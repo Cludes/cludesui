@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Journal.lua  (WoW Forever only)
 --  Dungeon Journal: every WoW Forever dungeon and raid, its bosses in kill
@@ -40,7 +41,7 @@ end
 local QUEST_ID, QUEST_NAME, QUEST_LEVEL, QUEST_SIDE, QUEST_SHARE, QUEST_WHERE = 1, 2, 3, 4, 5, 6
 local NOTYET_NAME, NOTYET_ICON = 7, 6
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 
 -- Quest lists and levels, matched to dungeons by instance map or name.
 local prepared
@@ -106,7 +107,7 @@ local Show
 
 local function Text(parent, size, colour)
     local fontString = parent:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(fontString, size, "essentials")
+    CUI.Kit.Font(fontString, size, "essentials")
     fontString:SetJustifyH("LEFT")
     if colour then fontString:SetTextColor(unpack(colour)) end
     return fontString
@@ -117,7 +118,7 @@ local function Build()
     win = CreateFrame("Frame", "CludesUIJournal", UIParent)
     win:SetSize(W, H)
     win:SetPoint("CENTER", 0, 30)
-    CludesUI.Kit.Panel(win, 0.96)
+    CUI.Kit.Panel(win, 0.96)
     win:SetMovable(true)
     win:EnableMouse(true)
     win:RegisterForDrag("LeftButton")
@@ -125,15 +126,15 @@ local function Build()
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
     win:SetFrameStrata("HIGH")
     local title = Text(win, 15)
-    CludesUI.Kit.Font(title, 15, "essentials")
+    CUI.Kit.Font(title, 15, "essentials")
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Dungeon Journal")
-    CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
+    CUI.Kit.AccentText(title)
+    local close = CUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
 
     -- Dungeon list
-    list = (CludesUI.Kit.Scroll(win))
+    list = (CUI.Kit.Scroll(win))
     list:SetPoint("TOPLEFT", 8, -32)
     list:SetSize(LIST_W - 24, H - 42)
     local lc = CreateFrame("Frame", nil, list)
@@ -142,7 +143,7 @@ local function Build()
     list.child = lc
 
     -- Detail
-    scroll = (CludesUI.Kit.Scroll(win))
+    scroll = (CUI.Kit.Scroll(win))
     scroll:SetPoint("TOPLEFT", LIST_W + 4, -32)
     scroll:SetSize(W - LIST_W - 36, H - 42)
     content = CreateFrame("Frame", nil, scroll)
@@ -181,7 +182,7 @@ local function FillList()
             widget.lv:SetPoint("RIGHT", -2, 0)
             widget.sel = widget:CreateTexture(nil, "BACKGROUND")
             widget.sel:SetAllPoints()
-            local ar, ag, ab = CludesUI.Kit.Accent()
+            local ar, ag, ab = CUI.Kit.Accent()
             widget.sel:SetColorTexture(ar, ag, ab, 0.18)
             local highlight = widget:CreateTexture(nil, "HIGHLIGHT")
             highlight:SetAllPoints()
@@ -192,7 +193,7 @@ local function FillList()
         widget.dungeon = not skinData.heading and skinData or nil
         widget:EnableMouse(not skinData.heading)
         if skinData.heading then
-            widget.text:SetText(CludesUI.Kit.AccentHex() .. skinData.heading .. "|r")
+            widget.text:SetText(CUI.Kit.AccentHex() .. skinData.heading .. "|r")
             widget.lv:SetText("")
         elseif skinData.faction then
             widget.text:SetText(skinData.name .. (skinData.tab == "pvp" and " |cff9aa6b2(PvP)|r" or ""))
@@ -257,7 +258,7 @@ end
 local y
 local function Line(text, size, indent, colour)
     local region = Acquire()
-    CludesUI.Kit.Font(region.text, size or 12, "essentials")
+    CUI.Kit.Font(region.text, size or 12, "essentials")
     region.text:SetTextColor(unpack(colour or { 1, 1, 1 }))
     region.text:SetPoint("TOPLEFT", region, "TOPLEFT", indent or 0, 0)
     region.text:SetWidth(content:GetWidth() - (indent or 0) - 8)
@@ -291,7 +292,7 @@ local function ItemLine(id, chance)
         extra[#extra + 1] = (module.Owned and module.Owned(id)) and "|cffff9933*|r |cff60d080BiS, yours|r"
             or "|cffff9933* BiS|r"
     end
-    CludesUI.Kit.Font(region.text, 12, "essentials")
+    CUI.Kit.Font(region.text, 12, "essentials")
     region.text:SetTextColor(1, 1, 1)
     region.text:SetPoint("LEFT", region.icon, "RIGHT", 6, 0)
     region.text:SetWidth(content:GetWidth() - 50)
@@ -346,7 +347,7 @@ local function PinEnter(pin)
     local tag = BossTag(boss)
     if tag then GameTooltip:AddLine(TAG_WORDS[tag], 0.6, 0.65, 0.7) end
     local tip = boss.npc and J.Tips and J.Tips[boss.npc]
-    local ar, ag, ab = CludesUI.Kit.Accent()
+    local ar, ag, ab = CUI.Kit.Accent()
     if tip then GameTooltip:AddLine(tip, ar, ag, ab, true) end
     GameTooltip:Show()
 end
@@ -364,7 +365,7 @@ local function NewMapPin(canvas)
     pin.plate:SetColorTexture(0.06, 0.07, 0.09, 1)
     Round(pin, pin.plate)
     pin.text = pin:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(pin.text, 13, "essentials")
+    CUI.Kit.Font(pin.text, 13, "essentials")
     pin.text:SetPoint("CENTER")
     pin:SetScript("OnEnter", PinEnter)
     pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -386,14 +387,14 @@ local function MapBuild()
         v.floor = v.floors[(at - 1 + by) % #v.floors + 1]
         v:Draw()
     end
-    v.down = CludesUI.Kit.Button(v.bar, "", 90, 22, nil, { key = "essentials" })
+    v.down = CUI.Kit.Button(v.bar, "", 90, 22, nil, { key = "essentials" })
     v.down:SetSize(24, 20)
     v.down:SetPoint("LEFT", 0, 0)
     v.down:SetText("<")
     v.down:SetScript("OnClick", function() Step(-1) end)
     v.name = Text(v.bar, 12)
     v.name:SetPoint("LEFT", v.down, "RIGHT", 8, 0)
-    v.up = CludesUI.Kit.Button(v.bar, "", 90, 22, nil, { key = "essentials" })
+    v.up = CUI.Kit.Button(v.bar, "", 90, 22, nil, { key = "essentials" })
     v.up:SetSize(24, 20)
     v.up:SetPoint("LEFT", v.name, "RIGHT", 8, 0)
     v.up:SetText(">")
@@ -401,7 +402,7 @@ local function MapBuild()
     v.canvas = CreateFrame("Frame", nil, content)
     v.canvas:SetSize(width, v.h)
     v.canvas:SetClipsChildren(true)
-    CludesUI.Kit.Border(v.canvas, 0, 0, 0, 1)
+    CUI.Kit.Border(v.canvas, 0, 0, 0, 1)
     v.picture = v.canvas:CreateTexture(nil, "BACKGROUND")
     v.picture:SetAllPoints()
     v.door = CreateFrame("Frame", nil, v.canvas)
@@ -410,7 +411,7 @@ local function MapBuild()
     v.door.icon:SetAllPoints()
     v.door.icon:SetAtlas("dungeon")
     v.door.text = v.door:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(v.door.text, 12, "essentials")
+    CUI.Kit.Font(v.door.text, 12, "essentials")
     v.door.text:SetPoint("LEFT", v.door, "RIGHT", 2, 0)
     v.door.text:SetText("Entrance")
 
@@ -444,7 +445,7 @@ local function MapBuild()
                     pin.boss, pin.number = boss, numbered and number or nil
                     pin.text:SetText(pin.number or TAG_SHORT[tag] or "")
                     if numbered then
-                        pin.ring:SetColorTexture(CludesUI.Kit.Accent())
+                        pin.ring:SetColorTexture(CUI.Kit.Accent())
                     else
                         pin.ring:SetColorTexture(0.6, 0.65, 0.7, 1)
                     end
@@ -544,7 +545,7 @@ Show = function(skinData)
         elseif GetFactionInfoByID then
             standing = select(3, GetFactionInfoByID(dd.id))
         end
-        Line(dd.name .. (dd.tab == "pvp" and "  |cffff6060PvP|r" or ""), 16, 0, CludesUI.Kit.SyncAccent({}))
+        Line(dd.name .. (dd.tab == "pvp" and "  |cffff6060PvP|r" or ""), 16, 0, CUI.Kit.SyncAccent({}))
         local facts = {}
         if dd.zone then facts[#facts + 1] = dd.zone end
         if standing then
@@ -617,7 +618,7 @@ Show = function(skinData)
         return
     end
 
-    Line(dd.name .. (dd.raid and "  |cffffb040Raid|r" or ""), 16, 0, CludesUI.Kit.SyncAccent({}))
+    Line(dd.name .. (dd.raid and "  |cffffb040Raid|r" or ""), 16, 0, CUI.Kit.SyncAccent({}))
     local facts = {}
     if dd.levels then facts[#facts + 1] = "Levels " .. LevelText(dd) end
     if dd.zone then facts[#facts + 1] = dd.zone end
@@ -694,7 +695,7 @@ eventFrame:SetScript("OnEvent", function()
     end)
 end)
 
-CludesUI._Journal = {
+CUI._Journal = {
     Show = function() module.ShowJournal() end,
 }
 

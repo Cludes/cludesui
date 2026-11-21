@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUICdmBarGlows.lua
 --  Bar Glows: Overlays glow effects on action bar / CDM bar buttons when
@@ -585,7 +586,7 @@ local function BindOverlays(backdrop)
                             and record.conditions[1]
                         local csid = type(cond) == "table" and tonumber(cond.spellID)
                         if csid and csid > 0 then glowSids[csid] = true end
-                        if record.heroTree and not CludesUI.IS_FOREVER then anyHero = true end
+                        if record.heroTree and not CUI.IS_FOREVER then anyHero = true end
                         if record.mode == "USABLE" then anyUsable = true end
                         local spellRef = record.stackEnabled and record.spellID
                         if spellRef and spellRef > 0 then
@@ -801,7 +802,7 @@ UpdateOverlayVisuals = function()
                     end
                     local cr, cg, callback
                     if record.colorMode == "class" then
-                        local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                        local classColor = CUI.GetClassColor(CUI._playerClass)
                         cr, cg, callback = classColor.r, classColor.g, classColor.b
                     elseif record.colorMode == "custom" and record.glowColor then
                         cr = record.glowColor.r or 1

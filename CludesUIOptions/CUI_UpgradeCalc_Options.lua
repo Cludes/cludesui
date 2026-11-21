@@ -1,16 +1,17 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then return end -- no item upgrade system on WoW Forever: the QoL module lists no Upgrader tab there and its callers nil-guard the page builder and reset
+local CUI = CludesUI
+if CUI and CUI.IS_FOREVER then return end -- no item upgrade system on WoW Forever: the QoL module lists no Upgrader tab there and its callers nil-guard the page builder and reset
 -------------------------------------------------------------------------------
 --  CUI_UpgradeCalc_Options.lua
 --  Options page for the Upgrade Calculator feature (part of CludesUIQoL).
 -------------------------------------------------------------------------------
 
-if not CludesUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
+if not CUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 local function GetAddonDB()
     -- Always delegate to the main module so we read from the same profile
@@ -22,14 +23,14 @@ local function GetAddonDB()
 end
 
 local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PanelPP
+    local W = CUI.Widgets
+    local Pix = CUI.PanelPP
     local cursorY = yOffset
     local _, height
 
     hostFrame._showRowDivider = true
 
-    if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
+    if CUI.ClearContentHeader then CUI:ClearContentHeader() end
 
     local function RefreshOpenCalc()
         local fr = _G["CUIUpgCalcFrame"]
@@ -45,15 +46,15 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         local GAP = 40
         local ROW_H = BTN_H + 20
         local row = CreateFrame("Frame", nil, hostFrame)
-        local totalW = hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2
+        local totalW = hostFrame:GetWidth() - CUI.CONTENT_PAD * 2
         Pix.Size(row, totalW, ROW_H)
-        Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
+        Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY)
 
         local openBtn = CreateFrame("Button", nil, row)
         Pix.Size(openBtn, BTN_W, BTN_H)
         Pix.Point(openBtn, "RIGHT", row, "CENTER", -(GAP / 2), 0)
         openBtn:SetFrameLevel(row:GetFrameLevel() + 1)
-        CludesUI.MakeStyledButton(openBtn, "Open Calculator", 14, CludesUI.WB_COLOURS, function()
+        CUI.MakeStyledButton(openBtn, "Open Calculator", 14, CUI.WB_COLOURS, function()
             local widget = _G["CUIUpgCalcFrame"]
             if widget then
                 if widget:IsShown() then
@@ -68,7 +69,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         Pix.Size(clearBtn, BTN_W, BTN_H)
         Pix.Point(clearBtn, "LEFT", row, "CENTER", GAP / 2, 0)
         clearBtn:SetFrameLevel(row:GetFrameLevel() + 1)
-        CludesUI.MakeStyledButton(clearBtn, "Clear Upgrade Cache", 14, CludesUI.WB_COLOURS, function()
+        CUI.MakeStyledButton(clearBtn, "Clear Upgrade Cache", 14, CUI.WB_COLOURS, function()
             if CUIUpgCalc and CUIUpgCalc.ClearCache then CUIUpgCalc:ClearCache() end
         end)
 
@@ -77,7 +78,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
 
     -- Reposition hint
     do
-        local fontFile = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
+        local fontFile = (CUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
         local infoFrame = CreateFrame("Frame", nil, hostFrame)
         infoFrame:SetSize(hostFrame:GetWidth(), 20)
         infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 10)
@@ -87,7 +88,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         line1:SetTextColor(1, 1, 1, 0.75)
         line1:SetPoint("TOP", infoFrame, "TOP", 0, 0)
         line1:SetJustifyH("CENTER")
-        line1:SetText(CludesUI.L("Reposition this element with Shift+Click and Drag."))
+        line1:SetText(CUI.L("Reposition this element with Shift+Click and Drag."))
         cursorY = cursorY - 36
     end
 
@@ -171,10 +172,10 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         getValue = function() return "__placeholder" end,
         setValue = function() end,
     })
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local leftRegion = filterRow._leftRegion
         if leftRegion._control then leftRegion._control:Hide() end
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             leftRegion,
             210,
             leftRegion:GetFrameLevel() + 2,
@@ -193,12 +194,12 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
         leftRegion._control = checkDrop
         leftRegion._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+        CUI.RegisterWidgetRefresh(cbDDRefresh)
     end
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local rightRegion = filterRow._rightRegion
         if rightRegion._control then rightRegion._control:Hide() end
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             rightRegion,
             210,
             rightRegion:GetFrameLevel() + 2,
@@ -217,7 +218,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         Pix.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
         rightRegion._control = checkDrop
         rightRegion._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+        CUI.RegisterWidgetRefresh(cbDDRefresh)
     end
     cursorY = cursorY - filterRowH
 
@@ -253,10 +254,10 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         getValue = function() return GetAddonDB().showCalcButton or false end,
         setValue = function(val)
             GetAddonDB().showCalcButton = val
-            if CludesUI and CludesUI.ApplyCharSheetCalcTab then CludesUI.ApplyCharSheetCalcTab() end
+            if CUI and CUI.ApplyCharSheetCalcTab then CUI.ApplyCharSheetCalcTab() end
         end,
     }
-    local skinNS = CludesUI._ModuleNS and CludesUI._ModuleNS.CludesUIBlizzardSkin
+    local skinNS = CUI._ModuleNS and CUI._ModuleNS.CludesUIBlizzardSkin
     if skinNS and skinNS.CharSheetStock() then
         calcBtnCfg.disabled = function() return true end
         calcBtnCfg.disabledTooltip = "Character Sheet: Blizz Default"
@@ -277,12 +278,12 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Enhanced Upgrade Tooltips",
         tooltip = "Replaces the Upgrade Level line with a colored rank, track and potential item-level range, including Ascension for eligible weapons, trinkets and necklaces. Shows the upgrade currency beside it while upgrades remain. Unmatched tracks keep Blizzard's text.",
-        getValue = function() return CludesUI.QoLExtrasGet("upgradeTooltips") == true end,
+        getValue = function() return CUI.QoLExtrasGet("upgradeTooltips") == true end,
         setValue = function(val)
-            CludesUI.QoLExtrasSet("upgradeTooltips", val)
-            CludesUI._applyUpgradeTooltips()
+            CUI.QoLExtrasSet("upgradeTooltips", val)
+            CUI._applyUpgradeTooltips()
         end,
-    }, CludesUI.BlankRowCfg())
+    }, CUI.BlankRowCfg())
     cursorY = cursorY - height
 
     _, height = W:Spacer(hostFrame, cursorY, 20)
@@ -301,8 +302,8 @@ _G._CUI_BuildUpgradeCalcPage = BuildUpgradeCalcPage
 
 -- Expose reset helper for QoL onReset
 _G._CUI_ResetUpgradeCalc = function()
-    CludesUI.QoLExtrasSet("upgradeTooltips", false)
-    CludesUI._applyUpgradeTooltips()
+    CUI.QoLExtrasSet("upgradeTooltips", false)
+    CUI._applyUpgradeTooltips()
     if CUIUpgCalc and CUIUpgCalc.GetOptsDB then
         local options = CUIUpgCalc.GetOptsDB()
         for keyName in pairs(options) do

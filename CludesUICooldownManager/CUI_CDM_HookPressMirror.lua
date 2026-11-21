@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookPressMirror.lua
 --
@@ -50,7 +51,7 @@ do
 
     -- Read the action bars' pushed settings live so the CDM press matches them.
     local function GetABProfile()
-        local L = CludesUI and CludesUI.Lite
+        local L = CUI and CUI.Lite
         if not (L and L.GetAddon) then return nil end
         local success, eab = pcall(L.GetAddon, "CludesUIActionBars", true)
         if success and eab and eab.db then return eab.db.profile end
@@ -85,10 +86,10 @@ do
             elseif p.useBlizzardStyle then
                 -- The bars' own pressed art: the retail sheet on WoW Forever
                 -- (CludesUI.StockAtlas) unless the bars wear its own look.
-                if CludesUI.IS_FOREVER == true and p.useForeverStyle == true then
+                if CUI.IS_FOREVER == true and p.useForeverStyle == true then
                     texture:SetAtlas("UI-HUD-ActionBar-IconFrame-Down", false)
                 else
-                    CludesUI.StockAtlas(texture, "UI-HUD-ActionBar-IconFrame-Down", false)
+                    CUI.StockAtlas(texture, "UI-HUD-ActionBar-IconFrame-Down", false)
                 end
                 texture:SetVertexColor(1, 1, 1, 1)
                 texture:SetAlpha(1)
@@ -141,10 +142,10 @@ do
             texture:SetAtlas(nil)
             texture:SetTexture(CHECKED_TEX)
         elseif p.useBlizzardStyle then
-            if CludesUI.IS_FOREVER == true and p.useForeverStyle == true then
+            if CUI.IS_FOREVER == true and p.useForeverStyle == true then
                 texture:SetAtlas(CHECKED_ATLAS, false)
             else
-                CludesUI.StockAtlas(texture, CHECKED_ATLAS, false)
+                CUI.StockAtlas(texture, CHECKED_ATLAS, false)
             end
         else
             texture:SetAtlas(nil)
@@ -660,7 +661,7 @@ do
             return
         end
         self:UnregisterEvent("PLAYER_LOGIN")
-        local lists = CludesUI.FOREVER_NEXT_SWING
+        local lists = CUI.FOREVER_NEXT_SWING
         local _, class = UnitClass("player")
         local ids = lists and lists[class]
         if not (ids and C_Spell.IsCurrentSpell) then return end

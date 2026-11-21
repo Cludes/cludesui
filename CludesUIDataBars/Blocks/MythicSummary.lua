@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then return end -- Mythic+ Tools does not load on WoW Forever (the main file drops the block type there too)
+local CUI = CludesUI
+if CUI.IS_FOREVER then return end -- Mythic+ Tools does not load on WoW Forever (the main file drops the block type there too)
 -------------------------------------------------------------------------------
 --  Blocks\MythicSummary.lua - Info Bar block: the latest Mythic+ run.
 --
@@ -32,12 +33,12 @@ end
 -- The hook is held while any block is enabled (bars are built after
 -- Mythic+ Tools has loaded, so it exists by then).
 local function Hook()
-    local store = CludesUI._MythicRuns
+    local store = CUI._MythicRuns
     if store then store.OnChanged = next(blocks) and RunsChanged or nil end
 end
 
 local function Runs()
-    local store = CludesUI._MythicRuns
+    local store = CUI._MythicRuns
     return store and store.Get()
 end
 
@@ -48,13 +49,13 @@ end
 
 -- "+12 Ara-Kara", the level in its keystone colour as in the Run Summary.
 local function RunName(run)
-    if not run then return CludesUI.L("No runs recorded yet") end
+    if not run then return CUI.L("No runs recorded yet") end
     local level = "+" .. (run.level or 0)
     local color = C_ChallengeMode
         and C_ChallengeMode.GetKeystoneLevelRarityColor
         and C_ChallengeMode.GetKeystoneLevelRarityColor(run.level or 0)
     if type(color) == "table" and color.r then
-        level = CludesUI.HexColor(color.r, color.g, color.b) .. level .. "|r"
+        level = CUI.HexColor(color.r, color.g, color.b) .. level .. "|r"
     end
     return level .. " " .. (run.mapName or "?")
 end
@@ -69,9 +70,9 @@ local function RunTime(run)
 end
 
 local function AskClear()
-    local store = CludesUI._MythicRuns
+    local store = CUI._MythicRuns
     if not (store and store.Clear) then return end
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Clear Run History",
         message = "Delete every recorded Mythic+ run for this character?",
         confirmText = "Delete",
@@ -159,17 +160,17 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
         local runs = Runs()
         local count = runs and #runs or 0
         mod.Tip_Begin(button)
-        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Run Summary") .. "|cFFFFFFFF]|r", red, green, blue)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CUI.L("Run Summary") .. "|cFFFFFFFF]|r", red, green, blue)
         mod.Tip_AddLine(" ")
-        if count == 0 then mod.Tip_AddLine(CludesUI.L("No runs recorded yet"), 0.6, 0.6, 0.6) end
+        if count == 0 then mod.Tip_AddLine(CUI.L("No runs recorded yet"), 0.6, 0.6, 0.6) end
         for i = 1, count do
             local time, tr, tg, tb = RunTime(runs[i])
             mod.Tip_AddDouble(RunName(runs[i]), time, 0.8, 0.8, 0.8, tr, tg, tb)
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Run Summary"), 1, 1, 1, red, green, blue)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], CUI.L("Open Run Summary"), 1, 1, 1, red, green, blue)
         if count > 0 then
-            mod.Tip_AddDouble(L["RIGHT_CLICK"], CludesUI.L("Clear Run History"), 1, 1, 1, red, green, blue)
+            mod.Tip_AddDouble(L["RIGHT_CLICK"], CUI.L("Clear Run History"), 1, 1, 1, red, green, blue)
         end
         mod.Tip_Show()
     end

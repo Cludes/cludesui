@@ -1,4 +1,5 @@
 local addonName, mod = ...
+local CUI = CludesUI
 if mod.standalone then return end
 
 -- ── Constants (shared with all modules via ns.K) ───────────────────────────
@@ -157,7 +158,7 @@ mod.isTestMode = false
 -- db.profile is re-pointed by the profile system, so always read it here.
 local profileDB
 function mod.DB()
-    if not profileDB then profileDB = CludesUI.Lite.NewDB("CludesUITankDB", { profile = {} }) end
+    if not profileDB then profileDB = CUI.Lite.NewDB("CludesUITankDB", { profile = {} }) end
     return profileDB.profile
 end
 
@@ -528,8 +529,8 @@ local function handleSlashCommand(msg)
             mod.Print("Layout Mode cannot open in combat.")
             return
         end
-        CludesUI:EnsureUnlockCore()
-        if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
+        CUI:EnsureUnlockCore()
+        if CUI._openUnlockMode then CUI._openUnlockMode() end
         return
     end
 

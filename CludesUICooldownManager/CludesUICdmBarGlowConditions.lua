@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUICdmBarGlowConditions.lua
 --  Extra conditions on a Bar Glow entry, evaluated after the entry's own
@@ -52,7 +53,7 @@ end
 -- The entry's final glow state, given its own Glow When result `main`.
 function mod.BarGlowCombine(record, main, cache)
     local hero = record.heroTree
-    if hero and not CludesUI.IS_FOREVER and ActiveHeroTree() ~= hero then return false end
+    if hero and not CUI.IS_FOREVER and ActiveHeroTree() ~= hero then return false end
     if record.andMode ~= "and" then return main end
     local c = type(record.conditions) == "table" and record.conditions[1]
     local spellRef = type(c) == "table" and tonumber(c.spellID)

@@ -1,16 +1,17 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  expressions.lua - type a filter like "hasBL and hasBR and healer > 0"
 --  our own little language, parsed into closures: nothing typed ever runs
 --  as lua. saved as extraExpr
 -------------------------------------------------------------------------------
 local FOLDER, mod = ...
-if CludesUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
+if CUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
 local GFNS = mod
 local CM = mod.CUI
 
 local EXPR_TEX = "Interface\\AddOns\\" .. FOLDER .. "\\media\\icons\\cui-expression.png"
-local Secret = CludesUI.IsSecret
+local Secret = CUI.IsSecret
 local function Readable(t)
     return type(t) == "table" and not Secret(t) and not (canaccesstable and not canaccesstable(t))
 end
@@ -106,7 +107,7 @@ local function Tokens(source)
                 elseif WORDS[lw] then
                     result[#result + 1] = { t = "var", v = WORDS[lw] }
                 else
-                    return nil, CludesUI.Lf("unknown word: %1$s", word)
+                    return nil, CUI.Lf("unknown word: %1$s", word)
                 end
                 index = index + #word
             elseif TWO[two] then
@@ -116,7 +117,7 @@ local function Tokens(source)
                 result[#result + 1] = { t = ONE[c] }
                 index = index + 1
             else
-                return nil, CludesUI.Lf('can\'t use "%1$s"', c)
+                return nil, CUI.Lf('can\'t use "%1$s"', c)
             end
         end
     end
@@ -144,7 +145,7 @@ local function Compile(source)
     local Or
     local function Primary()
         local tk = nextTok()
-        if not tk then error(CludesUI.L("ends too soon"), 0) end
+        if not tk then error(CUI.L("ends too soon"), 0) end
         if tk.t == "num" then
             local val = tk.v
             return function() return val end
@@ -157,10 +158,10 @@ local function Compile(source)
             end
         elseif tk.t == "(" then
             local frame = Or()
-            if nextTok() == nil or toks[place - 1].t ~= ")" then error(CludesUI.L("missing )"), 0) end
+            if nextTok() == nil or toks[place - 1].t ~= ")" then error(CUI.L("missing )"), 0) end
             return frame
         end
-        error(CludesUI.Lf('unexpected "%1$s"', tk.t), 0)
+        error(CUI.Lf('unexpected "%1$s"', tk.t), 0)
     end
     local function Unary()
         if peekKind() == "-" then
@@ -244,7 +245,7 @@ local function Compile(source)
 
     local success, frame = pcall(Or)
     if not success then return nil, frame end
-    if place <= #toks then return nil, CludesUI.Lf('unexpected "%1$s"', toks[place].t) end
+    if place <= #toks then return nil, CUI.Lf('unexpected "%1$s"', toks[place].t) end
     return frame
 end
 
@@ -336,110 +337,110 @@ end
 -- the reference under the box: hover a tag for help, click to type it
 local SECTIONS = {
     {
-        title = CludesUI.L("Words"),
+        title = CUI.L("Words"),
         boxes = {
             {
-                title = CludesUI.L("Open Slots"),
+                title = CUI.L("Open Slots"),
                 color = { 0.35, 0.65, 1 },
                 cols = 1,
                 examples = {
-                    { "tankOpen >= 1", CludesUI.L("room for a tank") },
-                    { "healerOpen > 0 and dpsOpen > 0", CludesUI.L("room for a healer and a dps") },
-                    { "dpsOpen == 3", CludesUI.L("still needs all three dps") },
+                    { "tankOpen >= 1", CUI.L("room for a tank") },
+                    { "healerOpen > 0 and dpsOpen > 0", CUI.L("room for a healer and a dps") },
+                    { "dpsOpen == 3", CUI.L("still needs all three dps") },
                 },
                 tags = {
-                    { "tankOpen", CludesUI.L("Tank spots still open.") },
-                    { "healerOpen", CludesUI.L("Healer spots still open.") },
-                    { "dpsOpen", CludesUI.L("DPS spots still open.") },
+                    { "tankOpen", CUI.L("Tank spots still open.") },
+                    { "healerOpen", CUI.L("Healer spots still open.") },
+                    { "dpsOpen", CUI.L("DPS spots still open.") },
                 },
             },
             {
-                title = CludesUI.L("Roles"),
+                title = CUI.L("Roles"),
                 color = { 0.3, 0.85, 0.5 },
                 cols = 2,
                 examples = {
-                    { "tank == 1 and healer == 1", CludesUI.L("has its tank and healer") },
-                    { "members <= 3", CludesUI.L("three players or fewer so far") },
-                    { "myClass == 0", CludesUI.L("nobody of your class yet") },
-                    { "mage >= 1 or priest >= 1", CludesUI.L("has a mage or a priest") },
-                    { "dk + dh == 0", CludesUI.L("no death knight or demon hunter") },
+                    { "tank == 1 and healer == 1", CUI.L("has its tank and healer") },
+                    { "members <= 3", CUI.L("three players or fewer so far") },
+                    { "myClass == 0", CUI.L("nobody of your class yet") },
+                    { "mage >= 1 or priest >= 1", CUI.L("has a mage or a priest") },
+                    { "dk + dh == 0", CUI.L("no death knight or demon hunter") },
                 },
                 tags = {
-                    { "tank", CludesUI.L("Tanks in the group.") },
-                    { "healer", CludesUI.L("Healers in the group.") },
-                    { "dps", CludesUI.L("DPS in the group.") },
+                    { "tank", CUI.L("Tanks in the group.") },
+                    { "healer", CUI.L("Healers in the group.") },
+                    { "dps", CUI.L("DPS in the group.") },
                     {
                         "mage",
-                        CludesUI.L("Any class name counts that class: mage, druid, priest, dk, dh..."),
+                        CUI.L("Any class name counts that class: mage, druid, priest, dk, dh..."),
                     },
-                    { "members", CludesUI.L("Players in the group."), span = true },
-                    { "myClass", CludesUI.L("Members of your own class."), span = true },
+                    { "members", CUI.L("Players in the group."), span = true },
+                    { "myClass", CUI.L("Members of your own class."), span = true },
                 },
             },
             {
-                title = CludesUI.L("Group"),
+                title = CUI.L("Group"),
                 color = { 0.72, 0.52, 1 },
                 cols = 2,
                 examples = {
-                    { "hasBL and hasBR", CludesUI.L("has bloodlust and a battle res") },
-                    { "score >= 2500", CludesUI.L("leader has 2500 score or more") },
-                    { "age <= 5", CludesUI.L("listed in the last five minutes") },
-                    { "friends > 0", CludesUI.L("a friend or guildmate is in it") },
-                    { "not voice", CludesUI.L("no voice chat listed") },
+                    { "hasBL and hasBR", CUI.L("has bloodlust and a battle res") },
+                    { "score >= 2500", CUI.L("leader has 2500 score or more") },
+                    { "age <= 5", CUI.L("listed in the last five minutes") },
+                    { "friends > 0", CUI.L("a friend or guildmate is in it") },
+                    { "not voice", CUI.L("no voice chat listed") },
                 },
                 tags = {
-                    { "hasBL", CludesUI.L("1 when someone can Bloodlust / Heroism.") },
-                    { "hasBR", CludesUI.L("1 when someone can battle res.") },
-                    { "score", CludesUI.L("The leader's Mythic+ score.") },
-                    { "ilvl", CludesUI.L("The group's required item level.") },
-                    { "age", CludesUI.L("Minutes since the group was listed.") },
-                    { "friends", CludesUI.L("Your friends and guildmates in the group.") },
-                    { "voice", CludesUI.L("1 when the group lists voice chat.") },
+                    { "hasBL", CUI.L("1 when someone can Bloodlust / Heroism.") },
+                    { "hasBR", CUI.L("1 when someone can battle res.") },
+                    { "score", CUI.L("The leader's Mythic+ score.") },
+                    { "ilvl", CUI.L("The group's required item level.") },
+                    { "age", CUI.L("Minutes since the group was listed.") },
+                    { "friends", CUI.L("Your friends and guildmates in the group.") },
+                    { "voice", CUI.L("1 when the group lists voice chat.") },
                 },
             },
         },
     },
     {
-        title = CludesUI.L("Syntax"),
+        title = CUI.L("Syntax"),
         boxes = {
             {
-                title = CludesUI.L("Math"),
+                title = CUI.L("Math"),
                 color = { 1, 0.55, 0.2 },
                 examples = {
-                    { "tank + healer == 2", CludesUI.L("has both a tank and a healer") },
-                    { "5 - members >= 2", CludesUI.L("at least two spots left") },
-                    { "mage + priest + druid >= 2", CludesUI.L("two or more of those classes") },
-                    { "(tank + healer) == 0", CludesUI.L("no tank or healer yet") },
+                    { "tank + healer == 2", CUI.L("has both a tank and a healer") },
+                    { "5 - members >= 2", CUI.L("at least two spots left") },
+                    { "mage + priest + druid >= 2", CUI.L("two or more of those classes") },
+                    { "(tank + healer) == 0", CUI.L("no tank or healer yet") },
                 },
                 tags = {
-                    { "+", CludesUI.L("Add.") },
-                    { "-", CludesUI.L("Subtract.") },
-                    { "*", CludesUI.L("Multiply.") },
-                    { "/", CludesUI.L("Divide.") },
-                    { "(", CludesUI.L("Group a part together.") },
-                    { ")", CludesUI.L("Close the group.") },
+                    { "+", CUI.L("Add.") },
+                    { "-", CUI.L("Subtract.") },
+                    { "*", CUI.L("Multiply.") },
+                    { "/", CUI.L("Divide.") },
+                    { "(", CUI.L("Group a part together.") },
+                    { ")", CUI.L("Close the group.") },
                 },
             },
             {
-                title = CludesUI.L("Comparisons"),
+                title = CUI.L("Comparisons"),
                 color = { 1, 0.8, 0.2 },
                 examples = {
-                    { "score > 2000", CludesUI.L("more than 2000") },
-                    { "healer != 0", CludesUI.L("any healer at all") },
-                    { "dps >= 1 and dps <= 2", CludesUI.L("one or two dps") },
-                    { "hasBL or hasBR", CludesUI.L("either one is enough") },
-                    { "not hasBL", CludesUI.L("no bloodlust") },
+                    { "score > 2000", CUI.L("more than 2000") },
+                    { "healer != 0", CUI.L("any healer at all") },
+                    { "dps >= 1 and dps <= 2", CUI.L("one or two dps") },
+                    { "hasBL or hasBR", CUI.L("either one is enough") },
+                    { "not hasBL", CUI.L("no bloodlust") },
                 },
                 tags = {
-                    { ">", CludesUI.L("More than.") },
-                    { "<", CludesUI.L("Less than.") },
-                    { ">=", CludesUI.L("At least.") },
-                    { "<=", CludesUI.L("At most.") },
-                    { "==", CludesUI.L("Exactly.") },
-                    { "!=", CludesUI.L("Anything but.") },
-                    { "and", CludesUI.L("Both sides must be true.") },
-                    { "or", CludesUI.L("Either side is enough.") },
-                    { "not", CludesUI.L("Flips true and false.") },
+                    { ">", CUI.L("More than.") },
+                    { "<", CUI.L("Less than.") },
+                    { ">=", CUI.L("At least.") },
+                    { "<=", CUI.L("At most.") },
+                    { "==", CUI.L("Exactly.") },
+                    { "!=", CUI.L("Anything but.") },
+                    { "and", CUI.L("Both sides must be true.") },
+                    { "or", CUI.L("Either side is enough.") },
+                    { "not", CUI.L("Flips true and false.") },
                 },
             },
         },
@@ -467,7 +468,7 @@ do
     end
 end
 local function Hex(cfg) return string.format("|cff%02x%02x%02x", cfg[1] * 255, cfg[2] * 255, cfg[3] * 255) end
-local BAD_HEX = CludesUI.COLOR_CODES.BAD
+local BAD_HEX = CUI.COLOR_CODES.BAD
 
 local function Colorize(textValue)
     local result, index, n = {}, 1, #textValue
@@ -577,11 +578,11 @@ local function BuildHelp(panelFrame, K, onClick)
                             lines[#lines + 1] = "|cffffffff|r"
                                 .. Colorize(ex[1])
                                 .. "   "
-                                .. CludesUI.COLOR_CODES.DIM
+                                .. CUI.COLOR_CODES.DIM
                                 .. ex[2]
                                 .. "|r"
                         end
-                        K.Tip(self, CludesUI.Lf("%1$s Examples", specInfo.title), unpack(lines))
+                        K.Tip(self, CUI.Lf("%1$s Examples", specInfo.title), unpack(lines))
                     end)
                     q:SetScript("OnLeave", function()
                         qt:SetTextColor(0.6, 0.6, 0.6, 1)
@@ -701,9 +702,9 @@ local function PaintBtn(K)
     if not textValue:find("%S") then
         status:SetText("")
     elseif frame then
-        status:SetText("|cff66dd66" .. CludesUI.L("Filtering with this expression.") .. "|r")
+        status:SetText("|cff66dd66" .. CUI.L("Filtering with this expression.") .. "|r")
     else
-        status:SetText(BAD_HEX .. (err or CludesUI.L("can't read that")) .. "|r")
+        status:SetText(BAD_HEX .. (err or CUI.L("can't read that")) .. "|r")
     end
 end
 
@@ -734,7 +735,7 @@ local function Build(SP, K)
     K.Font(title, 9)
     title:SetTextColor(0.55, 0.55, 0.55, 1)
     title:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", 9, -7)
-    title:SetText(CludesUI.L("Expressions"))
+    title:SetText(CUI.L("Expressions"))
 
     -- clear button, skinned
     local clear = CreateFrame("Button", nil, panelFrame)
@@ -745,7 +746,7 @@ local function Build(SP, K)
     clear.Label = clear:CreateFontString(nil, "OVERLAY")
     K.Font(clear.Label, 9)
     clear.Label:SetPoint("CENTER", 0, 0)
-    clear.Label:SetText(CludesUI.L("Clear"))
+    clear.Label:SetText(CUI.L("Clear"))
     local ct = clear.Label
     ct:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
     local skin = CM._ModuleNS and CM._ModuleNS.CludesUIBlizzardSkin
@@ -802,7 +803,7 @@ local function Build(SP, K)
     K.Font(hint, 10)
     hint:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
     hint:SetTextColor(0.45, 0.45, 0.45, 1)
-    hint:SetText(CludesUI.L("e.g. hasBL and hasBR and healer > 0"))
+    hint:SetText(CUI.L("e.g. hasBL and hasBR and healer > 0"))
     well:EnableMouse(true)
     well:SetScript("OnMouseDown", function() box:SetFocus() end)
     box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
@@ -916,9 +917,9 @@ local function Build(SP, K)
         local frame = Current()
         K.Tip(
             self,
-            CludesUI.L("Expressions"),
-            frame and CludesUI.Lf("Active: %1$s", GFNS.Cfg().extraExpr)
-                or CludesUI.L("Filter groups with your own rules")
+            CUI.L("Expressions"),
+            frame and CUI.Lf("Active: %1$s", GFNS.Cfg().extraExpr)
+                or CUI.L("Filter groups with your own rules")
         )
     end)
     button:SetScript("OnLeave", function(self)

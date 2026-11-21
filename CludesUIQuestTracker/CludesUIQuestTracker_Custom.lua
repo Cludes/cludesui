@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then return end
+local CUI = CludesUI
+if not CUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 -- CludesUIQuestTracker_Custom.lua  (WoW Forever only)
 --
@@ -12,7 +13,7 @@ if not CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 local _, mod = ...
 local TrackerNS = mod.EQT
-local IsSecret = CludesUI.IsSecret
+local IsSecret = CUI.IsSecret
 local function TrackerCfg(key) return TrackerNS.Cfg(key) end
 
 -- The tracker's width, and the height it grows to before it scrolls: the
@@ -189,8 +190,8 @@ local OnLineClick, OnLineEnter, OnLineLeave, ToggleFocus, SyncItems, HideOverlay
 
 -- Outline and shadow follow the Fonts page's Module Outline.
 local function StyleText(fontStr, px)
-    CludesUI.PrimeFontShadow(fontStr, CludesUI.GetFontUseShadow("questTracker") and true or false)
-    local flag = CludesUI.GetFontOutlineFlag("questTracker")
+    CUI.PrimeFontShadow(fontStr, CUI.GetFontUseShadow("questTracker") and true or false)
+    local flag = CUI.GetFontOutlineFlag("questTracker")
     if not pcall(fontStr.SetFont, fontStr, TrackerNS.GetFont(), px, flag) then
         fontStr:SetFont("Fonts/FRIZQT__.TTF", px, flag)
     end
@@ -314,7 +315,7 @@ local function ZoneRGB()
         return red, green, blue, not (cfg.headerShowClassColor or cfg.headerUseAccent == false)
     end
     if accent then
-        local a = CludesUI.CLUDES_GREEN
+        local a = CUI.CLUDES_GREEN
         return a.r, a.g, a.b, true
     end
     return cfg.customZoneR or 1, cfg.customZoneG or 1, cfg.customZoneB or 1, false
@@ -434,7 +435,7 @@ end
 -------------------------------------------------------------------------------
 -- Focus button: Blizzard's quest POI art, beside the title.
 local function FocusOnEnter(self)
-    CludesUI.ShowWidgetTooltip(
+    CUI.ShowWidgetTooltip(
         self,
         self.id == C_SuperTrack.GetSuperTrackedQuestID() and STOP_SUPER_TRACK_QUEST or SUPER_TRACK_QUEST
     )
@@ -464,7 +465,7 @@ local function FocusButton(line)
     end)
     widget:SetScript("OnLeave", function()
         SyncHover()
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
     line.focus = widget
     return widget
@@ -579,7 +580,7 @@ local function TimerBar(l)
     local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.15, 0.15, 0.15, 0.8)
-    CludesUI.PP.CreateBorder(barFrame, 0, 0, 0, 0.9, 1, "OVERLAY", 1)
+    CUI.PP.CreateBorder(barFrame, 0, 0, 0, 0.9, 1, "OVERLAY", 1)
     l.bar = barFrame
     return barFrame
 end
@@ -1067,7 +1068,7 @@ local function Draw()
     local body = posY > 0 and (posY + PAD) or 0
     -- Unlock Mode shows the whole area the tracker may grow into, so its
     -- mover and Height row match what is being set.
-    local hgt = CludesUI._unlockActive and maxH or math.min(HEADER_H + body, maxH)
+    local hgt = CUI._unlockActive and maxH or math.min(HEADER_H + body, maxH)
     viewH = math.max(hgt - HEADER_H - PAD, 0)
     widget:SetHeight(hgt)
     -- An Unlock Mode link places the tracker by its centre, from its height:
@@ -1076,7 +1077,7 @@ local function Draw()
     -- quest in a new zone arrives over several renders).
     if hgt ~= widget.renderH then
         widget.renderH = hgt
-        if not CludesUI._unlockActive then CludesUI.ReapplyOwnAnchor(UNLOCK_KEY) end
+        if not CUI._unlockActive then CUI.ReapplyOwnAnchor(UNLOCK_KEY) end
     end
     UpdateThumb()
     if (itemSize and true or false) ~= cdRegistered then
@@ -1101,7 +1102,7 @@ TrackerNS.RefreshCustom = Queue
 -- Public: fn(slot, questID, titleFontString) runs for each quest title row on
 -- every render. width (0-64, default 0) is kept free right of the title.
 local HOOK_MAX_W = 64
-function CludesUI.RegisterQuestTrackerRow(ident, func, width)
+function CUI.RegisterQuestTrackerRow(ident, func, width)
     if type(ident) ~= "string" or ident == "" or type(func) ~= "function" then return false end
     for _, hgt in ipairs(rowHooks) do
         if hgt.id == ident then return false end
@@ -1114,7 +1115,7 @@ function CludesUI.RegisterQuestTrackerRow(ident, func, width)
 end
 
 -- Public: re-render the tracker, for a hook whose own state changed.
-CludesUI.RefreshQuestTrackerRows = Queue
+CUI.RefreshQuestTrackerRows = Queue
 
 -------------------------------------------------------------------------------
 -- Interaction. Nothing here touches Blizzard's tracker, the watch list, the
@@ -1137,7 +1138,7 @@ local function TogglePin(questId)
 end
 
 local function Abandon(questId)
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = ABANDON_QUEST,
         message = ABANDON_QUEST_CONFIRM:format(C_QuestLog.GetTitleForQuestID(questId) or ""),
         confirmText = ACCEPT,
@@ -1178,7 +1179,7 @@ local function ShowMenu(ownerFrame, questId)
     end
     itemList[#itemList + 1] = {
         noLoc = true,
-        text = CharStore().ctPinned[questId] and CludesUI.L("Unpin") or CludesUI.L("Pin to Top"),
+        text = CharStore().ctPinned[questId] and CUI.L("Unpin") or CUI.L("Pin to Top"),
         onClick = function() TogglePin(questId) end,
     }
     itemList[#itemList + 1] = {
@@ -1203,12 +1204,12 @@ local function ShowMenu(ownerFrame, questId)
     if TrackerNS.WowheadQuestOK(questId) then
         itemList[#itemList + 1] = "---"
         itemList[#itemList + 1] = {
-            text = CludesUI.L("Wowhead Link"),
+            text = CUI.L("Wowhead Link"),
             noLoc = true,
             onClick = function() TrackerNS.ShowWowheadLink(questId) end,
         }
     end
-    CludesUI.ShowContextMenu(ownerFrame, itemList, MENU_OPTS)
+    CUI.ShowContextMenu(ownerFrame, itemList, MENU_OPTS)
 end
 
 local function ToggleCollapsed(key)
@@ -1541,7 +1542,7 @@ local function PlaceTracker()
     widget:ClearAllPoints()
     widget:SetPoint(p.point, UIParent, p.relPoint or p.point, p.x or 0, p.y or 0)
     -- Linked to another element in Unlock Mode: back onto that link.
-    CludesUI.ReapplyOwnAnchor(UNLOCK_KEY)
+    CUI.ReapplyOwnAnchor(UNLOCK_KEY)
     SyncItems()
 end
 
@@ -1636,7 +1637,7 @@ local function PlaceAtSpot()
         end
     end
     widget:SetWidth(TrackerCfg("customWidth") or DEF_WIDTH)
-    if CludesUI._unlockActive then
+    if CUI._unlockActive then
         widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
     else
         PlaceTracker()
@@ -1805,10 +1806,10 @@ local function CanHideInCombat()
     local _, instanceType = IsInInstance()
     if instanceType == "raid" and TrackerCfg("hideInRaidMode") ~= "never" then return true end
     local saved = TrackerNS.DB()
-    if CludesUI.VisDependsOnCombat(saved, "visibility") then return true end
-    local sel = CludesUI.GetVisibilitySelection(saved, "visibility")
+    if CUI.VisDependsOnCombat(saved, "visibility") then return true end
+    local sel = CUI.GetVisibilitySelection(saved, "visibility")
     if sel.in_raid or sel.in_party or sel.solo then return true end
-    for _, k in ipairs(CludesUI.VIS_OPT_KEYS) do
+    for _, k in ipairs(CUI.VIS_OPT_KEYS) do
         if saved[k] and not FIGHT_STATIC[k] then return true end
     end
     return false
@@ -1818,7 +1819,7 @@ local function Blocked() return TrackerCfg("enabled") == false or TrackerNS.IsSu
 
 local function SyncShown()
     if not widget then return end
-    local vis = not Blocked() and CludesUI.EvalVisibility(TrackerNS.DB())
+    local vis = not Blocked() and CUI.EvalVisibility(TrackerNS.DB())
     if not vis then
         widget:Hide()
         return
@@ -1927,19 +1928,19 @@ function TrackerNS.InitCustom()
     for _, event in ipairs(EVENTS) do
         eventTag:RegisterEvent(event)
     end
-    CludesUI.RegisterVisibilityUpdater(SyncShown)
-    CludesUI.RegisterMouseoverTarget(
+    CUI.RegisterVisibilityUpdater(SyncShown)
+    CUI.RegisterMouseoverTarget(
         widget,
-        function() return not Blocked() and CludesUI.VisWantsMouseover(TrackerNS.DB(), "visibility") end
+        function() return not Blocked() and CUI.VisWantsMouseover(TrackerNS.DB(), "visibility") end
     )
-    CludesUI.RegAccent({ type = "callback", fn = TrackerNS.RestyleAll })
+    CUI.RegAccent({ type = "callback", fn = TrackerNS.RestyleAll })
 
     -- Unlock Mode keeps the edge the tracker grows away from: its own answer
     -- in place of the one Blizzard's tracker has under this key.
-    CludesUI.GetQuestTrackerGrowDir = function() return GrowsUp() and "UP" or "DOWN" end
+    CUI.GetQuestTrackerGrowDir = function() return GrowsUp() and "UP" or "DOWN" end
 
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = UNLOCK_KEY,
             label = "Quest Tracker",
             group = "Quest Tracker",
@@ -1965,7 +1966,7 @@ function TrackerNS.InitCustom()
                 if hgt then
                     TrackerNS.Set("customMaxHeight", Clamp(math.floor(hgt + 0.5), HEIGHT_MIN, HEIGHT_MAX))
                 end
-                if CludesUI._unlockActive then
+                if CUI._unlockActive then
                     widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
                 end
                 Queue()
@@ -1976,7 +1977,7 @@ function TrackerNS.InitCustom()
                     "customPos",
                     Anchored({ point = anchorPoint, relPoint = relPoint, x = posX, y = posY })
                 )
-                if not CludesUI._unlockActive then PlaceTracker() end
+                if not CUI._unlockActive then PlaceTracker() end
             end,
             loadPos = GrowSpot,
             -- Back to its starting place: where Blizzard's tracker sits.
@@ -1993,7 +1994,7 @@ function TrackerNS.InitCustom()
     -- session takes it back to the height of its quests. A drag leaves the
     -- frame on Unlock Mode's own anchor, so it first goes back onto the edge
     -- it keeps.
-    CludesUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(isActive)
+    CUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(isActive)
         if isActive then
             widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
         else

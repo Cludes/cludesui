@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ActionBars_Options\BarAppearance_Options.lua
 --  Action Bars options: the Appearance, Effects, Behavior (and Paging) and
@@ -7,13 +8,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  navigation maps to. Shared helpers come from ns._ABO_OptEnv, the
 --  per-build helpers from ctx.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIActionBars"]
+local mod = CUI._ModuleNS["CludesUIActionBars"]
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page and every frame it hands out) is reset
 -- and dressed again by the next build instead of made anew; on any other
 -- parent this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 local function BuildBarAppearance(hostFrame, cursorY, context)
     local environ = mod._ABO_OptEnv
@@ -50,9 +51,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 copy(ABAR.db.profile.bars[key], value, key)
             end
             if after then after() end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
-        CludesUI.BuildSyncIcon({
+        CUI.BuildSyncIcon({
             region = region,
             tooltip = tooltip,
             onClick = function() CopyTo(GROUP_BAR_ORDER) end,
@@ -113,28 +114,28 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -- entry's search text. barKey (optional) is the bar a hit opens, in place
     -- of the bar being built.
     local function AddRowSearch(labelText, words, barId)
-        if not CludesUI._RegisterSearchEntry then return end
+        if not CUI._RegisterSearchEntry then return end
         local textValue = {}
         for idx = 1, #words do
             local s = words[idx]
             textValue[#textValue + 1] = s
-            local loc = CludesUI.L(s)
+            local loc = CUI.L(s)
             if loc ~= s then textValue[#textValue + 1] = loc end
         end
-        local labelLoc = CludesUI.L(labelText)
+        local labelLoc = CUI.L(labelText)
         local section = hostFrame._currentSection and hostFrame._currentSection._sectionName
         if type(section) ~= "string" then section = nil end
-        local sel = CludesUI._buildingSelector
+        local sel = CUI._buildingSelector
         local setter, selKey = sel and sel.setter, sel and sel.key
         if barId then
-            setter, selKey = CludesUI._setActionBarKey, barId
+            setter, selKey = CUI._setActionBarKey, barId
         end
-        CludesUI._RegisterSearchEntry(
+        CUI._RegisterSearchEntry(
             labelText,
             labelLoc ~= labelText and labelLoc or nil,
             table.concat(textValue, " "),
-            CludesUI._buildingModule,
-            CludesUI._buildingPage,
+            CUI._buildingModule,
+            CUI._buildingPage,
             section,
             setter,
             selKey
@@ -162,9 +163,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -- see each click as it happens (the slot's capture); onMenuClosed runs
     -- each time its open menu hides. The search prebuild builds none.
     local function BuildChecklist(region, itemList, get, set, onMenuClosed)
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         if region._control then region._control:Hide() end
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             170,
             region:GetFrameLevel() + 2,
@@ -181,7 +182,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         region._control = checkDrop
         region._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+        CUI.RegisterWidgetRefresh(cbDDRefresh)
     end
 
     -------------------------------------------------------------------
@@ -189,10 +190,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -------------------------------------------------------------------
     iconsSectionHeader, height = W:SectionHeader(hostFrame, SECTION_ICON_APPEARANCE, cursorY)
     cursorY = cursorY - height
-    cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "actionbars")
+    cursorY = CUI.BlizzStyle.Note(hostFrame, cursorY, "actionbars")
 
     -- Stock mode (Blizzard Style or Classic WoW UI): the shared gate.
-    local function BlizzLookOn() return CludesUI.BlizzStyle.Get("actionbars") end
+    local function BlizzLookOn() return CUI.BlizzStyle.Get("actionbars") end
 
     -- "No custom shape" also covers "cropped" and unset.
     local function ShapeIsNone()
@@ -227,7 +228,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
 
     local abBsRow
     do
-        local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+        local texValues, texOrder = CUI.GetBorderTextureDropdown()
         -- Border Size: a custom shape's ring is on/off, so it keeps the None/Strong
         -- dropdown; every other shape gets the pixel slider over the same key and
         -- its borderThicknessPx companion. The shape setter rebuilds the page so the
@@ -238,7 +239,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 type = "dropdown",
                 text = "Border Size",
                 disabled = BlizzLookOn,
-                disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+                disabledTooltip = CUI.BlizzStyle.Label("actionbars"),
                 requireState = "disabled",
                 values = mod.BORDER_THICKNESS_LABELS,
                 order = mod.BORDER_THICKNESS_ORDER,
@@ -277,10 +278,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 end,
             }
         else
-            sizeCfg = CludesUI.BorderPxSliderCfg({
+            sizeCfg = CUI.BorderPxSliderCfg({
                 text = "Border Size",
                 disabled = BlizzLookOn,
-                disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+                disabledTooltip = CUI.BlizzStyle.Label("actionbars"),
                 requireState = "disabled",
                 -- The step the buttons render with (ResolveBorderThickness's regular
                 -- column): an unknown or numeric thickness is thin.
@@ -292,7 +293,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 -- Exactly what the dropdown wrote for a non-custom shape: the label and its mirrors.
                 setStep = function(step)
                     local barCfg = SB()
-                    local labelText = CludesUI.BORDER_LABEL_OF_STEP[step]
+                    local labelText = CUI.BORDER_LABEL_OF_STEP[step]
                     barCfg.borderThickness = labelText
                     local record = mod.BORDER_THICKNESS[labelText]
                     if record then
@@ -307,7 +308,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     local keyName = SelectedKey()
                     ABAR:ApplyBordersForBar(keyName)
                     ABAR:ApplyShapesForBar(keyName)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     SUpdatePreview()
                 end,
             })
@@ -315,22 +316,22 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         abBsRow, height = W:DualRow(
             hostFrame,
             cursorY,
-            CludesUI.BlizzStyle.Gate("actionbars", {
+            CUI.BlizzStyle.Gate("actionbars", {
                 type = "dropdown",
                 text = "Border Style",
                 disabled = function() return BlizzLookOn() or HasCustomShape() end,
                 disabledTooltip = function()
                     if HasCustomShape() then return "This option requires a non-custom button shape" end
-                    return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
+                    return CUI.DisabledTooltip(CUI.BlizzStyle.Label("actionbars"), "disabled")
                 end,
                 rawTooltip = true,
                 values = texValues,
                 order = texOrder,
                 getValue = function() return SGet("borderTexture") or "solid" end,
                 setValue = function(value)
-                    local defTh = CludesUI.GetBorderDefaultSize("actionbars", value)
+                    local defTh = CUI.GetBorderDefaultSize("actionbars", value)
                     -- An unregistered SharedMedia border answers the NUMBER 1; this key stores labels.
-                    if type(defTh) == "number" then defTh = CludesUI.BORDER_LABEL_OF_STEP[defTh] or "thin" end
+                    if type(defTh) == "number" then defTh = CUI.BORDER_LABEL_OF_STEP[defTh] or "thin" end
                     SSet("borderTexture", value, function(keyName)
                         ABAR.db.profile.bars[keyName].borderTextureOffset = nil
                         ABAR.db.profile.bars[keyName].borderTextureOffsetY = nil
@@ -340,7 +341,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         if ABAR.db.profile.bars[keyName].borderThicknessPx then
                             ABAR.db.profile.bars[keyName].borderThicknessPx = false
                         end
-                        local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(value)
+                        local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(value)
                         ABAR.db.profile.bars[keyName].borderColor =
                             { r = _bcol.r, g = _bcol.g, b = _bcol.b, a = 1 }
                         ABAR.db.profile.bars[keyName].borderClassColor = false
@@ -364,10 +365,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     end)
                     SUpdatePreview()
                     -- Full rebuild: the Width/Height Offset row exists only for a textured style.
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             }),
-            CludesUI.BlizzStyle.Gate("actionbars", sizeCfg)
+            CUI.BlizzStyle.Gate("actionbars", sizeCfg)
         )
         cursorY = cursorY - height
         -- Width Offset | Height Offset: the textured border's outward offsets, their
@@ -378,10 +379,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         do
             local btnTex = SGet("borderTexture") or "solid"
             if btnTex ~= "" and btnTex ~= "solid" then
-                local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                     addonKey = "actionbars",
                     disabled = BlizzLookOn,
-                    disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+                    disabledTooltip = CUI.BlizzStyle.Label("actionbars"),
                     requireState = "disabled",
                     getTex = function() return SGet("borderTexture") or "solid" end,
                     getStep = function() return (mod.ResolveBorderThickness(SB())) end,
@@ -393,15 +394,15 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     setY = function(value) SB().borderTextureOffsetY = value end,
                     apply = function()
                         ABAR:ApplyBordersForBar(SelectedKey())
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                         SUpdatePreview()
                     end,
                 })
                 _, height = W:DualRow(
                     hostFrame,
                     cursorY,
-                    CludesUI.BlizzStyle.Gate("actionbars", ocfgL),
-                    CludesUI.BlizzStyle.Gate("actionbars", ocfgR)
+                    CUI.BlizzStyle.Gate("actionbars", ocfgL),
+                    CUI.BlizzStyle.Gate("actionbars", ocfgR)
                 )
                 cursorY = cursorY - height
             end
@@ -417,7 +418,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 local step, px = mod.ResolveBorderThickness(SB())
                 return ShownBorderDefaults(texture, th, step, px)
             end
-            local cogBtn = CludesUI.BuildInlineCog(region, {
+            local cogBtn = CUI.BuildInlineCog(region, {
                 anchorTo = region._control,
                 title = "Border Options",
                 captureRegion = region,
@@ -480,7 +481,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                                 function(keyName) ABAR:ApplyBordersForBar(keyName) end
                             )
                             SUpdatePreview()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     -- The inverse of Show Behind, which wins: the runtime
@@ -496,15 +497,15 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         end,
                         disabledTooltip = function()
                             if BlizzLookOn() then
-                                return CludesUI.DisabledTooltip(
-                                    CludesUI.BlizzStyle.Label("actionbars"),
+                                return CUI.DisabledTooltip(
+                                    CUI.BlizzStyle.Label("actionbars"),
                                     "disabled"
                                 )
                             end
                             if HasCustomShape() then
                                 return "This option requires a non-custom button shape"
                             end
-                            return CludesUI.DisabledTooltip("Show Behind", "disabled")
+                            return CUI.DisabledTooltip("Show Behind", "disabled")
                         end,
                         rawTooltip = true,
                         get = function() return SGet("borderAboveEffects") or false end,
@@ -521,7 +522,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             })
             if cogBtn then
                 local function UpdateCogVis() cogBtn:SetShown((SGet("borderTexture") or "solid") ~= "solid") end
-                CludesUI.RegisterWidgetRefresh(UpdateCogVis)
+                CUI.RegisterWidgetRefresh(UpdateCogVis)
                 UpdateCogVis()
             end
         end
@@ -572,7 +573,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         local rightRegion = abBsRow._rightRegion
         local control = rightRegion._control
 
-        local classBorderSwatch, updateClassBorderSwatch = CludesUI.BuildColorSwatch(
+        local classBorderSwatch, updateClassBorderSwatch = CUI.BuildColorSwatch(
             rightRegion,
             abBsRow:GetFrameLevel() + 3,
             function()
@@ -592,11 +593,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 ABAR:ApplyShapesForBar(keyName)
             end)
             SUpdatePreview()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end)
-        CludesUI.HoverTip(classBorderSwatch, "Class Colored")
+        CUI.HoverTip(classBorderSwatch, "Class Colored")
 
-        local customSwatch, updateCustomSwatch = CludesUI.BuildColorSwatch(
+        local customSwatch, updateCustomSwatch = CUI.BuildColorSwatch(
             rightRegion,
             abBsRow:GetFrameLevel() + 3,
             function()
@@ -623,7 +624,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             20
         )
         Pix.Point(customSwatch, "RIGHT", classBorderSwatch, "LEFT", -8, 0)
-        CludesUI.HoverTip(customSwatch, "Custom Color")
+        CUI.HoverTip(customSwatch, "Custom Color")
 
         -- Click the dimmed custom swatch to switch back from class color (no block overlay)
         local origClick = customSwatch:GetScript("OnClick")
@@ -634,7 +635,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     ABAR:ApplyShapesForBar(keyName)
                 end)
                 SUpdatePreview()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
                 return
             end
             -- No border selected: allow swapping boxes but do not open the color picker
@@ -648,7 +649,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             customSwatch:SetAlpha((isClassColored or isNone) and 0.3 or 1)
             classBorderSwatch:SetAlpha((isClassColored and not isNone) and 1 or 0.3)
         end
-        CludesUI.RegisterWidgetRefresh(function()
+        CUI.RegisterWidgetRefresh(function()
             updateCustomSwatch()
             updateClassBorderSwatch()
             UpdateBorderSwatchState()
@@ -712,11 +713,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     classColorBorderRow, height = W:DualRow(
         hostFrame,
         cursorY,
-        CludesUI.BlizzStyle.Gate("actionbars", {
+        CUI.BlizzStyle.Gate("actionbars", {
             type = "dropdown",
             text = "Custom Button Shape",
             disabled = BlizzLookOn,
-            disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+            disabledTooltip = CUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
             values = SHAPE_VALUES,
             order = SHAPE_ORDER,
@@ -772,17 +773,17 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 SUpdatePreview()
                 -- Full rebuild: the Border Size slot is a dropdown for a custom shape
                 -- and the pixel slider otherwise, and only a rebuild swaps it.
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         }),
-        CludesUI.BlizzStyle.Gate("actionbars", {
+        CUI.BlizzStyle.Gate("actionbars", {
             type = "slider",
             text = "Icon Zoom",
             min = 0,
             max = 10,
             step = 0.5,
             disabled = BlizzLookOn,
-            disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+            disabledTooltip = CUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
             getValue = function() return SVal("iconZoom", ABAR.db.profile.iconZoom or 5.5) end,
             setValue = function(value)
@@ -857,14 +858,14 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     slotBgRow, height = W:DualRow(
         hostFrame,
         cursorY,
-        CludesUI.BlizzStyle.Gate("actionbars", {
+        CUI.BlizzStyle.Gate("actionbars", {
             type = "slider",
             text = "Icon Background",
             min = 0,
             max = 100,
             step = 1,
             disabled = BlizzLookOn,
-            disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+            disabledTooltip = CUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
             getValue = function()
                 local value = ABAR.db.profile.slotBgOpacity
@@ -886,14 +887,14 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 for _, details in ipairs(mod.BAR_CONFIG or {}) do
                     ABAR:ApplyIconBackgroundForBar(details.key)
                 end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }
     )
     cursorY = cursorY - height
     do
         local region = slotBgRow._rightRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Icon Background",
             anchorTo = region._control,
             disabled = function() return not (ABAR.db.profile.showBlizzIconBg or false) end,
@@ -926,7 +927,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             if value == nil then value = 50 end
             return value == 0
         end
-        local sbgSwatch, sbgUpdateSwatch = CludesUI.BuildColorSwatch(
+        local sbgSwatch, sbgUpdateSwatch = CUI.BuildColorSwatch(
             region,
             slotBgRow:GetFrameLevel() + 3,
             function()
@@ -951,17 +952,17 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         sbgSwatch:SetScript("OnEnter", function(self)
             if SlotBgOff() then
                 if BlizzLookOn() then
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         self,
-                        CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
+                        CUI.DisabledTooltip(CUI.BlizzStyle.Label("actionbars"), "disabled")
                     )
                 else
-                    CludesUI.ShowWidgetTooltip(self, CludesUI.DisabledTooltip("Set Icon Background above 0"))
+                    CUI.ShowWidgetTooltip(self, CUI.DisabledTooltip("Set Icon Background above 0"))
                 end
             end
         end)
-        sbgSwatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        CludesUI.RegisterWidgetRefresh(function()
+        sbgSwatch:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+        CUI.RegisterWidgetRefresh(function()
             sbgSwatch:SetAlpha(SlotBgOff() and 0.15 or 1)
             sbgUpdateSwatch()
         end)
@@ -1110,7 +1111,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             end
 
             do
-                local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+                local texValues, texOrder = CUI.GetBorderTextureDropdown()
                 local bgBorderRow
                 bgBorderRow, height = W:DualRow(
                     hostFrame,
@@ -1124,7 +1125,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         order = texOrder,
                         getValue = function() return SVal("bgBorderTexture", "solid") end,
                         setValue = function(value)
-                            local color, behind = CludesUI.GetBorderStyleSelectDefaults(value)
+                            local color, behind = CUI.GetBorderStyleSelectDefaults(value)
                             SSet("bgBorderTexture", value, function(keyName)
                                 local prefs = ABAR.db.profile.bars[keyName]
                                 prefs.bgBorderOffsetX = nil
@@ -1139,10 +1140,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                             end)
                             SUpdatePreview()
                             -- Full rebuild: the Width/Height Offset row exists only for a textured style.
-                            CludesUI:RefreshPage(true)
+                            CUI:RefreshPage(true)
                         end,
                     },
-                    CludesUI.BorderPxSliderCfg({
+                    CUI.BorderPxSliderCfg({
                         text = "Background Border Size",
                         disabled = BgDisabled,
                         disabledTooltip = "Bar Background Border",
@@ -1152,13 +1153,13 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                             local record = mod.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
                             return record and record.regular or 0
                         end,
-                        setStep = function(step) SB().bgBorderThickness = CludesUI.BORDER_LABEL_OF_STEP[step] end,
+                        setStep = function(step) SB().bgBorderThickness = CUI.BORDER_LABEL_OF_STEP[step] end,
                         getTex = function() return SVal("bgBorderTexture", "solid") end,
                         getPx = function() return SGet("bgBorderThicknessPx") end,
                         setPx = function(value) SB().bgBorderThicknessPx = value end,
                         apply = function()
                             ABAR:ApplyBackgroundForBar(SelectedKey())
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                             SUpdatePreview()
                         end,
                     })
@@ -1173,7 +1174,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 do
                     local bgTex = SVal("bgBorderTexture", "solid")
                     if bgTex ~= "" and bgTex ~= "solid" then
-                        local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                        local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                             addonKey = "actionbars",
                             disabled = BgDisabled,
                             disabledTooltip = "Bar Background Border",
@@ -1190,7 +1191,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                             setY = function(value) SB().bgBorderOffsetY = value end,
                             apply = function()
                                 ABAR:ApplyBackgroundForBar(SelectedKey())
-                                CludesUI:RefreshPage()
+                                CUI:RefreshPage()
                                 SUpdatePreview()
                             end,
                         })
@@ -1203,7 +1204,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
 
                 do
                     local regionFrame = bgBorderRow._rightRegion
-                    local borderSwatch, refreshBorder = CludesUI.BuildColorSwatch(
+                    local borderSwatch, refreshBorder = CUI.BuildColorSwatch(
                         regionFrame,
                         regionFrame:GetFrameLevel() + 5,
                         function()
@@ -1226,7 +1227,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     )
                     Pix.Point(borderSwatch, "RIGHT", regionFrame._control, "LEFT", -12, 0)
                     regionFrame._lastInline = borderSwatch
-                    CludesUI.RegisterWidgetRefresh(function()
+                    CUI.RegisterWidgetRefresh(function()
                         local disabled = BgDisabled() or SVal("bgBorderThickness", "none") == "none"
                         borderSwatch:SetAlpha(disabled and 0.15 or 1)
                         refreshBorder()
@@ -1278,10 +1279,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         local thickness = SVal("bgBorderThickness", "thin")
                         local record = mod.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
                         local step = record and record.regular or 0
-                        local px = CludesUI.BorderPx(SGet("bgBorderThicknessPx"), step, texture)
+                        local px = CUI.BorderPx(SGet("bgBorderThicknessPx"), step, texture)
                         return ShownBorderDefaults(texture, thickness, step, px)
                     end
-                    local offsetButton = CludesUI.BuildInlineCog(regionFrame, {
+                    local offsetButton = CUI.BuildInlineCog(regionFrame, {
                         anchorTo = regionFrame._control,
                         title = "Border Options",
                         captureRegion = regionFrame,
@@ -1350,7 +1351,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     })
                     if offsetButton then
                         local function UpdateOffsetButton() offsetButton:SetShown(not BgDisabled()) end
-                        CludesUI.RegisterWidgetRefresh(UpdateOffsetButton)
+                        CUI.RegisterWidgetRefresh(UpdateOffsetButton)
                         UpdateOffsetButton()
                     end
                 end
@@ -1417,7 +1418,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
 
             do
                 local regionFrame = bgMultiplierRow._leftRegion
-                CludesUI.BuildInlineCog(regionFrame, {
+                CUI.BuildInlineCog(regionFrame, {
                     anchorTo = regionFrame._control,
                     title = "Multiplier X Settings",
                     captureRegion = regionFrame,
@@ -1443,7 +1444,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
 
             do
                 local regionFrame = bgMultiplierRow._rightRegion
-                CludesUI.BuildInlineCog(regionFrame, {
+                CUI.BuildInlineCog(regionFrame, {
                     anchorTo = regionFrame._control,
                     title = "Multiplier Y Settings",
                     captureRegion = regionFrame,
@@ -1469,7 +1470,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
 
             if not capsForever then
                 local spacingRow
-                spacingRow, height = W:DualRow(hostFrame, cursorY, BarBgSpacingCfg(), CludesUI.BlankRowCfg())
+                spacingRow, height = W:DualRow(hostFrame, cursorY, BarBgSpacingCfg(), CUI.BlankRowCfg())
                 cursorY = cursorY - height
                 BarBgSpacingSync(spacingRow._leftRegion)
             end
@@ -1491,7 +1492,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 else
                     ABAR:ApplyPaddingForBar(SelectedKey())
                     SUpdatePreviewAndResize()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
                 if SelectedKey() == "MainBar" then mod.AB_CapsSpanApply() end
             end,
@@ -1507,7 +1508,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             text = "Bar Background",
             getValue = function() return SVal("bgEnabled", false) end,
             -- Section gate: its other rows are hidden (not grayed) while off; the wrapper forces the page rebuild.
-            setValue = CludesUI.SectionToggleSetValue(function(value)
+            setValue = CUI.SectionToggleSetValue(function(value)
                 SSet("bgEnabled", value, function(keyName) ABAR:ApplyBackgroundForBar(keyName) end)
                 SUpdatePreview()
             end),
@@ -1555,7 +1556,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             local bgOn = SVal("bgEnabled", false)
             local bgRow
             bgRow, height =
-                W:DualRow(hostFrame, cursorY, bgCfg, bgOn and BarBgSpacingCfg() or CludesUI.BlankRowCfg())
+                W:DualRow(hostFrame, cursorY, bgCfg, bgOn and BarBgSpacingCfg() or CUI.BlankRowCfg())
             cursorY = cursorY - height
             bgRgn = bgRow._leftRegion
             if bgOn then BarBgSpacingSync(bgRow._rightRegion) end
@@ -1633,7 +1634,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         getValue = function() return SGet("outOfRangeColoring") or false end,
         setValue = function(value)
             SSet("outOfRangeColoring", value, function() ABAR:ApplyRangeColoring() end)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "slider",
@@ -1678,7 +1679,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         local rangeColorSet = function(red, green, blue)
             SSetColor("outOfRangeColor", red, green, blue, nil, function() ABAR:ApplyRangeColoring() end)
         end
-        local rangeSwatch, rangeUpdateSwatch = CludesUI.BuildColorSwatch(
+        local rangeSwatch, rangeUpdateSwatch = CUI.BuildColorSwatch(
             leftRegion,
             leftRegion:GetFrameLevel() + 5,
             rangeColorGet,
@@ -1691,29 +1692,29 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
 
         local function RangeColorOff() return not SGet("outOfRangeColoring") end
 
-        CludesUI.RegisterWidgetRefresh(function()
+        CUI.RegisterWidgetRefresh(function()
             local off = RangeColorOff()
             rangeSwatch:SetAlpha(off and 0.3 or 1)
             rangeUpdateSwatch()
         end)
         rangeSwatch:SetAlpha(RangeColorOff() and 0.3 or 1)
 
-        local rangeBlock = CludesUI.NewSwatchBlocker(rangeSwatch)
+        local rangeBlock = CUI.NewSwatchBlocker(rangeSwatch)
         rangeBlock:SetScript(
             "OnEnter",
             function()
-                CludesUI.ShowWidgetTooltip(rangeSwatch, CludesUI.DisabledTooltip("Out of Range Coloring"))
+                CUI.ShowWidgetTooltip(rangeSwatch, CUI.DisabledTooltip("Out of Range Coloring"))
             end
         )
-        rangeBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        CludesUI.RegisterWidgetRefresh(function() rangeBlock:SetShown(RangeColorOff()) end)
+        rangeBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+        CUI.RegisterWidgetRefresh(function() rangeBlock:SetShown(RangeColorOff()) end)
         rangeBlock:SetShown(RangeColorOff())
     end
     -- Inline swatch for Cooldown Swipe Opacity (right): colour-only (hasAlpha=false), since alpha lives on the slider.
     do
         local region = rangeSwipeRow._rightRegion
         local control = region._control
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+        local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
             region,
             rangeSwipeRow:GetFrameLevel() + 5,
             function()
@@ -1731,18 +1732,18 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         region._lastInline = colorSwatch
         -- Canonical inline-swatch pattern: auto-disable at 0 opacity (invisible swipe has no visible colour).
         local function SwipeDisabled() return (ABAR.db.profile.cdSwipeAlpha or 80) == 0 end
-        local block = CludesUI.NewSwatchBlocker(colorSwatch)
+        local block = CUI.NewSwatchBlocker(colorSwatch)
         block:SetScript(
             "OnEnter",
             function()
-                CludesUI.ShowWidgetTooltip(
+                CUI.ShowWidgetTooltip(
                     colorSwatch,
-                    CludesUI.DisabledTooltip("Set Cooldown Swipe Opacity above 0")
+                    CUI.DisabledTooltip("Set Cooldown Swipe Opacity above 0")
                 )
             end
         )
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        CludesUI.RegisterWidgetRefresh(function()
+        block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+        CUI.RegisterWidgetRefresh(function()
             updateSwatch()
             local off = SwipeDisabled()
             colorSwatch:SetAlpha(off and 0.3 or 1)
@@ -1798,7 +1799,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 tooltip = "Equipped items get a rarity color border.",
                 lockedFn = BlizzLookOn,
                 lockedTooltip = function()
-                    return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
+                    return CUI.DisabledTooltip(CUI.BlizzStyle.Label("actionbars"), "disabled")
                 end,
             },
         }, function(keyName)
@@ -1840,11 +1841,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             ABAR.db.profile.obaIconEnabled = value
             if mod.RefreshAssistSpinners then mod.RefreshAssistSpinners() end
         end,
-    }, CludesUI.BlankRowCfg())
+    }, CUI.BlankRowCfg())
     cursorY = cursorY - height
     do
         local region = obaRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             anchorTo = region._control,
             title = "One Button Assist Icon",
             rows = {
@@ -1889,7 +1890,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             setValue = function(value)
                 SSet("clickThrough", value, function(keyName) ABAR:ApplyClickThroughForBar(keyName) end)
                 -- Its Apply link compares this toggle.
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "toggle",
@@ -2022,7 +2023,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     label = "Form Paging",
                     tooltip = "While unchecked, this bar keeps its page in any form.",
                 }
-                if not CludesUI.IS_FOREVER then
+                if not CUI.IS_FOREVER then
                     pagingItems[#pagingItems + 1] = {
                         key = "skyriding",
                         label = "Skyriding Paging",
@@ -2082,7 +2083,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             -- A group's dropdowns exist only while it is on: the page is built
             -- again once the menu closed, never while it is open.
             local function PagingMenuClosed()
-                if ModifierOn() ~= modOn or TargetOn() ~= targetOn then CludesUI:RefreshPage(true) end
+                if ModifierOn() ~= modOn or TargetOn() ~= targetOn then CUI:RefreshPage(true) end
             end
 
             -- Paging Arrows (Action Bar 1): a view over showPagingArrows
@@ -2126,7 +2127,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         end
                         if mod.LayoutPagingFrame then mod.LayoutPagingFrame() end
                         SUpdatePreviewAndResize()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 }
             end
@@ -2155,7 +2156,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     "Form Paging",
                     "Disable Form Paging",
                 }
-                if not CludesUI.IS_FOREVER then
+                if not CUI.IS_FOREVER then
                     words[#words + 1] = "Skyriding Paging"
                     words[#words + 1] = "Disable Skyriding Paging"
                 end
@@ -2177,7 +2178,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             for idx = 1, #slots, 2 do
                 local r
                 r, height =
-                    W:DualRow(hostFrame, cursorY, slots[idx], slots[idx + 1] or CludesUI.BlankRowCfg())
+                    W:DualRow(hostFrame, cursorY, slots[idx], slots[idx + 1] or CUI.BlankRowCfg())
                 cursorY = cursorY - height
                 pagingRow = pagingRow or r
             end
@@ -2190,7 +2191,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 end
                 -- The cog's settings join the slot's capture, so the Spec
                 -- Overrides gold walk marks the slot while one is overridden.
-                CludesUI.BuildInlineCog(rRgn, {
+                CUI.BuildInlineCog(rRgn, {
                     title = "Paging Arrow Settings",
                     anchorTo = rRgn._control,
                     captureRegion = rRgn,
@@ -2270,7 +2271,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     end
     -- A text's colour swatch beside its size slider (white until set).
     local function TextColorSwatch(region, key, apply, off, offTip)
-        CludesUI.BuildInlineSwatches(region, {
+        CUI.BuildInlineSwatches(region, {
             {
                 getValue = function()
                     local color = SGet(key)
@@ -2290,7 +2291,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -- X and Y offsets, greyed with the text.
     local function TextCog(region, prefix, title, off, offTip)
         local ANCHOR, OX, OY = prefix .. "Anchor", prefix .. "OffsetX", prefix .. "OffsetY"
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = title,
             disabled = off,
             disabledTooltip = offTip,
@@ -2326,9 +2327,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         getValue = function() return GetCVarBool("countdownForCooldowns") end,
         setValue = function(value)
             if InCombatLockdown() then return end
-            CludesUI.SetCVar("countdownForCooldowns", value and "1" or "0", "CludesUIActionBars")
+            CUI.SetCVar("countdownForCooldowns", value and "1" or "0", "CludesUIActionBars")
             -- Refresh so the cogs and the right half dim/undim with the CVar state.
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "slider",
@@ -2350,7 +2351,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -- (our feature, DB-saved); dimmed when the CVar is off, since no numbers show then.
     do
         local region = cdTextRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Cooldown Numbers",
             anchorTo = region._control,
             disabled = TextOff.cooldown,
@@ -2405,7 +2406,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
 
     do
         local region = cdTextRow._rightRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Cooldown Text",
             disabled = TextOff.cooldown,
             disabledTooltip = "Cooldown Numbers",

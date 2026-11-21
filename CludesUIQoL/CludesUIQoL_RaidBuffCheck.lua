@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI or CludesUI.IS_FOREVER then return end
+local CUI = CludesUI
+if not CUI or CUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIQoL_RaidBuffCheck.lua -- Raid Buff Check, part of Raid Tools
 --
@@ -19,7 +20,7 @@ if not CludesUI or CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 local _, mod = ...
 
-local IsSecret, PlainString = CludesUI.IsSecret, CludesUI.PlainString
+local IsSecret, PlainString = CUI.IsSecret, CUI.PlainString
 local RT = mod.RT
 
 local WELL_FED_ICON = 136000
@@ -35,7 +36,7 @@ local VANTUS_ITEM = 272195 -- Vantus Rune: Tides
 
 -- Buff IDs: the shared lists AuraBuff Reminders reads too. Older augment runes
 -- count as missing. Raid buffs: only those whose class is in the group are checked.
-local PREP = CludesUI.RAID_PREP_IDS
+local PREP = CUI.RAID_PREP_IDS
 local FLASK_BUFF_IDS = PREP.flask
 local RUNE_IDS, OLD_RUNE_IDS = PREP.rune, PREP.oldRune
 local VANTUS_IDS = PREP.vantus
@@ -116,9 +117,9 @@ local function VantusRequired()
     return cfg and cfg.buffCheckVantusRequired == true or false
 end
 
-local function Restricted() return CludesUI.AuraKit.AurasRestricted() end
+local function Restricted() return CUI.AuraKit.AurasRestricted() end
 
-local function Msg(textValue) CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. textValue) end
+local function Msg(textValue) CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. textValue) end
 
 -- On-screen text in the QoL font; Raid Tools' ApplyFonts keeps it current.
 local function Text(hostFrame, size, red, green, blue)
@@ -170,7 +171,7 @@ local function SoonLeft(val, nowTime)
     if leftX < EXPIRE_SOON then return math.max(0, leftX) end
 end
 
-local function MinutesText(leftX) return CludesUI.Lf("%dm", math.ceil(leftX / 60)) end
+local function MinutesText(leftX) return CUI.Lf("%dm", math.ceil(leftX / 60)) end
 
 -- "eating" while the food channel is up.
 local function FoodState(unitToken, restricted)
@@ -331,15 +332,15 @@ local function MakeHeader(b)
         tex:SetTexture(texture)
         tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         hit:EnableMouse(true)
-        hit:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, tipText) end)
-        hit:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        hit:SetScript("OnEnter", function(self) CUI.ShowWidgetTooltip(self, tipText) end)
+        hit:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
     end
-    MakeIcon(C_Spell.GetSpellTexture(FLASK_BUFF_IDS[1]), CludesUI.L("Flask"))
-    MakeIcon(WELL_FED_ICON, CludesUI.L("Food"))
-    MakeIcon(C_Item.GetItemIconByID(RUNE_ITEM), CludesUI.L("Augment Rune"))
-    MakeIcon(C_Item.GetItemIconByID(VANTUS_ITEM), CludesUI.L("Vantus Rune"))
+    MakeIcon(C_Spell.GetSpellTexture(FLASK_BUFF_IDS[1]), CUI.L("Flask"))
+    MakeIcon(WELL_FED_ICON, CUI.L("Food"))
+    MakeIcon(C_Item.GetItemIconByID(RUNE_ITEM), CUI.L("Augment Rune"))
+    MakeIcon(C_Item.GetItemIconByID(VANTUS_ITEM), CUI.L("Vantus Rune"))
     hgt.buffsLabel = Text(hgt, 11, 0.8, 0.8, 0.8)
-    hgt.buffsLabel:SetText(CludesUI.L("Raid Buffs"))
+    hgt.buffsLabel:SetText(CUI.L("Raid Buffs"))
     heads[b] = hgt
     return hgt
 end
@@ -398,7 +399,7 @@ local function Build()
 
     local title = Text(widget, 12, 1, 1, 1)
     title:SetPoint("LEFT", widget, "TOPLEFT", PAD, -TITLE_H / 2)
-    title:SetText(CludesUI.L("Raid Buff Check"))
+    title:SetText(CUI.L("Raid Buff Check"))
 
     local close = CreateFrame("Button", nil, widget)
     close:SetSize(14, 14)
@@ -414,14 +415,14 @@ local function Build()
 
     -- Checkbox row above the note, left to right; each label is part of its
     -- box's hit rect.
-    local accR, accG, accB = CludesUI.GetAccentColor()
+    local accR, accG, accB = CUI.GetAccentColor()
     local function MakeCheckbox(textValue, onClick)
         local callback = CreateFrame("Button", nil, widget)
         callback:SetSize(14, 14)
         local box = callback:CreateTexture(nil, "BACKGROUND")
         box:SetColorTexture(0.08, 0.08, 0.08, 0.92)
         box:SetAllPoints(callback)
-        CludesUI.MakeBorder(callback, 0.35, 0.35, 0.35, 1)
+        CUI.MakeBorder(callback, 0.35, 0.35, 0.35, 1)
         callback.check = callback:CreateTexture(nil, "ARTWORK")
         callback.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
         callback.check:SetPoint("CENTER")
@@ -434,19 +435,19 @@ local function Build()
         callback:SetScript("OnClick", onClick)
         return callback
     end
-    widget.onlyBox = MakeCheckbox(CludesUI.L("Hide Fully Buffed"), function()
+    widget.onlyBox = MakeCheckbox(CUI.L("Hide Fully Buffed"), function()
         local cfg = CDB()
         if not cfg then return end
         cfg.buffCheckOnlyMissing = not OnlyMissing()
         Render()
     end)
-    widget.runeBox = MakeCheckbox(CludesUI.L("Require Augment Rune"), function()
+    widget.runeBox = MakeCheckbox(CUI.L("Require Augment Rune"), function()
         local cfg = CDB()
         if not cfg then return end
         cfg.buffCheckRuneRequired = not RuneRequired()
         Render()
     end)
-    widget.vantusBox = MakeCheckbox(CludesUI.L("Require Vantus Rune"), function()
+    widget.vantusBox = MakeCheckbox(CUI.L("Require Vantus Rune"), function()
         local cfg = CDB()
         if not cfg then return end
         cfg.buffCheckVantusRequired = not VantusRequired()
@@ -459,7 +460,7 @@ local function Build()
 
     widget.empty = Text(widget, 11, 0.4, 0.9, 0.4)
     widget.empty:SetPoint("TOPLEFT", widget, "TOPLEFT", PAD + 4, -TITLE_H - 6)
-    widget.empty:SetText(CludesUI.L("Everyone is fully buffed."))
+    widget.empty:SetText(CUI.L("Everyone is fully buffed."))
     widget.empty:Hide()
 
     -- The table (column headers, player rows, totals) in one container, so
@@ -469,7 +470,7 @@ local function Build()
 
     -- Totals under the first block: one count per column, aligned with its cells.
     -- Render places them; a row of zeros is hidden.
-    local labels = { CludesUI.L("Missing"), CludesUI.L("Expiring soon"), CludesUI.L("Unknown") }
+    local labels = { CUI.L("Missing"), CUI.L("Expiring soon"), CUI.L("Unknown") }
     widget.totals = {}
     for t = 1, TOTAL_ROWS do
         local tr = CreateFrame("Frame", nil, widget.table)
@@ -615,7 +616,7 @@ local function PaintRow(region, unitToken, nowTime)
     local cfg = states[unitToken]
     region.name:SetText(UnitName(unitToken))
     local cls = UnitClassToken(unitToken)
-    local cc = cls and CludesUI.GetClassColor(cls)
+    local cc = cls and CUI.GetClassColor(cls)
     if cc and cfg.online then
         region.name:SetTextColor(cc.r, cc.g, cc.b)
     else
@@ -812,9 +813,9 @@ function Render()
     widget.runeBox.check:SetShown(runeRequired)
     widget.vantusBox.check:SetShown(vantusRequired)
     if widget._restricted then
-        widget.note:SetText(CludesUI.L("Food and runes cannot be read here (aura restriction). ? = unknown"))
+        widget.note:SetText(CUI.L("Food and runes cannot be read here (aura restriction). ? = unknown"))
     else
-        widget.note:SetText(CludesUI.L("? = unknown (offline, dead or out of range)"))
+        widget.note:SetText(CUI.L("? = unknown (offline, dead or out of range)"))
     end
     if wakeAt and (not widget._wakeAt or wakeAt < widget._wakeAt) then
         if widget._wake then widget._wake:Cancel() end
@@ -870,7 +871,7 @@ end
 -------------------------------------------------------------------------------
 local function Open()
     if InCombatLockdown() then
-        Msg(CludesUI.L("Raid Buff Check cannot be opened in combat."))
+        Msg(CUI.L("Raid Buff Check cannot be opened in combat."))
         return
     end
     if runeReadable == nil then

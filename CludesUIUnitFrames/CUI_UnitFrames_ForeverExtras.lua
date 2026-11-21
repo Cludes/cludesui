@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ForeverExtras.lua
 --
@@ -62,17 +63,17 @@ function mod.UF_PetHappinessOnEnter(self)
     if diet and #diet > 0 then
         textValue = textValue .. "\n" .. PET_DIET_TEMPLATE:format(table.concat(diet, PET_FOOD_DELIMIT))
     end
-    CludesUI.ShowWidgetTooltip(self, textValue)
+    CUI.ShowWidgetTooltip(self, textValue)
 end
 
-function mod.UF_PetHappinessOnLeave() CludesUI.HideWidgetTooltip() end
+function mod.UF_PetHappinessOnLeave() CUI.HideWidgetTooltip() end
 
 -- Settings apply: builds the icon on first use, re-seats size, side and
 -- offsets, and arms or drops its events. Every reload pass runs it (the
 -- options setters reach it through ReloadAndUpdate) and it is safe to call
 -- directly; it returns at once off WoW Forever.
 function mod.UF_ApplyPetHappiness()
-    if CludesUI.IS_FOREVER ~= true then return end
+    if CUI.IS_FOREVER ~= true then return end
     local popFrame = frameList.pet
     local cfg = saved.profile.pet
     local hgt = popFrame and popFrame._petHappy
@@ -239,7 +240,7 @@ function mod.UF_BuildComboArc(owner)
 end
 -- The arc's event receiver (the Forever client only; armed by
 -- ns.UF_ApplyForeverComboArc).
-if CludesUI.IS_FOREVER == true then
+if CUI.IS_FOREVER == true then
     mod._ufComboEv = CreateFrame("Frame")
     mod._ufComboEv:SetScript("OnEvent", function(_, ...)
         local arc = mod._ufComboArc
@@ -371,7 +372,7 @@ end
 -- pass, the class resource toggle and the Combo Points setter run it; it
 -- returns at once off WoW Forever.
 function mod.UF_ApplyForeverComboArc()
-    if CludesUI.IS_FOREVER ~= true then return end
+    if CUI.IS_FOREVER ~= true then return end
     local arc, ev = mod._ufComboArc, mod._ufComboEv
     local owner
     if mod.UF_Forever() and saved.profile.player.classPowerStyle == "blizzard" and mod.UF_ComboClass() then

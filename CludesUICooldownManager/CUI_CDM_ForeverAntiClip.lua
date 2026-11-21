@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_ForeverAntiClip.lua -- WoW FOREVER ONLY: the Anti-Clip Glow.
 --
@@ -36,7 +37,7 @@ if not mod.CDM_ANTI_CLIP then return end
 
 local GetTime = GetTime
 local UnitCastingInfo, UnitChannelInfo = UnitCastingInfo, UnitChannelInfo
-local PlainString = CludesUI.PlainString
+local PlainString = CUI.PlainString
 local ReadExpiration = mod.ReadAuraExpiration
 local GCD_SPELL = 61304
 local HUGE = math.huge

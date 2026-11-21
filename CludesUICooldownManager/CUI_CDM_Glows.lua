@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Glows.lua
 --
@@ -27,7 +28,7 @@ Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val) _inCombat = va
 --  CDM keeps its own GLOW_STYLES (different scale values) and Start/Stop
 --  wrappers that handle CDM-specific shape glow (icon masks/borders).
 -------------------------------------------------------------------------------
-local _G_Glows = CludesUI.Glows
+local _G_Glows = CUI.Glows
 -- CDM saved glow numbering (1 Pixel, 2 Shape, 3 Action Button, 4 Auto-Cast,
 -- 5 GCD, 6 Modern, 7 Classic, 8 Blackout) as a view over the shared style table.
 mod.GLOW_VIEW = _G_Glows.MakeView({ 1, 4, 2, 3, 5, 6, 7, 8 })
@@ -66,13 +67,13 @@ end
 -- Pandemic Border; anything unsupported coerces to Pixel)
 local function PG_NameplateNameFromIndex(position)
     if position == PG_NP_BLIZZ then return PG_BLIZZ_NAME end
-    local entries = CludesUI.NameplatePandemicGlowStyles
+    local entries = CUI.NameplatePandemicGlowStyles
     local e = entries and entries[position]
     return (e and e.name) or "Pixel Glow"
 end
 local function PG_NameplateIndexFromName(name)
     if name == PG_BLIZZ_NAME then return PG_NP_BLIZZ end
-    local entries = CludesUI.NameplatePandemicGlowStyles
+    local entries = CUI.NameplatePandemicGlowStyles
     if name and entries then
         for i = 1, #entries do
             if entries[i].name == name then return i end
@@ -84,7 +85,7 @@ end
 -- saved keys (the 9.6 pick, else the older key), exported by Nameplates;
 -- its default is Blizzard Pandemic Border.
 local function PG_NameplateStyle(np)
-    local styleOf = CludesUI.NameplatePandemicStyle
+    local styleOf = CUI.NameplatePandemicStyle
     return styleOf and styleOf(np) or PG_NP_BLIZZ
 end
 
@@ -148,7 +149,7 @@ local function PG_Matches(dst, payload, indexFromName, actualStyleFn, unsetMode)
 end
 
 -- Build a canonical payload from a CDM icon bar.
-function CludesUI.PandemicPayloadFromCdmBar(edge)
+function CUI.PandemicPayloadFromCdmBar(edge)
     return {
         on = edge.pandemicGlow == true,
         styleName = PG_CdmNameFromIndex(edge.pandemicGlowStyle or 1),
@@ -164,7 +165,7 @@ end
 
 -- Payload from a rectangle bar (Tracked Buff Bar): rectangles only render Pixel/Auto-Cast, so
 -- report the EFFECTIVE displayed style, not the raw stored one (which may be e.g. -1 "Blizzard Default", shown there as Pixel).
-function CludesUI.PandemicPayloadFromRectBar(edge)
+function CUI.PandemicPayloadFromRectBar(edge)
     return {
         on = edge.pandemicGlow == true,
         styleName = GLOW_STYLES[PG_TbbEffectiveStyle(edge)].name,
@@ -180,7 +181,7 @@ end
 
 -- Build a payload from the nameplate profile. An unset color mode is Custom
 -- there (the swatch color the nameplate glow always drew).
-function CludesUI.PandemicPayloadFromNameplate(np)
+function CUI.PandemicPayloadFromNameplate(np)
     return {
         on = np.pandemicGlow == true,
         styleName = PG_NameplateNameFromIndex(PG_NameplateStyle(np)),
@@ -196,11 +197,11 @@ end
 
 -- Apply a canonical payload to all sync surfaces (CDM icon bars, Tracked Buff Bars,
 -- Nameplates), best-effort. opts.skipCdmKey/opts.skipNameplates exclude the source surface; opts.skipTbbBar excludes one TBB (its source bar table).
-function CludesUI.ApplyPandemicGlowToAll(payload, options)
+function CUI.ApplyPandemicGlowToAll(payload, options)
     options = options or {}
     if not options.skipNameplates then
         local np = PG_GetNPProfile()
-        if np and CludesUI.NameplatePandemicGlowStyles then
+        if np and CUI.NameplatePandemicGlowStyles then
             PG_Write(np, payload, PG_NameplateIndexFromName, "pandemicGlowPick")
             -- Nameplates read an unset mode as Custom: Default is stored as itself.
             np.pandemicGlowMode = payload.mode or "default"
@@ -227,13 +228,13 @@ function CludesUI.ApplyPandemicGlowToAll(payload, options)
 end
 
 -- True when every (non-skipped) surface already matches the payload.
-function CludesUI.IsPandemicGlowSyncedToAll(payload, options)
+function CUI.IsPandemicGlowSyncedToAll(payload, options)
     options = options or {}
     if not options.skipNameplates then
         local np = PG_GetNPProfile()
         if
             np
-            and CludesUI.NameplatePandemicGlowStyles
+            and CUI.NameplatePandemicGlowStyles
             and not PG_Matches(np, payload, PG_NameplateIndexFromName, PG_NameplateStyle, "custom")
         then
             return false

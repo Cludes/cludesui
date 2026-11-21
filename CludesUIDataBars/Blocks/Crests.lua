@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then return end -- no season crests on WoW Forever (the main file drops the block type there too)
+local CUI = CludesUI
+if CUI.IS_FOREVER then return end -- no season crests on WoW Forever (the main file drops the block type there too)
 -------------------------------------------------------------------------------
 --  Blocks\Crests.lua - Info Bar block: the season's upgrade crests.
 --

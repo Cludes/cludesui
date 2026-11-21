@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_PvP.lua  (WoW Forever only)
 --  PvP: enemy players around you, Kill on Sight, the last hour, statistics.
@@ -70,10 +71,10 @@ local PROWL = { [5215] = true, [6783] = true, [9913] = true }
 local WATCHED = { target = true, focus = true, mouseover = true }
 
 -- The CludesUI theme colour, read each time so a theme change follows.
-local function Accent() return CludesUI.GetAccentColor() end
-local function AccentHex() return CludesUI.HexColor(Accent()) end
-local function Say(text) CludesUI.Print(AccentHex() .. "PvP:|r " .. text) end
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Accent() return CUI.GetAccentColor() end
+local function AccentHex() return CUI.HexColor(Accent()) end
+local function Say(text) CUI.Print(AccentHex() .. "PvP:|r " .. text) end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 local function R(v)
     if v == nil or Secret(v) then return nil end
@@ -156,7 +157,7 @@ local function Warn(text, red, green, blue, alarm)
         alertFrame:SetSize(400, 40)
         alertFrame:SetPoint("TOP", 0, -170)
         alertFrame.text = alertFrame:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(alertFrame.text, 22, "essentials")
+        CUI.Kit.Font(alertFrame.text, 22, "essentials")
         alertFrame.text:SetPoint("CENTER")
         local anim = alertFrame:CreateAnimationGroup()
         local hold = anim:CreateAnimation("Alpha")
@@ -320,7 +321,7 @@ end
 -- noted one, unless stale (below the "you plus 10" the -1 already proves).
 -- nil when the shown level is not hidden, nothing is known, or the option is
 -- off.
-function CludesUI.KnownHiddenLevel(unit)
+function CUI.KnownHiddenLevel(unit)
     if not Get("knownLevels") then return nil end
     local shown = tonumber(R(UnitEffectiveLevel(unit)))
     if shown and shown > 0 then return nil end
@@ -633,7 +634,7 @@ local function TargetMacro(name)
 end
 
 local function RowMenu(owner, name)
-    CludesUI.Kit.ContextMenu(owner, function(_, root)
+    CUI.Kit.ContextMenu(owner, function(_, root)
         root:CreateTitle(name:gsub("%-", " "))
         local cfg = Store()
         root:CreateButton(
@@ -691,13 +692,13 @@ local function Row(i)
     region.bg = region:CreateTexture(nil, "BACKGROUND")
     region.bg:SetAllPoints()
     region.text = region:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(region.text, 12, "essentials")
+    CUI.Kit.Font(region.text, 12, "essentials")
     region.text:SetPoint("LEFT", 4, 0)
     region.text:SetWidth(W - 60)
     region.text:SetJustifyH("LEFT")
     region.text:SetWordWrap(false)
     region.right = region:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(region.right, 11, "essentials")
+    CUI.Kit.Font(region.right, 11, "essentials")
     region.right:SetPoint("RIGHT", -4, 0)
     region:SetScript("PostClick", function(self, button)
         if not self.player then return end
@@ -832,7 +833,7 @@ local function Build()
     if win then return win end
     win = CreateFrame("Frame", "CludesUIPvP", UIParent)
     win:SetSize(W, 50)
-    CludesUI.Kit.Panel(win, 0.9)
+    CUI.Kit.Panel(win, 0.9)
     win:SetMovable(true)
     win:EnableMouse(true)
     win:RegisterForDrag("LeftButton")
@@ -844,14 +845,14 @@ local function Build()
     end)
     win:SetClampedToScreen(true)
     win.title = win:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(win.title, 13, "essentials")
+    CUI.Kit.Font(win.title, 13, "essentials")
     win.title:SetPoint("TOPLEFT", 8, -6)
     local function Btn(text, x, fn, tip)
         local widget = CreateFrame("Button", nil, win)
         widget:SetSize(18, 18)
         widget:SetPoint("TOPRIGHT", x, -3)
         widget.t = widget:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(widget.t, 13, "essentials")
+        CUI.Kit.Font(widget.t, 13, "essentials")
         widget.t:SetPoint("CENTER")
         widget.t:SetText(text)
         widget:SetScript("OnClick", fn)
@@ -923,7 +924,7 @@ local function StatsRefresh()
         local region = statRows[i]
         if not region then
             region = statContent:CreateFontString(nil, "OVERLAY")
-            CludesUI.Kit.Font(region, 12, "essentials")
+            CUI.Kit.Font(region, 12, "essentials")
             region:SetJustifyH("LEFT")
             region:SetWidth(440)
             region:SetWordWrap(false)
@@ -956,7 +957,7 @@ function module.ShowPvPStats()
         stats = CreateFrame("Frame", "CludesUIPvPStats", UIParent)
         stats:SetSize(480, 420)
         stats:SetPoint("CENTER")
-        CludesUI.Kit.Panel(stats, 0.95)
+        CUI.Kit.Panel(stats, 0.95)
         stats:SetMovable(true)
         stats:EnableMouse(true)
         stats:RegisterForDrag("LeftButton")
@@ -964,19 +965,19 @@ function module.ShowPvPStats()
         stats:SetScript("OnDragStop", stats.StopMovingOrSizing)
         stats:SetFrameStrata("HIGH")
         local label = stats:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(label, 15, "essentials")
+        CUI.Kit.Font(label, 15, "essentials")
         label:SetPoint("TOPLEFT", 10, -8)
         label:SetText("PvP Statistics")
         stats.title = label
         stats.count = stats:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(stats.count, 11, "essentials")
+        CUI.Kit.Font(stats.count, 11, "essentials")
         stats.count:SetPoint("LEFT", label, "RIGHT", 10, 0)
-        local close = CludesUI.Kit.Glyph(stats, "x", function() stats:Hide() end, nil, "essentials")
+        local close = CUI.Kit.Glyph(stats, "x", function() stats:Hide() end, nil, "essentials")
         close:SetPoint("TOPRIGHT", -5, -5)
-        statSearch = CludesUI.Kit.Input(stats, 200, 20, "Search a name or guild", "essentials")
+        statSearch = CUI.Kit.Input(stats, 200, 20, "Search a name or guild", "essentials")
         statSearch:SetPoint("TOPLEFT", 10, -34)
         statSearch:HookScript("OnTextChanged", StatsRefresh)
-        statScroll = (CludesUI.Kit.Scroll(stats))
+        statScroll = (CUI.Kit.Scroll(stats))
         statScroll:SetPoint("TOPLEFT", 10, -58)
         statScroll:SetPoint("BOTTOMRIGHT", -30, 10)
         statContent = CreateFrame("Frame", nil, statScroll)
@@ -1011,7 +1012,7 @@ local function BuildKoSButton()
     kosButton:SetSize(34, 16)
     kosButton:SetPoint("BOTTOMRIGHT", parent, "TOPRIGHT", -20, -6)
     kosButton.t = kosButton:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(kosButton.t, 12, "essentials")
+    CUI.Kit.Font(kosButton.t, 12, "essentials")
     kosButton.t:SetPoint("CENTER")
     kosButton:RegisterForClicks("AnyUp")
     kosButton:SetScript("OnClick", function(self, button)
@@ -1398,14 +1399,14 @@ local function HoldPlateRange(on)
         if (tonumber(current) or 0) < PLATE_RANGE then
             conf = F.Cfg()
             if conf.plateRangeWas == nil then conf.plateRangeWas = current end
-            CludesUI.HoldCVar("nameplateMaxDistance", PLATE_RANGE, PLATE_OWNER)
+            CUI.HoldCVar("nameplateMaxDistance", PLATE_RANGE, PLATE_OWNER)
         end
     elseif conf.plateRangeWas ~= nil then
         local was = conf.plateRangeWas
         conf.plateRangeWas = nil
         local platesOwnIt = C_AddOns.IsAddOnLoaded("CludesUINameplates")
         if was and current ~= was then
-            CludesUI.ReleaseCVar("nameplateMaxDistance", not platesOwnIt and was or nil, PLATE_OWNER)
+            CUI.ReleaseCVar("nameplateMaxDistance", not platesOwnIt and was or nil, PLATE_OWNER)
         end
     end
 end
@@ -1446,7 +1447,7 @@ local function Apply()
     HoldPlateRange(Enabled())
 end
 
-CludesUI._PvP = {
+CUI._PvP = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,

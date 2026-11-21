@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials.lua  (WoW Forever only)
 --  Essential tools for WoW Forever. Each feature lives in its own file, listed
@@ -7,23 +8,23 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI._Pool
-        and CludesUI.RegisterNumberFormatCallback
-        and CludesUI.ApplyModuleFontFamily
-        and CludesUI.ForeverTalentTrees
-        and CludesUI.TalentTreeGrid
+        CUI
+        and CUI._ModuleNS
+        and CUI._Pool
+        and CUI.RegisterNumberFormatCallback
+        and CUI.ApplyModuleFontFamily
+        and CUI.ForeverTalentTrees
+        and CUI.TalentTreeGrid
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the threat meter redraws through the parent's RegisterNumberFormatCallback and takes its font families through ApplyModuleFontFamily; Classic Talents reads its trees through ForeverTalentTrees and TalentTreeGrid)
-CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+CUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
 
 -- Lifecycle object (OnInitialize / OnEnable) for features that need one. No
 -- per-profile DB: every feature so far keeps account-wide settings.
-mod.addon = CludesUI.Lite.NewAddon(ADDON_NAME)
+mod.addon = CUI.Lite.NewAddon(ADDON_NAME)
 
 -------------------------------------------------------------------------------
 --  Feature kit: settings and the login boot for every feature, plus placement
@@ -63,7 +64,7 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
         local place = SavedPos()
         local posX, posY = place.x or 0, place.y or 0
         if snap and place.point == "CENTER" then
-            local Pix = CludesUI.PP
+            local Pix = CUI.PP
             posX = Pix.SnapCenterForDim(posX, widget:GetWidth())
             posY = Pix.SnapCenterForDim(posY, widget:GetHeight())
         end
@@ -109,7 +110,7 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     if not anchorPoint then return end
                     Cfg().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                    if not CludesUI._unlockActive then Place(unit.frame(), unit.snap) end
+                    if not CUI._unlockActive then Place(unit.frame(), unit.snap) end
                 end,
                 loadPos = SavedPos,
                 clearPos = function()
@@ -126,14 +127,14 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
             else
                 e.getSize = function() return Get("width"), unit.height() end
                 e.setWidth = function(_, wid)
-                    Cfg().width = math.max(unit.minWidth, CludesUI.PP.Snap(wid))
+                    Cfg().width = math.max(unit.minWidth, CUI.PP.Snap(wid))
                     unit.applyStyle()
-                    if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                        CludesUI.RepositionBarToMover(unit.key)
+                    if CUI._unlockActive and CUI.RepositionBarToMover then
+                        CUI.RepositionBarToMover(unit.key)
                     end
                 end
             end
-            CludesUI:RegisterUnlockElements({ CludesUI.MakeUnlockElement(e) }, "CludesUIForeverEssentials")
+            CUI:RegisterUnlockElements({ CUI.MakeUnlockElement(e) }, "CludesUIForeverEssentials")
         end)
     end
     return F

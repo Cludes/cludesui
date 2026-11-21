@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ActionBars_Options\BarVisibilityLayout_Options.lua
 --  Action Bars options: the Bar 10 caution and the Visibility & Fading and
@@ -6,13 +7,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  returns y. Shared helpers come from ns._ABO_OptEnv, the per-build helpers
 --  from ctx.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIActionBars"]
+local mod = CUI._ModuleNS["CludesUIActionBars"]
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page and every frame it hands out) is reset
 -- and dressed again by the next build instead of made anew; on any other
 -- parent this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
     local environ = mod._ABO_OptEnv
@@ -40,25 +41,25 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
     -- entry of a label), carries its tooltip, its items' names and the rows its
     -- cog holds as search text; it is never shown.
     local function IndexChecklistRow(labelText, tooltip, words)
-        if not CludesUI._RegisterSearchEntry then return end
+        if not CUI._RegisterSearchEntry then return end
         local textValue = {}
         local function Add(s)
             textValue[#textValue + 1] = s
-            local loc = CludesUI.L(s)
+            local loc = CUI.L(s)
             if loc ~= s then textValue[#textValue + 1] = loc end
         end
         Add(tooltip)
         for idx = 1, #words do
             Add(words[idx])
         end
-        local labelLoc = CludesUI.L(labelText)
-        local sel = CludesUI._buildingSelector
-        CludesUI._RegisterSearchEntry(
+        local labelLoc = CUI.L(labelText)
+        local sel = CUI._buildingSelector
+        CUI._RegisterSearchEntry(
             labelText,
             labelLoc ~= labelText and labelLoc or nil,
             table.concat(textValue, " "),
-            CludesUI._buildingModule,
-            CludesUI._buildingPage,
+            CUI._buildingModule,
+            CUI._buildingPage,
             hostFrame._currentSection and hostFrame._currentSection._sectionName,
             sel and sel.setter,
             sel and sel.key
@@ -70,19 +71,19 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
     -----------------------------------------------------------------------
     -- Action page 10 (Bar 10's slots) is also the Druid Moonkin Form bonus bar, so editing either edits both. Shown for all classes; text self-qualifies.
     if SelectedKey() == "Bar10" then
-        local Pix = CludesUI.PanelPP
-        local PAD = CludesUI.CONTENT_PAD
+        local Pix = CUI.PanelPP
+        local PAD = CUI.CONTENT_PAD
         local warnW = hostFrame:GetWidth() - PAD * 2
         cursorY = cursorY - 5 -- 5px spacing above the caution
         local warnHost = CreateFrame("Frame", nil, hostFrame)
         Pix.Point(warnHost, "TOPLEFT", hostFrame, "TOPLEFT", PAD, cursorY)
-        local warnFS = CludesUI.MakeFont(warnHost, 14, nil, 1, 0.82, 0)
+        local warnFS = CUI.MakeFont(warnHost, 14, nil, 1, 0.82, 0)
         warnFS:SetWidth(warnW)
         warnFS:SetWordWrap(true)
         warnFS:SetJustifyH("CENTER")
         warnFS:SetPoint("TOPLEFT", warnHost, "TOPLEFT", 0, 0)
         warnFS:SetText(
-            CludesUI.L(
+            CUI.L(
                 "This Action Bar is also used as the Moonkin Form bar.\nChanging spells on a Druid for this bar will also change them on your Moonkin Form bar."
             )
         )
@@ -98,7 +99,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
     cursorY = cursorY - height
     -- The Move in Unlock Mode button on the selected bar's first section: the
     -- key is read at the click, so it highlights the bar the selector shows.
-    CludesUI.BuildSectionUnlockJump(heading, { key = SelectedKey })
+    CUI.BuildSectionUnlockJump(heading, { key = SelectedKey })
 
     -- A data bar under Blizzard's own data bars: the rows CUI cannot apply to it grey out.
     local _visBlizzDis
@@ -132,7 +133,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         )
 
         local visRow1
-        visRow1, height = CludesUI.BuildVisibilityRow(
+        visRow1, height = CUI.BuildVisibilityRow(
             W,
             hostFrame,
             cursorY,
@@ -190,7 +191,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         do
             local region = visRow1._leftRegion
             local function CopyTo(key, source) CopyVisibilitySettings(ABAR.db.profile.bars[key], source, key) end
-            CludesUI.BuildSyncIcon({
+            CUI.BuildSyncIcon({
                 region = region,
                 tooltip = "Apply Visibility to all Bars",
                 onClick = function()
@@ -202,13 +203,13 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     ABAR:RefreshMouseover()
                     ABAR:ApplyCombatVisibility()
                     RefreshPageCycle()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 isSynced = function()
                     local source = SB()
                     for _, key in ipairs(GROUP_BAR_ORDER) do
                         local dst = ABAR.db.profile.bars[key]
-                        if not CludesUI.VisFullEquals(source, "barVisibility", dst, "barVisibility") then
+                        if not CUI.VisFullEquals(source, "barVisibility", dst, "barVisibility") then
                             return false
                         end
                         if (source.dragShow or false) ~= (dst.dragShow or false) then return false end
@@ -229,12 +230,12 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         ABAR:RefreshMouseover()
                         ABAR:ApplyCombatVisibility()
                         RefreshPageCycle()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
             })
         end
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = visRow1._rightRegion
             -- Show During Drag applies only while THIS bar's visibility is Never
             -- (other modes already surface during a drag); the item is always
@@ -266,7 +267,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     label = "Show During Drag",
                     tooltip = "While dragging a spell or item, this bar appears so you can drop onto it.",
                     lockedFn = NeverOnly,
-                    lockedTooltip = function() return CludesUI.DisabledTooltip("Visibility set to Never") end,
+                    lockedTooltip = function() return CUI.DisabledTooltip("Visibility set to Never") end,
                 },
                 {
                     key = "mouseoverShowAll",
@@ -279,7 +280,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             if region._control then region._control:Hide() end
             -- Wider than the standard 170: its longest rows ("Show When Spellbook
             -- Is Open") must fit on the closed button and in the list.
-            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 240,
                 region:GetFrameLevel() + 2,
@@ -299,7 +300,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     elseif keyName == "dragShow" then
                         SB().dragShow = value
                         -- The Apply Visibility link compares this setting.
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     else
                         ABAR.db.profile.mouseoverShowAll = value
                     end
@@ -315,7 +316,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
             region._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
         end
     end
 
@@ -403,7 +404,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             end
             ABAR:RefreshAdvancedFadeEnabled(keyList)
             ABAR:RefreshAllCustomFade(true, true)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
 
         AdvancedFadeSynced = function()
@@ -419,7 +420,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         fadeItems = {}
         for idx = 1, #FADE_ORDER do
             local keyName = FADE_ORDER[idx]
-            if keyName ~= "flying" or not CludesUI.IS_FOREVER then
+            if keyName ~= "flying" or not CUI.IS_FOREVER then
                 fadeItems[#fadeItems + 1] = { key = keyName, label = FADE_LABELS[keyName] }
             end
         end
@@ -484,7 +485,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
     local fadeRow = row
     do
         local region = row._leftRegion
-        CludesUI.BuildSyncIcon({
+        CUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Bar Opacity to all Bars",
             onClick = function()
@@ -493,7 +494,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     ABAR.db.profile.bars[key].mouseoverAlpha = value
                     ABAR:ApplyBarOpacity(key)
                 end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             isSynced = function()
                 local current = SB()
@@ -516,16 +517,16 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         ABAR.db.profile.bars[key].mouseoverAlpha = value
                         ABAR:ApplyBarOpacity(key)
                     end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             },
         })
     end
 
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = fadeRow._rightRegion
         if region._control then region._control:Hide() end
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             170,
             region:GetFrameLevel() + 2,
@@ -543,7 +544,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 local key = SelectedKey()
                 ABAR:RefreshAdvancedFadeEnabled(key)
                 ABAR:RefreshCustomFadeForBar(key, true)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             nil,
             nil,
@@ -559,8 +560,8 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         region._control = checkDrop
         region._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
-        CludesUI.BuildInlineCog(region, {
+        CUI.RegisterWidgetRefresh(cbDDRefresh)
+        CUI.BuildInlineCog(region, {
             title = "Advanced Fade",
             disabled = AdvancedFadeOff,
             disabledTooltip = AdvancedFadeOffTip,
@@ -609,7 +610,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 },
             },
         })
-        CludesUI.BuildSyncIcon({
+        CUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Advanced Fade to all Bars",
             onClick = function() ApplyAdvancedFadeTo(GROUP_BAR_ORDER) end,
@@ -645,7 +646,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         tooltip = "Show button backgrounds even if a spell is not assigned to that slot.",
     }
     if visOnly then
-        _, height = W:DualRow(hostFrame, cursorY, alwaysShowCfg, CludesUI.BlankRowCfg())
+        _, height = W:DualRow(hostFrame, cursorY, alwaysShowCfg, CUI.BlankRowCfg())
         cursorY = cursorY - height
     else
         local toggleRow
@@ -657,7 +658,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         -- only. The button takes the slot its label names.
         do
             local region = toggleRow._leftRegion
-            local kbBtn, refresh = CludesUI.BuildKeybindButton(region, {
+            local kbBtn, refresh = CUI.BuildKeybindButton(region, {
                 w = 126,
                 h = 29,
                 level = 4,
@@ -665,10 +666,10 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 set = function(value)
                     -- Spec Overrides: the slot is read before the write, as
                     -- a rebuild may dress this row again for another setting.
-                    local snap = CludesUI._SOAttribution(region)
+                    local snap = CUI._SOAttribution(region)
                     SB().toggleVisKey = value
                     ABAR:RebuildVisToggleBindings()
-                    CludesUI._NotifySettingWrite(region, snap)
+                    CUI._NotifySettingWrite(region, snap)
                 end,
                 disabled = function()
                     local value = SB().barVisibility or "always"
@@ -678,10 +679,10 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 tooltip = "Toggling an action bar is only available out of combat\n\nLeft-click to set a keybind.\nRight-click to unbind.",
             })
             Pix.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
-            CludesUI.RegisterWidgetRefresh(refresh)
+            CUI.RegisterWidgetRefresh(refresh)
 
             -- Spec Overrides capture: bespoke widget opts in with a synthetic accessor (left half is a plain label cfg, no get/set).
-            CludesUI.AddCaptureAccessor(region, {
+            CUI.AddCaptureAccessor(region, {
                 type = "keybind",
                 text = "Toggle Action Bar",
                 getValue = function() return SB().toggleVisKey end,
@@ -714,20 +715,20 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             -- native-size button to it); only a size match locks it.
             disabled = function()
                 local keyName = SelectedKey()
-                if CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget(keyName) then return true end
-                if CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget(keyName) then
+                if CUI.GetWidthMatchTarget and CUI.GetWidthMatchTarget(keyName) then return true end
+                if CUI.GetHeightMatchTarget and CUI.GetHeightMatchTarget(keyName) then
                     return true
                 end
                 return false
             end,
             disabledTooltip = function()
                 local keyName = SelectedKey()
-                local wt = CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget(keyName)
-                local ht = CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget(keyName)
+                local wt = CUI.GetWidthMatchTarget and CUI.GetWidthMatchTarget(keyName)
+                local ht = CUI.GetHeightMatchTarget and CUI.GetHeightMatchTarget(keyName)
                 local target = wt or ht
                 if target then
-                    local name = (CludesUI.GetBarLabel and CludesUI.GetBarLabel(target)) or target
-                    return CludesUI.Lf("Size matched to %1$s. Unmatch in Layout Mode to edit.", name)
+                    local name = (CUI.GetBarLabel and CUI.GetBarLabel(target)) or target
+                    return CUI.Lf("Size matched to %1$s. Unmatch in Layout Mode to edit.", name)
                 end
                 return nil
             end,
@@ -746,7 +747,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 SB()._matchExtraPixelsH = nil
                 ABAR:ApplyButtonSizeForBar(SelectedKey())
                 SUpdatePreviewAndResize()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -764,7 +765,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         cursorY = cursorY - height
         do
             local region = iconSizeRow._leftRegion
-            CludesUI.BuildSyncIcon({
+            CUI.BuildSyncIcon({
                 region = region,
                 tooltip = "Apply Icon Size to all Bars",
                 onClick = function()
@@ -779,7 +780,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         ABAR.db.profile.bars[key].buttonHeight = value
                         ABAR:ApplyButtonSizeForBar(key)
                     end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 isSynced = function()
                     local barCfg = SB()
@@ -812,14 +813,14 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                             ABAR.db.profile.bars[key].buttonHeight = value
                             ABAR:ApplyButtonSizeForBar(key)
                         end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
             })
         end
         do
             local region = iconSizeRow._rightRegion
-            CludesUI.BuildSyncIcon({
+            CUI.BuildSyncIcon({
                 region = region,
                 tooltip = "Apply Icon Spacing to all Bars",
                 onClick = function()
@@ -828,7 +829,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         ABAR.db.profile.bars[key].buttonPadding = value
                         ABAR:ApplyPaddingForBar(key)
                     end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 isSynced = function()
                     local value = SB().buttonPadding or 2
@@ -848,7 +849,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                             ABAR.db.profile.bars[key].buttonPadding = value
                             ABAR:ApplyPaddingForBar(key)
                         end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
             })
@@ -896,7 +897,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         cursorY = cursorY - height
         do
             local region = row._leftRegion
-            CludesUI.BuildSyncIcon({
+            CUI.BuildSyncIcon({
                 region = region,
                 tooltip = "Apply Number of Icons to all Bars",
                 onClick = function()
@@ -905,7 +906,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         ABAR.db.profile.bars[key].overrideNumIcons = value
                         ABAR:ApplyIconRowOverrides(key)
                     end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 isSynced = function()
                     local value = SB().overrideNumIcons or 12
@@ -925,14 +926,14 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                             ABAR.db.profile.bars[key].overrideNumIcons = value
                             ABAR:ApplyIconRowOverrides(key)
                         end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
             })
         end
         do
             local region = row._rightRegion
-            CludesUI.BuildSyncIcon({
+            CUI.BuildSyncIcon({
                 region = region,
                 tooltip = "Apply Number of Rows to all Bars",
                 onClick = function()
@@ -941,7 +942,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         ABAR.db.profile.bars[key].overrideNumRows = value
                         ABAR:ApplyIconRowOverrides(key)
                     end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 isSynced = function()
                     local value = SB().overrideNumRows or 1
@@ -961,7 +962,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                             ABAR.db.profile.bars[key].overrideNumRows = value
                             ABAR:ApplyIconRowOverrides(key)
                         end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
             })
@@ -977,7 +978,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 growDirValues = { left = "Left", right = "Right", center = "Centered" }
                 growDirOrder = { "left", "right", "center" }
             end
-            CludesUI.BuildInlineCog(rightRegion, {
+            CUI.BuildInlineCog(rightRegion, {
                 title = "Row Settings",
                 anchorTo = rightRegion._control,
                 rows = {
@@ -1018,7 +1019,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 setValue = function(value)
                     ABAR:SetOrientationForBar(SelectedKey(), not value)
                     SUpdatePreviewAndResize()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             }, {
                 type = "dropdown",
@@ -1048,7 +1049,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             cursorY = cursorY - height
             do
                 local region = orientRow._leftRegion
-                CludesUI.BuildSyncIcon({
+                CUI.BuildSyncIcon({
                     region = region,
                     tooltip = "Apply Orientation to all Bars",
                     onClick = function()
@@ -1058,7 +1059,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                                 ABAR:SetOrientationForBar(key, isHoriz)
                             end
                         end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     isSynced = function()
                         local isHoriz = ABAR:GetOrientationForBar(SelectedKey())
@@ -1084,7 +1085,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                                     ABAR:SetOrientationForBar(key, isHoriz)
                                 end
                             end
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                 })

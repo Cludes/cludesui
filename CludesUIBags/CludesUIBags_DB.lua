@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIBags_DB.lua
 --  Bags profile database + login-time seeding. Lives in the resident module
@@ -37,7 +38,7 @@ local BAGS_DEFAULTS = {
         -- bagShowRecentItems, bagHidePinnedInCategories and bagDefaultBagType
         -- (CludesUI_Migration.lua: bags_hide_pinned_existing_off_v1, and on
         -- WoW Forever bags_forever_defaults_existing_v1).
-        bagShowRecentItems = CludesUI.IS_FOREVER ~= true, -- off on WoW Forever
+        bagShowRecentItems = CUI.IS_FOREVER ~= true, -- off on WoW Forever
         bagPinnedInOneBag = true,
         bagHidePinnedInCategories = true,
         bagDimPinnedInOneBag = false, -- Dim Items in OneBag/MultiBag (the Pinned Items cog)
@@ -50,7 +51,7 @@ local BAGS_DEFAULTS = {
         bagShowSortIcon = true,
         bagSortToBottom = false,
         -- "all" | "onebag" | "multibag"; MultiBag on WoW Forever
-        bagDefaultBagType = (CludesUI.IS_FOREVER == true) and "multibag" or "all",
+        bagDefaultBagType = (CUI.IS_FOREVER == true) and "multibag" or "all",
         bagDefaultOneBag = false, -- legacy; migrated to bagDefaultBagType
         bagNestByExpansion = false,
         bankNestByExpansion = false,
@@ -90,8 +91,8 @@ local BAGS_DEFAULTS = {
         bagListSectionValue = false,
     },
 }
-local saved = CludesUI.Lite.NewDB("CludesUIBagsDB", BAGS_DEFAULTS)
-CludesUI._bagsDB = saved
+local saved = CUI.Lite.NewDB("CludesUIBagsDB", BAGS_DEFAULTS)
+CUI._bagsDB = saved
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")

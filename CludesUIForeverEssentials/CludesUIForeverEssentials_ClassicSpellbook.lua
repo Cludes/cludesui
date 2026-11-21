@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ClassicSpellbook.lua  (WoW Forever only)
 --  The vanilla spellbook, drawn with the client's own art: school tabs down
@@ -224,9 +225,9 @@ local AIM = [[
     BOOK:CallMethod("Painted", LINE, page)
 ]]
 
-local function TabEnter(tabBtn) CludesUI.ShowWidgetTooltip(tabBtn, tabBtn.tooltip, { anchor = "right" }) end
+local function TabEnter(tabBtn) CUI.ShowWidgetTooltip(tabBtn, tabBtn.tooltip, { anchor = "right" }) end
 
-local function TabLeave() CludesUI.HideWidgetTooltip() end
+local function TabLeave() CUI.HideWidgetTooltip() end
 
 local function TurnSound(b)
     if not b.idle then PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN) end
@@ -277,7 +278,7 @@ local function ArrowsFor(pageNum)
         arrow.idle = not can
     end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Arrows", function()
+        CUI.CombatQueue.Defer(QUEUE_KEY .. "Arrows", function()
             local _, spellKey = Shown()
             ArrowsFor(pages[spellKey] or 1)
         end)
@@ -370,7 +371,7 @@ end
 local function Refresh()
     if not bookFrame then return end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer(QUEUE_KEY, Refresh)
+        CUI.CombatQueue.Defer(QUEUE_KEY, Refresh)
         return
     end
     stale = nil
@@ -381,7 +382,7 @@ end
 -- The talent window stands beside the open book and takes its place when it
 -- closes (the book is protected, so it is the one that never moves).
 local function PlaceTalents()
-    local talents = CludesUI._ClassicTalents
+    local talents = CUI._ClassicTalents
     if talents then talents.Place() end
 end
 
@@ -494,7 +495,7 @@ local function Build()
     escape:SetFrameRef("book", bookFrame)
     escape:SetAttribute("_onclick", [[ self:GetFrameRef("book"):Hide() ]])
     escape:SetScript("PostClick", function()
-        local talents = CludesUI._ClassicTalents
+        local talents = CUI._ClassicTalents
         if talents then talents.Close() end
     end)
 
@@ -531,7 +532,7 @@ local function Build()
     ]])
     bookFrame.prev = NewArrow("Prev", 50, -1)
     bookFrame.next = NewArrow("Next", 314, 1)
-    if CludesUI._ShifterAdopt then CludesUI._ShifterAdopt("CUI_ClassicSpellbook") end
+    if CUI._ShifterAdopt then CUI._ShifterAdopt("CUI_ClassicSpellbook") end
 end
 
 -- The click layer's click: out of combat, where an addon may show the book.
@@ -570,7 +571,7 @@ end
 -- override fires UPDATE_BINDINGS itself, so unchanged keys are left alone.
 local function Bind()
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Bind", Bind)
+        CUI.CombatQueue.Defer(QUEUE_KEY .. "Bind", Bind)
         return
     end
     if not toggle then return end
@@ -600,7 +601,7 @@ local function OnEvent(_, event)
         -- The game's own window opens from the micro button until the fight ends.
         if microButtons then
             microButtons:SetMouseClickEnabled(false)
-            CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Micro", MicroClicksBack)
+            CUI.CombatQueue.Defer(QUEUE_KEY .. "Micro", MicroClicksBack)
         end
     elseif bookFrame:IsShown() then
         Refresh()
@@ -611,7 +612,7 @@ end
 
 local function Apply()
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Apply", Apply)
+        CUI.CombatQueue.Defer(QUEUE_KEY .. "Apply", Apply)
         return
     end
     if eventList then eventList:UnregisterAllEvents() end
@@ -643,7 +644,7 @@ local function Apply()
 end
 
 -- Options-page entry points.
-CludesUI._ClassicSpellbook = {
+CUI._ClassicSpellbook = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Apply,

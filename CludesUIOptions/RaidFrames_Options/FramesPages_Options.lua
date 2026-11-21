@@ -1,21 +1,22 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  RaidFrames_Options\FramesPages_Options.lua
 --  Raid & Party Frames options: the Frames page (Raid tab, BuildMainPage), the Party page
 --  (BuildPartyPage) and the Sort By control both use. Definitions only; the
 --  shared helpers come from ns._RFO_OptEnv (filled by CUI_RaidFrames_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIRaidFrames"]
+local mod = CUI._ModuleNS["CludesUIRaidFrames"]
 if not mod then return end -- module disabled: no options page
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host (a kept page wrapper or menu and every frame it hands out) are reset
 -- and dressed again by the next build instead of made anew; elsewhere this is
 -- CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
-local PoolKept = CludesUI._Pool.Kept
+local CreateFrame = CUI._Pool.CreateFrame
+local PoolKept = CUI._Pool.Kept
 -- Deferred work on a pooled frame stops once the frame was dressed again.
-local PoolGen = CludesUI._Pool.Gen
+local PoolGen = CUI._Pool.Gen
 
 ---------------------------------------------------------------------------
 --  Shared "Sort By" control: Group/Role radio + drag-to-reorder role rows, installed into a DualRow half-region
@@ -37,16 +38,16 @@ local function BuildSortByControl(region, options)
 
     local sBg = sortBtn:CreateTexture(nil, "BACKGROUND")
     sBg:SetAllPoints()
-    sBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
-    local sBrd = CludesUI.MakeRoundedBorder(sortBtn, 1, 1, 1, CludesUI.DD_BRD_A, sBg)
+    sBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_A)
+    local sBrd = CUI.MakeRoundedBorder(sortBtn, 1, 1, 1, CUI.DD_BRD_A, sBg)
 
-    local sLabel = CludesUI.MakeFont(sortBtn, 13, nil, 1, 1, 1)
-    sLabel:SetAlpha(CludesUI.DD_TXT_A)
+    local sLabel = CUI.MakeFont(sortBtn, 13, nil, 1, 1, 1)
+    sLabel:SetAlpha(CUI.DD_TXT_A)
     sLabel:SetJustifyH("LEFT")
     sLabel:SetWordWrap(false)
     sLabel:SetMaxLines(1)
     sLabel:SetPoint("LEFT", sortBtn, "LEFT", 8, 0)
-    local sArrow = CludesUI.MakeDropdownArrow(sortBtn, 12, Pix)
+    local sArrow = CUI.MakeDropdownArrow(sortBtn, 12, Pix)
     sLabel:SetPoint("RIGHT", sArrow, "LEFT", -5, 0)
 
     local function UpdateSortLabel()
@@ -54,25 +55,25 @@ local function BuildSortByControl(region, options)
         if mode == "FRAMESORT" then
             sLabel:SetText("FrameSort")
         else
-            sLabel:SetText(mode == "ROLE" and CludesUI.L("Role") or CludesUI.L("Group"))
+            sLabel:SetText(mode == "ROLE" and CUI.L("Role") or CUI.L("Group"))
         end
     end
     UpdateSortLabel()
 
     sortBtn:SetScript("OnEnter", function()
-        sBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_HA)
-        sBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_HA)
-        sLabel:SetAlpha(CludesUI.DD_TXT_HA)
+        sBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_HA)
+        sBrd:SetColor(1, 1, 1, CUI.DD_BRD_HA)
+        sLabel:SetAlpha(CUI.DD_TXT_HA)
     end)
     sortBtn:SetScript("OnLeave", function()
-        sBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
-        sBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_A)
-        sLabel:SetAlpha(CludesUI.DD_TXT_A)
+        sBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_A)
+        sBrd:SetColor(1, 1, 1, CUI.DD_BRD_A)
+        sLabel:SetAlpha(CUI.DD_TXT_A)
     end)
 
     local MH = 26 -- row height
     local DH = 16 -- divider height
-    local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+    local ACC = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 
     -- Kept per Sort By button (the options page pool): a page build that
     -- dresses the same button again dresses the same menu again.
@@ -85,8 +86,8 @@ local function BuildSortByControl(region, options)
 
     local mBg = menuFrame:CreateTexture(nil, "BACKGROUND")
     mBg:SetAllPoints()
-    mBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
-    CludesUI.MakeRoundedBorder(menuFrame, 1, 1, 1, CludesUI.DD_BRD_A, mBg, nil, true)
+    mBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, 0.98)
+    CUI.MakeRoundedBorder(menuFrame, 1, 1, 1, CUI.DD_BRD_A, mBg, nil, true)
 
     -- Declared before OnShow: its OnUpdate suppresses click-away dismiss while a row is dragged.
     local dragRow, dsY, isDragging = nil, nil, false
@@ -105,7 +106,7 @@ local function BuildSortByControl(region, options)
     menuFrame:SetPoint("TOPLEFT", sortBtn, "BOTTOMLEFT", 0, -2)
 
     local mY = -2
-    local FONT = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+    local FONT = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
 
     local radioItems = {
         { key = "INDEX", label = "Group" },
@@ -118,9 +119,9 @@ local function BuildSortByControl(region, options)
     if mod._FrameSortApi and mod._FrameSortApi() then
         radioItems[#radioItems + 1] = { key = "FRAMESORT", label = "FrameSort", noLoc = true }
     end
-    local SEL_A = CludesUI.DD_ITEM_SEL_A
-    local HL_A = CludesUI.DD_ITEM_HL_A
-    local itemDimA = CludesUI.TEXT_DIM_A or 0.53
+    local SEL_A = CUI.DD_ITEM_SEL_A
+    local HL_A = CUI.DD_ITEM_HL_A
+    local itemDimA = CUI.TEXT_DIM_A or 0.53
     local radioRows = {}
     for _, ri in ipairs(radioItems) do
         local rr = CreateFrame("Button", nil, menuFrame)
@@ -158,7 +159,7 @@ local function BuildSortByControl(region, options)
             menuFrame:Hide()
         end)
 
-        rl:SetText(ri.noLoc and ri.label or CludesUI.L(ri.label))
+        rl:SetText(ri.noLoc and ri.label or CUI.L(ri.label))
         radioRows[#radioRows + 1] = rr
         mY = mY - MH
     end
@@ -182,7 +183,7 @@ local function BuildSortByControl(region, options)
     hfs:SetFont(FONT, 10, "")
     hfs:SetPoint("LEFT", ht, "LEFT", 10, 0)
     hfs:SetTextColor(1, 1, 1, 0.25)
-    hfs:SetText(CludesUI.L("Drag to Reorder Roles"))
+    hfs:SetText(CUI.L("Drag to Reorder Roles"))
     mY = mY - 18
 
     -- Draggable role rows
@@ -215,7 +216,7 @@ local function BuildSortByControl(region, options)
         rl:SetFont(FONT, 13, "")
         rl:SetPoint("LEFT", row, "LEFT", 20, 0)
         rl:SetJustifyH("LEFT")
-        rl:SetText(CludesUI.L(checkBtn.label))
+        rl:SetText(CUI.L(checkBtn.label))
         rl:SetTextColor(0.75, 0.75, 0.75, 1)
         row._lbl = rl
 
@@ -384,7 +385,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         return function(value) SSet(key, value) end
     end
     local SWrite, optionState = environ.SWrite, environ.optState
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local _, hgt, heading
     local row
 
@@ -392,7 +393,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     -- where it would render as Right (ReadGroupGrowth).
     local function GridFlowOff(value)
         if value == "DOWNRIGHT" and SVal("mergeGroups", false) then
-            return CludesUI.DisabledTooltip("Merge Groups", "disabled")
+            return CUI.DisabledTooltip("Merge Groups", "disabled")
         end
     end
 
@@ -420,7 +421,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     heading, hgt = W:SectionHeader(hostFrame, "FRAME SIZES", cursorY)
     cursorY = cursorY - hgt
-    CludesUI.BuildSectionUnlockJump(heading, { key = "RF_RaidFrames" })
+    CUI.BuildSectionUnlockJump(heading, { key = "RF_RaidFrames" })
 
     _, hgt = W:DualRow(hostFrame, cursorY, {
         type = "slider",
@@ -447,8 +448,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
         local TIER_LABELS =
             { [10] = "10 Man", [15] = "15 Man", [25] = "25 Man", [30] = "30 Man", [40] = "40 Man" }
         local overrides = db.profile.raidSizeOverrides
-        local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-        local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
+        local EYE_VISIBLE = CUI.EYE_VISIBLE_ICON
+        local EYE_INVISIBLE = CUI.EYE_INVISIBLE_ICON
         local CLOSE_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
 
         for _, tier in ipairs(CUSTOM_TIERS) do
@@ -482,7 +483,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             end
                         end
                         -- Full reload on drag end applies indicator scaling.
-                        if not CludesUI._sliderDragging then ReloadAndUpdate() end
+                        if not CUI._sliderDragging then ReloadAndUpdate() end
                     end,
                 }, {
                     type = "slider",
@@ -511,13 +512,13 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             end
                         end
                         -- Full reload on drag end applies indicator scaling.
-                        if not CludesUI._sliderDragging then ReloadAndUpdate() end
+                        if not CUI._sliderDragging then ReloadAndUpdate() end
                     end,
                 })
                 cursorY = cursorY - hgt
 
                 -- Eyeball (preview toggle), left of the row.
-                if not CludesUI._prebuilding then
+                if not CUI._prebuilding then
                     local eyeButton = CreateFrame("Button", nil, sizeRow)
                     eyeButton:SetSize(24, 24)
                     eyeButton:SetPoint("RIGHT", sizeRow, "LEFT", -5, 0)
@@ -533,15 +534,15 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         if PoolGen(eyeButton) ~= eyeGen then return end
                         local isActive = mod._sizePreviewTier == tier
                         eyeTex:SetTexture(isActive and EYE_INVISIBLE or EYE_VISIBLE)
-                        CludesUI.SetGlyphAlpha(eyeButton, isActive and 0.6 or 0.4)
+                        CUI.SetGlyphAlpha(eyeButton, isActive and 0.6 or 0.4)
                     end
                     RefreshSizeEye()
                     mod["_refreshSizeEye" .. tier] = RefreshSizeEye
 
                     eyeButton:SetScript("OnEnter", function(self)
-                        CludesUI.SetGlyphAlpha(self, 0.7)
+                        CUI.SetGlyphAlpha(self, 0.7)
                         local isActive = mod._sizePreviewTier == tier
-                        CludesUI.ShowWidgetTooltip(
+                        CUI.ShowWidgetTooltip(
                             self,
                             isActive and "Hide " .. tierLabel .. " preview"
                                 or "Preview " .. tierLabel .. " frame size"
@@ -549,7 +550,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     end)
                     eyeButton:SetScript("OnLeave", function(self)
                         RefreshSizeEye()
-                        CludesUI.HideWidgetTooltip()
+                        CUI.HideWidgetTooltip()
                     end)
                     eyeButton:SetScript("OnClick", function()
                         if mod._sizePreviewTier == tier then
@@ -579,7 +580,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     end)
                 end
 
-                if not CludesUI._prebuilding then
+                if not CUI._prebuilding then
                     local closeBtn = CreateFrame("Button", nil, sizeRow)
                     closeBtn:SetSize(18, 18)
                     closeBtn:SetPoint("LEFT", sizeRow, "RIGHT", 5, 0)
@@ -590,11 +591,11 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     closeTex:SetTexture(CLOSE_ICON)
                     closeBtn:SetScript("OnEnter", function(self)
                         self:SetAlpha(0.7)
-                        CludesUI.ShowWidgetTooltip(self, "Remove " .. tierLabel .. " size")
+                        CUI.ShowWidgetTooltip(self, "Remove " .. tierLabel .. " size")
                     end)
                     closeBtn:SetScript("OnLeave", function(self)
                         self:SetAlpha(0.45)
-                        CludesUI.HideWidgetTooltip()
+                        CUI.HideWidgetTooltip()
                     end)
                     closeBtn:SetScript("OnClick", function()
                         if mod._sizePreviewTier == tier then
@@ -615,12 +616,12 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             if not anyTier then db.profile.raidSizeOverrides = nil end
                         end
                         ReloadAndUpdate()
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end)
                 end
 
                 -- X/Y offset cog on the width slider.
-                if not CludesUI._prebuilding then
+                if not CUI._prebuilding then
                     local region = sizeRow._leftRegion
                     local function EnsureTierOv()
                         local ovs = mod._EnsureRaidSizeOverrides()
@@ -682,8 +683,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         },
                     }
                     local tb = TIER_BOUNDS[tier]
-                    CludesUI.BuildInlineCog(region, {
-                        title = CludesUI.Lf("%1$s Options", CludesUI.L(tierLabel)),
+                    CUI.BuildInlineCog(region, {
+                        title = CUI.Lf("%1$s Options", CUI.L(tierLabel)),
                         rows = {
                             {
                                 type = "slider",
@@ -878,7 +879,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         height = db.profile.frameHeight or 60,
                     }
                     ReloadAndUpdate()
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             }, autoResizeSlot)
             cursorY = cursorY - hgt
@@ -893,7 +894,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             cursorY = cursorY - hgt
         end
         -- Overlay the checkbox dropdown onto the right region, mirroring the "Hover Borders" conversion pattern.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rightRegion = autoResizeRow._rightRegion
             if rightRegion._control then rightRegion._control:Hide() end
             local arKeyMap = { indicators = "autoResizeIndicators", trackedBuffs = "autoResizeTrackedBuffs" }
@@ -901,7 +902,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 { key = "indicators", label = "Indicators & Auras" },
                 { key = "trackedBuffs", label = "Tracked Buffs" },
             }
-            local checkDrop = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop = CUI.BuildVisOptsCBDropdown(
                 rightRegion,
                 170,
                 rightRegion:GetFrameLevel() + 2,
@@ -925,9 +926,9 @@ local function BuildMainPage(page, hostFrame, yOffset)
     cursorY = cursorY - hgt
     -- Stock styles: the stock frame edge stands in for the CludesUI
     -- border (its style/size row hides; the hover border stays).
-    if CludesUI.BlizzStyle then cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "raidframes") end
+    if CUI.BlizzStyle then cursorY = CUI.BlizzStyle.Note(hostFrame, cursorY, "raidframes") end
     local function StockGate(rowConf)
-        if CludesUI.BlizzStyle then return CludesUI.BlizzStyle.Gate("raidframes", rowConf) end
+        if CUI.BlizzStyle then return CUI.BlizzStyle.Gate("raidframes", rowConf) end
         return rowConf
     end
 
@@ -961,7 +962,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         setValue = SSetRow("groupSpacing"),
     })
     cursorY = cursorY - hgt
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         -- A mode that is on stays reachable, so it can always be turned off.
         local COMPACT_TIP =
             "This option requires a Pixels or Pixels Textured border above size 0 on the CludesUI look."
@@ -971,7 +972,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         local function GridBlocked()
             return not db.profile.raidGridMode and not mod.RF_CompactOn(db.profile, false)
         end
-        CludesUI.BuildInlineCog(spacingRow._leftRegion, {
+        CUI.BuildInlineCog(spacingRow._leftRegion, {
             title = "Frame Spacing",
             disabled = CompactBlocked,
             disabledTooltip = COMPACT_TIP,
@@ -985,14 +986,14 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         if value and not mod.RF_CompactEligible(db.profile) then return end
                         db.profile.raidCompactMode = value
                         ReloadAndUpdate()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     disabled = CompactBlocked,
                     disabledTooltip = COMPACT_TIP,
                 },
             },
         })
-        CludesUI.BuildInlineCog(spacingRow._rightRegion, {
+        CUI.BuildInlineCog(spacingRow._rightRegion, {
             title = "Group Spacing",
             disabled = GridBlocked,
             disabledTooltip = "Compact Mode",
@@ -1006,7 +1007,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         if value and not mod.RF_CompactOn(db.profile, false) then return end
                         db.profile.raidGridMode = value
                         ReloadAndUpdate()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     disabled = GridBlocked,
                     disabledTooltip = "Compact Mode",
@@ -1016,7 +1017,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     end
 
     -- Border Style (+ options cog) | Border Size (+ Border swatch). Mirrors Unit Frames: ONE border recolored by state (hover/target), full SharedMedia support. Hover/Target swatches live on the row below.
-    local bdrTexValues, bdrTexOrder = CludesUI.GetBorderTextureDropdown()
+    local bdrTexValues, bdrTexOrder = CUI.GetBorderTextureDropdown()
     local borderStyleRow
     borderStyleRow, hgt = W:DualRow(
         hostFrame,
@@ -1033,20 +1034,20 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 SWrite("borderTextureOffsetY", nil)
                 SWrite("borderTextureShiftX", nil)
                 SWrite("borderTextureShiftY", nil)
-                local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(value)
+                local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(value)
                 SWrite("borderColor", _bcol)
                 SWrite("borderBehind", _bbehind)
-                local defSz = CludesUI.GetBorderDefaultSize("unitframes", value)
+                local defSz = CUI.GetBorderDefaultSize("unitframes", value)
                 if defSz then SWrite("borderSize", defSz) end
                 -- A style pick returns the size to its step: clear a set exact size.
                 if SGetPx("borderSizePx", "borderSize") then SWrite("borderSizePx", false) end
                 -- Rebuild: the offset row below exists only for a textured style.
                 ReloadAndUpdate()
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         }),
         -- Exact pixel size: borderSize keeps its step, borderSizePx the pixels.
-        StockGate(CludesUI.BorderPxSliderCfg({
+        StockGate(CUI.BorderPxSliderCfg({
             getStep = function() return SVal("borderSize", 1) end,
             setStep = function(value) SWrite("borderSize", value) end,
             getTex = function() return SGet("borderTexture") or "solid" end,
@@ -1056,9 +1057,9 @@ local function BuildMainPage(page, hostFrame, yOffset)
         }))
     )
     cursorY = cursorY - hgt
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = borderStyleRow._leftRegion
-        local cogBtn = CludesUI.BuildInlineCog(region, {
+        local cogBtn = CUI.BuildInlineCog(region, {
             title = "Border Options",
             rows = {
                 {
@@ -1070,7 +1071,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     get = function()
                         local value = SGet("borderTextureShiftX")
                         if value then return value end
-                        local _, _, dsx = CludesUI.GetBorderDefaults(
+                        local _, _, dsx = CUI.GetBorderDefaults(
                             "unitframes",
                             SGet("borderTexture") or "solid",
                             SVal("borderSize", 1)
@@ -1088,7 +1089,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     get = function()
                         local value = SGet("borderTextureShiftY")
                         if value then return value end
-                        local _, _, _, dsy = CludesUI.GetBorderDefaults(
+                        local _, _, _, dsy = CUI.GetBorderDefaults(
                             "unitframes",
                             SGet("borderTexture") or "solid",
                             SVal("borderSize", 1)
@@ -1113,32 +1114,32 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 cogBtn:Show()
             end
         end
-        CludesUI.RegisterWidgetRefresh(UpdateCogVis)
+        CUI.RegisterWidgetRefresh(UpdateCogVis)
         UpdateCogVis()
     end
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = borderStyleRow._rightRegion
         local lvl = borderStyleRow:GetFrameLevel() + 3
         -- Corner Radius (CludesUI_RoundedCorners.lua): an inline cog beside
         -- the control, the Border swatch left of it.
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Corner Radius",
             tip = "Corner Radius",
-            disabled = function() return not CludesUI.RoundedStyleOK(SGet("borderTexture")) end,
+            disabled = function() return not CUI.RoundedStyleOK(SGet("borderTexture")) end,
             disabledTooltip = "This option requires the Solid, Glow or Shadow border style.",
-            rows = CludesUI.RoundedCornerRows({
+            rows = CUI.RoundedCornerRows({
                 {
                     type = "slider",
                     label = "Corner Radius",
                     min = 0,
-                    max = CludesUI.ROUNDED_MAX_RADIUS,
+                    max = CUI.ROUNDED_MAX_RADIUS,
                     step = 1,
                     get = SValRow("cornerRadius", 0),
                     set = SSetRow("cornerRadius"),
                 },
             }, function() return SGet("cornerMask") end, function(value) SSet("cornerMask", value) end),
         })
-        local borderSwatch, updBorder = CludesUI.BuildColorSwatch(region, lvl, function()
+        local borderSwatch, updBorder = CUI.BuildColorSwatch(region, lvl, function()
             local color = SGet("borderColor") or { r = 0, g = 0, b = 0 }
             return color.r, color.g, color.b, SVal("borderAlpha", 1)
         end, function(red, green, blue, a)
@@ -1148,8 +1149,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end, true, 20)
         borderSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = borderSwatch
-        CludesUI.HoverTip(borderSwatch, "Border")
-        CludesUI.RegisterWidgetRefresh(function() updBorder() end)
+        CUI.HoverTip(borderSwatch, "Border")
+        CUI.RegisterWidgetRefresh(function() updBorder() end)
     end
 
     -- Width Offset | Height Offset: the textured edge's outward offsets as their
@@ -1169,10 +1170,10 @@ local function BuildMainPage(page, hostFrame, yOffset)
             SWrite(key, value)
             if value == nil and SGet(key) ~= nil then
                 local texture, step = SGet("borderTexture") or "solid", SVal("borderSize", 1)
-                local dx, dy = CludesUI.GetBorderDefaults("unitframes", texture, step)
-                local px = CludesUI.BorderPx(SGetPx("borderSizePx", "borderSize"), step, texture)
+                local dx, dy = CUI.GetBorderDefaults("unitframes", texture, step)
+                local px = CUI.BorderPx(SGetPx("borderSizePx", "borderSize"), step, texture)
                 if px then
-                    local PPg, EM = CludesUI.PP, CludesUI.BORDER_EDGE_MAP
+                    local PPg, EM = CUI.PP, CUI.BORDER_EDGE_MAP
                     local f = (px * PPg.mult) / (EM[step] or EM[1])
                     dx, dy = PPg.Snap(dx * f), PPg.Snap(dy * f)
                 end
@@ -1183,7 +1184,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 end
             end
         end
-        local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+        local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
             addonKey = "unitframes",
             getTex = function() return SGet("borderTexture") or "solid" end,
             getStep = function() return SVal("borderSize", 1) end,
@@ -1215,7 +1216,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             SSet("showWhenSolo", value)
             if mod.UpdateVisibility then mod.UpdateVisibility() end
             if mod._UpdatePartyVisibility then mod._UpdatePartyVisibility() end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "dropdown",
@@ -1226,7 +1227,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         setValue = function() end,
     })
     cursorY = cursorY - hgt
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local rightRegion = hoverBordersRow._rightRegion
         if rightRegion._control then rightRegion._control:Hide() end
         local hbItems = {
@@ -1235,7 +1236,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         }
         local hbKeyMap = { hover = "hoverBorderEnabled", target = "targetBorderEnabled" }
         local UpdateHBSwatchVis -- forward declare; assigned after swatches
-        local checkDrop = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop = CUI.BuildVisOptsCBDropdown(
             rightRegion,
             170,
             rightRegion:GetFrameLevel() + 2,
@@ -1260,7 +1261,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             end
             return SGet("borderTexture") or "solid"
         end
-        local hoverPx = CludesUI.BorderPxSliderCfg({
+        local hoverPx = CUI.BorderPxSliderCfg({
             getStep = function() return SVal("hoverBorderSize", 1) end,
             setStep = function(value) SWrite("hoverBorderSize", value) end,
             getTex = HlTex,
@@ -1268,7 +1269,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             setPx = function(value) SWrite("hoverBorderSizePx", value) end,
             apply = ReloadAndUpdate,
         })
-        local targetPx = CludesUI.BorderPxSliderCfg({
+        local targetPx = CUI.BorderPxSliderCfg({
             getStep = function() return SVal("targetBorderSize", 1) end,
             setStep = function(value) SWrite("targetBorderSize", value) end,
             getTex = HlTex,
@@ -1276,7 +1277,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             setPx = function(value) SWrite("targetBorderSizePx", value) end,
             apply = ReloadAndUpdate,
         })
-        local hlCog = CludesUI.BuildInlineCog(rightRegion, {
+        local hlCog = CUI.BuildInlineCog(rightRegion, {
             title = "Highlight Border",
             rows = {
                 {
@@ -1298,7 +1299,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     tooltip = targetPx.tooltip,
                     -- Stock styles draw the stock selection ring instead.
                     disabled = function() return mod.RF_Stock and mod.RF_Stock() end,
-                    disabledTooltip = CludesUI.BlizzStyle and CludesUI.BlizzStyle.Label("raidframes") or nil,
+                    disabledTooltip = CUI.BlizzStyle and CUI.BlizzStyle.Label("raidframes") or nil,
                     get = targetPx.getValue,
                     set = targetPx.setValue,
                 },
@@ -1308,7 +1309,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         -- Hover sits nearest the cog (the dropdown while the cog is hidden),
         -- Target to its left.
         local lvl = hoverBordersRow:GetFrameLevel() + 3
-        local hoverSwatch, updHover = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
+        local hoverSwatch, updHover = CUI.BuildColorSwatch(rightRegion, lvl, function()
             local color = SGet("hoverBorderColor") or { r = 1, g = 1, b = 1 }
             return color.r, color.g, color.b, SVal("hoverBorderAlpha", 1)
         end, function(red, green, blue, a)
@@ -1319,9 +1320,9 @@ local function BuildMainPage(page, hostFrame, yOffset)
         hoverSwatch:SetPoint("RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
         local hoverAnchor = rightRegion._lastInline or rightRegion._control -- memo: what Hover hangs from
         rightRegion._lastInline = hoverSwatch
-        CludesUI.HoverTip(hoverSwatch, "Hover")
+        CUI.HoverTip(hoverSwatch, "Hover")
 
-        local targetSwatch, updTarget = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
+        local targetSwatch, updTarget = CUI.BuildColorSwatch(rightRegion, lvl, function()
             local color = SGet("targetBorderColor") or { r = 1, g = 1, b = 1 }
             return color.r, color.g, color.b, SVal("targetBorderAlpha", 1)
         end, function(red, green, blue, a)
@@ -1331,10 +1332,10 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end, true, 20)
         targetSwatch:SetPoint("RIGHT", rightRegion._lastInline, "LEFT", -8, 0)
         rightRegion._lastInline = targetSwatch
-        CludesUI.HoverTip(targetSwatch, "Target")
+        CUI.HoverTip(targetSwatch, "Target")
         -- Stock styles: the stock selection ring carries its own colour.
-        local targetBlocked = CludesUI.BlizzStyle
-                and CludesUI.BlizzStyle.BlockInline("raidframes", targetSwatch)
+        local targetBlocked = CUI.BlizzStyle
+                and CUI.BlizzStyle.BlockInline("raidframes", targetSwatch)
             or false
 
         local function UpdateHLCogVis()
@@ -1354,7 +1355,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 hoverSwatch:SetPoint("RIGHT", anchor, "LEFT", -8, 0)
             end
         end
-        CludesUI.RegisterWidgetRefresh(UpdateHLCogVis)
+        CUI.RegisterWidgetRefresh(UpdateHLCogVis)
         UpdateHLCogVis()
 
         -- Gray a swatch when its border state is off but keep it clickable so the color can be pre-set (matches the Heal Prediction swatch).
@@ -1362,7 +1363,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             hoverSwatch:SetAlpha(SVal("hoverBorderEnabled", true) and 1 or 0.3)
             targetSwatch:SetAlpha((not targetBlocked and SVal("targetBorderEnabled", true)) and 1 or 0.3)
         end
-        CludesUI.RegisterWidgetRefresh(function()
+        CUI.RegisterWidgetRefresh(function()
             updHover()
             updTarget()
             UpdateHBSwatchVis()
@@ -1417,7 +1418,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     function(nv) db.profile.unitGrowth = nv end
                 )
                 FixTierOverridesPerpendicular()
-                CludesUI:RefreshPage() -- the sibling dropdown may have just changed
+                CUI:RefreshPage() -- the sibling dropdown may have just changed
             end
             if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
             ReloadAndUpdate()
@@ -1437,14 +1438,14 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     function(nv) db.profile.groupGrowth = nv end
                 )
                 FixTierOverridesPerpendicular()
-                CludesUI:RefreshPage() -- the sibling dropdown may have just changed
+                CUI:RefreshPage() -- the sibling dropdown may have just changed
             end
             if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
             ReloadAndUpdate()
         end,
     })
     cursorY = cursorY - hgt
-    CludesUI.BuildInlineCog(growthRow._leftRegion, {
+    CUI.BuildInlineCog(growthRow._leftRegion, {
         title = "Group Growth",
         captureRegion = growthRow._leftRegion,
         rows = {
@@ -1488,13 +1489,13 @@ local function BuildMainPage(page, hostFrame, yOffset)
             setValue = function(value)
                 SSet("showSelfFirst", value == "first")
                 SSet("showSelfLast", value == "last")
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - hgt
 
         -- Swap the placeholder dropdown for the shared Sort By control, wired to the raid keys.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             BuildSortByControl(sortRow._leftRegion, {
                 readMode = function() return SVal("sortMode", "INDEX") end,
                 writeMode = function(value) SSet("sortMode", value) end,
@@ -1541,7 +1542,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             return db.profile.sortMode == "FRAMESORT" and mod._FrameSortApi and mod._FrameSortApi() ~= nil
                 or false
         end
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Class Sorting",
             rows = {
                 {
@@ -1588,7 +1589,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             getValue = SValRow("mergeGroups", false),
             -- Custom Group Order only applies to separated groups, so a flip that
             -- changes whether it applies rebuilds the Show Groups dropdown.
-            setValue = CludesUI.DependentSetValue(
+            setValue = CUI.DependentSetValue(
                 function() return db.profile.customGroupOrder and not db.profile.mergeGroups end,
                 function(value)
                     -- Fix up an already-saved same-axis Group/Unit Growth pair so the
@@ -1606,14 +1607,14 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         FixTierOverridesPerpendicular()
                     end
                     SSet("mergeGroups", value)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
             ),
         })
         cursorY = cursorY - hgt
 
         -- Left dropdown becomes a checkbox dropdown for groups 1-8.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = showGroupsRow._leftRegion
             if region._control then region._control:Hide() end
 
@@ -1646,7 +1647,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
 
             local checkDrop, cbDDRefresh
             if useCustomOrder then
-                checkDrop, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
+                checkDrop, cbDDRefresh = CUI.BuildReorderCBDropdown(
                     region,
                     170,
                     region:GetFrameLevel() + 2,
@@ -1654,7 +1655,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     GroupVisible,
                     SetGroupVisible,
                     {
-                        hint = CludesUI.L("Drag to Reorder Groups"),
+                        hint = CUI.L("Drag to Reorder Groups"),
                         canReorder = function() return not InCombatLockdown() and not db.profile.mergeGroups end,
                         setOrder = function(sequence)
                             if InCombatLockdown() or db.profile.mergeGroups then return end
@@ -1665,15 +1666,15 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             local visible = {}
                             for _, entry in ipairs(movable) do
                                 if getFn(entry.key) then
-                                    visible[#visible + 1] = CludesUI.L("Group") .. " " .. entry.key
+                                    visible[#visible + 1] = CUI.L("Group") .. " " .. entry.key
                                 end
                             end
-                            return #visible > 0 and table.concat(visible, ", ") or CludesUI.L("None")
+                            return #visible > 0 and table.concat(visible, ", ") or CUI.L("None")
                         end,
                     }
                 )
             else
-                checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                     region,
                     170,
                     region:GetFrameLevel() + 2,
@@ -1685,7 +1686,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
             region._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
             local cogShow
             local cogRows = {
                 {
@@ -1711,22 +1712,22 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 },
                 {
                     type = "toggle",
-                    label = CludesUI.L("Custom Group Order"),
-                    tooltip = CludesUI.L("Display separated raid groups in your chosen order."),
+                    label = CUI.L("Custom Group Order"),
+                    tooltip = CUI.L("Display separated raid groups in your chosen order."),
                     get = function() return db.profile.customGroupOrder == true end,
                     set = function(value)
                         if InCombatLockdown() then return end
                         db.profile.customGroupOrder = value
                         ReloadAndUpdate()
                         if cogShow and cogShow._popupFrame then cogShow._popupFrame:Hide() end
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end,
                     disabled = function() return InCombatLockdown() end,
-                    disabledTooltip = CludesUI.L("Unavailable in combat"),
+                    disabledTooltip = CUI.L("Unavailable in combat"),
                     rawTooltip = true,
                 },
             }
-            cogShow = select(2, CludesUI.BuildInlineCog(region, { title = "Show Groups", rows = cogRows }))
+            cogShow = select(2, CUI.BuildInlineCog(region, { title = "Show Groups", rows = cogRows }))
         end
     end
 
@@ -1765,12 +1766,12 @@ local function PSSet(key, val)
         -- Preview refresh needs no full reload.
         if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then mod.ShowPartyPreview() end
         -- Container SetSize re-processes the secure header (= blink), so the container resize is deferred off the hot path and run the moment the drag releases via the slider system's end-of-drag callback set, snapping frames to final position instead of on options close.
-        if CludesUI._sliderDragging then
-            CludesUI._deferredDriftChecks = CludesUI._deferredDriftChecks or {}
-            CludesUI._deferredDriftChecks[RebuildParty] = true
+        if CUI._sliderDragging then
+            CUI._deferredDriftChecks = CUI._deferredDriftChecks or {}
+            CUI._deferredDriftChecks[RebuildParty] = true
         else
             -- Direct set (input box / post-release commit): finalize now and drop any pending registration so it runs once.
-            if CludesUI._deferredDriftChecks then CludesUI._deferredDriftChecks[RebuildParty] = nil end
+            if CUI._deferredDriftChecks then CUI._deferredDriftChecks[RebuildParty] = nil end
             RebuildParty()
         end
         return
@@ -1791,7 +1792,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     local function SValRow(key, default)
         return function() return SVal(key, default) end
     end
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local _, hgt, heading
     local row
     -- The Party Frames' Move in Unlock Mode button goes on the page's first
@@ -1813,7 +1814,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     if mod.RF_Stock and mod.RF_Stock() and (p0.useBlizzardStyle or p0.useClassicStyle) then
         heading, hgt = W:SectionHeader(hostFrame, "FRAME STYLE", cursorY)
         cursorY = cursorY - hgt
-        CludesUI.BuildSectionUnlockJump(heading, { key = "RF_PartyFrames" })
+        CUI.BuildSectionUnlockJump(heading, { key = "RF_PartyFrames" })
         jumped = true
         local kitOn = mod.RF_PartyKit and mod.RF_PartyKit()
         -- Frame Scale default (nil = this, 120%).
@@ -1830,14 +1831,14 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             setValue = function(value)
                 local current = (db.profile.partyFrameStyle == "party") and "party" or "raid"
                 if value == current then return end
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = "Reload Required",
                     message = "Changing the party frame style requires a UI reload.",
                     confirmText = "Reload Now",
                     cancelText = "Cancel",
                     reload = true,
                     onConfirm = function()
-                        CludesUI.SpecOverrides_CloseEditSessions()
+                        CUI.SpecOverrides_CloseEditSessions()
                         db.profile.partyFrameStyle = (value == "party") and "party" or nil
                     end,
                 })
@@ -1857,7 +1858,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         cursorY = cursorY - hgt
         if kitOn then
             -- Frame Scale cog: the gap between the party frames.
-            CludesUI.BuildInlineCog(styleRow._rightRegion, {
+            CUI.BuildInlineCog(styleRow._rightRegion, {
                 title = "Frame Scale",
                 rows = {
                     {
@@ -1892,7 +1893,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                 setValue = PSSetRow("partyKitBuffSize"),
             })
             cursorY = cursorY - hgt
-            CludesUI.BuildInlineCog(kitAuraRow._leftRegion, {
+            CUI.BuildInlineCog(kitAuraRow._leftRegion, {
                 title = "Debuff Position",
                 rows = {
                     {
@@ -1917,7 +1918,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             })
             -- Horizontal Frames always puts the buffs above each frame
             -- (the next frame sits beside it): the side picks disable.
-            CludesUI.BuildInlineCog(kitAuraRow._rightRegion, {
+            CUI.BuildInlineCog(kitAuraRow._rightRegion, {
                 title = "Buff Position",
                 rows = {
                     {
@@ -1971,7 +1972,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     heading, hgt = W:SectionHeader(hostFrame, "RAID SYNC AND SOLO", cursorY)
     cursorY = cursorY - hgt
-    if not jumped then CludesUI.BuildSectionUnlockJump(heading, { key = "RF_PartyFrames" }) end
+    if not jumped then CUI.BuildSectionUnlockJump(heading, { key = "RF_PartyFrames" }) end
 
     -- Row 1: Use Raid Settings For (checkbox dropdown) | Show When Solo
     local SECTION_ORDER = mod._PARTY_SECTION_ORDER or {}
@@ -2004,14 +2005,14 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         getValue = SValRow("partyShowWhenSolo", false),
         setValue = function(value)
             PSSet("partyShowWhenSolo", value)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     })
     cursorY = cursorY - hgt
 
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = syncRow._rightRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             -- Off while only the Raid toggle is on: party never shows solo then (both on = party does show).
             disabled = function() return db.profile.showWhenSolo and not db.profile.partyShowWhenSolo end,
             disabledTooltip = "Raid Frames Show When Solo",
@@ -2033,12 +2034,12 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     end
 
     -- Left dropdown becomes a per-section sync checkbox dropdown.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = syncRow._leftRegion
         if region._control then region._control:Hide() end
 
         local syncDD -- forward declared for the setter closure
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             170,
             region:GetFrameLevel() + 2,
@@ -2083,8 +2084,8 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                     if hasCustom then
                         -- Close the menu before the popup.
                         if syncDD and syncDD._ddMenu then syncDD._ddMenu:Hide() end
-                        CludesUI:ShowConfirmPopup({
-                            title = CludesUI.Lf("Re-sync %1$s?", SECTION_LABELS[keyName] or keyName),
+                        CUI:ShowConfirmPopup({
+                            title = CUI.Lf("Re-sync %1$s?", SECTION_LABELS[keyName] or keyName),
                             message = "This will discard your custom party settings for this section and use raid settings instead.",
                             confirmText = "Sync",
                             cancelText = "Cancel",
@@ -2167,7 +2168,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             end
             profile.partyHorizontal = value
             RebuildParty()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "dropdown",
@@ -2179,7 +2180,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - hgt
 
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         BuildSortByControl(pSortRow._rightRegion, {
             readMode = function() return SVal("partySortMode", "ROLE") end,
             writeMode = function(value) PSSet("partySortMode", value) end,
@@ -2229,7 +2230,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                     and mod._FrameSortApi() ~= nil
                 or false
         end
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Class Sorting",
             rows = {
                 {
@@ -2282,7 +2283,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         setValue = function(value)
             db.profile.partyHideSelf = value
             RebuildParty()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     })
     cursorY = cursorY - hgt
@@ -2325,7 +2326,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     )
     cursorY = cursorY - hgt
     -- Auto Resize Icons sits in the LEFT slot here; same conversion pattern as the Frames tab.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         -- Off while the party border is not a Pixels style or Party Targets sit along the
         -- frame stack; a mode that is on stays reachable, so it can always be turned off.
         local function PartyCompactBlocked()
@@ -2337,7 +2338,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         end
         local PARTY_COMPACT_TIP =
             "This option requires a Pixels or Pixels Textured border above size 0 on the CludesUI look, with Party Targets off or beside the frame stack."
-        CludesUI.BuildInlineCog(partyAutoResizeRow._rightRegion, {
+        CUI.BuildInlineCog(partyAutoResizeRow._rightRegion, {
             title = "Frame Spacing",
             disabled = PartyCompactBlocked,
             disabledTooltip = PARTY_COMPACT_TIP,
@@ -2350,7 +2351,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                     set = function(value)
                         if value and PartyCompactBlocked() then return end
                         PSSet("partyCompactMode", value)
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     disabled = PartyCompactBlocked,
                     disabledTooltip = PARTY_COMPACT_TIP,
@@ -2365,7 +2366,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             { key = "indicators", label = "Indicators & Auras" },
             { key = "trackedBuffs", label = "Tracked Buffs" },
         }
-        local checkDrop = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop = CUI.BuildVisOptsCBDropdown(
             leftRegion,
             170,
             leftRegion:GetFrameLevel() + 2,
@@ -2434,15 +2435,15 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     --  ALL VISUAL SECTIONS
     --  _partyCtx makes SGet/SSet/SVal read/write "party_<key>", so the same section builders produce party controls; synced sections get a per-section blocking overlay.
     -------------------------------------------------------------------
-    local CPAD = CludesUI.CONTENT_PAD or 10
-    local FONT = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+    local CPAD = CUI.CONTENT_PAD or 10
+    local FONT = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
 
     local syncOverlays = {}
     mod._syncOverlays = syncOverlays
 
     local function SyncOverlay(sectionKey, startY, endY)
         -- None in the search pre-build: the overlays index nothing, and that page is never shown.
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         local hdrH = 40 -- SectionHeader height
         local contentStart = startY - hdrH
         local shade = CreateFrame("Frame", nil, hostFrame)
@@ -2459,10 +2460,10 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         labelText:SetFont(FONT, 13, "")
         labelText:SetPoint("CENTER", shade, "CENTER", 0, 0)
         labelText:SetTextColor(1, 1, 1, 0.56)
-        labelText:SetText(CludesUI.L("Synced with Raid Settings"))
+        labelText:SetText(CUI.L("Synced with Raid Settings"))
         -- Accent on hover so the overlay reads as clickable.
         shade:SetScript("OnEnter", function()
-            local brandGreen = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.83, b = 0.62 }
+            local brandGreen = CUI.CLUDES_GREEN or { r = 0.05, g = 0.83, b = 0.62 }
             labelText:SetTextColor(brandGreen.r, brandGreen.g, brandGreen.b, 1)
         end)
         shade:SetScript("OnLeave", function() labelText:SetTextColor(1, 1, 1, 0.56) end)

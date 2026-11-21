@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_PlatePool.lua
 --
@@ -70,14 +71,14 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
         end
     end
     local function AddBorder(hostFrame)
-        local Pix = CludesUI and CludesUI.PP
+        local Pix = CUI and CUI.PP
         if Pix then
             Pix.CreateBorder(hostFrame, 0, 0, 0, 1, 1, "OVERLAY", 5, true) -- scaleGuard: NP frame
         end
     end
     -- Border: single pixel-perfect PP.CreateBorder (BackdropTemplate).
     -- Two settings: showBorder (bool) and borderSize (physical pixels).
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local bc = { r = 0, g = 0, b = 0 }
     bc.r, bc.g, bc.b = GetBorderColor()
     if Pix and Pix.CreateBorder then
@@ -139,7 +140,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                 if not backing._customBorder then mod.ApplyCustomBorderStyle(backing) end
                 if backing._customBorder then
                     local a = (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
-                    CludesUI.SetBorderStyleColor(
+                    CUI.SetBorderStyleColor(
                         backing._customBorder,
                         backing._threatBdR,
                         backing._threatBdG,
@@ -641,7 +642,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
         end
         return true
     end
-    backing.cast._timerTicker = CludesUI.Tick.NewAnimTicker(backing.cast, backing.cast._timerTick, 0.1)
+    backing.cast._timerTicker = CUI.Tick.NewAnimTicker(backing.cast, backing.cast._timerTick, 0.1)
     backing.cast._timerPlate = backing
     -- Full-size cast icon: side-slot reserve is valid only while the cast bar is shown, so
     -- re-anchor reserving side elements on every cast show/hide. One chokepoint catches every
@@ -711,11 +712,11 @@ do
     end)
 end
 
-function mod.GetActiveKickSpell() return CludesUI.GetActiveKickSpell() end
+function mod.GetActiveKickSpell() return CUI.GetActiveKickSpell() end
 -- Cast overlay uses the same tint as the on-plate cast bar.
 mod.ComputeCastBarTint = function(readyTint, baseTint)
-    if CludesUI and CludesUI.ComputeCastBarTint then
-        return CludesUI.ComputeCastBarTint(readyTint, baseTint)
+    if CUI and CUI.ComputeCastBarTint then
+        return CUI.ComputeCastBarTint(readyTint, baseTint)
     end
     return baseTint.r, baseTint.g, baseTint.b
 end
@@ -815,7 +816,7 @@ function mod.RefreshStackingMotion()
     local saved = p or defaultSet
     -- Enemy stacking is always CUI-owned; apply every time. Must NOT be gated on friendly
     -- players, or enemy plates stop stacking for anyone who hands friendly plates to Blizzard.
-    CludesUI.SetCVarBitfield(
+    CUI.SetCVarBitfield(
         "nameplateStackingTypes",
         Enum.NamePlateStackType.Enemy,
         saved.stackingEnabled ~= false,
@@ -824,7 +825,7 @@ function mod.RefreshStackingMotion()
     -- Friendly stacking is only ours to write while we manage friendly players; when
     -- Blizzard-managed, leave the friendly bit untouched so the user's setting survives.
     if saved.showFriendlyPlayers ~= false then
-        CludesUI.SetCVarBitfield(
+        CUI.SetCVarBitfield(
             "nameplateStackingTypes",
             Enum.NamePlateStackType.Friendly,
             saved.stackingFriendly == true,

@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then return end -- no raid-wide lust on WoW Forever: no icon, no events, no unlock mover, even when a saved or imported profile has the tracker enabled; the options section is not built there and every reader of the _G._CUI_Bloodlust_* hooks nil-guards
+local CUI = CludesUI
+if CUI and CUI.IS_FOREVER then return end -- no raid-wide lust on WoW Forever: no icon, no events, no unlock mover, even when a saved or imported profile has the tracker enabled; the options section is not built there and every reader of the _G._CUI_Bloodlust_* hooks nil-guards
 -------------------------------------------------------------------------------
 --  CludesUIQoL_Bloodlust.lua
 --  Runtime for the Bloodlust Tracker icon. Detects the player's Sated /
@@ -52,7 +53,7 @@ local SATED_DEBUFFS = {
 
 local _, mod = ...
 
-local SHAPE_MASKS = CludesUI.SHAPE_MASKS
+local SHAPE_MASKS = CUI.SHAPE_MASKS
 local BORDER_PX = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
 
 -------------------------------------------------------------------------------
@@ -170,7 +171,7 @@ end
 -- and center are snapped already (ApplyShape / ApplyPosition), so snapping the
 -- offset is what keeps the child anchored to it on the grid too.
 local function _snapOff(val)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix and Pix.Snap then return Pix.Snap(val) end
     return val
 end
@@ -183,7 +184,7 @@ local _applyShapeOutline = mod.QoL_ApplyShapeOutline
 -- the 40s buff overlay, whose opaque icon would otherwise cover the debuff
 -- icon's border. level pins the PP strip container (see CreateBloodlustFrame).
 local function _applyBorder(owner, shapeTex, level)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local shapeKey = LustVal("shape") or "none"
     local bs = BORDER_PX[LustVal("borderSize") or "thin"] or 1
 
@@ -227,9 +228,9 @@ local function _applyBuffShape()
 
     -- Match the debuff icon's duration text exactly (font, size, position).
     buffDurationFS:SetFont(
-        (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+        (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         LustVal("durationSize") or 12,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     buffDurationFS:ClearAllPoints()
     buffDurationFS:SetPoint(
@@ -282,7 +283,7 @@ end
 local function ApplyShape()
     if not widget then return end
 
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local shapeKey = LustVal("shape") or "none"
 
     local size = LustVal("iconSize") or 40
@@ -304,9 +305,9 @@ local function ApplyShape()
     -- have no stacks so the count string stays empty, but we keep the field for
     -- 1:1 parity with the BattleRes icon layout.
     durationFS:SetFont(
-        (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+        (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         LustVal("durationSize") or 12,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     durationFS:ClearAllPoints()
     durationFS:SetPoint(
@@ -318,9 +319,9 @@ local function ApplyShape()
     )
 
     countFS:SetFont(
-        (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+        (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         LustVal("countSize") or 11,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     countFS:ClearAllPoints()
     countFS:SetPoint(
@@ -336,9 +337,9 @@ local function ApplyShape()
     -- it with the new style instead of leaving a stale string on screen.
     if readyText then
         readyText:SetFont(
-            (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+            (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
             RP("readySize") or 12,
-            (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+            (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
         )
         readyText:ClearAllPoints()
         readyText:SetPoint(
@@ -437,7 +438,7 @@ local function PlaceLust()
     else
         cx, cy = _defaultLeftOfBrezCenter()
     end
-    local PPp = CludesUI and CludesUI.PP
+    local PPp = CUI and CUI.PP
     if PPp and PPp.SnapCenterForDim then
         cx = PPp.SnapCenterForDim(cx, widget:GetWidth())
         cy = PPp.SnapCenterForDim(cy, widget:GetHeight())
@@ -479,7 +480,7 @@ end
 -- 12.1: duration APIs (GetAuraDuration included) hard-error while aura
 -- restrictions are active, even with a clean auraInstanceID.
 local function AurasRestricted()
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if AK and AK.AurasRestricted then return AK.AurasRestricted() end
     return false
 end
@@ -619,7 +620,7 @@ local function _showReadyState()
     -- hide itself, and the leftover swipe has to go either way.
     if cdFrame then cdFrame:Clear() end
     if readyText then
-        readyText:SetText(CludesUI.L("Ready"))
+        readyText:SetText(CUI.L("Ready"))
         readyText:Show()
     end
     _readyShown = true
@@ -960,9 +961,9 @@ local function BuildLustFrame()
 
     durationFS = textOverlay:CreateFontString(nil, "OVERLAY")
     durationFS:SetFont(
-        (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+        (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         14,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     durationFS:SetText("")
 
@@ -970,18 +971,18 @@ local function BuildLustFrame()
     -- this runs before ApplyShape ever styles it.
     readyText = textOverlay:CreateFontString(nil, "OVERLAY")
     readyText:SetFont(
-        (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+        (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         12,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     readyText:SetText("")
     readyText:Hide()
 
     countFS = textOverlay:CreateFontString(nil, "OVERLAY")
     countFS:SetFont(
-        (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+        (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         12,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     countFS:SetText("")
 
@@ -1014,9 +1015,9 @@ local function BuildLustFrame()
 
     buffDurationFS = buffTextOverlay:CreateFontString(nil, "OVERLAY")
     buffDurationFS:SetFont(
-        (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+        (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         12,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     buffDurationFS:SetText("")
 
@@ -1050,12 +1051,12 @@ _G._CUI_Bloodlust_Apply = ApplyLust
 --  Unlock mode registration (mirrors the BattleRes icon)
 -------------------------------------------------------------------------------
 local function RegisterUnlock()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
     if not MK then return end
     local loadPos, clearPos = mod.CenterPosFns(P)
 
-    CludesUI:RegisterUnlockElements({
+    CUI:RegisterUnlockElements({
         MK({
             key = "CUI_Bloodlust",
             label = "Lust",
@@ -1078,21 +1079,21 @@ local function RegisterUnlock()
             setWidth = function(_, wid)
                 local profile = P()
                 if not profile then return end
-                local PPb = CludesUI and CludesUI.PP
+                local PPb = CUI and CUI.PP
                 profile.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
                 ApplyLust()
-                if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                    CludesUI.RepositionBarToMover("CUI_Bloodlust")
+                if CUI._unlockActive and CUI.RepositionBarToMover then
+                    CUI.RepositionBarToMover("CUI_Bloodlust")
                 end
             end,
             setHeight = function(_, hgt)
                 local profile = P()
                 if not profile then return end
-                local PPb = CludesUI and CludesUI.PP
+                local PPb = CUI and CUI.PP
                 profile.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
                 ApplyLust()
-                if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                    CludesUI.RepositionBarToMover("CUI_Bloodlust")
+                if CUI._unlockActive and CUI.RepositionBarToMover then
+                    CUI.RepositionBarToMover("CUI_Bloodlust")
                 end
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
@@ -1120,7 +1121,7 @@ boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
     local function init()
-        if not (CludesUI and CludesUI.Lite) then return end
+        if not (CUI and CUI.Lite) then return end
         local getDB = _G._CUI_BattleRes_DB
         local skinData = getDB and getDB()
         if not skinData then

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_TooltipVisibility.lua
 --
@@ -43,7 +44,7 @@ do
     end
 
     -- Exposed so modules with their own tooltip suppression (e.g. raid/party frames, whose OnEnter hides tips per its own combat mode) can let the same peek modifier reveal their tips.
-    function CludesUI._tooltipPeekHeld() return ShowModifierHeld() end
+    function CUI._tooltipPeekHeld() return ShowModifierHeld() end
 
     local EnsureComparisonSupport
     local UpdateStateWatcher
@@ -63,7 +64,7 @@ do
 
     -- Shared decision: should GameTooltip be suppressed right now given the user's "Show
     -- Tooltips" mode + combat state? Exposed on CludesUI so the cursor-anchor hook can honor it too (else cursor re-anchor would re-show a tooltip this hook just hid).
-    function CludesUI._tooltipSuppressedByMode(tipFrame)
+    function CUI._tooltipSuppressedByMode(tipFrame)
         if tipFrame ~= GameTooltip then return false end
         if tipFrame.IsForbidden and tipFrame:IsForbidden() then return false end
         -- Gated by the "Reskin Tooltip" master (matches the grayed-out "Show Tooltips" option), so disabling the reskin never leaves tooltips stuck suppressed at, e.g., "Never".
@@ -192,7 +193,7 @@ do
         -- Only clear comparisons while this controller is actually parking the
         -- global tooltip. Unparked shows (mode off, or a transient rebuild)
         -- keep their legitimate comparisons untouched.
-        if not _parked or not CludesUI._tooltipSuppressedByMode(GameTooltip) then return end
+        if not _parked or not CUI._tooltipSuppressedByMode(GameTooltip) then return end
 
         -- Clear the manager's state and its owned shopping frames through the
         -- same public method Blizzard calls from GameTooltip_OnHide.  Fall back
@@ -221,7 +222,7 @@ do
         -- Queue only while parked: an unparked build's comparisons are
         -- legitimate and must not be cleared after their owner refreshes.
         if not _parked then return end
-        if not ComparisonSuppressionModeEnabled() or not CludesUI._tooltipSuppressedByMode(GameTooltip) then
+        if not ComparisonSuppressionModeEnabled() or not CUI._tooltipSuppressedByMode(GameTooltip) then
             return
         end
         if _comparisonClearPending then return end
@@ -243,7 +244,7 @@ do
                 -- Item setters can fire OnHide while rebuilding content, so do not latch
                 -- owner eligibility here. Active state is derived from IsShown instead.
                 if not (_comparisonSupportActive or _comparisonStateWatcherRegistered) then return end
-                if CludesUI._tooltipSuppressedByMode(tip) then QueueComparisonClear() end
+                if CUI._tooltipSuppressedByMode(tip) then QueueComparisonClear() end
             end)
             -- Blizzard resets the field itself before hooks run, so only forget
             -- our ownership; restoring would overwrite Blizzard's reset.
@@ -256,7 +257,7 @@ do
                 if compareTip and compareTip.HookScript then
                     compareTip:HookScript("OnShow", function()
                         if not _comparisonSupportActive then return end
-                        if CludesUI._tooltipSuppressedByMode(GameTooltip) then QueueComparisonClear() end
+                        if CUI._tooltipSuppressedByMode(GameTooltip) then QueueComparisonClear() end
                     end)
                 end
             end
@@ -313,7 +314,7 @@ do
         tip:SetFrameStrata("TOOLTIP")
     end
     local function ApplySuppression(tip)
-        if CludesUI._tooltipSuppressedByMode(tip) then
+        if CUI._tooltipSuppressedByMode(tip) then
             ArmComparisonSuppression(tip)
             ParkTooltip(tip)
             QueueComparisonClear()
@@ -366,7 +367,7 @@ do
         -- combat/encounter end: the cursor may have left the owner while the
         -- parked tooltip remained logically shown, and unpark would resurrect
         -- stale content.  The next SetOwner path restores it normally.
-        if not CludesUI._tooltipSuppressedByMode(GameTooltip) then return end
+        if not CUI._tooltipSuppressedByMode(GameTooltip) then return end
         if GameTooltip:IsShown() then ApplySuppression(GameTooltip) end
         QueueComparisonClear()
     end
@@ -453,7 +454,7 @@ do
         if not GameTooltip:IsShown() and UnitExists("mouseover") then
             GameTooltip_SetDefaultAnchor(GameTooltip, anchor or UIParent)
             GameTooltip:SetUnit("mouseover")
-            if CludesUI._repointTooltipAtCursor then CludesUI._repointTooltipAtCursor(GameTooltip) end
+            if CUI._repointTooltipAtCursor then CUI._repointTooltipAtCursor(GameTooltip) end
             GameTooltip:Show()
         end
     end
@@ -472,7 +473,7 @@ do
                 -- No live tip: module-built tips (raid frames, CDM) skip building while suppressed, so re-drive the hovered frame's OnEnter -- with the modifier now held they build normally.
                 FireHoveredOnEnter()
             end
-        elseif GameTooltip:IsShown() and CludesUI._tooltipSuppressedByMode(GameTooltip) then
+        elseif GameTooltip:IsShown() and CUI._tooltipSuppressedByMode(GameTooltip) then
             ArmComparisonSuppression(GameTooltip)
             ParkTooltip(GameTooltip)
             QueueComparisonClear()
@@ -496,8 +497,8 @@ do
     end
 
     -- Live apply for the options toggle (immediate hide/restore) and login seed.
-    CludesUI._applyTooltipHealthStrip = function()
-        if CludesUI._repaintTooltipPreview then CludesUI._repaintTooltipPreview() end
+    CUI._applyTooltipHealthStrip = function()
+        if CUI._repaintTooltipPreview then CUI._repaintTooltipPreview() end
         if not GameTooltipStatusBar then return end
         GameTooltipStatusBar:SetAlpha(_healthStripHidden() and 0 or 1)
     end
@@ -507,17 +508,17 @@ do
     -- init=true; the options setters then re-apply live. sample: the options
     -- header's sample strip, styled whether or not the live one is yet.
     local styled, texLookup
-    CludesUI._applyTooltipHealthStripStyle = function(init, sample)
+    CUI._applyTooltipHealthStripStyle = function(init, sample)
         if init then styled = true end
-        if not sample and CludesUI._repaintTooltipPreview then CludesUI._repaintTooltipPreview() end
+        if not sample and CUI._repaintTooltipPreview then CUI._repaintTooltipPreview() end
         local barFrame = sample or GameTooltipStatusBar
         if not barFrame or not (styled or sample) then return end
         local saved = CludesUIDB
         local key = saved and saved.tooltipHealthStripTexture
         local filePath = "Interface\\TargetingFrame\\UI-StatusBar"
         if key and key ~= "blizzard" then
-            if not texLookup then texLookup = CludesUI.BuildBarTextureTables() end
-            filePath = CludesUI.ResolveTexturePath(texLookup, key, "Interface\\Buttons\\WHITE8X8")
+            if not texLookup then texLookup = CUI.BuildBarTextureTables() end
+            filePath = CUI.ResolveTexturePath(texLookup, key, "Interface\\Buttons\\WHITE8X8")
         end
         barFrame:SetStatusBarTexture(filePath)
         barFrame:SetHeight(saved and saved.tooltipHealthStripHeight or 3)
@@ -528,7 +529,7 @@ do
         hooksecurefunc(GameTooltipStatusBar, "Show", function(barFrame)
             if _healthStripHidden() then barFrame:SetAlpha(0) end
         end)
-        CludesUI._applyTooltipHealthStrip()
+        CUI._applyTooltipHealthStrip()
     end
 end
 

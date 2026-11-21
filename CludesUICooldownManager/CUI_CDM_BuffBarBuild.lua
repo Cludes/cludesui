@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarBuild.lua
 --
@@ -217,7 +218,7 @@ function mod.BuildTrackedBuffBars()
                     unlockKey = "TBB_" .. posKey
                 end
                 if place and place.point then
-                    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
+                    local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(unlockKey)
                     if not anchored or not barFrame:GetLeft() then
                         barFrame:ClearAllPoints()
                         if place.scale then pcall(function() barFrame:SetScale(place.scale) end) end
@@ -230,7 +231,7 @@ function mod.BuildTrackedBuffBars()
                         )
                     end
                 else
-                    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
+                    local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(unlockKey)
                     if not anchored or not barFrame:GetLeft() then
                         barFrame:ClearAllPoints()
                         barFrame:SetPoint(
@@ -308,7 +309,7 @@ function mod.BuildTrackedBuffBars()
                 then
                     mod.TBBEnsureStandin(gk)
                 end
-                if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
+                if not CUI._unlockActive and CUI.PropagateAnchorChain then
                     -- dir: 0 = covered (members present or option off), +/-1 =
                     -- shifting. Unset memo reads as 0, so the first build with
                     -- nothing to shift schedules nothing (ERB memo parity).
@@ -320,7 +321,7 @@ function mod.BuildTrackedBuffBars()
                     end
                     if direction ~= (memo[gk] or 0) then
                         memo[gk] = direction
-                        CludesUI.PropagateAnchorChain("TBBG_" .. gk)
+                        CUI.PropagateAnchorChain("TBBG_" .. gk)
                     end
                 end
             end
@@ -335,14 +336,14 @@ function mod.BuildTrackedBuffBars()
 
     -- Match pads follow each bar's border settings: a bar or group whose pad
     -- changed is re-pushed through its match once, deferred (compare-only here).
-    if CludesUI.MatchPadChanged then
+    if CUI.MatchPadChanged then
         for index = 1, #barList do
-            CludesUI.MatchPadChanged(mod._tbbUKey[index])
+            CUI.MatchPadChanged(mod._tbbUKey[index])
         end
         local greg = mod.GetTBBGlobalGroups and mod.GetTBBGlobalGroups()
         if greg then
             for gk in pairs(greg) do
-                CludesUI.MatchPadChanged(mod._tbbgUKey[gk])
+                CUI.MatchPadChanged(mod._tbbgUKey[gk])
             end
         end
     end

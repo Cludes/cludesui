@@ -1,11 +1,12 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Options.lua
 --  Registers the Minimap module with CludesUI.
 --  All get/set calls go through the global bridge to the addon's DB profile.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIMinimap"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 local PAGE_CHAT = "Chat"
@@ -22,10 +23,10 @@ local SECTION_MINIMAP = "DISPLAY"
 -- (CludesUI_FramePool.lua, the options addon's first file), which hands a
 -- kept page its previous build's frames back reset to new; on any other
 -- parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
-local PoolIsIdle = CludesUI._Pool.IsIdle
+local CreateFrame = CUI._Pool.CreateFrame
+local PoolIsIdle = CUI._Pool.IsIdle
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  DB helpers
     ---------------------------------------------------------------------------
@@ -128,13 +129,13 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Visibility row builder (reused across all pages)
     ---------------------------------------------------------------------------
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     -- One control for both halves (see CludesUI.BuildVisibilityRow): the mode axes
     -- and the option axes are Show/Hide lanes of the same list now. Storage is
     -- unchanged, so nothing else in this module had to move. The right DualRow slot
     -- the old Visibility Options dropdown occupied is free.
     local function BuildVisibilityRow(W, hostFrame, cursorY, getCfg, refreshFn, rightCfg)
-        local visRow, visH = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
+        local visRow, visH = CUI.BuildVisibilityRow(W, hostFrame, cursorY, {
             getStore = getCfg,
             legacyKey = "visibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
@@ -163,18 +164,18 @@ CludesUI.AtOptionsLogin(function()
     local sizeDragOverlay
 
     local function BuildMinimapPage(page, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
         hostFrame._showRowDivider = true
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         local heading
         heading, height = W:SectionHeader(hostFrame, SECTION_MINIMAP, cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(heading, { key = "EBS_Minimap" })
-        cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "minimap")
+        CUI.BuildSectionUnlockJump(heading, { key = "EBS_Minimap" })
+        cursorY = CUI.BlizzStyle.Note(hostFrame, cursorY, "minimap")
 
         -- A square frame on the Forever client (the WoW Forever look's Forever
         -- Square, or Blizzard Style's Square in the slim line): the map renders
@@ -185,10 +186,10 @@ CludesUI.AtOptionsLogin(function()
         local fvSquare = mod.MinimapFvSquare()
         local function Gate(rowConf)
             if fvSquare then return rowConf end
-            return CludesUI.BlizzStyle.Gate("minimap", rowConf)
+            return CUI.BlizzStyle.Gate("minimap", rowConf)
         end
         local function BlockInline(widget)
-            if not fvSquare then CludesUI.BlizzStyle.BlockInline("minimap", widget) end
+            if not fvSquare then CUI.BlizzStyle.BlockInline("minimap", widget) end
         end
 
         -- Row 1: Visibility | Shape. On the WoW Forever look its Border Style
@@ -211,14 +212,14 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local shapeCfg
-        if CludesUI.BlizzStyle.Forever("minimap") then
+        if CUI.BlizzStyle.Forever("minimap") then
             shapeCfg = {
                 type = "dropdown",
                 text = "Border Style",
                 tooltip = "Forever Circle: the round map in WoW Forever's ring. Forever Square: the CludesUI square map in the bronze frame of WoW Forever's windows, with the zone name in its title bar. Slim Square: the same square map in a thin bronze frame. Applies after a UI reload.",
                 values = { circle = "Forever Circle", square = "Forever Square", slim = "Slim Square" },
                 order = { "circle", "square", "slim" },
-                disabled = function() return not CludesUI.ForeverHeavyOK() end,
+                disabled = function() return not CUI.ForeverHeavyOK() end,
                 disabledTooltip = "This client is missing WoW Forever's window frame art.",
                 rawTooltip = true,
                 getValue = function()
@@ -237,7 +238,7 @@ CludesUI.AtOptionsLogin(function()
                     -- A reload only when the frame that renders changes (square
                     -- or not, heavy or slim): the module latches it.
                     if not mod.MinimapFvBorderChanged(mapDB) then return end
-                    CludesUI:ShowConfirmPopup({
+                    CUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Border Style changed. A UI reload is needed to apply it.",
                         confirmText = "Reload Now",
@@ -246,7 +247,7 @@ CludesUI.AtOptionsLogin(function()
                     })
                 end,
             }
-        elseif CludesUI.IS_FOREVER and CludesUI.BlizzStyle.Active("minimap") == "blizzard" then
+        elseif CUI.IS_FOREVER and CUI.BlizzStyle.Active("minimap") == "blizzard" then
             -- Blizzard Style on the Forever client: a Border Style of its own,
             -- Circle (the WoW Forever look's Forever Circle exactly) or Square
             -- (the default there: the same square layout in the slim bronze
@@ -269,7 +270,7 @@ CludesUI.AtOptionsLogin(function()
                     if square ~= (mapDB.blizzBorder ~= "circle") then BorderClock(mapDB, square) end
                     mapDB.blizzBorder = square and "square" or "circle"
                     if square == mod.MinimapFvSquare() then return end
-                    CludesUI:ShowConfirmPopup({
+                    CUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Border Style changed. A UI reload is needed to apply it.",
                         confirmText = "Reload Now",
@@ -279,7 +280,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         else
-            shapeCfg = CludesUI.BlizzStyle.Gate("minimap", {
+            shapeCfg = CUI.BlizzStyle.Gate("minimap", {
                 type = "dropdown",
                 text = "Shape",
                 values = {
@@ -293,7 +294,7 @@ CludesUI.AtOptionsLogin(function()
                 setValue = function(value)
                     if not MapSet("shape", value) then return end
                     -- Rebuild: the Width | Height Offset row exists only on the rect layout.
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             })
         end
@@ -303,12 +304,12 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Visibility: Opacity of the shown map (showing and hiding stay
         -- with Visibility). Greyed while the map never shows; the checklist refreshes
         -- the page on close, which re-runs the cog's disabled state.
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(visRow._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(visRow._leftRegion, {
                 title = "Minimap Opacity",
                 disabled = function()
                     local mapDB = MinimapDB()
-                    return mapDB ~= nil and (CludesUI.VisOverrideValue(mapDB) or mapDB.visibility) == "never"
+                    return mapDB ~= nil and (CUI.VisOverrideValue(mapDB) or mapDB.visibility) == "never"
                 end,
                 disabledTooltip = "This option requires a Visibility other than Never",
                 rows = {
@@ -393,8 +394,8 @@ CludesUI.AtOptionsLogin(function()
         -- Icon Size in a cog on Size: Blizzard's Edit Mode Icon Size (the scale of
         -- the icons on the map), kept here and applied to the map itself, so the
         -- Edit Mode layout is never written. Unset shows Edit Mode's value.
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(sizeRow._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(sizeRow._leftRegion, {
                 title = "Minimap Icons",
                 rows = {
                     {
@@ -422,12 +423,12 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Row 3: Border Style (+ options cog) | Border Size (+ class/custom swatches)
-        local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+        local texValues, texOrder = CUI.GetBorderTextureDropdown()
         local borderRow
         borderRow, height = W:DualRow(
             hostFrame,
             cursorY,
-            CludesUI.BlizzStyle.Gate("minimap", {
+            CUI.BlizzStyle.Gate("minimap", {
                 type = "dropdown",
                 text = "Border Style",
                 values = texValues,
@@ -446,27 +447,27 @@ CludesUI.AtOptionsLogin(function()
                     mapDB.borderTextureOffsetY = nil
                     mapDB.borderTextureShiftX = nil
                     mapDB.borderTextureShiftY = nil
-                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(value)
+                    local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(value)
                     mapDB.borderColor = _bcol
                     mapDB.borderA = 1
                     mapDB.borderBehind = _bbehind
                     mapDB.borderUseClassColor = false
                     mapDB.useClassColor = false
-                    local defSz = CludesUI.GetBorderDefaultSize("minimap", value)
+                    local defSz = CUI.GetBorderDefaultSize("minimap", value)
                     if defSz then mapDB.borderSize = defSz end
                     if mapDB.borderSizePx then mapDB.borderSizePx = false end
                     ApplyMinimap()
                     -- Rebuild: the Width | Height Offset row follows the Solid / textured pick.
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             }),
             -- Exact pixels over borderSize + borderSizePx (CludesUI.BorderPx). Only the
             -- square and rectangular border reads the texture and the exact size; the
             -- circle disc grows by the legacy step alone, so there the slider is a plain
             -- 0-4 view of that step and never stores an exact size it cannot draw.
-            CludesUI.BlizzStyle.Gate(
+            CUI.BlizzStyle.Gate(
                 "minimap",
-                CludesUI.BorderPxSliderCfg({
+                CUI.BorderPxSliderCfg({
                     text = "Border Size",
                     trackWidth = 120,
                     getStep = function()
@@ -507,7 +508,7 @@ CludesUI.AtOptionsLogin(function()
             local mapDB = MinimapDB()
             local texture = (mapDB and mapDB.borderTexture) or "solid"
             if RectLayout() and texture ~= "" and texture ~= "solid" then
-                local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                     addonKey = "minimap",
                     getTex = function()
                         local mapDB = MinimapDB()
@@ -546,15 +547,15 @@ CludesUI.AtOptionsLogin(function()
                 _, height = W:DualRow(
                     hostFrame,
                     cursorY,
-                    CludesUI.BlizzStyle.Gate("minimap", ocfgL),
-                    CludesUI.BlizzStyle.Gate("minimap", ocfgR)
+                    CUI.BlizzStyle.Gate("minimap", ocfgL),
+                    CUI.BlizzStyle.Gate("minimap", ocfgR)
                 )
                 cursorY = cursorY - height
             end
         end
 
         -- Inline cog for border options (left region); only shown for textured styles
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = borderRow._leftRegion
             local function BorderTex()
                 local mapDB = MinimapDB()
@@ -564,7 +565,7 @@ CludesUI.AtOptionsLogin(function()
                 local mapDB = MinimapDB()
                 return (mapDB and mapDB.borderSize) or 1
             end
-            local cogBtn = CludesUI.BuildInlineCog(region, {
+            local cogBtn = CUI.BuildInlineCog(region, {
                 title = "Border Options",
                 rows = {
                     {
@@ -577,7 +578,7 @@ CludesUI.AtOptionsLogin(function()
                             local mapDB = MinimapDB()
                             local value = mapDB and mapDB.borderTextureShiftX
                             if value then return value end
-                            local _, _, dsx = CludesUI.GetBorderDefaults("minimap", BorderTex(), BorderSz())
+                            local _, _, dsx = CUI.GetBorderDefaults("minimap", BorderTex(), BorderSz())
                             return dsx
                         end,
                         set = function(value)
@@ -598,7 +599,7 @@ CludesUI.AtOptionsLogin(function()
                             local value = mapDB and mapDB.borderTextureShiftY
                             if value then return value end
                             local _, _, _, dsy =
-                                CludesUI.GetBorderDefaults("minimap", BorderTex(), BorderSz())
+                                CUI.GetBorderDefaults("minimap", BorderTex(), BorderSz())
                             return dsy
                         end,
                         set = function(value)
@@ -617,34 +618,34 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         set = function(value)
                             if not MapSet("borderBehind", value) then return end
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                 },
             })
             local function UpdateCogVis()
-                local rect = RectLayout() and not CludesUI.BlizzStyle.Get("minimap")
+                local rect = RectLayout() and not CUI.BlizzStyle.Get("minimap")
                 if rect and BorderTex() ~= "solid" then
                     cogBtn:Show()
                 else
                     cogBtn:Hide()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(UpdateCogVis)
+            CUI.RegisterWidgetRefresh(UpdateCogVis)
             UpdateCogVis()
         end
         -- Inline accent + class + custom colour swatches on the Border Size
         -- slider. Modes are mutually exclusive: class > accent > custom.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = borderRow._rightRegion
-            local PPl = CludesUI.PP
+            local PPl = CUI.PP
 
             -- Accent swatch (nearest the control): live theme accent.
-            local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
+            local accentSwatch, updateAccent = CUI.BuildColorSwatch(
                 region,
                 borderRow:GetFrameLevel() + 3,
                 function()
-                    local accR, accG, accB = CludesUI.GetAccentColor()
+                    local accR, accG, accB = CUI.GetAccentColor()
                     return accR, accG, accB, 1
                 end,
                 function() end,
@@ -657,17 +658,17 @@ CludesUI.AtOptionsLogin(function()
                 mapDB.useClassColor = true
                 mapDB.borderUseClassColor = false
                 ApplyMinimap()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end)
             PPl.Point(accentSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = accentSwatch
 
             -- Class-colour swatch (to the left of accent): live player class colour.
-            local classSwatch, updateClass = CludesUI.BuildColorSwatch(
+            local classSwatch, updateClass = CUI.BuildColorSwatch(
                 region,
                 borderRow:GetFrameLevel() + 3,
                 function()
-                    local classColor = CludesUI.GetClassColor(select(2, UnitClass("player")))
+                    local classColor = CUI.GetClassColor(select(2, UnitClass("player")))
                     if classColor then return classColor.r, classColor.g, classColor.b, 1 end
                     return 1, 1, 1, 1
                 end,
@@ -681,13 +682,13 @@ CludesUI.AtOptionsLogin(function()
                 mapDB.borderUseClassColor = true
                 mapDB.useClassColor = false
                 ApplyMinimap()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end)
             PPl.Point(classSwatch, "RIGHT", region._lastInline, "LEFT", -8, 0)
             region._lastInline = classSwatch
 
             -- Custom-colour swatch (outermost): stored custom colour.
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+            local customSwatch, updateCustom = CUI.BuildColorSwatch(
                 region,
                 borderRow:GetFrameLevel() + 3,
                 function()
@@ -719,7 +720,7 @@ CludesUI.AtOptionsLogin(function()
                     mapDB.borderUseClassColor = false
                     mapDB.useClassColor = false
                     ApplyMinimap()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if openPicker then openPicker(self) end
@@ -729,26 +730,26 @@ CludesUI.AtOptionsLogin(function()
 
             accentSwatch:HookScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color") end
+                function() CUI.ShowWidgetTooltip(accentSwatch, "Accent Color") end
             )
-            accentSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            accentSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             classSwatch:HookScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(classSwatch, "Class Color") end
+                function() CUI.ShowWidgetTooltip(classSwatch, "Class Color") end
             )
-            classSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            classSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             customSwatch:HookScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color") end
+                function() CUI.ShowWidgetTooltip(customSwatch, "Custom Color") end
             )
-            customSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            customSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
             local function UpdateState()
                 if updateAccent then updateAccent() end
                 if updateClass then updateClass() end
                 if updateCustom then updateCustom() end
                 -- Blizzard Style draws the stock ring: every border colour is inert.
-                if CludesUI.BlizzStyle.Get("minimap") then
+                if CUI.BlizzStyle.Get("minimap") then
                     accentSwatch:SetAlpha(0.3)
                     classSwatch:SetAlpha(0.3)
                     customSwatch:SetAlpha(0.3)
@@ -761,11 +762,11 @@ CludesUI.AtOptionsLogin(function()
                 classSwatch:SetAlpha(useClass and 1 or 0.3)
                 customSwatch:SetAlpha((useClass or useAccent) and 0.3 or 1)
             end
-            CludesUI.RegisterWidgetRefresh(UpdateState)
+            CUI.RegisterWidgetRefresh(UpdateState)
             UpdateState()
-            CludesUI.BlizzStyle.BlockInline("minimap", accentSwatch)
-            CludesUI.BlizzStyle.BlockInline("minimap", classSwatch)
-            CludesUI.BlizzStyle.BlockInline("minimap", customSwatch)
+            CUI.BlizzStyle.BlockInline("minimap", accentSwatch)
+            CUI.BlizzStyle.BlockInline("minimap", classSwatch)
+            CUI.BlizzStyle.BlockInline("minimap", customSwatch)
         end
 
         -- Reset Zoom (+ seconds) | Rotate Minimap. Off (default) keeps the
@@ -791,10 +792,10 @@ CludesUI.AtOptionsLogin(function()
         -- "(seconds)" suffix next to the Reset Zoom slider (mirrors Damage
         -- Meters' Refresh Rate suffix). Prebuild-guarded like the Nameplates
         -- "(Percent)" suffix: the hidden search-index pass has no use for it.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = fmRow._leftRegion
             local suffix = region:CreateFontString(nil, "OVERLAY")
-            suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
+            suffix:SetFont(CUI.EXPRESSWAY, 11, "")
             suffix:SetTextColor(1, 1, 1, 0.35)
             local rzLabel
             -- An idle pooled region keeps its last build's text: skip it.
@@ -805,7 +806,7 @@ CludesUI.AtOptionsLogin(function()
                     reg
                     and reg.GetText
                     and not PoolIsIdle(reg)
-                    and CludesUI.EnKey(reg:GetText()) == "Reset Zoom"
+                    and CUI.EnKey(reg:GetText()) == "Reset Zoom"
                 then
                     rzLabel = reg
                     break
@@ -816,7 +817,7 @@ CludesUI.AtOptionsLogin(function()
             else
                 suffix:SetPoint("LEFT", region, "LEFT", 150, 0)
             end
-            suffix:SetText(CludesUI.L("(seconds)"))
+            suffix:SetText(CUI.L("(seconds)"))
         end
 
         cursorY = cursorY - 10
@@ -858,7 +859,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         -- Replace placeholder dropdown with checkbox dropdown
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = ungroupRow._leftRegion
             if leftRegion._control then leftRegion._control:Hide() end
 
@@ -900,7 +901,7 @@ CludesUI.AtOptionsLogin(function()
                 return itemList
             end
 
-            local checkDrop, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
+            local checkDrop, cbDDRefresh = CUI.BuildReorderCBDropdown(
                 leftRegion,
                 210,
                 leftRegion:GetFrameLevel() + 2,
@@ -939,11 +940,11 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 }
             )
-            local Pix = CludesUI.PP
-            CludesUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+            local Pix = CUI.PP
+            CUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
             leftRegion._control = checkDrop
             leftRegion._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
 
             -- The checkbox dropdown has no disabled state of its own: grey it and
             -- block clicks; the row's disabled overlay shows the requirement.
@@ -953,7 +954,7 @@ CludesUI.AtOptionsLogin(function()
                 checkDrop:EnableMouse(not off)
             end
             ApplyUngroupDisabled()
-            CludesUI.RegisterWidgetRefresh(ApplyUngroupDisabled)
+            CUI.RegisterWidgetRefresh(ApplyUngroupDisabled)
         end
 
         -- Show Extra Buttons (checkbox dropdown with drag-to-reorder)
@@ -981,7 +982,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         -- Replace placeholder with checkbox dropdown
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = extraBtnRow._leftRegion
             if leftRegion._control then leftRegion._control:Hide() end
 
@@ -997,7 +998,7 @@ CludesUI.AtOptionsLogin(function()
             -- WoW Forever has no Great Vault and no keystone portals: the module
             -- never builds those two buttons there, so the list offers Friends
             -- Online only (a saved order still carrying the keys is skipped below).
-            if CludesUI.IS_FOREVER then
+            if CUI.IS_FOREVER then
                 EXTRA_BTN_LABELS.greatVault, EXTRA_BTN_LABELS.portals = nil, nil
                 EXTRA_BTN_DEFAULT_ORDER = { "friendsOnline" }
             end
@@ -1022,7 +1023,7 @@ CludesUI.AtOptionsLogin(function()
                 return itemList
             end
 
-            local checkDrop, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
+            local checkDrop, cbDDRefresh = CUI.BuildReorderCBDropdown(
                 leftRegion,
                 210,
                 leftRegion:GetFrameLevel() + 2,
@@ -1054,11 +1055,11 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 }
             )
-            local Pix = CludesUI.PP
-            CludesUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+            local Pix = CUI.PP
+            CUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
             leftRegion._control = checkDrop
             leftRegion._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
         end
 
         -- M+ Portals Scale | Open Micro Menu on Middle Click
@@ -1091,7 +1092,7 @@ CludesUI.AtOptionsLogin(function()
                 mapDB.openMicroMenuOnMiddleClick = value
             end,
         }
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             _, height = W:DualRow(hostFrame, cursorY, middleClickCfg, { type = "label", text = "" })
         else
             _, height = W:DualRow(hostFrame, cursorY, portalsScaleCfg, middleClickCfg)
@@ -1129,8 +1130,8 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
         -- Inline cog on Friends Tooltip Cap: Show Notes
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(friendsCapRow._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(friendsCapRow._leftRegion, {
                 title = "Friends Tooltip",
                 rows = {
                     {
@@ -1199,14 +1200,14 @@ CludesUI.AtOptionsLogin(function()
                 mapDB.freeMoveBtns = value
                 if not value then mapDB.btnPositions = {} end
                 ApplyMinimap()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
         -- Inline cog on Button Row Position for icon spacing
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = btnRowRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Button Row Settings",
                 rows = {
                     {
@@ -1237,9 +1238,9 @@ CludesUI.AtOptionsLogin(function()
 
         -- Inline cog on Free Move Buttons: Button Backgrounds. Then the "Reset"
         -- link (only visible while free move is on) to the cog's left.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = btnRowRow._rightRegion
-            local cogBtn = CludesUI.BuildInlineCog(region, {
+            local cogBtn = CUI.BuildInlineCog(region, {
                 title = "Button Settings",
                 rows = {
                     {
@@ -1261,12 +1262,12 @@ CludesUI.AtOptionsLogin(function()
             })
             -- The stock looks and Forever Square draw no button boxes (every
             -- button wears the ring dress), so the cog waits under all of them.
-            CludesUI.BlizzStyle.BlockInline("minimap", cogBtn)
+            CUI.BlizzStyle.BlockInline("minimap", cogBtn)
 
             local resetFS = region:CreateFontString(nil, "OVERLAY")
-            resetFS:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 12, "")
+            resetFS:SetFont(CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 12, "")
             resetFS:SetTextColor(1, 1, 1, 0.8)
-            resetFS:SetText(CludesUI.L("Reset"))
+            resetFS:SetText(CUI.L("Reset"))
             resetFS:SetPoint("RIGHT", cogBtn, "LEFT", -8, 0)
             local hitBtn = CreateFrame("Button", nil, region)
             hitBtn:SetAllPoints(resetFS)
@@ -1286,7 +1287,7 @@ CludesUI.AtOptionsLogin(function()
                 hitBtn:SetShown(enabled)
             end
             UpdateResetVis()
-            CludesUI.RegisterWidgetRefresh(UpdateResetVis)
+            CUI.RegisterWidgetRefresh(UpdateResetVis)
         end
 
         cursorY = cursorY - 10
@@ -1299,7 +1300,7 @@ CludesUI.AtOptionsLogin(function()
         -- Legacy fallback mirrors the runtime: pre-dropdown data carries the
         -- showOmniumFolio toggle (default ON; only false is ever stored).
         -- No expansion landing page on WoW Forever: the row is not built there.
-        if not CludesUI.IS_FOREVER then
+        if not CUI.IS_FOREVER then
             local function OmniumMode()
                 local mapDB = MinimapDB()
                 if not mapDB then return "always" end
@@ -1317,7 +1318,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = OmniumMode,
                 setValue = function(value)
                     if not MapSet("omniumFolioMode", value) then return end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             }, {
                 type = "slider",
@@ -1334,10 +1335,10 @@ CludesUI.AtOptionsLogin(function()
                 setValue = MapSetRow("omniumFolioScale"),
             })
             cursorY = cursorY - height
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = omniumRow._leftRegion
                 local function omniumOff() return OmniumMode() == "never" end
-                CludesUI.BuildInlineCog(region, {
+                CUI.BuildInlineCog(region, {
                     disabled = omniumOff,
                     disabledTooltip = "Show Omnium Folio",
                     title = "Omnium Folio Position",
@@ -1409,7 +1410,7 @@ CludesUI.AtOptionsLogin(function()
                 if not mapDB then return end
                 mapDB.hideAddonCompartment = not value
                 ApplyMinimap()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -1426,9 +1427,9 @@ CludesUI.AtOptionsLogin(function()
             setValue = MapSetRow("addonCompartmentScale"),
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = compartmentRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 disabled = CompartmentOff,
                 disabledTooltip = "Show Addon Compartment",
                 title = "Addon Compartment Position",
@@ -1513,10 +1514,10 @@ CludesUI.AtOptionsLogin(function()
             setValue = MapSetRow("scrollZoom"),
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = blizzRow._leftRegion
             if region._control then region._control:Hide() end
-            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
@@ -1549,13 +1550,13 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end
                     ApplyMinimap()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
             )
-            CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
             region._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
         end
 
         -- Element Row Position (+ spacing cog) | (empty)
@@ -1598,19 +1599,19 @@ CludesUI.AtOptionsLogin(function()
                 getValue = MapGetRow("mailPosition", "button"),
                 setValue = function(value)
                     if not MapSet("mailPosition", value) then return end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             }
         )
         cursorY = cursorY - height
         -- Inline offset cog on Mail Position (corner modes only)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = elRowRow._rightRegion
             local function mailOff()
                 local mapDB = MinimapDB()
                 return not mapDB or mapDB.hideMail or (mapDB.mailPosition or "button") == "button"
             end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 disabled = mailOff,
                 disabledTooltip = function()
                     local mapDB = MinimapDB()
@@ -1625,10 +1626,10 @@ CludesUI.AtOptionsLogin(function()
             })
         end
         -- Inline cog on Element Row Position for icon spacing
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = elRowRow._leftRegion
             local function elOff() return not RectLayout() end
-            local cogBtn = CludesUI.BuildInlineCog(region, {
+            local cogBtn = CUI.BuildInlineCog(region, {
                 disabled = elOff,
                 disabledTooltip = "Square or Rectangular Shape",
                 title = "Element Row Spacing",
@@ -1701,7 +1702,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = ClockMode,
             setValue = function(value)
                 if not MapSet("clockMode", value) then return end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -1715,10 +1716,10 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
         -- Inline cog on Clock Position for scale + X/Y offset
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = clockRow._rightRegion
             local function clockOff() return ClockMode() == "none" end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = clockOff,
                 disabledTooltip = "Clock Style",
@@ -1766,7 +1767,7 @@ CludesUI.AtOptionsLogin(function()
             {
                 type = "dropdown",
                 text = "Zone Text Style",
-                tooltip = CludesUI.BlizzStyle.Active("minimap") ~= "cui"
+                tooltip = CUI.BlizzStyle.Active("minimap") ~= "cui"
                         and "On this look, Inside Map and Edge Box both show the zone name in the map's top bar."
                     or nil,
                 values = { none = "None", inside = "Inside Map", edge = "Edge Box" },
@@ -1774,10 +1775,10 @@ CludesUI.AtOptionsLogin(function()
                 getValue = LocationMode,
                 setValue = function(value)
                     if not MapSet("locationMode", value) then return end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             },
-            CludesUI.BlizzStyle.Gate("minimap", {
+            CUI.BlizzStyle.Gate("minimap", {
                 type = "dropdown",
                 text = "Zone Position",
                 values = MAP_POS_VALUES,
@@ -1790,10 +1791,10 @@ CludesUI.AtOptionsLogin(function()
         )
         cursorY = cursorY - height
         -- Inline cog on Zone Text Style: reactive zone coloring
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = zoneRow._leftRegion
             local function styleOff() return LocationMode() == "none" end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 disabled = styleOff,
                 disabledTooltip = "Zone Text Style",
                 title = "Zone Text Settings",
@@ -1814,10 +1815,10 @@ CludesUI.AtOptionsLogin(function()
             })
         end
         -- Inline cog on Zone Position for scale + X/Y offset
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = zoneRow._rightRegion
             local function locOff() return LocationMode() == "none" end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = locOff,
                 disabledTooltip = "Zone Text Style",
@@ -1861,7 +1862,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = CoordsMode,
             setValue = function(value)
                 if not MapSet("coordsMode", value) then return end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -1879,10 +1880,10 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
         -- Inline cog on Show Coordinates for decimal precision
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = coordsRow._leftRegion
             local function coordsOff() return CoordsMode() == "never" end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 disabled = coordsOff,
                 disabledTooltip = "Show Coordinates",
                 title = "Coordinate Precision",
@@ -1892,10 +1893,10 @@ CludesUI.AtOptionsLogin(function()
             })
         end
         -- Inline cog on Coordinates Position for X/Y offset
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = coordsRow._rightRegion
             local function coordsOff() return CoordsMode() == "never" end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = coordsOff,
                 disabledTooltip = "Show Coordinates",
@@ -1934,7 +1935,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = MapGetRow("showFPS", false),
             setValue = function(value)
                 if not MapSet("showFPS", value) then return end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -1950,10 +1951,10 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Show FPS/MS (text size + which MS readouts show).
         -- The description-colour swatches live on the Accented Text row at
         -- the bottom of this section.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = fpsRow._leftRegion
 
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 gap = 9,
                 disabled = FpsHidden,
                 disabledTooltip = "Show FPS/MS",
@@ -1982,9 +1983,9 @@ CludesUI.AtOptionsLogin(function()
             })
         end
         -- Inline offset cog on FPS/MS Position
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = fpsRow._rightRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = FpsHidden,
                 disabledTooltip = "Show FPS/MS",
@@ -2016,7 +2017,7 @@ CludesUI.AtOptionsLogin(function()
         local HOVER_TT_ORDER = { "none", "lockouts", "vault" }
         -- No Great Vault on WoW Forever: the entry is dropped and a saved "vault"
         -- shows as None (the module reads it as none too and never rewrites it).
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             HOVER_TT_VALUES.vault = nil
             HOVER_TT_ORDER = { "none", "lockouts" }
         end
@@ -2030,7 +2031,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 local mapDB = MinimapDB()
                 local value = mapDB and mapDB.fpsHoverTooltip or "none"
-                if CludesUI.IS_FOREVER and value == "vault" then value = "none" end
+                if CUI.IS_FOREVER and value == "vault" then value = "none" end
                 return value
             end,
             setValue = MapSetRow("fpsHoverTooltip"),
@@ -2044,7 +2045,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 local mapDB = MinimapDB()
                 local value = mapDB and mapDB.clockHoverTooltip or "none"
-                if CludesUI.IS_FOREVER and value == "vault" then value = "none" end
+                if CUI.IS_FOREVER and value == "vault" then value = "none" end
                 return value
             end,
             setValue = function(value)
@@ -2070,7 +2071,7 @@ CludesUI.AtOptionsLogin(function()
                 if not mapDB then return end
                 mapDB.diffTextEnabled = value and true or false
                 ApplyMinimap()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -2084,10 +2085,10 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
         -- Inline cog on Difficulty Position for text size + X/Y offset
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = diffRow._rightRegion
             local function diffOff() return not DiffTextOn() end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = diffOff,
                 disabledTooltip = "Show Instance Difficulty as Text",
@@ -2137,10 +2138,10 @@ CludesUI.AtOptionsLogin(function()
             setValue = function() end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = accentRow._leftRegion
             if region._control then region._control:Hide() end
-            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
@@ -2175,17 +2176,17 @@ CludesUI.AtOptionsLogin(function()
                     ApplyMinimap()
                 end
             )
-            CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
             region._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
 
             -- Accent swatch (nearest the control): live theme accent.
-            local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
+            local accentSwatch, updateAccent = CUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
                 function()
-                    local accR, accG, accB = CludesUI.GetAccentColor()
+                    local accR, accG, accB = CUI.GetAccentColor()
                     return accR, accG, accB, 1
                 end,
                 function() end,
@@ -2197,13 +2198,13 @@ CludesUI.AtOptionsLogin(function()
                 if not mapDB then return end
                 mapDB.fpsUseAccent = true
                 ApplyMinimap()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end)
             Pix.Point(accentSwatch, "RIGHT", checkDrop, "LEFT", -12, 0)
             region._lastInline = accentSwatch
 
             -- Custom swatch (to the left of accent): stored custom colour.
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+            local customSwatch, updateCustom = CUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
                 function()
@@ -2227,7 +2228,7 @@ CludesUI.AtOptionsLogin(function()
                 if mapDB and mapDB.fpsUseAccent then
                     mapDB.fpsUseAccent = false
                     ApplyMinimap()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if openPicker then openPicker(self) end
@@ -2237,16 +2238,16 @@ CludesUI.AtOptionsLogin(function()
 
             accentSwatch:HookScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color") end
+                function() CUI.ShowWidgetTooltip(accentSwatch, "Accent Color") end
             )
-            accentSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            accentSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             customSwatch:HookScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color") end
+                function() CUI.ShowWidgetTooltip(customSwatch, "Custom Color") end
             )
-            customSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            customSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 if updateAccent then updateAccent() end
                 if updateCustom then updateCustom() end
                 local mapDB = MinimapDB()
@@ -2266,7 +2267,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Register the module
     ---------------------------------------------------------------------------
-    CludesUI:RegisterModule("CludesUIMinimap", {
+    CUI:RegisterModule("CludesUIMinimap", {
         title = "Minimap",
         description = "Custom minimap skin and layout.",
         pages = { "Minimap" },
@@ -2275,7 +2276,7 @@ CludesUI.AtOptionsLogin(function()
         end,
         onReset = function()
             if _G._CUMM_DB and _G._CUMM_DB.ResetProfile then _G._CUMM_DB:ResetProfile() end
-            CludesUI:InvalidatePageCache()
+            CUI:InvalidatePageCache()
             if _G._CUMM_ApplyMinimap then _G._CUMM_ApplyMinimap() end
         end,
     })
@@ -2283,6 +2284,6 @@ CludesUI.AtOptionsLogin(function()
     SLASH_EMM1 = "/cmm"
     SlashCmdList.EMM = function()
         if InCombatLockdown and InCombatLockdown() then return end
-        CludesUI:ShowModule("CludesUIMinimap")
+        CUI:ShowModule("CludesUIMinimap")
     end
 end)

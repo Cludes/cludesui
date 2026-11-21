@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookDecorate.lua
 --
@@ -170,14 +171,14 @@ local function DecorateFrame(widget, barInfo)
     if blizzArt then
         -- Blizzard Style: the ring overlay is the frame; no square border.
         if frameData.borderFrame then
-            CludesUI.PP.HideBorder(frameData.borderFrame)
-            local bdFrame = CludesUI._bdBorderData and CludesUI._bdBorderData[frameData.borderFrame]
+            CUI.PP.HideBorder(frameData.borderFrame)
+            local bdFrame = CUI._bdBorderData and CUI._bdBorderData[frameData.borderFrame]
             if bdFrame then bdFrame:Hide() end
         end
     elseif shapeKey and shapeKey ~= "none" and shapeKey ~= "cropped" then
         if frameData.borderFrame then
-            CludesUI.PP.HideBorder(frameData.borderFrame)
-            local bdFrame = CludesUI._bdBorderData and CludesUI._bdBorderData[frameData.borderFrame]
+            CUI.PP.HideBorder(frameData.borderFrame)
+            local bdFrame = CUI._bdBorderData and CUI._bdBorderData[frameData.borderFrame]
             if bdFrame then bdFrame:Hide() end
         end
     else
@@ -200,9 +201,9 @@ local function DecorateFrame(widget, barInfo)
         -- textured backdrop inherits it.
         frameData.borderFrame:SetFrameLevel(
             barInfo.borderBehind and math.max(0, baseLvl - 1)
-                or (baseLvl + (CludesUI._pixelArtBorders[textureKey] and 14 or 13))
+                or (baseLvl + (CUI._pixelArtBorders[textureKey] and 14 or 13))
         )
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             frameData.borderFrame,
             brdSize,
             brdR,
@@ -217,12 +218,12 @@ local function DecorateFrame(widget, barInfo)
             "cdm",
             barInfo.borderThickness or "thin",
             true,
-            CludesUI.BorderPx(barInfo.borderSizePx, brdSize, textureKey)
+            CUI.BorderPx(barInfo.borderSizePx, brdSize, textureKey)
         )
         -- ApplyBorderStyle always paints the bar's BASE color, so re-assert the
         -- active-state tint if engaged (fd._activeBorderOn, set by
         -- ApplyActiveOverlays off Blizzard's SetSwipeColor) or a reanchor mid-proc flashes it back to base.
-        if frameData._activeBorderOn and CludesUI.SetBorderStyleColor then
+        if frameData._activeBorderOn and CUI.SetBorderStyleColor then
             local fcA = _ecmeFC[widget]
             local sidA, bkA = fcA and fcA.spellID, fcA and fcA.barKey
             local spellSettings = sidA and ResolveSpellSettings(widget, sidA, mod.GetBarSpellData(bkA))
@@ -230,7 +231,7 @@ local function DecorateFrame(widget, barInfo)
             local abG = (spellSettings and spellSettings.activeBorderG) or 0.776
             local abB = (spellSettings and spellSettings.activeBorderB) or 0.376
             local abA = (spellSettings and spellSettings.activeBorderA) or 1
-            CludesUI.SetBorderStyleColor(frameData.borderFrame, abR, abG, abB, abA)
+            CUI.SetBorderStyleColor(frameData.borderFrame, abR, abG, abB, abA)
         end
     end
     if frameData.glowOverlay then frameData.glowOverlay:SetFrameLevel(baseLvl + 16) end
@@ -346,7 +347,7 @@ local function DecorateFrame(widget, barInfo)
         local kt = frameData.textOverlay:CreateFontString(nil, "OVERLAY")
         local kbScale = widget:GetScale() or 1
         if kbScale < 0.01 then kbScale = 1 end
-        CludesUI.ApplyIconTextFont(kt, GetCDMFont(), (barInfo.keybindSize or 10) / kbScale, "cdm")
+        CUI.ApplyIconTextFont(kt, GetCDMFont(), (barInfo.keybindSize or 10) / kbScale, "cdm")
         kt:Hide()
         mod.StyleCDMKeybind(kt, barInfo, frameData.textOverlay, 1 / kbScale, GetCDMFont())
         frameData.keybindText = kt

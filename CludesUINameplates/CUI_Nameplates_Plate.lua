@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Plate.lua
 --
@@ -14,7 +15,7 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs, type = pairs, type
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local UnitName = UnitName
 local UnitIsUnit, UnitCanAttack = UnitIsUnit, UnitCanAttack
 local UnitIsPlayer = UnitIsPlayer
@@ -655,7 +656,7 @@ function NameplateFrame:UpdateToT()
         return
     end
     -- WoW Forever joins the surname; then the slot's Name Format.
-    local name = mod.NP_FormatName(CludesUI.WithSurname(UnitName(tu)), slotKey, tu)
+    local name = mod.NP_FormatName(CUI.WithSurname(UnitName(tu)), slotKey, tu)
     fontStr:SetText(name)
     if not mod._npToTClass then return end
     local plateUnit
@@ -663,7 +664,7 @@ function NameplateFrame:UpdateToT()
     if type(plateUnit) ~= "nil" then
         if issecretvalue(plateUnit) then
             -- Same order as the slot painter: the restricted-unit palette, then Blizzard's.
-            local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(tu, plateUnit)
+            local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(tu, plateUnit)
             if success then
                 fontStr:SetTextColor(red, green, blue, 1)
                 return
@@ -674,7 +675,7 @@ function NameplateFrame:UpdateToT()
                 return
             end
         else
-            local color = CludesUI.GetClassColor(plateUnit)
+            local color = CUI.GetClassColor(plateUnit)
             if color then
                 fontStr:SetTextColor(color.r, color.g, color.b, 1)
                 return

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Unlock.lua
 --
@@ -8,7 +9,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, mod = ...
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local frameList, GetSettingsForUnit, GetFrameDimensions =
@@ -25,8 +26,8 @@ Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 --  until combat dropped.
 -------------------------------------------------------------------------------
 local function RegisterUFUnlockElements()
-    if CludesUI and CludesUI.RegisterUnlockElements then
-        local MK = CludesUI.MakeUnlockElement
+    if CUI and CUI.RegisterUnlockElements then
+        local MK = CUI.MakeUnlockElement
         local UNIT_LABELS = {
             player = "Player",
             target = "Target",
@@ -134,16 +135,16 @@ local function RegisterUFUnlockElements()
                 -- and unlock resizes never write frameWidth/healthHeight into the CUI-look settings.
                 matchUnavailable = function()
                     if mod.UF_Blizz() then
-                        return CludesUI.L("Size matching is unavailable with Blizzard Style Unit Frames.")
+                        return CUI.L("Size matching is unavailable with Blizzard Style Unit Frames.")
                     end
                 end,
                 setWidth = function(key, wid)
                     if key == "classPower" then return end
                     if mod.UF_Blizz() then return end
                     if
-                        not CludesUI._unlockActive
-                        and not CludesUI._propagatingMatch
-                        and not CludesUI._unlockLayerApplying
+                        not CUI._unlockActive
+                        and not CUI._propagatingMatch
+                        and not CUI._unlockLayerApplying
                     then
                         ReloadUnitFrames()
                         return
@@ -188,16 +189,16 @@ local function RegisterUFUnlockElements()
                     -- A size match re-applied at the width the frame already has
                     -- (the settle pass re-runs every match after any anchored
                     -- element resizes) leaves nothing to rebuild.
-                    if CludesUI._propagatingMatch and cfg.frameWidth == oldW then return end
+                    if CUI._propagatingMatch and cfg.frameWidth == oldW then return end
                     ReloadUnitFrames()
                 end,
                 setHeight = function(key, hgt)
                     if key == "classPower" then return end
                     if mod.UF_Blizz() then return end
                     if
-                        not CludesUI._unlockActive
-                        and not CludesUI._propagatingMatch
-                        and not CludesUI._unlockLayerApplying
+                        not CUI._unlockActive
+                        and not CUI._propagatingMatch
+                        and not CUI._unlockLayerApplying
                     then
                         ReloadUnitFrames()
                         return
@@ -213,7 +214,7 @@ local function RegisterUFUnlockElements()
                     local btbH = (cfg.bottomTextBar and btbIsAtt) and (cfg.bottomTextBarHeight or 16) or 0
                     local oldH = cfg.healthHeight
                     cfg.healthHeight = math.max(Pix.Snap(hgt - powerH - btbH), 8)
-                    if CludesUI._propagatingMatch and cfg.healthHeight == oldH then return end
+                    if CUI._propagatingMatch and cfg.healthHeight == oldH then return end
                     ReloadUnitFrames()
                 end,
                 loadPos = function(key)
@@ -229,7 +230,7 @@ local function RegisterUFUnlockElements()
                 savePos = function(key, anchorPoint, relPoint, posX, posY)
                     saved.profile.positions[key] =
                         { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                    if CludesUI._unlockActive then return end
+                    if CUI._unlockActive then return end
                     if key == "boss" then
                         local spacing = mod.UF_BossSpacing()
                         local bossStackDir = saved.profile.boss and saved.profile.boss.bossStackDirection
@@ -277,11 +278,11 @@ local function RegisterUFUnlockElements()
                     -- authority. Only bootstrap from the saved standalone position
                     -- while the frame has no bounds yet (first placement); otherwise
                     -- leave it alone so the anchor position is never clobbered.
-                    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)
+                    local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(key)
                     local pt = place.point
                     local rpt = place.relPoint or pt
                     local px, py = place.x, place.y
-                    local PPa = CludesUI and CludesUI.PP
+                    local PPa = CUI and CUI.PP
                     -- Helper: snap (x, y) for a frame using SnapCenterForDim for
                     -- CENTER anchors and SnapForES otherwise. CENTER snap needs
                     -- the frame's actual size to handle odd-pixel-dim frames
@@ -436,7 +437,7 @@ local function RegisterUFUnlockElements()
                     if mod.UF_Style() ~= "classic" then
                         return mod.UF_CastBorderPad(unitKey, GetCBSettings())
                     end
-                    local CF = CludesUI.ClassicFrame
+                    local CF = CUI.ClassicFrame
                     if not CF then return nil end
                     local cfg = GetCBSettings()
                     return CF.Pad(CF.ScaleK(cfg and cfg[mod.UF_CastClassicKey(unitKey)]), false)
@@ -452,7 +453,7 @@ local function RegisterUFUnlockElements()
                     if frame then Pix.Size(frame, newW, cfg[GetHeightKey()] or 14) end
                 end,
                 setHeight = function(_, hgt)
-                    if not CludesUI._unlockActive and not CludesUI._unlockLayerApplying then return end
+                    if not CUI._unlockActive and not CUI._unlockLayerApplying then return end
                     local cfg = GetCBSettings()
                     if not cfg then return end
                     local newH = math.max(Pix.Snap(hgt), 5)
@@ -487,7 +488,7 @@ local function RegisterUFUnlockElements()
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     saved.profile.positions[cbKey] =
                         { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                    if CludesUI._unlockActive then return end
+                    if CUI._unlockActive then return end
                     local frame = GetCBFrame()
                     if frame then
                         frame:ClearAllPoints()
@@ -503,12 +504,12 @@ local function RegisterUFUnlockElements()
                     -- Unlock-anchored castbars: the anchor system owns the
                     -- position (castbars are anchored to their unit frame by
                     -- default). Only bootstrap while the frame has no bounds.
-                    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(cbKey) and frame:GetLeft() then
+                    if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(cbKey) and frame:GetLeft() then
                         return
                     end
                     local pt, rpt = place.point, place.relPoint or place.point
                     local px, py = place.x, place.y
-                    local PPa = CludesUI and CludesUI.PP
+                    local PPa = CUI and CUI.PP
                     if PPa and px and py then
                         local es = frame:GetEffectiveScale()
                         local isCenterAnchor = (pt == "CENTER") and (rpt == "CENTER")
@@ -542,14 +543,14 @@ local function RegisterUFUnlockElements()
             elements[#elements + 1] = CastBarElement("petCastbar", "pet", 13)
         end
 
-        CludesUI:RegisterUnlockElements(elements, "CludesUIUnitFrames")
+        CUI:RegisterUnlockElements(elements, "CludesUIUnitFrames")
         -- First sighting of each frame's border pad: the login reload ran before
         -- these elements existed, so without it the first border change after
         -- login would only be recorded, never re-pushed.
-        if CludesUI.MatchPadChanged then
+        if CUI.MatchPadChanged then
             local padKeys = mod.UF_PAD_KEYS
             for index = 1, #padKeys do
-                CludesUI.MatchPadChanged(padKeys[index])
+                CUI.MatchPadChanged(padKeys[index])
             end
         end
 

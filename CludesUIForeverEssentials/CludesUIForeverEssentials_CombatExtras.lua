@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_CombatExtras.lua  (WoW Forever only)
 --  Three small combat helpers, each with its own switch:
@@ -13,11 +14,11 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 
 local function Text(hostFrame, size)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(fontStr, size, "essentials")
+    CUI.Kit.Font(fontStr, size, "essentials")
     fontStr:SetPoint("CENTER")
     return fontStr
 end
@@ -67,12 +68,12 @@ timerEv:SetScript("OnEvent", function(_, evt)
             ticker = nil
         end
         timerText:SetText(Clock(length))
-        timerText:SetTextColor(CludesUI.Kit.Accent())
+        timerText:SetTextColor(CUI.Kit.Accent())
         if T.Get("chat") and length >= 3 then
-            CludesUI.Print("|cff4cc9f0Combat:|r that fight took " .. Clock(length) .. ".")
+            CUI.Print("|cff4cc9f0Combat:|r that fight took " .. Clock(length) .. ".")
         end
         C_Timer.After(T.Get("hold"), function()
-            if not started and not CludesUI._unlockActive then timerFrame:Hide() end
+            if not started and not CUI._unlockActive then timerFrame:Hide() end
         end)
     end
 end)
@@ -82,7 +83,7 @@ local function TimerApply()
         TimerBuild()
         timerEv:RegisterEvent("PLAYER_REGEN_DISABLED")
         timerEv:RegisterEvent("PLAYER_REGEN_ENABLED")
-        if not CludesUI._unlockActive then T.Place(timerFrame) end
+        if not CUI._unlockActive then T.Place(timerFrame) end
     else
         timerEv:UnregisterAllEvents()
         if timerFrame then timerFrame:Hide() end
@@ -160,7 +161,7 @@ local function AlertApply()
         AlertBuild()
         alertEv:RegisterEvent("PLAYER_REGEN_DISABLED")
         alertEv:RegisterEvent("PLAYER_REGEN_ENABLED")
-        if not CludesUI._unlockActive then A.Place(alertFrame) end
+        if not CUI._unlockActive then A.Place(alertFrame) end
     else
         alertEv:UnregisterAllEvents()
     end
@@ -198,7 +199,7 @@ local CAT_FORM = 1
 
 local function StealthWanted()
     if not S.Enabled() then return false end
-    if CludesUI._unlockActive then return true end
+    if CUI._unlockActive then return true end
     if class == "DRUID" then
         if not (GetShapeshiftFormID and GetShapeshiftFormID() == CAT_FORM) then return false end
     elseif class ~= "ROGUE" then
@@ -246,7 +247,7 @@ local function StealthApply()
         }) do
             stealthEv:RegisterEvent(event)
         end
-        if not CludesUI._unlockActive then S.Place(stealthFrame) end
+        if not CUI._unlockActive then S.Place(stealthFrame) end
     else
         stealthEv:UnregisterAllEvents()
     end
@@ -269,7 +270,7 @@ S.Start(StealthApply, {
     noSizeMatchTarget = true,
 })
 
-CludesUI._CombatExtras = {
+CUI._CombatExtras = {
     timer = { Get = T.Get, Cfg = T.Cfg, Apply = TimerApply },
     alert = { Get = A.Get, Cfg = A.Cfg, Apply = AlertApply },
     stealth = { Get = S.Get, Cfg = S.Cfg, Apply = StealthApply },

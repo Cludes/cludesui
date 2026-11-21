@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PartyLayout.lua
 --
@@ -666,7 +667,7 @@ mod.ReloadPartyFrames = function(skipButtons)
 end
 
 local function RegisterWithUnlockMode()
-    if not (CludesUI and CludesUI.RegisterUnlockElements) then return end
+    if not (CUI and CUI.RegisterUnlockElements) then return end
     if not containerFrame then return end
 
     -- Snap saved positions to the physical pixel grid using each container's own
@@ -674,7 +675,7 @@ local function RegisterWithUnlockMode()
     -- PanelPP, which has no .Snap (`PP.Snap or floor` would fall through to plain
     -- integer rounding, not physical pixels). Matches the SnapForES pattern every
     -- other unlock element uses (and RF's own PixelSnap), keeping the container crisp.
-    local realPP = CludesUI and CludesUI.PP
+    local realPP = CUI and CUI.PP
     local function snap(widget, val)
         if realPP and realPP.SnapForES and widget then
             return realPP.SnapForES(val, widget:GetEffectiveScale())
@@ -682,8 +683,8 @@ local function RegisterWithUnlockMode()
         return floor(val + 0.5)
     end
 
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = "RF_RaidFrames",
             label = "Raid Frames",
             group = "Raid & Party Frames",
@@ -733,7 +734,7 @@ local function RegisterWithUnlockMode()
                 if mod._ApplyTierOffset then mod._ApplyTierOffset() end
             end,
         }),
-        CludesUI.MakeUnlockElement({
+        CUI.MakeUnlockElement({
             key = "RF_PartyFrames",
             label = "Party Frames",
             group = "Raid & Party Frames",
@@ -760,8 +761,8 @@ local function RegisterWithUnlockMode()
                 -- apply the saved pos as a bootstrap while the frame has no
                 -- resolved geometry yet (anchor pass corrects it after).
                 if
-                    CludesUI.IsUnlockAnchored
-                    and CludesUI.IsUnlockAnchored("RF_PartyFrames")
+                    CUI.IsUnlockAnchored
+                    and CUI.IsUnlockAnchored("RF_PartyFrames")
                     and mod._partyContainerFrame
                     and mod._partyContainerFrame:GetLeft()
                 then
@@ -774,7 +775,7 @@ local function RegisterWithUnlockMode()
                 end
             end,
         }),
-        CludesUI.MakeUnlockElement({
+        CUI.MakeUnlockElement({
             key = "RF_HealerMana",
             label = "Healer Mana Display",
             group = "Raid & Party Frames",
@@ -823,7 +824,7 @@ local function RegisterWithUnlockMode()
                 end
             end,
         }),
-        CludesUI.MakeUnlockElement({
+        CUI.MakeUnlockElement({
             key = "RF_PlayerGroup",
             label = "Player Group Label",
             group = "Raid & Party Frames",

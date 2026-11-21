@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIUnitFrames_PlayerAuraBars.lua
 --  12.1 AuraKit-based player buff/debuff bars.
@@ -21,8 +22,8 @@ end
 -- (CludesUI_Migration.lua; "fvBuffWipe" is its frozen mark). The table is
 -- cleared in place, so the same table returns; a marked one costs one field
 -- read. Nothing here runs on other clients.
-if CludesUI.FvBW then
-    local fv = CludesUI.FvBW
+if CUI.FvBW then
+    local fv = CUI.FvBW
     PAB = function()
         local saved = mod.db
         local cfg = saved and saved.profile and saved.profile.playerAuraBars
@@ -357,7 +358,7 @@ end
 -- PP.ToPixels rounds with the 0.001 tie guard, so an exact half pixel cannot flip
 -- between sessions.
 local function PabSnap(posX)
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     if posX == 0 or Pix.mult == 1 then return posX end
     return Pix.FromPixels(Pix.ToPixels(posX))
 end
@@ -387,8 +388,8 @@ local function PAB_ApplyDmFx(btnFrame, skinData, style, arming)
     local category = skinData.dmCat
     local e = style.fxList and PAB_FxBlockFor(style.fxList, category) or nil
 
-    local Glows = CludesUI.Glows
-    local Pix = CludesUI.PP
+    local Glows = CUI.Glows
+    local Pix = CUI.PP
     -- Engine host: a Lua OnUpdate touching a frame parented to a 12.1 engine aura
     -- button is forbidden unconditionally, so only C-side animations render here
     -- (StartSpecGlow's engine path: Pixel as animated ants, ABG as its FlipBook twin).
@@ -438,7 +439,7 @@ local function PAB_ApplyDmFx(btnFrame, skinData, style, arming)
     if specInfo and skinData.pabFxBound == nil then
         skinData.pabFxBound = Glows.BindEngineHost(gov, btnFrame, skinData)
     end
-    if specInfo and (skinData.pabFxBound or CludesUI.AuraKit.ButtonCanShow(btnFrame)) then
+    if specInfo and (skinData.pabFxBound or CUI.AuraKit.ButtonCanShow(btnFrame)) then
         gov:Show()
         Glows.StartSpecGlow(gov, specInfo, sz, style.height or sz, "engine")
     else
@@ -941,7 +942,7 @@ end
 -- writes through the Set<Name> function built below, which runs them all.
 -- broken: true while an CUI_PlayerAuraBars_*.lua file loads; a file that
 -- fails leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(mod, "_pabInternals", {
+CUI.NewInternals(mod, "_pabInternals", {
     BuffBarChain = BuffBarChain,
     BuildChain = BuildChain,
     ClassByKey = ClassByKey,

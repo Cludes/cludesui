@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Chat_SidebarIcons.lua
 --
@@ -148,7 +149,7 @@ local SIDEBAR_CHAIN_KEYS = {
 -- No keystones on Forever, so no season portals (the Minimap button is never
 -- built there either): the M+ Portals icon leaves the chain, which also drops
 -- it from creation and from the options icon list. Every button reader guards.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     for index = #SIDEBAR_CHAIN_KEYS, 1, -1 do
         if SIDEBAR_CHAIN_KEYS[index] == "showPortals" then table.remove(SIDEBAR_CHAIN_KEYS, index) end
     end
@@ -162,8 +163,8 @@ end
 local chatMenuPadOff
 local function ChatMenuPadOff()
     if chatMenuPadOff == nil then
-        if not IsLoggedIn() then return CludesUI.PadGamepadUI() end
-        chatMenuPadOff = CludesUI.PadGamepadUI()
+        if not IsLoggedIn() then return CUI.PadGamepadUI() end
+        chatMenuPadOff = CUI.PadGamepadUI()
     end
     return chatMenuPadOff
 end

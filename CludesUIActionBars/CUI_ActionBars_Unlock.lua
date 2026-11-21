@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Unlock.lua
 --
@@ -78,7 +79,7 @@ local function SaveBarPosition(barId)
         -- restore-skip at RestoreBarPositions fires correctly.
         if anchorPoint == "CENTER" and relPoint == "CENTER" then
             local es = widget:GetEffectiveScale() or 1
-            local PixKit = CludesUI and CludesUI.PP
+            local PixKit = CUI and CUI.PP
             local onePx = PixKit and PixKit.perfect and (PixKit.perfect / es) or 1
             if math.abs(posX) < onePx then posX = 0 end
             if math.abs(posY) < onePx then posY = 0 end
@@ -95,7 +96,7 @@ end
 local function RestoreBarPositions()
     local positions = ABAR.db.profile.barPositions
     if not positions then return end
-    local PixKit = CludesUI and CludesUI.PP
+    local PixKit = CUI and CUI.PP
     for _, details in ipairs(BAR_CONFIG) do
         local key = details.key
         local place = positions[key]
@@ -103,7 +104,7 @@ local function RestoreBarPositions()
         if place and widget then
             -- Skip bars owned by the unlock anchor system: position is computed
             -- from the anchor chain, not saved barPositions.
-            local anchored = CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)
+            local anchored = CUI and CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(key)
             if anchored then
                 -- skip: anchor system owns this bar's position
             else
@@ -147,8 +148,8 @@ end
 --  Register bars with CUI_UnlockMode for positioning.
 -------------------------------------------------------------------------------
 local function RegisterWithUnlockMode()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
 
     local elements = {}
     local orderBase = 200
@@ -196,7 +197,7 @@ local function RegisterWithUnlockMode()
                 if shape ~= "none" and shape ~= "cropped" then return nil end
                 local sz, px = mod.ResolveBorderThickness(cfg)
                 local color = cfg.borderColor
-                return CludesUI.BorderMatchPad(
+                return CUI.BorderMatchPad(
                     sz,
                     cfg.borderTexture or "solid",
                     cfg.borderTextureOffset,
@@ -224,7 +225,7 @@ local function RegisterWithUnlockMode()
                 local pad = cfg.buttonPadding or 2
                 local shape = mod.AB_LayoutShape(cfg)
                 local cols = isVert and numRows or stride
-                local Pix = CludesUI and CludesUI.PP
+                local Pix = CUI and CUI.PP
                 local onePx = Pix and Pix.mult or 1
                 local physTarget = math.floor(wid / onePx + 0.5)
                 local physPad = math.floor(pad / onePx + 0.5)
@@ -264,7 +265,7 @@ local function RegisterWithUnlockMode()
                 local pad = cfg.buttonPadding or 2
                 local shape = mod.AB_LayoutShape(cfg)
                 local rowList = isVert and stride or numRows
-                local Pix = CludesUI and CludesUI.PP
+                local Pix = CUI and CUI.PP
                 local onePx = Pix and Pix.mult or 1
                 local physTarget = math.floor(hgt / onePx + 0.5)
                 local physPad = math.floor(pad / onePx + 0.5)
@@ -316,11 +317,11 @@ local function RegisterWithUnlockMode()
                     local record = ABAR.db.profile.barPositions[details.key]
                     local cfg = ABAR.db.profile.bars[details.key]
                     local gd = cfg and (cfg.growDirection or "up"):upper()
-                    if record and gd and gd ~= "CENTER" and CludesUI.GetAnchorTargetCenterUI then
-                        record.tgtx, record.tgty = CludesUI.GetAnchorTargetCenterUI(details.key)
-                        if CludesUI.GetAnchorTargetEdgesUI then
+                    if record and gd and gd ~= "CENTER" and CUI.GetAnchorTargetCenterUI then
+                        record.tgtx, record.tgty = CUI.GetAnchorTargetCenterUI(details.key)
+                        if CUI.GetAnchorTargetEdgesUI then
                             record.tgtL, record.tgtR, record.tgtT, record.tgtB =
-                                CludesUI.GetAnchorTargetEdgesUI(details.key)
+                                CUI.GetAnchorTargetEdgesUI(details.key)
                         end
                     end
                 end
@@ -331,14 +332,14 @@ local function RegisterWithUnlockMode()
             clearPos = function() ABAR.db.profile.barPositions[details.key] = nil end,
             applyPos = function()
                 ABAR:RecalcFlyoutDirection(details.key)
-                if CludesUI.IsPointAnchored(details.key) then
-                    CludesUI.ReapplyOwnAnchor(details.key)
+                if CUI.IsPointAnchored(details.key) then
+                    CUI.ReapplyOwnAnchor(details.key)
                     return
                 end
                 -- Anchored bars: position owned by anchor system. But bars
                 -- with growth direction need edge bounds applied first so the
                 -- live-edge reading in ApplyAnchorPosition has correct data.
-                if CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(details.key) then
+                if CUI and CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(details.key) then
                     local cfg = ABAR.db.profile.bars[details.key]
                     local gd = cfg and (cfg.growDirection or "up"):upper()
                     if gd and gd ~= "CENTER" and gd ~= "UP" then
@@ -363,7 +364,7 @@ local function RegisterWithUnlockMode()
                                 end
                             end
                             if pt ~= "CENTER" then
-                                local PixKit = CludesUI and CludesUI.PP
+                                local PixKit = CUI and CUI.PP
                                 if PixKit and PixKit.SnapForES then
                                     local es = widget:GetEffectiveScale()
                                     px = PixKit.SnapForES(px, es)
@@ -381,7 +382,7 @@ local function RegisterWithUnlockMode()
                 if place and widget then
                     local pt = place.point
                     local px, py = place.x, place.y
-                    local PixKit = CludesUI and CludesUI.PP
+                    local PixKit = CUI and CUI.PP
                     if PixKit and px and py then
                         local es = widget:GetEffectiveScale()
                         local isCenterAnchor = (pt == "CENTER")
@@ -439,7 +440,7 @@ local function RegisterWithUnlockMode()
                             y = posY,
                         }
                     end
-                    if not CludesUI._unlockActive then
+                    if not CUI._unlockActive then
                         local holderFrame = blizzMovableHolders[bk]
                         if holderFrame and anchorPoint and posX and posY and not InCombatLockdown() then
                             holderFrame:ClearAllPoints()
@@ -462,7 +463,7 @@ local function RegisterWithUnlockMode()
                     if place then
                         local pt = place.point
                         local px, py = place.x, place.y
-                        local PixKit = CludesUI and CludesUI.PP
+                        local PixKit = CUI and CUI.PP
                         if PixKit and px and py then
                             local es = holderFrame:GetEffectiveScale()
                             local isCenterAnchor = (pt == "CENTER")
@@ -484,19 +485,19 @@ local function RegisterWithUnlockMode()
         end
     end
 
-    CludesUI:RegisterUnlockElements(elements, "CludesUIActionBars")
+    CUI:RegisterUnlockElements(elements, "CludesUIActionBars")
 
     -- Reapply anchors now that elements are registered: RestoreBarPositions
     -- ran before registration (too early for ReapplyOwnAnchor to resolve
     -- frames), so anchored bars sit unresolved. Skip growth-direction bars:
     -- applyPos already pre-positioned them at the edge and the authoritative
     -- pass preserves that via live-edge reading.
-    if CludesUI.ReapplyOwnAnchor then
+    if CUI.ReapplyOwnAnchor then
         for _, details in ipairs(BAR_CONFIG) do
-            if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(details.key) then
+            if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(details.key) then
                 local cfg = ABAR.db.profile.bars[details.key]
                 local gd = cfg and (cfg.growDirection or "up"):upper()
-                if not gd or gd == "CENTER" or gd == "UP" then CludesUI.ReapplyOwnAnchor(details.key) end
+                if not gd or gd == "CENTER" or gd == "UP" then CUI.ReapplyOwnAnchor(details.key) end
             end
         end
     end

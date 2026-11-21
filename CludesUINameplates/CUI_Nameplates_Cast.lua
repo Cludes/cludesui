@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Cast.lua
 --
@@ -101,14 +102,14 @@ local function EnsureCastGlowOverlay(self, field, levelOffset)
 end
 
 -- The two cast bar glows' flat-schema keys, built once (so a cast start does no string work).
-local IMP_GLOW_KEYS = CludesUI.Glows.FlatKeys("importantCastGlow")
-local TGT_GLOW_KEYS = CludesUI.Glows.FlatKeys("castTargetGlow")
+local IMP_GLOW_KEYS = CUI.Glows.FlatKeys("importantCastGlow")
+local TGT_GLOW_KEYS = CUI.Glows.FlatKeys("castTargetGlow")
 -- One scratch spec for every plate and both glows: StartSpecGlow reads it synchronously.
 local castGlowSpec = {}
 
 -- Starts the glow on a cast bar overlay. Restarts only when the setting or the bar size changed.
 local function StartCastGlow(self, shade, conf, key)
-    local Glows = CludesUI.Glows
+    local Glows = CUI.Glows
     local style = conf[key.style] or defaultSet[key.style] or 1
     if type(style) ~= "number" or style < 1 or style > #PANDEMIC_GLOW_STYLES then style = 1 end
     local specInfo = Glows.SpecFromFlat(castGlowSpec, conf, key, conf[key.mode] or "custom", defaultSet)
@@ -173,7 +174,7 @@ end
 
 function NameplateFrame:ClearCastTargetGlow()
     if self._castTargetGlowActive and self._castTargetOverlay then
-        CludesUI.Glows.StopAllGlows(self._castTargetOverlay)
+        CUI.Glows.StopAllGlows(self._castTargetOverlay)
         self._castTargetOverlay:SetAlpha(0)
         self._castTargetOverlay:Hide()
         self._castTargetGlowActive = false
@@ -182,7 +183,7 @@ end
 
 function NameplateFrame:ClearImportantCastGlow()
     if self._importantGlowActive and self._importantCastOverlay then
-        CludesUI.Glows.StopAllGlows(self._importantCastOverlay)
+        CUI.Glows.StopAllGlows(self._importantCastOverlay)
         self._importantCastOverlay:SetAlpha(0)
         self._importantCastOverlay:Hide()
         self._importantGlowActive = false
@@ -847,7 +848,7 @@ function NameplateFrame:ShowInterrupted(kickerGuid)
         self.castName:SetWidth(hasInterrupter and math.max(castWidth - 8, 20) or castWidth * cnWPct / 100)
     end
 
-    local interruptedText = (CludesUI.L("Interrupted")) or "Interrupted"
+    local interruptedText = (CUI.L("Interrupted")) or "Interrupted"
     if hasInterrupter then
         -- The base FontString color carries SECRET class RGB; only the clean
         -- localized label/punctuation uses an inline profile-color escape.

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_Visibility.lua - when Blizzard's tracker shows, and
 --  our background behind it.
@@ -171,7 +172,7 @@ local function SyncTrackerShown()
     -- The player's settings: enabled, the visibility mode and the hide
     -- options, as true / false / "mouseover" (the hover check raises it).
     local vis = true
-    if CludesUI and CludesUI.EvalVisibility then vis = CludesUI.EvalVisibility(TrackerNS.DB()) end
+    if CUI and CUI.EvalVisibility then vis = CUI.EvalVisibility(TrackerNS.DB()) end
     local alpha = (suppressed or vis == false or vis == "mouseover") and 0 or 1
     otf:SetAlpha(alpha)
     if background then background:SetAlpha(alpha) end
@@ -230,14 +231,14 @@ local function PaintTopLine()
         line:Hide()
         return
     end
-    local core = CludesUI and CludesUI.PP
-    local panel = CludesUI and CludesUI.PanelPP
+    local core = CUI and CUI.PP
+    local panel = CUI and CUI.PanelPP
     if panel and panel.DisablePixelSnap then panel.DisablePixelSnap(line) end
     local perfect = (core and core.perfect) or (panel and panel.mult) or 1
     local otf = Tracker()
     local scale = (otf and otf.GetEffectiveScale and otf:GetEffectiveScale()) or 1
     line:SetHeight((scale and scale > 0) and (perfect / scale) or (panel and panel.mult) or 1)
-    local accent = CludesUI and CludesUI.CLUDES_GREEN
+    local accent = CUI and CUI.CLUDES_GREEN
     line:SetColorTexture(
         (accent and accent.r) or 0.298,
         (accent and accent.g) or 0.788,
@@ -425,8 +426,8 @@ function TrackerNS.InitVisibility()
 
     -- The top line follows the UI accent colour (not under the stock styles,
     -- which have no background).
-    if not TrackerNS.Blizz() and CludesUI and CludesUI.RegAccent then
-        CludesUI.RegAccent({ type = "callback", fn = PaintTopLine })
+    if not TrackerNS.Blizz() and CUI and CUI.RegAccent then
+        CUI.RegAccent({ type = "callback", fn = PaintTopLine })
     end
 
     -- A /reload inside a key or a raid can find the tracker already hidden,
@@ -456,16 +457,16 @@ function TrackerNS.InitVisibility()
     end)
 
     -- The shared visibility pass (combat, mounted and the other modes).
-    CludesUI.RegisterVisibilityUpdater(function()
+    CUI.RegisterVisibilityUpdater(function()
         if not suppressed then SyncTrackerShown() end
     end)
 
-    if CludesUI.RegisterMouseoverTarget then
-        CludesUI.RegisterMouseoverTarget(MouseoverTarget(otf), function()
+    if CUI.RegisterMouseoverTarget then
+        CUI.RegisterMouseoverTarget(MouseoverTarget(otf), function()
             if HiddenByPlace() or suppressed then return false end
             -- Hover-gated sets reveal only while their conditions pass; a
             -- plain "mouseover" behaves as it always did.
-            return CludesUI.VisWantsMouseover(TrackerNS.DB(), "visibility")
+            return CUI.VisWantsMouseover(TrackerNS.DB(), "visibility")
         end)
     end
 

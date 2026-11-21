@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_KickEngine.lua
 --  Kick Tracker (Mythic+ Tools): who in the group kicked what, and when each
@@ -58,7 +59,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
 
-local KD, MTWhere = CludesUI.KickData, mod.MTWhere
+local KD, MTWhere = CUI.KickData, mod.MTWhere
 if not (KD and MTWhere) then return end
 
 local KE = {}
@@ -68,7 +69,7 @@ local pairs, type, pcall, wipe, tostring, tonumber = pairs, type, pcall, wipe, t
 local GetTime = GetTime
 local securecallfunction = securecallfunction
 
-local Secret, PlainString = CludesUI.IsSecret, CludesUI.PlainString
+local Secret, PlainString = CUI.IsSecret, CUI.PlainString
 
 local DM = C_DamageMeter
 local INT = Enum.DamageMeterType and Enum.DamageMeterType.Interrupts
@@ -229,7 +230,7 @@ local function ResolveKick(m)
     if m.class then
         if m.unit == "player" then
             -- Your own: the spellbook knows (a demon's interrupt included).
-            kickRec = CludesUI.GetActiveKickSpell()
+            kickRec = CUI.GetActiveKickSpell()
             if kickRec and not KD.INTERRUPTS[kickRec] then kickRec = KD.OwnCastKick(kickRec) end
             if not kickRec then
                 kickRec, specInfo = KD.KickSpell(m.class, m.specID, m.role, m.talents, m.pet)

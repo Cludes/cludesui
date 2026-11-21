@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Extras.lua
 --
@@ -122,8 +123,8 @@ do
         local powerMode = hm.colorMode == "power"
         local cc = hm.color
         local cr, cg, callback = (cc and cc.r) or 1, (cc and cc.g) or 1, (cc and cc.b) or 1
-        local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-        local outline = (CludesUI.GetFontOutlineFlag("raidFrames")) or "OUTLINE"
+        local fontFile = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+        local outline = (CUI.GetFontOutlineFlag("raidFrames")) or "OUTLINE"
         local rowH = size + spacing
         local map = {}
         local total, widest = 0, 40
@@ -142,7 +143,7 @@ do
             local nameFS, valFS = row.nameFS, row.valFS
             -- The name a font family (other players' names), with no shadow as
             -- the value's plain font.
-            CludesUI.SetFontFamily(nameFS, fontFile, size, outline, false)
+            CUI.SetFontFamily(nameFS, fontFile, size, outline, false)
             valFS:SetFont(fontFile, size, outline)
             -- Value color: power color per unit, or the custom color.
             if powerMode then
@@ -166,7 +167,7 @@ do
                     end
                     local colour = token
                         and (
-                            (CludesUI.GetClassColor(token))
+                            (CUI.GetClassColor(token))
                             or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[token])
                         )
                     if colour then
@@ -182,7 +183,7 @@ do
                     -- Display sink: a secret name renders raw, never inspected.
                     -- The raid frames' Name Format (live names show only in a
                     -- raid).
-                    local hmName = unitToken and CludesUI.WithSurname(UnitName(unitToken))
+                    local hmName = unitToken and CUI.WithSurname(UnitName(unitToken))
                     if hmName then hmName = mod.RF_FormatName(hmName, saved.profile) end
                     nameFS:SetFormattedText("%s", hmName or "")
                 end
@@ -314,12 +315,12 @@ do
         if mode == "custom" then return custom end
         local red, green, blue
         if mode == "class" then
-            local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+            local classColor = CUI.GetClassColor(CUI._playerClass)
             if classColor then
                 red, green, blue = classColor.r, classColor.g, classColor.b
             end
         else
-            red, green, blue = CludesUI.ResolveActiveAccent()
+            red, green, blue = CUI.ResolveActiveAccent()
         end
         if not red then return custom end
         return { r = red, g = green, b = blue, a = 1 }
@@ -414,7 +415,7 @@ do
         if on and not events then
             events = CreateFrame("Frame")
             events:SetScript("OnEvent", UpdateGroup)
-            CludesUI.RegAccent({ type = "callback", fn = mod.PG_Apply })
+            CUI.RegAccent({ type = "callback", fn = mod.PG_Apply })
         end
         if events then
             if on then
@@ -458,8 +459,8 @@ do
         widget.bg:SetColorTexture(backdrop.r, backdrop.g, backdrop.b, backdrop.a or 1)
         local texture = cfg.borderTexture or "solid"
         -- The frame border's exact pixels apply only at its own size.
-        local px = (pg.borderSize == nil) and CludesUI.BorderPx(cfg.borderSizePx, bs, texture) or nil
-        CludesUI.ApplyBorderStyle(
+        local px = (pg.borderSize == nil) and CUI.BorderPx(cfg.borderSizePx, bs, texture) or nil
+        CUI.ApplyBorderStyle(
             widget.borderFrame,
             bs,
             bc.r,
@@ -529,7 +530,7 @@ end
 -- fresh the cache. This compares nothing -- it reads the secure "unit"
 -- attribute the header wrote. Extra frames answer last: they duplicate a unit
 -- already on a real raid button.
-function CludesUI.GetUnitFrame(unitToken)
+function CUI.GetUnitFrame(unitToken)
     if type(unitToken) ~= "string" then return nil end
     local function Find(entries)
         if not entries then return nil end

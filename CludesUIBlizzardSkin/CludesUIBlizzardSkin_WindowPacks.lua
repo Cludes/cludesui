@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_WindowPacks.lua
 --  Per-window skin packs on the shared engine (..._WindowEngine.lua):
@@ -446,7 +447,7 @@ do
                                 if not regionData.line then
                                     local line = region:GetParent():CreateTexture(nil, "OVERLAY")
                                     line:SetColorTexture(1, 1, 1, 0.25)
-                                    local PanelPx = CludesUI and CludesUI.PanelPP
+                                    local PanelPx = CUI and CUI.PanelPP
                                     if PanelPx and PanelPx.DisablePixelSnap then
                                         PanelPx.DisablePixelSnap(line)
                                         line:SetHeight(PanelPx.mult or 1)
@@ -2710,7 +2711,7 @@ local function SkinGuildCheck(creatureBtn)
     local fillTex = SolidTex(boxF, "BACKGROUND", 0.02, 0.02, 0.02, 1)
     fillTex:SetAllPoints(boxF)
     Skin.AddBorder(boxF, 0.25, 0.25, 0.25, 1)
-    local EG2 = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+    local EG2 = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
     local tick = boxF:CreateTexture(nil, "OVERLAY")
     tick:SetPoint("TOPLEFT", 3, -3)
     tick:SetPoint("BOTTOMRIGHT", -3, 3)
@@ -2965,7 +2966,7 @@ do
             editField:SetTextInsets((left or 0) + 6, right or 0, t2 or 0, button or 0)
         end
     end
-    CludesUI._WSkinPadInput = PadPopupInput
+    CUI._WSkinPadInput = PadPopupInput
 
     local function PopupEditBox(editField)
         if not editField then return end
@@ -3397,7 +3398,7 @@ do
             -- default pixel snapping. PP.mult is one physical pixel in UIParent units, so
             -- when the host's effective scale differs the raw mult is slightly over a pixel
             -- here and snapping rounds the line onto two rows.
-            local PPz = CludesUI.PanelPP
+            local PPz = CUI.PanelPP
             local pixel = (PPz and PPz.mult) or 1
             do
                 local es = win:GetEffectiveScale()
@@ -5502,7 +5503,7 @@ do
                 if fp and html.GetFont then
                     local success, _, sz = pcall(html.GetFont, html, part)
                     if success and not issecretvalue(sz) and type(sz) == "number" then
-                        local fam = html.SetFontObject and CludesUI.GetFontFamily(fp, sz, ff, false)
+                        local fam = html.SetFontObject and CUI.GetFontFamily(fp, sz, ff, false)
                         if not (fam and pcall(html.SetFontObject, html, part, fam)) then
                             pcall(html.SetFont, html, part, fp, sz, ff)
                         end
@@ -5912,7 +5913,7 @@ do
         if skinData.sock then return end
         skinData.sock = true
         -- House Modern WoW glow (gold) on our own wrapper frame.
-        if CludesUI.Glows and CludesUI.Glows.StartGlow then
+        if CUI.Glows and CUI.Glows.StartGlow then
             local gw = CreateFrame("Frame", nil, btnFrame)
             local w2, h2 = btnFrame:GetSize()
             if not w2 or w2 == 0 then
@@ -5920,7 +5921,7 @@ do
             end
             gw:SetSize(w2, h2)
             gw:SetPoint("CENTER")
-            CludesUI.Glows.StartGlow(gw, 6, w2, 1, 0.91, 0.5, nil, h2)
+            CUI.Glows.StartGlow(gw, 6, w2, 1, 0.91, 0.5, nil, h2)
             skinData.glow = gw
         end
     end
@@ -6303,7 +6304,7 @@ do
         -- the sheet's backdrop, like that client's other character tabs (Skills,
         -- PvP, Currency); only the list's scroll bar takes the house style, as
         -- the Currency and stats lists' do.
-        if rep and CludesUI.IS_FOREVER then
+        if rep and CUI.IS_FOREVER then
             if rep.ScrollBar then Skin.ScrollBar(rep.ScrollBar) end
         elseif rep then
             if rep.filterDropdown then Skin.Dropdown(rep.filterDropdown) end
@@ -7119,7 +7120,7 @@ do
                             local txt = fontStr:GetText()
                             if type(txt) ~= "string" or txt == "" then return end
                             if txt:find("|c", 1, true) then return end
-                            local ACC = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+                            local ACC = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
                             local hex = string.format(
                                 "%02x%02x%02x",
                                 (ACC.r or 0) * 255,
@@ -7299,7 +7300,7 @@ do
         if kind == "header" and not skinData.divider then
             local div = btnFrame:CreateTexture(nil, "OVERLAY")
             div:SetColorTexture(1, 1, 1, 0.15)
-            local PPd = CludesUI and CludesUI.PanelPP
+            local PPd = CUI and CUI.PanelPP
             if PPd and PPd.DisablePixelSnap then
                 PPd.DisablePixelSnap(div)
                 div:SetHeight(PPd.mult or 1)
@@ -8000,7 +8001,7 @@ do
     -- WoW Forever keeps several micro buttons retail folded away or renamed (spellbook
     -- and talents split out, socials and PvP as their own buttons). Add them so the
     -- Forever pass skins the whole row; missing/forbidden buttons are skipped per-button.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         for _, n in ipairs({
             "SpellbookMicroButton",
             "TalentMicroButton",
@@ -8074,7 +8075,7 @@ do
         -- BorderArt); on retail the CludesUI Bags addon hides the container, so it
         -- never shows. Fade that art so the flat buttons do not sit inside an ornate
         -- frame. Alpha only -- never :Hide() the Edit-Mode-owned container.
-        if CludesUI.IS_FOREVER and _G.MicroMenu then
+        if CUI.IS_FOREVER and _G.MicroMenu then
             local maxMinBtn = _G.MicroMenu
             if maxMinBtn.BackgroundArt and maxMinBtn.BackgroundArt.SetAlpha then
                 maxMinBtn.BackgroundArt:SetAlpha(0)
@@ -8303,7 +8304,7 @@ do
             local button = oc.SaveOutfitButton
             Skin.Button(button)
             -- Borderless + 2px shorter (this button only).
-            local PPb = CludesUI.PP
+            local PPb = CUI.PP
             if PPb and PPb.GetBorders and PPb.HideBorder and PPb.GetBorders(button) then
                 PPb.HideBorder(button)
             end
@@ -8782,7 +8783,7 @@ do
     end
 
     -- Options toggle entry point: re-sync row height.
-    CludesUI._Merchant_RefreshRowHeight = function()
+    CUI._Merchant_RefreshRowHeight = function()
         local win = _G.MerchantFrame
         if not win then return end
         if not CludesUIDB.merchantShowAsList or not (win.wSkinScrollFrame and win.wSkinScrollChild) then
@@ -8986,8 +8987,8 @@ do
         local win = _G.MerchantFrame
         return (ExpandOn() and win and (win.selectedTab or 1) == 1) and true or false
     end
-    CludesUI._Merchant_ExpandActive = ExpandActive
-    CludesUI._Merchant_ExpandPerPage = function() return exState.perPage end
+    CUI._Merchant_ExpandActive = ExpandActive
+    CUI._Merchant_ExpandPerPage = function() return exState.perPage end
 
     local function EX_NumPages()
         return math.max(1, math.ceil(GetMerchantNumItems() / math.max(1, exState.perPage)))
@@ -9124,8 +9125,8 @@ do
         local ssf = StackSplitFrame
         local ownerFrame = ssf and ssf:IsShown() and ssf.owner
         if ownerFrame and exState.buttons[ownerFrame] then
-            if not CludesUI.StackSplitFor(ownerFrame) then return end
-            CludesUI.TakeStackSplit()
+            if not CUI.StackSplitFor(ownerFrame) then return end
+            CUI.TakeStackSplit()
         end
         exState.page = want
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -9213,7 +9214,7 @@ do
             end
         end
         -- Item levels went to the grid's tiles while it was up.
-        if CludesUIDB.merchantShowItemLevel then CludesUI._Merchant_RefreshItemLevels() end
+        if CludesUIDB.merchantShowItemLevel then CUI._Merchant_RefreshItemLevels() end
     end
 
     EX_Update = function()
@@ -9276,10 +9277,10 @@ do
         EX_UpdatePager(win, numPages)
 
         -- Item levels read each button's ID, which a flip just changed.
-        if CludesUIDB.merchantShowItemLevel then CludesUI._Merchant_RefreshItemLevels() end
+        if CludesUIDB.merchantShowItemLevel then CUI._Merchant_RefreshItemLevels() end
         -- Bulk Buy closes its window once its tile shows another item; it checks on
         -- MerchantFrame_Update, which a flip does not run.
-        if CludesUI._Merchant_BulkBuyRepaint then CludesUI._Merchant_BulkBuyRepaint() end
+        if CUI._Merchant_BulkBuyRepaint then CUI._Merchant_BulkBuyRepaint() end
     end
     -- GET_ITEM_INFO_RECEIVED comes in a burst while a vendor's items load: one refill
     -- per frame. Built here, at load, so no skin callback wraps it.
@@ -9312,7 +9313,7 @@ do
     end
 
     -- Options entry point (toggle, columns, rows).
-    CludesUI._Merchant_RefreshExpand = function()
+    CUI._Merchant_RefreshExpand = function()
         local win = _G.MerchantFrame
         if not win or not win:IsShown() then return end -- the next show picks it up
         if ExpandOn() then EnsureExpand() end
@@ -9481,8 +9482,8 @@ do
             -- GetNumBuybackItems is irrelevant: text only shows on the sell tab.
             numItems = GetMerchantNumItems()
             prefixText = "CUI_MerchantItem"
-        elseif CludesUI._Merchant_ExpandActive() then
-            numItems = CludesUI._Merchant_ExpandPerPage()
+        elseif CUI._Merchant_ExpandActive() then
+            numItems = CUI._Merchant_ExpandPerPage()
             prefixText = "CUI_MerchantPage"
         else
             numItems = 12
@@ -9511,8 +9512,8 @@ do
                         else
                             fontStr:SetPoint("TOPLEFT", btnFrame, "TOPLEFT", 1, -1)
                         end
-                        local filePath = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
-                        local flag = (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE"
+                        local filePath = (CUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
+                        local flag = (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE"
                         fontStr:SetFont(filePath, 12, flag)
                         FrameDataOf(btnFrame).merchantILvl = fontStr
                     end
@@ -9526,7 +9527,7 @@ do
                             if ilvl and ilvl > 0 then
                                 fontStr:SetText(ilvl)
                                 local quality = select(3, C_Item.GetItemInfo(link))
-                                local color = CludesUI.GetItemLevelColor(link, quality)
+                                local color = CUI.GetItemLevelColor(link, quality)
                                 fontStr:SetTextColor(color.r or 1, color.g or 1, color.b or 1, 1)
                             end
                         end
@@ -9565,7 +9566,7 @@ do
     end
 
     -- Options toggle entry point: re-sync listeners, then render or clear.
-    CludesUI._Merchant_RefreshItemLevels = function()
+    CUI._Merchant_RefreshItemLevels = function()
         SyncMerchantILvlEvents()
         UpdateMerchantItemLevels()
     end
@@ -10767,7 +10768,7 @@ do
             frameData.zoneLines = true
             local pixel = 1
             do
-                local PanelPx = CludesUI.PP
+                local PanelPx = CUI.PP
                 local es = win:GetEffectiveScale()
                 if PanelPx and PanelPx.perfect and es and es > 0 then pixel = PanelPx.perfect / es end
             end
@@ -11800,7 +11801,7 @@ do
     local GEAR_SHELL_OPTS = { noTopBar = true }
     local function GearPopupBackdrop(win) Skin.Shell("charsheet", win, GEAR_SHELL_OPTS) end
     local function Skin_GearPopup()
-        if CludesUI.IS_FOREVER or mod.CharSheetStock() then return end
+        if CUI.IS_FOREVER or mod.CharSheetStock() then return end
         local p = _G.GearManagerPopupFrame
         if not p then return end
         Skin_IconSelectorPopup(p, GearPopupBackdrop, Skin_GearPopup)
@@ -12007,7 +12008,7 @@ do
             local fld = FrameDataOf(win.ForceLoad)
             if not fld.tightBorder and fld.bg then
                 fld.tightBorder = true
-                local PPb = CludesUI.PP
+                local PPb = CUI.PP
                 if PPb and PPb.GetBorders and PPb.HideBorder and PPb.GetBorders(win.ForceLoad) then
                     PPb.HideBorder(win.ForceLoad)
                 end
@@ -12225,7 +12226,7 @@ do
             frameData.zoneLines = true
             local pixel = 1
             do
-                local PanelPx = CludesUI.PP
+                local PanelPx = CUI.PP
                 local es = win:GetEffectiveScale()
                 if PanelPx and PanelPx.perfect and es and es > 0 then pixel = PanelPx.perfect / es end
             end
@@ -12956,7 +12957,7 @@ do
         local saved = CludesUIDB
         if not (saved and saved.lootWindowBorderTexture) then return nil end
         local mode = saved.lootWindowBorderColorMode or "custom"
-        if mode == "accent" then return CludesUI.CLUDES_GREEN end
+        if mode == "accent" then return CUI.CLUDES_GREEN end
         if mode == "class" then
             local _, class = UnitClass("player")
             return class and RAID_CLASS_COLORS[class]
@@ -13001,14 +13002,14 @@ do
                 lootPaintedBest = BestLootQuality()
                 override = LootQualityColor(lootPaintedBest)
             end
-            if CludesUI._applyBlizzardConfiguredBorder then
-                CludesUI._applyBlizzardConfiguredBorder(win, "lootWindow", 1, override)
+            if CUI._applyBlizzardConfiguredBorder then
+                CUI._applyBlizzardConfiguredBorder(win, "lootWindow", 1, override)
             end
             SyncLootQualityWatch(quality and win:IsShown())
             skinData.lootBorderOn = true
         elseif skinData.lootBorderOn then
             if skinData.atlasBorderFrame then skinData.atlasBorderFrame:Show() end
-            if CludesUI._hideBlizzardConfiguredBorder then CludesUI._hideBlizzardConfiguredBorder(win) end
+            if CUI._hideBlizzardConfiguredBorder then CUI._hideBlizzardConfiguredBorder(win) end
             SyncLootQualityWatch(false)
             skinData.lootBorderOn = nil
         end
@@ -13072,7 +13073,7 @@ do
                 -- live on a HOST FRAME of ours (child of the row, anchored to the
                 -- icon) via PP.CreateBorder (integer physical thickness,
                 -- snap-immune), so NOTHING is written onto Blizzard frames -- all state sits in FFD and PP's own registry.
-                local PPb = CludesUI and (CludesUI.PanelPP or CludesUI.PP)
+                local PPb = CUI and (CUI.PanelPP or CUI.PP)
                 local importData = FrameDataOf(entry)
                 if not importData.qBorder and PPb and PPb.CreateBorder and entry.CreateTexture then
                     local owner = CreateFrame("Frame", nil, entry)
@@ -13113,8 +13114,8 @@ do
                         end
                         local texture = saved.lootIconBorderTexture or "solid"
                         local key = saved.lootIconBorderThickness
-                        local size = key and (CludesUI.BORDER_STEP_OF_LABEL[key] or 1) or 1
-                        CludesUI.ApplyBorderStyle(
+                        local size = key and (CUI.BORDER_STEP_OF_LABEL[key] or 1) or 1
+                        CUI.ApplyBorderStyle(
                             importData.qBorder,
                             size,
                             qr,
@@ -13129,14 +13130,14 @@ do
                             "blizzardSkin",
                             key or "thin",
                             nil,
-                            CludesUI.BorderPx(saved.lootIconBorderThicknessPx, size, texture)
+                            CUI.BorderPx(saved.lootIconBorderThicknessPx, size, texture)
                         )
                         importData.qStyled = true
                     elseif importData.qStyled then
-                        CludesUI.HideBorderStyle(importData.qBorder)
+                        CUI.HideBorderStyle(importData.qBorder)
                         importData.qBorder:Show()
-                        CludesUI.PP.UpdateBorder(importData.qBorder, 1, qr, qg, qb, 1)
-                        CludesUI.PP.ShowBorder(importData.qBorder)
+                        CUI.PP.UpdateBorder(importData.qBorder, 1, qr, qg, qb, 1)
+                        CUI.PP.ShowBorder(importData.qBorder)
                         importData.qStyled = nil
                     else
                         PPb.SetBorderColor(importData.qBorder, qr, qg, qb, 1)
@@ -13259,7 +13260,7 @@ do
         )
     end
 
-    CludesUI._Loot_RefreshBorder = function()
+    CUI._Loot_RefreshBorder = function()
         local win = _G.LootFrame
         if not (lootSkinned and win) then return end
         -- Open: a full pass also restyles the icon borders. Closed: the next open does that.
@@ -13332,7 +13333,7 @@ do
             end
             -- Frames of OURS hanging off the toast (shell atlas border, PP border
             -- container): the recursion below would clear their textures too.
-            local PPt = CludesUI and (CludesUI.PanelPP or CludesUI.PP)
+            local PPt = CUI and (CUI.PanelPP or CUI.PP)
             local ourBorder = PPt and PPt.GetBorders and PPt.GetBorders(t)
             local function KillArt(owner, nestDepth)
                 nestDepth = nestDepth or 0
@@ -13517,7 +13518,7 @@ do
                 local barFrame = owner:CreateTexture(nil, "OVERLAY", nil, 7)
                 -- Tab-underline pixel treatment: unsnapped, so a thin strip cannot
                 -- round away at fractional scales.
-                local Pix = CludesUI and CludesUI.PanelPP
+                local Pix = CUI and CUI.PanelPP
                 if Pix and Pix.DisablePixelSnap then Pix.DisablePixelSnap(barFrame) end
                 skinData.selBar = barFrame
             end
@@ -13537,7 +13538,7 @@ do
             -- position rasterizes exactly N columns, flush with the shell's
             -- snapped fill: no seam, no drift. Re-solved every pass so scale
             -- changes and frame moves re-align it; falls back to plain corner anchors when the frame has no rect yet.
-            local PanelPx = CludesUI and CludesUI.PP
+            local PanelPx = CUI and CUI.PP
             local esc = t.GetEffectiveScale and t:GetEffectiveScale()
             local onePx = (PanelPx and PanelPx.perfect and esc and esc > 0) and (PanelPx.perfect / esc) or 1
             local function snap(v) return math.floor(v / onePx + 0.5 + 0.001) * onePx end
@@ -13654,7 +13655,7 @@ do
 
         -- Options entry point: re-sweep so a strip toggle lands on a toast that is
         -- already on screen (the next one would pick it up regardless).
-        CludesUI._LootToast_Refresh = function() SweepAlerts(true) end
+        CUI._LootToast_Refresh = function() SweepAlerts(true) end
 
         local skinData = FrameDataOf(_G.AlertFrame or UIParent)
         if skinData.toastEvt then return end
@@ -13825,7 +13826,7 @@ do
         if not win then return end
         -- The Friends List stock styles (Style page) keep Blizzard's whole Social
         -- window, its frame included; the Window Skins card is blocked meanwhile.
-        local found = CludesUI._ModuleNS and CludesUI._ModuleNS.CludesUIFriends
+        local found = CUI._ModuleNS and CUI._ModuleNS.CludesUIFriends
         if found and found.FR_Style and found.FR_Style() ~= "cui" then return end
 
         Skin.Shell("socialui", win)
@@ -14284,7 +14285,7 @@ do
         -- window moves), spacing ENTIRELY in physical pixels (1px lines, 3px gap,
         -- 4px pitch) so the glyph renders identically at every UI scale.
         local lines = {}
-        local PanelPx = CludesUI and CludesUI.PP
+        local PanelPx = CUI and CUI.PP
         local esc = rb.GetEffectiveScale and rb:GetEffectiveScale()
         local onePx = (PanelPx and PanelPx.perfect and esc and esc > 0) and (PanelPx.perfect / esc) or 1
         local pitch = onePx * 4
@@ -15524,7 +15525,7 @@ do
     -- UIParent's direct children, and these containers are two levels inside a
     -- window.
     function QueuePacks.AdoptOptionWidgets(opt)
-        local adopt = CludesUI._HUDWidgetAdopt
+        local adopt = CUI._HUDWidgetAdopt
         if type(adopt) ~= "function" then return end
         for _, keyName in ipairs({ "WidgetContainer" }) do
             local okC, wc = pcall(QueuePacks.RawGet, opt, keyName)
@@ -16348,10 +16349,10 @@ do
         local _, token = UnitClass(unitToken)
         if type(token) ~= "string" then return false end
         if not issecretvalue(token) then
-            local color = CludesUI.GetClassColor(token)
+            local color = CUI.GetClassColor(token)
             return true, color.r, color.g, color.b
         end
-        local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, token)
+        local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(unitToken, token)
         if success then return true, red, green, blue end
         local color = C_ClassColor.GetClassColor(token)
         if color then return true, color.r, color.g, color.b end
@@ -16384,7 +16385,7 @@ do
         if barFrame.lockColor then return end
         local token = barFrame.powerToken
         if type(token) ~= "string" or issecretvalue(token) then return end
-        local color = CludesUI.GetPowerColor(token)
+        local color = CUI.GetPowerColor(token)
         if not color then
             color = PowerBarColor and PowerBarColor[token]
             if not (color and color.atlas) then return end
@@ -16418,7 +16419,7 @@ do
     function FC.Frame(ownerFrame, top, bottom, seam)
         local skinData = FrameDataOf(ownerFrame)
         if skinData.fcEdge then return skinData.fcEdge end
-        local Pix = CludesUI.PP
+        local Pix = CUI.PP
         local back = CreateFrame("Frame", nil, ownerFrame)
         back:SetPoint("TOPLEFT", top, "TOPLEFT")
         back:SetPoint("BOTTOMRIGHT", bottom, "BOTTOMRIGHT")
@@ -16459,7 +16460,7 @@ do
     function FC.SpecIcon(ownerFrame, edge, specInfo, size)
         local skinData = FrameDataOf(ownerFrame)
         if skinData.fcSpec then return end
-        local Pix = CludesUI.PP
+        local Pix = CUI.PP
         local tabBox = CreateFrame("Frame", nil, ownerFrame)
         tabBox:SetSize(size, size)
         tabBox:SetPoint("TOPLEFT", edge, "TOPRIGHT")
@@ -16490,7 +16491,7 @@ do
         local edge = CreateFrame("Frame", nil, cc)
         edge:SetAllPoints(cc)
         edge:SetFrameLevel(cc:GetFrameLevel() + 3)
-        CludesUI.PP.CreateBorder(edge, 0, 0, 0, 1, 1, "OVERLAY", 7)
+        CUI.PP.CreateBorder(edge, 0, 0, 0, 1, 1, "OVERLAY", 7)
         skinData.fcEdge = edge
         hooksecurefunc(cc.Icon, "SetTexture", function(_, file) edge:SetShown(type(file) ~= "nil") end)
         edge:SetShown(type(cc.Icon:GetTexture()) ~= "nil")
@@ -16544,7 +16545,7 @@ do
         FC.Trinket(win.CC)
         local cast = win.CastingBar
         if cast and not cast:IsForbidden() then
-            CludesUI.PP.CreateBorder(cast, 0, 0, 0, 1, 1, "OVERLAY", 7)
+            CUI.PP.CreateBorder(cast, 0, 0, 0, 1, 1, "OVERLAY", 7)
             if cast.Icon then Skin.SquareIcon(cast.Icon, cast) end
             if cast.Text then Skin.Font(cast.Text) end
         end

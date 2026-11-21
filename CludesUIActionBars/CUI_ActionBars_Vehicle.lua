@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Vehicle.lua
 --
@@ -456,7 +457,7 @@ function ABAR._UpdateSpellbookNeverBars(resync)
                 cfg
                 and cfg.spellbookShow
                 and cfg.enabled ~= false
-                and ((CludesUI.VisOverrideValue(cfg) or cfg.barVisibility or "always") ~= "always" or ABAR.VisibilityCompat.IsNever(
+                and ((CUI.VisOverrideValue(cfg) or cfg.barVisibility or "always") ~= "always" or ABAR.VisibilityCompat.IsNever(
                     cfg
                 ) or (ABAR._padHide and cfg.gamepadHideBar == true))
                 and not (ABAR._visOverride and ABAR._visOverride[details.key])

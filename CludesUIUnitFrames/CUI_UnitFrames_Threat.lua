@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Threat.lua
 --
@@ -10,7 +11,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, mod = ...
 
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local frameList, GetSelectedFont, SetFSFont = Inner.frames, Inner.GetSelectedFont, Inner.SetFSFont
@@ -66,7 +67,7 @@ local function PT_Show(state, color)
     local widget = PT_EnsureBorder(popFrame)
     if _ptShownState ~= state then
         _ptShownState = state
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             widget,
             2,
             color.r,
@@ -82,7 +83,7 @@ local function PT_Show(state, color)
             2
         )
     else
-        CludesUI.SetBorderStyleColor(widget, color.r, color.g, color.b, 1)
+        CUI.SetBorderStyleColor(widget, color.r, color.g, color.b, 1)
     end
     widget:Show()
 end
@@ -147,7 +148,7 @@ end
 --  defines none of it). The watcher carries no events until
 --  SetThreatPctEnabled(true).
 -------------------------------------------------------------------------------
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     -- Inside spots sit on the health bar; outside spots sit beside the whole
     -- frame (past an attached portrait), centred on its height.
     local POS = {
@@ -165,7 +166,7 @@ if CludesUI.IS_FOREVER then
         local size = profile.threatPctSize
         local posX, posY = profile.threatPctXOffset, profile.threatPctYOffset
         local font = GetSelectedFont()
-        local outline = CludesUI.GetFontOutlineFlag("unitFrames")
+        local outline = CUI.GetFontOutlineFlag("unitFrames")
         if
             widget._tpPos == posKey
             and widget._tpSize == size
@@ -208,7 +209,7 @@ if CludesUI.IS_FOREVER then
                     widget._threatPctText = fontStr
                 end
                 Layout(widget, fontStr)
-                CludesUI.PaintThreatPct(fontStr, pct, status, isTanking, profile.threatPctColorByThreat)
+                CUI.PaintThreatPct(fontStr, pct, status, isTanking, profile.threatPctColorByThreat)
                 fontStr:Show()
                 return
             end

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_ExtraFrames.lua
 --
@@ -137,7 +138,7 @@ do
                 if
                     name
                     and not seen[name]
-                    and CludesUI.UnitEffectiveRole("raid" .. i) == "TANK"
+                    and CUI.UnitEffectiveRole("raid" .. i) == "TANK"
                     -- Exclude Myself (Show Tanks cog): the tanks auto-include
                     -- skips the player's own frame; explicit hotkey picks below
                     -- still add it.
@@ -171,7 +172,7 @@ do
             return mod.RF_OnePixel(false)
         end
         -- Same grid as FB.FreePin: the extra container's own scale.
-        return CludesUI.PP.SnapForES(cfg.cellSpacing or 2, Extras.container:GetEffectiveScale())
+        return CUI.PP.SnapForES(cfg.cellSpacing or 2, Extras.container:GetEffectiveScale())
     end
 
     -- Geometry only: container size, button stacking, per-button size (Extra
@@ -678,7 +679,7 @@ do
         -- stays legitimate.
         if
             set.showTanks
-            and CludesUI.UnitEffectiveRole(unitToken) == "TANK"
+            and CUI.UnitEffectiveRole(unitToken) == "TANK"
             and not (set.excludeSelfTank and UnitIsUnit(unitToken, "player"))
         then
             return

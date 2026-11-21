@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Transport.lua  (WoW Forever only)
 --  Boat and Zeppelin Timers: when each ship leaves and arrives, on minimap
@@ -34,7 +35,7 @@ local ARRIVAL, DEPARTURE = "arrival", "departure"
 local SAME_MAP = { [2665] = 2521 }
 local function SameMap(map) return SAME_MAP[map] or map end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 
 -------------------------------------------------------------------------------
 --  Times (server clock, per realm)
@@ -771,7 +772,7 @@ end
 local function HudBuild()
     if hud then return hud end
     hud = CreateFrame("Frame", "CludesUIShipTimer", UIParent)
-    CludesUI.Kit.Panel(hud, 0.7)
+    CUI.Kit.Panel(hud, 0.7)
     hud.names = hud:CreateFontString(nil, "OVERLAY")
     hud.names:SetPoint("TOPLEFT", 8, -6)
     hud.names:SetJustifyH("LEFT")
@@ -793,7 +794,7 @@ end
 
 function module.TransportDrawZone()
     if not hud then return end
-    local show = Enabled() and Get("zone") and (zoneSpots[1] ~= nil or CludesUI._unlockActive)
+    local show = Enabled() and Get("zone") and (zoneSpots[1] ~= nil or CUI._unlockActive)
     if not show then
         hud:Hide()
         return
@@ -808,8 +809,8 @@ function module.TransportDrawZone()
         nameList[1], times[1] = "Boat to Booty Bay", Tinted("Departs in 0:42", DOCKED)
     end
     local size = Get("size")
-    CludesUI.Kit.Font(hud.names, size, "essentials")
-    CludesUI.Kit.Font(hud.times, size, "essentials")
+    CUI.Kit.Font(hud.names, size, "essentials")
+    CUI.Kit.Font(hud.times, size, "essentials")
     hud.names:SetText(table.concat(nameList, "\n"))
     hud.times:SetText(table.concat(times, "\n"))
     hud:SetSize(
@@ -878,13 +879,13 @@ local function Apply()
         end
         if IsLoggedIn() then Times.Prune(GetServerTime()) end
         if Get("zone") then HudBuild() end
-        if hud and not CludesUI._unlockActive then F.Place(hud) end
+        if hud and not CUI._unlockActive then F.Place(hud) end
     end
     ShareApply()
     Refresh()
 end
 
-CludesUI._Transport = { Get = Get, Cfg = F.Cfg, Apply = Apply }
+CUI._Transport = { Get = Get, Cfg = F.Cfg, Apply = Apply }
 
 F.Start(Apply, {
     key = "CUI_ShipTimer",

@@ -1,18 +1,19 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CooldownManager_Options\LivePreview_Options.lua
 --  Cooldown Manager options: the interactive bar preview in the content header
 --  of the CDM Bars page (BuildCDMLivePreview). Definitions only; the shared
 --  helpers come from ns._CDMO_OptEnv (filled by CUI_CooldownManager_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
+local mod = CUI._ModuleNS["CludesUICooldownManager"]
 if not mod then return end -- module disabled: no options page
 
 -- The options page pool (CludesUI_FramePool.lua): a frame made under a pool
 -- host (a reused header) is handed out again reset to fresh; anywhere else this
 -- is the plain CreateFrame. The drag ghost is one kept frame for the session.
-local CreateFrame = CludesUI._Pool.CreateFrame
-local PoolKept, PoolGen = CludesUI._Pool.Kept, CludesUI._Pool.Gen
+local CreateFrame = CUI._Pool.CreateFrame
+local PoolKept, PoolGen = CUI._Pool.Kept, CUI._Pool.Gen
 
 --- Build the live CDM bar preview in the content header (interactive)
 local function BuildCDMLivePreview(hostFrame, yOff)
@@ -35,7 +36,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     if not barInfo then return 0 end
 
     local barId = barInfo.key
-    local PAD = CludesUI.CONTENT_PAD or 10
+    local PAD = CUI.CONTENT_PAD or 10
 
     -- Create preview container scale to match real in-game icon sizes
     local previewScale = UIParent:GetEffectiveScale() / hostFrame:GetEffectiveScale()
@@ -61,7 +62,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     scrollFrame:SetScrollChild(popFrame)
     scrollFrame:EnableMouseWheel(true)
 
-    local UpdatePVThumb = CludesUI.AttachSmoothScrollbar(scrollFrame, {
+    local UpdatePVThumb = CUI.AttachSmoothScrollbar(scrollFrame, {
         step = 40,
         thumbMin = 20,
         trackParent = wrapper,
@@ -202,7 +203,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
 
     -- Insertion line indicator (accent line between icons; horizontal on a vertical bar)
     local dropLine = popFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-    local accentGreen = CludesUI.CLUDES_GREEN
+    local accentGreen = CUI.CLUDES_GREEN
     dropLine:SetColorTexture(accentGreen.r, accentGreen.g, accentGreen.b, 0.9)
     dropLine:SetWidth(2)
     dropLine:Hide()
@@ -293,7 +294,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if not edge then return nil, nil end
         local iconSz = edge.iconSize or 36
         -- Match the preview render: width-matched bars use a fixed icon size.
-        if CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget("CDM_" .. edge.key) then
+        if CUI.GetWidthMatchTarget and CUI.GetWidthMatchTarget("CDM_" .. edge.key) then
             iconSz = 36
         end
         local gap = edge.spacing or 2
@@ -496,7 +497,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if not edge then return end
         local iconSz = edge.iconSize or 36
         -- Match the preview render: width-matched bars use a fixed icon size.
-        if CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget("CDM_" .. edge.key) then
+        if CUI.GetWidthMatchTarget and CUI.GetWidthMatchTarget("CDM_" .. edge.key) then
             iconSz = 36
         end
         local gap = edge.spacing or 2
@@ -724,7 +725,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if slotFrame._previewBlizzHidden then
             name = name
                 .. "\n"
-                .. CludesUI.Lf(
+                .. CUI.Lf(
                     "Blizzard's Cooldown Manager has this in %1$s, so it does not show in game. Open Blizzard CDM and move it to %2$s or %3$s.",
                     COOLDOWN_VIEWER_SETTINGS_CATEGORY_NOT_IN_BAR,
                     COOLDOWN_VIEWER_SETTINGS_CATEGORY_ESSENTIAL,
@@ -736,11 +737,11 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             edge
             and edge.barType ~= "custom_buff"
             and not (edge.key == "buffs" and slotFrame._previewItemID)
-            and not CludesUI.SpecOverrides_EditSessionActive()
+            and not CUI.SpecOverrides_EditSessionActive()
         then
-            name = name .. "\n" .. CludesUI.L("Click spell for alert settings")
+            name = name .. "\n" .. CUI.L("Click spell for alert settings")
         end
-        CludesUI.ShowWidgetTooltip(slotFrame, name)
+        CUI.ShowWidgetTooltip(slotFrame, name)
     end
 
     local function CreatePreviewSlot(position)
@@ -774,14 +775,14 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         slotFrame._tex = sIcon -- alias for shape system compatibility
 
         local sEdges = {}
-        local Pix = CludesUI and CludesUI.PP
+        local Pix = CUI and CUI.PP
         if Pix then Pix.CreateBorder(slotFrame, 0, 0, 0, 1, 1, "OVERLAY", 7) end
         slotFrame._edges = sEdges -- empty; borders managed by PP
 
         -- Hosted-buff marker border: gold (same color as the buff "+" add button), same 2px
         -- geometry as the hover highlight, always ON for buff icons hosted on this CD/utility
         -- bar so they read apart from the cooldowns at a glance. Level +1 -- UNDER the hover highlight (+2), so hovering still shows the accent border on top.
-        local slotPP = CludesUI and CludesUI.PP
+        local slotPP = CUI and CUI.PP
         local slotHostCont = CreateFrame("Frame", nil, slotFrame)
         slotHostCont:SetAllPoints()
         slotHostCont:SetFrameLevel(slotFrame:GetFrameLevel() + 1)
@@ -789,7 +790,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if hostBrd then hostBrd:Hide() end
         slotFrame._hostBrd = hostBrd
         -- Hover highlight (2px accent border, child container avoids conflict with existing PP border)
-        local accentGreen = CludesUI.CLUDES_GREEN
+        local accentGreen = CUI.CLUDES_GREEN
         local slotHlCont = CreateFrame("Frame", nil, slotFrame)
         slotHlCont:SetAllPoints()
         slotHlCont:SetFrameLevel(slotFrame:GetFrameLevel() + 2)
@@ -843,7 +844,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             ShowSlotTip(slotFrame)
         end)
         slotFrame:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
             if dragSlot then return end
             local bdHov = SelectedCDMBar()
             if slotFrame._shapeBorder and slotFrame._shapeBorder:IsShown() then
@@ -878,7 +879,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         -- Default buff bar: no interaction (Blizzard controls the list)
         slotFrame:SetScript("OnClick", function(self, btnFrame)
             if GetTime() - dragEndTime < 0.2 then return end
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
             local edge = SelectedCDMBar()
             if not edge then return end
             local isDefaultBuffs = (edge.key == "buffs")
@@ -1202,7 +1203,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end
             dragSlot = self
             dragIdx = si
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
             -- Clear hover highlight on the dragged slot
             if self._shapeBorder and self._shapeBorder:IsShown() then
                 local bd2 = SelectedCDMBar()
@@ -1349,20 +1350,20 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     addLbl:SetText("+")
 
     -- Hover highlight for add button (2px accent border, same as slots)
-    local accentGreen = CludesUI.CLUDES_GREEN
+    local accentGreen = CUI.CLUDES_GREEN
     local addHlCont = CreateFrame("Frame", nil, addBtn)
     addHlCont:SetAllPoints()
     addHlCont:SetFrameLevel(addBtn:GetFrameLevel() + 1)
-    local addPP = CludesUI and CludesUI.PP
+    local addPP = CUI and CUI.PP
     local addBrd = addPP
         and addPP.CreateBorder(addHlCont, accentGreen.r, accentGreen.g, accentGreen.b, 1, 2, "OVERLAY", 7)
     if addBrd then addBrd:Hide() end
 
     addBtn:SetScript("OnEnter", function()
-        local accR, accG, accB = CludesUI.GetAccentColor()
+        local accR, accG, accB = CUI.GetAccentColor()
         addLbl:SetTextColor(accR, accG, accB, 1)
         if addBrd then addBrd:Show() end
-        if CludesUI.ShowWidgetTooltip then
+        if CUI.ShowWidgetTooltip then
             -- This same button adds buffs on buff-family bars, so the tip
             -- follows the selected bar rather than hard-coding CD/Utility.
             local bdHov = SelectedCDMBar()
@@ -1372,14 +1373,14 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             else
                 tipText = "Add a CD/Utility Spell"
             end
-            CludesUI.ShowWidgetTooltip(addBtn, CludesUI.L(tipText))
+            CUI.ShowWidgetTooltip(addBtn, CUI.L(tipText))
         end
     end)
     addBtn:SetScript("OnLeave", function()
-        local accR, accG, accB = CludesUI.GetAccentColor()
+        local accR, accG, accB = CUI.GetAccentColor()
         addLbl:SetTextColor(accR, accG, accB, 0.6)
         if addBrd then addBrd:Hide() end
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
     addBtn:SetScript("OnClick", function(self)
         local edge = SelectedCDMBar()
@@ -1463,20 +1464,20 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     local buffAddHlCont = CreateFrame("Frame", nil, addBuffBtn)
     buffAddHlCont:SetAllPoints()
     buffAddHlCont:SetFrameLevel(addBuffBtn:GetFrameLevel() + 1)
-    local buffAddBrd = CludesUI
-        and CludesUI.PP
-        and CludesUI.PP.CreateBorder(buffAddHlCont, BUFF_ADD_R, BUFF_ADD_G, BUFF_ADD_B, 1, 2, "OVERLAY", 7)
+    local buffAddBrd = CUI
+        and CUI.PP
+        and CUI.PP.CreateBorder(buffAddHlCont, BUFF_ADD_R, BUFF_ADD_G, BUFF_ADD_B, 1, 2, "OVERLAY", 7)
     if buffAddBrd then buffAddBrd:Hide() end
 
     addBuffBtn:SetScript("OnEnter", function()
         buffAddLbl:SetTextColor(BUFF_ADD_R, BUFF_ADD_G, BUFF_ADD_B, 1)
         if buffAddBrd then buffAddBrd:Show() end
-        CludesUI.ShowWidgetTooltip(addBuffBtn, CludesUI.L("Add a Buff Spell"))
+        CUI.ShowWidgetTooltip(addBuffBtn, CUI.L("Add a Buff Spell"))
     end)
     addBuffBtn:SetScript("OnLeave", function()
         buffAddLbl:SetTextColor(BUFF_ADD_R, BUFF_ADD_G, BUFF_ADD_B, 0.7)
         if buffAddBrd then buffAddBrd:Hide() end
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
     addBuffBtn:SetScript("OnClick", function(self)
         local edge = SelectedCDMBar()
@@ -1513,7 +1514,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         local iconPx = edge.iconSize or 36
         -- Width-matched bars derive their real icon size from the matched target, so
         -- bd.iconSize (the disabled Icon Scale value) is ignored at runtime. Show a neutral fixed size in the preview rather than the stale scale value.
-        if CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget("CDM_" .. edge.key) then
+        if CUI.GetWidthMatchTarget and CUI.GetWidthMatchTarget("CDM_" .. edge.key) then
             iconPx = 36
         end
         local iconHeight = iconPx
@@ -1695,7 +1696,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         -- unlearned test above; the catalogue set is built only once a
         -- candidate shows up.
         if
-            CludesUI.IS_FOREVER
+            CUI.IS_FOREVER
             and edge.key ~= "buffs"
             and not isBuffBar
             and not isCustomBuffBar
@@ -2027,7 +2028,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             local bSz = edge.borderSize or 1
             -- The art inset follows an exact Solid size (borderSizePx) so the border keeps sitting outside the art here.
             local bTex = edge.borderTexture or "solid"
-            local bPx = CludesUI.BorderPx(edge.borderSizePx, bSz, bTex)
+            local bPx = CUI.BorderPx(edge.borderSizePx, bSz, bTex)
             if bPx and bTex == "solid" then bSz = bPx end
             slotFrame._icon:ClearAllPoints()
             Pix.Point(slotFrame._icon, "TOPLEFT", slotFrame, "TOPLEFT", bSz, -bSz)
@@ -2055,7 +2056,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             -- it does to a bar's own icons. The preview's overlays (text,
             -- hover and hosted-buff borders, glow) move above the ring, at
             -- the levels their live counterparts use.
-            if CludesUI.BlizzStyle.Get("cdmicons") and mod.CdmApplyBlizzIconArt then
+            if CUI.BlizzStyle.Get("cdmicons") and mod.CdmApplyBlizzIconArt then
                 if Pix.GetBorders(slotFrame) then Pix.HideBorder(slotFrame) end
                 slotFrame._bg:Hide()
                 mod.CdmApplyBlizzIconArt(slotFrame)
@@ -2078,7 +2079,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 and shape ~= "square"
                 and shape ~= "csquare"
                 and shape ~= "none"
-                and not CludesUI.BlizzStyle.Get("cdmicons")
+                and not CUI.BlizzStyle.Get("cdmicons")
             then
                 slotFrame._hlBrd:Hide()
             end
@@ -2139,7 +2140,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         scPoint = "BOTTOMRIGHT"
                         scY = scY + 2
                     end
-                    CludesUI.ApplyIconTextFont(slotFrame._stackText, scFont, scSize, "cdm")
+                    CUI.ApplyIconTextFont(slotFrame._stackText, scFont, scSize, "cdm")
                     slotFrame._stackText:SetTextColor(scR, scG, scB)
                     slotFrame._stackText:ClearAllPoints()
                     slotFrame._stackText:SetPoint(scPoint, slotFrame, scPoint, scX, scY)
@@ -2232,7 +2233,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         addBtn:ClearAllPoints()
         Pix.Point(addBtn, "TOPLEFT", self, "TOPLEFT", addPx, addPy)
         if Pix.GetBorders(addBtn) then Pix.SetBorderSize(addBtn, 1) end
-        local accR, accG, accB = CludesUI.GetAccentColor()
+        local accR, accG, accB = CUI.GetAccentColor()
 
         addLbl:SetTextColor(accR, accG, accB, 0.6)
         addBtn:Show()
@@ -2294,12 +2295,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         end
         local function ShowReorderHint(textValue)
             -- Override editing sessions: the per-icon menu is Remove Spell only.
-            if CludesUI.SpecOverrides_EditSessionActive() then
+            if CUI.SpecOverrides_EditSessionActive() then
                 textValue =
                     "Drag to Reorder. Click to remove spells. Per-spell settings are not part of the override system."
             end
             local rowHeight = self._reorderHintText
-            rowHeight:SetText(CludesUI.L(textValue))
+            rowHeight:SetText(CUI.L(textValue))
             rowHeight:ClearAllPoints()
             rowHeight:SetPoint("TOP", self, "TOPLEFT", self:GetWidth() / 2, -(totalH + 14))
             rowHeight:SetWidth(self:GetWidth() - 20)
@@ -2337,16 +2338,16 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             -- Wording must track the "Show on Target" toggle -- otherwise this text keeps promising focus-tracking even when the bar is configured to follow the current target instead.
             local fkMain
             if edge.focusKickUseTarget then
-                fkMain = CludesUI.L("This bar will always be attached to your current target's nameplate")
+                fkMain = CUI.L("This bar will always be attached to your current target's nameplate")
             else
-                fkMain = CludesUI.L("This bar will always be attached to your focus target's nameplate")
+                fkMain = CUI.L("This bar will always be attached to your focus target's nameplate")
             end
             -- Second, dimmer line: points sound-only users at the setup that needs no icon.
             kickText:SetText(
                 fkMain
                     .. "\n"
-                    .. CludesUI.COLOR_CODES.DIM
-                    .. CludesUI.L(
+                    .. CUI.COLOR_CODES.DIM
+                    .. CUI.L(
                         "Want only the cast sound? Leave this bar empty and set Interrupt Spell below."
                     )
                     .. "|r"
@@ -2406,8 +2407,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     -- This module's own header preview slot (its readers: the CDM options and
     -- the reanchor's preview pass); the shared slot is still written for the
     -- readers that have not moved to their own.
-    CludesUI._cdmHeaderPreview = popFrame
-    CludesUI._contentHeaderPreview = popFrame
+    CUI._cdmHeaderPreview = popFrame
+    CUI._contentHeaderPreview = popFrame
     -- Start active state preview if toggled on
     if _cdmActivePreviewOn then StartActiveStatePreview() end
     -- Return wrapper height (already capped by Update's resize logic)

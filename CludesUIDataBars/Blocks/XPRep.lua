@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\XPRep.lua - Info Bar block: an XP or reputation bar.
 --
@@ -86,7 +87,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             -- and a hidden block cannot be clicked.
             if Settings().mode ~= "xp" then return nil end
             local off = IsXPUserDisabled and IsXPUserDisabled()
-            return Grey(CludesUI.L(off and "XP Off (Right-Click: Rep)" or "Max Level (Right-Click: Rep)"))
+            return Grey(CUI.L(off and "XP Off (Right-Click: Rep)" or "Max Level (Right-Click: Rep)"))
         end
         local maxXP = UnitXPMax("player") or 1
         if maxXP <= 0 then maxXP = 1 end
@@ -114,7 +115,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         if not name then
             -- As above: hidden in automatic mode only.
             if Settings().mode ~= "rep" then return nil end
-            return Grey(CludesUI.L("No Rep Tracked"))
+            return Grey(CUI.L("No Rep Tracked"))
         end
         -- A friendship's thresholds come back equal (a permanent 0%); its own
         -- API has the real rank range. Checked before renown.

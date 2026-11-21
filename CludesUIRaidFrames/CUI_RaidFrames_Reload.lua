@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Reload.lua
 --
@@ -266,7 +267,7 @@ mod._raidUnitToButton = unitToButton
 -- party override (party_healthColorMode, present only when the party color
 -- section is decoupled) flips the same way. db is set at PLAYER_LOGIN; the
 -- closures read it lazily.
-CludesUI.RegisterDarkModeToggle({
+CUI.RegisterDarkModeToggle({
     id = "raidFrames",
     isOn = function() return (saved and saved.profile and saved.profile.healthColorMode == "dark") or false end,
     setOn = function(enabled)
@@ -872,8 +873,8 @@ end
 -- While anchored, the unlock anchor system owns the container's position, so the tier
 -- offset is folded into the position IT computes rather than applied on top afterwards --
 -- applying it after would sit outside the anchor's idempotent guard and reposition every pass forever.
-CludesUI._anchorExtraOffset = CludesUI._anchorExtraOffset or {}
-CludesUI._anchorExtraOffset["RF_RaidFrames"] = function()
+CUI._anchorExtraOffset = CUI._anchorExtraOffset or {}
+CUI._anchorExtraOffset["RF_RaidFrames"] = function()
     local _, shade = mod._RFResolveTierOverride(mod._GetEffectiveRaidSize())
     return (shade and shade.offsetX) or 0, (shade and shade.offsetY) or 0
 end
@@ -888,11 +889,11 @@ mod._ApplyTierOffset = function()
     -- anchor computed, rather than replacing it. Skipping it outright is what made the
     -- per-tier offset fields silently inert for anyone who anchored the raid frames to
     -- another element -- the setting was saved, shown in the options, and did nothing.
-    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("RF_RaidFrames") then
+    if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("RF_RaidFrames") then
         -- The anchor owns the position and now folds the tier offset into it
         -- (see _anchorExtraOffset above), so a tier change just needs the
         -- anchor re-run; moving the container from here would fight it.
-        if CludesUI.ReapplyUnlockAnchor then CludesUI.ReapplyUnlockAnchor("RF_RaidFrames") end
+        if CUI.ReapplyUnlockAnchor then CUI.ReapplyUnlockAnchor("RF_RaidFrames") end
         return
     end
     local cfg = saved.profile

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_VisibilityDrivers.lua
 --
@@ -42,10 +43,10 @@ Inner.isApplyingAllSetters[#Inner.isApplyingAllSetters + 1] = function(val) _isA
 -- Multi-select visibility compiler: thin delegate to the shared secure driver
 -- compiler in CludesUI_Visibility.lua (one grammar for Action Bars and
 -- Unit Frames). EAB table fields, not locals.
-function ABAR.BuildVisModeConjuncts(vm) return CludesUI.BuildVisModeConjuncts(vm) end
+function ABAR.BuildVisModeConjuncts(vm) return CUI.BuildVisModeConjuncts(vm) end
 
 function ABAR.BuildVisibilityStringMulti(hidePrefix, vm)
-    return CludesUI.BuildVisibilityDriverString(hidePrefix, vm)
+    return CUI.BuildVisibilityDriverString(hidePrefix, vm)
 end
 
 -- Edges this addon watches, for the shared Any tail builder: the target/enemy axes may
@@ -64,7 +65,7 @@ local function BuildVisibilityString(details, cfg, visOverride)
     -- An applied Visibility override replaces the whole setting, the shared option
     -- lanes included. The runtime toggle keybind still wins over it, the same way it
     -- wins over the saved mode.
-    local visOv = (not visOverride) and CludesUI.VisOverrideValue(cfg) or nil
+    local visOv = (not visOverride) and CUI.VisOverrideValue(cfg) or nil
 
     if details.isStance and (GetNumShapeshiftForms() or 0) == 0 then
         return "hide" -- classes/specs with no forms have no stance bar to show
@@ -92,14 +93,14 @@ local function BuildVisibilityString(details, cfg, visOverride)
     -- QuickKeybind, grid drag) substitute the whole mode term as for single
     -- modes, so they keep the legacy path.
     local vm
-    if not visOverride and CludesUI.GetActiveVisibilityModes then
-        vm = CludesUI.GetActiveVisibilityModes(cfg, "barVisibility")
+    if not visOverride and CUI.GetActiveVisibilityModes then
+        vm = CUI.GetActiveVisibilityModes(cfg, "barVisibility")
     end
 
     -- Any match: the shared builder compiles the whole tail; Lua-only lanes (instances,
     -- housing, skyriding mount) are resolved at build time, so their verdict is only as
     -- fresh as the last driver rebuild. Explicit overrides keep the legacy path.
-    if not visOverride and cfg.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
+    if not visOverride and cfg.visibilityMatch == "any" and CUI.BuildAnyMatchTail then
         local anyPrefix, anyWrap
         if details.isPetBar then
             anyPrefix = "[petbattle] hide; "
@@ -111,7 +112,7 @@ local function BuildVisibilityString(details, cfg, visOverride)
         else
             anyPrefix = "[vehicleui][petbattle][overridebar] hide; "
         end
-        return anyPrefix .. CludesUI.BuildAnyMatchTail(cfg, "barVisibility", vm, anyWrap, ABAR.VIS_EDGES)
+        return anyPrefix .. CUI.BuildAnyMatchTail(cfg, "barVisibility", vm, anyWrap, ABAR.VIS_EDGES)
     end
 
     -- Pet bar has unique logic: it only shows when a pet is active and
@@ -298,7 +299,7 @@ function ABAR:ApplyCombatVisibility()
                 -- branch inside CheckVisibilityOptionsNonMacro has no live caller left and
                 -- is kept only so the helper stays correct for a future non-driver one.
                 elseif
-                    barCfg.visibilityMatch ~= "any" and CludesUI.CheckVisibilityOptionsNonMacro(barCfg)
+                    barCfg.visibilityMatch ~= "any" and CUI.CheckVisibilityOptionsNonMacro(barCfg)
                 then
                     newStr = "hide"
                 else
@@ -346,7 +347,7 @@ function ABAR:_RefreshSoftTargetGate()
             -- for that bar. Deliberately over-inclusive (it also matches the
             -- macro-expressible lanes) -- a needless walk on a rare zone/mount edge is
             -- cheap, a missed one leaves the bar stale until the next settings change.
-            if not anyNonMacro and CludesUI.VisHasAnyOption(barCfg) then anyNonMacro = true end
+            if not anyNonMacro and CUI.VisHasAnyOption(barCfg) then anyNonMacro = true end
         end
         if not anyNonMacro and EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(details) then anyNonMacro = true end
     end

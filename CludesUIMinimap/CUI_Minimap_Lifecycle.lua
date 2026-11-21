@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Lifecycle.lua
 --
@@ -122,15 +123,15 @@ local _mmDriverStr
 local function MinimapDriverString(profile, vm)
     -- An applied Visibility override replaces the whole setting: a constant, and the
     -- shared selection underneath never reaches the driver.
-    local visOv = CludesUI.VisOverrideValue(profile)
+    local visOv = CUI.VisOverrideValue(profile)
     if visOv then return (visOv == "never") and "hide" or "show" end
     -- Any match: Lua-only lanes (instances, housing, skyriding mount) are resolved at
     -- build time (caller runs out of combat only); a later zone/mount edge re-runs the
     -- dispatcher and re-registers the string.
-    if profile.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
-        return (CludesUI.BuildAnyMatchTail(profile, "visibility", vm))
+    if profile.visibilityMatch == "any" and CUI.BuildAnyMatchTail then
+        return (CUI.BuildAnyMatchTail(profile, "visibility", vm))
     end
-    if vm then return CludesUI.BuildVisibilityDriverString("", vm) end
+    if vm then return CUI.BuildVisibilityDriverString("", vm) end
     local mode = profile.visibility
     if mode == "in_combat" then return "[combat] show; hide" end
     if mode == "out_of_combat" then return "[nocombat] show; hide" end
@@ -159,10 +160,10 @@ local function UpdateMinimapVisibility()
     -- skipping the update would leave "Out of Combat" permanently visible and "In Combat"
     -- permanently hidden. Alpha is no stand-in: engine-drawn blips ignore frame alpha,
     -- and a transparent map still takes the mouse. A secure state driver is the only thing that can legally hide this frame mid-combat, so combat-dependent selections get one; others keep plain Show()/Hide().
-    local vm = CludesUI.GetActiveVisibilityModes(profile, "visibility")
+    local vm = CUI.GetActiveVisibilityModes(profile, "visibility")
     -- Mouseover cannot be expressed as a macro conditional, and the poll's own Show()/Hide() would fight a driver, so those selections stay on Lua.
     local wanted = not _mmKeyHidden
-            and CludesUI.VisDependsOnCombat(profile, "visibility")
+            and CUI.VisDependsOnCombat(profile, "visibility")
             and not (vm and vm.mouseover)
             and MinimapDriverString(profile, vm)
         or nil
@@ -179,7 +180,7 @@ local function UpdateMinimapVisibility()
     if _mmDriverStr then return end
 
     if InCombatLockdown() then return end
-    local vis = CludesUI.EvalVisibility(profile)
+    local vis = CUI.EvalVisibility(profile)
     if _mmKeyHidden then
         minimap:Hide()
     elseif vis == "mouseover" then
@@ -217,7 +218,7 @@ end)
 -------------------------------------------------------------------------------
 ApplyAll = function()
     ApplyMinimap()
-    if CludesUI.RequestVisibilityUpdate then C_Timer.After(0, CludesUI.RequestVisibilityUpdate) end
+    if CUI.RequestVisibilityUpdate then C_Timer.After(0, CUI.RequestVisibilityUpdate) end
 end
 SetApplyAll(ApplyAll)
 
@@ -321,11 +322,11 @@ do
                 highlight:SetColorTexture(1, 1, 1, 0.08)
 
                 local labelText = button:CreateFontString(nil, "OVERLAY")
-                CludesUI.PrimeFontShadow(labelText, true)
-                labelText:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
+                CUI.PrimeFontShadow(labelText, true)
+                labelText:SetFont((CUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
                 labelText:SetPoint("LEFT", button, "LEFT", 10, 0)
                 labelText:SetTextColor(0.9, 0.9, 0.9)
-                labelText:SetText(CludesUI.L(entry.text))
+                labelText:SetText(CUI.L(entry.text))
 
                 local itemFn = entry.fn
                 button:SetScript("OnClick", function()
@@ -379,11 +380,11 @@ do
                 highlight:SetColorTexture(1, 1, 1, 0.08)
 
                 local labelText = button:CreateFontString(nil, "OVERLAY")
-                CludesUI.PrimeFontShadow(labelText, true)
-                labelText:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
+                CUI.PrimeFontShadow(labelText, true)
+                labelText:SetFont((CUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
                 labelText:SetPoint("LEFT", button, "LEFT", 10, 0)
                 labelText:SetTextColor(0.9, 0.9, 0.9)
-                labelText:SetText(CludesUI.L(entry.text))
+                labelText:SetText(CUI.L(entry.text))
 
                 button:HookScript("OnClick", function()
                     C_Timer.After(0, function() ShowMenu(false) end)
@@ -438,8 +439,8 @@ end
 -- side of the minimap measures from that box, not the square canvas. Live in
 -- unlock mode too, so a drag measures from the same edges as the apply.
 -- Chained in front of any provider installed before this file loaded.
-local prevExtent = CludesUI._GetAnchorTargetExtent
-CludesUI._GetAnchorTargetExtent = function(targetKey, side)
+local prevExtent = CUI._GetAnchorTargetExtent
+CUI._GetAnchorTargetExtent = function(targetKey, side)
     if targetKey == "EBS_Minimap" and Minimap and Minimap:GetLeft() then
         local left, right, top, bottom = MoverInsets()
         local ratio = Minimap:GetEffectiveScale() / UIParent:GetEffectiveScale()
@@ -466,13 +467,13 @@ function SKIN._NotifyMinimapExtent()
     local left, right, top, bottom = MoverInsets()
     if left == extL and right == extR and top == extT and bottom == extB then return end
     extL, extR, extT, extB = left, right, top, bottom
-    if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
-        CludesUI.PropagateAnchorChain("EBS_Minimap")
+    if not CUI._unlockActive and CUI.PropagateAnchorChain then
+        CUI.PropagateAnchorChain("EBS_Minimap")
     end
 end
 
 function SKIN:OnInitialize()
-    SKIN.db = CludesUI.Lite.NewDB("CludesUIMinimapDB", defaultSet)
+    SKIN.db = CUI.Lite.NewDB("CludesUIMinimapDB", defaultSet)
 
     -- Migrate legacy hideGreatVault/hidePortals into hideExtraBtns table
     local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
@@ -507,9 +508,9 @@ function SKIN:OnInitialize()
     _G._CUMM_EditModeIconScale = SKIN._EditModeIconScale
 
     -- Register visibility updater + mouseover target
-    CludesUI.RegisterVisibilityUpdater(UpdateMinimapVisibility)
-    if CludesUI.RegisterMouseoverTarget and Minimap then
-        CludesUI.RegisterMouseoverTarget(Minimap, function()
+    CUI.RegisterVisibilityUpdater(UpdateMinimapVisibility)
+    if CUI.RegisterMouseoverTarget and Minimap then
+        CUI.RegisterMouseoverTarget(Minimap, function()
             -- Minimap is the one mouseover target that is a raw protected Blizzard frame
             -- (every other module registers an addon-owned proxy); the shared poll's
             -- Show()/Hide() is blocked in combat lockdown, so report inactive during
@@ -518,7 +519,7 @@ function SKIN:OnInitialize()
             local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
             if not (profile and profile.enabled) then return false end
             -- Hover-gated sets only reveal while their conditions pass.
-            return CludesUI.VisWantsMouseover(profile, "visibility")
+            return CUI.VisWantsMouseover(profile, "visibility")
         end, function()
             -- A hover reveal shows the map at its Opacity, not full alpha.
             return SKIN._MapAlpha(SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap)
@@ -565,12 +566,12 @@ function SKIN:OnEnable()
     end
 
     -- Register minimap with unlock mode
-    if CludesUI and CludesUI.RegisterUnlockElements then
-        local MK = CludesUI.MakeUnlockElement
+    if CUI and CUI.RegisterUnlockElements then
+        local MK = CUI.MakeUnlockElement
         -- The mover outlines the map as it shows (MoverInsets above). getSize
         -- gives the same box, so the drag, the nudge and size matches all
         -- measure it.
-        CludesUI:RegisterUnlockElements({
+        CUI:RegisterUnlockElements({
             MK({
                 key = "EBS_Minimap",
                 label = "Minimap",
@@ -592,7 +593,7 @@ function SKIN:OnEnable()
                     local m = MapCfg()
                     if not m then return end
                     m.position = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                    if not CludesUI._unlockActive then ApplyMinimap() end
+                    if not CUI._unlockActive then ApplyMinimap() end
                 end,
                 loadPos = function()
                     local m = MapCfg()

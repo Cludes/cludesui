@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Nicknames.lua -- Raid Lead: CludesUI's own nicknames, synced with the guild.
 --
@@ -26,7 +27,7 @@ local function Short(name) return (name or ""):match("^([^%-]+)") or name or "" 
 function mod.MyNickname() return CludesUIDB.cuiNickname or "" end
 
 --- The nickname for a character name (Name or Name-Realm), or nil.
-function CludesUI.GetNickname(name)
+function CUI.GetNickname(name)
     if type(name) ~= "string" or name == "" then return nil end
     if issecretvalue and issecretvalue(name) then return nil end
     if CludesUIDB.cuiNicknamesOff then return nil end

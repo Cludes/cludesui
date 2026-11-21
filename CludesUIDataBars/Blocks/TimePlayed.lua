@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\TimePlayed.lua - Info Bar block: time played, and the account-wide
 --  record of every character's total.
@@ -31,7 +32,7 @@ local K = mod.BlockKit
 -- Kept as locals: the minute heartbeat runs these for as long as a block is on.
 local GetTime, UnitLevel, InCombatLockdown = GetTime, UnitLevel, InCombatLockdown
 local format, floor, max, min = string.format, math.floor, math.max, math.min
-local Duration = CludesUI.FormatDuration
+local Duration = CUI.FormatDuration
 
 -- A saved time older than this is not taken back (an earlier session's, or a
 -- reload that ran long) and the load asks the server instead.
@@ -58,7 +59,7 @@ end
 -- This character's key in the record; nil while the GUID cannot be read.
 local function MyKey()
     local guid = UnitGUID("player")
-    if not guid or CludesUI.IsSecret(guid) then return nil end
+    if not guid or CUI.IsSecret(guid) then return nil end
     return guid
 end
 
@@ -75,8 +76,8 @@ local function SaveMe()
     local _, class = UnitClass("player")
     -- The full name, whatever the show-surname preference.
     local name, surname = (UnitNameUnmodified or UnitName)("player")
-    entry.name = CludesUI.WithSurname(name, surname, true)
-    entry.realm = CludesUI.RealmGroupName()
+    entry.name = CUI.WithSurname(name, surname, true)
+    entry.realm = CUI.RealmGroupName()
     entry.class = class
     entry.level = charLevel
     entry.total = Total()
@@ -121,7 +122,7 @@ end
 local function Ask()
     -- Not before the first PLAYER_ENTERING_WORLD has looked at a saved time.
     if awaitingWorld then return end
-    TakeReply(CludesUI.RequestTimePlayed())
+    TakeReply(CUI.RequestTimePlayed())
 end
 
 -- PLAYER_LOGOUT (on /reload too): the time as of now, for the next load.
@@ -319,7 +320,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
         local me = MyKey()
         local byRealm, realms, sum, count = Roster(record)
         mod.Tip_Begin(button)
-        mod.Tip_AddLine(CludesUI.L("Time Played"), ar, ag, ab)
+        mod.Tip_AddLine(CUI.L("Time Played"), ar, ag, ab)
         for _, realm in ipairs(realms) do
             mod.Tip_AddLine(" ")
             mod.Tip_AddLine(realm, 0.5, 0.78, 1)
@@ -369,7 +370,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
     button:SetScript("OnClick", function(_, mouseButton)
         if mouseButton == "RightButton" and IsControlKeyDown() and IsShiftKeyDown() then
             mod.Tip_Hide(button)
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = "Reset Time Played Data",
                 message = "Clear the time played of every character? This character is recorded again at once, the others when they next log in.",
                 confirmText = "Reset",

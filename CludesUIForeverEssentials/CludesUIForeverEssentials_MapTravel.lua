@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MapTravel.lua  (WoW Forever only)
 --  Map Markers: travel pins by zoom level. The world map shows transports,
@@ -72,14 +73,14 @@ local function PinOnEnter(self)
     if C_Map.CanSetUserWaypointOnMap(self.linkMap) then
         tipText = tipText
             .. "\n\n"
-            .. CludesUI.COLOR_CODES.DIM
-            .. CludesUI.L("Click to link it in chat.")
+            .. CUI.COLOR_CODES.DIM
+            .. CUI.L("Click to link it in chat.")
             .. "|r"
     end
-    CludesUI.ShowWidgetTooltip(self, tipText)
+    CUI.ShowWidgetTooltip(self, tipText)
 end
 
-local function PinOnLeave() CludesUI.HideWidgetTooltip() end
+local function PinOnLeave() CUI.HideWidgetTooltip() end
 
 -- A pin's name for its link: the first line of its tooltip, without icons
 -- or colors ("Boat to Menethil Harbor").
@@ -93,7 +94,7 @@ end
 -- (0..1 here) travel as 0..10000. Clicked in chat, Blizzard places the pin.
 local hintedClick = false
 local function PrintLink(mapID, posX, posY, labelText, atlas)
-    local CC = CludesUI.COLOR_CODES
+    local CC = CUI.COLOR_CODES
     local iconTex = atlas and not atlas:find("\\", 1, true) and ("|A:%s:16:16|a "):format(atlas) or ""
     local itemLink = ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
         mapID,
@@ -101,7 +102,7 @@ local function PrintLink(mapID, posX, posY, labelText, atlas)
         math.floor(posY * 10000 + 0.5),
         MAP_PIN_HYPERLINK
     )
-    CludesUI.Print(
+    CUI.Print(
         CC.BRAND
             .. "CludesUI:|r "
             .. itemLink
@@ -116,11 +117,11 @@ local function PrintLink(mapID, posX, posY, labelText, atlas)
     )
     if not hintedClick then
         hintedClick = true
-        CludesUI.Print(
+        CUI.Print(
             CC.BRAND
                 .. "CludesUI:|r "
                 .. CC.DIM
-                .. CludesUI.L("Click a link to place the pin, then click the pin on the map to track it.")
+                .. CUI.L("Click a link to place the pin, then click the pin on the map to track it.")
                 .. "|r"
         )
     end
@@ -135,7 +136,7 @@ local function PinOnMouseUp(self, btnFrame)
     local labelText = self.link or PinLabel(self.tip)
     local function Print() PrintLink(mapID, posX, posY, labelText, atlas) end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("MapTravelLink", Print)
+        CUI.CombatQueue.Defer("MapTravelLink", Print)
     else
         Print()
     end
@@ -178,7 +179,7 @@ local function NextPin()
         p:SetScript("OnLeave", PinOnLeave)
         pins[used] = p
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer("MapTravelPass", PassRightClicks)
+            CUI.CombatQueue.Defer("MapTravelPass", PassRightClicks)
         else
             PassRightClicks()
         end
@@ -235,25 +236,25 @@ local function TransportTip(tbl)
     -- The place alone ("Orgrimmar"), its zone when the area has no name.
     local area = C_Map.GetAreaInfo(tbl[5])
     local where = area and area ~= "" and area or ZoneName(tbl[4])
-    if tbl[3] == "boat" then return CludesUI.Lf("Boat to %s", where) end
-    if tbl[3] == "zeppelin" then return CludesUI.Lf("Zeppelin to %s", where) end
-    if tbl[3] == "skycutter" then return CludesUI.Lf("Skycutter to %s", where) end
-    if tbl[3] == "portal" then return CludesUI.Lf("Portal to %s", where) end
-    return CludesUI.Lf("Tram to %s", where)
+    if tbl[3] == "boat" then return CUI.Lf("Boat to %s", where) end
+    if tbl[3] == "zeppelin" then return CUI.Lf("Zeppelin to %s", where) end
+    if tbl[3] == "skycutter" then return CUI.Lf("Skycutter to %s", where) end
+    if tbl[3] == "portal" then return CUI.Lf("Portal to %s", where) end
+    return CUI.Lf("Tram to %s", where)
 end
 
 -- The instance's name, the entrance or wings it opens on, then its kind.
 local function InstanceTip(index)
     local tipText = GetRealZoneText(index[3])
-    if index[5] then tipText = tipText .. "\n|cffffffff" .. CludesUI.L(index[5]) .. "|r" end
-    return tipText .. "\n" .. (index[4] and CludesUI.L("Raid") or CludesUI.L("Dungeon"))
+    if index[5] then tipText = tipText .. "\n|cffffffff" .. CUI.L(index[5]) .. "|r" end
+    return tipText .. "\n" .. (index[4] and CUI.L("Raid") or CUI.L("Dungeon"))
 end
 
 -- Its chat line: "Dungeon: The Deadmines (Main Entrance)".
 local function InstanceLink(index)
     local name = GetRealZoneText(index[3])
-    if index[5] then name = name .. " (" .. CludesUI.L(index[5]) .. ")" end
-    return index[4] and CludesUI.Lf("Raid: %s", name) or CludesUI.Lf("Dungeon: %s", name)
+    if index[5] then name = name .. " (" .. CUI.L(index[5]) .. ")" end
+    return index[4] and CUI.Lf("Raid: %s", name) or CUI.Lf("Dungeon: %s", name)
 end
 
 -- The arrow's angle toward the destination zone's middle, read on the continent.
@@ -350,7 +351,7 @@ local function DrawZone(zone)
                     ZoneName(entry[3]),
                     ExitRotation(zone, posX, posY, entry[3]),
                     nil,
-                    CludesUI.Lf("Path from %s to %s", ZoneName(zone), ZoneName(entry[3]))
+                    CUI.Lf("Path from %s to %s", ZoneName(zone), ZoneName(entry[3]))
                 )
             end
         end
@@ -453,7 +454,7 @@ local function DrawFlights(mapID)
             tipText,
             nil,
             nil,
-            CludesUI.Lf("Flight Point: %s", num.name)
+            CUI.Lf("Flight Point: %s", num.name)
         )
     end
 end
@@ -558,7 +559,7 @@ local function Apply()
 end
 
 -- Options-page entry points.
-CludesUI._MapTravel = {
+CUI._MapTravel = {
     Get = F.Get,
     On = FeatureOn,
     Cfg = F.Cfg,

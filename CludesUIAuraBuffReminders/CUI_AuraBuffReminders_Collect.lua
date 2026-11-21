@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Collect.lua
 --
@@ -537,7 +538,7 @@ function REMIND.EmitWeaponEnchantReminders(missing, collector)
             entry.macro = "/use item:" .. bestItemID .. "\n/use " .. slot
             entry.texture = C_Item.GetItemIconByID(bestItemID) or 134400
             -- Localizes the full slot name THEN shortens: ShortLabel truncates on whitespace (English -> Main/Off, space-less locales like zhTW stay intact). L() on the pre-truncated word would collide with the generic Off (disabled) translation.
-            entry.label = ShortLabel(CludesUI.L(slot == 16 and "Main Hand" or "Off Hand"))
+            entry.label = ShortLabel(CUI.L(slot == 16 and "Main Hand" or "Off Hand"))
             entry.tooltipItem = bestItemID
             entry.qualityAtlas = REMIND.GetItemQualityAtlas(bestItemID)
             entry.bagCount = CachedGetItemCount(bestItemID)
@@ -807,7 +808,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                         entry.mode = "item"
                         entry.itemID = runeItem
                         entry.texture = C_Item.GetItemIconByID(runeItem)
-                        entry.label = CludesUI.L(ShortLabel("Augment Rune"))
+                        entry.label = CUI.L(ShortLabel("Augment Rune"))
                         entry.qualityAtlas = REMIND.GetItemQualityAtlas(runeItem)
                         entry.bagCount = CachedGetItemCount(runeItem)
                         entry.desaturated = not rr.hasBags
@@ -847,7 +848,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                         entry.mode = "item"
                         entry.itemID = flaskItemID
                         entry.texture = C_Item.GetItemIconByID(flaskItemID) or 134830
-                        entry.label = CludesUI.L("Flask")
+                        entry.label = CUI.L("Flask")
                         entry.qualityAtlas = REMIND.GetItemQualityAtlas(flaskItemID)
                         entry.bagCount = CachedGetItemCount(flaskItemID)
                         entry.desaturated = not rf.hasBags
@@ -868,7 +869,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                         entry.mode = "item"
                         entry.itemID = foodItemID
                         entry.texture = C_Item.GetItemIconByID(foodItemID) or 134062
-                        entry.label = CludesUI.L("Food")
+                        entry.label = CUI.L("Food")
                         entry.qualityAtlas = REMIND.GetItemQualityAtlas(foodItemID)
                         entry.bagCount = CachedGetItemCount(foodItemID)
                         entry.desaturated = not REMIND._resolved.food.hasBags
@@ -911,7 +912,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                             entry.mode = "item"
                             entry.itemID = INKY_BLACK_ITEM
                             entry.texture = C_Item.GetItemIconByID(INKY_BLACK_ITEM)
-                            entry.label = CludesUI.L(ShortLabel("Inky Black Potion"))
+                            entry.label = CUI.L(ShortLabel("Inky Black Potion"))
                             entry.qualityAtlas = REMIND.GetItemQualityAtlas(INKY_BLACK_ITEM)
                             entry.bagCount = CachedGetItemCount(INKY_BLACK_ITEM)
                             entry.cat = "consumable"
@@ -968,7 +969,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
             entry.mode = "texture"
             entry.texture = Tex(esAlly.castSpell)
             entry.spellID = esAlly.castSpell -- tooltip only
-            entry.label = CludesUI.L(ShortLabel(esAlly.name))
+            entry.label = CUI.L(ShortLabel(esAlly.name))
             entry.cat = "consumable"
             entry.data = esAlly
             entry.dismissKey = "consumable:" .. esAlly.key
@@ -1017,12 +1018,12 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                 local entry = AcquireEntry()
                 entry.mode = "texture"
                 entry.texture = 538745
-                entry.label = CludesUI.L("HS")
+                entry.label = CUI.L("HS")
                 entry.cat = "consumable"
                 entry.dismissKey = "consumable:healthstone"
                 if saved.profile.raidBuffs.requestOnClick and GetPlayerClass() ~= "WARLOCK" then
                     entry.requestKey = "healthstone"
-                    entry.requestName = CludesUI.L("Healthstones")
+                    entry.requestName = CUI.L("Healthstones")
                 end
                 missing[#missing + 1] = entry
             end
@@ -1048,7 +1049,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                 local entry = AcquireEntry()
                 entry.mode = "texture"
                 entry.texture = PARTNERED_TRINKET.icon
-                entry.label = CludesUI.L("Whistle")
+                entry.label = CUI.L("Whistle")
                 entry.cat = "consumable"
                 entry.dismissKey = "consumable:coaches_whistle"
                 missing[#missing + 1] = entry
@@ -1079,7 +1080,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                 local entry = AcquireEntry()
                 entry.mode = "texture"
                 entry.texture = 135957
-                entry.label = CludesUI.L("Rune")
+                entry.label = CUI.L("Rune")
                 entry.cat = "consumable"
                 entry.dismissKey = "consumable:runeforge"
                 missing[#missing + 1] = entry

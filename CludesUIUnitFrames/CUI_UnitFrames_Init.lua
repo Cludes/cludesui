@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Init.lua
 --
@@ -11,8 +12,8 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, mod = ...
 
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
-local CLASS_FULL_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
+local Pix = CUI.PP
+local CLASS_FULL_COORDS = CUI.CLASS_ICON_SPRITE_COORDS
 
 local Inner = mod._internals
 local frameList, GetSettingsForUnit, UnsnapTex, SetFSFont =
@@ -33,7 +34,7 @@ local function InitializeFrames()
     -- The engine's shared class and power colors from the suite palette, before any
     -- frame spawns. Only the sync: a full colors pass here would repaint every module
     -- at login while nothing changed.
-    CludesUI.SyncUFColors()
+    CUI.SyncUFColors()
 
     local classPowerStyle = saved.profile.player.classPowerStyle or "none"
     -- Forever has no Blizzard class resource bar to adopt (see the ComboFrame
@@ -101,8 +102,8 @@ local function InitializeFrames()
         -- 12.0.7 gates SecureUnitButton's togglemenu; route right-click securely
         -- through a SecureActionButton proxy so the menu (and its protected items
         -- like Set Focus) work without taint.
-        if CludesUI.AttachSecureUnitMenu then
-            CludesUI.AttachSecureUnitMenu(widget)
+        if CUI.AttachSecureUnitMenu then
+            CUI.AttachSecureUnitMenu(widget)
         else
             widget:SetAttribute("*type2", "togglemenu")
         end
@@ -136,20 +137,20 @@ local function InitializeFrames()
     if playerFrameSource == "cui" then
         -- Spawning enables the Castbar element, which silences Blizzard's
         -- player/pet cast bars. Keep whatever a standalone cast bar addon set.
-        CludesUI.CaptureBlizzCastBarEvents()
+        CUI.CaptureBlizzCastBarEvents()
         frameList.player = mod.Engine.SpawnUnitFrame("player", "CludesUIUnitFrames_Player")
         StyleFullFrame(frameList.player, "player")
         mod.UF_AttachEngineFrame(frameList.player, "player")
-        CludesUI.RestoreBlizzCastBarEvents()
+        CUI.RestoreBlizzCastBarEvents()
     elseif playerFrameSource == "hidden" then
         -- Wrapped for the same reason as the spawn above: the suppression
         -- unregisters PlayerFrame's cast bar child, and an unregister seen
         -- outside a capture window reads as a third-party addon claiming the
         -- frame -- CUI would mark its own silence as somebody else's and
         -- never hand the bar back.
-        CludesUI.CaptureBlizzCastBarEvents()
+        CUI.CaptureBlizzCastBarEvents()
         mod.Engine.HideBlizzardUnitFrame("player")
-        CludesUI.RestoreBlizzCastBarEvents()
+        CUI.RestoreBlizzCastBarEvents()
     end
 
     -- Visibility wrapper for the player frame only. Parent the player frame to a
@@ -240,7 +241,7 @@ local function InitializeFrames()
                         restAnim:Hide()
                         local restTex = restAnim:CreateTexture(nil, "OVERLAY")
                         restTex:SetAllPoints(restAnim)
-                        CludesUI.AddRestFlipbook(restAnim, restTex)
+                        CUI.AddRestFlipbook(restAnim, restTex)
                         popFrame._restAnim = restAnim
                         popFrame._restPlace()
                     end
@@ -277,8 +278,8 @@ local function InitializeFrames()
         end)
         -- Edit Mode exit reparents the cast bar back into its layout frame
         -- (which gets hidden), so re-apply our state when the panel closes.
-        if EditModeManagerFrame and not CludesUI._GetFFD(EditModeManagerFrame).castbarHooked then
-            CludesUI._GetFFD(EditModeManagerFrame).castbarHooked = true
+        if EditModeManagerFrame and not CUI._GetFFD(EditModeManagerFrame).castbarHooked then
+            CUI._GetFFD(EditModeManagerFrame).castbarHooked = true
             hooksecurefunc(EditModeManagerFrame, "Hide", function()
                 C_Timer.After(0, ApplyBlizzCastbarState)
                 -- WoW Forever: Blizzard's own combo points stay up while Edit
@@ -855,7 +856,7 @@ local function InitializeFrames()
     local cpSpecInitDone = false
     -- WoW Forever keys the class resource by class alone (ClassPowerEntry), so
     -- a spec event there can never change the bar: no teardown on it.
-    if CludesUI.IS_FOREVER ~= true then
+    if CUI.IS_FOREVER ~= true then
         cpSpecWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
         cpSpecWatcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     end
@@ -958,7 +959,7 @@ local function InitializeFrames()
     -- there; ns._ufComboFrameKept lets a later Combo Points change take it
     -- down (ns.UF_ApplyForeverComboArc). The hidden parent is pinned for the
     -- session, like every frame HandleFrame takes.
-    if CludesUI.IS_FOREVER == true and _G.ComboFrame then
+    if CUI.IS_FOREVER == true and _G.ComboFrame then
         if
             targetFrameSource ~= "blizzard"
             or (classPowerStyle ~= "none" and classPowerStyle ~= "blizzard")
@@ -1078,7 +1079,7 @@ local function InitializeFrames()
 
                     -- Apply color tint
                     if colorMode == "classcolor" then
-                        local classColor = (classToken and CludesUI.GetClassColor(classToken))
+                        local classColor = (classToken and CUI.GetClassColor(classToken))
                             or { r = 1, g = 1, b = 1 }
                         combatIcon:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
                     elseif colorMode == "custom" then
@@ -1471,7 +1472,7 @@ local function InitializeFrames()
                 -- badge are the paint's only inputs (the texture is ours, so the
                 -- memo lives on it).
                 local look = cfg.factionIndicatorStyle or "pvp"
-                local badge = CludesUI.FactionBadgeFor(look, unitToken)
+                local badge = CUI.FactionBadgeFor(look, unitToken)
                 if
                     texture._facFac ~= fac
                     or texture._facStyle ~= look
@@ -1480,7 +1481,7 @@ local function InitializeFrames()
                 then
                     texture._facFac, texture._facStyle, texture._facDim, texture._facBadge =
                         fac, look, dim, badge
-                    CludesUI.SetFactionArt(texture, look, fac, badge)
+                    CUI.SetFactionArt(texture, look, fac, badge)
                     texture:SetDesaturated(dim)
                     texture:SetAlpha(dim and 0.6 or 1)
                 end
@@ -1887,13 +1888,13 @@ local function InitializeFrames()
             -- Visibility "never" no longer clears enabledFrames, so a frame hidden that
             -- way stays on this path and is hidden below, reversibly.
             if widget and not mod.VisUnitDisabled(saved.profile, unitName) and cfg then
-                local hiddenByOpts = CludesUI.CheckVisibilityOptions(cfg)
+                local hiddenByOpts = CUI.CheckVisibilityOptions(cfg)
                 local visible = cfg.barVisibility or "always"
 
                 -- Multi-select / dragonriding path: non-nil = engine-owned.
                 -- nil = legacy single mode, untouched.
                 local ext =
-                    CludesUI.EvalVisibilityExtended(cfg, "barVisibility", visState, CludesUI.VIS_CAPS_DEFAULT)
+                    CUI.EvalVisibilityExtended(cfg, "barVisibility", visState, CUI.VIS_CAPS_DEFAULT)
 
                 -- Secure condition driver: an engine-owned selection compiles into a
                 -- state-visibility driver (the action bar mechanism), replacing the
@@ -1903,7 +1904,7 @@ local function InitializeFrames()
                 -- ignores the mouseover key); the alpha bucket + hover handlers do the
                 -- revealing. Registration is out-of-combat only; a selection changed
                 -- during combat rides on alpha until the regen pass registers the driver.
-                local drvSet = CludesUI.GetActiveVisibilityModes(cfg, "barVisibility")
+                local drvSet = CUI.GetActiveVisibilityModes(cfg, "barVisibility")
                 -- Condition scalars ride the driver too: dragonriding (engine owns it
                 -- everywhere) and the combat pair, whose legacy alpha-hide left an
                 -- invisible click-absorbing frame out of combat. Visibility is
@@ -1924,17 +1925,17 @@ local function InitializeFrames()
                 local visTail
                 -- An applied Visibility override replaces the whole setting, so the tail
                 -- is a constant and the shared selection never reaches the driver.
-                local visOv = CludesUI.VisOverrideValue(cfg)
+                local visOv = CUI.VisOverrideValue(cfg)
                 if visOv then
                     visTail = (visOv == "never") and "hide" or "show"
-                elseif cfg.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
-                    local tail, _, liveAxes = CludesUI.BuildAnyMatchTail(cfg, "barVisibility", drvSet)
+                elseif cfg.visibilityMatch == "any" and CUI.BuildAnyMatchTail then
+                    local tail, _, liveAxes = CUI.BuildAnyMatchTail(cfg, "barVisibility", drvSet)
                     -- Gated on liveAxes: with no soft-target edge here, target/enemy axes
                     -- resolve in Lua, and a driver compiled from those alone would be a
                     -- frozen constant. Zero live axes keeps the frame on the live ext/alpha path.
                     if liveAxes > 0 then visTail = tail end
-                elseif drvSet and CludesUI.BuildVisibilityDriverString then
-                    visTail = CludesUI.BuildVisibilityDriverString("", drvSet)
+                elseif drvSet and CUI.BuildVisibilityDriverString then
+                    visTail = CUI.BuildVisibilityDriverString("", drvSet)
                 end
                 -- Off the override, never the stored scalar: an override REPLACES the
                 -- shared setting, so a profile-level "never" under an override of Always
@@ -2205,7 +2206,7 @@ local function InitializeFrames()
         -- Dragonriding visibility modes: capability edge plus the airborne
         -- edge (probed at load in CludesUI_Visibility.lua)
         frameList._visFrame:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED")
-        if CludesUI._hasGlidingEvent then frameList._visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
+        if CUI._hasGlidingEvent then frameList._visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
     end
     frameList._visFrame:SetScript("OnEvent", function(_, evt)
         if evt == "PLAYER_REGEN_DISABLED" then

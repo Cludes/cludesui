@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_RaidDebuffs.lua  (WoW Forever only)
 --  Raid Debuffs: a row of the raid debuffs you pick (Sunder Armor, Faerie
@@ -67,7 +68,7 @@ local function Cell(index)
 end
 
 local function CanBuild()
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     return AK and AK.CreateContainerShell and not InCombatLockdown() and not AK.AurasRestricted()
 end
 
@@ -82,7 +83,7 @@ local function Rebuild()
         return
     end
     pending = false
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if boxHolder then
         boxHolder:SetEnabled(false)
         boxHolder:Hide()
@@ -131,7 +132,7 @@ local function Rebuild()
     end)
     if not success then
         built = nil
-        CludesUI.Print("|cffff4040Raid Debuffs could not be set up:|r " .. tostring(err))
+        CUI.Print("|cffff4040Raid Debuffs could not be set up:|r " .. tostring(err))
     end
 end
 
@@ -145,7 +146,7 @@ local function UpdateShown()
         if not (issecretvalue and issecretvalue(enemy)) then show = enemy and not UnitIsDead("target") end
     end
     if show and Get("groupOnly") then show = IsInGroup() end
-    if CludesUI._unlockActive then show = Enabled() end
+    if CUI._unlockActive then show = Enabled() end
     holderFrame:SetAlpha(show and 1 or 0)
 end
 
@@ -178,7 +179,7 @@ local function Apply()
         pcall(eventFrame.RegisterEvent, eventFrame, "ADDON_RESTRICTION_STATE_CHANGED")
         eventFrame:RegisterUnitEvent("UNIT_FACTION", "target")
         eventFrame:RegisterUnitEvent("UNIT_FLAGS", "target")
-        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
+        if not CUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
     end
@@ -186,7 +187,7 @@ local function Apply()
     UpdateShown()
 end
 
-CludesUI._RaidDebuffs = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply, Debuffs = DEBUFFS }
+CUI._RaidDebuffs = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply, Debuffs = DEBUFFS }
 
 F.Start(Apply, {
     key = "CUI_RaidDebuffs",

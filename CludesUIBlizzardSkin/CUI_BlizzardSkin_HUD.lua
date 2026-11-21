@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_HUD.lua
 --
@@ -103,7 +104,7 @@ local GetFFD = Inner.GetFFD--
         if W and W.ApplyBarFill then
             W.ApplyBarFill(barFrame)
         elseif barFrame.SetStatusBarColor then
-            local ACC = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+            local ACC = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
             barFrame:SetStatusBarColor(ACC.r * 0.8, ACC.g * 0.8, ACC.b * 0.8, 0.95)
         end
     end
@@ -1074,14 +1075,14 @@ local GetFFD = Inner.GetFFD--
             -- this one. Missing it left a whole set of bars unswept until
             -- something else happened to fire.
             self:RegisterEvent("UPDATE_ALL_UI_WIDGETS")
-            CludesUI._HUDWidgetAdopt = HUDWidgetAdopt
+            CUI._HUDWidgetAdopt = HUDWidgetAdopt
             -- The options cog's write-through. Published on the same terms as
             -- the adopt seam -- at login, only with the feature on -- so with
             -- the reskin off it is nil and the cog is greyed out anyway.
             -- Re-reads the setting and books one refresh; SyncCover notices the
             -- floor moved and re-anchors every live cover.
             HUD.minPx = ReadMinPx()
-            CludesUI._HUDWidgetSetMinSize = function()
+            CUI._HUDWidgetSetMinSize = function()
                 HUD.minPx = ReadMinPx()
                 Refresh()
             end

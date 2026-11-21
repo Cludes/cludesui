@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_InstanceTracker.lua  (WoW Forever only)
 --  Instance Tracker: how many new dungeons and raids the account has entered
@@ -27,8 +28,8 @@ local Get, Enabled = F.Get, F.Enabled
 local HOUR = 3600
 local KEEP_RUNS = 20
 
-local function Say(textValue) CludesUI.Print("|cff4cc9f0Instances:|r " .. textValue) end
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Say(textValue) CUI.Print("|cff4cc9f0Instances:|r " .. textValue) end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 -- Account store: entries = { {t, map, copy}, ... } for the last hour;
@@ -189,7 +190,7 @@ local function Build()
     hud = CreateFrame("Frame", "CludesUIInstanceTracker", UIParent)
     hud:SetSize(170, 30)
     hudText = hud:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(hudText, 12, "essentials")
+    CUI.Kit.Font(hudText, 12, "essentials")
     hudText:SetPoint("TOPLEFT")
     hudText:SetJustifyH("LEFT")
     return hud
@@ -199,12 +200,12 @@ local function PaintHud()
     if not hud then return end
     local show = Enabled() and Get("hud")
     local num, frees = module.InstanceCount()
-    if show and not visit and num == 0 and not CludesUI._unlockActive then show = false end
+    if show and not visit and num == 0 and not CUI._unlockActive then show = false end
     hud:SetShown(show and true or false)
     if not show then return end
     local cap = Get("cap")
     local colour = num >= cap and "|cffff6040"
-        or (num >= cap - 2 and "|cffffb040" or CludesUI.Kit.AccentHex())
+        or (num >= cap - 2 and "|cffffb040" or CUI.Kit.AccentHex())
     local line = ("%sInstances %d/%d|r"):format(colour, num, cap)
     if frees and num > 0 then line = line .. ("  |cff9aa6b2next in %dm|r"):format(math.ceil(frees / 60)) end
     if visit then
@@ -272,7 +273,7 @@ local function Apply()
             eventFrame:RegisterEvent(event)
         end
         if not ticker then ticker = C_Timer.NewTicker(1, PaintHud) end
-        if not CludesUI._unlockActive then F.Place(hud) end
+        if not CUI._unlockActive then F.Place(hud) end
         if InGroupInstance() and not visit then StartVisit(true) end
     else
         eventFrame:UnregisterAllEvents()
@@ -286,7 +287,7 @@ local function Apply()
     PaintHud()
 end
 
-CludesUI._InstanceTracker = {
+CUI._InstanceTracker = {
     Get = Get,
     Read = F.Read,
     Cfg = F.Cfg,

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Paint.lua
 --
@@ -100,7 +101,7 @@ local function PaintCell(
     wid.plus:SetShown(placeholder)
 
     local labelled = showLabels and wantLabel and name ~= nil
-    wid.label:SetText((labelled and CludesUI.L(name)) or "")
+    wid.label:SetText((labelled and CUI.L(name)) or "")
     wid.label:SetShown(labelled or false)
 
     -- A palette has no cooldown of its own, and borrowing its first entry's
@@ -140,7 +141,7 @@ local function PaintCell(
     -- large one. Physical pixels, like the borders.
     local nests = (not placeholder) and slot and slot.kind == "palette"
     if wid.nestDots then
-        local px = CludesUI.PP and CludesUI.PP.mult or 1
+        local px = CUI.PP and CUI.PP.mult or 1
         local dot = max(px, floor((iconSize or 40) * 0.055 / px + 0.5) * px)
         for skinData = 1, 3 do
             local t = wid.nestDots[skinData]
@@ -645,8 +646,8 @@ function PaletteView:MarkerPip(wid, slot, iconSize)
     local s = max(3, floor((iconSize or wid:GetWidth() or 40) * 0.18))
     pip:SetSize(s, s)
     local ar, ag, ab = 0.298, 0.788, 0.941
-    if CludesUI.ResolveActiveAccent then
-        ar, ag, ab = CludesUI.ResolveActiveAccent()
+    if CUI.ResolveActiveAccent then
+        ar, ag, ab = CUI.ResolveActiveAccent()
     end
     pip:SetVertexColor(ar, ag, ab, 1)
     -- Whether the marker is down reaches the screen through the host's alpha
@@ -937,12 +938,12 @@ function PaletteView:SetSelection(index)
             if claim then
                 local _, parentName = SlotDisplay(self:CellSlot(claim.parent))
                 if parentName and name then
-                    name = CludesUI.L(parentName) .. " \194\187 " .. CludesUI.L(name)
+                    name = CUI.L(parentName) .. " \194\187 " .. CUI.L(name)
                 end
             end
             hub.text:SetText(
-                (name and CludesUI.L(name))
-                    or (wid.isPlaceholder and CludesUI.L("Add Action"))
+                (name and CUI.L(name))
+                    or (wid.isPlaceholder and CUI.L("Add Action"))
                     or ("Slot " .. index)
             )
             hub.text:SetTextColor(red, green, blue)

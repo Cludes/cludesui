@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Preview.lua
 --
@@ -366,7 +367,7 @@ end
 local function CreatePreviewIcon(box)
     -- Options preview only: the options frame pool (CludesUI_FramePool.lua)
     -- hands the box's next render these frames back reset to new.
-    local Pool = CludesUI._Pool
+    local Pool = CUI._Pool
     local CreateFrame = Pool.CreateFrame
     local button = CreateFrame("Frame", nil, box)
     button.icon = button:CreateTexture(nil, "ARTWORK")
@@ -442,7 +443,7 @@ end
 -- cancels out algebraically (UIParent's effective scale multiplies both equally), so
 -- only the panel's OWN extra SetScale factor matters.
 local function PreviewScaleFactor()
-    local s = (CludesUI.GetPopupScale()) or 1
+    local s = (CUI.GetPopupScale()) or 1
     if not s or s <= 0 then return 1 end
     return 1 / s
 end
@@ -476,7 +477,7 @@ local function ApplyPreviewScale(conf, comp)
     -- borderPxOverride. Solid scales like borderSize; a textured edge stays raw
     -- because the eight-slice draw scales it by borderTextureScaleOverride itself.
     local rawTex = conf.borderTexture
-    local rawPx = CludesUI.BorderPx(conf.borderSizePx, conf.borderSize or 1, rawTex)
+    local rawPx = CUI.BorderPx(conf.borderSizePx, conf.borderSize or 1, rawTex)
     if rawPx then
         local textured = rawTex and rawTex ~= "" and rawTex ~= "solid"
         result.borderPxOverride = textured and rawPx or (rawPx * comp)
@@ -780,8 +781,8 @@ end
 -- left over from a previous render of this reused frame.
 mod.PAB_PREVIEW_GLOW_SPEC = {}
 local function ApplyPreviewFx(button, e)
-    local CreateFrame = CludesUI._Pool.CreateFrame -- options preview only (the pool)
-    local Glows = CludesUI.Glows
+    local CreateFrame = CUI._Pool.CreateFrame -- options preview only (the pool)
+    local Glows = CUI.Glows
     local specInfo = e and Glows.SpecFromPrefix(mod.PAB_PREVIEW_GLOW_SPEC, e, "glow", 1.0, 0.776, 0.376)
     local gov = button.fxGlow
     if specInfo then
@@ -800,7 +801,7 @@ local function ApplyPreviewFx(button, e)
         gov:Hide()
     end
 
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local bSize = (e and e.borderSize) or 0
     if bSize > 0 and Pix then
         local owner = button.fxBorder
@@ -1032,7 +1033,7 @@ local function RenderPreviewIcons(box, icons, buffSide, conf, fontFile, pool)
                     button.icon:SetTexture(PreviewSpellIcon(spellId))
                 end
                 -- The live icons' texcoords, the shaped fill included (AuraKit).
-                button.icon:SetTexCoord(CludesUI.AuraKit.IconTexCoord(look))
+                button.icon:SetTexCoord(CUI.AuraKit.IconTexCoord(look))
             end
 
             -- Mirrors CludesUI_AuraKit.lua's ApplyStyleToRegions, unguarded (plain regions).
@@ -1066,7 +1067,7 @@ local function RenderPreviewIcons(box, icons, buffSide, conf, fontFile, pool)
             -- Type-icon host above the border's strip container (+1) and the fx
             -- border/glow hosts (+1/+2), like the live dispel holder clears them.
             button.typeHost:SetFrameLevel(button.border:GetFrameLevel() + 3)
-            local Pix = CludesUI and CludesUI.PanelPP
+            local Pix = CUI and CUI.PanelPP
             if Pix and look.border then
                 local br, backdrop, bb, ba = look.border[1], look.border[2], look.border[3], look.border[4]
                 if dispelType and dcMap and dcMap[dispelType] then
@@ -1075,7 +1076,7 @@ local function RenderPreviewIcons(box, icons, buffSide, conf, fontFile, pool)
                 end
                 local size = look.border.size or 1
                 if shapeActive and look.shapeBorderPath and Pix.ApplyMaskedShapeBorder then
-                    CludesUI.HideBorderStyle(button.border)
+                    CUI.HideBorderStyle(button.border)
                     if button.borderState and button.borderState._secretBorderEdges then
                         for _, texture in pairs(button.borderState._secretBorderEdges) do
                             texture:Hide()
@@ -1102,7 +1103,7 @@ local function RenderPreviewIcons(box, icons, buffSide, conf, fontFile, pool)
                     local appliedSize = (b.texture and b.texture ~= "" and b.texture ~= "solid")
                             and (b.textureSize or size)
                         or size
-                    CludesUI.ApplySecretSafeBorderStyle(
+                    CUI.ApplySecretSafeBorderStyle(
                         button.border,
                         button.borderState,
                         appliedSize,
@@ -1123,8 +1124,8 @@ local function RenderPreviewIcons(box, icons, buffSide, conf, fontFile, pool)
                     button.borderMade = true
                 end
             else
-                if CludesUI.ApplySecretSafeBorderStyle then
-                    CludesUI.ApplySecretSafeBorderStyle(
+                if CUI.ApplySecretSafeBorderStyle then
+                    CUI.ApplySecretSafeBorderStyle(
                         button.border,
                         button.borderState,
                         0,
@@ -1281,12 +1282,12 @@ end
 function mod.PAB_BuildPreviewBox(outerHolder, fontFile, startY, kindName, ident, conf)
     -- Options page only: under the kept manager root the options frame pool
     -- (CludesUI_FramePool.lua) hands the next render these frames back.
-    local CreateFrame = CludesUI._Pool.CreateFrame
+    local CreateFrame = CUI._Pool.CreateFrame
     local buffSide = kindName == "buff"
     local sy = startY
 
     do
-        local contentPad = CludesUI.CONTENT_PAD or 45
+        local contentPad = CUI.CONTENT_PAD or 45
         local padDiff = contentPad - 20
         local visibleW = outerHolder:GetWidth()
         -- Was W:SectionHeader, a shared widget fixed at 40px tall with its label
@@ -1310,14 +1311,14 @@ function mod.PAB_BuildPreviewBox(outerHolder, fontFile, startY, kindName, ident,
         local hdrBody = CreateFrame("Frame", nil, hdrClip)
         hdrBody:SetSize(visibleW + padDiff * 2, hdrH)
 
-        local TS = CludesUI.TEXT_SECTION or { r = 0.5, g = 0.5, b = 0.5, a = 1 }
+        local TS = CUI.TEXT_SECTION or { r = 0.5, g = 0.5, b = 0.5, a = 1 }
         local labelText = hdrBody:CreateFontString(nil, "OVERLAY")
         labelText:SetFont(fontFile, 12, "")
         labelText:SetTextColor(TS.r, TS.g, TS.b, TS.a or 1)
         labelText:SetPoint("BOTTOMLEFT", hdrBody, "BOTTOMLEFT", contentPad, 0)
-        labelText:SetText(CludesUI.L("PREVIEW"))
+        labelText:SetText(CUI.L("PREVIEW"))
 
-        local BC = CludesUI.BORDER_COLOR or { r = 1, g = 1, b = 1 }
+        local BC = CUI.BORDER_COLOR or { r = 1, g = 1, b = 1 }
         local sep = hdrBody:CreateTexture(nil, "ARTWORK")
         sep:SetColorTexture(BC.r, BC.g, BC.b, 0.02)
         sep:SetHeight(1)
@@ -1388,7 +1389,7 @@ function mod.PAB_BuildPreviewBox(outerHolder, fontFile, startY, kindName, ident,
         divider = dividerTex,
         -- the box's dress (nil off the pool): PAB_MaybeRefreshPreview stands down
         -- once a later render parked the box or dressed it again
-        gen = CludesUI._Pool.Gen(box),
+        gen = CUI._Pool.Gen(box),
     }
     RenderPreviewIcons(box, icons, buffSide, conf, fontFile, pool)
 
@@ -1421,7 +1422,7 @@ PAB_MaybeRefreshPreview = function(kindName, ident)
     -- one dressed it again): its frames belong to the pool now, not to this
     -- preview. (activePreview exists only once the options addon, and with it
     -- the pool, has loaded.)
-    local Pool = CludesUI._Pool
+    local Pool = CUI._Pool
     if Pool.IsIdle(livePreview.box) or Pool.Gen(livePreview.box) ~= livePreview.gen then
         livePreview = nil
         return

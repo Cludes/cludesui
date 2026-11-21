@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUICdmSpellPicker.lua
 --  Interactive Preview Helpers (used by options spell picker): spell list
@@ -123,7 +124,7 @@ mod.IsVariantOf = IsVariantOf
 -- this name. nil off Forever. Names are client spell data, the same all
 -- session; a name the client has not loaded yet is not kept.
 local RankName
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     local nameList = {}
     RankName = function(ident)
         if not _IsUsableSID(ident) then return nil end
@@ -836,7 +837,7 @@ function mod.MigrateSpecToBarFilterModelV6()
     -- Blizzard CDM tracked set, which an installer that rewrites Blizzard's own layout
     -- leaves unlaundered until a reload -- so return without stamping and retry next
     -- session. Fail-open: unplaced spells stay visible until then.
-    if profileTbl._importGhostMode and CludesUI and CludesUI._cdmImportGhostDeferred then return end
+    if profileTbl._importGhostMode and CUI and CUI._cdmImportGhostDeferred then return end
     if not profileTbl.barSpells then
         profileTbl._barFilterModelV6 = true
         return
@@ -2313,7 +2314,7 @@ function mod.RemoveCDMBar(barKey)
     for i, barInfo in ipairs(profile.cdmBars.bars) do
         if barInfo.key == barKey then
             local widget = cdmBarFrames[barKey]
-            if widget then CludesUI.SetElementVisibility(widget, false) end
+            if widget then CUI.SetElementVisibility(widget, false) end
             cdmBarFrames[barKey] = nil
             cdmBarIcons[barKey] = nil
             profile.cdmBarPositions[barKey] = nil
@@ -2326,7 +2327,7 @@ function mod.RemoveCDMBar(barKey)
             -- Deletion shifts every later bar's array index, so captured
             -- override paths into cdmBars.bars would point at the WRONG bars.
             -- Drop them all (users re-capture) -- honest beats corrupt.
-            CludesUI.SpecOverrides_OnCDMBarsRestructured()
+            CUI.SpecOverrides_OnCDMBarsRestructured()
 
             -- Free all spells (don't ghost them): delete the bar's spell data
             -- from every spec of the ACTIVE profile only -- other profiles own
@@ -2342,7 +2343,7 @@ function mod.RemoveCDMBar(barKey)
                 end
             end
 
-            CludesUI:UnregisterUnlockElement("CDM_" .. barKey)
+            CUI:UnregisterUnlockElement("CDM_" .. barKey)
             -- Re-register remaining bars to update linkedKeys
             RegisterCDMUnlockElements()
             -- Reanchor so frames re-route to the ghost bar (or wherever)

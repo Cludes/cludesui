@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookIconWatch.lua
 --
@@ -789,7 +790,7 @@ do
             }
             local caster = { forms = beasts } -- castable in Moonkin Form
             casterRules = {}
-            if CludesUI.IS_FOREVER == true then
+            if CUI.IS_FOREVER == true then
                 -- No talent permits these in a form; set bonuses and an item do
                 Add(heal, { 740, 8918, 9862, 9863 }) -- Tranquility
                 Add(heal, { 774, 1058, 1430, 2090, 2091, 3627, 8910, 9839, 9840, 9841, 25299 }) -- Rejuvenation
@@ -802,7 +803,7 @@ do
                 Add(caster, { 437138, 1237948, 1237949, 1237950, 1237951 }) -- Revive
                 Add(caster, { 2782, 2893, 8946 }) -- Remove Curse, Abolish Poison, Cure Poison
                 Add(caster, { 18960, 417148 }) -- Teleport: Moonglade, Efflorescence
-                local mark = CludesUI.FOREVER_BUFF_FAMILIES.mark
+                local mark = CUI.FOREVER_BUFF_FAMILIES.mark
                 Add(caster, mark.single) -- Mark of the Wild
                 Add(caster, mark.group) -- Gift of the Wild
                 -- 456325 T1 Guardian 2P, 1232896 Staff of the Glade, 1301005 T1
@@ -1853,8 +1854,8 @@ local function ApplyOnlyNumbers(widget, frameData, barInfo)
         local backdrop = (frameData and frameData.bg) or widget._bg
         if backdrop then backdrop:SetAlpha(0) end
         if frameData and frameData.borderFrame then
-            CludesUI.PP.HideBorder(frameData.borderFrame)
-            local bdFrame = CludesUI._bdBorderData and CludesUI._bdBorderData[frameData.borderFrame]
+            CUI.PP.HideBorder(frameData.borderFrame)
+            local bdFrame = CUI._bdBorderData and CUI._bdBorderData[frameData.borderFrame]
             if bdFrame then bdFrame:Hide() end
         end
         local ifc = _ecmeFC[widget]

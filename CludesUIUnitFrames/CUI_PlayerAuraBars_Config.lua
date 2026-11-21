@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Config.lua
 --
@@ -115,7 +116,7 @@ local function ComputeGrid(isBuff, conf)
     -- Reference boxes for stored positions (see BarAnchorOffset): the design extent
     -- from the raw config numbers, identical at every resolution, and the legacy
     -- extent the pre-fix PP.Scale truncation produced at this resolution.
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local legacyIcon, legacyPad, legacyRowGap = Pix.Scale(rawIconSize), Pix.Scale(pad), Pix.Scale(rowGap)
     local legacyHeight = conf.iconShape == "cropped" and Pix.Scale(rawIconHeight) or legacyIcon
     local designLine = cols * (vertical and rawIconHeight or rawIconSize) + (cols - 1) * pad

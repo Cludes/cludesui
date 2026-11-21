@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_ExtraBars.lua
 --
@@ -115,8 +116,8 @@ local function SetupBlizzardMovableFrame(barId)
         for _, frame in ipairs(extraFrames) do
             frame:SetParent(holderFrame)
             -- ExtraAbilityContainer is an Edit Mode system: base methods only.
-            CludesUI.ClearFramePoints(frame)
-            CludesUI.SetFramePoint(frame, "CENTER", holderFrame, "CENTER", 0, 0)
+            CUI.ClearFramePoints(frame)
+            CUI.SetFramePoint(frame, "CENTER", holderFrame, "CENTER", 0, 0)
         end
     end
 
@@ -131,8 +132,8 @@ local function SetupBlizzardMovableFrame(barId)
         if eacSel then
             eacSel:SetAlpha(0)
             eacSel:EnableMouse(false)
-            if not CludesUI._GetFFD(eacSel).showHooked then
-                CludesUI._GetFFD(eacSel).showHooked = true
+            if not CUI._GetFFD(eacSel).showHooked then
+                CUI._GetFFD(eacSel).showHooked = true
                 hooksecurefunc(eacSel, "Show", function(self)
                     self:SetAlpha(0)
                     self:EnableMouse(false)
@@ -202,8 +203,8 @@ local function SetupBlizzardMovableFrame(barId)
             if InCombatLockdown() then return end
             local boxHolder = ExtraAbilityContainer
             boxHolder:SetParent(holderFrame)
-            CludesUI.ClearFramePoints(boxHolder)
-            CludesUI.SetFramePoint(boxHolder, "CENTER", holderFrame, "CENTER", 0, 0)
+            CUI.ClearFramePoints(boxHolder)
+            CUI.SetFramePoint(boxHolder, "CENTER", holderFrame, "CENTER", 0, 0)
         end
         RepositionExtraContainer()
 
@@ -377,7 +378,7 @@ function mod.AB_ForeverEyeParked()
         if not (qs and qs.point) then
             profile.foreverEyeRingSeeded = true
         else
-            local mm = CludesUI._ModuleNS.CludesUIMinimap
+            local mm = CUI._ModuleNS.CludesUIMinimap
             if mm and mm.MinimapQueueEyeSpot() then
                 profile.foreverEyeRingSeeded = true
                 profile.barPositions.QueueStatus = nil
@@ -390,7 +391,7 @@ end
 -- Places the holder there; true when parked.
 function mod.AB_ForeverEyePark(holderFrame)
     if not (holderFrame and mod.AB_ForeverEyeParked()) then return false end
-    local mm = CludesUI._ModuleNS.CludesUIMinimap
+    local mm = CUI._ModuleNS.CludesUIMinimap
     local map, posX, posY
     if mm then
         map, posX, posY = mm.MinimapQueueEyeSpot()
@@ -419,7 +420,7 @@ function mod.AB_ForeverEyeRelayout() mod.AB_ForeverEyePark(extraBarHolders.Queue
 local FV_BAG_ART = { "actionbar-frame", "iconframe-background" }
 local fvBagArt
 local function FadeForeverBarArt(barId)
-    if not (CludesUI.IS_FOREVER and mod.AB_Style() == "blizzard" and not mod.AB_Forever()) then return end
+    if not (CUI.IS_FOREVER and mod.AB_Style() == "blizzard" and not mod.AB_Forever()) then return end
     if barId == "MicroBar" then
         local mm = _G.MicroMenu
         if mm and mm.BackgroundArt then mm.BackgroundArt:SetAlpha(0) end
@@ -586,8 +587,8 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
         -- ClearAllPoints are Blizzard overrides that flag Edit Mode's anchor
         -- pass (tainted from here); the saved base methods move it cleanly.
         local function RepositionQueue()
-            CludesUI.ClearFramePoints(blizzFrame)
-            CludesUI.SetFramePoint(blizzFrame, "CENTER", holderFrame, "CENTER", 0, 0)
+            CUI.ClearFramePoints(blizzFrame)
+            CUI.SetFramePoint(blizzFrame, "CENTER", holderFrame, "CENTER", 0, 0)
         end
 
         RepositionQueue()
@@ -610,7 +611,7 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
         -- Blizzard re-anchors it through UpdateDefaultAnchor (its own layout
         -- apply, the micro menu's anchor, drag and settings) and, through a
         -- callback that holds the unhooked function, on a Minimap size change.
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             if type(blizzFrame.UpdateDefaultAnchor) == "function" then
                 hooksecurefunc(blizzFrame, "UpdateDefaultAnchor", Repin)
             end
@@ -655,8 +656,8 @@ local function SetupExtraBarHolders()
 end
 
 local function RegisterExtraBarsWithUnlockMode()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
     local elements = {}
     local orderBase = 350
     for position, details in ipairs(EXTRA_BARS) do
@@ -698,7 +699,7 @@ local function RegisterExtraBarsWithUnlockMode()
                                 y = posY,
                             }
                         end
-                        if not CludesUI._unlockActive then
+                        if not CUI._unlockActive then
                             local holderFrame = extraBarHolders[bk]
                             if holderFrame and anchorPoint and posX and posY then
                                 holderFrame:ClearAllPoints()
@@ -746,7 +747,7 @@ local function RegisterExtraBarsWithUnlockMode()
             end -- else (not MicroBar/BagBar)
         end
     end
-    CludesUI:RegisterUnlockElements(elements, "CludesUIActionBars")
+    CUI:RegisterUnlockElements(elements, "CludesUIActionBars")
 end
 
 -------------------------------------------------------------------------------
@@ -782,11 +783,11 @@ local function SetupExtraBars()
     _quickKeybindState.art.ForEachSpecialButton(_quickKeybindState.art.InitializeButton)
 
     -- Register extra bars with unlock mode
-    if CludesUI and CludesUI.RegisterUnlockElements then
+    if CUI and CUI.RegisterUnlockElements then
         RegisterExtraBarsWithUnlockMode()
     else
         C_Timer_After(1, function()
-            if CludesUI and CludesUI.RegisterUnlockElements then RegisterExtraBarsWithUnlockMode() end
+            if CUI and CUI.RegisterUnlockElements then RegisterExtraBarsWithUnlockMode() end
         end)
     end
 

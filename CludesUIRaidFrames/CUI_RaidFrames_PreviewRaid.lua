@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewRaid.lua
 --
@@ -81,13 +82,13 @@ function mod.RF_StylePreviewWindow(oc)
     band:SetPoint("TOPLEFT", oc, "TOPLEFT", 0, 0)
     band:SetPoint("TOPRIGHT", oc, "TOPRIGHT", 0, 0)
     band:SetHeight(26)
-    local ACC = CludesUI.CLUDES_GREEN
+    local ACC = CUI.CLUDES_GREEN
     local cap = oc:CreateTexture(nil, "BORDER", nil, 1)
     cap:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
     cap:SetPoint("TOPLEFT", oc, "TOPLEFT", 0, 0)
     cap:SetPoint("TOPRIGHT", oc, "TOPRIGHT", 0, 0)
     cap:SetHeight(2)
-    if CludesUI.RegAccent then CludesUI.RegAccent({ type = "solid", obj = cap, a = 1 }) end
+    if CUI.RegAccent then CUI.RegAccent({ type = "solid", obj = cap, a = 1 }) end
     local title = oc:CreateFontString(nil, "OVERLAY")
     title:SetPoint("TOPLEFT", oc, "TOPLEFT", 10, -8)
     oc._title = title
@@ -100,7 +101,7 @@ end
 -- resort. Screen centre without the panel.
 function mod.RF_DockPreviewWindow(oc)
     oc:ClearAllPoints()
-    local scrollFrame = CludesUI._scrollFrame
+    local scrollFrame = CUI._scrollFrame
     local left, right, t =
         scrollFrame and scrollFrame:GetLeft(),
         scrollFrame and scrollFrame:GetRight(),
@@ -395,7 +396,7 @@ local function RedrawPreview()
         )
         if overlayContainer._title then
             ApplyFont(overlayContainer._title, 13)
-            overlayContainer._title:SetText(CludesUI.L("Raid Preview"):upper())
+            overlayContainer._title:SetText(CUI.L("Raid Preview"):upper())
             overlayContainer._title:SetTextColor(1, 1, 1, 0.9)
             overlayContainer._title:Show()
         end
@@ -510,7 +511,7 @@ local function ShowPreview()
     -- preview parent with nothing left to restore them -- the root cause of "frames
     -- vanish after closing options". Reparenting secure-header containers is also
     -- blocked/taint-prone in combat, so bail there too.
-    if not mod._testMode and not (CludesUI:IsShown()) then return end
+    if not mod._testMode and not (CUI:IsShown()) then return end
     if InCombatLockdown() then return end
     -- Kill any active size preview
     if mod._sizePreviewTier then

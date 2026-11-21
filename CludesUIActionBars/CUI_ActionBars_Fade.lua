@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Fade.lua
 --
@@ -75,7 +76,7 @@ end
 -------------------------------------------------------------------------------
 -- WoW Forever has no skyriding: its options leave the condition out, so a
 -- profile from retail that carries it is not on for it there.
-local FLYING_COUNTS = not CludesUI.IS_FOREVER
+local FLYING_COUNTS = not CUI.IS_FOREVER
 function EAB_VTABLE.Hover.AdvancedFadeEnabled(cfg)
     local c = cfg and cfg.advancedFadeConditions
     return type(c) == "table"
@@ -101,13 +102,13 @@ function EAB_VTABLE.Hover.CustomFadeConditionMet(barId, cfg)
     if type(c) ~= "table" then return false end
 
     if c.mouseover and EAB_VTABLE.Hover.AdvancedFadeHovered(hoverStates[barId]) then return true end
-    if c.combat and CludesUI.IsInCombat() then return true end
+    if c.combat and CUI.IsInCombat() then return true end
     local inRaid = IsInRaid()
     if c.raid and inRaid then return true end
     if c.party and IsInGroup() and not inRaid then return true end
-    if c.instance and CludesUI.IsInInstancedContent() then return true end
-    if c.mounted and CludesUI.IsPlayerMountedLike() then return true end
-    if c.flying and CludesUI.IsAirborneSkyriding() then return true end
+    if c.instance and CUI.IsInInstancedContent() then return true end
+    if c.mounted and CUI.IsPlayerMountedLike() then return true end
+    if c.flying and CUI.IsAirborneSkyriding() then return true end
     local targetExists = UnitExists("target")
     if c.target and targetExists then return true end
     if c.enemy_target and targetExists and UnitCanAttack("player", "target") then return true end
@@ -148,7 +149,7 @@ function EAB_VTABLE.Hover.RefreshCustomFadeBar(barId, animate, force)
     -- side stays the mouseover fade's: the layer only moves the alpha of a bar
     -- the hover has revealed.
     local visibilityWantsHover =
-        CludesUI.VisWantsMouseover(cfg, "barVisibility", nil, CludesUI.VIS_CAPS_DEFAULT)
+        CUI.VisWantsMouseover(cfg, "barVisibility", nil, CUI.VIS_CAPS_DEFAULT)
     local hoverHidden = false
     if visibilityWantsHover then
         local over = EAB_VTABLE.Hover.AdvancedFadeHovered(status)
@@ -209,11 +210,11 @@ function ABAR:RefreshCustomFadeGate()
     if any then
         self:EnsureAdvancedFadeHooks()
         if not self._advancedFadeUpdaterRegistered then
-            CludesUI.RegisterVisibilityUpdater(self._advancedFadeUpdater)
+            CUI.RegisterVisibilityUpdater(self._advancedFadeUpdater)
             self._advancedFadeUpdaterRegistered = true
         end
     elseif self._advancedFadeUpdaterRegistered then
-        CludesUI.UnregisterVisibilityUpdater(self._advancedFadeUpdater)
+        CUI.UnregisterVisibilityUpdater(self._advancedFadeUpdater)
         self._advancedFadeUpdaterRegistered = nil
     end
     return any
@@ -304,8 +305,8 @@ function EAB_VTABLE.Hover.RestingAlpha(barId, cfg)
     cfg = cfg or EAB_VTABLE.Hover.GetSettings(barId)
     if not cfg then return 1, false end
     local wantsHover
-    if cfg.mouseoverEnabled and CludesUI.VisWantsMouseover then
-        wantsHover = CludesUI.VisWantsMouseover(cfg, "barVisibility", nil, CludesUI.VIS_CAPS_DEFAULT)
+    if cfg.mouseoverEnabled and CUI.VisWantsMouseover then
+        wantsHover = CUI.VisWantsMouseover(cfg, "barVisibility", nil, CUI.VIS_CAPS_DEFAULT)
     else
         wantsHover = cfg.mouseoverEnabled
     end

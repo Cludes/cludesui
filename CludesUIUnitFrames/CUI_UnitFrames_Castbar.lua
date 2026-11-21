@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Castbar.lua
 --
@@ -10,10 +11,10 @@ local _, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local frameList, GetSettingsForUnit = Inner.frames, Inner.GetSettingsForUnit
@@ -108,7 +109,7 @@ function mod.UF_CastIconSeamOK(cfg)
     if not (cfg and cfg.castBorderCustom == true) then return true end
     if (cfg.castBorderSize or 1) <= 0 then return false end
     local texture = cfg.castBorderStyle or "solid"
-    return texture == "solid" or texture == "" or CludesUI.GetBorderCompanion(texture, "sepV") ~= nil
+    return texture == "solid" or texture == "" or CUI.GetBorderCompanion(texture, "sepV") ~= nil
 end
 
 -- Classic WoW UI: the settings key holding a cast bar's frame size (its
@@ -217,7 +218,7 @@ function mod.UF_ApplyCastBorder(castBar, cfg, stock, unitToken, iconTex, preview
     if stock or not (cfg and cfg.castBorderCustom == true) then
         if castBar._cbHost then
             castBar._cbHost = nil
-            CludesUI.HideBorderStyle(owner)
+            CUI.HideBorderStyle(owner)
             owner:Hide()
             -- The bar's own border back (the stock chrome keeps it hidden).
             if not stock then Pix.ShowBorder(castBar) end
@@ -259,8 +260,8 @@ function mod.UF_ApplyCastBorder(castBar, cfg, stock, unitToken, iconTex, preview
     local texture = cfg.castBorderStyle or "solid"
     local size = cfg.castBorderSize or 1
     local edgeRGB = cfg.castBorderColor
-    local px = CludesUI.BorderPx(cfg.castBorderSizePx, size, texture)
-    CludesUI.ApplyBorderStyle(
+    local px = CUI.BorderPx(cfg.castBorderSizePx, size, texture)
+    CUI.ApplyBorderStyle(
         owner,
         size,
         edgeRGB and edgeRGB.r or 0,
@@ -301,7 +302,7 @@ function mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, pre
     local size = custom and (cfg.castBorderSize or 1) or 1
     local edgeRGB = custom and cfg.castBorderColor
     local alpha = custom and (cfg.castBorderAlpha or 1) or 1
-    local px = custom and CludesUI.BorderPx(cfg.castBorderSizePx, size, texture) or nil
+    local px = custom and CUI.BorderPx(cfg.castBorderSizePx, size, texture) or nil
     if styled then
         if not owner then
             -- Options frame pool: a real frame for a live bar (as above).
@@ -314,7 +315,7 @@ function mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, pre
                 or iconTex:GetFrameLevel() + 1
         )
         Pix.HideBorder(iconTex)
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             owner,
             size,
             edgeRGB and edgeRGB.r or 0,
@@ -332,7 +333,7 @@ function mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, pre
             px
         )
     elseif owner then
-        CludesUI.HideBorderStyle(owner)
+        CUI.HideBorderStyle(owner)
         owner:Hide()
         if not stock and not portrait then Pix.ShowBorder(iconTex) end
     end
@@ -379,7 +380,7 @@ function mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, pre
     then
         if iconSeam then
             iconSeam:Hide()
-            CludesUI.RegisterPxReapply(iconSeam, nil)
+            CUI.RegisterPxReapply(iconSeam, nil)
         end
         return
     end
@@ -394,7 +395,7 @@ function mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, pre
     local borderFrame = castBar._cbHost or castBar
     iconSeam:SetFrameLevel(math.max(castBar:GetFrameLevel(), borderFrame:GetFrameLevel()) + 2)
     iconSeam._key, iconSeam._size, iconSeam._px, iconSeam._right = texture, size, px, iconRight
-    iconSeam._path = CludesUI.GetBorderCompanion(texture, "sepV")
+    iconSeam._path = CUI.GetBorderCompanion(texture, "sepV")
     iconSeam._tex:SetVertexColor(
         edgeRGB and edgeRGB.r or 0,
         edgeRGB and edgeRGB.g or 0,
@@ -403,7 +404,7 @@ function mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, pre
     )
     mod.UF_LayoutCastIconSeam(iconSeam)
     iconSeam:Show()
-    CludesUI.RegisterPxReapply(iconSeam, (not preview) and mod.UF_LayoutCastIconSeam or nil)
+    CUI.RegisterPxReapply(iconSeam, (not preview) and mod.UF_LayoutCastIconSeam or nil)
 end
 
 -- Lays the divider from the values the pass above stamped (also the UI-scale
@@ -414,7 +415,7 @@ function mod.UF_LayoutCastIconSeam(iconSeam)
     local t = iconSeam._tex
     local es = iconSeam:GetEffectiveScale()
     if iconSeam._path then
-        CludesUI.PlaceBorderDividerV(
+        CUI.PlaceBorderDividerV(
             t,
             iconSeam,
             iconSeam._right,
@@ -454,7 +455,7 @@ function mod.UF_CastBorderPad(unitToken, cfg)
     if not (cfg and cfg.castBorderCustom == true) or mod.UF_Blizz() then return nil end
     local texture = cfg.castBorderStyle or "solid"
     local size = cfg.castBorderSize or 1
-    local left, right, top, bottom = CludesUI.BorderReach(
+    local left, right, top, bottom = CUI.BorderReach(
         size,
         texture,
         cfg.castBorderOffsetX,
@@ -463,7 +464,7 @@ function mod.UF_CastBorderPad(unitToken, cfg)
         cfg.castBorderShiftY,
         "unitframes",
         size,
-        CludesUI.BorderPx(cfg.castBorderSizePx, size, texture),
+        CUI.BorderPx(cfg.castBorderSizePx, size, texture),
         nil,
         cfg.castBorderAlpha or 1
     )
@@ -680,10 +681,10 @@ end
 -- Cast bar positioning is owned by the centralized unlock/anchor system
 -- (ApplySavedPositions).
 
-local function KickSpell() return CludesUI.GetActiveKickSpell() end
+local function KickSpell() return CUI.GetActiveKickSpell() end
 local function ComputeCastBarTint(readyTint, plainTint)
-    if CludesUI and CludesUI.ComputeCastBarTint then
-        return CludesUI.ComputeCastBarTint(readyTint, plainTint)
+    if CUI and CUI.ComputeCastBarTint then
+        return CUI.ComputeCastBarTint(readyTint, plainTint)
     end
     return plainTint.r, plainTint.g, plainTint.b
 end
@@ -731,8 +732,8 @@ local function ApplyUnitFrameCastColor(castBar)
     if prefs and prefs.castbarClassColored and hostUnit == "player" then
         local _, classToken = UnitClass(hostUnit)
         if issecretvalue(classToken) then classToken = nil end
-        if classToken and CludesUI.GetClassColor then
-            local classColor = CludesUI.GetClassColor(classToken)
+        if classToken and CUI.GetClassColor then
+            local classColor = CUI.GetClassColor(classToken)
             if classColor then
                 red, green, blue = classColor.r, classColor.g, classColor.b
             end
@@ -1279,7 +1280,7 @@ local function CreateCastBar(widget, unitToken, prefs)
     -- Show Full Spell Name: shrink the shown name (spell, craft count or
     -- "Spell - Target") to the width LayoutCastTextZones gave it. _fitStr is
     -- the clean copy built at cast start; nil (secret) keeps the size.
-    castBar._fitSpellName = function(self) CludesUI.FitCastName(self.Text, self._fitStr, self._nameSize or 11) end
+    castBar._fitSpellName = function(self) CUI.FitCastName(self.Text, self._fitStr, self._nameSize or 11) end
 
     local castTintLayer = castBar:CreateTexture(nil, "ARTWORK", nil, 1)
     castTintLayer:SetPoint("TOPLEFT", castBar:GetStatusBarTexture(), "TOPLEFT")
@@ -1404,7 +1405,7 @@ local function CreateCastBar(widget, unitToken, prefs)
         end
         timeText:Show()
         if self._craftExtra and durationObject then
-            CludesUI.SetCraftTimerText(self, timeText, durationObject:GetRemainingDuration(), false)
+            CUI.SetCraftTimerText(self, timeText, durationObject:GetRemainingDuration(), false)
             return
         end
         if durationObject then
@@ -1479,7 +1480,7 @@ do
     mod.ClearUnitFrameImportantGlow = function(castBar)
         local shade = castBar and castBar._importantOverlay
         if not shade or not castBar._impGlowActive then return end
-        CludesUI.Glows.StopAllGlows(shade)
+        CUI.Glows.StopAllGlows(shade)
         shade:SetAlpha(0)
         shade:Hide()
         castBar._impGlowActive = nil
@@ -1488,7 +1489,7 @@ do
     -- Called from PostCastStart; the engine has already set castbar.spellID.
     mod.UpdateUnitFrameImportantGlow = function(castBar)
         local cfg = castBar and castBar._eufSettings
-        local Glows = CludesUI.Glows
+        local Glows = CUI.Glows
         if not (cfg and cfg.castbarImportantGlow and C_Spell and C_Spell.IsSpellImportant) then
             mod.ClearUnitFrameImportantGlow(castBar)
             return
@@ -1774,13 +1775,13 @@ end
 function mod.SetCastbarElement(widget, enable)
     if not widget or not widget.Castbar then return end
     if (widget:IsElementEnabled("Castbar") and true or false) == (enable and true or false) then return end
-    CludesUI.CaptureBlizzCastBarEvents()
+    CUI.CaptureBlizzCastBarEvents()
     if enable then
         widget:EnableElement("Castbar")
     else
         widget:DisableElement("Castbar")
     end
-    CludesUI.RestoreBlizzCastBarEvents()
+    CUI.RestoreBlizzCastBarEvents()
 end
 
 -- Manage Blizzard's player cast bar ownership based on whether UnitFrames renders its
@@ -1789,8 +1790,8 @@ end
 -- cleanly for external addons.
 local function ApplyBlizzCastbarState()
     if
-        CludesUI
-        and CludesUI.SetPlayerCastBarSuppressed
+        CUI
+        and CUI.SetPlayerCastBarSuppressed
         and saved
         and saved.profile
         and saved.profile.player
@@ -1806,9 +1807,9 @@ local function ApplyBlizzCastbarState()
             saved.profile.player.showPlayerCastbar
             and mod.VisEffective(saved.profile.player) ~= "never"
             and mod.GetUnitFrameSource("player") == "cui"
-            and not (mod._ufCastPadHidden and CludesUI.PadGamepadUI())
+            and not (mod._ufCastPadHidden and CUI.PadGamepadUI())
         ) or false
-        CludesUI.SetPlayerCastBarSuppressed("UnitFrames", suppress)
+        CUI.SetPlayerCastBarSuppressed("UnitFrames", suppress)
     end
 end
 
@@ -1840,14 +1841,14 @@ function mod.UF_ApplyGamepadCastbar(padOn)
     if wanted ~= (mod._ufCastPadWatched == true) then
         mod._ufCastPadWatched = wanted
         if wanted then
-            CludesUI.WatchPad("UF_PlayerCastbar", mod.UF_ApplyGamepadCastbar)
+            CUI.WatchPad("UF_PlayerCastbar", mod.UF_ApplyGamepadCastbar)
         else
-            CludesUI.UnwatchPad("UF_PlayerCastbar")
+            CUI.UnwatchPad("UF_PlayerCastbar")
         end
     end
     local hide = false
     if wanted then
-        if padOn == nil then padOn = CludesUI.PadModeOn() end
+        if padOn == nil then padOn = CUI.PadModeOn() end
         hide = padOn and true or false
     end
     if hide == (mod._ufCastPadHidden == true) then return end

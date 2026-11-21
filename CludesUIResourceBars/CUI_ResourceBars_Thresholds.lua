@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Thresholds.lua
 --
@@ -50,13 +51,13 @@ do
     }
     function ERB.ResolveSecondaryResourceColor(powerKey)
         local rk = RKEY[powerKey]
-        if rk and CludesUI.GetClassResourceColor then
-            local color = CludesUI.GetClassResourceColor(rk)
+        if rk and CUI.GetClassResourceColor then
+            local color = CUI.GetClassResourceColor(rk)
             if color then return color.r, color.g, color.b end
         end
         local pk = PKEY[powerKey]
-        if pk and CludesUI.GetPowerColor then
-            local color = CludesUI.GetPowerColor(pk)
+        if pk and CUI.GetPowerColor then
+            local color = CUI.GetPowerColor(pk)
             if color then return color.r, color.g, color.b end
         end
         return nil
@@ -73,7 +74,7 @@ local function BuildBarTypeSpecMap()
     -- The spec positions below are retail's: WoW Forever's specs are its
     -- vanilla talent trees, none of which has these resources, so the map
     -- stays empty there.
-    if CludesUI.IS_FOREVER then return end
+    if CUI.IS_FOREVER then return end
     for classID = 1, GetNumClasses() do
         local _, class = GetClassInfo(classID)
         if class then
@@ -126,7 +127,7 @@ do
     local function InvalidateThresholdCaches()
         _thrSpecID = nil
         wipe(_talentGateCache)
-        if CludesUI.IS_FOREVER and mod._fvThrPick then wipe(mod._fvThrPick) end
+        if CUI.IS_FOREVER and mod._fvThrPick then wipe(mod._fvThrPick) end
     end
     mod.InvalidateThresholdCaches = InvalidateThresholdCaches
 
@@ -185,13 +186,13 @@ do
         local profile = ERB.db and ERB.db.profile
         local sec = profile and profile.secondary
         if sec and entries == sec.thresholdSpecs and select(2, UnitClass("player")) == "DRUID" then
-            local ids = CludesUI.ForeverClassSpecIDs("DRUID")
+            local ids = CUI.ForeverClassSpecIDs("DRUID")
             for i = 1, (ids and #ids or 0) do
                 if ids[i] ~= 102 and mod.ThresholdEntriesMention(ids[i], entries) then return ids[i] end
             end
             return nil
         end
-        return CludesUI.ForeverClassSpec(nil, mod.ThresholdEntriesMention, entries)
+        return CUI.ForeverClassSpec(nil, mod.ThresholdEntriesMention, entries)
     end
 
     -- The resolver runs per frame, so the pick is memoized per list on ns.CfgGen
@@ -240,8 +241,8 @@ do
         -- runs as the spec ns.ForeverThresholdSpec picks (none named by a live
         -- card: the class's first spec, or no spec for a Druid's Class Resource,
         -- either way leaving the All Specs tiers 3 and 4).
-        if CludesUI.IS_FOREVER then specID = mod.ForeverThresholdSpec(entries) end
-        if not specID and not CludesUI.IS_FOREVER then return nil end
+        if CUI.IS_FOREVER then specID = mod.ForeverThresholdSpec(entries) end
+        if not specID and not CUI.IS_FOREVER then return nil end
 
         local specPlain, allTalent, allPlain
         for _, record in ipairs(entries) do

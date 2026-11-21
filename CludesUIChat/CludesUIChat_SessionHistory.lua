@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIChat_SessionHistory.lua
 --
@@ -74,7 +75,7 @@ end
 
 local function HistoryUsable()
     if not HistoryOn() then return false end
-    if CludesUI.InProtectedInstance() then return false end
+    if CUI.InProtectedInstance() then return false end
     if GetCVarBool and GetCVarBool("addonChatRestrictionsForced") then return false end
     return true
 end

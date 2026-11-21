@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\Profession.lua - Info Bar blocks: professions.
 --
@@ -61,7 +62,7 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
 
     -- One row per profession the block can show; First Aid's only on Forever.
     local rows = { { data = {} }, { data = {} } }
-    if secondary and CludesUI.IS_FOREVER then rows[3] = { data = {} } end
+    if secondary and CUI.IS_FOREVER then rows[3] = { data = {} } end
 
     -- Reads the professions into the rows (idx nil = not learned).
     local function Read(...)
@@ -136,7 +137,7 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         for _, row in ipairs(rows) do
             local skinData = row.data
             if skinData.idx and skinData.name then
-                local rank = CludesUI.COLOR_CODES.WHITE .. skinData.rank .. "|r / " .. skinData.maxRank
+                local rank = CUI.COLOR_CODES.WHITE .. skinData.rank .. "|r / " .. skinData.maxRank
                 mod.Tip_AddDouble(skinData.name, rank, 1, 1, 1, 1, 1, 1)
             end
         end

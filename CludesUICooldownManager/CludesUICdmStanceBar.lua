@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUICdmStanceBar.lua
 --  Per-spell Stance Bar hide for cooldown/utility icons: hidden in, or outside,
@@ -39,7 +40,7 @@ local function Parse(value)
     p = false
     local mode, ident = value:match("^(%a+):([%w_]+)$")
     local m = mode and MODES[mode]
-    local states = m and CludesUI.CLASS_PAGING_STATES[select(2, UnitClass("player"))]
+    local states = m and CUI.CLASS_PAGING_STATES[select(2, UnitClass("player"))]
     if states then
         for _, st in ipairs(states) do
             if st.id == ident then

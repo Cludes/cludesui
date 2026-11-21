@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_StatWeights.lua  (WoW Forever only)
 --  Stat Weights: what each stat is worth to your spec, and so how much
@@ -374,7 +375,7 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
     end)
 end
 
-CludesUI._StatWeights = {
+CUI._StatWeights = {
     Get = Get,
     Cfg = F.Cfg,
     Specs = ClassSpecs,

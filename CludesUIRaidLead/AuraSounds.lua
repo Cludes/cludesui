@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  AuraSounds.lua -- Raid Lead: Aura Sounds.
 --
@@ -37,7 +38,7 @@ mod.SOUND_WHEN = {
 
 local saved
 function mod.RaidLeadDB()
-    if not saved then saved = CludesUI.Lite.NewDB("CludesUIRaidLeadDB", { profile = { sounds = {} } }) end
+    if not saved then saved = CUI.Lite.NewDB("CludesUIRaidLeadDB", { profile = { sounds = {} } }) end
     saved.profile.sounds = saved.profile.sounds or {}
     return saved.profile
 end

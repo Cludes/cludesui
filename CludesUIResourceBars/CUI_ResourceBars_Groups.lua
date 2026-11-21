@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Groups.lua
 --
@@ -12,7 +13,7 @@ local Inner = mod._internals
 if not Inner or Inner.broken then return end
 Inner.broken = true
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local ERB, GetPrimaryPowerType = Inner.ERB, Inner.GetPrimaryPowerType
 local GetSecondaryResource, DEFAULTS = Inner.GetSecondaryResource, Inner.DEFAULTS
@@ -77,13 +78,13 @@ end
 -- horizontal bar, height links for a vertical one), following chained
 -- links; the key itself when unmatched.
 function mod.ERB_GroupMatchRoot(key, vertical)
-    local get = vertical and CludesUI.GetHeightMatchTarget or CludesUI.GetWidthMatchTarget
+    local get = vertical and CUI.GetHeightMatchTarget or CUI.GetWidthMatchTarget
     if not get then return key end
     for _ = 1, 16 do
         local nxt = get(key)
         if not nxt then break end
         -- A match with Extra Width/Height is not its target's length: root here.
-        if CludesUI.GetMatchExtra and CludesUI.GetMatchExtra(vertical and "h" or "w", key) then break end
+        if CUI.GetMatchExtra and CUI.GetMatchExtra(vertical and "h" or "w", key) then break end
         key = nxt
     end
     return key
@@ -176,7 +177,7 @@ function mod.ERB_BarsAnchoredTight(p)
     if not (p and mod.ERB_GroupCheck(p)) then return false end
     local anchors = CludesUIDB and CludesUIDB.unlockAnchors
     if not anchors then return false end
-    local P = CludesUI.PP
+    local P = CUI.PP
     local ui = UIParent and UIParent:GetEffectiveScale() or 1
     if not ui or ui <= 0 then ui = 1 end
     local tol = ((P and P.perfect) or 1) / ui + 0.01
@@ -192,7 +193,7 @@ function mod.ERB_BarsAnchoredTight(p)
                 if jdx ~= index and members[jdx] and keyList[jdx] == target then inGroup = true end
             end
             if inGroup then
-                local side = CludesUI.GetUnlockAnchorSide(details)
+                local side = CUI.GetUnlockAnchorSide(details)
                 local onAxis
                 if vert then
                     onAxis = (side == "LEFT" or side == "RIGHT")
@@ -356,7 +357,7 @@ function mod.ERB_GroupEval()
         end
         m[jdx + 1], lo[jdx + 1], hi[jdx + 1] = frame, l1, h1
     end
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     local k = mod.ERB_BarFrameK(nil)
     local classic = mod.ERB_BarsClassic()
     -- The frame's reach across the stacking axis: the vanilla frame's
@@ -796,7 +797,7 @@ end
 -- Resolve lazily: Unit Frames can load after Resource Bars.
 function mod.ERB_CastIconPortrait(callback)
     if not callback.iconOnPortrait or callback.showIcon == false then return nil end
-    local uf = CludesUI._ModuleNS["CludesUIUnitFrames"]
+    local uf = CUI._ModuleNS["CludesUIUnitFrames"]
     if uf and uf.UF_GetPlayerCastPortrait then return uf.UF_GetPlayerCastPortrait() end
 end
 -- Icon Size / Offset: a custom size or any offset takes the icon out of the
@@ -812,7 +813,7 @@ function mod.ERB_CastIconFree(callback)
 end
 -- Lays out a floating icon (live bar and options preview), or hides its border.
 function mod.ERB_LayoutFreeCastIcon(iconFrame, owner, callback, free)
-    local P = CludesUI.PP
+    local P = CUI.PP
     if not free then
         if P.GetBorders(iconFrame) then P.HideBorder(iconFrame) end
         return

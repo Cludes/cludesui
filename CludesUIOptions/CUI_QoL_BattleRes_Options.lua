@@ -1,15 +1,16 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_QoL_BattleRes_Options.lua
 --  Options page for the BattleRes icon (registered under CludesUIQoL).
 -------------------------------------------------------------------------------
 
-if not CludesUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
+if not CUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 local function DB()
     local func = _G._CUI_BattleRes_DB
@@ -72,9 +73,9 @@ local function BorderSizeSliderCfg(get, set, refresh, disabled, disabledTooltip)
         step = 1,
         disabled = disabled,
         disabledTooltip = disabledTooltip,
-        getValue = function() return CludesUI.BORDER_STEP_OF_LABEL[get("borderSize") or "thin"] or 1 end,
+        getValue = function() return CUI.BORDER_STEP_OF_LABEL[get("borderSize") or "thin"] or 1 end,
         setValue = function(val)
-            local word = CludesUI.BORDER_LABEL_OF_STEP[math.floor(val + 0.5)] or "thin"
+            local word = CUI.BORDER_LABEL_OF_STEP[math.floor(val + 0.5)] or "thin"
             if word == (get("borderSize") or "thin") then return end
             set("borderSize", word)
             refresh()
@@ -108,7 +109,7 @@ local function MakeBorderColorSwatches()
                 if ResCfg("borderUseClass") then
                     Set("borderUseClass", false)
                     ApplyBattleRes()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if self._eabOrigClick then self._eabOrigClick(self) end
@@ -131,7 +132,7 @@ local function MakeBorderColorSwatches()
             onClick = function()
                 Set("borderUseClass", true)
                 ApplyBattleRes()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             refreshAlpha = function()
                 if ResCfg("enabled") == false or ResCfg("visibility") == "NEVER" then return 0.15 end
@@ -152,7 +153,7 @@ local TEXT_ROWS_TIP = "This option requires Display Style to be set to Text"
 -- controls (same shape as the Skip Cinematics cog). offFn greys and blocks
 -- it; offReq is the DisabledTooltip requirement shown while blocked.
 local function AttachToggleCog(region, title, labelText, get, set, offFn, offReq)
-    CludesUI.BuildInlineCog(region, {
+    CUI.BuildInlineCog(region, {
         title = title,
         gap = 9,
         rows = { { type = "toggle", label = labelText, get = get, set = set } },
@@ -162,12 +163,12 @@ local function AttachToggleCog(region, title, labelText, get, set, offFn, offReq
 end
 
 local function BuildBattleResPage(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PP
+    local W = CUI.Widgets
+    local Pix = CUI.PP
     local cursorY = yOffset
     local _, height, row
 
-    if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
+    if CUI.ClearContentHeader then CUI:ClearContentHeader() end
     hostFrame._showRowDivider = true
 
     -- -- BATTLE RES ----------------------------------------------------
@@ -184,7 +185,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         setValue = function(val)
             Set("visibility", val)
             ApplyBattleRes()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "slider",
@@ -281,7 +282,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     -- Inline RESIZE cogs on Duration Size (left) and Count Size (right): X/Y offsets
     do
         local function _attachOffsetCog(region, popupTitle, xKey, yKey)
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = popupTitle,
                 rows = {
                     {
@@ -334,9 +335,9 @@ local function SetPreviewHidden(key, hidden) previewHidden[key] = hidden or nil 
 
 -- Inline eye left of a row's control: shows/hides that tracker's live preview.
 local function AttachPreviewEye(region, key, showTip, hideTip, setOwner, ownerFrame)
-    local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-    local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-    local eyeButton, eyeTex = CludesUI.NewInlineEye(region)
+    local EYE_VISIBLE = CUI.EYE_VISIBLE_ICON
+    local EYE_INVISIBLE = CUI.EYE_INVISIBLE_ICON
+    local eyeButton, eyeTex = CUI.NewInlineEye(region)
     local function RefreshEye() eyeTex:SetTexture(PreviewHidden(key) and EYE_VISIBLE or EYE_INVISIBLE) end
     RefreshEye()
     eyeButton:SetScript("OnClick", function(self)
@@ -347,12 +348,12 @@ local function AttachPreviewEye(region, key, showTip, hideTip, setOwner, ownerFr
         if self:IsMouseOver() then self:GetScript("OnEnter")(self) end
     end)
     eyeButton:SetScript("OnEnter", function(self)
-        CludesUI.SetGlyphAlpha(self, 0.7)
-        CludesUI.ShowWidgetTooltip(self, PreviewHidden(key) and showTip or hideTip)
+        CUI.SetGlyphAlpha(self, 0.7)
+        CUI.ShowWidgetTooltip(self, PreviewHidden(key) and showTip or hideTip)
     end)
     eyeButton:SetScript("OnLeave", function(self)
-        CludesUI.SetGlyphAlpha(self, 0.4)
-        CludesUI.HideWidgetTooltip()
+        CUI.SetGlyphAlpha(self, 0.4)
+        CUI.HideWidgetTooltip()
     end)
 end
 
@@ -364,7 +365,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
 
     heading, height = W:SectionHeader(hostFrame, "BATTLE RES", cursorY)
     cursorY = cursorY - height
-    CludesUI.BuildSectionUnlockJump(heading, {
+    CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_BattleRes",
         disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
@@ -376,7 +377,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
     -- The OnSHOW hook is what makes revisits work: the options panel caches built
     -- pages and re-shows the wrapper without re-running this builder, so without it
     -- the preview would arm on the first visit only.
-    if not CludesUI._prebuilding and _G._CUI_BattleRes_SetPreviewOwner then
+    if not CUI._prebuilding and _G._CUI_BattleRes_SetPreviewOwner then
         _G._CUI_BattleRes_SetPreviewOwner((not PreviewHidden("brez")) and hostFrame or nil)
         if not hostFrame._brPreviewHooked then
             hostFrame._brPreviewHooked = true
@@ -399,12 +400,12 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         getValue = function() return ResCfg("visibility") or "MPLUS_AND_RAID" end,
         -- DependentSetValue: the rows below Row 1 are hidden while Never;
         -- only the Never <-> shown flip forces the full rebuild.
-        setValue = CludesUI.DependentSetValue(
+        setValue = CUI.DependentSetValue(
             function() return ResCfg("visibility") ~= "NEVER" end,
             function(val)
                 Set("visibility", val)
                 ApplyBattleRes()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end
         ),
     }, {
@@ -443,7 +444,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             disabledTooltip = ICON_ROWS_TIP,
             swatches = MakeBorderColorSwatches(),
         })
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             AttachPreviewEye(
                 row._leftRegion,
                 "brez",
@@ -508,7 +509,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
 
         do
             local function _attachOffsetCog(region, popupTitle, xKey, yKey)
-                CludesUI.BuildInlineCog(region, {
+                CUI.BuildInlineCog(region, {
                     title = popupTitle,
                     rows = {
                         {
@@ -558,7 +559,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             setValue = function(val)
                 Set("displayMode", val)
                 ApplyBattleRes()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -574,13 +575,13 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         })
         cursorY = cursorY - height
 
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = dispRow._leftRegion
             -- Builds one inline color swatch with the blocking-overlay disabled
             -- state (interactive only while Display Style is Text). Anchored
             -- right-to-left so the visual order matches the "2 | 4:14" line.
             local function MakeInlineTextSwatch(colorKey, tipText, anchorTo)
-                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
                     region,
                     region:GetFrameLevel() + 5,
                     function()
@@ -597,15 +598,15 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 )
                 Pix.Point(colorSwatch, "RIGHT", anchorTo, "LEFT", -8, 0)
                 colorSwatch:HookScript("OnEnter", function()
-                    if ShowsText() then CludesUI.ShowWidgetTooltip(colorSwatch, tipText) end
+                    if ShowsText() then CUI.ShowWidgetTooltip(colorSwatch, tipText) end
                 end)
-                colorSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                local block = CludesUI.NewSwatchBlocker(colorSwatch)
+                colorSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+                local block = CUI.NewSwatchBlocker(colorSwatch)
                 block:SetScript(
                     "OnEnter",
-                    function() CludesUI.ShowWidgetTooltip(colorSwatch, TEXT_ROWS_TIP) end
+                    function() CUI.ShowWidgetTooltip(colorSwatch, TEXT_ROWS_TIP) end
                 )
-                block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 local function UpdateState()
                     updateSwatch()
                     if ShowsText() then
@@ -616,7 +617,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                         block:Show()
                     end
                 end
-                CludesUI.RegisterWidgetRefresh(UpdateState)
+                CUI.RegisterWidgetRefresh(UpdateState)
                 UpdateState()
                 return colorSwatch
             end
@@ -644,7 +645,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         -- Display Style is Icon. Mirrors the Chat module's font controls, but
         -- applies live -- no reload needed for these font strings.
         do
-            local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
+            local fontValues, fontOrder = CUI.BuildFontDropdownData()
             local outlineValues = {
                 ["__global"] = { text = "CUI Global Default" },
                 ["none"] = { text = "Drop Shadow" },
@@ -758,7 +759,7 @@ local function MakeBloodlustBorderColorSwatches()
                 if LustCfg("borderUseClass") then
                     BL_Set("borderUseClass", false)
                     ApplyBloodlust()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if self._eabOrigClick then self._eabOrigClick(self) end
@@ -781,7 +782,7 @@ local function MakeBloodlustBorderColorSwatches()
             onClick = function()
                 BL_Set("borderUseClass", true)
                 ApplyBloodlust()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             refreshAlpha = function()
                 if LustCfg("enabled") == false or LustCfg("visibility") == "NEVER" then return 0.15 end
@@ -799,7 +800,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
 
     heading, height = W:SectionHeader(hostFrame, "BLOODLUST TRACKER", cursorY)
     cursorY = cursorY - height
-    CludesUI.BuildSectionUnlockJump(heading, {
+    CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_Bloodlust",
         disabled = function() return LustCfg("visibility") == "NEVER" end,
         disabledTooltip = "Bloodlust Icon",
@@ -812,7 +813,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
     -- The OnSHOW hook is what makes revisits work: the options panel caches built
     -- pages and re-shows the wrapper without re-running this builder, so without it
     -- the preview would arm on the first visit only.
-    if not CludesUI._prebuilding and _G._CUI_Bloodlust_SetPreviewOwner then
+    if not CUI._prebuilding and _G._CUI_Bloodlust_SetPreviewOwner then
         _G._CUI_Bloodlust_SetPreviewOwner((not PreviewHidden("lust")) and hostFrame or nil)
         if not hostFrame._blPreviewHooked then
             hostFrame._blPreviewHooked = true
@@ -835,7 +836,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         getValue = function() return LustCfg("visibility") or "NEVER" end,
         -- DependentSetValue: the rows below Row 1 are hidden while Never;
         -- only the Never <-> shown flip forces the full rebuild.
-        setValue = CludesUI.DependentSetValue(
+        setValue = CUI.DependentSetValue(
             function() return LustCfg("visibility") ~= "NEVER" end,
             function(val)
                 local was = LustCfg("visibility") or "NEVER"
@@ -844,7 +845,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                     _G._CUI_Bloodlust_SeedPos()
                 end
                 ApplyBloodlust()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end
         ),
     }, {
@@ -882,7 +883,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             text = "Border Color",
             swatches = MakeBloodlustBorderColorSwatches(),
         })
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             AttachPreviewEye(
                 row._leftRegion,
                 "lust",
@@ -957,7 +958,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 disabledText,
                 anchorTo
             )
-                return CludesUI.BuildInlineCog(region, {
+                return CUI.BuildInlineCog(region, {
                     title = popupTitle,
                     rows = {
                         {
@@ -1009,7 +1010,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 setValue = function(val)
                     BL_Set("showSated", val)
                     ApplyBloodlust()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             }, {
                 type = "toggle",
@@ -1019,12 +1020,12 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 setValue = function(val)
                     BL_Set("showReady", val)
                     ApplyBloodlust()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
             cursorY = cursorY - height
 
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 AttachToggleCog(
                     row._leftRegion,
                     "Sated Settings",
@@ -1071,7 +1072,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                     readyOff,
                     "Show Icon with Ready Text"
                 )
-                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
                     leftRegion,
                     leftRegion:GetFrameLevel() + 5,
                     function()
@@ -1089,7 +1090,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 Pix.Point(colorSwatch, "RIGHT", readyCog or leftRegion._control, "LEFT", -8, 0)
                 -- The leftmost item: the label clamp's bound.
                 leftRegion._lastInline = colorSwatch
-                CludesUI.RegisterWidgetRefresh(function()
+                CUI.RegisterWidgetRefresh(function()
                     local off = readyOff()
                     colorSwatch:SetAlpha(off and 0.3 or 1)
                     updateSwatch()
@@ -1097,18 +1098,18 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 -- The slider's own "disabled" already blocks clicks on itself; the
                 -- swatch is a manual inline extra, so it needs the same click-block
                 -- overlay the ActionBars range-colour swatch uses.
-                local readyColorBlock = CludesUI.NewSwatchBlocker(colorSwatch)
+                local readyColorBlock = CUI.NewSwatchBlocker(colorSwatch)
                 readyColorBlock:SetScript(
                     "OnEnter",
                     function()
-                        CludesUI.ShowWidgetTooltip(
+                        CUI.ShowWidgetTooltip(
                             colorSwatch,
-                            CludesUI.DisabledTooltip("Show Icon with Ready Text")
+                            CUI.DisabledTooltip("Show Icon with Ready Text")
                         )
                     end
                 )
-                readyColorBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                CludesUI.RegisterWidgetRefresh(function() readyColorBlock:SetShown(readyOff()) end)
+                readyColorBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+                CUI.RegisterWidgetRefresh(function() readyColorBlock:SetShown(readyOff()) end)
                 readyColorBlock:SetShown(readyOff())
             end
         end

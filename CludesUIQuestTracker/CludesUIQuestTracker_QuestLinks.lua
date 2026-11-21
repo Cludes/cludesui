@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_QuestLinks.lua - a "Wowhead Link" entry in quest menus.
 --
@@ -15,7 +16,7 @@ defaults.wowheadQuestLinks = false
 defaults.wowheadQuestComments = false
 defaults.wowheadQuestClientLanguage = false
 
-local SITE = CludesUI.IS_FOREVER and "forever/" or ""
+local SITE = CUI.IS_FOREVER and "forever/" or ""
 -- Wowhead's path per client language (English has none).
 local LANGUAGE_PATH = {
     deDE = "de/",
@@ -57,7 +58,7 @@ function EQT.ShowWowheadLink(questID)
         .. "/"
         .. anchor
     -- The box translates its own texts.
-    CludesUI:ShowInputPopup({
+    CUI:ShowInputPopup({
         title = "Wowhead Link",
         message = "Press Ctrl+C to copy, then paste the link into your browser.",
         initialText = address,
@@ -73,7 +74,7 @@ local function AddEntry(questID, root)
     -- A menu hook also runs for the last menu built when it registers.
     done[root] = true
     root:CreateDivider()
-    root:CreateButton(CludesUI.L("Wowhead Link"), function() EQT.ShowWowheadLink(questID) end)
+    root:CreateButton(CUI.L("Wowhead Link"), function() EQT.ShowWowheadLink(questID) end)
 end
 
 -- Quest log rows and the details popup carry their quest (waypoints share

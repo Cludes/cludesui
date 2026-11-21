@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Tooltips.lua
 --
@@ -40,7 +41,7 @@ local function GatherOnlineFriends()
                     -- Fix "Name-Realm-Realm" to "Name-Realm"
                     guild[#guild + 1] = {
                         name = short,
-                        full = CludesUI.BuildFullName(label) or label,
+                        full = CUI.BuildFullName(label) or label,
                         class = class,
                         zone = zone or "",
                         level = level,
@@ -68,7 +69,7 @@ local function GatherOnlineFriends()
                 end
                 local zone = gameAccount.areaName or ""
                 -- Fix "Name-Realm-Realm" to "Name-Realm"
-                local full = CludesUI.BuildFullName(characterName, gameAccount.realmName) or characterName
+                local full = CUI.BuildFullName(characterName, gameAccount.realmName) or characterName
                 -- Battle tag without the #discriminator (fall back to accountName/RealID)
                 local rawTag = account.battleTag or account.accountName
                 local tagName = rawTag and rawTag:match("^([^#]+)") or rawTag
@@ -104,7 +105,7 @@ local function GatherOnlineFriends()
             if characterName and not seenBNet[characterName] then
                 friendList[#friendList + 1] = {
                     name = characterName:match("^([^%-]+)") or characterName,
-                    full = CludesUI.BuildFullName(characterName) or characterName,
+                    full = CUI.BuildFullName(characterName) or characterName,
                     class = details.className and details.className:upper():gsub(" ", ""),
                     zone = details.area or "",
                     level = details.level,
@@ -150,7 +151,7 @@ end
 -- in the do-block.
 -- Only ShowFriendsTooltip/HideFriendsTooltip are used outside, hence the forward declarations.
 local function TipFont()
-    return (CludesUI.GetFontPath("minimap")) or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+    return (CUI.GetFontPath("minimap")) or CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
 end
 local ShowFriendsTooltip, HideFriendsTooltip
 do
@@ -170,7 +171,7 @@ do
     -- The name and note lines show other players' writing: a font family (no
     -- outline, no shadow), so Cyrillic, Korean and Chinese letters draw in the
     -- client's own faces. Every font write to those two strings goes through here.
-    local function FTTNameFont(fontStr, size) CludesUI.SetFontFamily(fontStr, TipFont(), size, "", false) end
+    local function FTTNameFont(fontStr, size) CUI.SetFontFamily(fontStr, TipFont(), size, "", false) end
 
     -- Hover-stable hide: small grace period so cursor can travel from button to tooltip
     local _fttHideToken = 0
@@ -191,7 +192,7 @@ do
     -- code: a Mythic+ run (entire run), raid combat, rated/instanced PvP. That is exactly
     -- CludesUI.InProtectedInstance(), the canonical CUI guard for taint-sensitive ops.
     -- Whispering is suppressed entirely there; invites stay allowed.
-    local function FTTInProtectedContent() return CludesUI.InProtectedInstance() or false end
+    local function FTTInProtectedContent() return CUI.InProtectedInstance() or false end
 
     -- Open a whisper. BNet friends go via their Battle.net account (reaches any character/
     -- faction/realm), everyone else by character name. An explicit chat frame skips
@@ -202,7 +203,7 @@ do
         -- same secret-value environment as a real Mythic+). InProtectedInstance() itself
         -- reports true in dev mode; the separate branch exists only for the clearer message.
         local blocked
-        if CludesUI.IsDevModeActive() then
+        if CUI.IsDevModeActive() then
             blocked = "This action is protected while dev mode (/cuidev) is on."
         elseif FTTInProtectedContent() then
             blocked = "This action is protected in Mythic+ and raid combat."
@@ -221,7 +222,7 @@ do
         if characterName and characterName ~= "" then
             local sendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
             -- Fix "Name-Realm-Realm" to "Name-Realm"
-            local goal = CludesUI.BuildFullName(characterName) or characterName
+            local goal = CUI.BuildFullName(characterName) or characterName
             if sendTell then sendTell(goal, DEFAULT_CHAT_FRAME) end
         end
     end
@@ -242,7 +243,7 @@ do
         local backdrop = m:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.95)
-        CludesUI.MakeBorder(m, 1, 1, 1, 0.15, CludesUI.PanelPP)
+        CUI.MakeBorder(m, 1, 1, 1, 0.15, CUI.PanelPP)
 
         local function MakeItem(textValue, yOff, onClick)
             local widget = CreateFrame("Button", nil, m)
@@ -268,10 +269,10 @@ do
         end
 
         -- Whisper(charName, bnetName); Invite always uses the character name.
-        MakeItem(CludesUI.L("Whisper"), -PAD, FTTOpenWhisper)
-        MakeItem(CludesUI.L("Invite"), -PAD - RH, function(goal)
+        MakeItem(CUI.L("Whisper"), -PAD, FTTOpenWhisper)
+        MakeItem(CUI.L("Invite"), -PAD - RH, function(goal)
             if goal and goal ~= "" and C_PartyInfo and C_PartyInfo.InviteUnit then
-                C_PartyInfo.InviteUnit(CludesUI.BuildFullName(goal) or goal)
+                C_PartyInfo.InviteUnit(CUI.BuildFullName(goal) or goal)
             end
         end)
 
@@ -316,7 +317,7 @@ do
         local backdrop = frame:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.92)
-        CludesUI.MakeBorder(frame, 1, 1, 1, 0.15, CludesUI.PanelPP)
+        CUI.MakeBorder(frame, 1, 1, 1, 0.15, CUI.PanelPP)
         -- Hovering this tooltip counts as hovering the extra-button stack (crossing onto it
         -- must not hide them); MO_OverAny reads it via EBS since this local is do-block
         -- scoped. The OnHide hook is required or nothing re-runs the fade-out on close.
@@ -409,7 +410,7 @@ do
         local tooltip = GetFriendsTT()
         local texture = tooltip:CreateTexture(nil, "ARTWORK")
         texture:SetColorTexture(1, 1, 1, 0.12)
-        local Pix = CludesUI.PP
+        local Pix = CUI.PP
         if Pix and Pix.Snap then
             texture:SetHeight(Pix.Snap(1))
         else
@@ -467,7 +468,7 @@ do
         if sum == 0 then
             local line = EnsureFTTRow(1)
             FTTNameFont(line.name, 10)
-            line.name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("No friends online") .. "|r")
+            line.name:SetText(CUI.COLOR_CODES.DIM .. CUI.L("No friends online") .. "|r")
             line.zone:SetText("")
             tooltip:SetSize(FTT_PAD * 2 + 140, FTT_PAD + FTT_ROW_H + FTT_PAD)
             line.button:ClearAllPoints()
@@ -512,7 +513,7 @@ do
             hdrIdx = hdrIdx + 1
             local heading = EnsureFTTHeader(hdrIdx)
             heading:SetFont(fontFile, 12, "")
-            local ac = CludesUI.CLUDES_GREEN or CludesUI._accentColor
+            local ac = CUI.CLUDES_GREEN or CUI._accentColor
             local acHex = ac
                     and format(
                         "%02x%02x%02x",
@@ -521,7 +522,7 @@ do
                         (ac.b or 0.62) * 255
                     )
                 or "4cc9f0"
-            heading:SetText(CludesUI.L(sec.title) .. " (|cff" .. acHex .. #sec.list .. "|r)")
+            heading:SetText(CUI.L(sec.title) .. " (|cff" .. acHex .. #sec.list .. "|r)")
             heading:ClearAllPoints()
             heading:SetPoint("TOP", tooltip, "TOP", 0, nextY)
             heading:Show()
@@ -548,7 +549,7 @@ do
 
                 local zone = e.zone or ""
                 if zone ~= "" then
-                    line.zone:SetText(CludesUI.COLOR_CODES.DIM .. zone .. "|r")
+                    line.zone:SetText(CUI.COLOR_CODES.DIM .. zone .. "|r")
                 else
                     line.zone:SetText("")
                 end
@@ -568,7 +569,7 @@ do
                 if zw > maxZoneW then maxZoneW = zw end
 
                 local rowH = FTT_ROW_H
-                local note = showNotes and CludesUI.StripFriendNoteTag(e.note)
+                local note = showNotes and CUI.StripFriendNoteTag(e.note)
                 if note then
                     FTTNameFont(line.note, 9)
                     line.note:SetText(note)
@@ -588,7 +589,7 @@ do
                 local line = EnsureFTTRow(lineIndex)
                 FTTNameFont(line.name, 10)
                 line.name:SetText(
-                    CludesUI.COLOR_CODES.DIM .. CludesUI.Lf("...and %1$d more", #sec.list - maxRows) .. "|r"
+                    CUI.COLOR_CODES.DIM .. CUI.Lf("...and %1$d more", #sec.list - maxRows) .. "|r"
                 )
                 line.zone:SetText("")
                 line.button._entry = nil
@@ -639,7 +640,7 @@ local function GetCalendarTT()
     local backdrop = frame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.92)
-    CludesUI.MakeBorder(frame, 1, 1, 1, 0.15, CludesUI.PanelPP)
+    CUI.MakeBorder(frame, 1, 1, 1, 0.15, CUI.PanelPP)
     _calendarTT = frame
     return frame
 end
@@ -722,10 +723,10 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
 
     local title = EnsureCalendarTTTitle()
     title:SetFont(fontFile, 12, "")
-    title:SetText(CludesUI.L("Calendar"))
+    title:SetText(CUI.L("Calendar"))
 
     local footerData = {
-        { left = CludesUI.L("Server Time"), right = GetServerTimeText() },
+        { left = CUI.L("Server Time"), right = GetServerTimeText() },
         { left = format("%s %s", WEEKLY or "Weekly", RESET or "Reset"), right = GetWeeklyResetText() },
     }
 

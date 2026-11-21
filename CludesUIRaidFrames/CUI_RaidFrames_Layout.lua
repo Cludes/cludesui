@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Layout.lua
 --
@@ -552,7 +553,7 @@ mod._LayoutGroupsImpl = function()
     -- TOPLEFT re-anchor here would fight the anchor cascade.
     if
         not InCombatLockdown()
-        and not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("RF_RaidFrames"))
+        and not (CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("RF_RaidFrames"))
     then
         local l = containerFrame:GetLeft()
         local t = containerFrame:GetTop()

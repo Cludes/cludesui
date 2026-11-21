@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Options.lua
 --  Registers the Forever Essentials sidebar addon (WoW Forever only) with its
@@ -11,7 +12,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 -- Page names are DEEP-LINK IDENTIFIERS: every NavigateToElementSettings tuple
 -- and What's New nav carries them as strings and fails SILENTLY on a mismatch.
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
+if not CUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
 
 local PAGE_GENERAL = "General"
 local PAGE_TRAVEL = "Travel"
@@ -39,10 +40,10 @@ end
 -- kept page its previous build's frames back reset to new; on any other
 -- parent it is the plain CreateFrame. The buildPage below only hands each
 -- tab to its own page file.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
-CludesUI.AtLogin(function()
-    CludesUI:RegisterModule("CludesUIForeverEssentials", {
+CUI.AtLogin(function()
+    CUI:RegisterModule("CludesUIForeverEssentials", {
         title = "Forever Tools",
         description = "Essential tools for WoW Forever.",
         pages = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING, PAGE_PVP },
@@ -118,7 +119,7 @@ CludesUI.AtLogin(function()
             if page == PAGE_TRAVEL then return _G._CUI_TravelHeaderBuilder end
             if page == PAGE_THREAT then return _G._CUI_ThreatHeaderBuilder end
             if page == PAGE_LOOT then return _G._CUI_LootHeaderBuilder end
-            if page == PAGE_MACROS and CludesUI._MacroManager.Enabled() then
+            if page == PAGE_MACROS and CUI._MacroManager.Enabled() then
                 return _G._CUI_MacrosHeaderBuilder
             end
         end,
@@ -159,37 +160,37 @@ CludesUI.AtLogin(function()
                     CludesUIDB.unlockAnchors.CUI_ActiveForm = nil
                 end
             end
-            local FT = CludesUI._FlightTimer
+            local FT = CUI._FlightTimer
             if FT then
                 FT.Apply()
                 FT.ApplyStyle()
                 FT.ApplyPosition()
             end
-            local TM = CludesUI._ThreatMeter
+            local TM = CUI._ThreatMeter
             if TM then
                 TM.Apply()
                 TM.ApplyStyle()
                 TM.ApplyPosition()
             end
-            local LF = CludesUI._LootFeed
+            local LF = CUI._LootFeed
             if LF then
                 LF.Apply()
                 LF.ApplyStyle()
                 LF.ApplyPosition()
             end
-            if CludesUI._SpellUprank then CludesUI._SpellUprank.Apply() end
-            if CludesUI._JunkItems then CludesUI._JunkItems.Apply() end
-            if CludesUI._ActiveForm then CludesUI._ActiveForm.Apply() end
-            if CludesUI._ClassicSpellbook then CludesUI._ClassicSpellbook.Apply() end
-            if CludesUI._ClassicTalents then CludesUI._ClassicTalents.Apply() end
-            if CludesUI._QuestRewards then CludesUI._QuestRewards.Apply() end
-            if CludesUI._ZoneLevels then CludesUI._ZoneLevels.Apply() end
-            if CludesUI._PetSummon then CludesUI._PetSummon.Apply() end
-            if CludesUI._Fishing then CludesUI._Fishing.Apply() end
-            if CludesUI._MapTravel then CludesUI._MapTravel.Apply() end
-            if CludesUI._MapFade then CludesUI._MapFade.Apply() end
-            if CludesUI._GatherSkill then CludesUI._GatherSkill.Apply() end
-            CludesUI:InvalidatePageCache()
+            if CUI._SpellUprank then CUI._SpellUprank.Apply() end
+            if CUI._JunkItems then CUI._JunkItems.Apply() end
+            if CUI._ActiveForm then CUI._ActiveForm.Apply() end
+            if CUI._ClassicSpellbook then CUI._ClassicSpellbook.Apply() end
+            if CUI._ClassicTalents then CUI._ClassicTalents.Apply() end
+            if CUI._QuestRewards then CUI._QuestRewards.Apply() end
+            if CUI._ZoneLevels then CUI._ZoneLevels.Apply() end
+            if CUI._PetSummon then CUI._PetSummon.Apply() end
+            if CUI._Fishing then CUI._Fishing.Apply() end
+            if CUI._MapTravel then CUI._MapTravel.Apply() end
+            if CUI._MapFade then CUI._MapFade.Apply() end
+            if CUI._GatherSkill then CUI._GatherSkill.Apply() end
+            CUI:InvalidatePageCache()
         end,
     })
 end)

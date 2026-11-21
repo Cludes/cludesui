@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQoL_AutoLogging.lua - combat logging that follows the content.
 --
@@ -77,7 +78,7 @@ local function WantLog()
 
     -- WoW Forever: raids on the Raids trigger (the Normal raid key), dungeons
     -- on its own Dungeons trigger (off until ticked); nothing else applies.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         if kind == "raid" then return On(cfg, "logNormal") end
         return kind == "party" and cfg.logDungeon == true
     end
@@ -116,8 +117,8 @@ end
 -- A chat line when logging starts or stops (off by default).
 local function Say(started)
     if Settings().notify ~= true then return end
-    local text = CludesUI.L(started and "AutoLog Started" or "AutoLog Stopped")
-    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. text)
+    local text = CUI.L(started and "AutoLog Started" or "AutoLog Stopped")
+    CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. text)
 end
 
 local function Stop()
@@ -142,7 +143,7 @@ local function Apply()
     if want then
         CancelStop()
         if GetCVar and GetCVar("advancedCombatLogging") ~= "1" then
-            CludesUI.SetCVar("advancedCombatLogging", 1, "CludesUIQoL")
+            CUI.SetCVar("advancedCombatLogging", 1, "CludesUIQoL")
         end
         local already = LoggingCombat()
         LoggingCombat(true)
@@ -166,7 +167,7 @@ local EVENTS = {
     ZONE_CHANGED_NEW_AREA = function() C_Timer.After(2, Apply) end,
     CHALLENGE_MODE_START = function() C_Timer.After(1, Apply) end,
 }
-if not CludesUI.IS_FOREVER then EVENTS.PVP_MATCH_ACTIVE = Apply end
+if not CUI.IS_FOREVER then EVENTS.PVP_MATCH_ACTIVE = Apply end
 
 -- The zone events are registered only while the feature is on.
 local listener = CreateFrame("Frame")

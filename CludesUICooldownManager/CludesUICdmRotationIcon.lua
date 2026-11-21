@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 local _, mod = ...
 if not mod.ECME then return end
 
@@ -43,7 +44,7 @@ mod.CDM_ROTATION_ICON_DEFAULT_POS = DEFAULT_POS
 -- Every recommendation comes from Blizzard's Assisted Highlight; WoW Forever
 -- has no assisted combat at all.
 function mod.RotationAssistAvailable()
-    if CludesUI.IS_FOREVER then return false end
+    if CUI.IS_FOREVER then return false end
     return GetCVarBool("assistedCombatHighlight") == true
 end
 
@@ -61,7 +62,7 @@ end
 -- Its duration object goes straight to the native widget (no timing reads),
 -- pushed through on every pass with no value comparison.
 local function PaintGCD()
-    local duration = C_Spell.GetSpellCooldownDuration(CludesUI.GCD_SPELL)
+    local duration = C_Spell.GetSpellCooldownDuration(CUI.GCD_SPELL)
     if duration then
         gcd:Show()
         gcd:SetCooldownFromDurationObject(duration)
@@ -205,7 +206,7 @@ local function OnEvent(self, evt)
 end
 
 local function PlaceIcon()
-    if not widget or CludesUI._unlockActive then return end
+    if not widget or CUI._unlockActive then return end
     local conf = Settings()
     local place = conf and conf.position or DEFAULT_POS
     widget:ClearAllPoints()
@@ -221,8 +222,8 @@ end
 local function RegisterMover()
     -- Element Options opens the icon's own page. The key must not start with
     -- CDM_: Unlock Mode and spec layers read that prefix as a CDM bar.
-    local map = CludesUI._ELEMENT_SETTINGS_MAP or {}
-    CludesUI._ELEMENT_SETTINGS_MAP = map
+    local map = CUI._ELEMENT_SETTINGS_MAP or {}
+    CUI._ELEMENT_SETTINGS_MAP = map
     if not map[moverKey] then
         map[moverKey] = {
             module = "CludesUICooldownManager",
@@ -231,8 +232,8 @@ local function RegisterMover()
             highlightText = "Show Rotation Assist Icon",
         }
     end
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = moverKey,
             label = "Rotation Assist Icon",
             group = "Cooldown Manager",
@@ -261,7 +262,7 @@ local function RegisterMover()
             applyPos = PlaceIcon,
         }),
     }, "CludesUICooldownManager")
-    CludesUI:RegisterUnlockModeListener(widget, OnUnlock)
+    CUI:RegisterUnlockModeListener(widget, OnUnlock)
 end
 
 -- Live = enabled with Blizzard's Assisted Highlight on. Off it, nothing but
@@ -282,8 +283,8 @@ local function SetLive(on)
     ArmGCD(false)
     driver:UnregisterAllEvents()
     driver:Hide()
-    CludesUI:UnregisterUnlockModeListener(widget)
-    CludesUI:UnregisterUnlockElement(moverKey)
+    CUI:UnregisterUnlockModeListener(widget)
+    CUI:UnregisterUnlockElement(moverKey)
     preview = false
     widget:Hide()
 end
@@ -306,13 +307,13 @@ local function CreateIcon()
     local rim = CreateFrame("Frame", nil, widget)
     rim:SetAllPoints()
     rim:SetFrameLevel(level + 2)
-    CludesUI.PP.CreateBorder(rim, 0, 0, 0, 1, 1)
+    CUI.PP.CreateBorder(rim, 0, 0, 0, 1, 1)
     textOverlay = CreateFrame("Frame", nil, widget)
     textOverlay:SetAllPoints()
     textOverlay:SetFrameLevel(level + 6)
     keybind = textOverlay:CreateFontString(nil, "OVERLAY")
     -- SetText also requires a font when the opt-in label is still hidden.
-    CludesUI.ApplyIconTextFont(keybind, mod.GetCDMFont(), 14 * CludesUI.PP.mult, "cdm")
+    CUI.ApplyIconTextFont(keybind, mod.GetCDMFont(), 14 * CUI.PP.mult, "cdm")
     -- The one event and callback owner: hidden while idle, shown to queue a
     -- pass, and its one-shot OnUpdate (Update hides it first) runs that pass.
     driver = mod.TakeShell()
@@ -323,7 +324,7 @@ end
 
 function mod.RefreshRotationAssistIcon()
     -- Kept defined on WoW Forever (called unguarded), where it does nothing.
-    if CludesUI.IS_FOREVER then return end
+    if CUI.IS_FOREVER then return end
     local conf = Settings()
     if not conf or not conf.enabled then
         if not isActive then return end
@@ -334,8 +335,8 @@ function mod.RefreshRotationAssistIcon()
     end
     if not widget then CreateIcon() end
     local size = conf.iconSize or 48
-    CludesUI.PP.Size(widget, size, size)
-    mod.StyleCDMKeybind(keybind, conf, textOverlay, CludesUI.PP.mult, mod.GetCDMFont())
+    CUI.PP.Size(widget, size, size)
+    mod.StyleCDMKeybind(keybind, conf, textOverlay, CUI.PP.mult, mod.GetCDMFont())
     -- Settings edge: the next pass repaints the texture and the label.
     paintedTexture, paintedKey = nil, false
     PlaceIcon()

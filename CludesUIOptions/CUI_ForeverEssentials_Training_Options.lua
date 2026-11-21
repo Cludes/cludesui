@@ -1,21 +1,22 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Training_Options.lua
 --  Forever Tools > Training: the Training Planner page. Lists what you can
 --  train now with its total, then the next levels that bring spells.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIForeverEssentials"]
+local mod = CUI._ModuleNS["CludesUIForeverEssentials"]
 if not mod then return end
 
 local COMING_LEVELS = 6 -- how many coming levels the page lists
 
 function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height
     local cfg = mod.TrainingSettings()
 
-    CludesUI:ClearContentHeader()
+    CUI:ClearContentHeader()
 
     _, height = W:SectionHeader(hostFrame, "TRAINING PLANNER", cursorY)
     cursorY = cursorY - height

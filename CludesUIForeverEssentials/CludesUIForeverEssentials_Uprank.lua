@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Uprank.lua  (WoW Forever only)
 --  When you or your pet get a higher rank of a spell, swaps every lower rank
@@ -147,9 +148,9 @@ local function Report()
         local rank = C_Spell.GetSpellSubtext(ident)
         local spell = (C_Spell.GetSpellLink(ident) or name or "?")
             .. (rank and rank ~= "" and " (" .. rank .. ")" or "")
-        local message = total == 1 and CludesUI.Lf("Upranked %s on 1 action slot.", spell)
-            or CludesUI.Lf("Upranked %1$s on %2$d action slots.", spell, total)
-        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. message)
+        local message = total == 1 and CUI.Lf("Upranked %s on 1 action slot.", spell)
+            or CUI.Lf("Upranked %1$s on %2$d action slots.", spell, total)
+        CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. message)
     end
 end
 
@@ -192,7 +193,7 @@ end
 local function Flush()
     if not (next(pending.player) or next(pending.pet)) then return end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("SpellUprank", Flush)
+        CUI.CombatQueue.Defer("SpellUprank", Flush)
         return
     end
     if GetCursorInfo() then
@@ -291,7 +292,7 @@ local function Apply()
 end
 
 -- Options-page entry points.
-CludesUI._SpellUprank = {
+CUI._SpellUprank = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Apply,

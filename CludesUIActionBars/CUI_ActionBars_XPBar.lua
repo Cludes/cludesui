@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI Action Bars - XP Bar
 --  The XP bar's own runtime: its frame art styles and profession flipbook
@@ -20,7 +21,7 @@ local dataBarFrames = mod.dataBarFrames
 local ApplyDataBarLayout = mod.ApplyDataBarLayout
 local CreateDataBarFrame = mod.CreateDataBarFrame
 local ResolveBorderThickness = mod.ResolveBorderThickness
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local ipairs, pairs = ipairs, pairs
 local floor, min, max = math.floor, math.min, math.max
 
@@ -125,7 +126,7 @@ mod._XPArtFit = {
 function mod.XPArtFit(cfg)
     local art = cfg and cfg.xpArt
     if not art then return nil end
-    if art == "forever" then return CludesUI.ForeverBorderOK() and mod._XPArtFit.forever or nil end
+    if art == "forever" then return CUI.ForeverBorderOK() and mod._XPArtFit.forever or nil end
     if (cfg.orientation or "HORIZONTAL") ~= "HORIZONTAL" then return nil end
     local atlasName = mod._XPArtAtlas[art]
     if not (atlasName and C_Texture.GetAtlasInfo(atlasName)) then return nil end
@@ -438,13 +439,13 @@ local function ApplyXPForeverBorder(widget, barFrame, backdrop, rb)
         owner = CreateFrame("Frame", nil, widget)
         owner:SetAllPoints(widget)
         owner:EnableMouse(false)
-        widget._fvRing = CludesUI.ForeverBorder(owner)
-        CludesUI.ForeverBorderSeat(widget._fvRing, widget)
+        widget._fvRing = CUI.ForeverBorder(owner)
+        CUI.ForeverBorderSeat(widget._fvRing, widget)
         widget._fvRingHost = owner
     end
     owner:SetFrameLevel(widget:GetFrameLevel() + 3)
     owner:Show()
-    local e = CludesUI.FOREVER_BORDER.fill
+    local e = CUI.FOREVER_BORDER.fill
     Pix.SetInside(barFrame, widget, e, e)
     Pix.SetInside(backdrop, widget, e, e)
     if rb then Pix.SetInside(rb, widget, e, e) end
@@ -701,7 +702,7 @@ function mod.AB_DataBarDividers(holderFrame, wid, hgt, orient, cfg)
         if showLbl then
             local pi = math.pi
             lsz = cfg.dividerTextSize or 8
-            lflag = CludesUI.GetFontOutlineFlag("actionBars")
+            lflag = CUI.GetFontOutlineFlag("actionBars")
             color = cfg.dividerTextColor
             lr, lg, lb = color and color.r or 1, color and color.g or 1, color and color.b or 1
             lrot = (isVertical and cfg.rotateDividerText) and (cfg.textReadDown and -pi / 2 or pi / 2) or 0
@@ -739,11 +740,11 @@ function mod.AB_DataBarDividers(holderFrame, wid, hgt, orient, cfg)
                         -- Sublevel 1: above the lines (OVERLAY 0) it sits on.
                         fontStr:SetDrawLayer("OVERLAY", 1)
                         -- The font first: SetText needs one.
-                        CludesUI.ApplyModuleFont(fontStr, nil, lsz, "actionBars", lflag)
+                        CUI.ApplyModuleFont(fontStr, nil, lsz, "actionBars", lflag)
                         fontStr:SetText(nLbl * 10 .. "%")
                         labelFS[nLbl] = fontStr
                     end
-                    CludesUI.ApplyModuleFont(fontStr, nil, lsz, "actionBars", lflag)
+                    CUI.ApplyModuleFont(fontStr, nil, lsz, "actionBars", lflag)
                     fontStr:SetTextColor(lr, lg, lb, 1)
                     fontStr:SetRotation(lrot)
                     local hh = fontStr:GetStringHeight()
@@ -855,7 +856,7 @@ end
 -- which the Use Blizzard's Rep Bars toggle also sets), "cui" = the
 -- CludesUI bar, "prof" = in the Professions frame, "forever" = in WoW
 -- Forever's border.
-function CludesUI._GetXPBarStyle()
+function CUI._GetXPBarStyle()
     local profile = ABAR.db and ABAR.db.profile
     if not profile then return "cui" end
     if profile.useBlizzardDataBars then return "default" end
@@ -867,7 +868,7 @@ end
 -- ns.SetUseBlizzardDataBars; the frame art applies live. Returns true when the
 -- swap needs a reload (our bars wanted but never built, or Blizzard's bars
 -- back after their events were dropped), so the caller can offer it.
-function CludesUI._SetXPBarStyle(look)
+function CUI._SetXPBarStyle(look)
     local profile = ABAR.db and ABAR.db.profile
     if not profile then return false end
     local wantBlizz = look == "default"
@@ -883,8 +884,8 @@ end
 
 -- Whether an art style exists on this client ("forever" = WoW Forever's
 -- border, on that client only).
-function CludesUI._XPBarArtAvailable(look)
-    if look == "forever" then return CludesUI.ForeverBorderOK() end
+function CUI._XPBarArtAvailable(look)
+    if look == "forever" then return CUI.ForeverBorderOK() end
     local atlasName = mod._XPArtAtlas[look]
     return atlasName ~= nil and C_Texture.GetAtlasInfo(atlasName) ~= nil
 end
@@ -905,7 +906,7 @@ function mod.XPBarAtMaxLevel()
 end
 
 -- WoW Forever: raw XP under 10,000 is not abbreviated (CludesUI_NumberFormat.lua).
-mod.AbbreviateLargeNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateLargeNumbers)
+mod.AbbreviateLargeNumbers = (CUI.IS_FOREVER and CUI.ForeverAbbreviateLargeNumbers)
     or AbbreviateLargeNumbers
 
 -------------------------------------------------------------------------------
@@ -1171,7 +1172,7 @@ local function FmtPct(val)
 end
 
 -- A duration: 3d 4h, 1h 24m, 22m.
-local FmtDur = CludesUI.FormatDuration
+local FmtDur = CUI.FormatDuration
 
 -- This character's entry in CludesUIDB.xpBarChars (create: build it, and
 -- the store, when missing). nil while the player's GUID cannot be read.
@@ -1245,7 +1246,7 @@ end
 local function XPLegacyText(widget, record, current, mx, rested, level)
     local region = record.render
     if region == "remaining" then
-        return format(CludesUI.L("Remaining: %s"), FmtNum(mx - current))
+        return format(CUI.L("Remaining: %s"), FmtNum(mx - current))
     elseif region == "percentProjected" then
         return FmtPct(current / mx * 100)
             .. " ("
@@ -1263,7 +1264,7 @@ local function XPLegacyText(widget, record, current, mx, rested, level)
     if record.rested and rested > 0 then
         text = text
             .. format(
-                CludesUI.L(" (Rested: %s)"),
+                CUI.L(" (Rested: %s)"),
                 raw and mod.AbbreviateLargeNumbers(rested) or format("%.1f%%", rested / mx * 100)
             )
     end
@@ -1275,51 +1276,51 @@ end
 local function XPItemText(widget, ident, current, mx, rested, level, nowTime, rest)
     if ident == "pct" then
         local text = FmtPct(current / mx * 100)
-        if rest then text = text .. format(CludesUI.L(" (Rested: %s)"), FmtPct(rested / mx * 100)) end
+        if rest then text = text .. format(CUI.L(" (Rested: %s)"), FmtPct(rested / mx * 100)) end
         return text
     elseif ident == "cur" then
         local text = FmtNum(current)
-        if rest then text = text .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested)) end
+        if rest then text = text .. format(CUI.L(" (Rested: %s)"), FmtNum(rested)) end
         return text
     elseif ident == "curMax" then
         local text = FmtNum(current) .. " / " .. FmtNum(mx)
-        if rest then text = text .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested)) end
+        if rest then text = text .. format(CUI.L(" (Rested: %s)"), FmtNum(rested)) end
         return text
     elseif ident == "curMaxRem" then
         return format(
             "%s / %s (%s)",
             FmtNum(current),
             FmtNum(mx),
-            format(CludesUI.L("Remaining: %s"), FmtNum(mx - current))
+            format(CUI.L("Remaining: %s"), FmtNum(mx - current))
         )
     elseif ident == "restVal" then
-        return format(CludesUI.L("Rested: %s"), FmtNum(rested))
+        return format(CUI.L("Rested: %s"), FmtNum(rested))
     elseif ident == "restPct" then
-        return format(CludesUI.L("Rested: %s"), FmtPct(rested / mx * 100))
+        return format(CUI.L("Rested: %s"), FmtPct(rested / mx * 100))
     elseif ident == "questVal" then
-        return format(CludesUI.L("Completed: %s"), FmtNum(widget._xpQuestXP or 0))
+        return format(CUI.L("Completed: %s"), FmtNum(widget._xpQuestXP or 0))
     elseif ident == "questPct" then
-        return format(CludesUI.L("Completed: %s"), FmtPct((widget._xpQuestXP or 0) / mx * 100))
+        return format(CUI.L("Completed: %s"), FmtPct((widget._xpQuestXP or 0) / mx * 100))
     elseif ident == "level" then
         return format("%s %d", LEVEL, level)
     elseif ident == "xpPerHour" then
-        return format(CludesUI.L("%s XP/Hour"), FmtNum(XPRate(nowTime)))
+        return format(CUI.L("%s XP/Hour"), FmtNum(XPRate(nowTime)))
     elseif ident == "levelingIn" then
         local rate = XPRate(nowTime)
         return format(
-            CludesUI.L("Leveling in: %s (%s XP/Hour)"),
+            CUI.L("Leveling in: %s (%s XP/Hour)"),
             rate > 0 and FmtDur((mx - current) / rate * 3600) or "--",
             FmtNum(rate)
         )
     elseif ident == "timeLevel" then
         return format(
-            CludesUI.L("Time this level: %s"),
+            CUI.L("Time this level: %s"),
             xpLvlBase and FmtDur(xpLvlBase + (nowTime - xpLvlStamp)) or "--"
         )
     elseif ident == "timeSession" then
         local entry = XPCharEntry(false)
         local start = entry and entry.sStart or xpLoginAt
-        return format(CludesUI.L("Time this session: %s"), start and FmtDur(nowTime - start) or "--")
+        return format(CUI.L("Time this session: %s"), start and FmtDur(nowTime - start) or "--")
     end
     return ""
 end
@@ -1563,7 +1564,7 @@ local function XPRequestPlayed(widget)
     if xpLvlBase and xpLvl == UnitLevel("player") then return end
     if mod.XPBarAtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled()) then return end
     xpLvlAsked = true
-    local _, levelTime = CludesUI.RequestTimePlayed()
+    local _, levelTime = CUI.RequestTimePlayed()
     if levelTime then XPSetLevelTime(levelTime) end
 end
 
@@ -1690,7 +1691,7 @@ function mod.XPBarTextSlots(widget, cfg)
             if record.nc then clock = true end
             if record.nl then levelTime = true end
             local fontStr = record.fs
-            CludesUI.ApplyModuleFont(fontStr, nil, cfg[skinData.size] or size, "actionBars")
+            CUI.ApplyModuleFont(fontStr, nil, cfg[skinData.size] or size, "actionBars")
             fontStr:SetTextColor(1, 1, 1, 1)
             fontStr:SetJustifyH(p.justify)
             fontStr:ClearAllPoints()
@@ -1964,7 +1965,7 @@ function mod.CreateXPBarFrame(updateFunc, hostFrame)
     local holderFrame = CreateDataBarFrame("XPBar", updateFunc, hostFrame)
     local restBar = CreateFrame("StatusBar", not hostFrame and "CludesEAB_XPBar_Rested" or nil, holderFrame)
     restBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix then
         Pix.SetInside(restBar, holderFrame, 1, 1)
     else
@@ -2004,10 +2005,10 @@ function mod.CreateXPBar()
         local restedXP = GetXPExhaustion() or 0
         local percent = (currentXP / maxXP) * 100
         local remain = maxXP - currentXP
-        GameTooltip:AddLine(CludesUI.L("Experience"), 1, 1, 1)
-        GameTooltip:AddDoubleLine(CludesUI.L("Level"), tostring(UnitLevel("player")), 1, 1, 1, 1, 1, 1)
+        GameTooltip:AddLine(CUI.L("Experience"), 1, 1, 1)
+        GameTooltip:AddDoubleLine(CUI.L("Level"), tostring(UnitLevel("player")), 1, 1, 1, 1, 1, 1)
         GameTooltip:AddDoubleLine(
-            CludesUI.L("XP"),
+            CUI.L("XP"),
             format("%s / %s (%.1f%%)", BreakUpLargeNumbers(currentXP), BreakUpLargeNumbers(maxXP), percent),
             1,
             1,
@@ -2016,10 +2017,10 @@ function mod.CreateXPBar()
             1,
             1
         )
-        GameTooltip:AddDoubleLine(CludesUI.L("Remaining"), BreakUpLargeNumbers(remain), 1, 1, 1, 1, 1, 1)
+        GameTooltip:AddDoubleLine(CUI.L("Remaining"), BreakUpLargeNumbers(remain), 1, 1, 1, 1, 1, 1)
         if restedXP > 0 then
             GameTooltip:AddDoubleLine(
-                CludesUI.L("Rested"),
+                CUI.L("Rested"),
                 format("+%s (%.1f%%)", BreakUpLargeNumbers(restedXP), (restedXP / maxXP) * 100),
                 1,
                 1,

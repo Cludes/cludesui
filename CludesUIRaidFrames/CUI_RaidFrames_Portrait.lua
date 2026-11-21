@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Portrait.lua
 --
@@ -21,10 +22,10 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, mod = ...
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
-local MASKS, BORDERS = CludesUI.SHAPE_MASKS, CludesUI.SHAPE_BORDERS
-local MASK_INSETS = CludesUI.SHAPE_INSETS
+local MASKS, BORDERS = CUI.SHAPE_MASKS, CUI.SHAPE_BORDERS
+local MASK_INSETS = CUI.SHAPE_INSETS
 local CLASS_ART = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\"
 local CLASS_SHEET = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
 local QMARK_MODEL = "Interface\\Buttons\\TalkToMeQuestionMark.m2"
@@ -53,7 +54,7 @@ end
 
 -- Class art from the shared sprite sheets.
 function mod.RF_PtClassArt(texture, ct, style)
-    local c = CludesUI.CLASS_ICON_SPRITE_COORDS and CludesUI.CLASS_ICON_SPRITE_COORDS[ct]
+    local c = CUI.CLASS_ICON_SPRITE_COORDS and CUI.CLASS_ICON_SPRITE_COORDS[ct]
     if not (texture and c) then return end
     texture:SetTexture(CLASS_ART .. (style or "modern") .. ".tga")
     texture:SetTexCoord(c[1], c[2], c[3], c[4])
@@ -378,7 +379,7 @@ end
 -- colour otherwise, the player's own class in dark mode or with no unit.
 local function PlayerClassColor()
     local _, classTok = UnitClass("player")
-    local color = classTok and CludesUI.GetClassColor(classTok)
+    local color = classTok and CUI.GetClassColor(classTok)
     if color then return color.r, color.g, color.b end
     return 1, 1, 1
 end
@@ -388,7 +389,7 @@ local function TintBorder(edge, unitToken, ctOverride)
     local red, green, blue
     local cfg = mod._scaledPartyProxy
     if ctOverride then
-        local color = CludesUI.GetClassColor(ctOverride)
+        local color = CUI.GetClassColor(ctOverride)
         if color then
             red, green, blue = color.r, color.g, color.b
         end
@@ -398,7 +399,7 @@ local function TintBorder(edge, unitToken, ctOverride)
         local _, classTok = UnitClass(unitToken)
         local isPl = UnitIsPlayer(unitToken)
         if not issecretvalue(classTok) and not issecretvalue(isPl) and isPl and classTok then
-            local color = CludesUI.GetClassColor(classTok)
+            local color = CUI.GetClassColor(classTok)
             if color then
                 red, green, blue = color.r, color.g, color.b
             end
@@ -638,7 +639,7 @@ function mod.RF_PtApply(ownerFrame, st, cfg, bw, bh, unitToken)
                 SeatModel(edge)
             end
         end
-        if not edge._preview then CludesUI.SyncPortraitClick(ownerFrame, PORTRAIT_CLICK) end
+        if not edge._preview then CUI.SyncPortraitClick(ownerFrame, PORTRAIT_CLICK) end
         return
     end
     -- Levels re-asserted every pass (a strata change rebuilds child levels).
@@ -698,7 +699,7 @@ function mod.RF_PtApply(ownerFrame, st, cfg, bw, bh, unitToken)
         local u = ownerFrame:GetAttribute("unit")
         TintBorder(edge, (u and UnitExists(u)) and u or nil)
     end
-    if not edge._preview then CludesUI.SyncPortraitClick(ownerFrame, PORTRAIT_CLICK) end
+    if not edge._preview then CUI.SyncPortraitClick(ownerFrame, PORTRAIT_CLICK) end
 end
 
 -- Portrait events the current settings need (RF_KitPortraitEvents): "2d",
@@ -747,7 +748,7 @@ function mod.RF_PtRefreshAll()
             if skinData.kitPortrait then
                 if u then mod.RF_KitPortrait(skinData, u) end
                 -- A click button from before the kit stands down.
-                if skinData.pt then CludesUI.SyncPortraitClick(widget, PORTRAIT_CLICK) end
+                if skinData.pt then CUI.SyncPortraitClick(widget, PORTRAIT_CLICK) end
             else
                 mod.RF_PtApply(widget, skinData, s, bw, bh, u)
             end
@@ -768,10 +769,10 @@ function mod.RF_PtModelAlphaApply(edge)
     if not m then return end
     local pc = mod._partyContainerFrame
     -- A UIParent fade (models ignore it) scales the mirror too.
-    local c = CludesUI.UIScaledAlpha(pc and pc:GetAlpha() or 1)
+    local c = CUI.UIScaledAlpha(pc and pc:GetAlpha() or 1)
     if not mod._ptUIAlphaHooked then
         mod._ptUIAlphaHooked = true
-        CludesUI.OnUIAlphaChanged(mod.RF_PtContainerAlpha)
+        CUI.OnUIAlphaChanged(mod.RF_PtContainerAlpha)
     end
     if edge._rSecret then
         m:SetAlphaFromBoolean(edge._rIn, c * edge._rA1, c * edge._rA2)

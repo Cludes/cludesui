@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ZoneLevels.lua  (WoW Forever only)
 --  Show Zone Levels: on a continent map, the level range of the hovered zone
@@ -142,7 +143,7 @@ local function LevelsText(lv)
     else
         c = QuestDifficultyColors["difficult"]
     end
-    return CludesUI.HexColor(c.r, c.g, c.b) .. ("(%d-%d)|r"):format(lo, hi)
+    return CUI.HexColor(c.r, c.g, c.b) .. ("(%d-%d)|r"):format(lo, hi)
 end
 
 -- "Fishing 330": the skill the zone needs, colored by the player's skill
@@ -163,7 +164,7 @@ local function FishingText(base)
             red, green, blue = 0.25, 1, 0.25
         end
     end
-    return CludesUI.HexColor(red, green, blue)
+    return CUI.HexColor(red, green, blue)
         .. ("%s %d|r"):format(C_Spell.GetSpellName(FISHING_SPELL) or "", low)
 end
 
@@ -272,7 +273,7 @@ local function Apply()
 end
 
 -- Options-page entry points.
-CludesUI._ZoneLevels = {
+CUI._ZoneLevels = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Apply,

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 -- CludesUIQuestTracker_Skin.lua
 --
@@ -104,7 +105,7 @@ local _masterHeaderCollapseHooked = false -- guards the SetCollapsed re-skin hoo
 -- Helpers
 -------------------------------------------------------------------------------
 local function GetAccent()
-    local eg = CludesUI and CludesUI.CLUDES_GREEN
+    local eg = CUI and CUI.CLUDES_GREEN
     if eg then return eg.r, eg.g, eg.b end
     return 0.298, 0.788, 0.941
 end
@@ -112,7 +113,7 @@ end
 -- Player class color, via the shared CludesUI.GetClassColor() cache.
 -- Falls back to white if the player's class token isn't known yet.
 local function GetClassColorRGB()
-    local cc = CludesUI and CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
+    local cc = CUI and CUI._playerClass and CUI.GetClassColor(CUI._playerClass)
     if cc then return cc.r, cc.g, cc.b end
     return 1.0, 1.0, 1.0
 end
@@ -148,24 +149,24 @@ local function GetFont()
     local saved = _G._CUQT_DB
     local fontKey = saved and saved.profile and saved.profile.questTracker and saved.profile.questTracker.font
     if fontKey and fontKey ~= "__global" then
-        if CludesUI and CludesUI.ResolveFontName then
-            return CludesUI.ResolveFontName(fontKey) or "Fonts/FRIZQT__.TTF"
+        if CUI and CUI.ResolveFontName then
+            return CUI.ResolveFontName(fontKey) or "Fonts/FRIZQT__.TTF"
         end
     end
-    if CludesUI and CludesUI.GetFontPath then
-        return CludesUI.GetFontPath("questTracker") or "Fonts/FRIZQT__.TTF"
+    if CUI and CUI.GetFontPath then
+        return CUI.GetFontPath("questTracker") or "Fonts/FRIZQT__.TTF"
     end
     return "Fonts/FRIZQT__.TTF"
 end
 
 local function ApplyShadow(fontStr)
     if not fontStr then return end
-    local useShadow = (CludesUI.GetFontUseShadow("questTracker")) and true or false
+    local useShadow = (CUI.GetFontUseShadow("questTracker")) and true or false
     -- 12.0.7: instance shadows no longer render; shadow must ride a FontObject.
     -- These are Blizzard objective-tracker strings, so capture and restore the
     -- current font face around PrimeFontShadow to preserve Blizzard's typeface.
     local _pf, _ps, _pfl = fontStr:GetFont()
-    CludesUI.PrimeFontShadow(fontStr, useShadow)
+    CUI.PrimeFontShadow(fontStr, useShadow)
     if _pf then fontStr:SetFont(_pf, _ps, _pfl) end
 end
 
@@ -182,9 +183,9 @@ local function StyleFontStringSized(fontStr, size)
         size = current or 12
     end
     local success =
-        pcall(fontStr.SetFont, fontStr, GetFont(), size, CludesUI.GetFontOutlineFlag("questTracker"))
+        pcall(fontStr.SetFont, fontStr, GetFont(), size, CUI.GetFontOutlineFlag("questTracker"))
     if not success then
-        fontStr:SetFont("Fonts/FRIZQT__.TTF", size, CludesUI.GetFontOutlineFlag("questTracker"))
+        fontStr:SetFont("Fonts/FRIZQT__.TTF", size, CUI.GetFontOutlineFlag("questTracker"))
     end
     ApplyShadow(fontStr)
     _eqtFontRegistry[fontStr] = true
@@ -216,7 +217,7 @@ function TrackerNS.RefreshFonts()
                 fontStr,
                 GetFont(),
                 size or 12,
-                CludesUI.GetFontOutlineFlag("questTracker")
+                CUI.GetFontOutlineFlag("questTracker")
             )
             ApplyShadow(fontStr)
         end
@@ -313,8 +314,8 @@ local function EnsureAccentDivider(headerFrame)
     texture:ClearAllPoints()
     texture:SetPoint("TOPLEFT", headerFrame, "BOTTOMLEFT", 7, 0)
     texture:SetPoint("TOPRIGHT", headerFrame, "BOTTOMRIGHT", -1, 0)
-    local PP_CORE = CludesUI and CludesUI.PP
-    local PP_SEC = CludesUI and CludesUI.PanelPP
+    local PP_CORE = CUI and CUI.PP
+    local PP_SEC = CUI and CUI.PanelPP
     if PP_SEC and PP_SEC.DisablePixelSnap then PP_SEC.DisablePixelSnap(texture) end
     local perfect = (PP_CORE and PP_CORE.perfect) or (PP_SEC and PP_SEC.mult) or 1
     local es = headerFrame.GetEffectiveScale and headerFrame:GetEffectiveScale() or 1
@@ -831,7 +832,7 @@ end
 -- showQuestDifficultyColor CVar is on, and an inline code beats SetTextColor.
 -- The focused title drops it; Blizzard sets every title again on the next
 -- update, so the color comes back once the focus moves on.
-local IS_FOREVER = CludesUI.IS_FOREVER
+local IS_FOREVER = CUI.IS_FOREVER
 local function StripTitleColorCodes(fontStr)
     local textValue = fontStr:GetText()
     if not textValue or issecretvalue(textValue) or not textValue:find("|c", 1, true) then return end
@@ -1879,8 +1880,8 @@ function TrackerNS.InitSkin()
     -- Live-update headers, blocks and progress bar fills when the user
     -- changes the UI accent color in Global Settings (nothing reads the
     -- accent under the stock styles).
-    if not STOCK and CludesUI and CludesUI.RegAccent then
-        CludesUI.RegAccent({
+    if not STOCK and CUI and CUI.RegAccent then
+        CUI.RegAccent({
             type = "callback",
             fn = function()
                 if TrackerNS.RestyleAll then TrackerNS.RestyleAll() end

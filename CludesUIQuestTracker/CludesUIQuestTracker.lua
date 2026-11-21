@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker.lua - the Quest Tracker module's core.
 --
@@ -12,12 +13,12 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  files start once Blizzard_ObjectiveTracker and the login are both there.
 -------------------------------------------------------------------------------
 local addonName, mod = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewCombatQueue) then
+if not (CUI and CUI._ModuleNS and CUI.NewCombatQueue) then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a part-updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
-CludesUI._ModuleNS[addonName] = mod -- the load-on-demand options find the module through this
-mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+CUI._ModuleNS[addonName] = mod -- the load-on-demand options find the module through this
+mod.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
 
 local EQT = {}
 mod.EQT = EQT
@@ -94,8 +95,8 @@ mod.QT_DEFAULTS = DEFAULTS
 
 local db
 local function Database()
-    if not db and CludesUI and CludesUI.Lite then
-        db = CludesUI.Lite.NewDB("CludesUIQuestTrackerDB", DEFAULTS)
+    if not db and CUI and CUI.Lite then
+        db = CUI.Lite.NewDB("CludesUIQuestTrackerDB", DEFAULTS)
         _G._CUQT_DB = db
     end
     return db
@@ -144,7 +145,7 @@ end
 -- false in the older customTracker key also counts as a pick; a true there
 -- never was one (that key read true for everyone who had not turned it off).
 function mod.CustomTrackerWanted(qt)
-    if CludesUI.IS_FOREVER ~= true then return false end
+    if CUI.IS_FOREVER ~= true then return false end
     local pick = qt.customTrackerPick
     if pick == nil and qt.customTracker == false then pick = false end
     if pick ~= nil then return pick end
@@ -276,6 +277,6 @@ SlashCmdList.EQT = function(message)
     elseif message == "toggle" then
         SetShown(not EQT.Cfg("enabled"))
     elseif not (InCombatLockdown and InCombatLockdown()) then
-        CludesUI:ShowModule("CludesUIQuestTracker")
+        CUI:ShowModule("CludesUIQuestTracker")
     end
 end

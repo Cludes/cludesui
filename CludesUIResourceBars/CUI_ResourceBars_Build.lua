@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Build.lua
 --
@@ -11,7 +12,7 @@ local Inner = mod._internals
 if not Inner or Inner.broken then return end
 Inner.broken = true
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local UnitHealthMax, UnitPowerMax = UnitHealthMax, UnitPowerMax
 
 local CLASS_COLORS, DARK_BG_A, DARK_FILL_A = Inner.CLASS_COLORS, Inner.DARK_BG_A, Inner.DARK_FILL_A
@@ -121,7 +122,7 @@ local function ApplyResourceBarTicks(
         revFill = (vert and oriSb.GetReverseFill and oriSb:GetReverseFill()) or false
     end
     if scrollBar then
-        local _pp = CludesUI and CludesUI.PP
+        local _pp = CUI and CUI.PP
         local wid, hgt = scrollBar:GetWidth(), scrollBar:GetHeight()
         local mult = (_pp and _pp.mult) or 1
         local st = scrollBar._tickState
@@ -164,7 +165,7 @@ local function ApplyResourceBarTicks(
 
     if not vals or not scrollBar or maxVal <= 0 then return end
 
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local tickW = hashWidth or 1
     local tR, tG, tB, tA = hashR or 1, hashG or 1, hashB or 1, hashA or 0.7
 
@@ -273,11 +274,11 @@ function mod.ApplyHashLines(scrollBar, conf, getMaxFn)
     end
     -- Shrink the hash vertically by the border so it sits inside the bar. An
     -- exact SOLID border size is the inset; a textured one keeps its step.
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local hbs = conf.borderSize or 0
     local htex = conf.borderTexture
     if not htex or htex == "" or htex == "solid" then
-        hbs = CludesUI.BorderPx(conf.borderSizePx, hbs, htex) or hbs
+        hbs = CUI.BorderPx(conf.borderSizePx, hbs, htex) or hbs
     end
     local vInset = hbs * ((Pix and Pix.mult) or 1)
     ApplyResourceBarTicks(
@@ -317,10 +318,10 @@ function mod.ERB_RoundBar(barFrame, conf)
     if not barFrame then return end
     local radius = (not mod.ERB_BarsBlizz() and conf.cornerRadius) or 0
     if radius <= 0 then
-        CludesUI.RoundCorners(barFrame, 0)
+        CUI.RoundCorners(barFrame, 0)
         return
     end
-    CludesUI.RoundCorners(barFrame, radius, {
+    CUI.RoundCorners(barFrame, radius, {
         roots = { barFrame._sb },
         clip = barFrame._sb,
         border = barFrame._border and barFrame._border._frame,
@@ -338,9 +339,9 @@ do
         for index = 1, #entries do
             local pip = entries[index]
             if radius <= 0 then
-                CludesUI.RoundCorners(pip, 0)
+                CUI.RoundCorners(pip, 0)
             elseif pip:IsShown() then
-                CludesUI.RoundCorners(pip, radius, {
+                CUI.RoundCorners(pip, radius, {
                     style = style,
                     border = pip._border and pip._border._frame,
                     corners = corners,
@@ -354,14 +355,14 @@ do
         local onPips = sp.borderOnPips and not isBarType
         local rowBorder = secondaryFrame._barBorder
         if radius > 0 then
-            CludesUI.RoundCorners(secondaryFrame, radius, {
+            CUI.RoundCorners(secondaryFrame, radius, {
                 style = style,
                 border = not onPips and rowBorder and rowBorder._frame or nil,
                 clip = isBarType and secondaryBar and secondaryBar._sb or nil,
                 corners = sp.cornerMask,
             })
         else
-            CludesUI.RoundCorners(secondaryFrame, 0)
+            CUI.RoundCorners(secondaryFrame, 0)
         end
         local pipRadius = onPips and radius or 0
         if pipRadius > 0 or pipsRounded then
@@ -443,7 +444,7 @@ local function BuildBars()
             local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
             health:SetSize(ow, oh)
             health:Show()
-            if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_Health", health) then
+            if CUI._TryOverrideAnchor and CUI._TryOverrideAnchor("ERB_Health", health) then
                 -- Override anchor owns position (zero-alpha anchor target)
             elseif hp.unlockPos and hp.unlockPos.point then
                 local rp = hp.unlockPos.relPoint or hp.unlockPos.point
@@ -451,11 +452,11 @@ local function BuildBars()
                 health:ClearAllPoints()
                 health:SetPoint(hp.unlockPos.point, UIParent, rp, sx, sy)
             end
-            CludesUI.SetElementVisibility(health, false)
+            CUI.SetElementVisibility(health, false)
             mod.HealthIndicatorsApply(health, nil)
         else
             local healthAnchorKey = NormalizeAnchorKey(hp.anchorTo)
-            if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_Health", health) then
+            if CUI._TryOverrideAnchor and CUI._TryOverrideAnchor("ERB_Health", health) then
                 -- Override anchor owns positioning; only update size
                 local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
                 health:SetSize(ow, oh)
@@ -481,8 +482,8 @@ local function BuildBars()
                 local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
                 ApplyBarAnchor(health, "none")
                 health:SetSize(ow, oh)
-                if not CludesUI._unlockActive then
-                    if not CludesUI.IsUnlockAnchored("ERB_Health") or not health:GetLeft() then
+                if not CUI._unlockActive then
+                    if not CUI.IsUnlockAnchored("ERB_Health") or not health:GetLeft() then
                         local sx, sy = SnapXY(hp.unlockPos.x, hp.unlockPos.y, health, hp.unlockPos)
                         health:ClearAllPoints()
                         health:SetPoint(hp.unlockPos.point, UIParent, rp, sx, sy)
@@ -491,7 +492,7 @@ local function BuildBars()
             else
                 -- Clear any mouse-tracking OnUpdate from a previous anchor
                 ApplyBarAnchor(health, "none")
-                if CludesUI._unlockActive then
+                if CUI._unlockActive then
                     -- During unlock mode, only update size -- position is managed by the mover
                     local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
                     health:SetSize(ow, oh)
@@ -544,7 +545,7 @@ local function BuildBars()
                     "resourcebars",
                     hp.borderSize,
                     hp.borderBehind,
-                    CludesUI.BorderPx(hp.borderSizePx, hp.borderSize, hp.borderTexture)
+                    CUI.BorderPx(hp.borderSizePx, hp.borderSize, hp.borderTexture)
                 )
             end
 
@@ -591,7 +592,7 @@ local function BuildBars()
                         health._bg,
                         g.barTextureBg
                             and (hp.fillOpacity or 100) >= 100
-                            and CludesUI.ResolveTexturePath(
+                            and CUI.ResolveTexturePath(
                                 _G._CURB_BarTextures,
                                 (p.splitTex == true and hp.barTexture) or g.barTexture,
                                 nil
@@ -628,7 +629,7 @@ local function BuildBars()
             health:SetAlpha(mod.ERB_MissingBarAlpha(health, hp))
             ApplyBarOrientation(health, hpOri)
             mod.ApplyFillOpacity(health, hpOri, hp.fillOpacity)
-            if IsSpecDisabled(hp) then CludesUI.SetElementVisibility(health, false) end
+            if IsSpecDisabled(hp) then CUI.SetElementVisibility(health, false) end
             -- Absorb / heal absorb / max health reduction overlays
             -- (CUI_ResourceBars_HealthIndicators.lua): settings pass only.
             mod.HealthIndicatorsApply(health, (not IsSpecDisabled(hp)) and hp or nil, hpOri)
@@ -648,14 +649,14 @@ local function BuildBars()
     local ppHeight = pp.height or 14
     local ppExpandDelta = 0
     local ppDirSign = 1 -- expand direction: +1 grow up (class resource above), -1 grow down (below)
-    local _heightMatched = CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power")
+    local _heightMatched = CUI.GetHeightMatchTarget and CUI.GetHeightMatchTarget("ERB_Power")
     -- Runtime suppression only -- never reads or writes the saved setting
     -- (see _CURB_SuppressExpand in OnInitialize).
     if
         pp.expandIfNoResource
         and not _heightMatched
-        and not CludesUI._erbExpandSuppressed
-        and not CludesUI._unlockActive
+        and not CUI._erbExpandSuppressed
+        and not CUI._unlockActive
     then
         local sp2 = _G._CURB_ResolveSecondaryCfg(p) or FALLBACK.secondary
         -- The class resource leaves an empty slot to expand into when "Show Class
@@ -708,9 +709,9 @@ local function BuildBars()
     if pp.enabled ~= false and cachedPrimary then
         local ppOri = pp.orientation or g.orientation or "HORIZONTAL"
         local primaryAnchorKey = NormalizeAnchorKey(pp.anchorTo)
-        local primaryOverrideOwned = CludesUI._TryOverrideAnchor
-            and CludesUI._TryOverrideAnchor("ERB_Power", primaryBar)
-        local primaryUnlockAnchored = CludesUI.IsUnlockAnchored("ERB_Power")
+        local primaryOverrideOwned = CUI._TryOverrideAnchor
+            and CUI._TryOverrideAnchor("ERB_Power", primaryBar)
+        local primaryUnlockAnchored = CUI.IsUnlockAnchored("ERB_Power")
         if primaryOverrideOwned or primaryUnlockAnchored then
             -- Unlock anchor system / override anchor owns positioning; only update size
             local ow, oh = OrientedSize(ppWidth, ppHeight, ppOri)
@@ -737,8 +738,8 @@ local function BuildBars()
             local ow, oh = OrientedSize(ppWidth, ppHeight, ppOri)
             ApplyBarAnchor(primaryBar, "none")
             primaryBar:SetSize(ow, oh)
-            if not CludesUI._unlockActive then
-                if not CludesUI.IsUnlockAnchored("ERB_Power") or not primaryBar:GetLeft() then
+            if not CUI._unlockActive then
+                if not CUI.IsUnlockAnchored("ERB_Power") or not primaryBar:GetLeft() then
                     local sx, sy = SnapXY(pp.unlockPos.x, pp.unlockPos.y, primaryBar, pp.unlockPos)
                     -- Dragged bars store the UNexpanded CENTER (expand is suppressed
                     -- during unlock capture), so SetSize alone grows symmetrically;
@@ -754,7 +755,7 @@ local function BuildBars()
         else
             -- Clear any mouse-tracking OnUpdate from a previous anchor
             ApplyBarAnchor(primaryBar, "none")
-            if CludesUI._unlockActive then
+            if CUI._unlockActive then
                 -- During unlock mode, only update size -- position is managed by the mover
                 local ow, oh = OrientedSize(ppWidth, ppHeight, ppOri)
                 primaryBar:SetSize(ow, oh)
@@ -814,7 +815,7 @@ local function BuildBars()
                 "resourcebars",
                 pp.borderSize,
                 pp.borderBehind,
-                CludesUI.BorderPx(pp.borderSizePx, pp.borderSize, pp.borderTexture),
+                CUI.BorderPx(pp.borderSizePx, pp.borderSize, pp.borderTexture),
                 mod.ERB_BorderExtents(pp)
             )
         end
@@ -865,7 +866,7 @@ local function BuildBars()
                     primaryBar._bg,
                     g.barTextureBg
                         and (pp.fillOpacity or 100) >= 100
-                        and CludesUI.ResolveTexturePath(
+                        and CUI.ResolveTexturePath(
                             _G._CURB_BarTextures,
                             (p.splitTex == true and pp.barTexture) or g.barTexture,
                             nil
@@ -904,13 +905,13 @@ local function BuildBars()
             and p.secondary.enabled ~= false
             and cachedSecondary
         if hidePower then
-            CludesUI.SetElementVisibility(primaryBar, false)
+            CUI.SetElementVisibility(primaryBar, false)
         else
             primaryBar:SetAlpha(mod.ERB_MissingBarAlpha(primaryBar, pp))
         end
         ApplyBarOrientation(primaryBar, ppOri)
         mod.ApplyFillOpacity(primaryBar, ppOri, pp.fillOpacity)
-        if IsSpecDisabled(pp) then CludesUI.SetElementVisibility(primaryBar, false) end
+        if IsSpecDisabled(pp) then CUI.SetElementVisibility(primaryBar, false) end
     elseif primaryBar then
         -- Enabled but no resource for this spec: keep the frame positioned at
         -- zero alpha so anchored elements (CDM bars, etc.) have a target.
@@ -919,8 +920,8 @@ local function BuildBars()
         primaryBar:SetSize(ow, oh)
         primaryBar:Show()
         if
-            not (CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_Power", primaryBar))
-            and not CludesUI.IsUnlockAnchored("ERB_Power")
+            not (CUI._TryOverrideAnchor and CUI._TryOverrideAnchor("ERB_Power", primaryBar))
+            and not CUI.IsUnlockAnchored("ERB_Power")
         then
             if pp.unlockPos and pp.unlockPos.point then
                 local rp = pp.unlockPos.relPoint or pp.unlockPos.point
@@ -932,7 +933,7 @@ local function BuildBars()
                 primaryBar:SetPoint("CENTER", mainFrame, "CENTER", pp.offsetX or 0, pp.offsetY or -54)
             end
         end
-        CludesUI.SetElementVisibility(primaryBar, false)
+        CUI.SetElementVisibility(primaryBar, false)
     end
 
     -- Class resource (secondary: pips / runes)
@@ -958,13 +959,13 @@ local function BuildBars()
     if mod.ERB_BlizzArtSync then mod.ERB_BlizzArtSync(sp, cachedSecondary, secondaryFrame) end
     if sp.enabled ~= false and not IsSpecDisabled(sp) and cachedSecondary then
         local maxPts = cachedSecondary.max or 5
-        if cachedSecondary.type == "custom" and CludesUI then
+        if cachedSecondary.type == "custom" and CUI then
             local powerType = cachedSecondary.power
-            if powerType == "SOUL_FRAGMENTS" and CludesUI.GetSoulFragments then
-                local _, realMax = CludesUI.GetSoulFragments()
+            if powerType == "SOUL_FRAGMENTS" and CUI.GetSoulFragments then
+                local _, realMax = CUI.GetSoulFragments()
                 if realMax and realMax > 0 then maxPts = realMax end
-            elseif powerType == "MAELSTROM_WEAPON" and CludesUI.GetMaelstromWeapon then
-                local _, realMax = CludesUI.GetMaelstromWeapon()
+            elseif powerType == "MAELSTROM_WEAPON" and CUI.GetMaelstromWeapon then
+                local _, realMax = CUI.GetMaelstromWeapon()
                 if realMax and realMax > 0 then maxPts = realMax end
                 -- Enhance 5-bar mode: cap visual pips to 5, overflow handled at render time
                 if sp.enhanceFiveBar and maxPts > 5 then
@@ -973,8 +974,8 @@ local function BuildBars()
                 else
                     cachedSecondary._realMax = nil
                 end
-            elseif powerType == "TIP_OF_THE_SPEAR" and CludesUI.GetTipOfTheSpear then
-                local _, realMax = CludesUI.GetTipOfTheSpear()
+            elseif powerType == "TIP_OF_THE_SPEAR" and CUI.GetTipOfTheSpear then
+                local _, realMax = CUI.GetTipOfTheSpear()
                 if realMax and realMax > 0 then maxPts = realMax end
             elseif (powerType == "WHIRLWIND_STACKS" or powerType == "SWEEPING_STRIKES") and _G._EWC then
                 -- Talent-aware cap from the engine-slot module (Broad Strokes).
@@ -1016,9 +1017,9 @@ local function BuildBars()
         local frameW = isVertical and heightSnapped or widthSnapped
         local frameH = isVertical and widthSnapped or heightSnapped
         local secondaryAnchorKey = NormalizeAnchorKey(sp.anchorTo)
-        local secondaryOverrideOwned = CludesUI._TryOverrideAnchor
-            and CludesUI._TryOverrideAnchor("ERB_ClassResource", secondaryFrame)
-        local secondaryUnlockAnchored = CludesUI.IsUnlockAnchored("ERB_ClassResource")
+        local secondaryOverrideOwned = CUI._TryOverrideAnchor
+            and CUI._TryOverrideAnchor("ERB_ClassResource", secondaryFrame)
+        local secondaryUnlockAnchored = CUI.IsUnlockAnchored("ERB_ClassResource")
         if secondaryOverrideOwned or secondaryUnlockAnchored then
             -- Unlock anchor system / override anchor owns positioning; only update size
             secondaryFrame:SetSize(frameW, frameH)
@@ -1059,7 +1060,7 @@ local function BuildBars()
             end
         else
             ApplyBarAnchor(secondaryFrame, "none")
-            if CludesUI._unlockActive then
+            if CUI._unlockActive then
                 -- During unlock mode, only update size -- position is managed by the mover
                 secondaryFrame:SetSize(frameW, frameH)
             else
@@ -1141,8 +1142,8 @@ local function BuildBars()
 
             local pc = POWER_COLORS[cachedSecondary.power]
             if sp.darkTheme then
-                local _dfr, _dfg, _dfb = CludesUI.GetDarkModeFill()
-                local _dbr, _dbg, _dbb = CludesUI.GetDarkModeBg()
+                local _dfr, _dfg, _dfb = CUI.GetDarkModeFill()
+                local _dbr, _dbg, _dbb = CUI.GetDarkModeBg()
                 secondaryBar:GetStatusBarTexture():SetVertexColor(_dfr, _dfg, _dfb, DARK_FILL_A)
                 secondaryBar._bg:SetColorTexture(_dbr, _dbg, _dbb, DARK_BG_A)
             elseif cachedSecondary.power == "BREWMASTER_STAGGER" then
@@ -1188,14 +1189,14 @@ local function BuildBars()
             if g.barTextureBg or secondaryBar._bg._erbBgTex then
                 local br, bgg, bb, ba = sp.bgR, sp.bgG, sp.bgB, sp.bgA
                 if sp.darkTheme then
-                    br, bgg, bb = CludesUI.GetDarkModeBg()
+                    br, bgg, bb = CUI.GetDarkModeBg()
                     ba = DARK_BG_A
                 end
                 mod.ERB_BgTexture(
                     secondaryBar._bg,
                     g.barTextureBg
                         and (sp.fillOpacity or 100) >= 100
-                        and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.barTexture, nil),
+                        and CUI.ResolveTexturePath(_G._CURB_BarTextures, g.barTexture, nil),
                     br,
                     bgg,
                     bb,
@@ -1342,7 +1343,7 @@ local function BuildBars()
                         sp.borderTextureShiftY,
                         "resourcebars",
                         sp.borderSize,
-                        CludesUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture)
+                        CUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture)
                     )
                 else
                     runeFrames[index]:ApplyBorder(0, 0, 0, 0, 0)
@@ -1361,7 +1362,7 @@ local function BuildBars()
                         g.barTextureBg
                             and not pipBg
                             and (sp.fillOpacity or 100) >= 100
-                            and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.barTexture, nil),
+                            and CUI.ResolveTexturePath(_G._CURB_BarTextures, g.barTexture, nil),
                         ERB.PipBgColor(sp, pipBg)
                     )
                 end
@@ -1454,7 +1455,7 @@ local function BuildBars()
                         sp.borderTextureShiftY,
                         "resourcebars",
                         sp.borderSize,
-                        CludesUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture)
+                        CUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture)
                     )
                 else
                     pips[index]:ApplyBorder(0, 0, 0, 0, 0)
@@ -1473,7 +1474,7 @@ local function BuildBars()
                         g.barTextureBg
                             and not pipBg
                             and (sp.fillOpacity or 100) >= 100
-                            and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.barTexture, nil),
+                            and CUI.ResolveTexturePath(_G._CURB_BarTextures, g.barTexture, nil),
                         ERB.PipBgColor(sp, pipBg)
                     )
                 end
@@ -1627,7 +1628,7 @@ local function BuildBars()
                 sp.borderTextureShiftY,
                 "resourcebars",
                 sp.borderSize,
-                CludesUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture),
+                CUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture),
                 mod.ERB_BorderExtents(sp)
             )
         end
@@ -1781,7 +1782,7 @@ local function BuildBars()
         secondaryFrame:Show()
         if mod._erbArtOn then
             -- Blizzard's frame stands in: the slot stays shown and sized at zero alpha.
-            CludesUI.SetElementVisibility(secondaryFrame, false)
+            CUI.SetElementVisibility(secondaryFrame, false)
         else
             secondaryFrame:SetAlpha(mod.ResolveBarAlpha(sp))
         end
@@ -1794,9 +1795,9 @@ local function BuildBars()
         secondaryFrame:Show()
         if
             not (
-                CludesUI._TryOverrideAnchor
-                and CludesUI._TryOverrideAnchor("ERB_ClassResource", secondaryFrame)
-            ) and not CludesUI.IsUnlockAnchored("ERB_ClassResource")
+                CUI._TryOverrideAnchor
+                and CUI._TryOverrideAnchor("ERB_ClassResource", secondaryFrame)
+            ) and not CUI.IsUnlockAnchored("ERB_ClassResource")
         then
             if sp.unlockPos and sp.unlockPos.point then
                 local rp = sp.unlockPos.relPoint or sp.unlockPos.point
@@ -1808,7 +1809,7 @@ local function BuildBars()
                 secondaryFrame:SetPoint("CENTER", mainFrame, "CENTER", sp.offsetX or 0, sp.offsetY or -74)
             end
         end
-        CludesUI.SetElementVisibility(secondaryFrame, false)
+        CUI.SetElementVisibility(secondaryFrame, false)
     end
 
     -- Bottom Separator on the power bar, placed after the class resource block
@@ -1846,14 +1847,14 @@ local function BuildBars()
         -- a busy chain. The present<->absent transition is the only moment frame
         -- size is unchanged, hence the only moment the normal hooks miss.
         -- dir: 0 = present, +/-1 = absent.
-        if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
+        if not CUI._unlockActive and CUI.PropagateAnchorChain then
             local direction = 0
-            if isActive and CludesUI._GetAnchorTargetShiftDir then
-                direction = CludesUI._GetAnchorTargetShiftDir("ERB_ClassResource") or 0
+            if isActive and CUI._GetAnchorTargetShiftDir then
+                direction = CUI._GetAnchorTargetShiftDir("ERB_ClassResource") or 0
             end
             if direction ~= (ERB._lastShiftDir or 0) then
                 ERB._lastShiftDir = direction
-                CludesUI.PropagateAnchorChain("ERB_ClassResource")
+                CUI.PropagateAnchorChain("ERB_ClassResource")
             end
         end
     end
@@ -1868,14 +1869,14 @@ local function BuildBars()
             and (primary.shiftElementsIfNoPower == "Up" or primary.shiftElementsIfNoPower == "Down")
         -- Same transition-only guard as the class-resource block above: cascade
         -- only when the shift state actually changes, not every BuildBars call.
-        if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
+        if not CUI._unlockActive and CUI.PropagateAnchorChain then
             local direction = 0
-            if isActive and CludesUI._GetAnchorTargetShiftDir then
-                direction = CludesUI._GetAnchorTargetShiftDir("ERB_Power") or 0
+            if isActive and CUI._GetAnchorTargetShiftDir then
+                direction = CUI._GetAnchorTargetShiftDir("ERB_Power") or 0
             end
             if direction ~= (ERB._lastShiftDirPower or 0) then
                 ERB._lastShiftDirPower = direction
-                CludesUI.PropagateAnchorChain("ERB_Power")
+                CUI.PropagateAnchorChain("ERB_Power")
             end
         end
     end
@@ -1888,7 +1889,7 @@ local function BuildBars()
     -- end here): ask Unit Frames to re-anchor its bottom-anchored player auras to the
     -- new footprint. This only arms its one-shot re-anchor for the next frame (no
     -- geometry is read here), and does nothing unless the player bottom-anchors auras.
-    if CludesUI.UF_RequestResourceReanchor then CludesUI.UF_RequestResourceReanchor() end
+    if CUI.UF_RequestResourceReanchor then CUI.UF_RequestResourceReanchor() end
 end
 
 Inner.ApplyResourceBarTicks, Inner.BuildBars = ApplyResourceBarTicks, BuildBars

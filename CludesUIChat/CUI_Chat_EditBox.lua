@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Chat_EditBox.lua
 --
@@ -338,7 +339,7 @@ local function SkinEditBox(castFrame)
                         CHAT._recallLockdownNoticeShown = true
                         local castFrame = self.chatFrame or DEFAULT_CHAT_FRAME
                         castFrame:AddMessage(
-                            CludesUI.L("Chat recall is unavailable here. Use Alt+Up and Alt+Down.")
+                            CUI.L("Chat recall is unavailable here. Use Alt+Up and Alt+Down.")
                         )
                     end
                     return

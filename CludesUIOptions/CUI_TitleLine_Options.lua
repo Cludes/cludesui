@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_TitleLine_Options.lua
 --  The Title Line page of the CludesUI settings panel. Title Line's graph is
@@ -6,12 +7,12 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  and a button that opens the graph.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUITitleLine"
-local mod = CludesUI._ModuleNS[ADDON_NAME]
+local mod = CUI._ModuleNS[ADDON_NAME]
 if not mod then return end
 
 local PAGE = "Title Line"
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     local function DB() return _G.CludesUITitleLineDB or {} end
 
     local function Toggle(textValue, key, tooltip, default)
@@ -47,11 +48,11 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildPage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         _, height = W:SectionHeader(hostFrame, "GRAPH", cursorY)
         cursorY = cursorY - height
@@ -115,7 +116,7 @@ CludesUI.AtOptionsLogin(function()
         return math.abs(cursorY)
     end
 
-    CludesUI:RegisterModule(ADDON_NAME, {
+    CUI:RegisterModule(ADDON_NAME, {
         title = "Title Line",
         description = "Your Mythic+ rating against the 0.1% and 1% title lines.",
         pages = { PAGE },

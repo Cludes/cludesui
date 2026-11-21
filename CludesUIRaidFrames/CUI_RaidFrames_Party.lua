@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Party.lua
 --
@@ -620,7 +621,7 @@ mod._scaledPartyProxy = setmetatable({}, {
             end
             if pv ~= nil then
                 resolved = true
-                if pv ~= CludesUI.SPECOV_NIL then val = pv end
+                if pv ~= CUI.SPECOV_NIL then val = pv end
             end
         end
         if not resolved then val = mod._partyProxy[key] end

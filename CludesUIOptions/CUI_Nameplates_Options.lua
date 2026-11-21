@@ -1,28 +1,29 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Options.lua: registers the Nameplates module with CludesUI.
 --  All get/set calls go to ns.db.profile (centralized store); does NOT touch nameplate rendering logic.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUINameplates"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 -- The options page frame pool (CludesUI_FramePool.lua): frames made under a
 -- pooled page or header part are handed back to its next build.
-local CreateFrame = CludesUI._Pool.CreateFrame
-local PoolGen, PoolKeep = CludesUI._Pool.Gen, CludesUI._Pool.Keep
+local CreateFrame = CUI._Pool.CreateFrame
+local PoolGen, PoolKeep = CUI._Pool.Gen, CUI._Pool.Keep
 
 -- Body-text preview flag, already slug-gated at the source (GetFontOutlineFlag).
-local function GetNPOptOutline() return CludesUI.GetFontOutlineFlag("nameplates") end
+local function GetNPOptOutline() return CUI.GetFontOutlineFlag("nameplates") end
 
 -- Rows the Blizzard kit replaces but the classic plate leaves to the user
 -- (bar background, cast bar texture, cast background and colours, the
 -- border wrap): gated only while Blizzard Style renders, live under Classic
 -- WoW UI. ns fields so the page builders gain no upvalue; the gate returns
 -- cfg for inline use like BlizzStyle.Gate.
-function mod.NP_BlizzOnly() return CludesUI.BlizzStyle.Active("nameplates") == "blizzard" end
+function mod.NP_BlizzOnly() return CUI.BlizzStyle.Active("nameplates") == "blizzard" end
 function mod.NP_BlizzOnlyGate(rowConf)
-    if mod.NP_BlizzOnly() then return CludesUI.BlizzStyle.Gate("nameplates", rowConf) end
+    if mod.NP_BlizzOnly() then return CUI.BlizzStyle.Gate("nameplates", rowConf) end
     return rowConf
 end
 
@@ -45,14 +46,14 @@ local SECTION_OTHER = "OTHER COLORS"
 
 -- Threat % Position dropdown (WoW Forever only, so nil on retail).
 local THREAT_PCT_POSITIONS, THREAT_PCT_POSITION_ORDER
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     THREAT_PCT_POSITIONS = { RIGHT = "Inside Right", LEFT = "Inside Left", CENTER = "Inside Center" }
     THREAT_PCT_POSITION_ORDER = { "RIGHT", "LEFT", "CENTER" }
 end
 
 -- Wait for CludesUI to exist
-CludesUI.AtOptionsLogin(function()
-    local Pix = CludesUI.PanelPP
+CUI.AtOptionsLogin(function()
+    local Pix = CUI.PanelPP
 
     ---------------------------------------------------------------------------
     --  Local references from the addon namespace
@@ -73,7 +74,7 @@ CludesUI.AtOptionsLogin(function()
     -- preview name, title or cast target draws as on a live plate. Every font
     -- write to a preview text goes through it, never a plain SetFont.
     local function SetPVFont(fontStr, fontFile, size, flags)
-        CludesUI.ApplyModuleFontFamily(fontStr, fontFile, size, "nameplates", flags)
+        CUI.ApplyModuleFontFamily(fontStr, fontFile, size, "nameplates", flags)
     end
     local floor = math.floor
     local NAME_RAID_MARKER_GAP = 3
@@ -141,7 +142,7 @@ CludesUI.AtOptionsLogin(function()
     --  Health bar texture dropdown values (built from ns tables)
     ---------------------------------------------------------------------------
     -- Append SharedMedia textures to the runtime ns tables first so both the dropdown AND the live nameplate rendering can resolve SM keys.
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         mod.healthBarTextureNames or {},
         mod.healthBarTextureOrder or {},
         nil,
@@ -208,7 +209,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- Refresh the preview every time the panel is reopened
-    CludesUI:RegisterOnShow(UpdatePreview)
+    CUI:RegisterOnShow(UpdatePreview)
 
     ---------------------------------------------------------------------------
     --  Glow sites: the Dispel, Pandemic, Important Cast and Cast Targets You glows as shared glow
@@ -216,7 +217,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local npDispelGlowDesc, npImpCastGlowDesc, npPandemicGlowDesc, npCastTargetGlowDesc
     do
-        local GO = CludesUI.GlowOptions
+        local GO = CUI.GlowOptions
         -- The aura glows (Dispel, Pandemic) share one refresh, so the Glows
         -- page runs it once per Apply.
         local function RefreshAuraGlows()
@@ -226,11 +227,11 @@ CludesUI.AtOptionsLogin(function()
         -- Engine aura buttons (no Auto-Cast/Shape); an unset color is the
         -- suite default (gold).
         -- Blizzard Border: Blizzard's static stealable art, outside the view.
-        local BLIZZ_BORDER = CludesUI.Glows.STEALABLE_BORDER
+        local BLIZZ_BORDER = CUI.Glows.STEALABLE_BORDER
         -- Blizzard Pandemic Border: the Cooldown Manager's static pandemic
         -- art, outside the view, never tinted (noColor locks the swatches);
         -- the default of both aura glows.
-        local PAN_BORDER = CludesUI.Glows.PANDEMIC_BORDER
+        local PAN_BORDER = CUI.Glows.PANDEMIC_BORDER
         npDispelGlowDesc = {
             view = mod.NP_GLOW_VIEW,
             host = "engine",
@@ -244,7 +245,7 @@ CludesUI.AtOptionsLogin(function()
                 { value = BLIZZ_BORDER, label = "Blizzard Border", style = BLIZZ_BORDER },
             },
             caps = { mode = true, params = true, bg = true },
-            defaultColor = CludesUI.Glows.DEFAULT_COLOR,
+            defaultColor = CUI.Glows.DEFAULT_COLOR,
             isOff = function() return DBVal("dispelGlow") ~= true end,
             -- Color by Type replaces the swatch color on every group.
             colorDisabled = function() return DBVal("dispelGlowUseTypeColor") == true end,
@@ -257,7 +258,7 @@ CludesUI.AtOptionsLogin(function()
                 elseif f == "mode" then
                     return profile.dispelGlowColorMode or (profile.dispelGlowColor and "custom" or "default")
                 end
-                return CludesUI.GlowOptions.FlatGet(profile, "dispelGlow", f)
+                return CUI.GlowOptions.FlatGet(profile, "dispelGlow", f)
             end,
             set = function(f, a, b2, c2)
                 local profile = PlatesProfile()
@@ -271,7 +272,7 @@ CludesUI.AtOptionsLogin(function()
                 elseif f == "mode" then
                     profile.dispelGlowColorMode = a
                 else
-                    CludesUI.GlowOptions.FlatSet(profile, "dispelGlow", f, a, b2, c2)
+                    CUI.GlowOptions.FlatSet(profile, "dispelGlow", f, a, b2, c2)
                 end
             end,
             -- Magic buffs and enrages are separate groups in the buff row, so the
@@ -284,7 +285,7 @@ CludesUI.AtOptionsLogin(function()
                     set = function(value)
                         PlatesProfile().dispelGlowUseTypeColor = value
                         RefreshAuraGlows()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
             },
@@ -295,7 +296,7 @@ CludesUI.AtOptionsLogin(function()
             if mod.NP_RefreshCastGlows then mod.NP_RefreshCastGlows() end
         end
         local function CastBarGlowDesc(prefixText)
-            local keyName = CludesUI.Glows.FlatKeys(prefixText)
+            local keyName = CUI.Glows.FlatKeys(prefixText)
             return {
                 view = mod.NP_GLOW_VIEW,
                 host = "bar",
@@ -358,7 +359,7 @@ CludesUI.AtOptionsLogin(function()
                 elseif f == "mode" then
                     return profile.pandemicGlowMode or "custom"
                 end
-                return CludesUI.GlowOptions.FlatGet(profile, "pandemicGlow", f, defaultSet)
+                return CUI.GlowOptions.FlatGet(profile, "pandemicGlow", f, defaultSet)
             end,
             set = function(f, a, b2, c2)
                 local profile = PlatesProfile()
@@ -372,7 +373,7 @@ CludesUI.AtOptionsLogin(function()
                 elseif f == "mode" then
                     profile.pandemicGlowMode = a
                 else
-                    CludesUI.GlowOptions.FlatSet(profile, "pandemicGlow", f, a, b2, c2)
+                    CUI.GlowOptions.FlatSet(profile, "pandemicGlow", f, a, b2, c2)
                 end
             end,
         }
@@ -424,7 +425,7 @@ CludesUI.AtOptionsLogin(function()
     local LazyColorPreviewBar -- forward declaration; defined with the Colors page helpers below
 
     local function BuildDisplayPage(pageName, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
@@ -460,11 +461,11 @@ CludesUI.AtOptionsLogin(function()
                     -- Held across builds: out of the preview's frame pool for good
                     -- (its later builds only hide it with the preview).
                     optionState._previewHintFS = PoolKeep(
-                        CludesUI.MakeFont(optionState.activePreview or headerParent, 11, nil, 1, 1, 1)
+                        CUI.MakeFont(optionState.activePreview or headerParent, 11, nil, 1, 1, 1)
                     )
                     optionState._previewHintFS:SetAlpha(0.45)
                     optionState._previewHintFS:SetText(
-                        CludesUI.L("Click elements to scroll to and highlight their options")
+                        CUI.L("Click elements to scroll to and highlight their options")
                     )
                 end
                 optionState._previewHintFS:SetParent(optionState.activePreview or headerParent)
@@ -479,7 +480,7 @@ CludesUI.AtOptionsLogin(function()
             _headerBaseH = previewH + PRESET_HEADER_H + PREVIEW_TOP_PAD + PREVIEW_BOTTOM_PAD
             return _headerBaseH + (hintShown and 29 or 0)
         end
-        CludesUI:SetContentHeader(_displayHeaderBuilder)
+        CUI:SetContentHeader(_displayHeaderBuilder)
 
         -- Enable per-row center divider for the dual-column layout
         hostFrame._showRowDivider = true
@@ -586,7 +587,7 @@ CludesUI.AtOptionsLogin(function()
             end
             mod.NP_RefreshFriendlyFaction()
             UpdatePreview()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
 
         -----------------------------------------------------------------------
@@ -672,13 +673,13 @@ CludesUI.AtOptionsLogin(function()
         -- The search pre-build indexes rows only. The click navigation below
         -- rewires the live preview's hit overlays, which a hidden build of
         -- this page must leave alone.
-        if CludesUI._prebuilding then return math.abs(cursorY) end
+        if CUI._prebuilding then return math.abs(cursorY) end
 
         -----------------------------------------------------------------------
         --  CLICK NAVIGATION: glow, scroll, mapping, hit overlays
         -----------------------------------------------------------------------
-        local PlaySettingGlow = CludesUI.MakeSettingGlow({
-            color = CludesUI.CLUDES_GREEN,
+        local PlaySettingGlow = CUI.MakeSettingGlow({
+            color = CUI.CLUDES_GREEN,
             thickness = function() return Pix.Scale(2) end,
             noSnap = true,
         })
@@ -840,14 +841,14 @@ CludesUI.AtOptionsLogin(function()
             if not m or not m.section or not m.target then return end
 
             -- Header grows by 29 but shrinks by 39 (kept as shipped).
-            CludesUI.DismissPreviewHint(optionState._previewHintFS, _headerBaseH, 29, 17)
+            CUI.DismissPreviewHint(optionState._previewHintFS, _headerBaseH, 29, 17)
 
-            local scrollFrame = CludesUI._scrollFrame
+            local scrollFrame = CUI._scrollFrame
             if not scrollFrame then return end
             local _, _, _, _, headerY = m.section:GetPoint(1)
             if not headerY then return end
             local scrollPos = math.max(0, math.abs(headerY) - 40)
-            CludesUI.SmoothScrollTo(scrollPos)
+            CUI.SmoothScrollTo(scrollPos)
             local glowTarget = m.target
             if m.slotSide and m.target then
                 local regionFrame = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
@@ -873,7 +874,7 @@ CludesUI.AtOptionsLogin(function()
         -- again with their overlays parked by the preview's pool.
         local hitStyle = { container = true }
         local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
-            local button = CludesUI.CreatePreviewHitOverlay(
+            local button = CUI.CreatePreviewHitOverlay(
                 element,
                 NavigateToSetting,
                 mappingKey,
@@ -956,14 +957,14 @@ CludesUI.AtOptionsLogin(function()
             local castOverlayLevel
             if preview._cast then
                 castOverlayLevel = preview._cast:GetFrameLevel() + 20
-                local classColor = CludesUI.CLUDES_GREEN
+                local classColor = CUI.CLUDES_GREEN
                 -- Cast icon overlay
                 if preview._castIconFrame then
                     local iconOv = CreateFrame("Button", nil, preview._cast:GetParent())
                     iconOv:SetAllPoints(preview._castIconFrame)
                     iconOv:SetFrameLevel(castOverlayLevel)
                     iconOv:RegisterForClicks("LeftButtonDown")
-                    local ioBrd = CludesUI.PP.CreateBorder(
+                    local ioBrd = CUI.PP.CreateBorder(
                         iconOv,
                         classColor.r,
                         classColor.g,
@@ -983,7 +984,7 @@ CludesUI.AtOptionsLogin(function()
                 castOverlay:SetAllPoints(preview._cast)
                 castOverlay:SetFrameLevel(castOverlayLevel)
                 castOverlay:RegisterForClicks("LeftButtonDown")
-                local coBrd = CludesUI.PP.CreateBorder(
+                local coBrd = CUI.PP.CreateBorder(
                     castOverlay,
                     classColor.r,
                     classColor.g,
@@ -1095,7 +1096,7 @@ CludesUI.AtOptionsLogin(function()
                     cpBtn:SetPoint("BOTTOMRIGHT", anchorLast, "BOTTOMRIGHT", 2, -2)
                     cpBtn:SetFrameLevel((preview._health and preview._health:GetFrameLevel() or 20) + 15)
                     cpBtn:RegisterForClicks("LeftButtonDown")
-                    local classColor = CludesUI.CLUDES_GREEN
+                    local classColor = CUI.CLUDES_GREEN
                     local function MkCPHL()
                         local tex = cpBtn:CreateTexture(nil, "OVERLAY", nil, 7)
                         tex:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
@@ -1144,7 +1145,7 @@ CludesUI.AtOptionsLogin(function()
                         cpBtn:EnableMouse(not off)
                         cpBtn:SetAlpha(off and 0 or 1)
                     end
-                    CludesUI.RegisterWidgetRefresh(UpdateCPOverlay)
+                    CUI.RegisterWidgetRefresh(UpdateCPOverlay)
                     UpdateCPOverlay()
                 end
             end
@@ -1159,7 +1160,7 @@ CludesUI.AtOptionsLogin(function()
                 arrowBtn:SetPoint("BOTTOMRIGHT", preview._arrows.right, "BOTTOMRIGHT", 2, -2)
                 arrowBtn:SetFrameLevel((preview._health and preview._health:GetFrameLevel() or 20) + 15)
                 arrowBtn:RegisterForClicks("LeftButtonDown")
-                local classColor = CludesUI.CLUDES_GREEN
+                local classColor = CUI.CLUDES_GREEN
                 local function MkAHL()
                     local tex = arrowBtn:CreateTexture(nil, "OVERLAY", nil, 7)
                     tex:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
@@ -1437,21 +1438,21 @@ CludesUI.AtOptionsLogin(function()
     npOptSpecFrame:SetScript("OnEvent", function(_, _, unitToken)
         if unitToken ~= "player" then return end
         -- Only invalidate + rebuild when the panel is open; invalidating while closed destroys all cached pages, causing a blank panel on next open.
-        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
-            CludesUI:InvalidatePageCache()
-            C_Timer.After(0.2, function() CludesUI:RefreshPage(true) end)
+        if CUI._mainFrame and CUI._mainFrame:IsShown() then
+            CUI:InvalidatePageCache()
+            C_Timer.After(0.2, function() CUI:RefreshPage(true) end)
         elseif
-            CludesUI:GetActiveModule() == "CludesUINameplates"
-            and CludesUI:GetActivePage() == PAGE_DISPLAY
+            CUI:GetActiveModule() == "CludesUINameplates"
+            and CUI:GetActivePage() == PAGE_DISPLAY
         then
             -- Closed on the Display page: a spec preset can rewrite the texts, and
             -- a reopen shows the cached page without a restore. RefreshPage only
             -- flags a hidden panel, so the next open rebuilds this page once.
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
         end
     end)
 
-    CludesUI:RegisterModule("CludesUINameplates", {
+    CUI:RegisterModule("CludesUINameplates", {
         title = "Nameplates",
         description = "Custom nameplate design and behavior.",
         pages = { PAGE_DISPLAY, PAGE_COLORS, PAGE_GENERAL },
@@ -1477,15 +1478,15 @@ CludesUI.AtOptionsLogin(function()
                 if optionState._npTextFP and mod.NPO_TextStructureFP() ~= optionState._npTextFP then
                     C_Timer.After(0, function()
                         if
-                            CludesUI:GetActiveModule() == "CludesUINameplates"
-                            and CludesUI:GetActivePage() == PAGE_DISPLAY
+                            CUI:GetActiveModule() == "CludesUINameplates"
+                            and CUI:GetActivePage() == PAGE_DISPLAY
                         then
-                            CludesUI:RefreshPage(true)
+                            CUI:RefreshPage(true)
                         end
                     end)
                 end
                 -- Re-evaluate Set as Default button visibility (cache restore blanket-shows all children, which can ghost the button).
-                local pState = CludesUI._presetState and CludesUI._presetState[""]
+                local pState = CUI._presetState and CUI._presetState[""]
                 if pState and pState.UpdateDefaultBtnState then pState.UpdateDefaultBtnState() end
                 -- Randomize preview values when switching TO this tab
                 RandomizePreviewValues()
@@ -1505,7 +1506,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 -- Set correct header height based on current hint state
                 if _headerBaseH > 0 then
-                    CludesUI:SetContentHeaderHeightSilent(_headerBaseH + (dismissed and 0 or 29))
+                    CUI:SetContentHeaderHeightSilent(_headerBaseH + (dismissed and 0 or 29))
                 end
             elseif pageName == PAGE_COLORS then
                 -- Refresh all color preview bars (colors from DB)
@@ -1514,7 +1515,7 @@ CludesUI.AtOptionsLogin(function()
         end,
         onReset = function()
             -- Invalidate page cache so pages are rebuilt with fresh defaults
-            CludesUI:InvalidatePageCache()
+            CUI:InvalidatePageCache()
             -- Preserve user-saved presets (display + color), Custom presets, AND spec assignments across reset
             local old = PlatesProfile()
             if old then
@@ -1562,7 +1563,7 @@ CludesUI.AtOptionsLogin(function()
 
         if msg == "reset" then
             -- The reload first (RequestReload); the reset below lands before it.
-            CludesUI.RequestReload()
+            CUI.RequestReload()
             local _db = PlatesProfile()
             if _db then
                 local pD = _db._presets
@@ -1596,6 +1597,6 @@ CludesUI.AtOptionsLogin(function()
             return
         end
 
-        CludesUI:ShowModule("CludesUINameplates")
+        CUI:ShowModule("CludesUINameplates")
     end
 end)

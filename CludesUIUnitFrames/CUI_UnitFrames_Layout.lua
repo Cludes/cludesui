@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Layout.lua
 --
@@ -10,7 +11,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, mod = ...
 
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local GetSettingsForUnit, UnitToSettingsKey, unitSettingsKey =
@@ -189,7 +190,7 @@ local function NoNameWidth(key)
 end
 local function EstimateUFTextWidth(contentFrame, customFmt, isRight)
     if contentFrame == "custom" then
-        local TT, category = CludesUI.TextTags, mod.UF_TextTags
+        local TT, category = CUI.TextTags, mod.UF_TextTags
         local parsed = TT.Parse(category, customFmt)
         if not parsed then return UF_TEXT_PADDING end
         return TT.EstimateWidth(category, parsed, not isRight and NoNameWidth or nil) + UF_TEXT_PADDING
@@ -212,7 +213,7 @@ function mod.UF_IsPowerContent(contentFrame, customFmt)
         return true
     end
     if contentFrame ~= "custom" then return false end
-    local parsed = CludesUI.TextTags.Parse(mod.UF_TextTags, customFmt)
+    local parsed = CUI.TextTags.Parse(mod.UF_TextTags, customFmt)
     return parsed ~= nil and parsed.reads.pp == true
 end
 
@@ -340,7 +341,7 @@ end
 
 -- Colors changed (CludesUI.ApplyColorsToOUF): texts are colored once when set,
 -- so the class-colored ones repaint here with the new palette.
-CludesUI._UFRecolorAllTexts = function()
+CUI._UFRecolorAllTexts = function()
     local frameList = Inner.frames
     if not (frameList and saved) then return end
     for unitToken in pairs(unitSettingsKey) do
@@ -421,7 +422,7 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
             -- Secret-safe per-unit power color: player resolves via the clean
             -- string token; non-player units recover it from the clean integer
             -- power type instead of falling back to white.
-            local red, green, blue = CludesUI.ResolveUnitPowerColor(unitToken)
+            local red, green, blue = CUI.ResolveUnitPowerColor(unitToken)
             if red then
                 fontStr:SetTextColor(red, green, blue)
             else
@@ -589,7 +590,7 @@ local function ApplyFramePosition(widget, unitToken)
     -- the +0.5 center offset odd-pixel-dimension frames need for whole-pixel edges);
     -- plain SnapForES rounds the center to whole pixels, forcing edges to half pixels
     -- and causing 1px drift on save/exit, spec swap, or profile change.
-    local PPa = CludesUI and CludesUI.PP
+    local PPa = CUI and CUI.PP
     if PPa and posX and posY then
         local es = widget:GetEffectiveScale()
         local isCenterAnchor = (place.point == "CENTER" or place.point == nil)
@@ -665,7 +666,7 @@ local function UpdateBordersForScale(widget, unitToken)
     if widget.unifiedBorder then
         local bc = prefs.borderColor or { r = 0, g = 0, b = 0 }
         local textureKey = prefs.borderTexture or "solid"
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             widget.unifiedBorder,
             borderSize,
             bc.r,
@@ -680,7 +681,7 @@ local function UpdateBordersForScale(widget, unitToken)
             "unitframes",
             borderSize,
             nil,
-            CludesUI.BorderPx(prefs.borderSizePx, borderSize, textureKey)
+            CUI.BorderPx(prefs.borderSizePx, borderSize, textureKey)
         )
     end
 
@@ -705,7 +706,7 @@ local function UpdateBordersForScale(widget, unitToken)
     local isAttached = pStyle == "attached"
     -- Use the side the frame was actually built with, so frames like the pet that
     -- hard-code "left" are not treated as "right".
-    local pSide = CludesUI._ufPortraitSide[widget] or prefs.portraitSide or "right"
+    local pSide = CUI._ufPortraitSide[widget] or prefs.portraitSide or "right"
     local effectiveSide = pSide
     if isAttached and pSide == "top" then effectiveSide = "right" end
 

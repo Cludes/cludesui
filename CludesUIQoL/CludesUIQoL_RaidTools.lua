@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQoL_RaidTools.lua -- Raid control panels (QoL: Raid Tools page)
 --
@@ -191,7 +192,7 @@ end
 local function SkinPanelBorder(frame)
     local details = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(BORDER_ATLAS)
     if not details then
-        local fallback = CludesUI.MakeBorder(frame, BRD_R, BRD_G, BRD_B, BRD_A, CludesUI.PP)
+        local fallback = CUI.MakeBorder(frame, BRD_R, BRD_G, BRD_B, BRD_A, CUI.PP)
         frame._windowBorder = fallback and fallback._frame
         return
     end
@@ -210,7 +211,7 @@ local function SkinButtonChrome(widget)
     local fillTex = widget:CreateTexture(nil, "BACKGROUND")
     fillTex:SetColorTexture(BTN_R, BTN_G, BTN_B, BTN_A)
     fillTex:SetAllPoints(widget)
-    CludesUI.MakeBorder(widget, BRD_R, BRD_G, BRD_B, BRD_A, CludesUI.PP)
+    CUI.MakeBorder(widget, BRD_R, BRD_G, BRD_B, BRD_A, CUI.PP)
     local hover = widget:CreateTexture(nil, "HIGHLIGHT")
     hover:SetColorTexture(1, 1, 1, 0.1)
     hover:SetAllPoints(widget)
@@ -395,14 +396,14 @@ local function TrackFont(markerOwner, fontStr, size, family)
     return fontStr
 end
 local function ApplyFonts()
-    local filePath = CludesUI.GetFontPath(FONT_KEY)
+    local filePath = CUI.GetFontPath(FONT_KEY)
     if not filePath then return end
     for _, markerOwner in ipairs(fontOwners) do
         local t = markerOwner._fonts
         if t then
             for _, entry in ipairs(t) do
                 if entry.family then
-                    CludesUI.SetFontFamily(entry.fs, filePath, entry.size, "", false)
+                    CUI.SetFontFamily(entry.fs, filePath, entry.size, "", false)
                 else
                     local _, _, flags = entry.fs:GetFont()
                     entry.fs:SetFont(filePath, entry.size, flags or "")
@@ -576,9 +577,9 @@ local function MakeGroupButton(hostFrame, textValue, width, onClick, needsLeader
     local widget = CreateFrame("Button", nil, hostFrame)
     widget:SetSize(width, ROW_H)
     SkinButtonChrome(widget)
-    local labelFS = TrackFont(hostFrame, CludesUI.MakeFont(widget, 11, nil, 1, 1, 1), 11)
+    local labelFS = TrackFont(hostFrame, CUI.MakeFont(widget, 11, nil, 1, 1, 1), 11)
     labelFS:SetPoint("CENTER")
-    if textValue ~= "" then labelFS:SetText(CludesUI.L(textValue)) end
+    if textValue ~= "" then labelFS:SetText(CUI.L(textValue)) end
     widget:SetScript("OnClick", onClick)
     widget._lbl = labelFS
     widget.needsLeader = needsLeader
@@ -684,8 +685,8 @@ local function MakeMarkerButton(hostFrame, index, kindName)
         isActive:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -2, -2)
         isActive:SetHeight(2)
         local ar, ag, ab = 0.30, 0.79, 0.94
-        if CludesUI.GetAccentColor then
-            ar, ag, ab = CludesUI.GetAccentColor()
+        if CUI.GetAccentColor then
+            ar, ag, ab = CUI.GetAccentColor()
         end
         isActive:SetColorTexture(ar, ag, ab, 0.95)
         widget._activeHost = markerOwner
@@ -740,8 +741,8 @@ mod.RT = {
     AddFontOwner = function(markerOwner) fontOwners[#fontOwners + 1] = markerOwner end,
     Text = function(markerOwner, hostFrame, size, red, green, blue)
         local fontStr =
-            TrackFont(markerOwner, CludesUI.MakeFont(hostFrame, size, nil, red, green, blue), size)
-        local filePath = CludesUI.GetFontPath(FONT_KEY)
+            TrackFont(markerOwner, CUI.MakeFont(hostFrame, size, nil, red, green, blue), size)
+        local filePath = CUI.GetFontPath(FONT_KEY)
         if filePath then
             local _, _, flags = fontStr:GetFont()
             fontStr:SetFont(filePath, size, flags or "")
@@ -752,9 +753,9 @@ mod.RT = {
     -- scripts the font lacks (no outline, no shadow, as Text has)
     NameText = function(markerOwner, hostFrame, size, red, green, blue)
         local fontStr = TrackFont(markerOwner, hostFrame:CreateFontString(nil, "OVERLAY"), size, true)
-        CludesUI.SetFontFamily(
+        CUI.SetFontFamily(
             fontStr,
-            CludesUI.GetFontPath(FONT_KEY) or CludesUI.EXPRESSWAY,
+            CUI.GetFontPath(FONT_KEY) or CUI.EXPRESSWAY,
             size,
             "",
             false
@@ -846,7 +847,7 @@ local function RefreshPermissions(force)
     end
 
     if convertButton then
-        convertButton._lbl:SetText(raid and CludesUI.L("Convert to Party") or CludesUI.L("Convert to Raid"))
+        convertButton._lbl:SetText(raid and CUI.L("Convert to Party") or CUI.L("Convert to Raid"))
     end
 end
 
@@ -873,10 +874,10 @@ local function StartPull(seconds)
     local handler = BossModPullHandler()
     if handler then handler(tostring(seconds)) end
     if ChatLocked() then
-        CludesUI.Print(
-            CludesUI.COLOR_CODES.BRAND
+        CUI.Print(
+            CUI.COLOR_CODES.BRAND
                 .. "CludesUI:|r "
-                .. CludesUI.L(
+                .. CUI.L(
                     "In-game countdown unavailable in combat; the boss mod pull timer still started."
                 )
         )
@@ -915,7 +916,7 @@ end
 -- that confirmations use ShowConfirmPopup, and it is the one that inherits the
 -- panel skin and the scale registry.
 local function ConfirmDisband()
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Disband Group",
         message = "Disband the group?",
         confirmText = "Disband",
@@ -997,9 +998,9 @@ local function MakeShell(toolKey)
 
     -- White title, vertically centered in the black band (the skins' title
     -- treatment; the accent stays on interactions, not chrome).
-    local fontStr = TrackFont(frame, CludesUI.MakeFont(frame, 12, nil, 1, 1, 1), 12)
+    local fontStr = TrackFont(frame, CUI.MakeFont(frame, 12, nil, 1, 1, 1), 12)
     fontStr:SetPoint("LEFT", frame, "TOPLEFT", PAD, -TOPBAR_H / 2)
-    fontStr:SetText(CludesUI.L(SECTION_LABEL[toolKey]))
+    fontStr:SetText(CUI.L(SECTION_LABEL[toolKey]))
     shellTitle[toolKey] = fontStr
 
     -- Collapse button: small secure corner control riding the title band,
@@ -1010,7 +1011,7 @@ local function MakeShell(toolKey)
     colour:SetPoint("RIGHT", frame, "TOPRIGHT", -6, -TOPBAR_H / 2)
     colour:RegisterForClicks("AnyDown")
     SkinButtonChrome(colour)
-    local colFs = TrackFont(frame, CludesUI.MakeFont(colour, 14, nil, 1, 1, 1), 14)
+    local colFs = TrackFont(frame, CUI.MakeFont(colour, 14, nil, 1, 1, 1), 14)
     colFs:SetPoint("CENTER", colour, "CENTER", 0, 1)
     colFs:SetText("-")
     colFs:SetAlpha(0.7)
@@ -1143,10 +1144,10 @@ local function BuildMarkersContent()
     -- 8 markers + a clear button per row, evenly spread across the width.
     local step = (PANEL_W - PAD * 2 - MARKER_SZ) / 8
     for region, line in ipairs(MARKER_ROWS) do
-        local labelFS = TrackFont(frame, CludesUI.MakeFont(frame, 9, nil, 1, 1, 1), 9)
+        local labelFS = TrackFont(frame, CUI.MakeFont(frame, 9, nil, 1, 1, 1), 9)
         labelFS:SetAlpha(0.55)
         labelFS:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, posY)
-        labelFS:SetText(CludesUI.L(line.label))
+        labelFS:SetText(CUI.L(line.label))
         posY = posY - MARKER_LBL_H - 2
 
         for index = 0, 8 do
@@ -1171,7 +1172,7 @@ do
     local TIP_PAD, TIP_ROW_GAP, TIP_COL_GAP, TIP_FONT_SIZE = 10, 3, 18, 12
 
     local function SetTipFont(fontStr)
-        local filePath = CludesUI.GetFontPath(FONT_KEY)
+        local filePath = CUI.GetFontPath(FONT_KEY)
         local _, _, flags = fontStr:GetFont()
         if not filePath and GameFontNormal then
             local fallbackPath, _, fallbackFlags = GameFontNormal:GetFont()
@@ -1190,8 +1191,8 @@ do
         local backdrop = tipText:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.97)
-        if CludesUI.PP and CludesUI.PP.CreateBorder then
-            CludesUI.PP.CreateBorder(tipText, 0, 0, 0, 0.9, 1, "OVERLAY", 7)
+        if CUI.PP and CUI.PP.CreateBorder then
+            CUI.PP.CreateBorder(tipText, 0, 0, 0, 0.9, 1, "OVERLAY", 7)
         end
         return tipText
     end
@@ -1225,7 +1226,7 @@ do
             line.right:SetWidth(0)
 
             if index == 1 then
-                line.left:SetText("[" .. CludesUI.L(title) .. "]")
+                line.left:SetText("[" .. CUI.L(title) .. "]")
                 line.right:SetText("")
                 line.right:Hide()
                 line._h = line.left:GetStringHeight() or TIP_FONT_SIZE
@@ -1236,8 +1237,8 @@ do
                 line._h = 4
             else
                 local action = actions[index - 2]
-                line.left:SetText(CludesUI.L(action[1]))
-                line.right:SetText(CludesUI.L(action[2]))
+                line.left:SetText(CUI.L(action[1]))
+                line.right:SetText(CUI.L(action[2]))
                 line.right:Show()
                 line._h = math.max(
                     line.left:GetStringHeight() or TIP_FONT_SIZE,
@@ -1296,7 +1297,7 @@ local function MakeCompactActionButton(hostFrame, labelText, tipBuilder, onClick
     widget:SetSize(COMPACT_ICON, COMPACT_ICON)
     widget:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     widget:SetScript("OnClick", onClick)
-    local fontStr = TrackFont(hostFrame, CludesUI.MakeFont(widget, 11, nil, 1, 1, 1), 11)
+    local fontStr = TrackFont(hostFrame, CUI.MakeFont(widget, 11, nil, 1, 1, 1), 11)
     fontStr:SetPoint("CENTER")
     fontStr:SetText(labelText)
     fontStr:SetAlpha(0.8)
@@ -1618,7 +1619,7 @@ local function LayoutTools()
     elseif displayAs == "one" then
         windowGroup:SetWidth(PANEL_W)
         windowMarkers:SetWidth(PANEL_W)
-        shellTitle.Group:SetText(CludesUI.L(COMBINED_LABEL))
+        shellTitle.Group:SetText(CUI.L(COMBINED_LABEL))
         groupFrame:SetShown(true)
         groupFrame:SetParent(windowGroup)
         groupFrame:ClearAllPoints()
@@ -1639,7 +1640,7 @@ local function LayoutTools()
         windowMarkers:SetWidth(PANEL_W)
         -- Every split mode parents each holder to its own shell; which shells
         -- actually SHOW is ApplyVisibility's call (the enabled attribute).
-        shellTitle.Group:SetText(CludesUI.L(SECTION_LABEL.Group))
+        shellTitle.Group:SetText(CUI.L(SECTION_LABEL.Group))
         groupFrame:SetParent(windowGroup)
         groupFrame:SetShown(true)
         groupFrame:ClearAllPoints()
@@ -1700,15 +1701,15 @@ local function PlaceSection(toolKey, unlockKey, posKey)
     unlockKey = unlockKey or (UNLOCK_KEY .. toolKey)
     posKey = posKey or toolKey
     local position = ((profile and profile.pos) or {})[posKey] or DefaultPos(toolKey)
-    if CludesUI.ApplyCenterPosition and position.point == "CENTER" and position.relPoint == "CENTER" then
+    if CUI.ApplyCenterPosition and position.point == "CENTER" and position.relPoint == "CENTER" then
         -- Skips anchor-linked elements itself, and defers its own combat case for
         -- protected frames. FALSE means it could not resolve a live frame for this key
         -- -- fall through to the plain path, exactly as unlock mode's own caller does.
-        if CludesUI.ApplyCenterPosition(unlockKey, position) then return end
+        if CUI.ApplyCenterPosition(unlockKey, position) then return end
     end
 
     -- Anything not in that convention is a default or a pre-conversion value.
-    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey) then return end
+    if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(unlockKey) then return end
     frame:ClearAllPoints()
     frame:SetPoint(
         position.point,
@@ -1727,7 +1728,7 @@ local function ApplyPositions()
     -- spot -- and because Save & Exit derives the value it stores from the frame's LIVE
     -- bounds, the drag is then written back as the old position and lost for good. Same
     -- guard Action Bars, Aura Reminders and the Cooldown Manager already carry.
-    if CludesUI._unlockActive then return end
+    if CUI._unlockActive then return end
 
     -- Each shell is positioned only when the Show as choice can put it on screen; One
     -- Window and Only Group & Pull ride pos.Group, Only Markers rides pos.Markers.
@@ -2162,7 +2163,7 @@ end
 local unlockRegistered
 local function RegisterUnlock()
     if unlockRegistered then return end
-    local MK = CludesUI.MakeUnlockElement
+    local MK = CUI.MakeUnlockElement
     if not MK then return end
     unlockRegistered = true
 
@@ -2209,9 +2210,9 @@ local function RegisterUnlock()
                 -- raw. Converting here makes both identical --
                 -- ConvertToCenterPos passes an already-CENTER value through
                 -- untouched, so the drag path is unaffected.
-                if CludesUI.ConvertToCenterPos then
+                if CUI.ConvertToCenterPos then
                     anchorPoint, relPoint, posX, posY =
-                        CludesUI.ConvertToCenterPos(unlockKey, anchorPoint, relPoint, posX, posY)
+                        CUI.ConvertToCenterPos(unlockKey, anchorPoint, relPoint, posX, posY)
                 end
                 -- Direct index, no `p.pos = p.pos or {}` reseed: DB_DEFAULTS
                 -- guarantees the table, and under a Spec Overrides capture
@@ -2220,7 +2221,7 @@ local function RegisterUnlock()
                 -- proxy-safe; storing it back is not.
                 if not profile.pos then return end
                 profile.pos[toolKey] = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                if not CludesUI._unlockActive then PlaceSection(toolKey) end
+                if not CUI._unlockActive then PlaceSection(toolKey) end
             end,
             loadPos = function() return ((P() and P().pos) or {})[toolKey] end,
             clearPos = function()
@@ -2256,14 +2257,14 @@ local function RegisterUnlock()
         setWidth = function(_, newW)
             local profile = P()
             if not (profile and newW) then return end
-            local Pix = CludesUI and CludesUI.PP
+            local Pix = CUI and CUI.PP
             profile.compactWidth = math.max(COMPACT_MIN_W, Pix and Pix.Snap(newW) or math.floor(newW + 0.5))
             if sectionList.Group then LayoutTools() end
         end,
         setHeight = function(_, newH)
             local profile = P()
             if not (profile and newH) then return end
-            local Pix = CludesUI and CludesUI.PP
+            local Pix = CUI and CUI.PP
             profile.compactHeight = math.max(COMPACT_MIN_H, Pix and Pix.Snap(newH) or math.floor(newH + 0.5))
             if sectionList.Group then LayoutTools() end
         end,
@@ -2271,12 +2272,12 @@ local function RegisterUnlock()
             if not anchorPoint then return end
             local profile = P()
             if not (profile and profile.pos) then return end
-            if CludesUI.ConvertToCenterPos then
+            if CUI.ConvertToCenterPos then
                 anchorPoint, relPoint, posX, posY =
-                    CludesUI.ConvertToCenterPos(COMPACT_UNLOCK_KEY, anchorPoint, relPoint, posX, posY)
+                    CUI.ConvertToCenterPos(COMPACT_UNLOCK_KEY, anchorPoint, relPoint, posX, posY)
             end
             profile.pos.Compact = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-            if not CludesUI._unlockActive then PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact") end
+            if not CUI._unlockActive then PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact") end
         end,
         loadPos = function() return ((P() and P().pos) or {}).Compact end,
         clearPos = function()
@@ -2289,7 +2290,7 @@ local function RegisterUnlock()
         end,
     })
 
-    if #elementList > 0 then CludesUI:RegisterUnlockElements(elementList, "CludesUIQoL") end
+    if #elementList > 0 then CUI:RegisterUnlockElements(elementList, "CludesUIQoL") end
 end
 
 -- Options-page entry point, and the completion target for combat-deferred work. Every
@@ -2380,28 +2381,28 @@ end
 SLASH_CUIRAIDTOOLS1 = "/cuiraid"
 SlashCmdList["CUIRAIDTOOLS"] = function()
     if ShowMode() == "never" then
-        CludesUI.Print(
-            CludesUI.COLOR_CODES.BRAND
+        CUI.Print(
+            CUI.COLOR_CODES.BRAND
                 .. "CludesUI:|r "
-                .. CludesUI.L("Raid Tools is disabled in the CludesUI options.")
+                .. CUI.L("Raid Tools is disabled in the CludesUI options.")
         )
         return
     end
     if InCombatLockdown() then
-        CludesUI.Print(
-            CludesUI.COLOR_CODES.BRAND
+        CUI.Print(
+            CUI.COLOR_CODES.BRAND
                 .. "CludesUI:|r "
-                .. CludesUI.L("Raid Tools cannot be toggled by slash command in combat -- use the keybind.")
+                .. CUI.L("Raid Tools cannot be toggled by slash command in combat -- use the keybind.")
         )
         return
     end
     -- The snippet would refuse anyway (enabled is false while the gate is
     -- shut); saying so beats a slash command that looks broken.
     if AssistHidden() then
-        CludesUI.Print(
-            CludesUI.COLOR_CODES.BRAND
+        CUI.Print(
+            CUI.COLOR_CODES.BRAND
                 .. "CludesUI:|r "
-                .. CludesUI.L(
+                .. CUI.L(
                     "Raid Tools is hidden in a raid without leader or assist -- none of its buttons work there."
                 )
         )
@@ -2420,8 +2421,8 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    if not (CludesUI and CludesUI.Lite and CludesUI.Lite.NewDB) then return end
-    saved = CludesUI.Lite.NewDB("CludesUIQoLDB", DB_DEFAULTS, true)
+    if not (CUI and CUI.Lite and CUI.Lite.NewDB) then return end
+    saved = CUI.Lite.NewDB("CludesUIQoLDB", DB_DEFAULTS, true)
     _G._CUI_RaidTools_DB = function() return saved end
     Apply()
 end)

@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MapReveal.lua  (WoW Forever only)
 --  Reveal Unexplored Areas: draws the world map overlays the player has not
@@ -145,7 +146,7 @@ local function Apply()
 end
 
 -- Options-page entry points.
-CludesUI._MapReveal = {
+CUI._MapReveal = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Apply,

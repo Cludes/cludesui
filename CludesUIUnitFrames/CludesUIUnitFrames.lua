@@ -1,35 +1,36 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 local GetSpecialization = (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization)
     or GetSpecialization
 local addonName, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewInternals
-        and CludesUI.NewCombatQueue
-        and CludesUI.HideFrame
-        and CludesUI._Pool
-        and CludesUI.AbsorbGlow
-        and CludesUI.SetCraftBatch
-        and CludesUI.FitCastName
-        and CludesUI.CleanCastName
-        and CludesUI.AbbreviateValue
-        and CludesUI.IsZeroValue
-        and CludesUI.UnitNameFormat
-        and CludesUI.OwnSurnameHidden
-        and CludesUI.PadGamepadUI
-        and CludesUI.SetEditModeChildInert
-        and CludesUI.ApplyModuleFontFamily
-        and CludesUI.PadModeOn
-        and CludesUI.UIScaledAlpha
-        and CludesUI.OnUIAlphaChanged
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewInternals
+        and CUI.NewCombatQueue
+        and CUI.HideFrame
+        and CUI._Pool
+        and CUI.AbsorbGlow
+        and CUI.SetCraftBatch
+        and CUI.FitCastName
+        and CUI.CleanCastName
+        and CUI.AbbreviateValue
+        and CUI.IsZeroValue
+        and CUI.UnitNameFormat
+        and CUI.OwnSurnameHidden
+        and CUI.PadGamepadUI
+        and CUI.SetEditModeChildInert
+        and CUI.ApplyModuleFontFamily
+        and CUI.PadModeOn
+        and CUI.UIScaledAlpha
+        and CUI.OnUIAlphaChanged
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Blizzard frame suppression hides through the parent's HideFrame, the player absorb glow line is the parent's AbsorbGlow, the player cast bar's Full Craft Time is the parent's SetCraftBatch, Show Full Spell Name is the parent's FitCastName, the cast name drops the quest-object " - No Text" through its CleanCastName, and the health texts format through the parent's AbbreviateValue, the [absorb:abr] tags blank at zero through its IsZeroValue, and the Name Format asks its UnitNameFormat, the [name:last] and [target:last] tags its OwnSurnameHidden, and the WoW Forever gamepad target menu keeps Blizzard's TargetFrame live through its PadGamepadUI and SetEditModeChildInert, and the frame texts take their font family through its ApplyModuleFontFamily, and the gamepad cast bar hide follows its PadModeOn, and the 3D portraits follow a faded UI through its UIScaledAlpha and OnUIAlphaChanged)
-CludesUI._ModuleNS[addonName] = mod -- LOD options files read this module ns via the registry
+CUI._ModuleNS[addonName] = mod -- LOD options files read this module ns via the registry
 
 local math_floor, math_ceil, math_max, math_min, math_abs =
     math.floor, math.ceil, math.max, math.min, math.abs
@@ -37,15 +38,15 @@ local string_format = string.format
 local issecretvalue = issecretvalue
 -- WoW Forever: no number under 10,000 abbreviates (CludesUI_NumberFormat.lua).
 -- Also on ns for the options preview, whose builder is near its upvalue cap.
-local AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
+local AbbreviateNumbers = (CUI.IS_FOREVER and CUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
 mod.AbbreviateNumbers = AbbreviateNumbers
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 -- "Run once after combat" for the combat-gated deferrals of this addon (all files).
 -- The frame is created in the main chunk, so drained work bills UnitFrames. Keys are
 -- per purpose; PlayerAuraBars prefixes its own with "PAB:".
-mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+mod.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
 
 -- Taint-safe DisableBlizzard override. Stock lib reparents inline via a SetParent
 -- hooksecurefunc; Edit Mode's layout pass calls SetParent on managed containers
@@ -98,7 +99,7 @@ do
         if type(widget) == "string" then widget = _G[widget] end
         if not widget then return end
         widget:UnregisterAllEvents()
-        if not keepShown then CludesUI.HideFrame(widget) end
+        if not keepShown then CUI.HideFrame(widget) end
         if not doNotReparent then
             widget:SetParent(homeParent[widget] or hiddenParent)
             if not hookedFrames[widget] then
@@ -175,7 +176,7 @@ do
         if main and main.ManaBar then main.ManaBar:EnableMouseMotion(false) end
         local auras = targetFrame.GetAuraContainer and targetFrame:GetAuraContainer()
         if auras then auras:Hide() end
-        CludesUI.SetEditModeChildInert(targetFrame.Selection, true)
+        CUI.SetEditModeChildInert(targetFrame.Selection, true)
         mod.UF_TargetMenuOwner = true
     end
 
@@ -189,7 +190,7 @@ do
         elseif unitToken == "target" then
             -- Once kept for the gamepad menu, a repeat call has nothing to do.
             if not mod.UF_TargetMenuOwner then
-                if CludesUI.PadGamepadUI() and TargetFrame then
+                if CUI.PadGamepadUI() and TargetFrame then
                     KeepTargetMenuOwner(TargetFrame)
                 else
                     TakeOverFrame(TargetFrame)
@@ -213,14 +214,14 @@ do
 end
 
 -- Per-addon border texture defaults (size key = borderSize 0-4)
-CludesUI.RegisterBorderDefaults("unitframes", CludesUI.BORDER_DEFAULTS_FRAMES)
+CUI.RegisterBorderDefaults("unitframes", CUI.BORDER_DEFAULTS_FRAMES)
 
 -- Portrait UNIT_MODEL_CHANGED on eventless frames (TargetTarget) triggers UnitIsUnit,
 -- which returns secret booleans in protected instances; we unregister that event after
 -- oUF sets up eventless frames instead of patching the global. See PostCreateTargetTarget.
 
 -- External lookup for portrait side per frame (writing custom props onto oUF frames would taint their secure execution chain).
-CludesUI._ufPortraitSide = CludesUI._ufPortraitSide or setmetatable({}, { __mode = "k" })
+CUI._ufPortraitSide = CUI._ufPortraitSide or setmetatable({}, { __mode = "k" })
 
 local saved
 local defaultSet = {
@@ -307,7 +308,7 @@ local defaultSet = {
         -- Targeting Sound Effects: Blizzard's target / lost-target sounds,
         -- which its parked TargetFrame no longer plays (Lifecycle). On by
         -- default on WoW Forever only.
-        targetSounds = (CludesUI.IS_FOREVER == true) and true or false,
+        targetSounds = (CUI.IS_FOREVER == true) and true or false,
         player = {
             frameWidth = 181,
             healthHeight = 46,
@@ -363,7 +364,7 @@ local defaultSet = {
             namePosition = "left",
             healthTextPosition = "right",
             leftTextContent = "name",
-            rightTextContent = (CludesUI.IS_FOREVER == true) and "perhp" or "both", -- WoW Forever: Health % (retail: Health # | %)
+            rightTextContent = (CUI.IS_FOREVER == true) and "perhp" or "both", -- WoW Forever: Health % (retail: Health # | %)
             leftTextSize = 12,
             leftTextX = 0,
             leftTextY = 0,
@@ -508,13 +509,13 @@ local defaultSet = {
             -- there (Forever combo points belong to the target and Blizzard's
             -- classic ComboFrame cannot follow our target frame); the 8 default
             -- lands at a 3px sliver. Per-client defaults, never seeded.
-            showClassPowerBar = (CludesUI.IS_FOREVER == true) and true or false,
+            showClassPowerBar = (CUI.IS_FOREVER == true) and true or false,
             lockClassPowerToFrame = true,
-            classPowerStyle = (CludesUI.IS_FOREVER == true) and "modern" or "none",
-            classPowerPosition = (CludesUI.IS_FOREVER == true) and "above" or "top",
+            classPowerStyle = (CUI.IS_FOREVER == true) and "modern" or "none",
+            classPowerPosition = (CUI.IS_FOREVER == true) and "above" or "top",
             classPowerBarX = 0,
             classPowerBarY = 0,
-            classPowerSize = (CludesUI.IS_FOREVER == true) and 16 or 8,
+            classPowerSize = (CUI.IS_FOREVER == true) and 16 or 8,
             classPowerSpacing = 2,
             classPowerClassColor = true,
             classPowerCustomColor = { r = 1, g = 0.82, b = 0 },
@@ -524,7 +525,7 @@ local defaultSet = {
             -- resource (the combo point arc) shows -- "target" (the stock
             -- spot), "player" or "never". Player only; nil on every other
             -- client.
-            foreverComboLocation = (CludesUI.IS_FOREVER == true) and "target" or nil,
+            foreverComboLocation = (CUI.IS_FOREVER == true) and "target" or nil,
             borderSize = 1,
             borderColor = { r = 0, g = 0, b = 0 },
             borderTexture = "solid",
@@ -680,8 +681,8 @@ local defaultSet = {
             namePosition = "left",
             healthTextPosition = "right",
             -- WoW Forever shows level and name on the left (retail: name only).
-            leftTextContent = (CludesUI.IS_FOREVER == true) and "levelname" or "name",
-            rightTextContent = (CludesUI.IS_FOREVER == true) and "perhp" or "both", -- WoW Forever: Health % (retail: Health # | %)
+            leftTextContent = (CUI.IS_FOREVER == true) and "levelname" or "name",
+            rightTextContent = (CUI.IS_FOREVER == true) and "perhp" or "both", -- WoW Forever: Health % (retail: Health # | %)
             leftTextSize = 12,
             leftTextX = 0,
             leftTextY = 0,
@@ -797,7 +798,7 @@ local defaultSet = {
             eliteIndicatorPosition = "topleft",
             eliteIndicatorX = 0,
             eliteIndicatorY = 0,
-            eliteIndicatorShowInInstances = (CludesUI.IS_FOREVER == true) and true or false, -- WoW Forever: on
+            eliteIndicatorShowInInstances = (CUI.IS_FOREVER == true) and true or false, -- WoW Forever: on
             eliteIndicatorStyle = "badge", -- "badge" | "pixelsDragon"
             -- A saved "wingless" style and these five keys read as the Portrait
             -- Dragon (ns.UF_DragonSettings) until a setter pins them over.
@@ -1026,7 +1027,7 @@ local defaultSet = {
             castbarIconInWidth = true,
             -- WoW Forever pets have power (hunter pet focus, warlock pet mana), so
             -- the pet frame carries a power bar there (retail: none).
-            powerPosition = (CludesUI.IS_FOREVER == true) and "below" or "none",
+            powerPosition = (CUI.IS_FOREVER == true) and "below" or "none",
             powerHeight = 6,
             powerWidth = 0,
             powerX = 0,
@@ -1120,7 +1121,7 @@ local defaultSet = {
             castBorderBehind = false,
             healthDisplay = "perhp",
             -- WoW Forever shows level and name on the left (retail: name only).
-            leftTextContent = (CludesUI.IS_FOREVER == true) and "levelname" or "name",
+            leftTextContent = (CUI.IS_FOREVER == true) and "levelname" or "name",
             rightTextContent = "perhp",
             leftTextSize = 12,
             leftTextX = 0,
@@ -1507,11 +1508,11 @@ local SOLID_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8X8" }
 -- glyph-restricted locales (CJK/Cyrillic): keeps a SharedMedia font if it can render the
 -- locale's glyphs, else falls back to the system font. Do NOT re-decide locale fallback
 -- locally or locale clients could never use a custom font here.
-local cachedFontPath = (CludesUI.GetFontPath("unitFrames"))
+local cachedFontPath = (CUI.GetFontPath("unitFrames"))
     or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 local cachedFontPaths = {} -- per-unit font cache
 local function ResolveFontPath(unitName)
-    local gPath = CludesUI.GetFontPath("unitFrames")
+    local gPath = CUI.GetFontPath("unitFrames")
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     cachedFontPath = gPath
     for _, uKey in ipairs({ "player", "target", "focus", "boss", "pet", "targettarget", "focustarget" }) do
@@ -1530,7 +1531,7 @@ end
 -- string's face for good, so every font write to these strings goes through
 -- here (or ApplyModuleFontFamily).
 local function SetFSFont(fontStr, size, flags)
-    CludesUI.ApplyModuleFontFamily(fontStr, GetSelectedFont(), size or 12, "unitFrames", flags)
+    CUI.ApplyModuleFontFamily(fontStr, GetSelectedFont(), size or 12, "unitFrames", flags)
 end
 
 -- Shared cast-bar text anchoring (mirrors the nameplate cast text system). Three
@@ -1568,7 +1569,7 @@ end
 
 -- Disable WoW's automatic pixel snapping on a texture (prevents sub-pixel jitter)
 local function UnsnapTex(texture)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix then
         Pix.DisablePixelSnap(texture)
     elseif texture.SetSnapToPixelGrid then
@@ -1578,7 +1579,7 @@ local function UnsnapTex(texture)
 end
 
 -- Health bar texture overlay lookup
-local healthBarTextures, healthBarTextureNames, healthBarTextureOrder = CludesUI.BuildBarTextureTables(true)
+local healthBarTextures, healthBarTextureNames, healthBarTextureOrder = CUI.BuildBarTextureTables(true)
 mod.healthBarTextures = healthBarTextures
 mod.healthBarTextureOrder = healthBarTextureOrder
 mod.healthBarTextureNames = healthBarTextureNames
@@ -1599,7 +1600,7 @@ local function ApplyHealthBarTexture(healthBar, unitName, texKeyOverride)
         local cfg = unitName and saved.profile[unitName]
         texKey = (cfg and cfg.healthBarTexture) or saved.profile.healthBarTexture or "none"
     end
-    local filePath = CludesUI.ResolveTexturePath(healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
+    local filePath = CUI.ResolveTexturePath(healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
     healthBar:SetStatusBarTexture(filePath)
     local hFill = healthBar:GetStatusBarTexture()
     if hFill then UnsnapTex(hFill) end
@@ -1677,7 +1678,7 @@ do
     -- The health fill is opaque: Dark Mode Fill in Dark Mode, else Fill Opacity.
     function mod.UF_HealthOpaque(cfg)
         if mod.UF_DarkThemeOn(cfg) then
-            local _, _, _, fa = CludesUI.GetDarkModeFill()
+            local _, _, _, fa = CUI.GetDarkModeFill()
             return fa >= 1
         end
         return ((cfg and cfg.healthBarOpacity) or 90) >= 100
@@ -1688,7 +1689,7 @@ do
     function mod.UF_TexBgPaths(unitName, cfg, texKey)
         local filePath = cfg
             and mod.UF_TexBgOn(unitName)
-            and CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
+            and CUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
         if not filePath then return nil, nil end
         return mod.UF_HealthOpaque(cfg) and filePath or nil,
             ((cfg.powerBarOpacity or 100) >= 100) and filePath or nil
@@ -1701,7 +1702,7 @@ do
         local own = profile.castBarTexture
         if own and own ~= "inherit" then texKey = own end
         if texKey == "blizzard" or (cfg.castFillOpacity or 100) < 100 then return nil end
-        return CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
+        return CUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
     end
 
     local function PaintTinted(self, red, green, blue, a) self:SetVertexColor(red, green, blue, a) end
@@ -1852,7 +1853,7 @@ mod.ApplyCastBarTexture = function(castBar, texKey)
         return
     end
     local filePath =
-        CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", "Interface\\Buttons\\WHITE8X8")
+        CUI.ResolveTexturePath(healthBarTextures, texKey or "none", "Interface\\Buttons\\WHITE8X8")
     castBar:SetStatusBarTexture(filePath)
     local fillTex = castBar:GetStatusBarTexture()
     if fillTex then
@@ -2142,7 +2143,7 @@ do
             r0r, r0g, r0b = c0.r, c0.g, c0.b
             r50r, r50g, r50b = midColor.r, midColor.g, midColor.b
         end
-        local classColor = CludesUI.GetClassColor(classToken) or GRAY
+        local classColor = CUI.GetClassColor(classToken) or GRAY
         local e = reactiveCurves[classToken]
         if not (e and e.r == classColor.r and e.g == classColor.g and e.b == classColor.b) then
             local colorCurve = C_CurveUtil.CreateColorCurve()
@@ -2230,7 +2231,7 @@ do
     end
 
     function mod.UF_ResolveClassReactiveColor(cfg, classToken, fraction)
-        local classColor = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
+        local classColor = (classToken and CUI.GetClassColor(classToken)) or GRAY
         local c0 = cfg.dynamicColor0 or DEF0
         local midColor = cfg.dynamicColor50 or DEF50
         if fraction >= 0.4 then
@@ -2308,7 +2309,7 @@ local function UF_SecretSafeHealthColor(self, evt, unitToken)
             -- Blizzard's shade. GetClassColorForRestrictedUnit recovers the user's custom
             -- class color for group members with the compare done in C; its r/g/b are secret,
             -- so they go into a scratch ColorMixin (plain field writes) and are never read.
-            local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
+            local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(unitToken, class)
             if success then
                 SECRET_CLASS_COLOR:SetRGB(red, green, blue)
                 rgb = SECRET_CLASS_COLOR
@@ -2357,8 +2358,8 @@ local function ApplyDarkTheme(healthBar, unitToken)
         healthBar.colorTapped = false
         healthBar.colorDisconnected = false
         -- Fill/background from the global per-profile Dark Mode palette.
-        local dfr, dfg, dfb, dfa = CludesUI.GetDarkModeFill()
-        local dbr, dbg, dbb, dba = CludesUI.GetDarkModeBg()
+        local dfr, dfg, dfb, dfa = CUI.GetDarkModeFill()
+        local dbr, dbg, dbb, dba = CUI.GetDarkModeBg()
         healthBar:SetStatusBarColor(dfr, dfg, dfb)
         local darkFillTex = healthBar:GetStatusBarTexture()
         if darkFillTex then darkFillTex:SetAlpha(dfa) end
@@ -2373,7 +2374,7 @@ local function ApplyDarkTheme(healthBar, unitToken)
         -- fill edge. Alpha is NOT re-applied: SetStatusBarColor(r,g,b) with 3 args
         -- preserves texture alpha, so ApplyHealthBarAlpha's value survives oUF recolors.
         healthBar.PostUpdateColor = function(self)
-            local fr, fg, fb = CludesUI.GetDarkModeFill()
+            local fr, fg, fb = CUI.GetDarkModeFill()
             self:SetStatusBarColor(fr, fg, fb)
             if self.bg then AnchorHealthBg(self) end
         end
@@ -2394,7 +2395,7 @@ local function ApplyDarkTheme(healthBar, unitToken)
                 local _, classTok = UnitClass("player")
                 local classColor = classTok
                     and not issecretvalue(classTok)
-                    and CludesUI.GetClassColor(classTok)
+                    and CUI.GetClassColor(classTok)
                 if classColor then healthBar:SetStatusBarColor(classColor.r, classColor.g, classColor.b) end
             end
         end
@@ -2442,7 +2443,7 @@ local function ApplyDarkTheme(healthBar, unitToken)
                 local _, classTok = UnitClass("player")
                 local classColor = classTok
                     and not issecretvalue(classTok)
-                    and CludesUI.GetClassColor(classTok)
+                    and CUI.GetClassColor(classTok)
                 if classColor then
                     bR, bG, bB = classColor.r, classColor.g, classColor.b
                     haveBase = true
@@ -2566,8 +2567,8 @@ mod.ApplyDarkTheme = ApplyDarkTheme
 -- Re-apply dark theme to every frame when the global Dark Mode palette changes
 -- (fill/bg colour + opacity). Class/power darken propagates via ApplyColorsToOUF,
 -- which RefreshDarkMode() calls right after these refreshers.
-if CludesUI.RegisterDarkModeRefresh then
-    CludesUI.RegisterDarkModeRefresh(function()
+if CUI.RegisterDarkModeRefresh then
+    CUI.RegisterDarkModeRefresh(function()
         for _, object in pairs(frameList) do
             local hgt = type(object) == "table" and object.Health
             if hgt then
@@ -2624,7 +2625,7 @@ end
 --- 200-locals cap.
 function mod.VisEffective(cfg)
     if not cfg then return nil end
-    return (CludesUI.VisOverrideValue(cfg)) or cfg.barVisibility
+    return (CUI.VisOverrideValue(cfg)) or cfg.barVisibility
 end
 
 --- True when the unit has no CludesUI frame at all -- the enabledFrames flag, which
@@ -2665,7 +2666,7 @@ end
 --- it answers before InitializeFrames and while a change waits to apply.
 --- On ns for the 200-locals cap.
 function mod.UF_OwnsBlizzClassPower()
-    if CludesUI.IS_FOREVER == true then return false end
+    if CUI.IS_FOREVER == true then return false end
     -- Held right now (runtime), even while the config says otherwise: a style or
     -- source change not applied yet (combat, a pending reload) keeps it ours.
     if mod._ufBlizzCPHeld then return true end
@@ -2728,7 +2729,7 @@ local FOREVER_CLASS_POWER = {
 }
 
 local function ClassPowerEntry(playerClass)
-    if CludesUI.IS_FOREVER == true then return FOREVER_CLASS_POWER[playerClass] end
+    if CUI.IS_FOREVER == true then return FOREVER_CLASS_POWER[playerClass] end
     return CLASS_POWER_TYPES[playerClass]
 end
 
@@ -2736,7 +2737,7 @@ end
 -- every druid on Forever, where there are no specs to tell them apart.
 local function DruidNeedsCatForm(playerClass, powerType)
     if playerClass ~= "DRUID" or powerType ~= Enum.PowerType.ComboPoints then return false end
-    if CludesUI.IS_FOREVER == true then return true end
+    if CUI.IS_FOREVER == true then return true end
     local specInfo = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
     local specID = specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)
     return specID == 104 or specID == 105
@@ -2764,7 +2765,7 @@ end
 -- dbSetters: a file that reads db keeps its own local and adds a setter here,
 -- this file first; CludesUF:OnInitialize (CUI_UnitFrames_Lifecycle.lua)
 -- assigns its own db, then calls SetDB.
-CludesUI.NewInternals(mod, "_internals", {
+CUI.NewInternals(mod, "_internals", {
     frames = frameList,
     GetSettingsForUnit = GetSettingsForUnit,
     UnsnapTex = UnsnapTex,

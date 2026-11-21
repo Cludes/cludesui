@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-local mod = CludesUI._ModuleNS["CludesUIUnitFrames"]
+local CUI = CludesUI
+local mod = CUI._ModuleNS["CludesUIUnitFrames"]
 if not mod then return end
 
 local MOVE_KEYS = {
@@ -33,7 +34,7 @@ function mod.UFO_EditCustomText(prefixText, db, unitToken, onSave)
     -- else the player, as the unit preview shows it.
     local function PowerColor()
         local u = unitToken == "boss" and "boss1" or unitToken
-        local red, green, blue = CludesUI.ResolveUnitPowerColor((u and UnitExists(u)) and u or "player")
+        local red, green, blue = CUI.ResolveUnitPowerColor((u and UnitExists(u)) and u or "player")
         return red and { r = red, g = green, b = blue }
     end
     if prefixText == "powerText" then
@@ -47,7 +48,7 @@ function mod.UFO_EditCustomText(prefixText, db, unitToken, onSave)
     elseif db[prefixText .. "ClassColor"] then
         if unitToken == "player" then
             local _, classTok = UnitClass("player")
-            color = classTok and CludesUI.GetClassColor(classTok)
+            color = classTok and CUI.GetClassColor(classTok)
         else
             color = { r = 0.9, g = 0.3, b = 0.3 }
         end
@@ -58,11 +59,11 @@ function mod.UFO_EditCustomText(prefixText, db, unitToken, onSave)
             b = db[prefixText .. "ColorB"] or 1,
         }
     end
-    CludesUI.TextTags.EditPopup({
+    CUI.TextTags.EditPopup({
         cat = mod.UF_TextTags,
         color = color,
         onSave = onSave,
-        tagNotes = { hp = CludesUI.L("shows DEAD or OFFLINE") },
+        tagNotes = { hp = CUI.L("shows DEAD or OFFLINE") },
         get = function() return db[key] end,
         set = function(txt) db[key] = txt end,
     })
@@ -73,7 +74,7 @@ end
 -- "custom". The menu reads the alpha when it is built, so a selection has
 -- to rebuild it (page rebuild or _invalidateMenu).
 function mod.UFO_CustomTextValues(values, getValue, edit)
-    return CludesUI.TextTags.MenuValues(values, edit, {
+    return CUI.TextTags.MenuValues(values, edit, {
         selected = function() return getValue() == "custom" end,
     })
 end
@@ -89,7 +90,7 @@ function mod.UFO_RefreshMenus(...)
             local dropdown = rgns[idx] and rgns[idx]._control
             if dropdown and dropdown._invalidateMenu then dropdown._invalidateMenu() end
         end
-        local refreshList = CludesUI._widgetRefreshList
+        local refreshList = CUI._widgetRefreshList
         if refreshList then
             for ri = 1, #refreshList do
                 refreshList[ri]()
@@ -135,7 +136,7 @@ end
 function mod.UFO_AddCustomFormatAccessor(region, labelText, prefixText, contentFrame, getDB, apply)
     local fk = prefixText .. "CustomFormat"
     if contentFrame ~= "custom" and type(getDB()[fk]) ~= "string" then return end
-    CludesUI.TextTags.AddFormatAccessor(region, labelText, function() return getDB()[fk] end, function(val)
+    CUI.TextTags.AddFormatAccessor(region, labelText, function() return getDB()[fk] end, function(val)
         getDB()[fk] = val
         apply()
     end)
@@ -146,7 +147,7 @@ function mod.UF_CoreTextRows(prefixText, contentDefault, get, set, rowList)
     rowList = mod.UF_NameFormatRows(prefixText, contentDefault, get, set, rowList)
     local contentFrame = get(prefixText .. "Content", contentDefault)
     local parsed = contentFrame == "custom"
-        and CludesUI.TextTags.Parse(mod.UF_TextTags, get(prefixText .. "CustomFormat"))
+        and CUI.TextTags.Parse(mod.UF_TextTags, get(prefixText .. "CustomFormat"))
     local hasLevel = contentFrame == "level"
         or contentFrame == "levelname"
         or contentFrame == "namelevel"
@@ -245,7 +246,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
     local function Add(key)
         local val = Candidate()
         if Assigned(key) or not byKey[key] or not val then
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
             return
         end
         Notify(key)
@@ -254,7 +255,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
     local function Move(source, dest)
         if source == dest then return end
         if not Assigned(source) or not byKey[dest] or Assigned(dest) then
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
             return
         end
         local db = options.db()
@@ -278,7 +279,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         db[dest .. "Content"], db[source .. "Content"] = contentFrame, "none"
         Notify(dest)
         options.apply()
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
     end
 
     local addOpen
@@ -294,7 +295,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
     }
     cells[#cells + 1] = addCfg
     local function Config(cfg)
-        if not cfg then return CludesUI.BlankRowCfg() end
+        if not cfg then return CUI.BlankRowCfg() end
         return cfg.cfg or cfg
     end
     local firstRow
@@ -303,8 +304,8 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         firstRow = firstRow or row
         local region = row[side]
         if cell == addCfg then
-            if not CludesUI._prebuilding then
-                addOpen = CludesUI.AttachButtonMenu(region._control, {
+            if not CUI._prebuilding then
+                addOpen = CUI.AttachButtonMenu(region._control, {
                     width = 220,
                     order = sequence,
                     values = values,
@@ -316,8 +317,8 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         end
         if not cell.key then return end
         targets[cell.key] = { row = row, side = side }
-        if CludesUI._prebuilding then return end
-        CludesUI.BuildRowLabelMenu(region, {
+        if CUI._prebuilding then return end
+        CUI.BuildRowLabelMenu(region, {
             order = sequence,
             values = values,
             getValue = function() return cell.key end,
@@ -343,8 +344,8 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         if pending and pending.unit == options.unit and pending.key == cell.key then
             mod._ufTextNotify = nil
             -- The slot read now, while this build's cell is its dress.
-            local snap = CludesUI._SOAttribution(region)
-            CludesUI._NotifySettingWrite(region, snap)
+            local snap = CUI._SOAttribution(region)
+            CUI._NotifySettingWrite(region, snap)
         end
     end
     for idx = 1, #cells, 2 do
@@ -354,7 +355,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         Finish(row, "_rightRegion", cells[idx + 1])
     end
     hostFrame._ufTextCells = targets
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         -- Presets/spec changes can alter the list while the page is cached.
         local saved = {}
         for idx = 1, #slots do

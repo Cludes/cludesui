@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_QoL.lua - the quest conveniences.
 --
@@ -48,7 +49,7 @@ local function Skipped(questID, trivial)
     if trivial and Cfg("autoAcceptIgnoreTrivial") then return true end
     if not Cfg("autoAcceptIgnoreOldExpansion") or not questID or questID == 0 then return false end
     if
-        CludesUI.IS_FOREVER
+        CUI.IS_FOREVER
         or C_PlayerInfo.IsPlayerInChromieTime()
         or UnitLevel("player") < GetMaxLevelForPlayerExpansion()
     then

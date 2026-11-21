@@ -1,15 +1,16 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ResourceBars_Options\GCDBarPage_Options.lua
 --  Resource Bars options: GCD Bar page. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
+local mod = CUI._ModuleNS["CludesUIResourceBars"]
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- GCD Bar page
 function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
@@ -18,20 +19,20 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         environ.DB, environ.PP, environ.CLASS_COLORS, environ._clickMappings
     local UpdateGCDPreview = environ.UpdateGCDPreview
     local TexBgRowCfg = environ.TexBgRowCfg
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height
 
     hostFrame._showRowDivider = true
 
     environ.SetGCDPreviewFill(math.random(30, 85) / 100)
-    CludesUI:SetContentHeader(environ._gcdPreviewBuilder)
+    CUI:SetContentHeader(environ._gcdPreviewBuilder)
 
     -- Clear this page's own click mapping (shared table; never from a hidden pre-build)
-    if not CludesUI._prebuilding then _clickMappings.gcdBar = nil end
+    if not CUI._prebuilding then _clickMappings.gcdBar = nil end
 
     -- Re-append SharedMedia textures (catches lazy-registered SM packs)
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         _G._CURB_BarTextureNames or {},
         _G._CURB_BarTextureOrder or {},
         nil,
@@ -60,7 +61,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
 
     local function ApplyGcdBar()
         if _G._CURB_Apply then _G._CURB_Apply() end
-        if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_GCDBar") end
+        if CUI.NotifyElementResized then CUI.NotifyElementResized("ERB_GCDBar") end
         UpdateGCDPreview()
     end
     -- A setting row's getter for one GCD bar key: its value, or default when
@@ -80,21 +81,21 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             if not profile then return end
             profile.gcdBar[key] = val
             ApplyGcdBar()
-            if alsoPage then CludesUI:RefreshPage() end
+            if alsoPage then CUI:RefreshPage() end
         end
     end
 
     local _sec
     _sec, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
     cursorY = cursorY - height
-    CludesUI.BuildSectionUnlockJump(
+    CUI.BuildSectionUnlockJump(
         _sec,
         { key = "ERB_GCDBar", disabled = gcdOff, disabledTooltip = "GCD Bar" }
     )
     local layoutSection = _sec
 
-    local gStrataValues = CludesUI.FRAME_STRATA_LABELS
-    local gStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
+    local gStrataValues = CUI.FRAME_STRATA_LABELS
+    local gStrataOrder = CUI.FRAME_STRATA_ORDER_BASE
 
     -- Row: Enable GCD Bar (+ position cog) | Frame Strata
     local enableRow
@@ -117,9 +118,9 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
     -- Inline position cog (X/Y + unlock) on Enable
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = enableRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function()
                 local profile = DB()
                 return profile and not profile.gcdBar.enabled
@@ -263,8 +264,8 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
     -- Inline cog on Always Show: idle fill appearance
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(gcdShowRow._rightRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(gcdShowRow._rightRegion, {
             title = "Always Show",
             rows = {
                 {
@@ -298,7 +299,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
 
     -- Row: Border Style | Border Size (+ inline color swatch + offset cog)
     do
-        local btValues, btOrder = CludesUI.GetBorderTextureDropdown()
+        local btValues, btOrder = CUI.GetBorderTextureDropdown()
         local bsRow
         bsRow, height = W:DualRow(
             hostFrame,
@@ -319,20 +320,20 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     profile.gcdBar.borderTextureOffsetY = nil
                     profile.gcdBar.borderTextureShiftX = nil
                     profile.gcdBar.borderTextureShiftY = nil
-                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
+                    local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(val)
                     profile.gcdBar.borderR = _bcol.r
                     profile.gcdBar.borderG = _bcol.g
                     profile.gcdBar.borderB = _bcol.b
                     profile.gcdBar.borderA = 1
                     profile.gcdBar.borderBehind = _bbehind
-                    local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
+                    local defSz = CUI.GetBorderDefaultSize("resourcebars", val)
                     if defSz then profile.gcdBar.borderSize = defSz end
                     if profile.gcdBar.borderSizePx then profile.gcdBar.borderSizePx = false end
                     ApplyGcdBar()
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             },
-            CludesUI.BorderPxSliderCfg({
+            CUI.BorderPxSliderCfg({
                 text = "Border Size",
                 disabled = gcdOff,
                 disabledTooltip = "GCD Bar",
@@ -358,7 +359,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 end,
                 apply = function()
                     ApplyGcdBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
         )
@@ -372,7 +373,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     local profile = DB()
                     return profile and (profile.gcdBar.borderSize or 0) or 0
                 end
-                local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                     addonKey = "resourcebars",
                     disabled = gcdOff,
                     disabledTooltip = "GCD Bar",
@@ -404,7 +405,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end,
                     apply = function()
                         ApplyGcdBar()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
                 _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
@@ -413,10 +414,10 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         end
         -- Border color swatch on the size slider (right region); none in the
         -- search pre-build (it indexes nothing, and the row is a stand-in there)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = bsRow._rightRegion
             local control = region._control
-            local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+            local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
                 region,
                 bsRow:GetFrameLevel() + 3,
                 function()
@@ -432,23 +433,23 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     profile.gcdBar.borderR, profile.gcdBar.borderG, profile.gcdBar.borderB, profile.gcdBar.borderA =
                         red, green, blue, a
                     ApplyGcdBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 true,
                 20
             )
             Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
-            local block = CludesUI.NewSwatchBlocker(colorSwatch)
+            local block = CUI.NewSwatchBlocker(colorSwatch)
             block:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         colorSwatch,
-                        CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
+                        CUI.DisabledTooltip("This option requires a Border Size above 0.")
                     )
                 end
             )
-            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function UpdateSwatchState()
                 local profile = DB()
                 local noBorder = not profile or (profile.gcdBar.borderSize or 0) == 0
@@ -460,17 +461,17 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     block:Hide()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 updateSwatch()
                 UpdateSwatchState()
             end)
             UpdateSwatchState()
         end
         -- Offset cog on Border Style (left region), hidden for "solid"
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = bsRow._leftRegion
             local sepValues, sepOrder = mod.ERB_SeparatorArtValues(true)
-            local cogBtn = CludesUI.BuildInlineCog(region, {
+            local cogBtn = CUI.BuildInlineCog(region, {
                 title = "Border Options",
                 rows = {
                     {
@@ -484,7 +485,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             if not profile then return 0 end
                             local val = profile.gcdBar.borderTextureShiftX
                             if val then return val end
-                            local _, _, dsx = CludesUI.GetBorderDefaults(
+                            local _, _, dsx = CUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.gcdBar.borderTexture or "solid",
                                 profile.gcdBar.borderSize or 0
@@ -496,7 +497,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.gcdBar.borderTextureShiftX = val == 0 and nil or val
                             ApplyGcdBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -510,7 +511,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             if not profile then return 0 end
                             local val = profile.gcdBar.borderTextureShiftY
                             if val then return val end
-                            local _, _, _, dsy = CludesUI.GetBorderDefaults(
+                            local _, _, _, dsy = CUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.gcdBar.borderTexture or "solid",
                                 profile.gcdBar.borderSize or 0
@@ -522,7 +523,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.gcdBar.borderTextureShiftY = val == 0 and nil or val
                             ApplyGcdBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -534,7 +535,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.gcdBar.borderBehind = val == false and nil or val
                             ApplyGcdBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     -- Border extensions (0 = off); the cog has no bar-off block.
@@ -611,7 +612,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                                 profile.gcdBar.edgeSepArt = val
                             end
                             ApplyGcdBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -639,7 +640,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     cogBtn:Show()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(UpdateCogVis)
+            CUI.RegisterWidgetRefresh(UpdateCogVis)
             UpdateCogVis()
         end
     end
@@ -696,7 +697,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         red, green, blue, a
                     if profile.gcdBar.classColored then profile.gcdBar.classColored = false end
                     ApplyGcdBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 onClick = function(self)
                     local profile = DB()
@@ -704,7 +705,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     if profile.gcdBar.classColored then
                         profile.gcdBar.classColored = false
                         ApplyGcdBar()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                         return
                     end
                     if self._eabOrigClick then self._eabOrigClick(self) end
@@ -728,7 +729,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     if not profile then return end
                     profile.gcdBar.classColored = true
                     ApplyGcdBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
                     local profile = DB()
@@ -757,9 +758,9 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
     -- Gradient cog on Color
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = colorRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function()
                 local profile = DB()
                 return profile and not profile.gcdBar.enabled
@@ -804,13 +805,13 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             end
         end
         UpdateGradientSwatch()
-        CludesUI.RegisterWidgetRefresh(UpdateGradientSwatch)
+        CUI.RegisterWidgetRefresh(UpdateGradientSwatch)
     end
     -- Background color swatch on the Background slider (right region)
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = colorRow._rightRegion
         local control = region._control
-        local bgSwatch, bgUpdateSwatch = CludesUI.BuildColorSwatch(
+        local bgSwatch, bgUpdateSwatch = CUI.BuildColorSwatch(
             region,
             colorRow:GetFrameLevel() + 3,
             function()
@@ -843,7 +844,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             bgUpdateSwatch()
         end
         UpdateBgSwatch()
-        CludesUI.RegisterWidgetRefresh(UpdateBgSwatch)
+        CUI.RegisterWidgetRefresh(UpdateBgSwatch)
     end
 
     -- Row: Bar Texture | Show Spark
@@ -868,8 +869,8 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
     -- Inline cog on Bar Texture: Textured Background (greyed with the dropdown).
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(gcdTexRow._leftRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(gcdTexRow._leftRegion, {
             disabled = gcdOff,
             disabledTooltip = "GCD Bar",
             title = "Texture Settings",
@@ -890,7 +891,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     -- Click mapping for the preview's hit overlay (never from a hidden pre-build)
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         _clickMappings.gcdBar = { section = layoutSection, target = sizeRow }
     end
 

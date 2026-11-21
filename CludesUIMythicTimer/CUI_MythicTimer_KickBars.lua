@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_KickBars.lua - Kick Tracker bars (Mythic+ Tools).
 --
@@ -35,7 +36,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --------------------------------------------------------------------------------
 local _, ns = ...
 
-local MTWhere, KE, KD = ns.MTWhere, ns.KickEngine, CludesUI.KickData
+local MTWhere, KE, KD = ns.MTWhere, ns.KickEngine, CUI.KickData
 if not (MTWhere and KE and KD) then return end
 
 local db -- the module's settings handle, given by ns.KTB_OnEnable
@@ -48,12 +49,12 @@ end
 local floor, ceil = math.floor, math.ceil
 local GetTime = GetTime
 local GetRaidTargetIndex, SetRaidTargetIconTexture = GetRaidTargetIndex, SetRaidTargetIconTexture
-local PP = CludesUI.PP
+local PP = CUI.PP
 
 -- Font family, outline and shadow are the module's ("mythicTimer"); only
 -- sizes are settings. Rows show player names, so they take a font family
 -- (Cyrillic, Korean and Chinese names draw), never a plain SetFont.
-local function Font(text, size) CludesUI.ApplyModuleFontFamily(text, nil, size, "mythicTimer") end
+local function Font(text, size) CUI.ApplyModuleFontFamily(text, nil, size, "mythicTimer") end
 
 local IMMEDIATE = Enum.StatusBarInterpolation and Enum.StatusBarInterpolation.Immediate or 0
 local ELAPSED = Enum.StatusBarTimerDirection and Enum.StatusBarTimerDirection.ElapsedTime or 0
@@ -230,7 +231,7 @@ local function Style(row, settings)
         barFrame:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
     end
     barFrame:SetStatusBarTexture(
-        CludesUI.ResolveTexturePath(ns.barTextures, settings.texture or "none", WHITE) or WHITE
+        CUI.ResolveTexturePath(ns.barTextures, settings.texture or "none", WHITE) or WHITE
     )
     PP.DisablePixelSnap(barFrame:GetStatusBarTexture())
 
@@ -870,8 +871,8 @@ end
 local function RegisterUnlock()
     if unlockRegistered then return end
     unlockRegistered = true
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = "EMT_KickBars",
             label = "Kick Tracker Bars",
             group = "Mythic+",
@@ -904,7 +905,7 @@ local function RegisterUnlock()
                 local settings = Cfg()
                 if settings and x and y then
                     settings.barPos = { centerX = x, centerY = y }
-                    if not CludesUI._unlockActive then PlaceContainer() end
+                    if not CUI._unlockActive then PlaceContainer() end
                 end
             end,
             loadPos = function()
@@ -928,11 +929,11 @@ local function RegisterUnlock()
         }),
     }, "CludesUIMythicTimer")
 
-    CludesUI:RegisterUnlockModeListener("EMT_KickBars", function(active)
+    CUI:RegisterUnlockModeListener("EMT_KickBars", function(active)
         if not Enabled(Cfg()) then return end
         -- Sample rows while placing; live rows again on leaving.
         ns.KTB_SetPreview(active == true)
-        if not CludesUI.IsUnlockAnchored("EMT_KickBars") then PlaceContainer() end
+        if not CUI.IsUnlockAnchored("EMT_KickBars") then PlaceContainer() end
     end)
 end
 

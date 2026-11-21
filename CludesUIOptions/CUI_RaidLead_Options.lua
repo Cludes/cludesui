@@ -1,16 +1,17 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidLead_Options.lua
 --  The Raid Lead page of the CludesUI settings panel: the setup manager's
 --  buttons. Each one runs the same code as its /raidlead command.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIRaidLead"
-local mod = CludesUI._ModuleNS[ADDON_NAME]
+local mod = CUI._ModuleNS[ADDON_NAME]
 if not mod then return end
 
 local PAGE = "Setup"
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     local function Run(cmd)
         return function()
             if mod.Command then mod.Command(cmd) end
@@ -18,11 +19,11 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildPage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         _, height = W:SectionHeader(hostFrame, "RAID GROUPS", cursorY)
         cursorY = cursorY - height
@@ -252,17 +253,17 @@ CludesUI.AtOptionsLogin(function()
     local PAGE_NICKNAMES = "Nicknames"
 
     local function Refresh()
-        CludesUI:InvalidatePageCache()
-        CludesUI:RefreshPage(true)
+        CUI:InvalidatePageCache()
+        CUI:RefreshPage(true)
     end
 
     local function BuildTrackingPage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
         local im, pace = mod.ImmunitySettings(), mod.PaceSettings()
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         _, height = W:SectionHeader(hostFrame, "IMMUNITIES ON YOU", cursorY)
         cursorY = cursorY - height
@@ -547,11 +548,11 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildNicknamesPage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         _, height = W:SectionHeader(hostFrame, "NICKNAMES", cursorY)
         cursorY = cursorY - height
@@ -581,9 +582,9 @@ CludesUI.AtOptionsLogin(function()
             width = 90,
             tooltip = 'One "Character=Nickname" per line.',
             onClick = function()
-                CludesUI:ShowImportPopup(function(str)
+                CUI:ShowImportPopup(function(str)
                     local num = mod.ImportNicknames(str)
-                    CludesUI.Print(
+                    CUI.Print(
                         ("|cff4cc9f0Raid Lead:|r added %d nickname%s."):format(num, num == 1 and "" or "s")
                     )
                     Refresh()
@@ -601,11 +602,11 @@ CludesUI.AtOptionsLogin(function()
     local PAGE_REMINDERS = "Reminders"
 
     local function Redraw()
-        CludesUI:InvalidatePageCache()
-        CludesUI:RefreshPage(true)
+        CUI:InvalidatePageCache()
+        CUI:RefreshPage(true)
     end
     mod.OnSharedChanged = function()
-        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then Redraw() end
+        if CUI._mainFrame and CUI._mainFrame:IsShown() then Redraw() end
     end
 
     local function Summary(textValue)
@@ -621,12 +622,12 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildRemindersPage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
         local r = mod.ReminderSettings()
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         _, height = W:SectionHeader(hostFrame, "REMINDERS", cursorY)
         cursorY = cursorY - height
@@ -726,7 +727,7 @@ CludesUI.AtOptionsLogin(function()
                 width = 90,
                 tooltip = "Paste a note from wowutils, wowaudit or a Method Raid Tools note.",
                 onClick = function()
-                    CludesUI:ShowImportPopup(function(str)
+                    CUI:ShowImportPopup(function(str)
                         note.text = str or ""
                         Redraw()
                     end, "Reminders for " .. note.boss, "Paste the note, then press Save")
@@ -739,7 +740,7 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Runs the note as if the boss was pulled now. Lines for you appear on screen.",
                 onClick = function()
                     local num, skipped = mod.RunNote(note.text)
-                    CludesUI.Print(
+                    CUI.Print(
                         ("|cff4cc9f0Raid Lead:|r testing %s: %d reminder%s for you%s."):format(
                             note.boss,
                             num,
@@ -804,8 +805,8 @@ CludesUI.AtOptionsLogin(function()
 
     local function Rebuild()
         mod.RebuildAuraSounds()
-        CludesUI:InvalidatePageCache()
-        CludesUI:RefreshPage(true)
+        CUI:InvalidatePageCache()
+        CUI:RefreshPage(true)
     end
 
     local soundValues, soundOrder = {}, {}
@@ -826,12 +827,12 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildSoundsPage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
         local entries = mod.RaidLeadDB().sounds
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         _, height = W:SectionHeader(hostFrame, "AURA SOUNDS", cursorY)
         cursorY = cursorY - height
@@ -906,7 +907,7 @@ CludesUI.AtOptionsLogin(function()
         return math.abs(cursorY)
     end
 
-    CludesUI:RegisterModule(ADDON_NAME, {
+    CUI:RegisterModule(ADDON_NAME, {
         title = "Raid Lead",
         description = "Tools for raid leaders: sort or split the raid, and sounds for auras on you.",
         pages = { PAGE, PAGE_REMINDERS, PAGE_TRACKING, PAGE_SOUNDS, PAGE_NICKNAMES },

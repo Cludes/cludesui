@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_StockStyles.lua
 --
@@ -10,7 +11,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, mod = ...
 
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local frameList, GetSettingsForUnit, UnsnapTex = Inner.frames, Inner.GetSettingsForUnit, Inner.UnsnapTex
@@ -519,7 +520,7 @@ function mod.UF_Style()
         -- The WoW Forever variant of Blizzard Style, latched with it: the
         -- Forever client, Blizzard Style, and the sibling useForeverStyle
         -- flag set together with the Blizzard one.
-        mod._ufForever = val == "blizzard" and CludesUI.IS_FOREVER == true and profile.useForeverStyle == true
+        mod._ufForever = val == "blizzard" and CUI.IS_FOREVER == true and profile.useForeverStyle == true
         if val == "classic" then mod.UF_BLIZZ = mod.UF_KITS.classic end
         if mod._ufForever then mod.UF_BLIZZ = mod.UF_ForeverKit() end
     end
@@ -537,7 +538,7 @@ end
 -- has no Blizzard class resource bar to adopt, so a saved "blizzard" builds
 -- as modern there. Read-side only: the saved style is never rewritten.
 -- nil on every other client (readers test the field).
-if CludesUI.IS_FOREVER == true then
+if CUI.IS_FOREVER == true then
     -- Rogues under the CludesUI look keep a class resource style of their
     -- own, hidden until picked, so a rogue's choice
     -- and the other classes' player.classPowerStyle never overwrite each
@@ -735,18 +736,18 @@ end
 -- Plain textures only (never a mask or a StatusBar fill).
 function mod.UF_StockAtlas(texture, name, ...)
     if mod.UF_Forever() then return texture:SetAtlas(name, ...) end
-    return CludesUI.StockAtlas(texture, name, ...)
+    return CUI.StockAtlas(texture, name, ...)
 end
 function mod.UF_StockAtlasInfo(name)
     if mod.UF_Forever() then return C_Texture.GetAtlasInfo(name) end
-    return CludesUI.StockAtlasInfo(name)
+    return CUI.StockAtlasInfo(name)
 end
 -- Bar and portrait masks the same way: the stock looks take the retail
 -- masks on the Forever client (it redrew them under the retail names), the
 -- WoW Forever look the client's own.
 function mod.UF_StockMask(maskTex, name, useSize)
     if mod.UF_Forever() then return maskTex:SetAtlas(name, useSize) end
-    return CludesUI.StockMask(maskTex, name, useSize)
+    return CUI.StockMask(maskTex, name, useSize)
 end
 -- A kit bar's mask on `bar`: the stock mask at its own size, or at the size
 -- the kit stretches it to (mw x mh), hung from the bar's top-left. B.maskFile:
@@ -787,7 +788,7 @@ end
 -- Idempotent (the seat memoizes on the rect and scale).
 function mod.UF_SeatClassicCastFrame(texture, barFrame, hgt, pct)
     local CK = mod.UF_BLIZZ.cast
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     if not (texture and barFrame and CK and CF) then return end
     if not mod.UF_ArtOK(CK.frame) then
         texture:Hide()
@@ -956,7 +957,7 @@ end
 -- aura stack below is never read (see the block). Chained in front of any
 -- provider installed before this file loaded (ns fields, like the rest of
 -- this file).
-mod._ufPrevAnchorExtent = CludesUI._GetAnchorTargetExtent
+mod._ufPrevAnchorExtent = CUI._GetAnchorTargetExtent
 mod._ufAnchorKeys = {
     player = true,
     target = true,
@@ -966,7 +967,7 @@ mod._ufAnchorKeys = {
     focustarget = true,
     boss = true,
 }
-CludesUI._GetAnchorTargetExtent = function(targetKey, edgeSide)
+CUI._GetAnchorTargetExtent = function(targetKey, edgeSide)
     if mod._ufAnchorKeys[targetKey] and mod.UF_Blizz() then
         local frame = (targetKey == "boss") and frameList.boss1 or frameList[targetKey]
         local left, right, top, bottom = mod.UF_BlizzVis(frame)
@@ -991,8 +992,8 @@ end
 -- to the BOTTOM of its frame anchors to the frame's aura block instead of an
 -- absolute position (its offsets stay edge-to-edge from the visible art's
 -- bottom, the block's resting edge), so it rides the aura stack engine-side.
-mod._ufPrevAnchorFollow = CludesUI._GetAnchorFollowFrame
-CludesUI._GetAnchorFollowFrame = function(childKey, targetKey, edgeSide)
+mod._ufPrevAnchorFollow = CUI._GetAnchorFollowFrame
+CUI._GetAnchorFollowFrame = function(childKey, targetKey, edgeSide)
     -- Inert in unlock mode: a bar on the block reports a SECRET rect (the
     -- container's geometry is secret-wrapped), which the movers must read, so
     -- the bar sits at its resting spot there and re-attaches on the exit
@@ -1000,7 +1001,7 @@ CludesUI._GetAnchorFollowFrame = function(childKey, targetKey, edgeSide)
     if
         edgeSide == "BOTTOM"
         and mod.UF_Blizz()
-        and not CludesUI._unlockActive
+        and not CUI._unlockActive
         and childKey == CastbarUnlockKey(targetKey)
     then
         -- Only a holder created with the layout aspect may hang off the block.
@@ -1781,7 +1782,7 @@ function mod.UF_BlizzLevelPass(widget)
     local lt = widget.LeftText
     if lt then
         local fo = lt:GetFontObject()
-        local source = (fo and CludesUI._fontFamilySet[fo] and fo:GetFontObjectForAlphabet("roman")) or lt
+        local source = (fo and CUI._fontFamilySet[fo] and fo:GetFontObjectForAlphabet("roman")) or lt
         local face, size, flags = source:GetFont()
         if face then
             if fo then fontStr:SetFontObject(fo) end
@@ -2098,7 +2099,7 @@ function mod.UF_ApplyBlizzCastbar(callback)
         -- A bar texture, not frame chrome: the retail background under
         -- Blizzard Style, WoW Forever included.
         local bgAtlas = mod.UF_BlizzAtlas(mod.UF_CAST_BLIZZ.bg)
-        if bgAtlas then CludesUI.StockAtlas(owner._bgTex, bgAtlas) end
+        if bgAtlas then CUI.StockAtlas(owner._bgTex, bgAtlas) end
         owner._bgTex:ClearAllPoints()
         owner._bgTex:SetPoint("TOPLEFT", owner, "TOPLEFT", -1, 1)
         owner._bgTex:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", 1, -1)
@@ -2221,7 +2222,7 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
         local posKey = unitToken:match("^boss%d$") and "boss" or unitToken
         if
             (posKey ~= "boss" or unitToken == "boss1")
-            and not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(posKey))
+            and not (CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(posKey))
         then
             ApplyFramePosition(widget, posKey)
         end
@@ -2233,9 +2234,9 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
         if
             math.abs(prevScale - sc) > 0.001
             and (posKey ~= "boss" or unitToken == "boss1")
-            and CludesUI.ReapplyMatchPads
+            and CUI.ReapplyMatchPads
         then
-            CludesUI.ReapplyMatchPads(posKey)
+            CUI.ReapplyMatchPads(posKey)
         end
     end
     if widget._barClip then

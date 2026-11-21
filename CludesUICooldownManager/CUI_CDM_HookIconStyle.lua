@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookIconStyle.lua
 --
@@ -21,7 +22,7 @@ local hookFrameData, ResolveSpellSettings = Inner.hookFrameData, Inner.ResolveSp
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot, so nothing written to that slot later reaches the live icons.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 -------------------------------------------------------------------------------
 --  Active aura cache (consumed by bar glow overlays)

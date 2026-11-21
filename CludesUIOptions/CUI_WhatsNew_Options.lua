@@ -1,16 +1,17 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- Patch Notes page builder; its content table stays in CUI__General_Options.lua.
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
-local PoolKeep, PoolGen = CludesUI._Pool.Keep, CludesUI._Pool.Gen
+local CreateFrame = CUI._Pool.CreateFrame
+local PoolKeep, PoolGen = CUI._Pool.Keep, CUI._Pool.Gen
 
 -- An accent-coloured piece repaints itself (paint(r, g, b)) when the accent
 -- changes. Keyed by the piece: the page pool forgets the entry when it resets
 -- it, and the kept Legends page registers each piece once.
-local function OnAccent(object, paint) CludesUI.RegAccent({ type = "callback", obj = object, fn = paint }) end
+local function OnAccent(object, paint) CUI.RegAccent({ type = "callback", obj = object, fn = paint }) end
 
 -------------------------------------------------------------------------------
 --  What's New page -- one expandable card per patch (the shared module card),
@@ -25,13 +26,13 @@ local function OnAccent(object, paint) CludesUI.RegAccent({ type = "callback", o
 -------------------------------------------------------------------------------
 local whatsNewOpen = {}
 local NOTES_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\sidebar\\notes-off.png"
-function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
-    local Pix = CludesUI.PanelPP
-    local ACC = CludesUI.CLUDES_GREEN
-    local PAD = CludesUI.CONTENT_PAD
-    local W = CludesUI.Widgets
-    local MakeFont = CludesUI.MakeFont
-    local MakeBorder = CludesUI.MakeBorder
+function CUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
+    local Pix = CUI.PanelPP
+    local ACC = CUI.CLUDES_GREEN
+    local PAD = CUI.CONTENT_PAD
+    local W = CUI.Widgets
+    local MakeFont = CUI.MakeFont
+    local MakeBorder = CUI.MakeBorder
 
     -- This page is a free-form feed, not a DualRow split layout.
     hostFrame._showRowDivider = nil
@@ -48,17 +49,17 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     -- from one retail patch on (`patch = "12.1.5"`), so the note text itself
     -- never has to say where it applies. Sorting stays by module, so a
     -- module's lines sit together whatever their tag.
-    local FOREVER_TAG = "|cffdca77f" .. CludesUI.L("WoW Forever") .. "|r - "
-    local RETAIL_TAG = CludesUI.IS_FOREVER and ("|cff74b9ff" .. CludesUI.L("Retail") .. "|r - ") or nil
+    local FOREVER_TAG = "|cffdca77f" .. CUI.L("WoW Forever") .. "|r - "
+    local RETAIL_TAG = CUI.IS_FOREVER and ("|cff74b9ff" .. CUI.L("Retail") .. "|r - ") or nil
     local function PrefixOf(e)
         local tag = (e.forever and FOREVER_TAG)
             or (e.retail and RETAIL_TAG)
             or (e.patch and ("|cffa88bff" .. e.patch .. "|r - "))
             or ""
-        return tag .. ((e.module and CludesUI.L(e.module) .. ": ") or "")
+        return tag .. ((e.module and CUI.L(e.module) .. ": ") or "")
     end
     -- Display title: "Module: Title" (see PrefixOf).
-    local function TitleOf(e) return PrefixOf(e) .. (CludesUI.L(e.title) or "") end
+    local function TitleOf(e) return PrefixOf(e) .. (CUI.L(e.title) or "") end
 
     -- Stable sort by module display name; preserves authored order per module.
     local function SortByModule(entries)
@@ -86,14 +87,14 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     -- A module that is off (or not on this client) has no page to open, and the
     -- nav's preSelect may call that module's own setters; such a card renders static.
     local function NavTarget(nav)
-        if nav and nav.module and CludesUI:GetModuleTitle(nav.module) then return nav end
+        if nav and nav.module and CUI:GetModuleTitle(nav.module) then return nav end
     end
 
     -- Deep-link to a setting (opens the page; highlights the control if mapped).
     local function GoTo(nav)
         nav = NavTarget(nav)
         if nav then
-            CludesUI:NavigateToElementSettings(
+            CUI:NavigateToElementSettings(
                 nav.module,
                 nav.page,
                 nav.section,
@@ -110,7 +111,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         Pix.Point(cardFrame, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy)
         cardFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
 
-        local brd = CludesUI.MakeRoundedCard(cardFrame, 0.12, 0.50, 2)
+        local brd = CUI.MakeRoundedCard(cardFrame, 0.12, 0.50, 2)
         local backdrop, accent = brd.bg, brd.accent
 
         accent:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.6)
@@ -130,7 +131,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         descFs:SetJustifyH("LEFT")
         descFs:SetJustifyV("TOP")
         descFs:SetWordWrap(true)
-        descFs:SetText(CludesUI.L(record.desc) or "")
+        descFs:SetText(CUI.L(record.desc) or "")
 
         -- Clickable only with a nav target. No nav renders a static card: no hover lift, no click, mouse disabled so nothing invites a dead click.
         if record.onClick or NavTarget(record.nav) then
@@ -168,7 +169,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         Pix.Point(cardFrame, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy)
         cardFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
 
-        local brd = CludesUI.MakeRoundedCard(cardFrame, 0.15, 0.92, 2)
+        local brd = CUI.MakeRoundedCard(cardFrame, 0.15, 0.92, 2)
         local backdrop, accent = brd.bg, brd.accent
 
         -- Per-entry accent (entry.accent = {r,g,b}); the theme accent otherwise.
@@ -223,7 +224,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         Pix.Point(eyebrow, "TOP", cardFrame, "TOP", 0, -18)
         eyebrow:SetJustifyH("CENTER")
         eyebrow:SetWordWrap(false)
-        eyebrow:SetText(CludesUI.L(record.eyebrow or "SPECIAL UPDATE"))
+        eyebrow:SetText(CUI.L(record.eyebrow or "SPECIAL UPDATE"))
 
         -- Headline: banner titles stand alone (no "Module:" prefix), rendered
         -- LARGE like popup headlines -- or a logo texture stands in for the
@@ -243,7 +244,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             Pix.Point(titleFs, "TOP", eyebrow, "BOTTOM", 0, -8)
             titleFs:SetJustifyH("CENTER")
             titleFs:SetWordWrap(false)
-            titleFs:SetText(CludesUI.L(record.title) or "")
+            titleFs:SetText(CUI.L(record.title) or "")
             headline, headH = titleFs, 24
         end
 
@@ -254,7 +255,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         descFs:SetJustifyH("CENTER")
         descFs:SetJustifyV("TOP")
         descFs:SetWordWrap(true)
-        descFs:SetText(CludesUI.L(record.desc) or "")
+        descFs:SetText(CUI.L(record.desc) or "")
 
         local dh = math.ceil(descFs:GetStringHeight() or 14)
         local bh = 18 + 11 + 8 + headH + 10 + dh + 28
@@ -306,7 +307,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         Pix.Point(subFs, "RIGHT", row, "RIGHT", -10, 0)
         subFs:SetJustifyH("LEFT")
         subFs:SetWordWrap(false)
-        subFs:SetText(CludesUI.L(record.desc) or "")
+        subFs:SetText(CUI.L(record.desc) or "")
 
         -- Clickable only with a nav target (see MakeHeroCard); else static.
         if record.onClick or NavTarget(record.nav) then
@@ -351,7 +352,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     -- A tier's title (already localized) inside a patch card: the section label
     -- colour and a faint rule under it, inset with the card's content.
     local function TierHeader(host, posX, cy, wid, textValue)
-        local ts = CludesUI.TEXT_SECTION
+        local ts = CUI.TEXT_SECTION
         local labelText = MakeFont(host, 12, nil, ts.r, ts.g, ts.b, ts.a)
         Pix.Point(labelText, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy - 16)
         labelText:SetText(textValue)
@@ -363,11 +364,11 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         return 40
     end
 
-    local patches = CludesUI._WHATSNEW_PATCHES
+    local patches = CUI._WHATSNEW_PATCHES
     if not patches or #patches == 0 then
         local none = MakeFont(hostFrame, 13, nil, 1, 1, 1, 0.5)
         Pix.Point(none, "TOPLEFT", hostFrame, "TOPLEFT", PAD, cursorY - 20)
-        none:SetText(CludesUI.L("No patch notes yet."))
+        none:SetText(CUI.L("No patch notes yet."))
         return math.abs(cursorY) + 60
     end
 
@@ -376,7 +377,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     local hint = MakeFont(hostFrame, 14, nil, 1, 1, 1, 0.5)
     Pix.Point(hint, "TOP", hostFrame, "TOP", 0, cursorY)
     hint:SetJustifyH("CENTER")
-    hint:SetText(CludesUI.L("Click any new feature to go directly to the setting"))
+    hint:SetText(CUI.L("Click any new feature to go directly to the setting"))
 
     -- "New Patch Reminder Dot" opt-out for the pulsing sidebar dot shown when the account version increases (Patch Notes button in CludesUI.lua).
     do
@@ -389,14 +390,14 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.088, 0.098, 0.111, 1)
-        local boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.25, boxBg)
+        local boxBrd = CUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.25, boxBg)
         local check = boxFrame:CreateTexture(nil, "ARTWORK")
         Pix.Point(check, "TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
         Pix.Point(check, "BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
-        CludesUI.RoundBody(boxFrame, check, 1)
+        CUI.RoundBody(boxFrame, check, 1)
         local labelFS = MakeFont(row, 12, nil, 1, 1, 1, 0.5)
         Pix.Point(labelFS, "LEFT", boxFrame, "RIGHT", 7, 0)
-        labelFS:SetText(CludesUI.L("New Patch Reminder Dot"))
+        labelFS:SetText(CUI.L("New Patch Reminder Dot"))
         row:SetSize(BOX + 10 + (labelFS:GetStringWidth() or 130), 20)
         Pix.Point(row, "TOPRIGHT", hostFrame, "TOPRIGHT", -PAD, cursorY + 2)
         local function Paint()
@@ -415,20 +416,20 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.patchDotDisabled = (not CludesUIDB.patchDotDisabled) and true or nil
             Paint()
-            if CludesUI._UpdatePatchDot then CludesUI._UpdatePatchDot() end
+            if CUI._UpdatePatchDot then CUI._UpdatePatchDot() end
         end)
         row:SetScript("OnEnter", function(self)
             labelFS:SetAlpha(0.85)
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
-                CludesUI.L(
+                CUI.L(
                     "Show a pulsing dot on the Patch Notes button whenever CludesUI updates to a new version."
                 )
             )
         end)
         row:SetScript("OnLeave", function()
             labelFS:SetAlpha(0.5)
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
     end
 
@@ -480,7 +481,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         -- Tier 2: small listings.
         local feats = SortByModule(patch.features or {})
         if #feats > 0 then
-            cy = cy - TierHeader(host, innerX, cy, innerW, CludesUI.L("ADDITIONAL FEATURES"))
+            cy = cy - TierHeader(host, innerX, cy, innerW, CUI.L("ADDITIONAL FEATURES"))
             cy = cy - 5 -- extra spacing below the divider
             for _, f in ipairs(feats) do
                 local rh = MakeListing(innerX, cy, innerW, f)
@@ -493,12 +494,12 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         local fixes = SortByModule(patch.fixes or {})
         if #fixes > 0 then
             if not isMini or #feats > 0 then
-                cy = cy - TierHeader(host, innerX, cy, innerW, CludesUI.L("BUG FIXES"))
+                cy = cy - TierHeader(host, innerX, cy, innerW, CUI.L("BUG FIXES"))
                 cy = cy - 10 -- extra spacing below the divider
             end
             for _, fx in ipairs(fixes) do
                 local fh =
-                    MakeFixLine(host, innerX, PAD + INSET, cy, PrefixOf(fx) .. (CludesUI.L(fx.text) or ""))
+                    MakeFixLine(host, innerX, PAD + INSET, cy, PrefixOf(fx) .. (CUI.L(fx.text) or ""))
                 cy = cy - fh
             end
         end
@@ -520,10 +521,10 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         end
         local featN, fixN = #(patch.features or {}), #(patch.fixes or {})
         local parts = {}
-        if patch.mini then parts[#parts + 1] = CludesUI.L("Mini Patch") end
-        if heroN > 0 then parts[#parts + 1] = CludesUI.L("Major Features") .. ": " .. heroN end
-        if featN > 0 then parts[#parts + 1] = CludesUI.L("Additional Features") .. ": " .. featN end
-        if fixN > 0 then parts[#parts + 1] = CludesUI.L("Bug Fixes") .. ": " .. fixN end
+        if patch.mini then parts[#parts + 1] = CUI.L("Mini Patch") end
+        if heroN > 0 then parts[#parts + 1] = CUI.L("Major Features") .. ": " .. heroN end
+        if featN > 0 then parts[#parts + 1] = CUI.L("Additional Features") .. ": " .. featN end
+        if fixN > 0 then parts[#parts + 1] = CUI.L("Bug Fixes") .. ": " .. fixN end
         local tile = {
             key = patch.version or pi,
             display = "CludesUI " .. (patch.version or ""),
@@ -531,7 +532,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             buildContent = function(_, cy) return BuildPatchContent(patch, cy) end,
         }
         local newest = pi == 1
-        cursorY = CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
+        cursorY = CUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
             enabled = true,
             expanded = whatsNewOpen,
             descW = 560,
@@ -557,7 +558,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
                 local tag = MakeFont(tile._hdr, 11, nil, ACC.r, ACC.g, ACC.b, 0.9)
                 OnAccent(tag, function(red, green, blue) tag:SetTextColor(red, green, blue, 0.9) end)
                 Pix.Point(tag, "LEFT", title, "RIGHT", 10, 0)
-                tag:SetText(CludesUI.L("Latest"))
+                tag:SetText(CUI.L("Latest"))
             end
         end
     end

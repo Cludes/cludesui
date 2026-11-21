@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Totem.lua
 --
@@ -36,7 +37,7 @@ local function TotemCfg() return ERB.db and ERB.db.profile and ERB.db.profile.to
 -- and back. Reading through one helper keeps the stored value intact and stops layout
 -- and unlock mode's menu from disagreeing. Unset (every existing profile) resolves to
 -- the orientation default, reproducing the pre-setting layout exactly.
-function CludesUI.GetTotemGrowDir()
+function CUI.GetTotemGrowDir()
     local tb = TotemCfg()
     local vertical = tb and tb.orientation == "VERTICAL"
     local direction = (tb and tb.growDirection or (vertical and "DOWN" or "RIGHT")):upper()
@@ -72,7 +73,7 @@ local function PlaceTotemBar()
     if not tb or not tb.enabledClasses then return end
 
     local spacing = tb.spacing or 2
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix and Pix.Snap then spacing = Pix.Snap(spacing) end
     local iconSize = tb.iconSize or 30
     local vertical = (tb.orientation == "VERTICAL")
@@ -87,7 +88,7 @@ local function PlaceTotemBar()
     TotemFrame:SetFrameStrata(tb.frameStrata or "MEDIUM")
     -- Effective grow direction, resolved through the shared helper below so the
     -- layout and unlock mode's menu can never disagree about it.
-    local _growDir = CludesUI.GetTotemGrowDir()
+    local _growDir = CUI.GetTotemGrowDir()
     TotemFrame:ClearAllPoints()
     if vertical then
         TotemFrame:SetPoint(
@@ -155,7 +156,7 @@ local function PlaceTotemBar()
     local timerSize = tb.timerSize or 11
     local scaledTimerSize = math.max(6, math.floor(timerSize / iconScale + 0.5))
     local fontFile = GetRBFont()
-    local outlineMode = CludesUI.GetFontOutlineFlag("resourceBars")
+    local outlineMode = CUI.GetFontOutlineFlag("resourceBars")
 
     wipe(_totemActiveSet)
     for index, button in ipairs(buttons) do
@@ -251,7 +252,7 @@ local function PlaceTotemBar()
         overlayFrame:Show()
         local bs = tb.borderSize or 0
         local texKey = tb.borderTexture or "solid"
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             overlayFrame,
             bs,
             tb.borderR or 0,
@@ -266,7 +267,7 @@ local function PlaceTotemBar()
             "resourcebars",
             bs,
             nil,
-            CludesUI.BorderPx(tb.borderSizePx, bs, texKey)
+            CUI.BorderPx(tb.borderSizePx, bs, texKey)
         )
     end
 
@@ -286,7 +287,7 @@ end
 
 -- Expose so unlock-mode's grow-direction menu can re-run the layout after
 -- changing totemBar.growDirection (LayoutTotemBar is file-local).
-CludesUI.LayoutTotemBar = PlaceTotemBar
+CUI.LayoutTotemBar = PlaceTotemBar
 
 local function BuildTotemBar()
     local tb = TotemCfg()
@@ -298,7 +299,7 @@ local function BuildTotemBar()
     local isActive = ec and class and ec[class]
 
     if not isActive then
-        if totemBarFrame then CludesUI.SetElementVisibility(totemBarFrame, false) end
+        if totemBarFrame then CUI.SetElementVisibility(totemBarFrame, false) end
         -- Restore TotemFrame to original parent and strata
         if TotemFrame and _totemOrigParent and not InCombatLockdown() then
             TotemFrame:SetParent(_totemOrigParent)
@@ -326,10 +327,10 @@ local function BuildTotemBar()
     end
 
     -- Position our container
-    if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_TotemBar", totemBarFrame) then
+    if CUI._TryOverrideAnchor and CUI._TryOverrideAnchor("ERB_TotemBar", totemBarFrame) then
         -- Override anchor owns position (container already sized above)
     elseif tb.unlockPos and tb.unlockPos.point then
-        if not CludesUI._unlockActive then
+        if not CUI._unlockActive then
             -- When the unlock anchor system owns this frame's position (totem
             -- anchored to another element), let it own it -- do NOT slam the frame
             -- back to the stored absolute unlockPos (mirrors cast/GCD bar). Without
@@ -337,9 +338,9 @@ local function BuildTotemBar()
             -- snapshots the stale absolute spot and only corrects after a manual
             -- nudge -- most visible right after a profile import, where the
             -- imported absolute pos and anchor resolve to different positions.
-            local anchored = CludesUI.IsUnlockAnchored("ERB_TotemBar")
+            local anchored = CUI.IsUnlockAnchored("ERB_TotemBar")
             if not (anchored and totemBarFrame:GetLeft()) then
-                local Pix = CludesUI and CludesUI.PP
+                local Pix = CUI and CUI.PP
                 local px, py = tb.unlockPos.x or 0, tb.unlockPos.y or 0
                 if Pix and Pix.SnapForES then
                     local es = totemBarFrame:GetEffectiveScale()
@@ -357,7 +358,7 @@ local function BuildTotemBar()
             end
         end
     else
-        if not CludesUI._unlockActive then
+        if not CUI._unlockActive then
             totemBarFrame:ClearAllPoints()
             -- Default: left-aligned 5px below the player unit frame
             local playerUF = _G["oUF_CludesPlayer"]
@@ -369,7 +370,7 @@ local function BuildTotemBar()
         end
     end
 
-    CludesUI.SetElementVisibility(totemBarFrame, true)
+    CUI.SetElementVisibility(totemBarFrame, true)
 
     -- Invalidate layout cache so next LayoutTotemBar re-applies scale
     _totemLayoutCache.iconScale = nil

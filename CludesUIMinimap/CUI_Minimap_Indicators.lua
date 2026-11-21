@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Indicators.lua
 --
@@ -236,7 +237,7 @@ local function GetVaultTooltip()
     title:SetFont("Fonts\\FRIZQT__.TTF", 11, "") -- placeholder, updated on show
     title:SetTextColor(0.80, 0.80, 0.80, 1)
     title:SetPoint("TOP", frame, "TOP", 0, -VAULT_PAD)
-    title:SetText(CludesUI.L("Great Vault"))
+    title:SetText(CUI.L("Great Vault"))
     frame._title = title
 
     -- 3 data rows x 4 columns (label + 3 tokens)
@@ -272,17 +273,17 @@ local function ShowVaultTooltip(anchor)
     ) or 6
 
     local rowList = {
-        BuildVaultRowData(CludesUI.L("Raids"), raidType, true),
-        BuildVaultRowData(CludesUI.L("Mythic+"), dungeonType, false),
-        BuildVaultRowData(CludesUI.L("World"), worldType, false),
+        BuildVaultRowData(CUI.L("Raids"), raidType, true),
+        BuildVaultRowData(CUI.L("Mythic+"), dungeonType, false),
+        BuildVaultRowData(CUI.L("World"), worldType, false),
     }
 
     local tooltip = GetVaultTooltip()
     -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
     tooltip:SetScale(GetCustomTooltipScale())
 
-    local fontFile = (CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF"
-    local fontFlags = (CludesUI.GetFontOutlineFlag("minimap")) or ""
+    local fontFile = (CUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF"
+    local fontFlags = (CUI.GetFontOutlineFlag("minimap")) or ""
     tooltip._title:SetFont(fontFile, 11, fontFlags)
     for region = 1, 3 do
         _vaultTTRows[region][0]:SetFont(fontFile, 11, fontFlags)
@@ -390,7 +391,7 @@ local function CreateGreatVaultBtn(hostFrame)
     button:SetScript("OnLeave", function(self)
         self._whole:SetVertexColor(0.85, 0.85, 0.85, 1)
         HideVaultTooltip()
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
     button:SetScript("OnMouseDown", function(self) self._whole:SetVertexColor(0.7, 0.7, 0.7, 1) end)
     button:SetScript("OnMouseUp", function(self)
@@ -400,7 +401,7 @@ local function CreateGreatVaultBtn(hostFrame)
     end)
     button:SetScript("OnClick", function(self)
         if GetFFD(self).freeMoveJustDragged then return end
-        CludesUI.ToggleGreatVault()
+        CUI.ToggleGreatVault()
     end)
 
     -- Resting tint matches OnLeave state
@@ -420,12 +421,12 @@ Inner.portalFlyoutSetters[#Inner.portalFlyoutSetters + 1] = function(val) _porta
 local function ToggleMinimapPortalFlyout(anchorBtn)
     if InCombatLockdown() then return end
     if not _portalFlyout then
-        SetPortalFlyout(CludesUI.CreatePortalFlyout({
+        SetPortalFlyout(CUI.CreatePortalFlyout({
             name = "CUIMinimap",
             bg = { 0.04, 0.04, 0.06 },
             clamp = true,
             unitEvents = true,
-            labelFont = (CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF",
+            labelFont = (CUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF",
             labelFlags = "OUTLINE",
         }))
         -- Keep the mouseover stack shown while open; re-evaluate on close so it can hide.
@@ -503,7 +504,7 @@ local function CreatePortalBtn(hostFrame)
     button:SetScript("OnEnter", function(self)
         self._icon:SetVertexColor(1, 1, 1, 1)
         if _portalFlyout and _portalFlyout:IsShown() then return end
-        CludesUI.ShowWidgetTooltip(
+        CUI.ShowWidgetTooltip(
             self,
             "M+ Portals",
             { anchor = SKIN._Grow.TT(), scale = GetCustomTooltipScale() }
@@ -511,7 +512,7 @@ local function CreatePortalBtn(hostFrame)
     end)
     button:SetScript("OnLeave", function(self)
         self._icon:SetVertexColor(0.85, 0.85, 0.85, 1)
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
     button:SetScript("OnMouseDown", function(self) self._icon:SetVertexColor(0.7, 0.7, 0.7, 1) end)
     button:SetScript("OnMouseUp", function(self)
@@ -521,7 +522,7 @@ local function CreatePortalBtn(hostFrame)
     end)
     button:SetScript("OnClick", function(self)
         if GetFFD(self).freeMoveJustDragged then return end
-        CludesUI.HideWidgetTooltip(true)
+        CUI.HideWidgetTooltip(true)
         ToggleMinimapPortalFlyout(self)
     end)
 

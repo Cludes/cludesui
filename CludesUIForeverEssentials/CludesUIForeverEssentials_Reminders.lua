@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Reminders.lua  (WoW Forever only)
 --  Four reminders:
@@ -19,7 +20,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 local function Known(ident)
     return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(ident)
@@ -280,13 +281,13 @@ local function BuildAlert()
     -- A font first: the client refuses text on a FontString without one.
     alert.title = alert:CreateFontString(nil, "OVERLAY")
     alert.title:SetPoint("TOP", 0, -4)
-    CludesUI.Kit.Font(alert.title, R.Get("size") + 6, "essentials")
-    alert.title:SetTextColor(CludesUI.Kit.Accent())
+    CUI.Kit.Font(alert.title, R.Get("size") + 6, "essentials")
+    alert.title:SetTextColor(CUI.Kit.Accent())
     alert.title:SetText("Restock")
     alert.text = alert:CreateFontString(nil, "OVERLAY")
     alert.text:SetPoint("TOP", alert.title, "BOTTOM", 0, -4)
     alert.text:SetJustifyH("CENTER")
-    CludesUI.Kit.Font(alert.text, R.Get("size"), "essentials")
+    CUI.Kit.Font(alert.text, R.Get("size"), "essentials")
     flash = alert:CreateAnimationGroup()
     flash:SetLooping("BOUNCE")
     flash:SetScript("OnLoop", function(self)
@@ -311,8 +312,8 @@ end
 local function ShowAlert(lines)
     BuildAlert()
     local size = R.Get("size")
-    CludesUI.Kit.Font(alert.title, size + 6, "essentials")
-    CludesUI.Kit.Font(alert.text, size, "essentials")
+    CUI.Kit.Font(alert.title, size + 6, "essentials")
+    CUI.Kit.Font(alert.text, size, "essentials")
     alert.text:SetText(table.concat(lines, "\n"))
     alert:SetSize(
         math.max(alert.title:GetStringWidth(), alert.text:GetStringWidth()) + 16,
@@ -326,7 +327,7 @@ local function ShowAlert(lines)
 end
 
 local function Check()
-    if CludesUI._unlockActive and R.Enabled() then
+    if CUI._unlockActive and R.Enabled() then
         ShowAlert({ "Arcane Powder  3 / 20", "Junk to sell  6" })
         return
     end
@@ -380,7 +381,7 @@ local function Buy()
         end
     end
     if #bought > 0 then
-        CludesUI.Print(
+        CUI.Print(
             "|cff4cc9f0Restocked|r "
                 .. table.concat(bought, ", ")
                 .. " for "
@@ -437,7 +438,7 @@ local function RApply()
     if R.Get("ammo") or HunterAmmoOn() then rEvents:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player") end
     RequestItem(DRINK_ITEM)
     wasResting = IsResting()
-    if alert and not CludesUI._unlockActive then R.Place(alert) end
+    if alert and not CUI._unlockActive then R.Place(alert) end
     Check()
 end
 
@@ -590,8 +591,8 @@ local function Icon(index)
         if not self.slot then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetInventoryItem("player", self.slot)
-        GameTooltip:AddLine(CludesUI.L("You are wearing this."), CludesUI.Kit.Accent())
-        GameTooltip:AddLine(CludesUI.L("Ctrl-click to hide it until you take it off."), 0.6, 0.6, 0.6)
+        GameTooltip:AddLine(CUI.L("You are wearing this."), CUI.Kit.Accent())
+        GameTooltip:AddLine(CUI.L("Ctrl-click to hide it until you take it off."), 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
     widget:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -614,7 +615,7 @@ GUpdate = function()
         local ident = GetInventoryItemID("player", wid.slot)
         if dismissed[wid.slot] ~= ident then dismissed[wid.slot] = nil end
         local show, texture, slot
-        if CludesUI._unlockActive then
+        if CUI._unlockActive then
             show, texture = G.Get(wid.setting), C_Item.GetItemIconByID(wid.item or wid.sample)
         elseif
             ident
@@ -655,7 +656,7 @@ local function GApply()
         return
     end
     if not gFrame then gFrame = CreateFrame("Frame", "CludesUIGearReminders", UIParent) end
-    if not CludesUI._unlockActive then G.Place(gFrame) end
+    if not CUI._unlockActive then G.Place(gFrame) end
     gFrame:Show()
     for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD" }) do
         gEv:RegisterEvent(event)
@@ -699,9 +700,9 @@ local function TBuild()
 end
 local function TUpdate()
     if not tFrame then return end
-    CludesUI.Kit.Font(tFrame.text, T.Get("size"), "essentials")
+    CUI.Kit.Font(tFrame.text, T.Get("size"), "essentials")
     local points
-    if CludesUI._unlockActive and T.Enabled() then
+    if CUI._unlockActive and T.Enabled() then
         points = 2
     elseif T.Enabled() and not tCombat and C_ClassTalents and C_ClassTalents.HasUnspentTalentPoints then
         local unspent, classPoints, specPoints = C_ClassTalents.HasUnspentTalentPoints()
@@ -709,7 +710,7 @@ local function TUpdate()
     end
     if points and points > 0 then
         tFrame.text:SetText(
-            points == 1 and CludesUI.L("1 Unspent Talent Point") or (points .. " Unspent Talent Points")
+            points == 1 and CUI.L("1 Unspent Talent Point") or (points .. " Unspent Talent Points")
         )
         tFrame:Show()
     else
@@ -743,7 +744,7 @@ local function TApply()
     }) do
         pcall(tEv.RegisterEvent, tEv, event)
     end
-    if not CludesUI._unlockActive then T.Place(tFrame) end
+    if not CUI._unlockActive then T.Place(tFrame) end
     TUpdate()
 end
 T.Start(TApply, {
@@ -762,7 +763,7 @@ T.Start(TApply, {
     noSizeMatchTarget = true,
 })
 
-CludesUI._Reminders = {
+CUI._Reminders = {
     restock = {
         Get = R.Get,
         Cfg = R.Cfg,

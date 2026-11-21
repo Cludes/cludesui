@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Colors.lua
 --
@@ -134,7 +135,7 @@ end
 -- for. The watcher is armed only while the threat colors are on: the form event for the
 -- shapes, the player's aura event for Righteous Fury, its payload probed for that one aura
 -- (a restricted read keeps the last answer). A changed verdict repaints the plates.
-local FV_TANK_CLASS = CludesUI.IS_FOREVER
+local FV_TANK_CLASS = CUI.IS_FOREVER
         and ({ WARRIOR = "form", DRUID = "form", PALADIN = "fury" })[select(2, UnitClass("player"))]
     or nil
 local FV_FURY = 25780
@@ -146,7 +147,7 @@ local fvRoleTank = false
 -- while it is armed (RefreshThreatCache); a restricted read that finds none keeps the last
 -- answer.
 local function FvReadRoleTank()
-    local has, unsure = CludesUI.GroupHasTankRole()
+    local has, unsure = CUI.GroupHasTankRole()
     if has or not unsure then fvRoleTank = has end
 end
 
@@ -210,9 +211,9 @@ end
 -- The player's tank verdict: the effective role, plus the Forever shapes and Righteous Fury
 -- while the group has no assigned tank.
 local function PlayerTankVerdict()
-    if CludesUI.UnitEffectiveRole("player") == "TANK" then return true end
+    if CUI.UnitEffectiveRole("player") == "TANK" then return true end
     if not FV_TANK_CLASS or fvRoleTank then return false end
-    return CludesUI.ForeverTankForm() or fvFury
+    return CUI.ForeverTankForm() or fvFury
 end
 
 local function FvTankOnEvent(_, evt, _, details)
@@ -756,7 +757,7 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
         local painted = false
         if tok == true then
             local _, t = UnitClass(unitToken)
-            local success, sr, sg, scrollBar = CludesUI.GetClassColorForRestrictedUnit(unitToken, t)
+            local success, sr, sg, scrollBar = CUI.GetClassColorForRestrictedUnit(unitToken, t)
             if not success then
                 local color = C_ClassColor.GetClassColor(t)
                 if color then
@@ -780,7 +781,7 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
         if not painted then
             local red, green, blue
             if tok and tok ~= true then
-                local color = CludesUI.GetClassColor(tok)
+                local color = CUI.GetClassColor(tok)
                 red, green, blue = color.r, color.g, color.b
             elseif UnitIsTapDenied(unitToken) then
                 local color = (p and p.enemyNameTappedColor) or _C("tapped")

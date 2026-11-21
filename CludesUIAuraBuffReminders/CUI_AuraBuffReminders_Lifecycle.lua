@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Lifecycle.lua
 --
@@ -91,7 +92,7 @@ end
 --  Lifecycle: OnInitialize (fires at ADDON_LOADED time). Creates the DB early so EABR is in _dbRegistry before PreSeedSpecProfile.
 -------------------------------------------------------------------------------
 function REMIND:OnInitialize()
-    SetDB(CludesUI.Lite.NewDB("CludesUIAuraBuffRemindersDB", defaultSet, true))
+    SetDB(CUI.Lite.NewDB("CludesUIAuraBuffRemindersDB", defaultSet, true))
 
     ---------------------------------------------------------------------------
     --  Legacy visibility-model migration. Keyed off LEGACY field presence
@@ -210,8 +211,8 @@ function REMIND:OnEnable()
     _G._CUABR_FvClassBuffOn = REMIND.FvClassBuffs and REMIND.FvClassBuffOn
     -- _CUABR_TALENT_REMINDER_ZONES set by CludesUIABR_TalentReminders.lua
 
-    local STRATA_VALUES = CludesUI.FRAME_STRATA_LABELS
-    local STRATA_ORDER = CludesUI.FRAME_STRATA_ORDER_FULL
+    local STRATA_VALUES = CUI.FRAME_STRATA_LABELS
+    local STRATA_ORDER = CUI.FRAME_STRATA_ORDER_FULL
     _G._CUABR_STRATA_VALUES = STRATA_VALUES
     _G._CUABR_STRATA_ORDER = STRATA_ORDER
 
@@ -229,7 +230,7 @@ function REMIND:OnEnable()
     combatHolder:EnableMouse(false)
     combatHolder:SetAllPoints(iconHolder)
     combatHolder:Show()
-    CludesUI.SetElementVisibility(combatHolder, false)
+    CUI.SetElementVisibility(combatHolder, false)
 
     -- Cursor anchor: tracks cursor position via OnUpdate (same as CDM).
     SetCursorAnchor(CreateFrame("Frame", "EABR_CursorAnchor", UIParent))
@@ -252,20 +253,20 @@ function REMIND:OnEnable()
             end
         end
         cursorHolder:SetScript("OnShow", function()
-            local M = CludesUI.Mouse
+            local M = CUI.Mouse
             if M then
                 GlueBody(M.Get())
                 M.SubscribeFrame("abrCursor", GlueBody, true)
             end
         end)
         cursorHolder:SetScript("OnHide", function()
-            local M = CludesUI.Mouse
+            local M = CUI.Mouse
             if M then M.UnsubscribeFrame("abrCursor") end
         end)
     end
     -- Starts hidden: OnUpdate only runs while :IsShown(), saving CPU when no cursor-attached reminders are active.
     cursorHolder:Hide()
-    CludesUI.SetElementVisibility(cursorHolder, false)
+    CUI.SetElementVisibility(cursorHolder, false)
 
     -- Talent reminder anchor created by CludesUIABR_TalentReminders.lua (independent of iconAnchor so parent alpha doesn't hide it).
 
@@ -290,13 +291,13 @@ function REMIND:OnEnable()
     _G._CUABR_ApplyStrata = ApplyStrata
 
     -- Hook CUI panel show/hide
-    if CludesUI then
-        CludesUI:RegisterOnShow(function()
+    if CUI then
+        CUI:RegisterOnShow(function()
             SetPanelOpen(true)
             HideAllIcons()
             BeaconRefresh()
         end)
-        CludesUI:RegisterOnHide(function()
+        CUI:RegisterOnHide(function()
             SetPanelOpen(false)
             RequestRefresh()
             BeaconRefresh()

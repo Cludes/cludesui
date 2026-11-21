@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookTrinkets.lua
 --
@@ -76,9 +77,9 @@ local function GetOrCreateTrinketFrame(slotID)
         -- custom frame's explicit content population would otherwise re-show the
         -- tip after the global suppression hook hid it.
         if
-            CludesUI
-            and CludesUI._tooltipSuppressedByMode
-            and CludesUI._tooltipSuppressedByMode(GameTooltip)
+            CUI
+            and CUI._tooltipSuppressedByMode
+            and CUI._tooltipSuppressedByMode(GameTooltip)
         then
             return
         end
@@ -97,8 +98,8 @@ local function GetOrCreateTrinketFrame(slotID)
             -- Re-assert the cursor anchor after content is set (see helper notes):
             -- the item content-setter can drop the tip's cursor anchor, so without
             -- this it never appears while "Anchor to Cursor" is on. No-op otherwise.
-            if CludesUI and CludesUI._repointTooltipAtCursor then
-                CludesUI._repointTooltipAtCursor(GameTooltip)
+            if CUI and CUI._repointTooltipAtCursor then
+                CUI._repointTooltipAtCursor(GameTooltip)
             end
             GameTooltip:Show()
             -- This is our own already-equipped trinket, so the side-by-side

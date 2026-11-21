@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUICdmHooks.lua  (v5 -- Mixin Hook Architecture)
 --
@@ -30,7 +31,7 @@ local _isDruid = (_playerClass == "DRUID")
 mod._spellOrderDirty = true -- start dirty so first reanchor builds caches
 
 -- Per-frame decoration state (weak-keyed; FD(frame) makes a frame's record)
-local hookFrameData, FD = CludesUI.NewFrameData()
+local hookFrameData, FD = CUI.NewFrameData()
 mod._hookFrameData = hookFrameData
 
 -- Glow at Stacks (per-spell): REPLACES the Buff Glow for icons with a stack
@@ -610,7 +611,7 @@ local VIEWER_TO_BAR = {
 local function IsCDMSettingsOpen() return CooldownViewerSettings and CooldownViewerSettings:IsShown() end
 
 -- Main-chunk locals the CUI_CDM_Hook*.lua files re-import by name.
-CludesUI.NewInternals(mod, "_hookInternals", {
+CUI.NewInternals(mod, "_hookInternals", {
     _isDruid = _isDruid,
     FD = FD,
     GetViewerFrame = GetViewerFrame,

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_GCD.lua
 --
@@ -11,7 +12,7 @@ local Inner = mod._internals
 if not Inner or Inner.broken then return end
 Inner.broken = true
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local CLASS_COLORS, ERB, SnapXY, ApplyBarFlat =
     Inner.CLASS_COLORS, Inner.ERB, Inner.SnapXY, Inner.ApplyBarFlat
@@ -53,7 +54,7 @@ mod.GCDIdleFill = function(g)
         -- each side falls back to the other.
         local fresh = C_Spell
             and C_Spell.GetSpellCooldownDuration
-            and C_Spell.GetSpellCooldownDuration(CludesUI.GCD_SPELL)
+            and C_Spell.GetSpellCooldownDuration(CUI.GCD_SPELL)
         local object
         if wantFull then
             object = gcdBarFrame._gcdDurObj or fresh
@@ -77,7 +78,7 @@ BuildGCDBar = function()
 
     if not g.enabled then
         if gcdBarFrame then
-            CludesUI.SetElementVisibility(gcdBarFrame, false)
+            CUI.SetElementVisibility(gcdBarFrame, false)
             gcdBarFrame:UnregisterAllEvents()
             gcdBarFrame._gcdStart = nil
             gcdBarFrame._gcdDur = nil
@@ -103,7 +104,7 @@ BuildGCDBar = function()
         bdrFrame:SetAllPoints(gcdBarFrame)
         bdrFrame:SetFrameLevel(gcdBarFrame:GetFrameLevel() + 5)
         gcdBarFrame._border = bdrFrame
-        local Pix = CludesUI and CludesUI.PP
+        local Pix = CUI and CUI.PP
         if Pix then Pix.CreateBorder(bdrFrame, 0, 0, 0, 1, 1) end
 
         local clipFrame = CreateFrame("Frame", nil, gcdBarFrame)
@@ -137,7 +138,7 @@ BuildGCDBar = function()
         -- kept on the frame: the idle render re-arms it to repaint (see
         -- ns.GCDIdleFill).
         local function armNativeGCD(barFrame, deplete)
-            local durObj = C_Spell.GetSpellCooldownDuration(CludesUI.GCD_SPELL)
+            local durObj = C_Spell.GetSpellCooldownDuration(CUI.GCD_SPELL)
             if not durObj then return end
             gcdBarFrame._gcdDurObj = durObj
             barFrame:SetTimerDuration(
@@ -154,7 +155,7 @@ BuildGCDBar = function()
         -- refresh an already-open lifecycle window, never open one --
         -- otherwise random cooldown chatter would flash an empty bar.
         local function captureGCD(self, gc, windowOnly)
-            local cd = getCD and getCD(CludesUI.GCD_SPELL)
+            local cd = getCD and getCD(CUI.GCD_SPELL)
             if not cd or not cd.startTime then return end
             -- Engine-true fill, same duration-object push-through as the
             -- action bar swipes: hand the GCD's duration object to the bar
@@ -305,7 +306,7 @@ BuildGCDBar = function()
                 or evt == "UNIT_SPELLCAST_INTERRUPTED"
                 or evt == "UNIT_SPELLCAST_STOP"
             then
-                local cd = getCD and getCD(CludesUI.GCD_SPELL)
+                local cd = getCD and getCD(CUI.GCD_SPELL)
                 local stillActive = false
                 if cd and cd.startTime then
                     local success, act = pcall(function()
@@ -407,13 +408,13 @@ BuildGCDBar = function()
     local wid, hgt = OrientedSize(g.width, g.height, ori)
     gcdBarFrame:SetFrameStrata(g.frameStrata or "MEDIUM")
 
-    if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_GCDBar", gcdBarFrame) then
+    if CUI._TryOverrideAnchor and CUI._TryOverrideAnchor("ERB_GCDBar", gcdBarFrame) then
         -- Override anchor owns position; only update size
         gcdBarFrame:SetSize(wid, hgt)
     elseif g.unlockPos and g.unlockPos.point then
         gcdBarFrame:SetSize(wid, hgt)
-        if not CludesUI._unlockActive then
-            local anchored = CludesUI.IsUnlockAnchored("ERB_GCDBar")
+        if not CUI._unlockActive then
+            local anchored = CUI.IsUnlockAnchored("ERB_GCDBar")
             if not (anchored and gcdBarFrame:GetLeft()) then
                 local rp = g.unlockPos.relPoint or g.unlockPos.point
                 gcdBarFrame:ClearAllPoints()
@@ -427,7 +428,7 @@ BuildGCDBar = function()
         end
     else
         gcdBarFrame:SetSize(wid, hgt)
-        if not CludesUI._unlockActive then
+        if not CUI._unlockActive then
             gcdBarFrame:ClearAllPoints()
             gcdBarFrame:SetPoint("CENTER", UIParent, "CENTER", g.anchorX or 0, g.anchorY or 0)
         end
@@ -440,7 +441,7 @@ BuildGCDBar = function()
         -- Lost-rect recovery and Extend Top / Extend Bottom, see the cast bar border above
         -- (no stock style on this bar).
         mod.ERB_AnchorBorderHost(gcdBarFrame._border, gcdBarFrame, mod.ERB_BorderExtents(g))
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             gcdBarFrame._border,
             bs,
             g.borderR or 0,
@@ -455,7 +456,7 @@ BuildGCDBar = function()
             "resourcebars",
             bs,
             nil,
-            CludesUI.BorderPx(g.borderSizePx, bs, g.borderTexture or "solid")
+            CUI.BorderPx(g.borderSizePx, bs, g.borderTexture or "solid")
         )
     end
     -- Bottom Separator above the border; none on a Solid border (no stock style
@@ -484,7 +485,7 @@ BuildGCDBar = function()
 
     -- Texture + background
     local texPath =
-        CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, "Interface\\Buttons\\WHITE8x8")
+        CUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, "Interface\\Buttons\\WHITE8x8")
     barFrame:SetStatusBarTexture(texPath)
     gcdBarFrame._bg:SetTexture(nil)
     gcdBarFrame._bg:SetColorTexture(g.bgR, g.bgG, g.bgB, g.bgA)
@@ -492,7 +493,7 @@ BuildGCDBar = function()
     if g.textureBg or gcdBarFrame._bg._erbBgTex then
         mod.ERB_BgTexture(
             gcdBarFrame._bg,
-            g.textureBg and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, nil),
+            g.textureBg and CUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, nil),
             g.bgR,
             g.bgG,
             g.bgB,
@@ -563,13 +564,13 @@ BuildGCDBar = function()
         -- A GCD is mid-flight: leave the fill alone -- a plain SetValue here
         -- would cancel the engine bar timer with nothing to restore it until
         -- the next arm.
-        CludesUI.SetElementVisibility(gcdBarFrame, true)
+        CUI.SetElementVisibility(gcdBarFrame, true)
     elseif g.alwaysShow and not (g.instanceOnly and not IsInInstance()) then
         mod.GCDIdleFill(g)
-        CludesUI.SetElementVisibility(gcdBarFrame, true)
+        CUI.SetElementVisibility(gcdBarFrame, true)
     else
         mod.GCDIdleFill(g)
-        CludesUI.SetElementVisibility(gcdBarFrame, false)
+        CUI.SetElementVisibility(gcdBarFrame, false)
     end
 end
 
@@ -586,7 +587,7 @@ SetUpdateGCDBar(function(_dt)
         mod.GCDIdleFill(g)
         gcdBarFrame._barActive = nil
         gcdBarFrame._nativeGCD = nil
-        CludesUI.SetElementVisibility(gcdBarFrame, false)
+        CUI.SetElementVisibility(gcdBarFrame, false)
         return
     end
 
@@ -610,7 +611,7 @@ SetUpdateGCDBar(function(_dt)
     -- Secret values: the real length is unreadable, so the window above is only a ceiling.
     -- The cooldown's isActive stays a plain boolean; end the window when the GCD is over.
     if active and gcdBarFrame._gcdUnread then
-        local cd = C_Spell.GetSpellCooldown(CludesUI.GCD_SPELL)
+        local cd = C_Spell.GetSpellCooldown(CUI.GCD_SPELL)
         local act = cd and cd.isActive
         if not (issecretvalue and issecretvalue(act)) and act == false then
             gcdBarFrame._gcdStart = nil
@@ -630,11 +631,11 @@ SetUpdateGCDBar(function(_dt)
         gcdBarFrame._nativeGCD = nil
         local visible = false
         if g.alwaysShow then visible = true end
-        CludesUI.SetElementVisibility(gcdBarFrame, visible)
+        CUI.SetElementVisibility(gcdBarFrame, visible)
         return
     end
 
-    CludesUI.SetElementVisibility(gcdBarFrame, true)
+    CUI.SetElementVisibility(gcdBarFrame, true)
     if gcdBarFrame._nativeGCD then
         -- The engine bar timer owns the fill (true progress, per frame,
         -- zero Lua); the tick keeps only lifecycle and visibility.

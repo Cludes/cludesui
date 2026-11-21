@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Name.lua
 --
@@ -13,7 +14,7 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs, type = ipairs, type
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local UnitName = UnitName
 local UnitIsUnit = UnitIsUnit
 local UnitClassification = UnitClassification
@@ -82,7 +83,7 @@ function NameplateFrame:UpdateName()
     -- write (RefreshNamePosition hides it).
     local slotRec = mod.FindNameSlot()
     local el = slotRec and GetTextSlot(slotRec) or "enemyName"
-    local name = CludesUI.WithSurname(UnitName(unitToken))
+    local name = CUI.WithSurname(UnitName(unitToken))
     if type(name) == "string" then
         name = mod.NP_FormatName(name, slotRec, unitToken) -- the slot's Name Format
         mod.SetNameElementText(self.name, el, name, unitToken, slotRec)
@@ -465,9 +466,9 @@ function NameplateFrame:UpdateFaction(artOnly)
     -- badge, dim). The texture keeps its art across pool recycles, so the memo never
     -- goes stale.
     local style = mod.NP_GetFactionStyle()
-    local badge = CludesUI.FactionBadgeFor(style, unitToken)
+    local badge = CUI.FactionBadgeFor(style, unitToken)
     if self._facArt ~= atlasName or self._facStyle ~= style or self._facBadge ~= badge then
-        CludesUI.SetFactionArt(self.faction, style, atlasName, badge)
+        CUI.SetFactionArt(self.faction, style, atlasName, badge)
         self._facArt, self._facStyle, self._facBadge = atlasName, style, badge
     end
     if self._facDim ~= dimmed then
@@ -829,8 +830,8 @@ function NameplateFrame:ApplyTarget()
                 -- Custom border replaces the simple one; recolor with the target color,
                 -- lazy-creating it if this plate is targeted before its first ApplyBorder ran.
                 if not self._customBorder then mod.ApplyCustomBorderStyle(self) end
-                if self._customBorder and CludesUI.SetBorderStyleColor then
-                    CludesUI.SetBorderStyleColor(self._customBorder, bc.r, bc.g, bc.b, 1)
+                if self._customBorder and CUI.SetBorderStyleColor then
+                    CUI.SetBorderStyleColor(self._customBorder, bc.r, bc.g, bc.b, 1)
                 end
             else
                 mod.NP_BasicBorderColor(self, bc.r, bc.g, bc.b, 1)
@@ -964,8 +965,8 @@ function mod.ApplyHoverExtras(backing)
             local bc = mod.GetHoverBorderColor()
             if mod.IsCustomBorderEnabled() then
                 if not backing._customBorder then mod.ApplyCustomBorderStyle(backing) end
-                if backing._customBorder and CludesUI.SetBorderStyleColor then
-                    CludesUI.SetBorderStyleColor(backing._customBorder, bc.r, bc.g, bc.b, 1)
+                if backing._customBorder and CUI.SetBorderStyleColor then
+                    CUI.SetBorderStyleColor(backing._customBorder, bc.r, bc.g, bc.b, 1)
                 end
             else
                 mod.NP_BasicBorderColor(backing, bc.r, bc.g, bc.b, 1)

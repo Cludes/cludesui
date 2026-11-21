@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MapFade.lua  (WoW Forever only)
 --  Fade Map While Moving: turns on the game's own map fade (mapFade CVar,
@@ -30,11 +31,11 @@ local function HoldGameFade(on)
     if on then
         conf = F.Cfg()
         if conf.mapFadeWas == nil then conf.mapFadeWas = current end
-        if current and current ~= "1" then CludesUI.HoldCVar("mapFade", "1", OWNER) end
+        if current and current ~= "1" then CUI.HoldCVar("mapFade", "1", OWNER) end
     elseif conf.mapFadeWas ~= nil then
         local was = conf.mapFadeWas
         conf.mapFadeWas = nil
-        if was and current ~= was then CludesUI.ReleaseCVar("mapFade", was, OWNER) end
+        if was and current ~= was then CUI.ReleaseCVar("mapFade", was, OWNER) end
     end
 end
 
@@ -69,7 +70,7 @@ local function Apply()
 end
 
 -- Options-page entry points.
-CludesUI._MapFade = {
+CUI._MapFade = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Apply,

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Options.lua
 --  Registers the Raid Frames module with CludesUI options panel.
@@ -6,19 +7,19 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  indicators, debuffs, dispels, range/tooltip) and Buff Manager.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIRaidFrames"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host (a kept page wrapper or popup and every frame it hands out) are reset
 -- and dressed again by the next build instead of made anew; elsewhere this is
 -- CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 -- Deferred work on a pooled frame stops once the frame was dressed again.
-local PoolGen = CludesUI._Pool.Gen
+local PoolGen = CUI._Pool.Gen
 
 -- WoW Forever: the preview's numbers follow the live frames (CludesUI_NumberFormat.lua).
-local AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
+local AbbreviateNumbers = (CUI.IS_FOREVER and CUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
 
 local PAGE_MAIN = "Frames"
 local PAGE_PARTY = "Party"
@@ -28,9 +29,9 @@ local PAGE_CLICKCAST = "Frame Bindings" -- was "HoverCast"
 
 -- Display-only tab labels. Page IDENTITY strings above are baked into nav
 -- targets/unlock/overrides/saved state; tab bar renders these instead (see CreateTabButton in CludesUI.lua).
-CludesUI.TAB_LABEL_OVERRIDES = CludesUI.TAB_LABEL_OVERRIDES or {}
-CludesUI.TAB_LABEL_OVERRIDES[PAGE_BUFFS] = "Buffs"
-CludesUI.TAB_LABEL_OVERRIDES[PAGE_DM] = "Debuffs"
+CUI.TAB_LABEL_OVERRIDES = CUI.TAB_LABEL_OVERRIDES or {}
+CUI.TAB_LABEL_OVERRIDES[PAGE_BUFFS] = "Buffs"
+CUI.TAB_LABEL_OVERRIDES[PAGE_DM] = "Debuffs"
 
 -- Party page under "Frame Style: Party Frames" (the latched stock portrait
 -- party frame): the rows its layout replaces are hidden on the Party page
@@ -38,7 +39,7 @@ CludesUI.TAB_LABEL_OVERRIDES[PAGE_DM] = "Debuffs"
 -- page too, and the search prebuild can leave the party context stale). ns
 -- fields, so no page builder gains an upvalue.
 function mod.RF_OptPartyKit()
-    return CludesUI._buildingPage == PAGE_PARTY and mod.RF_PartyKit ~= nil and mod.RF_PartyKit() and true
+    return CUI._buildingPage == PAGE_PARTY and mod.RF_PartyKit ~= nil and mod.RF_PartyKit() and true
         or false
 end
 function mod.RF_PartyKitGate(rowConf)
@@ -57,7 +58,7 @@ end
 -- with enabledTip, the group's own switch, which also dims rgn's plain label while off. Nothing is
 -- built during the search prebuild; returns the button.
 function mod.RF_OptMoveFramesButton(row, region, options)
-    if CludesUI._prebuilding then return end
+    if CUI._prebuilding then return end
     local button = CreateFrame("Button", nil, row)
     button:SetSize(140, 26)
     button:SetPoint("RIGHT", region, "RIGHT", -20, 0)
@@ -65,39 +66,39 @@ function mod.RF_OptMoveFramesButton(row, region, options)
     local bbg = button:CreateTexture(nil, "BACKGROUND")
     bbg:SetAllPoints()
     bbg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-    CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.25, bbg)
+    CUI.MakeRoundedBorder(button, 1, 1, 1, 0.25, bbg)
     local labelFS = button:CreateFontString(nil, "OVERLAY")
-    CludesUI.ApplyModuleFont(labelFS, nil, 13, "raidFrames")
+    CUI.ApplyModuleFont(labelFS, nil, 13, "raidFrames")
     labelFS:SetPoint("CENTER", button, "CENTER", 0, 0)
     local enabled = options.enabled
     local function Update()
-        labelFS:SetText(options.isShown() and CludesUI.L("Stop Moving") or CludesUI.L("Move Frames"))
+        labelFS:SetText(options.isShown() and CUI.L("Stop Moving") or CUI.L("Move Frames"))
         button:SetAlpha(options.allowed() and 1 or 0.35)
         -- Plain-label slots have no native disabled handling.
         if enabled and region._label then region._label:SetAlpha(enabled() and 1 or 0.3) end
     end
     button:SetScript("OnEnter", function(self)
         if enabled and not enabled() then
-            CludesUI.ShowWidgetTooltip(self, options.enabledTip)
+            CUI.ShowWidgetTooltip(self, options.enabledTip)
         elseif not options.allowed() then
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
-                CludesUI.DisabledTooltip("This option requires Position to be set to Free Move")
+                CUI.DisabledTooltip("This option requires Position to be set to Free Move")
             )
         else
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
                 "Drag the overlay to position the frames, then click again to lock"
             )
         end
     end)
-    button:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+    button:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
     button:SetScript("OnClick", function()
         if not options.allowed() then return end
         options.setShown(not options.isShown())
         Update()
     end)
-    CludesUI.RegisterWidgetRefresh(Update)
+    CUI.RegisterWidgetRefresh(Update)
     Update()
     return button
 end
@@ -136,7 +137,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     end
     local function RunWidgetRefresh()
         C_Timer.After(0, function()
-            local refreshList = CludesUI._widgetRefreshList
+            local refreshList = CUI._widgetRefreshList
             if refreshList then
                 for idx = 1, #refreshList do
                     refreshList[idx]()
@@ -195,8 +196,8 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 icon = function(key)
                     local _, ct = UnitClass("player")
                     local c = ct
-                        and CludesUI.CLASS_ICON_SPRITE_COORDS
-                        and CludesUI.CLASS_ICON_SPRITE_COORDS[ct]
+                        and CUI.CLASS_ICON_SPRITE_COORDS
+                        and CUI.CLASS_ICON_SPRITE_COORDS[ct]
                     if not c then return nil end
                     return "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\" .. key .. ".tga",
                         c[1],
@@ -237,7 +238,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     if sd == "top" or IsInside(sd) then profile.partyPortraitSide = "left" end
                 end
                 PSSet("partyPortraitStyle", value)
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         }),
         {
@@ -266,7 +267,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     and ProfileVal("partyPortraitMode", "2d") ~= "3d"
                     and not (CludesUIDB and CludesUIDB.dismissed3DWarning)
                 then
-                    CludesUI:ShowConfirmPopup({
+                    CUI:ShowConfirmPopup({
                         title = "3D Portraits",
                         message = "3D portraits may cause a slight loss in performance efficiency. Do you want to enable them?",
                         confirmText = "Enable",
@@ -275,9 +276,9 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                             if not CludesUIDB then CludesUIDB = {} end
                             CludesUIDB.dismissed3DWarning = true
                             SetArt("3d")
-                            CludesUI:RefreshPage(true)
+                            CUI:RefreshPage(true)
                         end,
-                        onCancel = function() CludesUI:RefreshPage() end,
+                        onCancel = function() CUI:RefreshPage() end,
                     })
                     return
                 end
@@ -288,7 +289,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     )
     cursorY = cursorY - height
     -- Portrait Settings (Detached only): Clickable Portrait, Background Color.
-    CludesUI.BuildInlineCog(modeRow._leftRegion, {
+    CUI.BuildInlineCog(modeRow._leftRegion, {
         title = "Portrait Settings",
         disabled = function() return kit or ProfileVal("partyPortraitStyle", "none") ~= "detached" end,
         disabledTooltip = function()
@@ -376,11 +377,11 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         getValue = PVRow("partyPortraitSide", "left"),
         setValue = function(value)
             PtSet("partyPortraitSide", value)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     })
     cursorY = cursorY - height
-    CludesUI.BuildInlineCog(sizePosRow._leftRegion, {
+    CUI.BuildInlineCog(sizePosRow._leftRegion, {
         title = "Portrait Zoom",
         rows = {
             {
@@ -419,7 +420,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             },
         },
     })
-    CludesUI.BuildInlineCog(sizePosRow._rightRegion, {
+    CUI.BuildInlineCog(sizePosRow._rightRegion, {
         title = "Portrait Position Offsets",
         rows = {
             {
@@ -488,7 +489,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 onClick = function(self)
                     if ProfileVal("partyPortraitBorderClassColor", true) then
                         PtSet("partyPortraitBorderClassColor", false)
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                         return
                     end
                     if self._eabOrigClick then self._eabOrigClick(self) end
@@ -509,7 +510,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 setValue = function() end,
                 onClick = function()
                     PtSet("partyPortraitBorderClassColor", true)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
                     return ProfileVal("partyPortraitBorderClassColor", true) and 1 or 0.3
@@ -518,7 +519,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         },
     })
     cursorY = cursorY - height
-    CludesUI.BuildInlineCog(shapeRow._rightRegion, {
+    CUI.BuildInlineCog(shapeRow._rightRegion, {
         title = "Shape Border Settings",
         rows = {
             {
@@ -551,7 +552,7 @@ end
 -- include edge), never a party reload. Returns the new y.
 function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     local db = mod.db
-    local BLANK = CludesUI.BlankRowCfg
+    local BLANK = CUI.BlankRowCfg
     local _, height, row
     local function ProfileVal(keyName, d)
         local value = db.profile[keyName]
@@ -604,7 +605,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         disabledTooltip = "Move Party Targets beside the frame stack or turn off Compact Mode.",
         rawTooltip = true,
         getValue = function() return db.profile.partyShowTargets or false end,
-        setValue = CludesUI.SectionToggleSetValue(function(value)
+        setValue = CUI.SectionToggleSetValue(function(value)
             if value and db.profile.partyCompactMode and mod.PT_AlongStack(db.profile, true) then return end
             db.profile.partyShowTargets = value
             mod.PT_SetEnabled(value)
@@ -640,7 +641,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         getValue = PVRow("partyTargetHealthColorMode", "class"),
         setValue = function(value)
             PtSet("partyTargetHealthColorMode", value)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "slider",
@@ -656,9 +657,9 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     })
     cursorY = cursorY - height
     -- Custom fill swatch: live only in Custom mode, dimmed and blocked otherwise.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = row._leftRegion
-        local colorSwatch = CludesUI.BuildColorSwatch(
+        local colorSwatch = CUI.BuildColorSwatch(
             region,
             row:GetFrameLevel() + 3,
             function()
@@ -673,12 +674,12 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
         -- Blocking overlay: non-clickable + tooltip unless Fill Color is Custom.
-        local block = CludesUI.NewSwatchBlocker(colorSwatch)
+        local block = CUI.NewSwatchBlocker(colorSwatch)
         block:SetScript(
             "OnEnter",
-            function() CludesUI.ShowWidgetTooltip(colorSwatch, "Only available with Custom fill color") end
+            function() CUI.ShowWidgetTooltip(colorSwatch, "Only available with Custom fill color") end
         )
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         local function UpdateSwatchVis()
             if ProfileVal("partyTargetHealthColorMode", "class") == "custom" then
                 colorSwatch:SetAlpha(1)
@@ -688,32 +689,32 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 block:Show()
             end
         end
-        CludesUI.RegisterWidgetRefresh(UpdateSwatchVis)
+        CUI.RegisterWidgetRefresh(UpdateSwatchVis)
         UpdateSwatchVis()
     end
     -- Background Custom + Class swatch pair: clicking either toggles partyTargetBgClassColored, the inactive one dims (mirrors the fill picker).
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = row._rightRegion
         -- Class swatch shows the player's class color and is not editable.
-        local bgClassSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
+        local bgClassSwatch = CUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local _, classTok = UnitClass("player")
-            local classColor = classTok and CludesUI.GetClassColor(classTok)
+            local classColor = classTok and CUI.GetClassColor(classTok)
             if classColor then return classColor.r, classColor.g, classColor.b, 1 end
             return 1, 1, 1, 1
         end, function() end, false, 20)
         bgClassSwatch:SetScript("OnClick", function()
             PtSet("partyTargetBgClassColored", true)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end)
         bgClassSwatch:HookScript(
             "OnEnter",
-            function() CludesUI.ShowWidgetTooltip(bgClassSwatch, "Class Colored Background") end
+            function() CUI.ShowWidgetTooltip(bgClassSwatch, "Class Colored Background") end
         )
-        bgClassSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        bgClassSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         bgClassSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = bgClassSwatch
 
-        local bgSwatch = CludesUI.BuildColorSwatch(
+        local bgSwatch = CUI.BuildColorSwatch(
             region,
             row:GetFrameLevel() + 3,
             function()
@@ -729,16 +730,16 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         bgSwatch:SetScript("OnClick", function(self)
             if ProfileVal("partyTargetBgClassColored", false) then
                 PtSet("partyTargetBgClassColored", false)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
                 return
             end
             if self._eabOrigClick then self._eabOrigClick(self) end
         end)
         bgSwatch:HookScript(
             "OnEnter",
-            function() CludesUI.ShowWidgetTooltip(bgSwatch, "Custom Background Color") end
+            function() CUI.ShowWidgetTooltip(bgSwatch, "Custom Background Color") end
         )
-        bgSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        bgSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = bgSwatch
         -- Blocking overlay spans BOTH swatches: Dark Mode has no background.
@@ -747,8 +748,8 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         bgBlock:SetPoint("BOTTOMRIGHT", bgClassSwatch, "BOTTOMRIGHT", 0, 0)
         bgBlock:SetFrameLevel(bgClassSwatch:GetFrameLevel() + 10)
         bgBlock:EnableMouse(true)
-        bgBlock:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgSwatch, DARK_TIP) end)
-        bgBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        bgBlock:SetScript("OnEnter", function() CUI.ShowWidgetTooltip(bgSwatch, DARK_TIP) end)
+        bgBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         local function UpdateBgSwatchVis()
             if ProfileVal("partyTargetHealthColorMode", "class") == "dark" then
                 bgSwatch:SetAlpha(0.3)
@@ -761,7 +762,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 bgClassSwatch:SetAlpha(classOn and 1 or 0.3)
             end
         end
-        CludesUI.RegisterWidgetRefresh(UpdateBgSwatchVis)
+        CUI.RegisterWidgetRefresh(UpdateBgSwatchVis)
         UpdateBgSwatchVis()
     end
 
@@ -825,7 +826,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         end,
     }, BLANK())
     cursorY = cursorY - height
-    CludesUI.BuildInlineCog(row._leftRegion, {
+    CUI.BuildInlineCog(row._leftRegion, {
         title = "Target Position Offsets",
         rows = {
             {
@@ -851,12 +852,12 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     return cursorY
 end
 
-CludesUI.AtLogin(function()
+CUI.AtLogin(function()
     mod._InitCUIModule = function()
-        if not CludesUI or not CludesUI.RegisterModule then return end
+        if not CUI or not CUI.RegisterModule then return end
         if not mod.db then return end
 
-        local Pix = CludesUI.PanelPP
+        local Pix = CUI.PanelPP
         local db = mod.db
         local ReloadFrames = mod.ReloadFrames
         local floor = math.floor
@@ -963,14 +964,14 @@ CludesUI.AtLogin(function()
         -- aware SVal/SWrite in the indicator's cog, the raid keys on Global
         -- Settings > Glows (built outside any tab, so never through the tab context).
         local MissingGlowDesc
-        if CludesUI.IS_FOREVER then
-            local GK = CludesUI.Glows.PrefixKeys("missingBuffsGlow")
+        if CUI.IS_FOREVER then
+            local GK = CUI.Glows.PrefixKeys("missingBuffsGlow")
             function MissingGlowDesc(read, write)
                 return {
                     host = "icon",
                     excludes = { [4] = true },
                     caps = { mode = true, params = true, bg = true },
-                    defaultColor = CludesUI.Glows.DEFAULT_COLOR,
+                    defaultColor = CUI.Glows.DEFAULT_COLOR,
                     onChange = ReloadAndUpdate,
                     disabled = function() return read("showMissingBuffs", true) == false end,
                     disabledTooltip = "Missing Buffs",
@@ -1018,7 +1019,7 @@ CludesUI.AtLogin(function()
                     end,
                 }
             end
-            CludesUI.GlowOptions.RegisterSite({
+            CUI.GlowOptions.RegisterSite({
                 id = "rf_missing_buffs",
                 label = "Missing Buffs Glow",
                 group = "module",
@@ -1039,7 +1040,7 @@ CludesUI.AtLogin(function()
         ---------------------------------------------------------------------------
         -- Re-append post-login: the OnInitialize append runs too early to catch most
         -- SM texture providers, which register after our ADDON_LOADED.
-        CludesUI.AppendSharedMediaTextures(
+        CUI.AppendSharedMediaTextures(
             mod.healthBarTextureNames or {},
             mod.healthBarTextureOrder or {},
             nil,
@@ -1151,7 +1152,7 @@ CludesUI.AtLogin(function()
         -- Appends SharedMedia statusbar textures after a divider (mirrors Bar Texture dropdown). "sm:" keys land in the shared health-bar tables via AppendSharedMediaTextures; resolution flows through ns.ResolveAbsorbStyleTex -> health-bar lookup.
         -- All three dropdowns share absorbStyleValues, so each gains the SM entries and preview swatch.
         do
-            CludesUI.AppendSharedMediaTextures(
+            CUI.AppendSharedMediaTextures(
                 mod.healthBarTextureNames or {},
                 mod.healthBarTextureOrder or {},
                 nil,
@@ -1184,7 +1185,7 @@ CludesUI.AtLogin(function()
                     if key == "blizzardModern" then
                         return mod.ResolveAbsorbStyleTex("striped"), modernSwatch
                     end
-                    if key == "maxHealthStripes" then return CludesUI.MAX_HEALTH_STRIPES_TEX end
+                    if key == "maxHealthStripes" then return CUI.MAX_HEALTH_STRIPES_TEX end
                     return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex(key) or nil
                 end,
             }
@@ -1259,16 +1260,16 @@ CludesUI.AtLogin(function()
             local textValue
             if (db.profile.previewMode or "overlay") == "real" then
                 -- Editing-as session: preview shows THAT session's values (effective overlay off there by design), so name it.
-                local sessName = CludesUI.SpecOverrides_EditSessionName()
+                local sessName = CUI.SpecOverrides_EditSessionName()
                 if sessName then
-                    textValue = CludesUI.Lf("Previewing Override: %1$s", sessName)
-                elseif CludesUI.SpecOverrides_PeekEffectiveValues then
+                    textValue = CUI.Lf("Previewing Override: %1$s", sessName)
+                elseif CUI.SpecOverrides_PeekEffectiveValues then
                     local _, specSrc, condSrc =
-                        CludesUI.SpecOverrides_PeekEffectiveValues("CludesUIRaidFrames")
+                        CUI.SpecOverrides_PeekEffectiveValues("CludesUIRaidFrames")
                     if specSrc and condSrc then
-                        textValue = CludesUI.Lf("Previewing Overrides: %1$s, %2$s", specSrc, condSrc)
+                        textValue = CUI.Lf("Previewing Overrides: %1$s, %2$s", specSrc, condSrc)
                     elseif specSrc or condSrc then
-                        textValue = CludesUI.Lf("Previewing Override: %1$s", specSrc or condSrc)
+                        textValue = CUI.Lf("Previewing Override: %1$s", specSrc or condSrc)
                     end
                 end
             end
@@ -1287,8 +1288,8 @@ CludesUI.AtLogin(function()
         -- Builds the "Preview Mode" row at the top of a page; returns the new y.
         local function BuildPreviewModeRow(hostFrame, cursorY)
             local ROW_H = 50
-            local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-            local contentPad = CludesUI.CONTENT_PAD or 45
+            local fontFile = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+            local contentPad = CUI.CONTENT_PAD or 45
             -- The tab this row belongs to (the page being built sets the context first).
             local pvCtx = optionState._partyCtx and "party" or "raid"
 
@@ -1299,9 +1300,9 @@ CludesUI.AtLogin(function()
             cursorY = cursorY - ROW_H
 
             local modeLabel = modeRow:CreateFontString(nil, "OVERLAY")
-            CludesUI.ApplyModuleFont(modeLabel, fontFile, 14, "raidFrames")
+            CUI.ApplyModuleFont(modeLabel, fontFile, 14, "raidFrames")
             modeLabel:SetPoint("TOP", modeRow, "TOP", 0, 0)
-            modeLabel:SetText(CludesUI.L("Preview Mode"))
+            modeLabel:SetText(CUI.L("Preview Mode"))
             modeLabel:SetTextColor(1, 1, 1, 0.6)
 
             local previewModeValues = {
@@ -1310,7 +1311,7 @@ CludesUI.AtLogin(function()
                 none = "No Preview",
             }
             local previewModeOrder = { "real", "overlay", "none" }
-            local ddCtrl, dropCaption = CludesUI.BuildDropdownControl(
+            local ddCtrl, dropCaption = CUI.BuildDropdownControl(
                 modeRow,
                 180,
                 modeRow:GetFrameLevel() + 2,
@@ -1320,7 +1321,7 @@ CludesUI.AtLogin(function()
                 function(value)
                     db.profile.previewMode = value
                     -- Apply to whichever preview the current tab owns.
-                    local page = CludesUI:GetActivePage()
+                    local page = CUI:GetActivePage()
                     if page == PAGE_PARTY then
                         if value == "none" then
                             if mod.HidePartyPreview then mod.HidePartyPreview() end
@@ -1337,13 +1338,13 @@ CludesUI.AtLogin(function()
                             dropdown.lbl:SetText(previewModeValues[value] or value)
                         end
                     end
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
             )
             ddCtrl:SetPoint("TOP", modeLabel, "BOTTOM", 0, -9)
 
             -- The search prebuild's row is a stand-in: it never takes a tab's place.
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local d = pvModeDropdowns[pvCtx]
                 if not d then
                     d = {}
@@ -1354,13 +1355,13 @@ CludesUI.AtLogin(function()
 
             -- Override-preview chrome lives on a SEPARATE gold border host: the control's own border is re-asserted by its hover scripts, so never recolor it directly (same pattern as the overrides UI slot marks).
             do
-                local gold = CludesUI._SPECOV_GOLD or { 199 / 255, 166 / 255, 90 / 255 }
+                local gold = CUI._SPECOV_GOLD or { 199 / 255, 166 / 255, 90 / 255 }
                 local host = CreateFrame("Frame", nil, ddCtrl)
                 host:SetAllPoints(ddCtrl)
                 host:SetFrameLevel(ddCtrl:GetFrameLevel() + 30)
-                CludesUI.MakeRoundedBorder(host, gold[1], gold[2], gold[3], 0.9)
+                CUI.MakeRoundedBorder(host, gold[1], gold[2], gold[3], 0.9)
                 host:Hide()
-                if not CludesUI._prebuilding then
+                if not CUI._prebuilding then
                     local e = pvModeCtrls[pvCtx]
                     if not e then
                         e = {}
@@ -1453,7 +1454,7 @@ CludesUI.AtLogin(function()
             -- Hide the container immediately; the dimmer fade masks it.
             if mod._overlayContainer then mod._overlayContainer:Hide() end
             if mod.HidePreview then mod.HidePreview() end
-            local activePage = CludesUI:GetActivePage()
+            local activePage = CUI:GetActivePage()
             if activePage == PAGE_MAIN then
                 local mode = db.profile.previewMode or "overlay"
                 if mode ~= "none" and mod.ShowPreview then
@@ -1478,7 +1479,7 @@ CludesUI.AtLogin(function()
             local panelBg = panelFrame:CreateTexture(nil, "BACKGROUND")
             panelBg:SetAllPoints()
             panelBg:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 0.9)
-            CludesUI.MakeBorder(panelFrame, 1, 1, 1, 0.1, Pix)
+            CUI.MakeBorder(panelFrame, 1, 1, 1, 0.1, Pix)
             local panelFadeAG = panelFrame:CreateAnimationGroup()
             local panelFadeA = panelFadeAG:CreateAnimation("Alpha")
             panelFadeA:SetFromAlpha(0)
@@ -1492,7 +1493,7 @@ CludesUI.AtLogin(function()
 
             local function MakeFont(p, size, red, green, blue, a)
                 local fontStr = p:CreateFontString(nil, "OVERLAY")
-                CludesUI.PrimeFontShadow(fontStr, true)
+                CUI.PrimeFontShadow(fontStr, true)
                 fontStr:SetFont(fontFile, size, "")
                 fontStr:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
                 fonts[#fonts + 1] = fontStr
@@ -1506,7 +1507,7 @@ CludesUI.AtLogin(function()
                 cy = cy - 10
                 local labelFS = MakeFont(panelFrame, 11, 1, 1, 1, 0.75)
                 labelFS:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, cy)
-                labelFS:SetText(CludesUI.L(textValue))
+                labelFS:SetText(CUI.L(textValue))
                 local line = panelFrame:CreateTexture(nil, "ARTWORK")
                 line:SetHeight(1)
                 line:SetPoint("LEFT", labelFS, "RIGHT", 8, 0)
@@ -1534,7 +1535,7 @@ CludesUI.AtLogin(function()
                 local cbBg = checkBtn:CreateTexture(nil, "BACKGROUND")
                 cbBg:SetAllPoints()
                 cbBg:SetColorTexture(0.15, 0.15, 0.15, 1)
-                CludesUI.MakeBorder(checkBtn, 1, 1, 1, 0.2, Pix)
+                CUI.MakeBorder(checkBtn, 1, 1, 1, 0.2, Pix)
 
                 local checkMark = checkBtn:CreateTexture(nil, "OVERLAY")
                 checkMark:SetSize(12, 12)
@@ -1568,7 +1569,7 @@ CludesUI.AtLogin(function()
                 lblBtn:SetScript("OnClick", DoToggle)
                 local labelFS = MakeFont(lblBtn, 11, 1, 1, 1, 0.85)
                 labelFS:SetPoint("LEFT")
-                labelFS:SetText(CludesUI.L(labelText))
+                labelFS:SetText(CUI.L(labelText))
 
                 if editTarget then
                     local editBtn = CreateFrame("Button", nil, row)
@@ -1580,7 +1581,7 @@ CludesUI.AtLogin(function()
                     eBg:SetColorTexture(1, 1, 1, 0.05)
                     local eLbl = MakeFont(editBtn, 10, 1, 1, 1, 0.4)
                     eLbl:SetPoint("CENTER")
-                    eLbl:SetText(CludesUI.L("Edit"))
+                    eLbl:SetText(CUI.L("Edit"))
                     editParts[#editParts + 1] = eBg
                     editParts[#editParts + 1] = eLbl
                     editBtn:SetScript("OnEnter", function()
@@ -1594,7 +1595,7 @@ CludesUI.AtLogin(function()
                     editBtn:SetScript("OnClick", function()
                         EndTestMode()
                         if editTarget.page then
-                            CludesUI:SelectPage(editTarget.page)
+                            CUI:SelectPage(editTarget.page)
                             -- Scroll to + highlight the target row once the page builds.
                             if editTarget.key then
                                 C_Timer.After(0.1, function()
@@ -1603,13 +1604,13 @@ CludesUI.AtLogin(function()
                                     -- A row the page rebuilt since is dressed again (maybe as
                                     -- another row): the glow below is for this dress only.
                                     local targetGen = PoolGen(target)
-                                    local scrollFrame = CludesUI._scrollFrame
+                                    local scrollFrame = CUI._scrollFrame
                                     if scrollFrame then
                                         local _, _, _, _, rowY = target:GetPoint(1)
                                         if rowY then
                                             local scrollPos = math.max(0, math.abs(rowY) - 40)
-                                            if CludesUI.SmoothScrollTo then
-                                                CludesUI.SmoothScrollTo(scrollPos)
+                                            if CUI.SmoothScrollTo then
+                                                CUI.SmoothScrollTo(scrollPos)
                                             end
                                         end
                                     end
@@ -1617,7 +1618,7 @@ CludesUI.AtLogin(function()
                                         if PoolGen(target) ~= targetGen or not target:IsShown() then
                                             return
                                         end
-                                        local brandGreen = CludesUI.CLUDES_GREEN
+                                        local brandGreen = CUI.CLUDES_GREEN
                                         if
                                             not editGlow
                                             or glowR ~= brandGreen.r
@@ -1625,7 +1626,7 @@ CludesUI.AtLogin(function()
                                             or glowB ~= brandGreen.b
                                         then
                                             glowR, glowG, glowB = brandGreen.r, brandGreen.g, brandGreen.b
-                                            editGlow = CludesUI.MakeSettingGlow({ color = brandGreen })
+                                            editGlow = CUI.MakeSettingGlow({ color = brandGreen })
                                         end
                                         editGlow(target)
                                     end)
@@ -1842,7 +1843,7 @@ CludesUI.AtLogin(function()
             clBg:SetColorTexture(0.25, 0.25, 0.25, 0.6)
             local clLbl = MakeFont(closeBtn, 12, 1, 1, 1, 0.7)
             clLbl:SetPoint("CENTER")
-            clLbl:SetText(CludesUI.L("Close"))
+            clLbl:SetText(CUI.L("Close"))
             closeBtn:SetScript("OnEnter", function()
                 clBg:SetColorTexture(0.35, 0.35, 0.35, 0.8)
                 clLbl:SetAlpha(1)
@@ -1869,7 +1870,7 @@ CludesUI.AtLogin(function()
                     self:SetPropagateKeyboardInput(true)
                 end
             end)
-            CludesUI.PopupTakeKeys(testModeFrame, testModeFrame)
+            CUI.PopupTakeKeys(testModeFrame, testModeFrame)
 
             -- Every open starts the sidebar from the look a new one has.
             panelFrame._redress = function(fp, ac)
@@ -1912,9 +1913,9 @@ CludesUI.AtLogin(function()
             testModeActive = true
             mod._testMode = true
 
-            local Pix = CludesUI.PanelPP or CludesUI.PP
-            local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-            local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+            local Pix = CUI.PanelPP or CUI.PP
+            local fontFile = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+            local accentColor = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
             local s = db.profile
 
             if not testModeFrame then
@@ -1976,10 +1977,10 @@ CludesUI.AtLogin(function()
 
         -- Test button appears on the tab bar while the RF module is selected.
         local testTabBtn = nil
-        if CludesUI.SelectModule then
-            hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
+        if CUI.SelectModule then
+            hooksecurefunc(CUI, "SelectModule", function(_, folderName)
                 if folderName == "CludesUIRaidFrames" then
-                    local tb = CludesUI._tabBar
+                    local tb = CUI._tabBar
                     if not tb or not tb._tabButtons then return end
                     local lastBtn = tb._tabButtons[#tb._tabButtons]
                     if not lastBtn then return end
@@ -1997,18 +1998,18 @@ CludesUI.AtLogin(function()
                     testTabBtn:SetHeight(40)
                     testTabBtn:SetFrameLevel(tb:GetFrameLevel() + 1)
 
-                    local PP2 = CludesUI.PanelPP or CludesUI.PP
-                    local labelText = CludesUI.MakeFont(
+                    local PP2 = CUI.PanelPP or CUI.PP
+                    local labelText = CUI.MakeFont(
                         testTabBtn,
                         16,
                         nil,
-                        CludesUI.TEXT_DIM_R or 0.65,
-                        CludesUI.TEXT_DIM_G or 0.65,
-                        CludesUI.TEXT_DIM_B or 0.65,
-                        CludesUI.TEXT_DIM_A or 0.65
+                        CUI.TEXT_DIM_R or 0.65,
+                        CUI.TEXT_DIM_G or 0.65,
+                        CUI.TEXT_DIM_B or 0.65,
+                        CUI.TEXT_DIM_A or 0.65
                     )
                     labelText:SetPoint("CENTER", 0, 0)
-                    labelText:SetText(CludesUI.L("Full Preview"))
+                    labelText:SetText(CUI.L("Full Preview"))
                     testTabBtn._label = labelText
 
                     local textW = labelText:GetStringWidth() or 30
@@ -2023,10 +2024,10 @@ CludesUI.AtLogin(function()
                         "OnLeave",
                         function(self)
                             self._label:SetTextColor(
-                                CludesUI.TEXT_DIM_R or 0.65,
-                                CludesUI.TEXT_DIM_G or 0.65,
-                                CludesUI.TEXT_DIM_B or 0.65,
-                                CludesUI.TEXT_DIM_A or 0.65
+                                CUI.TEXT_DIM_R or 0.65,
+                                CUI.TEXT_DIM_G or 0.65,
+                                CUI.TEXT_DIM_B or 0.65,
+                                CUI.TEXT_DIM_A or 0.65
                             )
                         end
                     )
@@ -2202,7 +2203,7 @@ CludesUI.AtLogin(function()
         -- A manager root's deferred build runs only while its page still shows: a
         -- deep link opens this module on its last page and moves on in one click.
         local function RFPageShown(page)
-            return CludesUI:GetActiveModule() == "CludesUIRaidFrames" and CludesUI:GetActivePage() == page
+            return CUI:GetActiveModule() == "CludesUIRaidFrames" and CUI:GetActivePage() == page
         end
 
         local function WithStack(err) return tostring(err) .. "\n" .. debugstack(2) end
@@ -2212,7 +2213,7 @@ CludesUI.AtLogin(function()
             return ...
         end
 
-        CludesUI:RegisterModule("CludesUIRaidFrames", {
+        CUI:RegisterModule("CludesUIRaidFrames", {
             title = "Raid & Party Frames",
             description = "Configure raid and party frame appearance and behavior.",
             -- No Auras page: debuffs and defensives/externals live in the managers.
@@ -2227,7 +2228,7 @@ CludesUI.AtLogin(function()
                 -- PAGE_BUFFS / PAGE_CLICKCAST go further: their builders (BuildBuffManagerPage -> ns.BM_BuildPage, ns.CC_BuildPage) bypass `parent` and build directly onto the live shared CludesUI._scrollFrame, so building them here would inject visible UI over whatever is on screen. Skip them; they index normally on the player's first live visit.
                 --
                 -- The pre-build must not leave the live page's _partyCtx changed.
-                if CludesUI._prebuilding then
+                if CUI._prebuilding then
                     if pageName == PAGE_MAIN or pageName == PAGE_PARTY then
                         local saved = optionState._partyCtx
                         optionState._partyCtx = (pageName == PAGE_PARTY)
@@ -2292,7 +2293,7 @@ CludesUI.AtLogin(function()
                 local textCheck = mod._rfTextChecks and mod._rfTextChecks[pageName]
                 if textCheck and textCheck() then
                     C_Timer.After(0, function()
-                        if RFPageShown(pageName) then CludesUI:RefreshPage(true) end
+                        if RFPageShown(pageName) then CUI:RefreshPage(true) end
                     end)
                 end
                 if pageName == PAGE_MAIN then
@@ -2366,9 +2367,9 @@ CludesUI.AtLogin(function()
         })
 
         -- Re-open on an RF page: show preview / rebuild BM.
-        CludesUI:RegisterOnShow(function()
-            if CludesUI:GetActiveModule() == "CludesUIRaidFrames" then
-                local page = CludesUI:GetActivePage()
+        CUI:RegisterOnShow(function()
+            if CUI:GetActiveModule() == "CludesUIRaidFrames" then
+                local page = CUI:GetActivePage()
                 if page == PAGE_MAIN then
                     local mode = db.profile.previewMode or "overlay"
                     if mode ~= "none" and mod.ShowPreview then mod.ShowPreview() end
@@ -2403,8 +2404,8 @@ CludesUI.AtLogin(function()
             end
         end)
         -- Panel close: hide preview and clean up BM/CC.
-        if CludesUI.RegisterOnHide then
-            CludesUI:RegisterOnHide(function()
+        if CUI.RegisterOnHide then
+            CUI:RegisterOnHide(function()
                 if mod._rfEyeHintTip then mod._rfEyeHintTip:Hide() end
                 -- HARD INVARIANT against "frames vanish after closing options": both real containers get reparented to UIParent and their visibility recomputed even if a skip-restore tab swap or a post-close deferred ShowPreview orphaned one under the hidden preview parent.
                 -- Self-defers to PLAYER_REGEN_ENABLED in combat.
@@ -2421,11 +2422,11 @@ CludesUI.AtLogin(function()
         -- HideAllChildren callback: BM/CC intentionally bypass the scroll child, so their scrollFrame-parented roots need explicit cleanup.
         -- Registered beside the other modules' scroll-root hiders (never in place of them).
         local function HideManagerRoots() DropManagerPanels(nil, true, true) end
-        CludesUI._AddScrollRootHider(HideManagerRoots)
+        CUI._AddScrollRootHider(HideManagerRoots)
 
         -- Module switch: drop the BM/CC roots and hide the preview.
-        if CludesUI.SelectModule then
-            hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
+        if CUI.SelectModule then
+            hooksecurefunc(CUI, "SelectModule", function(_, folderName)
                 if folderName ~= "CludesUIRaidFrames" then
                     if mod._rfEyeHintTip then mod._rfEyeHintTip:Hide() end
                     -- Tear down previews and guarantee the real containers return to UIParent, including the orphaned-flag-false cases.
@@ -2481,17 +2482,17 @@ CludesUI.AtLogin(function()
         }
 
         -- Page switch cleanup within RF. PRE-hook (wrap, not hooksecurefunc): _partyCtx must be set BEFORE SelectPage refreshes widget values.
-        if CludesUI.SelectPage then
-            local origSelectPage = CludesUI.SelectPage
-            CludesUI.SelectPage = function(self, pageName, ...)
+        if CUI.SelectPage then
+            local origSelectPage = CUI.SelectPage
+            CUI.SelectPage = function(self, pageName, ...)
                 optionState._partyCtx = (pageName == PAGE_PARTY)
                 -- Entering Buffs from another page (not a rebuild while on it): WoW Forever opens it on All Specs.
-                if pageName == PAGE_BUFFS and CludesUI:GetActivePage() ~= PAGE_BUFFS then
+                if pageName == PAGE_BUFFS and CUI:GetActivePage() ~= PAGE_BUFFS then
                     mod.BM_EnterAllSpecs()
                 end
                 -- Party tab excludes synced sections from inline search; cleared on every other page (any module) so the hook can never leak.
-                CludesUI._searchExcludeSection = (pageName == PAGE_PARTY) and mod._PartySearchExclude or nil
-                CludesUI._onInlineSearch = (pageName == PAGE_PARTY) and mod._PartySearchOverlaySync or nil
+                CUI._searchExcludeSection = (pageName == PAGE_PARTY) and mod._PartySearchExclude or nil
+                CUI._onInlineSearch = (pageName == PAGE_PARTY) and mod._PartySearchOverlaySync or nil
                 local result = origSelectPage(self, pageName, ...)
                 -- Re-sync overlays on entering the party tab: a prior search may have hidden them, and the search box clears on page change.
                 if pageName == PAGE_PARTY and mod._PartySearchOverlaySync then
@@ -2565,11 +2566,11 @@ CludesUI.AtLogin(function()
             end
             if msg == "reset" then
                 -- The reload first (RequestReload); the reset lands before it.
-                CludesUI.RequestReload()
+                CUI.RequestReload()
                 db:ResetProfile()
                 return
             end
-            CludesUI:ShowModule("CludesUIRaidFrames")
+            CUI:ShowModule("CludesUIRaidFrames")
         end
     end -- ns._InitCUIModule
 

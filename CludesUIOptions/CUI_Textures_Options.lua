@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Textures_Options.lua
 --
@@ -28,12 +29,12 @@ local GLOBAL_KEY = "_CUIGlobal"
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- Session-only card expand state (never saved).
 local _txExpanded = {}
 
-local NS = CludesUI.ModuleNS
+local NS = CUI.ModuleNS
 
 -------------------------------------------------------------------------------
 --  Statusbar catalogue helpers
@@ -46,8 +47,8 @@ local _ownCat = {}
 local function OwnBarCatalogue(key, includeExtras)
     local c = _ownCat[key]
     if not c then
-        local texture, nameList, sequence = CludesUI.BuildBarTextureTables(includeExtras)
-        CludesUI.AppendSharedMediaTextures(nameList, sequence, nil, texture)
+        local texture, nameList, sequence = CUI.BuildBarTextureTables(includeExtras)
+        CUI.AppendSharedMediaTextures(nameList, sequence, nil, texture)
         c = { lookup = texture, names = nameList, order = sequence }
         _ownCat[key] = c
     end
@@ -98,13 +99,13 @@ end
 --  Shared row helpers (CludesUI_Widgets.lua, shared with the Fonts page)
 -------------------------------------------------------------------------------
 
-local BLANK, LinkRow, NoteRow = CludesUI.BlankRowCfg, CludesUI.BuildLinkRow, CludesUI.BuildNoteRow
+local BLANK, LinkRow, NoteRow = CUI.BlankRowCfg, CUI.BuildLinkRow, CUI.BuildNoteRow
 
 local function DisabledTile(hostFrame, cursorY, W, tile)
     return NoteRow(
         hostFrame,
         cursorY,
-        CludesUI.Lf("Enable %1$s to edit its texture settings.", CludesUI.L(tile.display))
+        CUI.Lf("Enable %1$s to edit its texture settings.", CUI.L(tile.display))
     )
 end
 
@@ -112,13 +113,13 @@ end
 -- (rowFn builds it; nil while the module's options are not loaded), greyed while
 -- the Blizzard Style of styleKey draws its stock art there instead.
 local function AddTexBgCog(region, rowFn, styleKey)
-    if CludesUI._prebuilding then return end
+    if CUI._prebuilding then return end
     local row = rowFn()
     if not row then return end
-    local blizzOn = styleKey and CludesUI.BlizzStyle.Active(styleKey) == "blizzard"
-    CludesUI.BuildInlineCog(region, {
+    local blizzOn = styleKey and CUI.BlizzStyle.Active(styleKey) == "blizzard"
+    CUI.BuildInlineCog(region, {
         disabled = blizzOn and function() return true end or nil,
-        disabledTooltip = blizzOn and CludesUI.BlizzStyle.Label(styleKey) or nil,
+        disabledTooltip = blizzOn and CUI.BlizzStyle.Label(styleKey) or nil,
         requireState = blizzOn and "disabled" or nil,
         title = "Texture Settings",
         rows = { row },
@@ -133,7 +134,7 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local ABAR = mod.EAB
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         mod.dataBarTextureNames or {},
         mod.dataBarTextureOrder or {},
         nil,
@@ -148,7 +149,7 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
         false,
         function(key)
             if not key or key == "---" or key == "none" then return nil end
-            return CludesUI.ResolveTexturePath(lookup, key, nil)
+            return CUI.ResolveTexturePath(lookup, key, nil)
         end
     )
     local function barTexCfg(labelText, barId)
@@ -179,7 +180,7 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
     )
     cursorY = cursorY - height
     -- WoW Forever has no House Favor bar: its row is not built there.
-    if not CludesUI.IS_FOREVER then
+    if not CUI.IS_FOREVER then
         _, height = W:DualRow(hostFrame, cursorY, barTexCfg("House Favor Bar Texture", "FavorBar"), BLANK())
         cursorY = cursorY - height
     end -- not IS_FOREVER
@@ -200,7 +201,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local function saved() return mod.db and mod.db.profile end
     local DEF = mod.defaults or {}
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         mod.healthBarTextureNames or {},
         mod.healthBarTextureOrder or {},
         nil,
@@ -421,7 +422,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local function saved() return mod.db and mod.db.profile end
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         mod.healthBarTextureNames or {},
         mod.healthBarTextureOrder or {},
         nil,
@@ -542,8 +543,8 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
             ReloadUnitFrames()
         end,
     }
-    if CludesUI.BlizzStyle.Active("unitframes") == "blizzard" then
-        CludesUI.BlizzStyle.Gate("unitframes", castTexCfg)
+    if CUI.BlizzStyle.Active("unitframes") == "blizzard" then
+        CUI.BlizzStyle.Gate("unitframes", castTexCfg)
     end
     local _, focusRow, castRow
     local ptRow, height = W:DualRow(hostFrame, cursorY, barTexCfg("player"), barTexCfg("target"))
@@ -593,7 +594,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local function saved() return mod.db and mod.db.profile end
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         mod.healthBarTextureNames or {},
         mod.healthBarTextureOrder or {},
         nil,
@@ -691,7 +692,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
             if key == "blizzardModern" then
                 return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex("striped"), modernSwatch
             end
-            if key == "maxHealthStripes" then return CludesUI.MAX_HEALTH_STRIPES_TEX end
+            if key == "maxHealthStripes" then return CUI.MAX_HEALTH_STRIPES_TEX end
             return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex(key) or nil
         end,
     }
@@ -846,14 +847,14 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
     local function RBApply()
         if _G._CURB_Apply then _G._CURB_Apply() end
     end
-    if CludesUI.AppendSharedMediaTextures then
-        CludesUI.AppendSharedMediaTextures(
+    if CUI.AppendSharedMediaTextures then
+        CUI.AppendSharedMediaTextures(
             _G._CURB_BarTextureNames or {},
             _G._CURB_BarTextureOrder or {},
             nil,
             _G._CURB_BarTextures
         )
-        CludesUI.AppendSharedMediaTextures(
+        CUI.AppendSharedMediaTextures(
             _G._CURB_CastBarTextureNames or {},
             _G._CURB_CastBarTextureOrder or {},
             nil,
@@ -903,7 +904,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             if not (profile and profile.castBar) then return end
             profile.castBar.texture = value
             RBApply()
-            if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_CastBar") end
+            if CUI.NotifyElementResized then CUI.NotifyElementResized("ERB_CastBar") end
         end,
     })
     cursorY = cursorY - height
@@ -936,7 +937,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
                     mod.ERB_SetBarTexture(profile, barId, val ~= "__match" and val)
                     RBApply()
                     -- Neither bar has its own texture any more: the row goes.
-                    if profile.splitTex ~= true then CludesUI:RefreshPage(true) end
+                    if profile.splitTex ~= true then CUI:RefreshPage(true) end
                 end,
             }
         end
@@ -964,7 +965,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             if not (profile and profile.gcdBar) then return end
             profile.gcdBar.texture = value
             RBApply()
-            if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_GCDBar") end
+            if CUI.NotifyElementResized then CUI.NotifyElementResized("ERB_GCDBar") end
         end,
     }, BLANK())
     cursorY = cursorY - height
@@ -989,14 +990,14 @@ local function TileChat(hostFrame, cursorY, W, tile)
     -- Stock styles (Style page): Blizzard's own chat background, and either
     -- Blizzard's tabs or the painted vanilla tab sheet -- none take a texture,
     -- and the linked border row is hidden there too.
-    local BS = CludesUI.BlizzStyle
+    local BS = CUI.BlizzStyle
     if BS and BS.Get("chat") then
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf(
+            CUI.Lf(
                 "%1$s is active: chat keeps Blizzard's own background and tab art.",
-                CludesUI.L(BS.Label("chat"))
+                CUI.L(BS.Label("chat"))
             )
         )
     end
@@ -1056,10 +1057,10 @@ local function TileQoL(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     -- Movement alert bar texture: module-owned registered tables.
-    local mt = CludesUI._MovementBarTextures
+    local mt = CUI._MovementBarTextures
     local maCfg
     if mt then
-        CludesUI.AppendSharedMediaTextures(mt.names, mt.order, nil, mt.lookup)
+        CUI.AppendSharedMediaTextures(mt.names, mt.order, nil, mt.lookup)
         local values, sequence = CopyBarDD(mt.names, mt.order, mt.lookup, false)
         maCfg = {
             type = "dropdown",
@@ -1077,9 +1078,9 @@ local function TileQoL(hostFrame, cursorY, W, tile)
                 local ma = db and db.profile and db.profile.movementAlert
                 if not ma then return end
                 ma.barTexture = value
-                if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
-                if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
-                if CludesUI._applyGateway then CludesUI._applyGateway() end
+                if CUI._applyMovementAlert then CUI._applyMovementAlert() end
+                if CUI._applyTimeSpiral then CUI._applyTimeSpiral() end
+                if CUI._applyGateway then CUI._applyGateway() end
             end,
         }
     end
@@ -1268,7 +1269,7 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local function saved() return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm end
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         _G._CUDM_BarTextureNames or {},
         _G._CUDM_BarTextureOrder or {},
         nil,
@@ -1426,7 +1427,7 @@ local TILE_BUILDERS = {
 
 local function BuildTileList()
     local tiles = {}
-    local roster = CludesUI.ADDON_ROSTER or {}
+    local roster = CUI.ADDON_ROSTER or {}
     for _, record in ipairs(roster) do
         local def = not record.comingSoon and TILE_BUILDERS[record.folder]
         if def then
@@ -1451,18 +1452,18 @@ end
 local TX_GLYPH_TEX = "Interface\\AddOns\\CludesUI\\media\\textures\\melli.tga"
 
 local function BuildTexCard(hostFrame, cursorY, W, tile)
-    return CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
+    return CUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
         enabled = NS(tile.folder) ~= nil,
         expanded = _txExpanded,
         descW = 560,
         -- Mini statusbar glyph: a texture strip in a thin frame.
         glyph = function(heading, enabled)
-            local Pix = CludesUI.PanelPP
-            local ACC = CludesUI.CLUDES_GREEN
+            local Pix = CUI.PanelPP
+            local ACC = CUI.CLUDES_GREEN
             local icon = CreateFrame("Frame", nil, heading)
             Pix.Size(icon, 26, 12)
             Pix.Point(icon, "LEFT", heading, "LEFT", 14, 0)
-            CludesUI.MakeBorder(icon, 1, 1, 1, 0.3, Pix)
+            CUI.MakeBorder(icon, 1, 1, 1, 0.3, Pix)
             local glyphTex = icon:CreateTexture(nil, "ARTWORK")
             glyphTex:SetPoint("TOPLEFT", icon, "TOPLEFT", 1, -1)
             glyphTex:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -1, 1)
@@ -1480,8 +1481,8 @@ end
 --  Deep-link pre-hook: expand every card before a jump into the Textures page
 -------------------------------------------------------------------------------
 do
-    local origNav = CludesUI.NavigateToElementSettings
-    function CludesUI:NavigateToElementSettings(moduleName, page, sectionName, preSelectFn, highlightText)
+    local origNav = CUI.NavigateToElementSettings
+    function CUI:NavigateToElementSettings(moduleName, page, sectionName, preSelectFn, highlightText)
         -- The original refuses in combat: no page state changes then.
         if InCombatLockdown() then
             return origNav(self, moduleName, page, sectionName, preSelectFn, highlightText)
@@ -1494,7 +1495,7 @@ do
                     changed = true
                 end
             end
-            if changed and CludesUI.InvalidatePageCache then CludesUI:InvalidatePageCache() end
+            if changed and CUI.InvalidatePageCache then CUI:InvalidatePageCache() end
         end
         return origNav(self, moduleName, page, sectionName, preSelectFn, highlightText)
     end
@@ -1505,8 +1506,8 @@ end
 -------------------------------------------------------------------------------
 
 function _G._CUI_BuildTexturesPage(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PanelPP
+    local W = CUI.Widgets
+    local Pix = CUI.PanelPP
     local cursorY = yOffset
     local _, height
 
@@ -1518,19 +1519,19 @@ function _G._CUI_BuildTexturesPage(page, hostFrame, yOffset)
     -- parent-level regions are invisible to the search and float over
     -- filtered results).
     local introHost = CreateFrame("Frame", nil, hostFrame)
-    Pix.Size(introHost, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 44)
+    Pix.Size(introHost, hostFrame:GetWidth() - CUI.CONTENT_PAD * 2, 44)
     -- 10px breathing room above; the host's slack below is trimmed the same
     -- amount so the section title sits tighter under the text.
-    introHost:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY - 20)
-    local intro = CludesUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
+    introHost:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY - 20)
+    local intro = CUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
     intro:SetPoint("TOPLEFT", introHost, "TOPLEFT", 0, -2)
     intro:SetPoint("TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
     intro:SetJustifyH("LEFT")
     intro:SetWordWrap(true)
     intro:SetText(
-        CludesUI.L("A quick view of every texture setting in one place.")
+        CUI.L("A quick view of every texture setting in one place.")
             .. "\n"
-            .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones.")
+            .. CUI.L("These are the same settings found on each module's own pages, not separate ones.")
     )
     cursorY = cursorY - 48
 

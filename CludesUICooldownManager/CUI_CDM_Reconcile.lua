@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Reconcile.lua
 --
@@ -310,7 +311,7 @@ end
 
 -- Parent-facing bridge for the automatic/export-time reconcile: cd and utility bars only
 -- (buff-family excluded -- picker-authoritative). The export path nil-checks this, so a disabled CDM child is a clean no-op.
-CludesUI.CDMReconcileActiveSpecSpells = function()
+CUI.CDMReconcileActiveSpecSpells = function()
     mod.ReseedAssignedSpellsFromLiveIcons(true)
     -- Export serializes immediately after this bridge: erase any item rows
     -- the reseed just mirrored so exports can never ship them.
@@ -554,7 +555,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
     -- need (see below). A catalogue it cannot read keeps the spell (fails open).
     local foreverListed, defaultHidden
     local function DefaultHidden(ident)
-        if not CludesUI.IS_FOREVER then return false end
+        if not CUI.IS_FOREVER then return false end
         if defaultHidden == nil then defaultHidden = mod.CDMDefaultHiddenSet() or false end
         return not defaultHidden or mod.CDMIsDefaultHidden(defaultHidden, ident)
     end
@@ -620,7 +621,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
                 -- Owned but no longer tracked: the user cleared it from
                 -- Blizzard's CDM tracking -> drop.
                 keepSet = false
-            elseif catalogKeys and not CludesUI.IS_FOREVER then
+            elseif catalogKeys and not CUI.IS_FOREVER then
                 -- Untalented: it only reached the preview by being
                 -- materialized from the settings catalog, so it must also
                 -- LEAVE when removed from tracking -> drop.
@@ -996,7 +997,7 @@ end
 -- it no slot. nil off Forever or while the catalogue is not readable (callers
 -- then keep everything). Read-only, drop-pass and options time only.
 function mod.CDMForeverListedSet()
-    if not CludesUI.IS_FOREVER then return nil end
+    if not CUI.IS_FOREVER then return nil end
     local prefs = _G.CooldownViewerSettings
     if not prefs or type(prefs.GetDataProvider) ~= "function" then return nil end
     local okP, provider = pcall(prefs.GetDataProvider, prefs)
@@ -1037,7 +1038,7 @@ end
 -- an entry the player showed and hid again reads as default-hidden too. nil off
 -- Forever or while the catalogue is not readable. Read with ns.CDMIsDefaultHidden.
 function mod.CDMDefaultHiddenSet()
-    if not CludesUI.IS_FOREVER then return nil end
+    if not CUI.IS_FOREVER then return nil end
     local prefs = _G.CooldownViewerSettings
     if not prefs or type(prefs.GetDataProvider) ~= "function" then return nil end
     local okP, provider = pcall(prefs.GetDataProvider, prefs)
@@ -1304,7 +1305,7 @@ function mod.ReconcileBuffFamilyDrops(barId)
             -- Displayed included) is a buff this client cannot see (a retail
             -- layout's): it holds its place instead.
             local unseen = false
-            if vouched and not anyPresent and CludesUI.IS_FOREVER then
+            if vouched and not anyPresent and CUI.IS_FOREVER then
                 if foreverListed == nil then foreverListed = mod.CDMForeverListedSet() or false end
                 unseen = true
                 if foreverListed then
@@ -1508,7 +1509,7 @@ local function IsSpecID(ident) return type(ident) == "number" and ident > 0 and 
 
 -- specIDs: nil = every spec of the player's class, or one spec ID, or a list of them.
 -- Returns true once queued, false when nothing valid was given.
-function CludesUI.RequestCDMRepopulate(specIDs)
+function CUI.RequestCDMRepopulate(specIDs)
     if not CludesUIDB then return false end
     local ids = {}
     if specIDs == nil then
@@ -1547,7 +1548,7 @@ end
 -- "pending" while the spec (default: the live one) is queued for this
 -- character; "done", time(), layoutID once its queued run finished (layoutID
 -- nil when no saved Blizzard layout was active); nil otherwise.
-function CludesUI.GetCDMRepopulateStatus(specID)
+function CUI.GetCDMRepopulateStatus(specID)
     if not CludesUIDB then return nil end
     if specID == nil then specID = LiveSpecID() end
     if not IsSpecID(specID) then return nil end

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- Blocks\Shared.lua
 -- Shared scaffolding for the DataBars block factories. Loads before every other
 -- Blocks\*.lua file; each block file lives in its own file and imports helpers
@@ -42,13 +43,13 @@ local ICON_GAP = 8
 -- Bar fill textures for block statusbars (XP/Rep, professions): mirrors the
 -- Unit Frames Bar Texture set; SharedMedia appended below + at dropdown build.
 -- "none" = flat fill.
-local barTextures, barTextureNames, barTextureOrder = CludesUI.BuildBarTextureTables(true)
+local barTextures, barTextureNames, barTextureOrder = CUI.BuildBarTextureTables(true)
 mod.barTextures = barTextures
 mod.barTextureOrder = barTextureOrder
 mod.barTextureNames = barTextureNames
 
 -- Seed SharedMedia statusbar textures once at load so a saved LSM key resolves at login; the parent helper also registers for late LSM packs.
-CludesUI.AppendSharedMediaTextures(barTextureNames, barTextureOrder, nil, barTextures)
+CUI.AppendSharedMediaTextures(barTextureNames, barTextureOrder, nil, barTextures)
 
 local InCombatLockdown = InCombatLockdown
 

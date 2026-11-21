@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then return end -- no skyriding on WoW Forever: no DB, no events, no HUD; its options tab is not registered there
+local CUI = CludesUI
+if CUI and CUI.IS_FOREVER then return end -- no skyriding on WoW Forever: no DB, no events, no HUD; its options tab is not registered there
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_DragonRiding.lua - Skyriding HUD
 -------------------------------------------------------------------------------
@@ -18,7 +19,7 @@ local GetTime = GetTime
 
 -- Bar texture table (shared with options via ns); paths only -- the
 -- options file builds its own names/order pair from the same catalogue.
-mod.EDR_BAR_TEXTURES = (CludesUI.BuildBarTextureTables())
+mod.EDR_BAR_TEXTURES = (CUI.BuildBarTextureTables())
 
 -- Constants
 local SPELL = {
@@ -216,7 +217,7 @@ local function TickWanted()
 end
 local function SyncTicker()
     if not rootHost then return end
-    if rootHost:IsShown() and (TickWanted() or (CludesUI and CludesUI._unlockActive)) then
+    if rootHost:IsShown() and (TickWanted() or (CUI and CUI._unlockActive)) then
         rootHost:SetScript("OnUpdate", OnUpdate)
     else
         rootHost:SetScript("OnUpdate", nil)
@@ -260,7 +261,7 @@ end
 --  Visibility
 -------------------------------------------------------------------------------
 local function IsOnSkyridingMount()
-    if not CludesUI.IsPlayerMountedLike() then return false end
+    if not CUI.IsPlayerMountedLike() then return false end
     local _, canGlide = C_PlayerInfo.GetGlidingInfo()
     return canGlide == true
 end
@@ -284,7 +285,7 @@ function UpdateVisibility()
         return
     end
     local wasShown = rootHost:IsShown()
-    if CludesUI and CludesUI._unlockActive then
+    if CUI and CUI._unlockActive then
         if not wasShown then MarkReshown() end
         rootHost:Show()
         rootHost:SetScript("OnUpdate", OnUpdate)
@@ -602,7 +603,7 @@ local BLIZZ_ICON = {
 }
 
 local function SnapPx(val)
-    local PPdr = CludesUI and CludesUI.PP
+    local PPdr = CUI and CUI.PP
     if PPdr and PPdr.Snap then return PPdr.Snap(val) end
     return floor(val + 0.5)
 end
@@ -611,7 +612,7 @@ end
 -- gems' half-unit art sizes produced) puts every edge inside it half a pixel
 -- off the grid.
 local function SnapEven(val)
-    local PPdr = CludesUI and CludesUI.PP
+    local PPdr = CUI and CUI.PP
     local m = PPdr and PPdr.mult or 1
     if m <= 0 then m = 1 end
     return math.ceil(val / (2 * m) - 1e-6) * 2 * m
@@ -627,7 +628,7 @@ local function ArtOverhang(chromeFrame, keyName)
         local C = BLIZZ_CHROME
         return SnapPx((C.rimT + C.rimB) / 2), SnapPx(C.rimX)
     elseif chromeFrame == "classic" then
-        local CF = CludesUI.ClassicFrame
+        local CF = CUI.ClassicFrame
         if not CF then return 0, 0 end
         local padW, padH = CF.Pad(keyName)
         return SnapPx(padH / 2), SnapPx(padW / 2)
@@ -649,7 +650,7 @@ end
 -- Classic WoW UI frame scale: the Border Size percentage (nil = the shared
 -- default), as the Resource Bars' Classic WoW UI bars take it.
 local function ClassicFrameK(profile)
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     return CF and CF.ScaleK(profile.classicFrameSize) or 1
 end
 
@@ -728,9 +729,9 @@ end
 -------------------------------------------------------------------------------
 local function ApplyFont(fontStr, size)
     if not fontStr then return end
-    local font = CludesUI.GetFontPath("blizzardSkin") or "Fonts/FRIZQT__.TTF"
-    local flag = CludesUI.GetFontOutlineFlag("blizzardSkin") or ""
-    CludesUI.PrimeFontShadow(fontStr, flag == "")
+    local font = CUI.GetFontPath("blizzardSkin") or "Fonts/FRIZQT__.TTF"
+    local flag = CUI.GetFontOutlineFlag("blizzardSkin") or ""
+    CUI.PrimeFontShadow(fontStr, flag == "")
     fontStr:SetFont(font, size or 12, flag)
 end
 
@@ -749,14 +750,14 @@ local borderedFrames = {}
 -- the layout and paint passes below take the set they draw.
 local function EnsureBorder(Set, widget)
     if not widget or widget._edrBorderAdded then return end
-    if not (CludesUI and CludesUI.PP and CludesUI.PP.CreateBorder) then return end
-    CludesUI.PP.CreateBorder(widget, 0, 0, 0, 1, 1, "OVERLAY", 7)
+    if not (CUI and CUI.PP and CUI.PP.CreateBorder) then return end
+    CUI.PP.CreateBorder(widget, 0, 0, 0, 1, 1, "OVERLAY", 7)
     widget._edrBorderAdded = true
     Set.bordered[#Set.bordered + 1] = widget
 end
 
 local function ApplyBorderEdges(widget, hideL, hideR, hideT, hideB)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local edges = Pix and Pix.GetBorders and Pix.GetBorders(widget)
     if not edges then return end
     edges._hideLeft = hideL or nil
@@ -766,7 +767,7 @@ local function ApplyBorderEdges(widget, hideL, hideR, hideT, hideB)
 end
 
 local function ApplyBordersAll(Set, Lay)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if not Pix then return end
     local profile = saved.profile
     local color = profile.borderColor
@@ -1127,7 +1128,7 @@ local function ApplyColumnChrome(Set, Lay, geo, wid, gap, spacing)
     end
 
     -- Classic WoW UI frame.
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     if chromeFrame == "classic" and CF and not colour.classic then
         colour.classic = CF.Create(colour.art, "OVERLAY", 2)
     end
@@ -1137,7 +1138,7 @@ local function ApplyColumnChrome(Set, Lay, geo, wid, gap, spacing)
     end
 
     -- Dividers, one physical pixel thick, snapped to whole pixels.
-    local PPdr = CludesUI.PP
+    local PPdr = CUI.PP
     local pixel = ((PPdr and PPdr.perfect) or 1) / colour:GetEffectiveScale()
     local function Centre(span) return floor(((span - pixel) / 2) / pixel + 0.5) * pixel end
     local num = 0
@@ -1414,7 +1415,7 @@ local function LayoutPips(widget, pipCount, width, height, spacing)
     -- unassigned, so the last pip fell short of the frame's actual right edge (the
     -- "extra spacing between charges and Whirling Surge" report, reproducible at UI
     -- scales where that leftover doesn't round away to ~0).
-    local PPdr = CludesUI and CludesUI.PP
+    local PPdr = CUI and CUI.PP
     local pixel = (PPdr and PPdr.mult and PPdr.mult > 0) and PPdr.mult or 1
     local widthAvail = max(0, width - (pipCount - 1) * spacing)
     -- If the whole row doesn't span even one physical pixel (a very small bar at a low
@@ -1554,7 +1555,7 @@ end
 -- Textures, colours, texts, borders and bevels of one set.
 local function PaintSet(Set, profile, Lay)
     -- Apply bar texture to all StatusBars
-    local texPath = CludesUI.ResolveTexturePath(
+    local texPath = CUI.ResolveTexturePath(
         mod.EDR_BAR_TEXTURES,
         profile.barTexture or "none",
         "Interface\\Buttons\\WHITE8x8"
@@ -1784,7 +1785,7 @@ local function SavePos(_, anchorPoint, relPoint, posX, posY)
     local profile = saved and saved.profile
     if not profile then return end
     profile.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-    if not CludesUI._unlockActive and rootHost then
+    if not CUI._unlockActive and rootHost then
         rootHost:ClearAllPoints()
         rootHost:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
     end
@@ -1821,9 +1822,9 @@ _G._CUDR_Rebuild = function()
 end
 
 function RegisterUnlockElements()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
-    CludesUI:RegisterUnlockElements({
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
+    CUI:RegisterUnlockElements({
         MK({
             key = "EDR_Cluster",
             label = "Dragon Riding",
@@ -1988,9 +1989,9 @@ local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
-    if not CludesUI or not CludesUI.Lite then return end
+    if not CUI or not CUI.Lite then return end
 
-    saved = CludesUI.Lite.NewDB("CludesUIDragonRidingDB", DB_DEFAULTS)
+    saved = CUI.Lite.NewDB("CludesUIDragonRidingDB", DB_DEFAULTS)
     mod.edrDB = saved
     -- Latch the bar art from the login profile (even while the HUD is off,
     -- so a profile switch before its first build still compares against it).

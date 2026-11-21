@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CUI_NumberFormat_Options.lua - Global Settings > Numbers.
 --
@@ -16,9 +17,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --------------------------------------------------------------------------------
 
 -- Frames made on an options page come from the page pool (CludesUI_FramePool.lua).
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
-local TYPES = CludesUI.NUMBER_FORMAT_TYPES
+local TYPES = CUI.NUMBER_FORMAT_TYPES
 
 -- Per value type: its tab, the name of its Precision setting (each type
 -- its own, so a search hit brings back the right type) and that setting's
@@ -48,7 +49,7 @@ local TYPE_INFO = {
         tab = "Damage Meter",
         precision = "Damage Meter Precision",
         -- WoW Forever has no Mythic+ run summary; its threat meter uses this type instead.
-        tip = CludesUI.IS_FOREVER
+        tip = CUI.IS_FOREVER
                 and "Damage Meters and the threat meter. Standard keeps the Damage Meters' own format. Smart shows three digits (1.23M, 12.3M, 123M)."
             or "Damage Meters and the Mythic+ run summary. Standard keeps the Damage Meters' own format. Smart shows three digits (1.23M, 12.3M, 123M).",
     },
@@ -85,11 +86,11 @@ local INFO_ALPHA, INFO_ALPHA_HOVER = 0.45, 0.9
 -- Picked in the header tabs, or set by a search jump to one type's setting.
 local shownType = TYPES[1]
 
-CludesUI._setNumberFormatType = function(valueType) shownType = valueType end
+CUI._setNumberFormatType = function(valueType) shownType = valueType end
 
 -- The search builds the page once per type (its "variants").
 function _G._CUI_NumberFormatVariants()
-    return { setter = CludesUI._setNumberFormatType, keys = TYPES, currentKey = shownType }
+    return { setter = CUI._setNumberFormatType, keys = TYPES, currentKey = shownType }
 end
 
 --------------------------------------------------------------------------------
@@ -97,12 +98,12 @@ end
 --------------------------------------------------------------------------------
 -- A type's Precision and threshold as the engine applies them.
 local function Precision(valueType)
-    local precision = CludesUI.NumberFormatTypeSettings(valueType)
+    local precision = CUI.NumberFormatTypeSettings(valueType)
     return precision
 end
 
 local function Threshold(valueType)
-    local _, threshold = CludesUI.NumberFormatTypeSettings(valueType)
+    local _, threshold = CUI.NumberFormatTypeSettings(valueType)
     return threshold
 end
 
@@ -118,14 +119,14 @@ local RefreshHeader
 
 -- After any change: the engine, the header, then the page's rows.
 local function Applied()
-    CludesUI.RefreshNumberFormat()
+    CUI.RefreshNumberFormat()
     if RefreshHeader then RefreshHeader() end
-    CludesUI:RefreshPage()
+    CUI:RefreshPage()
 end
 
 -- One setting of one value type. Standard Precision is saved as no value.
 local function SetTypeSetting(valueType, key, value)
-    local saved = CludesUI.GetNumberFormatDB(true)
+    local saved = CUI.GetNumberFormatDB(true)
     if not saved then return end
     saved.types = saved.types or {}
     local forType = saved.types[valueType] or {}
@@ -137,7 +138,7 @@ end
 
 -- One setting shared by every value type.
 local function SetSharedSetting(key, value)
-    local saved = CludesUI.GetNumberFormatDB(true)
+    local saved = CUI.GetNumberFormatDB(true)
     if not saved then return end
     saved[key] = value
     Applied()
@@ -146,7 +147,7 @@ end
 -- A shared setting as its row shows it: the saved value when it is the
 -- other choice, else the default.
 local function SharedChoice(key, other, default)
-    local saved = CludesUI.GetNumberFormatDB()
+    local saved = CUI.GetNumberFormatDB()
     if saved and saved[key] == other then return other end
     return default
 end
@@ -156,7 +157,7 @@ end
 --------------------------------------------------------------------------------
 -- Unit Frames' Show Decimal on Health Text (not in its percent-only form).
 local function UnitFramesDecimalsOn()
-    local mod = CludesUI.ModuleNS("CludesUIUnitFrames")
+    local mod = CUI.ModuleNS("CludesUIUnitFrames")
     local profile = mod and mod.db and mod.db.profile
     return profile ~= nil and profile.showDecimalOnText == true and profile.showDecimalPercentOnly ~= true
 end
@@ -166,7 +167,7 @@ end
 local function MetersForceEnglishOn()
     local db = _G._CUDM_DB
     local meters = db and db.profile and db.profile.dm
-    return meters ~= nil and meters.forceEnglishUnits == true and CludesUI.NumberFormatUsesGlyphs()
+    return meters ~= nil and meters.forceEnglishUnits == true and CUI.NumberFormatUsesGlyphs()
 end
 
 local OVERRIDES = {
@@ -204,7 +205,7 @@ local function BuildTypeTabs(heading)
     for _, valueType in ipairs(TYPES) do
         labels[valueType] = TYPE_INFO[valueType].tab
     end
-    return CludesUI.BuildSegmentedControl({
+    return CUI.BuildSegmentedControl({
         parent = heading,
         keys = TYPES,
         labels = labels,
@@ -217,7 +218,7 @@ local function BuildTypeTabs(heading)
             if key == shownType then return end
             shownType = key
             RefreshHeader()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     })
 end
@@ -225,16 +226,16 @@ end
 -- One column per preview value, centred on the header: the number small,
 -- and the result in the accent under it. Returns the result strings.
 local function BuildPreview(heading, cursorY)
-    local PP = CludesUI.PanelPP
-    local accent = CludesUI.CLUDES_GREEN
+    local PP = CUI.PanelPP
+    local accent = CUI.CLUDES_GREEN
     local count = #PREVIEW_VALUES
     local results = {}
     for i, value in ipairs(PREVIEW_VALUES) do
         local posX = (i - (count + 1) / 2) * PREVIEW_COLUMN_W
-        local number = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.4)
+        local number = CUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.4)
         number:SetText(BreakUpLargeNumbers(value))
         PP.Point(number, "TOP", heading, "TOP", posX, cursorY)
-        local result = CludesUI.MakeFont(heading, 20, nil, accent.r, accent.g, accent.b, 1)
+        local result = CUI.MakeFont(heading, 20, nil, accent.r, accent.g, accent.b, 1)
         PP.Point(result, "TOP", heading, "TOP", posX, cursorY - 16)
         results[i] = result
     end
@@ -245,9 +246,9 @@ end
 -- With info set, an (i) follows the label (lowered by info.dy) and lights
 -- up with the tooltip. Placing the label and dropdown is the caller's.
 local function BuildHeaderSetting(heading, spec)
-    local label = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 1)
-    label:SetText(CludesUI.L(spec.label))
-    local dropdown = CludesUI.BuildDropdownControl(
+    local label = CUI.MakeFont(heading, 14, nil, 1, 1, 1, 1)
+    label:SetText(CUI.L(spec.label))
+    local dropdown = CUI.BuildDropdownControl(
         heading,
         spec.width,
         heading:GetFrameLevel() + 5,
@@ -261,7 +262,7 @@ local function BuildHeaderSetting(heading, spec)
         icon = heading:CreateTexture(nil, "OVERLAY")
         icon:SetTexture(INFO_ICON)
         icon:SetVertexColor(1, 1, 1, INFO_ALPHA)
-        CludesUI.PanelPP.Size(icon, 12, 12)
+        CUI.PanelPP.Size(icon, 12, 12)
         icon:SetPoint("LEFT", label, "RIGHT", 5, spec.info.dy)
     end
     local hover = CreateFrame("Frame", nil, heading)
@@ -271,11 +272,11 @@ local function BuildHeaderSetting(heading, spec)
     hover:SetMouseMotionEnabled(true)
     hover:SetScript("OnEnter", function()
         if icon then icon:SetVertexColor(1, 1, 1, INFO_ALPHA_HOVER) end
-        CludesUI.ShowWidgetTooltip(label, spec.tooltip())
+        CUI.ShowWidgetTooltip(label, spec.tooltip())
     end)
     hover:SetScript("OnLeave", function()
         if icon then icon:SetVertexColor(1, 1, 1, INFO_ALPHA) end
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
     return label, dropdown
 end
@@ -290,17 +291,17 @@ local function BuildThresholdLock(heading, label, dropdown)
     lock:EnableMouse(true)
     lock:SetScript(
         "OnEnter",
-        function() CludesUI.ShowWidgetTooltip(dropdown, CludesUI.DisabledTooltip(THRESHOLD_LOCK)) end
+        function() CUI.ShowWidgetTooltip(dropdown, CUI.DisabledTooltip(THRESHOLD_LOCK)) end
     )
-    lock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+    lock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
     return lock
 end
 
 -- Tabs, preview, then the shown type's Precision and threshold either side
 -- of the middle. Returns the header's height.
 local function BuildHeader(heading)
-    local PP = CludesUI.PanelPP
-    local L = CludesUI.L
+    local PP = CUI.PanelPP
+    local L = CUI.L
     local cursorY = -16
 
     local tabs, tabsH, refreshTabs = BuildTypeTabs(heading)
@@ -317,7 +318,7 @@ local function BuildHeader(heading)
     local precisionLabel, precisionDropdown = BuildHeaderSetting(heading, {
         label = TYPE_INFO[shownType].precision,
         tooltip = function()
-            return L(TYPE_INFO[shownType].tip) .. "\n\n" .. CludesUI.L("Numbers are cut, not rounded.")
+            return L(TYPE_INFO[shownType].tip) .. "\n\n" .. CUI.L("Numbers are cut, not rounded.")
         end,
         width = 170,
         choices = PRECISION_CHOICES,
@@ -345,7 +346,7 @@ local function BuildHeader(heading)
         local valueType = shownType
         precisionLabel:SetText(L(TYPE_INFO[valueType].precision))
         for i, result in ipairs(results) do
-            result:SetText(CludesUI.AbbreviateValue(PREVIEW_VALUES[i], valueType))
+            result:SetText(CUI.AbbreviateValue(PREVIEW_VALUES[i], valueType))
         end
         local locked = Precision(valueType) == "standard"
         local alpha = locked and 0.3 or 1
@@ -376,8 +377,8 @@ end
 -- not on the page). The body rows are shared by every type and stay
 -- untagged, so a jump to one keeps the shown type.
 local function RegisterHeaderSearch(valueType)
-    local L = CludesUI.L
-    local module, page = CludesUI._buildingModule, CludesUI._buildingPage
+    local L = CUI.L
+    local module, page = CUI._buildingModule, CUI._buildingPage
     local entries = {
         { TYPE_INFO[valueType].precision, TYPE_INFO[valueType].tip },
         { THRESHOLD_LABEL, THRESHOLD_TIP },
@@ -385,14 +386,14 @@ local function RegisterHeaderSearch(valueType)
     for _, entry in ipairs(entries) do
         local label, tip = entry[1], entry[2]
         local localized = L(label)
-        CludesUI._RegisterSearchEntry(
+        CUI._RegisterSearchEntry(
             label,
             localized ~= label and localized or nil,
             tip,
             module,
             page,
             "PRECISION",
-            CludesUI._setNumberFormatType,
+            CUI._setNumberFormatType,
             valueType
         )
     end
@@ -408,9 +409,9 @@ local function LetterCaseRow()
         order = { "upper", "lower" },
         getValue = function() return SharedChoice("case", "lower", "upper") end,
         setValue = function(value) SetSharedSetting("case", value ~= "upper" and value or nil) end,
-        disabled = function() return EveryTypeStandard() or CludesUI.NumberFormatUsesGlyphs() end,
+        disabled = function() return EveryTypeStandard() or CUI.NumberFormatUsesGlyphs() end,
         disabledTooltip = function()
-            if CludesUI.NumberFormatUsesGlyphs() then return "Your client's units have no letter case" end
+            if CUI.NumberFormatUsesGlyphs() then return "Your client's units have no letter case" end
             return "This option requires a value type with a Precision other than Standard"
         end,
         rawTooltip = true,
@@ -426,7 +427,7 @@ local function UnitStyleRow()
         order = { "auto", "western" },
         getValue = function() return SharedChoice("units", "western", "auto") end,
         setValue = function(value) SetSharedSetting("units", value ~= "auto" and value or nil) end,
-        disabled = function() return not CludesUI.LocaleHasNumberAbbreviation() end,
+        disabled = function() return not CUI.LocaleHasNumberAbbreviation() end,
         disabledTooltip = "Only East Asian clients have their own units",
         rawTooltip = true,
     }
@@ -441,10 +442,10 @@ local function BuildOverrideNote(hostFrame, cursorY)
     local active, note, module, page, section, setting = Override(shownType)
     local row
     cursorY, row =
-        CludesUI.BuildLinkRow(hostFrame, cursorY, note, module, page, section, setting, { warn = true })
+        CUI.BuildLinkRow(hostFrame, cursorY, note, module, page, section, setting, { warn = true })
     row._searchIgnore = true
     row:SetShown(active)
-    CludesUI.RegisterWidgetRefresh(function()
+    CUI.RegisterWidgetRefresh(function()
         local on, text, m, p, s, hl = Override(shownType)
         row:Relink(text, m, p, s, hl)
         row:SetShown(on)
@@ -454,11 +455,11 @@ end
 
 -- Builds the page into hostFrame from yOffset down; returns its height.
 function _G._CUI_BuildNumberFormatPage(pageName, hostFrame, yOffset)
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height
 
-    CludesUI:SetContentHeader(BuildHeader)
+    CUI:SetContentHeader(BuildHeader)
     RegisterHeaderSearch(shownType)
 
     hostFrame._showRowDivider = true

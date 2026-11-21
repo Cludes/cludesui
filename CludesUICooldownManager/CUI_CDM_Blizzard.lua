@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Blizzard.lua
 --
@@ -18,10 +19,10 @@ local ECME, FC, _ecmeFC, cdmBarFrames = Inner.ECME, Inner.FC, Inner._ecmeFC, Inn
 --  CDM Bars: Our replacement for Blizzard's Cooldown Manager
 --  Captures Blizzard positions on first login, then creates our own bars.
 -------------------------------------------------------------------------------
-local function GetCDMFont() return CludesUI.GetFontPath("cdm") end
+local function GetCDMFont() return CUI.GetFontPath("cdm") end
 local function SetBlizzCDMFont(fontStr, font, size, red, green, blue)
     if not (fontStr and fontStr.SetFont) then return end
-    CludesUI.ApplyIconTextFont(fontStr, font, size, "cdm")
+    CUI.ApplyIconTextFont(fontStr, font, size, "cdm")
     if red then fontStr:SetTextColor(red, green, blue) end
 end
 
@@ -173,8 +174,8 @@ local _editModePolicyApplied = false
 -- button does that step. Step 6 lives in the text because once CDM is disabled nothing of ours runs to remind them to re-enable it.
 local function ShowManualEditModeFixPopup()
     C_Timer.After(0, function()
-        if not (CludesUI and CludesUI.ShowConfirmPopup) then return end
-        CludesUI:ShowConfirmPopup({
+        if not (CUI and CUI.ShowConfirmPopup) then return end
+        CUI:ShowConfirmPopup({
             title = "Edit Mode Needs a Manual Fix",
             message = "CludesUI could not save this change to your Edit Mode layout, so it has to be set by hand. The Cooldown Manager has to be off while you do it, because it hides Blizzard's cooldown viewers and a hidden viewer cannot be selected in Edit Mode.\n\n"
                 .. "1. Disable CludesUI Cooldown Manager (button below).\n"
@@ -213,7 +214,7 @@ local function EnforceCooldownViewerEditModeSettings()
     -- Presets merged first so the activeLayout index resolves correctly. Presets unresolved:
     -- activeLayout counts them, so without the merge it picks the WRONG layout below and the
     -- save hands the client a list its own index no longer fits.
-    local layoutInfo, numPresets = CludesUI.EditModeLayoutsForSave()
+    local layoutInfo, numPresets = CUI.EditModeLayoutsForSave()
     if not layoutInfo then return end
 
     local activeLayout = type(layoutInfo.activeLayout) == "number"
@@ -250,7 +251,7 @@ local function EnforceCooldownViewerEditModeSettings()
         for _, s in ipairs(prefs) do
             if s.setting == settingEnum then
                 if s.value ~= desiredValue then
-                    CludesUI.NoteEditModeSetting(activeLayout, sysInfo, settingEnum, s.value, desiredValue)
+                    CUI.NoteEditModeSetting(activeLayout, sysInfo, settingEnum, s.value, desiredValue)
                     s.value = desiredValue
                     return true
                 end
@@ -259,7 +260,7 @@ local function EnforceCooldownViewerEditModeSettings()
         end
         -- Absent: at the Blizzard default. Nothing to do if that already matches.
         if desiredValue == defaultValue then return false end
-        CludesUI.NoteEditModeSetting(activeLayout, sysInfo, settingEnum, defaultValue, desiredValue)
+        CUI.NoteEditModeSetting(activeLayout, sysInfo, settingEnum, defaultValue, desiredValue)
         prefs[#prefs + 1] = { setting = settingEnum, value = desiredValue }
         return true
     end
@@ -304,9 +305,9 @@ local function EnforceCooldownViewerEditModeSettings()
     -- Forced (non-dismissable) reload popup. On first install the Welcome picker is
     -- pending/open and ALWAYS ends in its own reload, which applies the layout we
     -- just saved -- a second forced popup would stomp the picker, so stay silent and ride that reload.
-    if CludesUI and CludesUI._firstInstallPending then return end
+    if CUI and CUI._firstInstallPending then return end
     C_Timer.After(0, function()
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = "Edit Mode Update",
             message = "CludesUI has updated your CDM Edit Mode settings to ensure cooldown tracking works correctly.\n\nA UI reload is required for the changes to take effect.",
             confirmText = "Reload UI",
@@ -387,8 +388,8 @@ function mod.ParkSecondaryBuffViewer(widget)
         -- player's next Edit Mode save keeps it (renaming or deleting a layout
         -- saves too), and with our Cooldown Manager off Blizzard's tracked
         -- bars then show in that corner.
-        CludesUI.ClearFramePoints(widget)
-        CludesUI.SetFramePoint(widget, "TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
+        CUI.ClearFramePoints(widget)
+        CUI.SetFramePoint(widget, "TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
     end
     if not fc.parkHooked then
         fc.parkHooked = true
@@ -610,7 +611,7 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
     -- A bar keeps its spot unless it is hidden for good: one that shows only
     -- in combat can appear under rolls placed out of combat. The stance bar
     -- of a class with no forms never shows (the test its driver uses).
-    local abKeys, elems = CludesUI._abBarKeys, CludesUI._unlockRegisteredElements
+    local abKeys, elems = CUI._abBarKeys, CUI._unlockRegisteredElements
     if abKeys then
         for key in pairs(abKeys) do
             local e = elems[key]
@@ -670,7 +671,7 @@ function mod.RequestLootPlacement()
     local loot = GroupLootContainer
     if not loot then return end
     local isShown = loot:IsShown()
-    if not issecretvalue(isShown) and isShown then CludesUI.RequestFramePlacement(loot) end
+    if not issecretvalue(isShown) and isShown then CUI.RequestFramePlacement(loot) end
 end
 
 HideBlizzardCDM = function()
@@ -712,14 +713,14 @@ HideBlizzardCDM = function()
     end
     local loot = GroupLootContainer
     if loot then
-        CludesUI.SetFramePlacer(loot, "cdm", PlaceLootRolls)
+        CUI.SetFramePlacer(loot, "cdm", PlaceLootRolls)
         -- Rebuilds run through here: rolls already up follow the rebuilt bars.
         mod.RequestLootPlacement()
     end
 end
 
 RestoreBlizzardCDM = function()
-    if GroupLootContainer then CludesUI.SetFramePlacer(GroupLootContainer, "cdm", nil) end
+    if GroupLootContainer then CUI.SetFramePlacer(GroupLootContainer, "cdm", nil) end
     local allFrameNames = {}
     for _, func in pairs(BLIZZ_CDM_FRAMES) do
         allFrameNames[#allFrameNames + 1] = func
@@ -734,9 +735,9 @@ RestoreBlizzardCDM = function()
             fc.restoring = true
             mod._secondaryParkPending = nil
             if fc.origPoints then
-                CludesUI.ClearFramePoints(widget)
+                CUI.ClearFramePoints(widget)
                 for _, pt in ipairs(fc.origPoints) do
-                    CludesUI.SetFramePoint(widget, pt[1], pt[2], pt[3], pt[4], pt[5])
+                    CUI.SetFramePoint(widget, pt[1], pt[2], pt[3], pt[4], pt[5])
                 end
             end
             -- The secondary viewer is the only alpha-suppressed one, and its Blizzard default is EnableMouse(false) -- restoring it true leaves an invisible click-catcher.
@@ -763,9 +764,9 @@ local function RestoreBlizzardBuffFrame()
         fc.restoring = true
         mod._secondaryParkPending = nil
         if fc.origPoints then
-            CludesUI.ClearFramePoints(widget)
+            CUI.ClearFramePoints(widget)
             for _, pt in ipairs(fc.origPoints) do
-                CludesUI.SetFramePoint(widget, pt[1], pt[2], pt[3], pt[4], pt[5])
+                CUI.SetFramePoint(widget, pt[1], pt[2], pt[3], pt[4], pt[5])
             end
         end
         widget:SetAlpha(1)

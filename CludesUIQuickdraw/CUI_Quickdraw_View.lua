@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_View.lua
 --
@@ -130,13 +131,13 @@ local function ApplySlotVisual(widget, selected, armed)
     -- under the cursor.
     if widget.isPlaceholder then
         local ar, ag, ab = 0.298, 0.788, 0.941
-        if CludesUI.ResolveActiveAccent then
-            ar, ag, ab = CludesUI.ResolveActiveAccent()
+        if CUI.ResolveActiveAccent then
+            ar, ag, ab = CUI.ResolveActiveAccent()
         end
         if selected then
-            CludesUI.PP.UpdateBorder(widget.bhost, 2, ar, ag, ab, 1)
+            CUI.PP.UpdateBorder(widget.bhost, 2, ar, ag, ab, 1)
         else
-            CludesUI.PP.UpdateBorder(widget.bhost, 1, 0.3, 0.3, 0.3, 0.5)
+            CUI.PP.UpdateBorder(widget.bhost, 1, 0.3, 0.3, 0.3, 0.5)
         end
         widget.bg:SetVertexColor(0.08, 0.08, 0.08, 0.6)
         widget.plus:SetTextColor(ar, ag, ab, selected and 1 or 0.6)
@@ -163,17 +164,17 @@ local function ApplySlotVisual(widget, selected, armed)
         local lr = red + (1 - red) * ARM_LIFT
         local lg = green + (1 - green) * ARM_LIFT
         local lb = blue + (1 - blue) * ARM_LIFT
-        CludesUI.PP.UpdateBorder(widget.bhost, t, lr, lg, lb, 1)
+        CUI.PP.UpdateBorder(widget.bhost, t, lr, lg, lb, 1)
         widget.bg:SetVertexColor(red * 0.22, green * 0.22, blue * 0.22, 0.9)
         widget.icon:SetVertexColor(ur, ug, ub)
         widget.label:SetTextColor(lr, lg, lb)
     elseif selected then
-        CludesUI.PP.UpdateBorder(widget.bhost, t, red, green, blue, 1)
+        CUI.PP.UpdateBorder(widget.bhost, t, red, green, blue, 1)
         widget.bg:SetVertexColor(red * 0.22, green * 0.22, blue * 0.22, 0.9)
         widget.icon:SetVertexColor(ur, ug, ub)
         widget.label:SetTextColor(red, green, blue)
     else
-        CludesUI.PP.UpdateBorder(widget.bhost, t, 0, 0, 0, 0.9)
+        CUI.PP.UpdateBorder(widget.bhost, t, 0, 0, 0, 0.9)
         -- Plate opacity is FIXED -- 0.65 idle, 0.9 selected and armed above
         -- (the Background Opacity setting was removed).
         widget.bg:SetVertexColor(0.05, 0.05, 0.06, 0.65)
@@ -196,7 +197,7 @@ local fontStrings = {}
 
 local function ApplyModuleFont(fontStr)
     local size = fontStr.eqdFontSize
-    if not size or not CludesUI.GetFontPath then return end
+    if not size or not CUI.GetFontPath then return end
     -- Snapped to whole physical pixels. A font height is given in the string's
     -- own units and drawn at that height TIMES its effective scale, so a
     -- palette scaled to anything but 1 asks for a fractional pixel height --
@@ -206,24 +207,24 @@ local function ApplyModuleFont(fontStr)
     -- were never the problem. PP.perfect is one physical pixel in WoW's
     -- 768-based coordinates, which is what turns a height into pixels and
     -- back. Whole pixels, and never rounded away to nothing.
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local eff = fontStr.GetEffectiveScale and fontStr:GetEffectiveScale()
     if Pix and Pix.perfect and Pix.perfect > 0 and eff and eff > 0 then
         size = max(1, floor(size * eff / Pix.perfect + 0.5)) * Pix.perfect / eff
     end
     local flags
-    if fontStr.eqdIconText and CludesUI.GetIconTextOutlineFlag then
-        flags = CludesUI.GetIconTextOutlineFlag(FONT_KEY)
+    if fontStr.eqdIconText and CUI.GetIconTextOutlineFlag then
+        flags = CUI.GetIconTextOutlineFlag(FONT_KEY)
     else
-        flags = CludesUI.GetFontOutlineFlag(FONT_KEY) or ""
+        flags = CUI.GetFontOutlineFlag(FONT_KEY) or ""
     end
     -- Runtime SetShadowOffset no longer renders on 12.x; the shadow has to be
     -- carried by a FontObject, primed BEFORE the typeface call.
-    if CludesUI.PrimeFontShadow then
-        local useShadow = flags == "" and CludesUI.GetFontUseShadow()
-        CludesUI.PrimeFontShadow(fontStr, useShadow and true or false)
+    if CUI.PrimeFontShadow then
+        local useShadow = flags == "" and CUI.GetFontUseShadow()
+        CUI.PrimeFontShadow(fontStr, useShadow and true or false)
     end
-    fontStr:SetFont(CludesUI.GetFontPath(FONT_KEY), size, flags)
+    fontStr:SetFont(CUI.GetFontPath(FONT_KEY), size, flags)
 end
 
 -- Called once per string, right after it is created from its Blizzard font
@@ -319,7 +320,7 @@ local function CreateSlotWidget(view, index)
     wid.bhost = CreateFrame("Frame", nil, wid)
     wid.bhost:SetAllPoints(wid)
     wid.bhost:SetFrameLevel(wid:GetFrameLevel() + 5)
-    CludesUI.PP.CreateBorder(wid.bhost, 0, 0, 0, 0.9, 2, "OVERLAY", 7)
+    CUI.PP.CreateBorder(wid.bhost, 0, 0, 0, 0.9, 2, "OVERLAY", 7)
 
     -- Stack size or charges, in the corner an action button writes them in.
     -- Its text may be a SECRET value (see SlotCount), so it is SHOWN and

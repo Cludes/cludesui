@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  GroupHelpers.lua -- Raid Lead: feast alerts, Gateway Usable, Stats panel.
 --
@@ -42,7 +43,7 @@ local DROP_TEXT = {
 }
 local GATEWAY_SHARD = 188152
 
-local function Font() return CludesUI.GetFontPath(nil) end
+local function Font() return CUI.GetFontPath(nil) end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 function mod.HelperSettings()
@@ -63,8 +64,8 @@ end
 function mod.ReceiveDrop(who, kind)
     local cfg = mod.HelperSettings()
     if not cfg.drops or not DROP_TEXT[kind] then return end
-    local name = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
-    CludesUI.Print(("|cff4cc9f0Raid Lead:|r %s dropped %s."):format(name, DROP_TEXT[kind]))
+    local name = (CUI.GetNickname and CUI.GetNickname(who)) or who
+    CUI.Print(("|cff4cc9f0Raid Lead:|r %s dropped %s."):format(name, DROP_TEXT[kind]))
     if cfg.dropSound then PlaySound(SOUNDKIT.READY_CHECK, "Master") end
 end
 
@@ -96,8 +97,8 @@ local function Movable(name, key, labelText, sequence, wid, hgt, default, isHidd
     end
     Place()
     frame.register = function()
-        CludesUI:RegisterUnlockElements({
-            CludesUI.MakeUnlockElement({
+        CUI:RegisterUnlockElements({
+            CUI.MakeUnlockElement({
                 key = "RLEAD_" .. key,
                 label = labelText,
                 group = "Raid Lead",
@@ -131,7 +132,7 @@ local function GateUpdate()
         local usable = C_Item.IsUsableItem(GATEWAY_SHARD)
         enabled = not Secret(usable) and usable and true or false
     end
-    gate:SetShown(enabled or (CludesUI._unlockActive and mod.HelperSettings().gateway) or false)
+    gate:SetShown(enabled or (CUI._unlockActive and mod.HelperSettings().gateway) or false)
 end
 
 -------------------------------------------------------------------------------
@@ -211,7 +212,7 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             function() return not mod.HelperSettings().gateway end
         )
         gateText = gate:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(gateText, 18, nil)
+        CUI.Kit.Font(gateText, 18, nil)
         gateText:SetPoint("CENTER")
         gateText:SetText("|cffb070ffGateway usable|r")
         gate:Hide()
@@ -226,7 +227,7 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             function() return not mod.HelperSettings().stats end
         )
         statsText = stats:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(statsText, 12, nil)
+        CUI.Kit.Font(statsText, 12, nil)
         statsText:SetPoint("TOPLEFT")
         statsText:SetJustifyH("LEFT")
         stats:Hide()
@@ -235,7 +236,7 @@ eventFrame:SetScript("OnEvent", function(_, evt)
         evt == "PLAYER_ENTERING_WORLD"
         and not registered
         and not InCombatLockdown()
-        and CludesUI.RegisterUnlockElements
+        and CUI.RegisterUnlockElements
     then
         registered = true
         gate.register()

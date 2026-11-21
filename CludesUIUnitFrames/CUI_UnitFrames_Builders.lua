@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Builders.lua
 --
@@ -10,7 +11,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, mod = ...
 
 local math_floor = math.floor
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local GetMiniDonorSettings = mod.GetMiniDonorSettings
 
 local Inner = mod._internals
@@ -51,7 +52,7 @@ mod.ApplyBossBorderState = function(self)
         local color = bsrc.borderColor or { r = 0, g = 0, b = 0 }
         red, green, blue, a = color.r, color.g, color.b, bsrc.borderAlpha or 1
     end
-    CludesUI.SetBorderStyleColor(self.unifiedBorder, red, green, blue, a)
+    CUI.SetBorderStyleColor(self.unifiedBorder, red, green, blue, a)
     local seam = self.Power and self.Power._pbSeam
     if seam and seam:IsShown() then seam._tex:SetVertexColor(red, green, blue, a) end
     local portraitSeam = self._portraitSeparator
@@ -77,7 +78,7 @@ local function FrameBorderEnter(self)
     if isMini and GetSettingsForUnit(unitToken).showHighlightBorder == false then return end
     local hc = prefs.highlightColor or { r = 1, g = 1, b = 1 }
     local ha = prefs.highlightAlpha or 1
-    CludesUI.SetBorderStyleColor(self.unifiedBorder, hc.r, hc.g, hc.b, ha)
+    CUI.SetBorderStyleColor(self.unifiedBorder, hc.r, hc.g, hc.b, ha)
     -- The portrait's Outer Ring wears the frame border tint (only once built).
     local pt = self.Portrait
     local ring = pt and pt.backdrop and pt.backdrop._outerRing
@@ -101,7 +102,7 @@ local function FrameBorderLeave(self)
     local prefs = isMini and GetMiniDonorSettings(unitToken) or GetSettingsForUnit(unitToken)
     local bc = prefs.borderColor or { r = 0, g = 0, b = 0 }
     local ba = prefs.borderAlpha or 1
-    CludesUI.SetBorderStyleColor(self.unifiedBorder, bc.r, bc.g, bc.b, ba)
+    CUI.SetBorderStyleColor(self.unifiedBorder, bc.r, bc.g, bc.b, ba)
     local pt = self.Portrait
     local ring = pt and pt.backdrop and pt.backdrop._outerRing
     if ring and ring:IsShown() then ring:SetVertexColor(bc.r, bc.g, bc.b, ba) end
@@ -128,7 +129,7 @@ local function CreateUnifiedBorder(widget, unitToken)
         borderBehind and math.max(0, widget:GetFrameLevel() - 1) or (widget:GetFrameLevel() + 10)
     )
 
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         border,
         size,
         bc.r,
@@ -143,7 +144,7 @@ local function CreateUnifiedBorder(widget, unitToken)
         "unitframes",
         size,
         nil,
-        CludesUI.BorderPx(prefs.borderSizePx, size, textureKey)
+        CUI.BorderPx(prefs.borderSizePx, size, textureKey)
     )
 
     widget.unifiedBorder = border
@@ -485,7 +486,7 @@ local function StyleFullFrame(widget, unitToken)
         CreateAbsorbBar(widget, unitToken, prefs)
         -- Always create portrait; hide backdrop when disabled
         widget.Portrait = CreatePortrait(widget, pSide, playerHeightWithCp, unitToken)
-        CludesUI._ufPortraitSide[widget] = pSide
+        CUI._ufPortraitSide[widget] = pSide
         if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
         -- Re-anchor health bar to portrait's actual snapped width (eliminates sub-pixel gap)
         if widget.Portrait and widget.Portrait.backdrop and showPortrait and isAttached and widget.Health then
@@ -536,7 +537,7 @@ local function StyleFullFrame(widget, unitToken)
         widget.Castbar = CreateCastBar(widget, unitToken, prefs)
         SetupShowOnCastBar(widget, unitToken)
         widget.Portrait = CreatePortrait(widget, pSide, playerTargetHeight, unitToken)
-        CludesUI._ufPortraitSide[widget] = pSide
+        CUI._ufPortraitSide[widget] = pSide
         if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
         -- Re-anchor health bar to portrait's actual snapped width (eliminates sub-pixel gap)
         if widget.Portrait and widget.Portrait.backdrop and showPortrait and isAttached and widget.Health then
@@ -707,7 +708,7 @@ local function StyleFocusFrame(widget, unitToken)
     widget.Castbar = CreateCastBar(widget, unitToken, prefs)
     -- Always create portrait; hide backdrop when disabled
     widget.Portrait = CreatePortrait(widget, pSide, focusBarHeight, unitToken)
-    CludesUI._ufPortraitSide[widget] = pSide
+    CUI._ufPortraitSide[widget] = pSide
     if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
     -- Re-anchor health bar to portrait's actual snapped width (eliminates sub-pixel gap)
     if widget.Portrait and widget.Portrait.backdrop and showPortrait and isAttached and widget.Health then
@@ -831,7 +832,7 @@ end
 -- WoW Forever pets have power (hunter pet focus, warlock pet mana), so there the
 -- pet frame carries a power bar driven by the pet's own power settings, laid out
 -- like the boss frames'. A plain boolean, fixed per session.
-mod.UF_PetHasPower = (CludesUI.IS_FOREVER == true)
+mod.UF_PetHasPower = (CUI.IS_FOREVER == true)
 
 local function StyleSimpleFrame(widget, unitToken)
     local prefs = GetSettingsForUnit(unitToken)
@@ -908,7 +909,7 @@ local function StyleSimpleFrame(widget, unitToken)
 
     -- Always create portrait; hide backdrop when disabled.
     widget.Portrait = CreatePortrait(widget, pSide, barH, unitToken)
-    CludesUI._ufPortraitSide[widget] = pSide
+    CUI._ufPortraitSide[widget] = pSide
     if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
     if widget.Portrait and widget.Portrait.backdrop and showPortrait then
         local portW = math.max(barH, 1)
@@ -1010,7 +1011,7 @@ local function StyleBossFrame(widget, unitToken)
     CreateAbsorbBar(widget, unitToken, prefs)
     -- Always create portrait; hide backdrop when disabled
     widget.Portrait = CreatePortrait(widget, pSide, bossBarHeight, unitToken)
-    CludesUI._ufPortraitSide[widget] = pSide
+    CUI._ufPortraitSide[widget] = pSide
     if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
     -- Re-anchor health bar to portrait's actual snapped width (eliminates sub-pixel gap)
     if widget.Portrait and widget.Portrait.backdrop and showPortrait and widget.Health then

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarStore.lua
 --
@@ -42,7 +43,7 @@ Inner.ecmeSetters[#Inner.ecmeSetters + 1] = function(val) ECME = val end
 --  system covers an empty slot.
 -------------------------------------------------------------------------------
 do
-    local CopyEntry = CludesUI.Lite.DeepCopy
+    local CopyEntry = CUI.Lite.DeepCopy
 
     local function LiveStores(create)
         local saved = CludesUIDB
@@ -112,7 +113,7 @@ do
         -- can name a key the class no longer resolves to, and a recreated
         -- bucket would steer which key the next session reads; a missing
         -- bucket has nothing live to bank.
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             local sp = profileName
                 and specKey
                 and mod.GetSpecProfilesForProfile
@@ -210,7 +211,7 @@ do
         SwapExtra("unlockWidthMatchExtra", b.wmx)
         SwapExtra("unlockHeightMatchExtra", b.hmx)
         -- Modules memoize views over the anchor DB (extent watch etc.).
-        CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
+        CUI._anchorLinksStamp = (CUI._anchorLinksStamp or 0) + 1
     end
 
     function mod.SyncTBBUnlockLinks(force)
@@ -235,7 +236,7 @@ do
     -- Called by profile-restore choke points right after they replace the live unlock
     -- stores wholesale from an unlockLayout snapshot: the snapshot's TBB entries are stale
     -- copies of whichever spec last saved unlock mode, so the active spec's own entries are re-asserted here.
-    CludesUI._TBBRestoreUnlockLinks = function()
+    CUI._TBBRestoreUnlockLinks = function()
         -- Mid-apply, the active-store cache still holds the outgoing profile's
         -- store, and on WoW Forever the spec key resolves against that store.
         mod._cachedSpecProfiles = nil
@@ -245,7 +246,7 @@ do
     -- Unlock Save & Exit: bank the active spec's live TBB links and extras into its
     -- bucket (only while live belongs to it), so a profile restore before the next
     -- bar build cannot swap an older bucket over them.
-    CludesUI._TBBBankUnlockLinks = function()
+    CUI._TBBBankUnlockLinks = function()
         if not CludesUIDB then return end
         local own = CludesUIDB._tbbLinkOwner
         local profName = mod.GetActiveProfileName and mod.GetActiveProfileName()
@@ -369,8 +370,8 @@ function mod.RemoveTrackedBuffBar(position)
     place[tostring(oldCount)] = nil
     -- Re-key element-anchor / size-match links the same way (TBB_3 -> TBB_2) so anchors
     -- keep tracking the same visual bar; links pointing AT the deleted bar are severed.
-    if CludesUI and CludesUI.ShiftIndexedAnchorKeys then
-        CludesUI.ShiftIndexedAnchorKeys("TBB_", position, oldCount)
+    if CUI and CUI.ShiftIndexedAnchorKeys then
+        CUI.ShiftIndexedAnchorKeys("TBB_", position, oldCount)
     end
     if tbb.selectedBar > #tbb.bars then tbb.selectedBar = max(1, #tbb.bars) end
     mod.BuildTrackedBuffBars()
@@ -452,7 +453,7 @@ end
 -- Specs already holding it are skipped, so repeated clicks never pile up duplicates.
 -- Returns the number of specs added to.
 function mod.AddBarToAllSpecs(srcIdx)
-    local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
+    local DeepCopy = CUI.Lite and CUI.Lite.DeepCopy
     if not DeepCopy then return 0 end
     local activeKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     if not activeKey then return 0 end
@@ -487,7 +488,7 @@ function mod.AddBarToAllSpecs(srcIdx)
     local added = 0
     -- WoW Forever: the class has no other spec to copy into (the store key it
     -- runs on is the only one it reads).
-    local numSpecs = (not CludesUI.IS_FOREVER) and GetNumSpecializations and GetNumSpecializations() or 0
+    local numSpecs = (not CUI.IS_FOREVER) and GetNumSpecializations and GetNumSpecializations() or 0
     for i = 1, numSpecs do
         local specID = C_SpecializationInfo.GetSpecializationInfo(i)
         if specID then
@@ -529,7 +530,7 @@ function mod.AddBarToAllSpecs(srcIdx)
 
     -- Mark broadcast so the button flips to "Remove..." in every spec; set even when added == 0 (all specs already held it).
     -- WoW Forever copies nowhere (see above), so nothing is marked there.
-    local set = not CludesUI.IS_FOREVER and mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
+    local set = not CUI.IS_FOREVER and mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
     if set then
         local key = mod.TBBBroadcastKey(srcBar)
         if key then set[key] = true end
@@ -563,7 +564,7 @@ function mod.RemoveBarFromAllSpecs(srcIdx)
     end
 
     local removed = 0
-    local numSpecs = (not CludesUI.IS_FOREVER) and GetNumSpecializations and GetNumSpecializations() or 0
+    local numSpecs = (not CUI.IS_FOREVER) and GetNumSpecializations and GetNumSpecializations() or 0
     for i = 1, numSpecs do
         local specID = C_SpecializationInfo.GetSpecializationInfo(i)
         if specID then

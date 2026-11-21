@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Events.lua
 --
@@ -113,14 +114,14 @@ do
         return entries
     end
     function mod.MigrateLegacyAnchorTo()
-        if waiting or (CludesUI and CludesUI._unlockActive) then return end
+        if waiting or (CUI and CUI._unlockActive) then return end
         if not LegacyAnchored() then return end
         waiting = true
         -- One frame later so ApplyBarAnchor's SetPoint has flushed and
         -- GetCenter returns the anchored on-screen position.
         C_Timer.After(0, function()
             waiting = nil
-            if CludesUI and CludesUI._unlockActive then return end
+            if CUI and CUI._unlockActive then return end
             local entries = LegacyAnchored()
             if not entries then return end
             local uiS = UIParent:GetEffectiveScale()
@@ -276,16 +277,16 @@ function ERB:ApplyAll()
     -- Size matching: every settings path lands here, so each bar's match pad
     -- is re-checked once; the notifier compares it with the last one seen and
     -- re-pushes only a bar whose pad actually moved (one deferred pass).
-    if CludesUI.MatchPadChanged then
+    if CUI.MatchPadChanged then
         local keyList = mod._erbPadKeys
         for index = 1, #keyList do
-            CludesUI.MatchPadChanged(keyList[index])
+            CUI.MatchPadChanged(keyList[index])
         end
     end
 end
 
 local function ScheduleRosterApply()
-    CludesUI.InvalidateFrameCache()
+    CUI.InvalidateFrameCache()
     C_Timer.After(0.2, function() ERB:ApplyAll() end)
 end
 
@@ -330,7 +331,7 @@ local ScheduleSpecResolve
 ScheduleSpecResolve = function()
     -- WoW Forever: the GetSpecialization alias above always reads nil there, so
     -- no retry could ever succeed; nothing is armed.
-    if CludesUI.IS_FOREVER then return end
+    if CUI.IS_FOREVER then return end
     if GetSpecialization() then
         _specResolveTries = 0
         return
@@ -637,15 +638,15 @@ function ERB:OnInitialize()
     -- merges defaults at NewDB, not persisted), so the RB Advanced migration
     -- compares against these defaults. Export, then migrate every stored
     -- profile (idempotent; flagged per RB profile table).
-    CludesUI._RBSectionDefaults = {
+    CUI._RBSectionDefaults = {
         health = DEFAULTS.profile.health,
         primary = DEFAULTS.profile.primary,
         secondary = DEFAULTS.profile.secondary,
     }
-    self.db = CludesUI.Lite.NewDB("CludesUIResourceBarsDB", DEFAULTS, true)
-    if CludesUI.MigrateRBAdvancedProfile and CludesUIDB and CludesUIDB.profiles then
+    self.db = CUI.Lite.NewDB("CludesUIResourceBarsDB", DEFAULTS, true)
+    if CUI.MigrateRBAdvancedProfile and CludesUIDB and CludesUIDB.profiles then
         for _, prof in pairs(CludesUIDB.profiles) do
-            CludesUI.MigrateRBAdvancedProfile(prof)
+            CUI.MigrateRBAdvancedProfile(prof)
         end
     end
 
@@ -665,11 +666,11 @@ function ERB:OnInitialize()
     -- suppressed even if this flag races (e.g. the unlock-open animation fires the
     -- panel OnHide and clears the flag while _unlockActive is still true).
     _G._CURB_SuppressExpand = function()
-        CludesUI._erbExpandSuppressed = true
+        CUI._erbExpandSuppressed = true
         ERB:ApplyAll()
     end
     _G._CURB_RestoreExpand = function()
-        CludesUI._erbExpandSuppressed = false
+        CUI._erbExpandSuppressed = false
         ERB:ApplyAll()
     end
     _G._CURB_GetSecondaryResource = GetSecondaryResource
@@ -734,10 +735,10 @@ function ERB:OnInitialize()
     -- before snapshotting; deliberately ignores unlock state). restore:
     -- re-apply after unlock closes (PropagateAnchorChain is a no-op while
     -- unlocked). Gated so None = zero work.
-    CludesUI._anchorShiftProviders = CludesUI._anchorShiftProviders or {}
-    table.insert(CludesUI._anchorShiftProviders, {
+    CUI._anchorShiftProviders = CUI._anchorShiftProviders or {}
+    table.insert(CUI._anchorShiftProviders, {
         dir = function(targetKey, childKey)
-            if CludesUI._unlockActive then return 0 end
+            if CUI._unlockActive then return 0 end
             if targetKey == "ERB_ClassResource" then
                 local direction = ResolveShiftDir()
                 if direction == 0 then return 0 end
@@ -754,9 +755,9 @@ function ERB:OnInitialize()
         end,
         wants = function() return ResolveShiftDir() ~= 0 or ResolveShiftDirPower() ~= 0 end,
         restore = function()
-            if not CludesUI.PropagateAnchorChain then return end
-            if ResolveShiftDir() ~= 0 then CludesUI.PropagateAnchorChain("ERB_ClassResource") end
-            if ResolveShiftDirPower() ~= 0 then CludesUI.PropagateAnchorChain("ERB_Power") end
+            if not CUI.PropagateAnchorChain then return end
+            if ResolveShiftDir() ~= 0 then CUI.PropagateAnchorChain("ERB_ClassResource") end
+            if ResolveShiftDirPower() ~= 0 then CUI.PropagateAnchorChain("ERB_Power") end
         end,
     })
 
@@ -781,7 +782,7 @@ function ERB:OnEnable()
     watcher:RegisterEvent("PLAYER_TARGET_CHANGED")
     -- WoW Forever: combo points moving to a new target fire no power event
     -- (only a rogue or druid ever raises it; the handler acts for onTarget).
-    if CludesUI.IS_FOREVER == true then watcher:RegisterEvent("COMBO_TARGET_CHANGED") end
+    if CUI.IS_FOREVER == true then watcher:RegisterEvent("COMBO_TARGET_CHANGED") end
     watcher:RegisterEvent("GROUP_ROSTER_UPDATE")
     watcher:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
     watcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
@@ -799,14 +800,14 @@ function ERB:OnEnable()
     watcher:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
     -- Airborne edge for the dragonriding visibility modes (probed at load
     -- in CludesUI_Visibility.lua; absent = the checklist items lock)
-    if CludesUI._hasGlidingEvent then watcher:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
+    if CUI._hasGlidingEvent then watcher:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
 
     -- Mouseover hover-reveal: one proxy per bar registered with the shared poll. Plain
     -- tables (Quest Tracker precedent) so the poll never calls EnableMouse/Show on the
     -- real bars -- a mouse-enabled bar would steal mouseover focus from frames beneath
     -- it. Eligibility comes from the flags UpdateVisibility maintains, so hover only
     -- reveals a bar whose evaluation currently lands on "mouseover".
-    if CludesUI.RegisterMouseoverTarget then
+    if CUI.RegisterMouseoverTarget then
         local function RegisterBarHover(barId, frameGetter)
             local proxyFrame = {}
             proxyFrame.GetRect = function()
@@ -822,13 +823,13 @@ function ERB:OnEnable()
             proxyFrame.EnableMouse = function() end
             proxyFrame.Show = function()
                 local frame = frameGetter()
-                if frame then CludesUI.SetElementVisibility(frame, true) end
+                if frame then CUI.SetElementVisibility(frame, true) end
             end
             proxyFrame.Hide = function()
                 local frame = frameGetter()
-                if frame then CludesUI.SetElementVisibility(frame, false) end
+                if frame then CUI.SetElementVisibility(frame, false) end
             end
-            CludesUI.RegisterMouseoverTarget(
+            CUI.RegisterMouseoverTarget(
                 proxyFrame,
                 function() return ERB._moEligible and ERB._moEligible[barId] or false end
             )
@@ -886,8 +887,8 @@ function ERB:OnEnable()
     -- switch back restores it.
     if mod.ERB_CastBlizz() then
         local callback = self.db.profile.castBar
-        if callback and not callback.stockTextureSeeded and CludesUI.BankEuiStyleSlot then
-            CludesUI.BankEuiStyleSlot(callback, mod._erbCastSlotKeys)
+        if callback and not callback.stockTextureSeeded and CUI.BankEuiStyleSlot then
+            CUI.BankEuiStyleSlot(callback, mod._erbCastSlotKeys)
         end
         mod.ERB_SeedStockCast(callback)
     end
@@ -896,8 +897,8 @@ function ERB:OnEnable()
     if mod.ERB_BarsClassic() then
         local profile = self.db.profile
         local g = profile and profile.general
-        if g and not g.classicTextureSeeded and not g.borderAllSeeded and CludesUI.BankEuiStyleSlot then
-            CludesUI.BankEuiStyleSlot(profile, mod._erbBarsSlotKeys)
+        if g and not g.classicTextureSeeded and not g.borderAllSeeded and CUI.BankEuiStyleSlot then
+            CUI.BankEuiStyleSlot(profile, mod._erbBarsSlotKeys)
         end
         mod.ERB_SeedStockBars(profile, "classic")
     end
@@ -911,7 +912,7 @@ function ERB:OnEnable()
     -- Re-render when the global Dark Mode palette changes so the class resource
     -- bar's dark colours update live (colours are fetched live each render, so a
     -- plain rebuild is enough). ApplyAll touches secure positioning, so guard combat.
-    CludesUI.RegisterDarkModeRefresh(function()
+    CUI.RegisterDarkModeRefresh(function()
         if InCombatLockdown() then return end
         ERB:ApplyAll()
     end)
@@ -919,7 +920,7 @@ function ERB:OnEnable()
     -- Global Dark Mode master: expose the class resource bar's darkTheme flag so
     -- the parent addon's master toggle can flip it alongside other modules.
     -- Combat-guarded like the palette refresher above.
-    CludesUI.RegisterDarkModeToggle({
+    CUI.RegisterDarkModeToggle({
         id = "resourceBars",
         isOn = function()
             return (
@@ -937,10 +938,10 @@ function ERB:OnEnable()
     })
 
     -- Collapse/restore expandIfNoResource when CUI options panel opens/closes
-    CludesUI:RegisterOnShow(function()
+    CUI:RegisterOnShow(function()
         if _G._CURB_SuppressExpand then _G._CURB_SuppressExpand() end
     end)
-    CludesUI:RegisterOnHide(function()
+    CUI:RegisterOnHide(function()
         if _G._CURB_RestoreExpand then _G._CURB_RestoreExpand() end
     end)
 end
@@ -951,15 +952,15 @@ SLASH_ERB2 = "/cludesresource"
 SlashCmdList.ERB = function(message)
     if message == "lock" or message == "unlock" then
         -- Unlock mode is now handled by the shared CludesUI system
-        if CludesUI and CludesUI.ToggleUnlockMode then CludesUI:ToggleUnlockMode() end
+        if CUI and CUI.ToggleUnlockMode then CUI:ToggleUnlockMode() end
         return
     end
     if InCombatLockdown and InCombatLockdown() then return end
-    CludesUI:ShowModule("CludesUIResourceBars")
+    CUI:ShowModule("CludesUIResourceBars")
 end ------------------------------------------------------------------------------- --  Party Mode: spinning resource and power bars (CludesUI.PartySpin_Create). --  Resource Bars: pips / runes orbit the class resource bar's centre. --  Power Bars: the health and primary power bars orbit the screen centre. ------------------------------------------------------------------------------- -- Wrapped in a function to keep its locals out of the main chunk.
 (function()
     -- Party Mode visibility axis: no game event; the core fires its own edge.
-    if CludesUI.RegisterVisEdge then CludesUI.RegisterVisEdge(function() UpdateVisibility() end) end
+    if CUI.RegisterVisEdge then CUI.RegisterVisEdge(function() UpdateVisibility() end) end
     do
         -- The backdrop, gap fills and ticks are drawn on the bar and cannot turn,
         -- and empty pips are transparent, so while spinning those layers fade out
@@ -988,7 +989,7 @@ end ----------------------------------------------------------------------------
             t:Show()
         end
 
-        CludesUI.PartySpin_Create({
+        CUI.PartySpin_Create({
             target = "resource",
             collect = function()
                 wipe(resGroups)
@@ -1036,7 +1037,7 @@ end ----------------------------------------------------------------------------
 
         local powList = {}
         local powGroups = { { pivot = UIParent, frames = powList } }
-        CludesUI.PartySpin_Create({
+        CUI.PartySpin_Create({
             target = "power",
             collect = function()
                 wipe(powList)

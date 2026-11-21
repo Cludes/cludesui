@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIDamageMeters_ForeverThreat.lua  (WoW Forever only)
 --  The "Threat" meter type: Forever Essentials' threat list in a Damage Meters
@@ -34,7 +35,7 @@ end
 
 -- The session a visible Threat window paints. The first one starts the feed.
 function mod.DMThreatSession()
-    local feed = CludesUI._ThreatFeed
+    local feed = CUI._ThreatFeed
     if not feed then return nil end
     if not feed.IsActive() then feed.Start(mod.DMThreatNotify) end
     -- The value text follows the meter's Force English Units, as every type's does.
@@ -45,7 +46,7 @@ end
 -- Stops the feed once no Threat window is on screen; `except` is a window in
 -- the middle of hiding.
 function mod.DMThreatSync(except)
-    local feed = CludesUI._ThreatFeed
+    local feed = CUI._ThreatFeed
     if not (feed and feed.IsActive()) then return end
     for _, wid in ipairs(mod._windows) do
         if wid ~= except and wid.curDMType == THREAT and wid.frame and wid.frame:IsVisible() then return end
@@ -57,7 +58,7 @@ end
 -- Threat window's settings menu, and the clock and segment rows (noThreat)
 -- leave it.
 function mod.DMThreatMenu(itemList)
-    local feed = CludesUI._ThreatFeed
+    local feed = CUI._ThreatFeed
     if not feed then return end
     for index = #itemList, 1, -1 do
         local e = itemList[index]
@@ -76,5 +77,5 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    if CludesUI._ThreatFeed then mod._DM_TYPE_NAMES[THREAT] = "Threat" end
+    if CUI._ThreatFeed then mod._DM_TYPE_NAMES[THREAT] = "Threat" end
 end)

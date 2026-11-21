@@ -1,16 +1,17 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_QoL_Shifter_Options.lua
 --  Builds the "Shifter" page inside the Quality of Life module.
 -------------------------------------------------------------------------------
 
 -- "CharacterFrame" -> "Character", "AuctionHouseFrame" -> "Auction House", etc.
-if not CludesUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
+if not CUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- The account-wide settings table, made if it is not there yet, for a write.
 local function Account()
@@ -25,13 +26,13 @@ local function PrettifyName(name)
 end
 
 _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height, heading
 
     -- Info text (top of page, matching bags pattern)
     do
-        local fontFile = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
+        local fontFile = (CUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
         local infoFrame = CreateFrame("Frame", nil, hostFrame)
         infoFrame:SetSize(hostFrame:GetWidth(), 34)
         infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 10)
@@ -41,14 +42,14 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         line1:SetTextColor(1, 1, 1, 0.75)
         line1:SetPoint("TOP", infoFrame, "TOP", 0, 0)
         line1:SetJustifyH("CENTER")
-        line1:SetText(CludesUI.L("Shift + Left-Click Drag to permanently save a panel's position."))
+        line1:SetText(CUI.L("Shift + Left-Click Drag to permanently save a panel's position."))
         local line2 = infoFrame:CreateFontString(nil, "OVERLAY")
         line2:SetFont(fontFile, 15, "")
         line2:SetTextColor(1, 1, 1, 0.75)
         line2:SetPoint("TOP", line1, "BOTTOM", 0, -2)
         line2:SetJustifyH("CENTER")
         line2:SetText(
-            CludesUI.L("Ctrl + Left-Click Drag for a temporary move that resets when the panel closes.")
+            CUI.L("Ctrl + Left-Click Drag for a temporary move that resets when the panel closes.")
         )
         local line3 = infoFrame:CreateFontString(nil, "OVERLAY")
         line3:SetFont(fontFile, 15, "")
@@ -56,21 +57,21 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         line3:SetPoint("TOP", line2, "BOTTOM", 0, -2)
         line3:SetJustifyH("CENTER")
         line3:SetText(
-            CludesUI.L("Shift + Scroll to permanently zoom a panel. Ctrl + Scroll for a temporary zoom.")
+            CUI.L("Shift + Scroll to permanently zoom a panel. Ctrl + Scroll for a temporary zoom.")
         )
         cursorY = cursorY - 70
     end
 
     -- Reset All button
     _, height = W:WideButton(hostFrame, "Reset All Positions & Zoom", cursorY, function()
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = "Reset Shifter Positions & Zoom",
             message = "This will reset all saved panel positions and zoom levels and reload your UI.",
             confirmText = "Reset",
             cancelText = "Cancel",
             reload = true,
             onConfirm = function()
-                if CludesUI._ResetShifterPositions then CludesUI._ResetShifterPositions() end
+                if CUI._ResetShifterPositions then CUI._ResetShifterPositions() end
             end,
         })
     end)
@@ -112,10 +113,10 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         getValue = function() return CludesUIDB and CludesUIDB.shifterEnabled or false end,
         setValue = function(val)
             Account().shifterEnabled = val
-            if val and CludesUI._InitShifter then
-                CludesUI._InitShifter()
-            elseif not val and CludesUI._ShutdownShifter then
-                CludesUI._ShutdownShifter()
+            if val and CUI._InitShifter then
+                CUI._InitShifter()
+            elseif not val and CUI._ShutdownShifter then
+                CUI._ShutdownShifter()
             end
         end,
     }, {
@@ -127,9 +128,9 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         setValue = function(frameName)
             if frameName == "" then return end
             local pretty = ddValues[frameName] or PrettifyName(frameName)
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = "Reset Window Position & Zoom",
-                message = CludesUI.Lf(
+                message = CUI.Lf(
                     "Reset %1$s to its default position and zoom and reload your UI?",
                     pretty
                 ),
@@ -167,7 +168,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
 
     local function lootUnlockOff() return not (CludesUIDB and CludesUIDB.shifterLootUnlock) end
     -- One toggle adds all three loot movers, so the button takes the first.
-    CludesUI.BuildSectionUnlockJump(heading, {
+    CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_BonusRoll",
         disabled = lootUnlockOff,
         disabledTooltip = "Move Loot Windows in Layout Mode",
@@ -181,11 +182,11 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         setValue = function(val)
             Account().shifterLootUnlock = val
             if val then
-                if CludesUI._InitShifterLootWindows then CludesUI._InitShifterLootWindows() end
+                if CUI._InitShifterLootWindows then CUI._InitShifterLootWindows() end
             else
-                if CludesUI._DisableShifterLootWindows then CludesUI._DisableShifterLootWindows() end
+                if CUI._DisableShifterLootWindows then CUI._DisableShifterLootWindows() end
             end
-            CludesUI:RefreshPage() -- update the overlay toggle disabled state
+            CUI:RefreshPage() -- update the overlay toggle disabled state
         end,
     }, {
         type = "toggle",
@@ -205,7 +206,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     local function topBarUnlockOff() return not (CludesUIDB and CludesUIDB.shifterTopBarUnlock) end
-    CludesUI.BuildSectionUnlockJump(heading, {
+    CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_TopBarEventText",
         disabled = topBarUnlockOff,
         disabledTooltip = "Move Top Bar Event Text in Layout Mode",
@@ -219,11 +220,11 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         setValue = function(val)
             Account().shifterTopBarUnlock = val
             if val then
-                if CludesUI._InitShifterTopBar then CludesUI._InitShifterTopBar() end
+                if CUI._InitShifterTopBar then CUI._InitShifterTopBar() end
             else
-                if CludesUI._DisableShifterTopBar then CludesUI._DisableShifterTopBar() end
+                if CUI._DisableShifterTopBar then CUI._DisableShifterTopBar() end
             end
-            CludesUI:RefreshPage() -- update the overlay toggle disabled state
+            CUI:RefreshPage() -- update the overlay toggle disabled state
         end,
     }, {
         type = "toggle",
@@ -244,7 +245,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
 
     local function battlegroundUnlockOff() return not (CludesUIDB and CludesUIDB.shifterBattlegroundUnlock) end
     -- One toggle adds both battleground movers, so the button takes the flag carriers'.
-    CludesUI.BuildSectionUnlockJump(heading, {
+    CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_FlagCarriers",
         disabled = battlegroundUnlockOff,
         disabledTooltip = "Move Battleground Frames in Layout Mode",
@@ -257,9 +258,9 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         getValue = function() return CludesUIDB and CludesUIDB.shifterBattlegroundUnlock or false end,
         setValue = function(val)
             Account().shifterBattlegroundUnlock = val
-            if CludesUI._InitShifterLootWindows then CludesUI._InitShifterLootWindows() end
-            if CludesUI._SyncShifterCarriers then CludesUI._SyncShifterCarriers() end
-            CludesUI:RefreshPage() -- update the overlay toggle disabled state
+            if CUI._InitShifterLootWindows then CUI._InitShifterLootWindows() end
+            if CUI._SyncShifterCarriers then CUI._SyncShifterCarriers() end
+            CUI:RefreshPage() -- update the overlay toggle disabled state
         end,
     }, {
         type = "toggle",

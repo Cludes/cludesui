@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_CastBar.lua
 --
@@ -12,7 +13,7 @@ local Inner = mod._internals
 if not Inner or Inner.broken then return end
 Inner.broken = true
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local floor, min, max = math.floor, math.min, math.max
 local format = string.format
 local IsPlayerSpell, GetInventoryItemID = IsPlayerSpell, GetInventoryItemID
@@ -42,7 +43,7 @@ BuildCastBar = function()
     local callback = ERB.db.profile.castBar
     -- Embed in Player Portrait: Unit Frames calls back after each frame reload, which
     -- can move, reshape or remove the portrait the icon sits on.
-    local uf = CludesUI._ModuleNS["CludesUIUnitFrames"]
+    local uf = CUI._ModuleNS["CludesUIUnitFrames"]
     if uf and uf.UF_WatchPlayerPortrait then
         uf.UF_WatchPlayerPortrait(
             "ResourceBars",
@@ -64,7 +65,7 @@ BuildCastBar = function()
     mod.ERB_LatencySendWatch(callback.enabled and callback.latencyEnabled)
 
     if not callback.enabled then
-        if castFrame then CludesUI.SetElementVisibility(castFrame, false) end
+        if castFrame then CUI.SetElementVisibility(castFrame, false) end
         return
     end
 
@@ -82,7 +83,7 @@ BuildCastBar = function()
         bdrFrame:SetAllPoints(castFrame)
         bdrFrame:SetFrameLevel(castFrame:GetFrameLevel() + 5)
         castFrame._border = bdrFrame
-        local Pix = CludesUI and CludesUI.PP
+        local Pix = CUI and CUI.PP
         if Pix then Pix.CreateBorder(bdrFrame, 0, 0, 0, 1, 1) end
 
         -- Clip frame to prevent bar fill from bleeding past the border
@@ -192,7 +193,7 @@ BuildCastBar = function()
     -- bar keeps its configured width beside it).
     local iconW = mod.ERB_CastIconW(callback)
     local totalW = wid + iconW
-    if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_CastBar", castFrame) then
+    if CUI._TryOverrideAnchor and CUI._TryOverrideAnchor("ERB_CastBar", castFrame) then
         -- Override anchor owns position; just set size directly
         castFrame:SetSize(totalW, hgt)
     elseif callback.unlockPos and callback.unlockPos.point then
@@ -200,8 +201,8 @@ BuildCastBar = function()
         -- Skip reposition during unlock mode so resize does not snap the bar.
         local rp = callback.unlockPos.relPoint or callback.unlockPos.point
         local px, py = callback.unlockPos.x or 0, callback.unlockPos.y or 0
-        local anchored = CludesUI.IsUnlockAnchored("ERB_CastBar")
-        if CludesUI._unlockActive then
+        local anchored = CUI.IsUnlockAnchored("ERB_CastBar")
+        if CUI._unlockActive then
             castFrame:SetSize(totalW, hgt)
         elseif anchored and castFrame:GetLeft() then
             -- Anchor system owns position; just set size directly
@@ -227,7 +228,7 @@ BuildCastBar = function()
         end
     else
         castFrame:SetSize(totalW, hgt)
-        if not CludesUI._unlockActive then
+        if not CUI._unlockActive then
             castFrame:ClearAllPoints()
             castFrame:SetPoint("CENTER", UIParent, "CENTER", callback.anchorX, callback.anchorY)
         end
@@ -253,8 +254,8 @@ BuildCastBar = function()
             mod.ERB_BorderExtents((not blizz) and callback or nil)
         )
         -- Exact size only for the bar's own step: the forced 0 under the style is a substitute.
-        local bpx = (not blizz) and CludesUI.BorderPx(callback.borderSizePx, bs, texKey) or nil
-        CludesUI.ApplyBorderStyle(
+        local bpx = (not blizz) and CUI.BorderPx(callback.borderSizePx, bs, texKey) or nil
+        CUI.ApplyBorderStyle(
             castFrame._border,
             bs,
             callback.borderR or 0,
@@ -338,7 +339,7 @@ BuildCastBar = function()
         -- An exact SOLID size drives the divider too; a textured one keeps the step.
         local dtex = callback.borderTexture
         if not blizz and (not dtex or dtex == "" or dtex == "solid") then
-            dbs = CludesUI.BorderPx(callback.borderSizePx, callback.borderSize or 0, dtex) or dbs
+            dbs = CUI.BorderPx(callback.borderSizePx, callback.borderSize or 0, dtex) or dbs
         end
         iconSplit:ClearAllPoints()
         iconSplit:SetWidth(math.max(onePixel, math.floor(dbs + 0.5) * onePixel))
@@ -393,7 +394,7 @@ BuildCastBar = function()
         -- Blizzard Style, WoW Forever included.
         local bgAtlas = mod.ERB_BlizzAtlas("bg")
         if bgAtlas then
-            CludesUI.StockAtlas(castFrame._bg, bgAtlas)
+            CUI.StockAtlas(castFrame._bg, bgAtlas)
         else
             castFrame._bg:SetTexture(nil)
             castFrame._bg:SetColorTexture(0, 0, 0, 0.7)
@@ -414,7 +415,7 @@ BuildCastBar = function()
         castFrame._bg:ClearAllPoints()
         castFrame._bg:SetAllPoints(castFrame)
     else
-        local texPath = CludesUI.ResolveTexturePath(CAST_BAR_TEXTURES, texKey, "Interface\\Buttons\\WHITE8x8")
+        local texPath = CUI.ResolveTexturePath(CAST_BAR_TEXTURES, texKey, "Interface\\Buttons\\WHITE8x8")
         barFrame:SetStatusBarTexture(texPath)
         castFrame._bg:SetTexture(nil)
         castFrame._bg:SetColorTexture(callback.bgR, callback.bgG, callback.bgB, callback.bgA)
@@ -422,7 +423,7 @@ BuildCastBar = function()
         if callback.textureBg and (callback.fillOpacity or 100) >= 100 then
             mod.ERB_BgTexture(
                 castFrame._bg,
-                CludesUI.ResolveTexturePath(CAST_BAR_TEXTURES, texKey, nil),
+                CUI.ResolveTexturePath(CAST_BAR_TEXTURES, texKey, nil),
                 callback.bgR,
                 callback.bgG,
                 callback.bgB,
@@ -563,7 +564,7 @@ BuildCastBar = function()
         local texKey = callback.texture
         local texPath
         if texKey and texKey ~= "none" and texKey ~= "blizzard" then
-            texPath = CludesUI.ResolveTexturePath(CAST_BAR_TEXTURES, texKey, nil)
+            texPath = CUI.ResolveTexturePath(CAST_BAR_TEXTURES, texKey, nil)
         end
         -- Style both overlays; ShowLatencyOverlay picks one per cast kind
         -- (channels use the front twin so the zone survives the full fill).
@@ -679,7 +680,7 @@ end
 
 function mod.ERB_RefreshCastPortrait()
     BuildCastBar()
-    CludesUI.NotifyElementResized("ERB_CastBar")
+    CUI.NotifyElementResized("ERB_CastBar")
 end
 
 -- Some set bonuses never register via IsPlayerSpell or a player aura.
@@ -744,7 +745,7 @@ ShowChannelTicks = function(spellId)
     -- effectiveScale rounding treated the target as UI units and drifted
     -- between 1 and 3 physical pixels depending on scale.
     local effectiveScale = barFrame:GetEffectiveScale()
-    local PPc = CludesUI and CludesUI.PP
+    local PPc = CUI and CUI.PP
     local onePx = ((PPc and PPc.perfect) or 1) / effectiveScale
     local tickWidth = 2 * onePx
     local highlightWidth = 3 * onePx
@@ -1034,7 +1035,7 @@ end
 function mod.SetCastTimerText(frame, nowTime, totalDurMode, totalSuffix, latSuffix)
     local remaining = frame._endTime - nowTime
     if frame._craftExtra then
-        CludesUI.SetCraftTimerText(frame, frame._timerText, remaining, totalDurMode)
+        CUI.SetCraftTimerText(frame, frame._timerText, remaining, totalDurMode)
         return
     end
     if remaining > 0 then
@@ -1297,7 +1298,7 @@ local function LatencyRequestQueued()
     if UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil then return true end
     -- A GCD that began before this request belongs to an earlier spell. One that
     -- cannot be read counts as queued: a reading that cannot be checked is not taken.
-    local cd = C_Spell.GetSpellCooldown(CludesUI.GCD_SPELL)
+    local cd = C_Spell.GetSpellCooldown(CUI.GCD_SPELL)
     local s, skinData = cd and cd.startTime, cd and cd.duration
     if not (s and skinData) then return false end
     if issecretvalue and (issecretvalue(s) or issecretvalue(skinData)) then return true end
@@ -1494,9 +1495,9 @@ function mod.ShowIdleCastBar()
 
     if callback.alwaysShow and callback.enabled and not mod._erbCastPadHidden then
         castFrame:Show()
-        CludesUI.SetElementVisibility(castFrame, true)
+        CUI.SetElementVisibility(castFrame, true)
     else
-        CludesUI.SetElementVisibility(castFrame, false)
+        CUI.SetElementVisibility(castFrame, false)
     end
 end
 
@@ -1509,15 +1510,15 @@ function mod.ActivateCastBar()
     if castFrame._spark then castFrame._spark:SetShown(callback.showSpark and true or false) end
     mod.ApplyCastBgAnchor()
     castFrame:Show()
-    CludesUI.SetElementVisibility(castFrame, true)
+    CUI.SetElementVisibility(castFrame, true)
 end
 
 -- Spell name plus its rank subtext ("Name (Rank 2)") when Show Spell Rank is on.
 -- Spell ranks exist only on WoW Forever (retail's subtext is "Racial" and the
 -- like), so the option and this read are Forever-only.
 function mod.CastDisplayName(callback, spellName, spellId)
-    spellName = CludesUI.CleanCastName(spellName)
-    if callback.showSpellRank and spellId and CludesUI.IS_FOREVER then
+    spellName = CUI.CleanCastName(spellName)
+    if callback.showSpellRank and spellId and CUI.IS_FOREVER then
         local rank = C_Spell.GetSpellSubtext(spellId)
         if rank and rank ~= "" then return spellName .. " (" .. rank .. ")" end
     end
@@ -1546,7 +1547,7 @@ function mod.ERB_FitCastName(callback)
                 .. (frame._latencySuffix or "")
         end
         local timerW =
-            max((callback.timerSize or 11) * 2.2, CludesUI.MeasureCastText(frame._timerText, sample) + 6)
+            max((callback.timerSize or 11) * 2.2, CUI.MeasureCastText(frame._timerText, sample) + 6)
         local barFrame = frame._bar
         local barW = barFrame:GetWidth()
         if not barW or barW < 10 then barW = callback.width end
@@ -1558,7 +1559,7 @@ function mod.ERB_FitCastName(callback)
         end
         fontStr:SetWidth(max(20, barW - 8 - (spellSide == "center" and 2 or 1) * timerW))
     end
-    CludesUI.FitCastName(fontStr, fontStr:GetText(), callback.spellTextSize or 11)
+    CUI.FitCastName(fontStr, fontStr:GetText(), callback.spellTextSize or 11)
 end
 
 OnCastStart = function()
@@ -1570,7 +1571,7 @@ OnCastStart = function()
         UnitCastingInfo("player")
     if not spellName then return end
     local castDurSec = (endMs - startMs) / 1000
-    CludesUI.SetCraftBatch(
+    CUI.SetCraftBatch(
         castFrame,
         (callback.fullCraftTime or callback.mergeCrafts) and isTradeSkill,
         spellId,
@@ -2028,8 +2029,8 @@ end
 -- player bar itself.
 function mod.RB_SyncBlizzCastSuppress()
     local callback = ERB.db and ERB.db.profile and ERB.db.profile.castBar
-    local on = callback and callback.enabled and not (mod._erbCastPadHidden and CludesUI.PadGamepadUI())
-    CludesUI.SetPlayerCastBarSuppressed("ResourceBars", on and true or false)
+    local on = callback and callback.enabled and not (mod._erbCastPadHidden and CUI.PadGamepadUI())
+    CUI.SetPlayerCastBarSuppressed("ResourceBars", on and true or false)
 end
 
 -- Hide While Using Gamepad (Global Settings > Gamepad): Blizzard's gamepad UI
@@ -2048,14 +2049,14 @@ function mod.RB_ApplyGamepadCastbar(padOn)
     if wanted ~= (mod._erbCastPadWatched == true) then
         mod._erbCastPadWatched = wanted
         if wanted then
-            CludesUI.WatchPad("ERB_CastBar", mod.RB_ApplyGamepadCastbar)
+            CUI.WatchPad("ERB_CastBar", mod.RB_ApplyGamepadCastbar)
         else
-            CludesUI.UnwatchPad("ERB_CastBar")
+            CUI.UnwatchPad("ERB_CastBar")
         end
     end
     local hide = false
     if wanted then
-        if padOn == nil then padOn = CludesUI.PadModeOn() end
+        if padOn == nil then padOn = CUI.PadModeOn() end
         hide = padOn and true or false
     end
     if hide == (mod._erbCastPadHidden == true) then return end
@@ -2179,7 +2180,7 @@ function mod.ERB_LayoutEmpowerPips(stages)
     -- pixels wide at every UI scale (the old effectiveScale rounding
     -- treated 2 as UI units and drifted between 1 and 3 physical pixels).
     local effectiveScale = barFrame:GetEffectiveScale()
-    local PPc = CludesUI and CludesUI.PP
+    local PPc = CUI and CUI.PP
     local onePx = ((PPc and PPc.perfect) or 1) / effectiveScale
     local pipWidth = 2 * onePx
     local snappedHeight = (PPc and PPc.SnapForES) and PPc.SnapForES(barHeight, effectiveScale) or barHeight

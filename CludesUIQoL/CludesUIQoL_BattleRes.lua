@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQoL_BattleRes.lua
 --  Runtime for the BattleRes icon. Polls GetSpellCharges(20484) and shows
@@ -9,7 +10,7 @@ local _, mod = ...
 
 local BREZ_SPELL_ID = 20484 -- Rebirth -- canonical shared brez pool spell ID
 
-local SHAPE_MASKS = CludesUI.SHAPE_MASKS
+local SHAPE_MASKS = CUI.SHAPE_MASKS
 
 -- Sits under CludesUIQoLDB.profile.battleRes so we don't clobber the
 -- existing cursor / QoL feature data that already lives in that SavedVariable.
@@ -89,20 +90,20 @@ end
 local function GetBrezFont()
     local profile = P()
     local key = (profile and profile.font) or "__global"
-    if key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
-        local filePath = CludesUI.ResolveFontName(key)
+    if key ~= "__global" and CUI and CUI.ResolveFontName then
+        local filePath = CUI.ResolveFontName(key)
         if filePath then return filePath end
     end
-    return (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT
+    return (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT
 end
 
 local function GetBrezOutline()
     local profile = P()
     local mode = (profile and profile.outlineMode) or "__global"
-    if mode == "outline" then return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG" end
-    if mode == "thick" then return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG" end
+    if mode == "outline" then return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG" end
+    if mode == "thick" then return (CUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG" end
     if mode == "none" then return "" end
-    return (CludesUI.GetFontOutlineFlag("qol")) or (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+    return (CUI.GetFontOutlineFlag("qol")) or (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
 end
 
 -- ONLY the text display ("2 | 4:14") routes through this; the icon's
@@ -112,7 +113,7 @@ end
 local function SetBrezFont(fontStr, size)
     if not fontStr then return end
     local flags = GetBrezOutline()
-    CludesUI.PrimeFontShadow(fontStr, flags == "")
+    CUI.PrimeFontShadow(fontStr, flags == "")
     fontStr:SetFont(GetBrezFont(), size, flags)
 end
 
@@ -121,9 +122,9 @@ end
 local function SetBrezIconFont(fontStr, size)
     if not fontStr then return end
     fontStr:SetFont(
-        (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
+        (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         size,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
 end
 
@@ -151,7 +152,7 @@ end
 -- and center are snapped already (ApplyShape / ApplyPosition), so snapping the
 -- offset is what keeps the child anchored to it on the grid too.
 local function _snapOff(val)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix and Pix.Snap then return Pix.Snap(val) end
     return val
 end
@@ -160,8 +161,8 @@ end
 -- the border colour behind the masked icon, leaving a ring exactly that thick.
 local function _applyShapeOutline(owner, shapeKey, bs, red, green, blue, a)
     local t = owner._cuiOutline
-    local maskFile = shapeKey and CludesUI.SHAPE_MASKS[shapeKey]
-    local Pix = CludesUI and CludesUI.PP
+    local maskFile = shapeKey and CUI.SHAPE_MASKS[shapeKey]
+    local Pix = CUI and CUI.PP
     if not (maskFile and Pix) or bs <= 0 then
         if t then t:Hide() end
         return
@@ -175,7 +176,7 @@ local function _applyShapeOutline(owner, shapeKey, bs, red, green, blue, a)
     local m = owner._cuiOutlineMask
     -- The mask's opening is its middle (128 - 2 * inset) / 128: grow it by bs over
     -- that ratio so the outline reaches bs pixels past the icon's own edge.
-    local inset = CludesUI.SHAPE_INSETS[shapeKey] or 17
+    local inset = CUI.SHAPE_INSETS[shapeKey] or 17
     local grow = _snapOff(Pix.FromPixels(bs * 128 / (128 - 2 * inset)))
     m:ClearAllPoints()
     m:SetPoint("TOPLEFT", owner, "TOPLEFT", -grow, grow)
@@ -194,7 +195,7 @@ local function ApplyShape()
     local profile = P()
     if not profile then return end
 
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local shapeKey = profile.shape or "none"
     local bs = BORDER_PX[profile.borderSize or "thin"] or 1
 
@@ -322,11 +323,11 @@ end
 --  Alternative to the icon, toggled via displayMode; shares the same frame,
 --  position, visibility, and unlock element.
 -------------------------------------------------------------------------------
-local _cntPfx, _timPfx = CludesUI.COLOR_CODES.WHITE, CludesUI.COLOR_CODES.WHITE
+local _cntPfx, _timPfx = CUI.COLOR_CODES.WHITE, CUI.COLOR_CODES.WHITE
 local _txtCount, _txtTime, _txtZero
 
 local function _colorPrefix(color)
-    return CludesUI.HexColor((color and color.r) or 1, (color and color.g) or 1, (color and color.b) or 1)
+    return CUI.HexColor((color and color.r) or 1, (color and color.g) or 1, (color and color.b) or 1)
 end
 
 -- Compose the line only when a part actually changed (once per second while
@@ -363,7 +364,7 @@ local function ApplyText()
     if wid < 1 then wid = (profile.textSize or 14) * 4 end
     if hgt < 1 then hgt = profile.textSize or 14 end
     local tw, th = math.ceil(wid) + 4, math.ceil(hgt) + 2
-    local PPt = CludesUI and CludesUI.PP
+    local PPt = CUI and CUI.PP
     if PPt and PPt.Snap then
         tw, th = PPt.Snap(tw), PPt.Snap(th)
     end
@@ -381,7 +382,7 @@ local function ApplyPosition()
     local place = profile.pos
     local cx = (place and place.centerX) or 0
     local cy = (place and place.centerY) or 200
-    local PPp = CludesUI and CludesUI.PP
+    local PPp = CUI and CUI.PP
     if PPp and PPp.SnapCenterForDim then
         cx = PPp.SnapCenterForDim(cx, widget:GetWidth())
         cy = PPp.SnapCenterForDim(cy, widget:GetHeight())
@@ -491,7 +492,7 @@ mod.FormatTime = FormatTime
 -- (no DB, frame, events, unlock mover or _G._CUI_BattleRes_* hooks), even when
 -- a saved or imported profile has it enabled. Every reader of those hooks
 -- nil-guards, and the options section and Fonts rows are not built there.
-if CludesUI.IS_FOREVER then return end
+if CUI.IS_FOREVER then return end
 
 local _lastCountText, _lastDurText, _lastCountColor
 local function _setCount(s, isZero)
@@ -689,7 +690,7 @@ local function ApplyResTracker()
             cdFrame:Clear()
             cdFrame:Hide()
         end
-        local Pix = CludesUI and CludesUI.PP
+        local Pix = CUI and CUI.PP
         if Pix and Pix.GetBorders and Pix.GetBorders(widget) then Pix.HideBorder(widget) end
         _applyShapeOutline(widget, nil, 0)
         textLine:Show()
@@ -712,7 +713,7 @@ function _G._CUI_BattleRes_Reset()
     local prof = addonName.db and addonName.db.profile
     if not prof then return end
     prof.battleRes, prof.bloodlust = {}, {}
-    CludesUI.Lite.DeepMergeDefaults(prof, defaultSet.profile)
+    CUI.Lite.DeepMergeDefaults(prof, defaultSet.profile)
     ApplyResTracker()
     if _G._CUI_Bloodlust_Apply then _G._CUI_Bloodlust_Apply() end
 end
@@ -762,12 +763,12 @@ end
 --  Unlock mode registration
 -------------------------------------------------------------------------------
 local function RegisterUnlock()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
     if not MK then return end
     local loadPos, clearPos = mod.CenterPosFns(P)
 
-    CludesUI:RegisterUnlockElements({
+    CUI:RegisterUnlockElements({
         MK({
             key = "CUI_BattleRes",
             label = "Brez",
@@ -804,11 +805,11 @@ local function RegisterUnlock()
                     -- unlock Cancel round-trip (getSize -> setWidth) into a 40-point font.
                     return
                 end
-                local PPb = CludesUI and CludesUI.PP
+                local PPb = CUI and CUI.PP
                 profile.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
                 ApplyResTracker()
-                if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                    CludesUI.RepositionBarToMover("CUI_BattleRes")
+                if CUI._unlockActive and CUI.RepositionBarToMover then
+                    CUI.RepositionBarToMover("CUI_BattleRes")
                 end
             end,
             setHeight = function(_, hgt)
@@ -822,12 +823,12 @@ local function RegisterUnlock()
                     if widget and math.abs(hgt - widget:GetHeight()) < 0.5 then return end
                     profile.textSize = math.max(8, math.min(40, math.floor(hgt + 0.5) - 2))
                 else
-                    local PPb = CludesUI and CludesUI.PP
+                    local PPb = CUI and CUI.PP
                     profile.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
                 end
                 ApplyResTracker()
-                if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                    CludesUI.RepositionBarToMover("CUI_BattleRes")
+                if CUI._unlockActive and CUI.RepositionBarToMover then
+                    CUI.RepositionBarToMover("CUI_BattleRes")
                 end
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
@@ -852,8 +853,8 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    if not CludesUI or not CludesUI.Lite or not CludesUI.Lite.NewDB then return end
-    addonName.db = CludesUI.Lite.NewDB("CludesUIQoLDB", defaultSet, true)
+    if not CUI or not CUI.Lite or not CUI.Lite.NewDB then return end
+    addonName.db = CUI.Lite.NewDB("CludesUIQoLDB", defaultSet, true)
     _G._CUI_BattleRes_DB = function() return addonName.db end
     BuildResFrame()
     -- Apply registers events (gated on enabled + visibility) and refreshes

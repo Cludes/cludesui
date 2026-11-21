@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Flyout.lua
 --
@@ -324,7 +325,7 @@ local function LayoutFlyoutButtons()
             iconTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
             pcall(iconTex.SetTexCoord, iconTex, 0.05, 0.95, 0.05, 0.95)
             -- Foreign icon: no global SetTexCoord snap hook, so disable snap once here.
-            if CludesUI.PP then CludesUI.PP.DisablePixelSnap(iconTex) end
+            if CUI.PP then CUI.PP.DisablePixelSnap(iconTex) end
         end
         if boxes then
             -- After the child loop above, which lifted the box over the icon
@@ -381,7 +382,7 @@ local function EnsureFlyoutPanel()
     if not flyoutPanel then
         -- Controller cursor: the shared overlay parent (UIParent without a
         -- controller UI, so nothing changes then); tracked once scripts are set.
-        local overlayParent = CludesUI.OverlayParent()
+        local overlayParent = CUI.OverlayParent()
         SetFlyoutPanel(CreateFrame("Frame", nil, overlayParent, "BackdropTemplate"))
         flyoutPanel:SetFrameStrata("DIALOG")
         flyoutPanel:SetBackdrop({
@@ -425,7 +426,7 @@ local function EnsureFlyoutPanel()
         -- grid); the layer shows exactly while the grid does.
         if overlayParent ~= UIParent then
             flyoutPanel.CloseButton = flyoutToggle
-            CludesUI.TrackOverlay(flyoutPanel)
+            CUI.TrackOverlay(flyoutPanel)
         end
     end
 end
@@ -615,7 +616,7 @@ local function CreateFlyoutToggle()
     if flyoutToggle then
         -- Re-apply the current accent so a later ApplyAll (e.g. at PLAYER_ENTERING_WORLD,
         -- after theme resolution mutated CLUDES_GREEN) picks up the right color.
-        local EG2 = CludesUI.CLUDES_GREEN
+        local EG2 = CUI.CLUDES_GREEN
         if flyoutToggle._norm then flyoutToggle._norm:SetVertexColor(EG2.r, EG2.g, EG2.b, 1) end
         if flyoutToggle._pushed then flyoutToggle._pushed:SetVertexColor(EG2.r, EG2.g, EG2.b, 1) end
         if flyoutToggle._hl then flyoutToggle._hl:SetVertexColor(EG2.r, EG2.g, EG2.b, 1) end
@@ -654,9 +655,9 @@ local function CreateFlyoutToggle()
     button._hl = highlight
 
     -- Keep the three textures synced to the accent. Vertex alpha stays 1; the highlight's SetAlpha(0.3) still applies on top since the two multiply.
-    CludesUI.RegAccent({ type = "vertex", obj = norm })
-    CludesUI.RegAccent({ type = "vertex", obj = pushed })
-    CludesUI.RegAccent({ type = "vertex", obj = highlight })
+    CUI.RegAccent({ type = "vertex", obj = norm })
+    CUI.RegAccent({ type = "vertex", obj = pushed })
+    CUI.RegAccent({ type = "vertex", obj = highlight })
 
     local backdrop = CreateFrame("Frame", nil, button, "BackdropTemplate")
     backdrop:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
@@ -668,20 +669,20 @@ local function CreateFlyoutToggle()
     button:SetScript("OnClick", function(self)
         if GetFFD(self).freeMoveJustDragged then return end
         -- Opening the grid replaces the label tooltip (same as M+ Portals)
-        CludesUI.HideWidgetTooltip(true)
+        CUI.HideWidgetTooltip(true)
         ToggleFlyoutPanel()
     end)
     button:SetScript("OnEnter", function(self)
         if flyoutPanel and flyoutPanel:IsShown() then return end
-        if not GetFFD(self).freeMoveJustDragged and CludesUI.ShowWidgetTooltip then
-            CludesUI.ShowWidgetTooltip(
+        if not GetFFD(self).freeMoveJustDragged and CUI.ShowWidgetTooltip then
+            CUI.ShowWidgetTooltip(
                 self,
                 "Addon Buttons",
                 { anchor = SKIN._Grow.TT(), scale = GetCustomTooltipScale() }
             )
         end
     end)
-    button:SetScript("OnLeave", function(self) CludesUI.HideWidgetTooltip() end)
+    button:SetScript("OnLeave", function(self) CUI.HideWidgetTooltip() end)
 
     -- Blizzard/addon hooks on minimap children can disable mouse; re-assert on Show.
     button:HookScript("OnShow", function(self)

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ActionBars_Options\MenuBagsRepPage_Options.lua
 --  Action Bars options: the Menu, Bags & Rep Bars page (BuildMenuBagsRepPage)
@@ -10,7 +11,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  out its own way. Definitions only; the shared helpers come from
 --  ns._ABO_OptEnv (filled by CUI_ActionBars_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIActionBars"]
+local mod = CUI._ModuleNS["CludesUIActionBars"]
 if not mod then return end -- module disabled: no options page
 
 ---------------------------------------------------------------------------
@@ -18,12 +19,12 @@ if not mod then return end -- module disabled: no options page
 ---------------------------------------------------------------------------
 
 -- The data bars this client builds (WoW Forever has no House Favor bar).
-local DATA_BAR_KEYS = CludesUI.IS_FOREVER and { "XPBar", "RepBar" } or { "XPBar", "RepBar", "FavorBar" }
+local DATA_BAR_KEYS = CUI.IS_FOREVER and { "XPBar", "RepBar" } or { "XPBar", "RepBar", "FavorBar" }
 local DATA_BAR_LABELS = { XPBar = "XP Bar", RepBar = "Reputation Bar", FavorBar = "House Favor Bar" }
 -- The bars whose borders sync with each other: the rep bars. The XP bar's
 -- border is its own and never syncs (a lone rep bar, on Forever, has nothing
 -- to sync with).
-local BORDER_SYNC_KEYS = CludesUI.IS_FOREVER and { "RepBar" } or { "RepBar", "FavorBar" }
+local BORDER_SYNC_KEYS = CUI.IS_FOREVER and { "RepBar" } or { "RepBar", "FavorBar" }
 local BORDER_SYNCS = {}
 for _, keyName in ipairs(BORDER_SYNC_KEYS) do
     BORDER_SYNCS[keyName] = #BORDER_SYNC_KEYS > 1
@@ -43,9 +44,9 @@ local REACTIVE_PREVIEW = {
 -- Blizzard's bars back after their events were dropped, asks for the reload
 -- that applies it.
 local function AfterDataBarSwitch(needsReload)
-    CludesUI:RefreshPage()
+    CUI:RefreshPage()
     if needsReload then
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = "Reload Required",
             message = mod.EAB.db.profile.useBlizzardDataBars
                     and "Blizzard's XP and reputation bars return after a UI reload."
@@ -64,7 +65,7 @@ local function DataBarKit(hostFrame)
     local ApplyVisibilityKey, ABAR, GetVisibilityKey =
         environ.ApplyVisibilityKey, environ.EAB, environ.GetVisibilityKey
     local ShownBorderDefaults = environ.ShownBorderDefaults
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local K = { AfterSwitch = AfterDataBarSwitch }
 
     local BLIZZ_DIS_TIP = "This option does not work with Blizzard Bars. Please use Blizzard Edit Mode."
@@ -110,7 +111,7 @@ local function DataBarKit(hostFrame)
                 ABAR:RefreshRuntimeVisibility()
                 ABAR:RefreshMouseover()
                 ABAR:ApplyCombatVisibility()
-                if trackNeverFlip and BarIsNever(barId) ~= wasNever then CludesUI:RefreshPage(true) end
+                if trackNeverFlip and BarIsNever(barId) ~= wasNever then CUI:RefreshPage(true) end
             end,
             -- Option axes recompile the secure driver through the same chain the
             -- old Visibility Options dropdown used. The gate refresh first: a lane
@@ -129,7 +130,7 @@ local function DataBarKit(hostFrame)
     -- any ordinary widget for the right slot (nil = blank). Returns the row
     -- and the new y.
     local function BuildVisRow(cursorY, barId, leftLabel, disabledFn, disTip, trackNeverFlip, rightCfg)
-        local visRow, visH = CludesUI.BuildVisibilityRow(
+        local visRow, visH = CUI.BuildVisibilityRow(
             W,
             hostFrame,
             cursorY,
@@ -159,9 +160,9 @@ local function DataBarKit(hostFrame)
         end
         local function OutsideSizeMatch()
             for _, keyName in ipairs(DATA_BAR_KEYS) do
-                local t = CludesUI.GetWidthMatchTarget(keyName)
+                local t = CUI.GetWidthMatchTarget(keyName)
                 if t and not set[keyName] ~= not set[t] then return keyName, t end
-                t = CludesUI.GetHeightMatchTarget(keyName)
+                t = CUI.GetHeightMatchTarget(keyName)
                 if t and not set[keyName] ~= not set[t] then return keyName, t end
             end
         end
@@ -175,11 +176,11 @@ local function DataBarKit(hostFrame)
                 if _blizzDis() then return BLIZZ_DIS_TIP end
                 local keyName, t = OutsideSizeMatch()
                 if not keyName then return nil end
-                return CludesUI.GetBarLabel(keyName)
+                return CUI.GetBarLabel(keyName)
                     .. ": "
-                    .. CludesUI.Lf(
+                    .. CUI.Lf(
                         "Size matched to %1$s. Unmatch in Layout Mode to edit.",
-                        CludesUI.GetBarLabel(t)
+                        CUI.GetBarLabel(t)
                     )
             end,
             rawTooltip = true,
@@ -213,7 +214,7 @@ local function DataBarKit(hostFrame)
                 end
                 -- Rebuild: the Width and Height sliders take their ranges from
                 -- the orientation when they are built.
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         }
     end
@@ -223,7 +224,7 @@ local function DataBarKit(hostFrame)
     -- along the bar. Each setting goes to every bar of `keys`, as the
     -- orientation does.
     function K.OrientCog(regionFrame, keyList, dividers)
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         local lead = keyList[1]
         local function Flag(key)
             local b = ABAR.db.profile.bars[lead]
@@ -267,7 +268,7 @@ local function DataBarKit(hostFrame)
             get = function() return Flag("textReadDown") end,
             set = function(val) SetFlag("textReadDown", val) end,
         }
-        CludesUI.BuildInlineCog(regionFrame, {
+        CUI.BuildInlineCog(regionFrame, {
             title = "Vertical Text",
             anchorTo = regionFrame._control,
             disabled = function()
@@ -306,7 +307,7 @@ local function DataBarKit(hostFrame)
             itemHeight = 28,
             background = function(key)
                 if not key or key == "---" or key == "none" then return nil end
-                if CludesUI.ResolveTexturePath then return CludesUI.ResolveTexturePath(lookup, key, nil) end
+                if CUI.ResolveTexturePath then return CUI.ResolveTexturePath(lookup, key, nil) end
                 return lookup[key]
             end,
         }
@@ -386,9 +387,9 @@ local function DataBarKit(hostFrame)
                     mod.ApplyDataBarLayout(keyName)
                 end
             end
-            CludesUI:RefreshPage(reveal)
+            CUI:RefreshPage(reveal)
         end
-        CludesUI.BuildSyncIcon({
+        CUI.BuildSyncIcon({
             region = regionFrame,
             tooltip = tooltip,
             onClick = function() ApplyTo(BORDER_SYNC_KEYS) end,
@@ -445,12 +446,12 @@ local function DataBarKit(hostFrame)
             mod.ApplyDataBarLayout(barId)
             if turnedOn then
                 turnedOn = false
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             else
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end
         end
-        local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+        local texValues, texOrder = CUI.GetBorderTextureDropdown()
         local function Textured() return DataBarTextured(V()) end
         local function BorderOff() return (mod.ResolveBorderThickness(V())) <= 0 end
         local brdRow
@@ -468,12 +469,12 @@ local function DataBarKit(hostFrame)
                 getValue = function() return V().borderTexture or "solid" end,
                 -- The offset row exists only for a textured style, so only a
                 -- Solid <-> textured flip rebuilds the page.
-                setValue = CludesUI.DependentSetValue(Textured, function(val)
+                setValue = CUI.DependentSetValue(Textured, function(val)
                     local cfg = Wr()
-                    local defTh = CludesUI.GetBorderDefaultSize("actionbars", val)
+                    local defTh = CUI.GetBorderDefaultSize("actionbars", val)
                     -- An unregistered SharedMedia border answers the NUMBER 1; this key stores labels.
-                    if type(defTh) == "number" then defTh = CludesUI.BORDER_LABEL_OF_STEP[defTh] or "thin" end
-                    local col, behind = CludesUI.GetBorderStyleSelectDefaults(val)
+                    if type(defTh) == "number" then defTh = CUI.BORDER_LABEL_OF_STEP[defTh] or "thin" end
+                    local col, behind = CUI.GetBorderStyleSelectDefaults(val)
                     cfg.borderTexture = val
                     cfg.borderTextureOffset, cfg.borderTextureOffsetY = nil, nil
                     cfg.borderTextureShiftX, cfg.borderTextureShiftY = nil, nil
@@ -485,7 +486,7 @@ local function DataBarKit(hostFrame)
                     FinishToggle()
                 end),
             },
-            CludesUI.BorderPxSliderCfg({
+            CUI.BorderPxSliderCfg({
                 text = "Border Size",
                 disabled = _blizzDis,
                 disabledTooltip = BLIZZ_DIS_TIP,
@@ -497,7 +498,7 @@ local function DataBarKit(hostFrame)
                         or mod.BORDER_THICKNESS.thin
                     return record.regular
                 end,
-                setStep = function(step) Wr().borderThickness = CludesUI.BORDER_LABEL_OF_STEP[step] end,
+                setStep = function(step) Wr().borderThickness = CUI.BORDER_LABEL_OF_STEP[step] end,
                 getTex = function() return V().borderTexture or "solid" end,
                 getPx = function() return V().borderThicknessPx end,
                 setPx = function(val) Wr().borderThicknessPx = val end,
@@ -511,7 +512,7 @@ local function DataBarKit(hostFrame)
         -- registry default for the step and thickness key the bar renders
         -- with, scaled to an exact size as drawn.
         if Textured() then
-            local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+            local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                 addonKey = "actionbars",
                 tooltip = "How far the border reaches past the bar.",
                 disabled = _blizzDis,
@@ -532,7 +533,7 @@ local function DataBarKit(hostFrame)
         end
 
         -- Row chrome (frames: never on the search pre-build's absorber rows).
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             -- Border Options cog (Shift X / Shift Y / Show Behind): textured
             -- styles only, hidden (not dimmed) for Solid and under Blizzard bars.
             local lRgn = brdRow._leftRegion
@@ -553,7 +554,7 @@ local function DataBarKit(hostFrame)
                 Wr()[key] = val
                 FinishToggle()
             end
-            local cogBtn = CludesUI.BuildInlineCog(lRgn, {
+            local cogBtn = CUI.BuildInlineCog(lRgn, {
                 anchorTo = lRgn._control,
                 title = "Border Options",
                 tip = "Fine-tunes the textured border's position and draws it under the bar fill when Show Behind is on.",
@@ -606,12 +607,12 @@ local function DataBarKit(hostFrame)
             })
             if cogBtn then
                 local function UpdateCogVis() cogBtn:SetShown(Textured() and not _blizzDis()) end
-                CludesUI.RegisterWidgetRefresh(UpdateCogVis)
+                CUI.RegisterWidgetRefresh(UpdateCogVis)
                 UpdateCogVis()
             end
 
             -- Border color with alpha, left of the Border Size slider.
-            CludesUI.BuildInlineSwatches(brdRow._rightRegion, {
+            CUI.BuildInlineSwatches(brdRow._rightRegion, {
                 {
                     tooltip = "Border Color",
                     hasAlpha = true,
@@ -663,8 +664,8 @@ local function DataBarKit(hostFrame)
     function K.SizeRow(cursorY, barId)
         local _, height
         local function BarCfg() return ABAR.db.profile.bars[barId] end
-        local wDis, wTip, wRaw = CludesUI.MatchGuard(barId, "Width", _blizzDis, BLIZZ_DIS_TIP)
-        local hDis, hTip, hRaw = CludesUI.MatchGuard(barId, "Height", _blizzDis, BLIZZ_DIS_TIP)
+        local wDis, wTip, wRaw = CUI.MatchGuard(barId, "Width", _blizzDis, BLIZZ_DIS_TIP)
+        local hDis, hTip, hRaw = CUI.MatchGuard(barId, "Height", _blizzDis, BLIZZ_DIS_TIP)
         local _dbVert = (BarCfg().orientation == "VERTICAL")
         local _dbLenMax = math.floor(_dbVert and UIParent:GetHeight() or UIParent:GetWidth())
         local _dbWMin, _dbWMax = (_dbVert and 4 or 50), (_dbVert and 100 or _dbLenMax)
@@ -724,7 +725,7 @@ local function DataBarKit(hostFrame)
                     if BarCfg().colorMode ~= "custom" then
                         BarCfg().colorMode = "custom"
                         RefreshDataBar(barId)
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                         return
                     end
                     if self._eabOrigClick then self._eabOrigClick(self) end
@@ -734,7 +735,7 @@ local function DataBarKit(hostFrame)
             {
                 tooltip = "Accent Color",
                 getValue = function()
-                    local ACC = CludesUI.CLUDES_GREEN
+                    local ACC = CUI.CLUDES_GREEN
                     if ACC then return ACC.r or 0.298, ACC.g or 0.788, ACC.b or 0.941 end
                     return 0.298, 0.788, 0.941
                 end,
@@ -742,7 +743,7 @@ local function DataBarKit(hostFrame)
                 onClick = function()
                     BarCfg().colorMode = "accent"
                     RefreshDataBar(barId)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 refreshAlpha = function() return BarCfg().colorMode == "accent" and 1 or 0.3 end,
             },
@@ -753,7 +754,7 @@ local function DataBarKit(hostFrame)
                 onClick = function()
                     BarCfg().colorMode = nil
                     RefreshDataBar(barId)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
                     local m = BarCfg().colorMode
@@ -821,7 +822,7 @@ local function DataBarKit(hostFrame)
     -- The Bar Text Offsets cog on a Text Size control: the anchor and
     -- offsets, then extraRows (the XP bar text's Show Rested).
     function K.TextCog(regionFrame, barId, extraRows)
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         local function BarCfg() return ABAR.db.profile.bars[barId] end
         local textRows = {
             {
@@ -866,7 +867,7 @@ local function DataBarKit(hostFrame)
                 textRows[#textRows + 1] = r
             end
         end
-        CludesUI.BuildInlineCog(regionFrame, {
+        CUI.BuildInlineCog(regionFrame, {
             anchorTo = regionFrame._control,
             title = "Bar Text Offsets",
             disabled = _blizzDis,
@@ -889,7 +890,7 @@ local function DataBarKit(hostFrame)
         cursorY = cursorY - height
         -- The Move in Unlock Mode button on this bar's section: greyed while
         -- Blizzard's bars are in use, since our bar (and its mover) is not built then.
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = barId, disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
         )
@@ -908,7 +909,7 @@ local function DataBarKit(hostFrame)
                 disabledTooltip = BLIZZ_DIS_TIP,
                 rawTooltip = true,
                 getValue = function() return BarCfg().customBorder or false end,
-                setValue = CludesUI.SectionToggleSetValue(function(val)
+                setValue = CUI.SectionToggleSetValue(function(val)
                     BarCfg().customBorder = val and true or false
                     mod.ApplyDataBarLayout(barId)
                 end),
@@ -946,14 +947,14 @@ mod.ABO_DataBarKit = DataBarKit
 local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
     local environ = mod._ABO_OptEnv
     local ABAR, EndCapsCtl = environ.EAB, environ.EndCapsCtl
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local K = DataBarKit(hostFrame)
     local VisOpts = K.VisOpts
     local cursorY = yOffset
     local _, height
 
     -- Global settings page, no bar selector header
-    CludesUI:ClearContentHeader()
+    CUI:ClearContentHeader()
     hostFrame._showRowDivider = true
 
     -------------------------------------------------------------------
@@ -966,7 +967,7 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
     do
         local microOpts = VisOpts("MicroBar", "Micro Menu Visibility")
         microOpts.rightVis = VisOpts("BagBar", "Bag Bar Visibility")
-        _, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, microOpts)
+        _, height = CUI.BuildVisibilityRow(W, hostFrame, cursorY, microOpts)
         cursorY = cursorY - height
     end
     -- Their skins: the Blizzard Skins+ Micro Menu and Bag Bar cards' style,
@@ -976,7 +977,7 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
     -- makes the two differ on purpose). Without the Bag Bar skin the slots
     -- fill in order, so no blank is left mid-section.
     do
-        local SkinCfg = CludesUI.WindowSkinStyleCfg
+        local SkinCfg = CUI.WindowSkinStyleCfg
         local microSkin = SkinCfg
             and SkinCfg(
                 "micromenu",
@@ -998,7 +999,7 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
                 write = function(keyName, val)
                     if keyName then ABAR.db.profile.bars[key][keyName] = val end
                     mod.AB_ExtraCaps(key)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
         end
@@ -1012,7 +1013,7 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
             row, height = W:DualRow(hostFrame, cursorY, microSkin, mc.Cfg())
             cursorY = cursorY - height
             mc.Build(row._rightRegion)
-            row, height = W:DualRow(hostFrame, cursorY, bc.Cfg(), CludesUI.BlankRowCfg())
+            row, height = W:DualRow(hostFrame, cursorY, bc.Cfg(), CUI.BlankRowCfg())
             cursorY = cursorY - height
             bc.Build(row._leftRegion)
         else
@@ -1042,7 +1043,7 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
             setValue = function(val) K.AfterSwitch(mod.SetUseBlizzardDataBars(val)) end,
         }, { "RepBar", "FavorBar" })
     end)
-    if not CludesUI.IS_FOREVER then
+    if not CUI.IS_FOREVER then
         _, height = W:Spacer(hostFrame, cursorY, 12)
         cursorY = cursorY - height
         cursorY = K.Section(cursorY, "FavorBar", "HOUSE FAVOR BAR", "Favor Bar Visibility")
@@ -1064,7 +1065,7 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
         setValue = function(val)
             ABAR.db.profile.hideBlizzardVehicleBar = val
             if ABAR.UpdateVehicleBarWatch then ABAR:UpdateVehicleBarWatch() end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
         tooltip = "Hide Blizzard's stock vehicle and override bar.",
     }, { type = "label", text = "" })

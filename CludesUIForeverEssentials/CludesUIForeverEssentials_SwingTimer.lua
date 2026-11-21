@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -- Forever's swing API (Blizzard_APIDocumentationGenerated/SwingTimerDocumentation.lua).
 if not (C_SwingTimer and Enum and Enum.PlayerSwingType) then return end
 -------------------------------------------------------------------------------
@@ -37,7 +38,7 @@ local IDLE_AFTER = 0.4 -- seconds past a swing's end before its bar counts as id
 local holderFrame
 local barList = {} -- [swingType] = StatusBar with .started, .duration
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 
 -- Whether the player has a weapon for this swing type right now.
 local function HasWeapon(t)
@@ -73,17 +74,17 @@ local function Bar(t)
     if widget then return widget end
     widget = CreateFrame("StatusBar", nil, holderFrame)
     widget:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    if t == SWING.MainHand then CludesUI.Kit.SyncAccent(COLOR[t]) end
+    if t == SWING.MainHand then CUI.Kit.SyncAccent(COLOR[t]) end
     widget:GetStatusBarTexture():SetVertexColor(unpack(COLOR[t]))
-    CludesUI.Kit.Panel(widget, 0.85)
+    CUI.Kit.Panel(widget, 0.85)
     widget:SetMinMaxValues(0, 1)
     widget:SetValue(0)
     widget.label = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.label, 10, "essentials")
+    CUI.Kit.Font(widget.label, 10, "essentials")
     widget.label:SetPoint("LEFT", 3, 0)
     widget.label:SetText(LABEL[t])
     widget.text = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.text, 10, "essentials")
+    CUI.Kit.Font(widget.text, 10, "essentials")
     widget.text:SetPoint("RIGHT", -3, 0)
     barList[t] = widget
     return widget
@@ -104,7 +105,7 @@ end
 function module.SwingLayout()
     if not holderFrame then return end
     local wid, hgt = Get("width"), Get("height")
-    local preview = CludesUI._unlockActive
+    local preview = CUI._unlockActive
     local posY, isShown = 0, 0
     for _, t in ipairs(ORDER) do
         local widget = barList[t]
@@ -152,7 +153,7 @@ local function Apply()
         eventFrame:RegisterEvent("PLAYER_SWING")
         eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        if not CludesUI._unlockActive then F.Place(holderFrame) end
+        if not CUI._unlockActive then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
         for _, bar in pairs(barList) do
@@ -163,7 +164,7 @@ local function Apply()
     module.SwingLayout()
 end
 
-CludesUI._SwingTimer = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
+CUI._SwingTimer = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
 
 F.Start(Apply, {
     key = "CUI_SwingTimer",

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_ClassPower.lua
 --
@@ -12,7 +13,7 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local type = type
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local UnitHealthMax = UnitHealthMax
 local C_UnitAuras = C_UnitAuras
 local UnitIsUnit = UnitIsUnit
@@ -105,16 +106,16 @@ end
 -- return the power color; class resources return resource color > class color.
 local CP_DEFAULT_COLOR = { 1.00, 0.84, 0.30 }
 local function GetClassPipColor(class, powerName)
-    if CludesUI then
+    if CUI then
         if powerName then
             local alias = powerName:match("^(.+)_BAR$")
             local key = alias or powerName
-            local color = CludesUI.GetPowerColor(key)
+            local color = CUI.GetPowerColor(key)
             if color then return { color.r, color.g, color.b } end
         end
-        local rc = CludesUI.GetResourceColor(class)
+        local rc = CUI.GetResourceColor(class)
         if rc then return { rc.r, rc.g, rc.b } end
-        local classColor = CludesUI.GetClassColor(class)
+        local classColor = CUI.GetClassColor(class)
         if classColor then return { classColor.r, classColor.g, classColor.b } end
     end
     return CP_DEFAULT_COLOR
@@ -429,8 +430,8 @@ local function UpdateClassPowerOnPlate(backing)
         EnsureClassPowerBar(backing)
         local barFrame = backing._cpBar
         local current, maxC = 0, 50
-        if CludesUI and CludesUI.GetSoulFragments then
-            current, maxC = CludesUI.GetSoulFragments()
+        if CUI and CUI.GetSoulFragments then
+            current, maxC = CUI.GetSoulFragments()
             if not maxC or maxC <= 0 then maxC = 50 end
         end
 
@@ -465,9 +466,9 @@ local function UpdateClassPowerOnPlate(backing)
         pipCap = 6
         isSecret = true
     elseif powerKind == "MAELSTROM_WEAPON" then
-        current, pipCap = CludesUI.GetMaelstromWeapon()
+        current, pipCap = CUI.GetMaelstromWeapon()
     elseif powerKind == "TIP_OF_THE_SPEAR" then
-        current, pipCap = CludesUI.GetTipOfTheSpear()
+        current, pipCap = CUI.GetTipOfTheSpear()
     elseif powerKind == "WHIRLWIND_STACKS" or powerKind == "SWEEPING_STRIKES" then
         -- Engine-slot display only (the cast-count simulator is retired):
         -- shared geometry below sizes the overlay, the pre-loop handoff
@@ -500,7 +501,7 @@ local function UpdateClassPowerOnPlate(backing)
         -- the previous target's count at the moment PLAYER_TARGET_CHANGED fires
         -- (measured on 1.60.1: up=3 while gcp=0 on the swap), with no later power
         -- event to correct it. Blizzard's own ComboFrame reads GetComboPoints.
-        if CludesUI.IS_FOREVER == true and powerKind == Enum.PowerType.ComboPoints and GetComboPoints then
+        if CUI.IS_FOREVER == true and powerKind == Enum.PowerType.ComboPoints and GetComboPoints then
             current = GetComboPoints("player", "target") or 0
         else
             current = UnitPower("player", powerKind) or 0
@@ -901,7 +902,7 @@ local function EnableClassPowerWatcher()
     -- Vanilla content has no specializations, so the spec-keyed entries above never
     -- resolve on Forever, and the flat ones name resources that client does not
     -- have. This is the whole set that exists there.
-    if CludesUI.IS_FOREVER == true then
+    if CUI.IS_FOREVER == true then
         details = (PLAYER_CLASS == "ROGUE" or PLAYER_CLASS == "DRUID") and { Enum.PowerType.ComboPoints, 5 }
             or nil
     end
@@ -920,7 +921,7 @@ local function EnableClassPowerWatcher()
     classPowerMax = details[2]
     -- Druid Resto: cat form required. Feral always shows. On Forever there are no
     -- specs to tell them apart and combo points are cat-only for every druid.
-    if CludesUI.IS_FOREVER == true then
+    if CUI.IS_FOREVER == true then
         formRequired = (PLAYER_CLASS == "DRUID") and (DRUID_CAT_FORM or 1) or nil
     else
         local specIdx = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
@@ -982,7 +983,7 @@ local function EnableClassPowerWatcher()
         if formRequired then powerWatcher:RegisterEvent("UPDATE_SHAPESHIFT_FORM") end
         -- WoW Forever: combo points moving to a new target keep their count, so no
         -- power event fires; the light refresh below repaints the target plate.
-        if CludesUI.IS_FOREVER == true and powerKind == Enum.PowerType.ComboPoints then
+        if CUI.IS_FOREVER == true and powerKind == Enum.PowerType.ComboPoints then
             powerWatcher:RegisterEvent("COMBO_TARGET_CHANGED")
         end
         -- Runes need their own event for per-rune cooldown changes

@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 if not (C_EquipmentSet and C_EquipmentSet.UseEquipmentSet) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GearSets.lua  (WoW Forever only)
@@ -24,8 +25,8 @@ local buttons = {}
 local queuedSet -- a set to wear once combat ends
 local previous -- the set worn before an automatic swap
 
-local function Font() return CludesUI.GetFontPath("essentials") end
-local function Say(textValue) CludesUI.Print("|cff4cc9f0Gear Sets:|r " .. textValue) end
+local function Font() return CUI.GetFontPath("essentials") end
+local function Say(textValue) CUI.Print("|cff4cc9f0Gear Sets:|r " .. textValue) end
 
 --- { {id, name, icon, equipped}, ... } sorted by name.
 function module.GearSetList()
@@ -85,10 +86,10 @@ local function Button(index)
     widget.lit = widget:CreateTexture(nil, "OVERLAY")
     widget.lit:SetPoint("TOPLEFT", -2, 2)
     widget.lit:SetPoint("BOTTOMRIGHT", 2, -2)
-    local ar, ag, ab = CludesUI.Kit.Accent()
+    local ar, ag, ab = CUI.Kit.Accent()
     widget.lit:SetColorTexture(ar, ag, ab, 0.35)
     widget.name = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.name, 10, "essentials")
+    CUI.Kit.Font(widget.name, 10, "essentials")
     widget.name:SetPoint("TOP", widget, "BOTTOM", 0, -2)
     widget:SetScript("OnClick", function(self)
         if InCombatLockdown() then
@@ -130,7 +131,7 @@ local function Layout()
         buttons[index].setID = nil
     end
     holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
-    holderFrame:SetShown(Enabled() and (#entries > 0 or CludesUI._unlockActive) and true or false)
+    holderFrame:SetShown(Enabled() and (#entries > 0 or CUI._unlockActive) and true or false)
     Paint()
 end
 
@@ -187,7 +188,7 @@ local function Apply()
         }) do
             eventFrame:RegisterEvent(event)
         end
-        if not CludesUI._unlockActive then F.Place(holderFrame) end
+        if not CUI._unlockActive then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
         previous, queuedSet = nil, nil
@@ -210,7 +211,7 @@ function module.SaveGearSet(name)
     end
 end
 
-CludesUI._GearSets = {
+CUI._GearSets = {
     Get = Get,
     Read = F.Read,
     Cfg = F.Cfg,

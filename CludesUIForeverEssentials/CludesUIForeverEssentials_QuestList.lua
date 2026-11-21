@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_QuestList.lua  (WoW Forever only)
 --  Discovery's Quest List and Rares tabs.
@@ -39,14 +40,14 @@ local F = module.Feature("questList", {
 local Get = F.Get
 local function On() return DF.Enabled() end
 
-local ACCENT = CludesUI.Kit.SyncAccent({}) -- refreshed on each draw
+local ACCENT = CUI.Kit.SyncAccent({}) -- refreshed on each draw
 local MUTED = { 0.6, 0.65, 0.7 }
 local GOLD = { 1, 0.82, 0 }
 local CHECK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
 local NONE = {}
 local function Muted(textValue) return "|cff9aa6b2" .. textValue .. "|r" end
 local function Secret(val) return issecretvalue ~= nil and issecretvalue(val) end
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 local SAME_MAPS = { [2665] = 2521 }
 local function SameMap(map) return map and (SAME_MAPS[map] or map) end
 
@@ -963,7 +964,7 @@ do
             local iconTex = C_Item.GetItemIconByID(entry[LOOT_ID])
             local name = (iconTex and ("|T%s:14:14|t "):format(iconTex) or "")
                 .. entry[LOOT_NAME]
-                .. (entry[LOOT_NEW] == 1 and " " .. CludesUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
+                .. (entry[LOOT_NEW] == 1 and " " .. CUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
                 .. (R.Dropped(npc, entry[LOOT_ID]) and " |cff60d080(you got it)|r" or "")
             local chance = entry[LOOT_CHANCE]
             tipText:AddDoubleLine(
@@ -1131,7 +1132,7 @@ do
         cardFrame:SetSize(W, H)
         cardFrame:SetFrameStrata("HIGH")
         cardFrame:SetClampedToScreen(true)
-        CludesUI.Kit.Panel(cardFrame, 0.92)
+        CUI.Kit.Panel(cardFrame, 0.92)
         cardFrame:RegisterForClicks("RightButtonUp")
         cardFrame:SetScript("OnClick", function(_, btnFrame)
             if btnFrame == "RightButton" then HideAlert() end
@@ -1156,13 +1157,13 @@ do
         cardFrame.star:SetPoint("CENTER", cardFrame.model, "CENTER")
         cardFrame.star:SetAtlas("VignetteKill")
         cardFrame.name = cardFrame:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(cardFrame.name, 14, "essentials")
+        CUI.Kit.Font(cardFrame.name, 14, "essentials")
         cardFrame.name:SetPoint("TOPLEFT", cardFrame.model, "TOPRIGHT", 8, -4)
         cardFrame.name:SetPoint("RIGHT", -8, 0)
         cardFrame.name:SetJustifyH("LEFT")
         cardFrame.name:SetWordWrap(false)
         cardFrame.detail = cardFrame:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(cardFrame.detail, 11, "essentials")
+        CUI.Kit.Font(cardFrame.detail, 11, "essentials")
         cardFrame.detail:SetPoint("TOPLEFT", cardFrame.name, "BOTTOMLEFT", 0, -4)
         cardFrame.detail:SetPoint("RIGHT", -8, 0)
         cardFrame.detail:SetJustifyH("LEFT")
@@ -1206,7 +1207,7 @@ do
 
     local function Show(seen, quiet)
         if not cardFrame then Build() end
-        if not CludesUI._unlockActive then F.Place(cardFrame) end
+        if not CUI._unlockActive then F.Place(cardFrame) end
         shownNpc, shownGuid = not quiet and seen.npc or nil, not quiet and seen.guid or nil
         cardFrame.preview = quiet == true
         cardFrame.seen = seen
@@ -1490,7 +1491,7 @@ local function RareTip(npc)
 end
 
 local function DrawPins()
-    CludesUI.Kit.SyncAccent(ACCENT)
+    CUI.Kit.SyncAccent(ACCENT)
     ClearPins()
     if not PinsWanted() then return end
     local mapID = WorldMapFrame:GetMapID()
@@ -1595,7 +1596,7 @@ local tools = {}
 local STATE_COLOUR = { done = MUTED, log = GOLD, open = { 1, 1, 1 }, low = { 1, 0.5, 0.25 } }
 
 local function ZoneMenu(ownerFrame, zones, progress, choose)
-    CludesUI.Kit.ContextMenu(ownerFrame, function(_, root)
+    CUI.Kit.ContextMenu(ownerFrame, function(_, root)
         root:CreateButton("Your zone", function() choose(nil) end)
         root:CreateButton("All zones", function() choose(false) end)
         for _, part in ipairs({ { 0, "Eastern Kingdoms" }, { 1, "Kalimdor" } }) do
@@ -1622,16 +1623,16 @@ local function Tools(hostFrame, key, onZone, onSearch, getSearch, extra)
     local tbl = tools[key]
     if not tbl then
         tbl = {}
-        tbl.zone = CludesUI.Kit.Button(hostFrame, "", 90, 22, nil, { key = "essentials" })
+        tbl.zone = CUI.Kit.Button(hostFrame, "", 90, 22, nil, { key = "essentials" })
         tbl.zone:SetSize(200, 22)
         tbl.zone:SetPoint("LEFT", hostFrame, "LEFT", 0, 0)
         tbl.zone:SetScript("OnClick", function(self) onZone(self) end)
-        tbl.search = CludesUI.Kit.Input(hostFrame, 160, 22, "Search", "essentials")
+        tbl.search = CUI.Kit.Input(hostFrame, 160, 22, "Search", "essentials")
         tbl.search:SetPoint("LEFT", tbl.zone, "RIGHT", 10, 0)
         tbl.search:HookScript("OnTextChanged", function(self, user)
             if user then onSearch(self:GetText()) end
         end)
-        tbl.check = CludesUI.Kit.Check(
+        tbl.check = CUI.Kit.Check(
             hostFrame,
             "",
             function(self) extra.set(self:GetChecked()) end,
@@ -1733,7 +1734,7 @@ local function DrawQuestZone(R2, zone)
 end
 
 local function DrawQuests(R2, hostFrame)
-    CludesUI.Kit.SyncAccent(ACCENT)
+    CUI.Kit.SyncAccent(ACCENT)
     Q.Refresh()
     local tbl = Tools(hostFrame, "quests", function(self)
         ZoneMenu(self, Q.Zones(), Q.ZoneProgress, function(zone)
@@ -1823,7 +1824,7 @@ local function RareRow(R2, npc)
 end
 
 local function DrawRares(R2, hostFrame)
-    CludesUI.Kit.SyncAccent(ACCENT)
+    CUI.Kit.SyncAccent(ACCENT)
     local tbl = Tools(hostFrame, "rares", function(self)
         ZoneMenu(self, R.Zones(), R.ZoneProgress, function(zone)
             rareZone = zone
@@ -1936,7 +1937,7 @@ function module.QuestListApply()
     RareAlert.Apply()
 end
 
-CludesUI._QuestList = {
+CUI._QuestList = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = function() module.QuestListApply() end,
@@ -1950,7 +1951,7 @@ F.Start(function() end, {
     shown = function() return On() and Get("rareAlert") end,
     frame = function(build)
         local cardFrame = RareAlert.Frame(build)
-        if build and CludesUI._unlockActive then RareAlert.Preview(true) end
+        if build and CUI._unlockActive then RareAlert.Preview(true) end
         return cardFrame
     end,
     size = function() return 260, 64 end,

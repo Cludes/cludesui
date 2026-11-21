@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Training.lua -- Training Planner (WoW Forever).
 --
@@ -156,14 +157,14 @@ local function RefreshPage()
     refreshQueued = true
     C_Timer.After(0.5, function()
         refreshQueued = nil
-        if not CludesUI.InvalidateModulePageCache then return end
-        CludesUI:InvalidateModulePageCache("CludesUIForeverEssentials")
+        if not CUI.InvalidateModulePageCache then return end
+        CUI:InvalidateModulePageCache("CludesUIForeverEssentials")
         if
-            CludesUI.GetActiveModule
-            and CludesUI:GetActiveModule() == "CludesUIForeverEssentials"
-            and CludesUI:GetActivePage() == "Training"
+            CUI.GetActiveModule
+            and CUI:GetActiveModule() == "CludesUIForeverEssentials"
+            and CUI:GetActivePage() == "Training"
         then
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
         end
     end)
 end
@@ -184,7 +185,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, newLevel)
             end
         end
         if fresh > 0 then
-            CludesUI.Print(
+            CUI.Print(
                 ("|cff4cc9f0Training:|r level %d brings %d new spell%s (%s). %d in all to train now (%s)."):format(
                     newLevel,
                     fresh,

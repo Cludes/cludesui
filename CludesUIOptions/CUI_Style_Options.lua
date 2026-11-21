@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Style_Options.lua
 --
@@ -44,9 +45,9 @@ local PAGE_STYLE = "Style"
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame. BlizzStyle.Note and BlockInline build on
 -- other modules' pages through it too.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
-local function ModuleNS(folder) return CludesUI._ModuleNS and CludesUI._ModuleNS[folder] end
+local function ModuleNS(folder) return CUI._ModuleNS and CUI._ModuleNS[folder] end
 
 -------------------------------------------------------------------------------
 --  Module registry: one entry per styleable surface. get/set read and write
@@ -115,7 +116,7 @@ local function RFProfile()
     return num and num.db and num.db.profile
 end
 
-local IS_FOREVER = CludesUI.IS_FOREVER == true
+local IS_FOREVER = CUI.IS_FOREVER == true
 
 -- The WoW Forever variant is Blizzard Style everywhere a base style is
 -- asked for (module seeds, the whole-UI font slots, Active()); the window
@@ -330,16 +331,16 @@ Register(
     -- same way when a pick changes. Classic WoW UI also centres the zone text
     -- in the banner's text slot (its X/Y offsets back to 0).
     function(profile, styleKey, isForever)
-        if not CludesUI.IS_FOREVER then profile.omniumFolioCorner = "BOTTOMRIGHT" end
+        if not CUI.IS_FOREVER then profile.omniumFolioCorner = "BOTTOMRIGHT" end
         local square
         if isForever then
             if profile.foreverBorder == "slim" then
-                square = CludesUI.ForeverBorderOK()
+                square = CUI.ForeverBorderOK()
             else
-                square = profile.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK()
+                square = profile.foreverBorder ~= "circle" and CUI.ForeverHeavyOK()
             end
         else
-            square = styleKey == "blizzard" and CludesUI.IS_FOREVER and profile.blizzBorder ~= "circle"
+            square = styleKey == "blizzard" and CUI.IS_FOREVER and profile.blizzBorder ~= "circle"
         end
         if square then
             profile.clockMode, profile.clockPosition, profile.clockOffsetY = "inside", "bottom", 0
@@ -371,7 +372,7 @@ Register(
             profile.blizzBgAlphaSeeded = true
             profile.bgAlpha = isForever and 0.65 or 0.4
         elseif styleKey == "classic" then
-            local dm = CludesUI._ModuleNS and CludesUI._ModuleNS.CludesUIDamageMeters
+            local dm = CUI._ModuleNS and CUI._ModuleNS.CludesUIDamageMeters
             if dm and dm.DMSeedClassic then dm.DMSeedClassic(profile) end
         end
     end
@@ -383,7 +384,7 @@ Register(
 -- it for the whole account. The row reads without creating the table
 -- (opening this page writes nothing); a style write creates it. nil while
 -- Forever Essentials is disabled.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     local function TMStore(create)
         if not ModuleNS("CludesUIForeverEssentials") or not CludesUIDB then return nil end
         local t = CludesUIDB.threatMeter
@@ -436,7 +437,7 @@ Register("chat", "CludesUIChat", "Chat", ChatProfile, "useBlizzardStyle", "useCl
 -- CludesUI style), so it holds against that majority.
 if IS_FOREVER then
     local function BagsProfile()
-        local db = CludesUI._bagsDB
+        local db = CUI._bagsDB
         return db and db.profile
     end
     local bags = {
@@ -484,7 +485,7 @@ Register(
         if rf and rf.RF_SeedStock then rf.RF_SeedStock(p, styleKey) end
     end
 )
-if not CludesUI.IS_FOREVER then
+if not CUI.IS_FOREVER then
     -- WoW Forever has no skyriding (no HUD, no row there).
     Register(
         "dragonriding",
@@ -666,7 +667,7 @@ local SLOT_KEYS = {
 }
 -- The threat meter's seeds write into its appearance groups, two levels down
 -- in its account table; the stamps sit at the top.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     SLOT_KEYS.threatmeter = {
         stamps = { "blizzBgAlphaSeeded", "classicSeeded" },
         keys = {
@@ -764,7 +765,7 @@ end
 -- The slot keys a spec or conditional override holds (spec.prefix = the
 -- module profile's subtable path, e.g. the cast bar's): nil when none.
 local function OverriddenKeys(m, specInfo, keyList)
-    local isCap = CludesUI.SpecOverrides_IsCaptured
+    local isCap = CUI.SpecOverrides_IsCaptured
     if not isCap then return nil end
     local pre, entries = specInfo.prefix, nil
     for idx = 1, #keyList do
@@ -953,7 +954,7 @@ end
 -------------------------------------------------------------------------------
 
 local BlizzStyle = {}
-CludesUI.BlizzStyle = BlizzStyle
+CUI.BlizzStyle = BlizzStyle
 
 local STYLE_VALUES = { cui = "CludesUI Style", blizzard = "Blizzard Style", classic = "Classic WoW UI" }
 -- The WoW Forever variant exists on the Forever client only.
@@ -1006,8 +1007,8 @@ function BlizzStyle.Get(key) return BlizzStyle.Active(key) ~= "cui" end
 -- legacy: the stock look a record from before the slots belongs to, taken
 -- before any module flag changes (nil = infer it now).
 local function FontSlots(legacy)
-    if CludesUI.LOCALE_FONT_FALLBACK or not CludesUI.GetFontsDB then return nil end
-    local db = CludesUI.GetFontsDB()
+    if CUI.LOCALE_FONT_FALLBACK or not CUI.GetFontsDB then return nil end
+    local db = CUI.GetFontsDB()
     local s = db._styleSlots
     if type(s) ~= "table" then
         -- A one-way seed from before the slots (fontStockSeeded): the live
@@ -1035,18 +1036,18 @@ local function ApplyWholeUIFont(styleKey, legacy)
     if type(saved) == "table" and saved.global then
         db.global = saved.global
     else
-        local blizz = CludesUI.BLIZZARD_FONT_KEY or "__blizzard"
-        local current = db.global or CludesUI.DEFAULT_FONT_NAME
+        local blizz = CUI.BLIZZARD_FONT_KEY or "__blizzard"
+        local current = db.global or CUI.DEFAULT_FONT_NAME
         if styleKey ~= "cui" then
-            if current == CludesUI.DEFAULT_FONT_NAME then db.global = blizz end
+            if current == CUI.DEFAULT_FONT_NAME then db.global = blizz end
         elseif current == blizz then
-            db.global = CludesUI.DEFAULT_FONT_NAME
+            db.global = CUI.DEFAULT_FONT_NAME
         end
     end
     s.active = styleKey
     db._styleSlots = s
     db.fontStockSeeded = nil
-    CludesUI.InvalidateFontCache()
+    CUI.InvalidateFontCache()
 end
 -- The same two callers also swap the Blizz UI Enhanced window skins through
 -- their own per-style slots (CludesUI.SwapWindowSkinStyle: first visit
@@ -1061,14 +1062,14 @@ end
 -- does but the micro menu and the bag bar (Blizz Default); a window look
 -- recorded before that slot existed stays as it is.
 local function WholeUIWindowsPending(styleKey)
-    local swap = CludesUI.SwapWindowSkinStyle
+    local swap = CUI.SwapWindowSkinStyle
     return swap ~= nil and swap(styleKey, true, GuessStockStyle())
 end
 local function ApplyWholeUIWindows(styleKey, legacy)
-    local swap = CludesUI.SwapWindowSkinStyle
+    local swap = CUI.SwapWindowSkinStyle
     if not swap then return end
     swap(styleKey, false, legacy or GuessStockStyle())
-    local prof = CludesUI.GetActiveProfileData()
+    local prof = CUI.GetActiveProfileData()
     if prof then prof.windowSkinLook = styleKey end
 end
 
@@ -1118,7 +1119,7 @@ end
 -- default); set(v) stores it (nil for the default) and repaints. opts, when
 -- given, carries disabled / disabledTooltip. Returns the slider cfg.
 function BlizzStyle.ClassicBorderSizeCfg(get, set, options)
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     local def = (CF and CF.BORDER_DEFAULT) or 60
     return {
         type = "slider",
@@ -1168,16 +1169,16 @@ end
 -- active for the module. No-op otherwise, so existing pages are untouched.
 function BlizzStyle.BlockInline(key, widget, dimAlpha)
     -- The search prebuild only indexes rows: no blocker (the widget is a stand-in there).
-    if CludesUI._prebuilding then return false end
+    if CUI._prebuilding then return false end
     if not widget or not BlizzStyle.Get(key) then return false end
     widget:SetAlpha(dimAlpha or 0.3)
-    local block = CludesUI.NewSwatchBlocker(widget)
+    local block = CUI.NewSwatchBlocker(widget)
     local labelText = BlizzStyle.Label(key)
     block:SetScript(
         "OnEnter",
-        function() CludesUI.ShowWidgetTooltip(widget, CludesUI.DisabledTooltip(labelText, "disabled")) end
+        function() CUI.ShowWidgetTooltip(widget, CUI.DisabledTooltip(labelText, "disabled")) end
     )
-    block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+    block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
     return true
 end
 
@@ -1191,24 +1192,24 @@ function BlizzStyle.Note(hostFrame, cursorY, key)
     if not m or m.active() == "cui" then return cursorY end
     local ROW_H = 40
     -- The search prebuild only indexes rows: same y advance, no frames.
-    if CludesUI._prebuilding then return cursorY - ROW_H end
-    local Pix = CludesUI.PanelPP
+    if CUI._prebuilding then return cursorY - ROW_H end
+    local Pix = CUI.PanelPP
     local row = CreateFrame("Frame", nil, hostFrame)
-    Pix.Size(row, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
+    Pix.Size(row, hostFrame:GetWidth() - CUI.CONTENT_PAD * 2, ROW_H)
+    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY)
     row._skipRowDivider = true
-    CludesUI.RowBg(row, hostFrame)
+    CUI.RowBg(row, hostFrame)
 
-    local labelFS = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
+    local labelFS = CUI.MakeFont(row, 12, nil, 1, 1, 1)
     labelFS:SetAlpha(0.6)
     labelFS:SetPoint("LEFT", row, "LEFT", 20, 0)
     labelFS:SetPoint("RIGHT", row, "RIGHT", -160, 0)
     labelFS:SetJustifyH("LEFT")
     labelFS:SetWordWrap(false)
     labelFS:SetText(
-        CludesUI.Lf(
+        CUI.Lf(
             "%1$s is active. Settings that only apply to the CludesUI look are hidden.",
-            CludesUI.L(BlizzStyle.Label(key))
+            CUI.L(BlizzStyle.Label(key))
         )
     )
 
@@ -1216,12 +1217,12 @@ function BlizzStyle.Note(hostFrame, cursorY, key)
     Pix.Size(button, 122, 26)
     button:SetPoint("RIGHT", row, "RIGHT", -20, 0)
     button:SetFrameLevel(row:GetFrameLevel() + 2)
-    CludesUI.MakeStyledButton(
+    CUI.MakeStyledButton(
         button,
         "Open Style",
         11,
-        CludesUI.WB_COLOURS,
-        function() CludesUI:NavigateToElementSettings(GLOBAL_KEY, PAGE_STYLE) end
+        CUI.WB_COLOURS,
+        function() CUI:NavigateToElementSettings(GLOBAL_KEY, PAGE_STYLE) end
     )
     return cursorY - ROW_H
 end
@@ -1239,7 +1240,7 @@ local function PromptStyleChanges(changes, wholeUIStyle)
     then
         return
     end
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Reload Required",
         message = "Changing the style requires a UI reload to apply.",
         confirmText = "Reload Now",
@@ -1250,10 +1251,10 @@ local function PromptStyleChanges(changes, wholeUIStyle)
             -- these writes then land on the profile itself, where an open
             -- session's logout sweep would have turned them into overrides
             -- for the group being edited.
-            CludesUI.SpecOverrides_CloseEditSessions()
+            CUI.SpecOverrides_CloseEditSessions()
             -- WoW Forever: a look committed here settles the first-install
             -- picker, so it never asks again over a choice already made.
-            if CludesUI.IS_FOREVER and CludesUIDB then CludesUIDB.styleChoicePending = nil end
+            if CUI.IS_FOREVER and CludesUIDB then CludesUIDB.styleChoicePending = nil end
             local legacy = wholeUIStyle and GuessStockStyle()
             for idx = 1, #changes do
                 SwitchModuleStyle(changes[idx].m, changes[idx].key)
@@ -1287,7 +1288,7 @@ end
 -------------------------------------------------------------------------------
 
 function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
-    local Pix = CludesUI.PanelPP
+    local Pix = CUI.PanelPP
     local cursorY = yOffset
 
     -- Header: the first-install picker's look cards (three; four with WoW
@@ -1301,28 +1302,28 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
     -- contract; the search prebuild only needs the y advance.
     local CARDS_TOP = 140
     local DD_GAP, DD_H, BTN_GAP, BTN_W, BTN_H = 14, 30, 26, 252, 45
-    local DD_TOP = CARDS_TOP + (CludesUI.STYLE_CARD_H or 296) + DD_GAP
+    local DD_TOP = CARDS_TOP + (CUI.STYLE_CARD_H or 296) + DD_GAP
     local BTN_TOP = DD_TOP + DD_H + BTN_GAP
     local HERO_H = BTN_TOP + BTN_H + 4
-    local hasHero = CludesUI.BuildStyleCards ~= nil
-    if hasHero and not CludesUI._prebuilding then
-        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-        local ACC = CludesUI.CLUDES_GREEN
+    local hasHero = CUI.BuildStyleCards ~= nil
+    if hasHero and not CUI._prebuilding then
+        local FONT = CUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        local ACC = CUI.CLUDES_GREEN
         local host = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(host, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, HERO_H)
-        host:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY - 20)
+        Pix.Size(host, hostFrame:GetWidth() - CUI.CONTENT_PAD * 2, HERO_H)
+        host:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY - 20)
 
         local eyebrow = host:CreateFontString(nil, "OVERLAY")
         eyebrow:SetFont(FONT, 13, "")
         eyebrow:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
         Pix.Point(eyebrow, "TOP", host, "TOP", 0, -4)
-        eyebrow:SetText(CludesUI.L("CHOOSE YOUR LOOK"))
+        eyebrow:SetText(CUI.L("CHOOSE YOUR LOOK"))
 
         local title = host:CreateFontString(nil, "OVERLAY")
         title:SetFont(FONT, 25, "")
         title:SetTextColor(1, 1, 1, 1)
         Pix.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
-        title:SetText(CludesUI.L("Your UI, Restyled in Seconds"))
+        title:SetText(CUI.L("Your UI, Restyled in Seconds"))
 
         local desc = host:CreateFontString(nil, "OVERLAY")
         desc:SetFont(FONT, 14, "")
@@ -1332,12 +1333,12 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
         desc:SetWordWrap(true)
         Pix.Point(desc, "TOP", title, "BOTTOM", 0, -10)
         desc:SetText(
-            CludesUI.L(
+            CUI.L(
                 "Your setup and every CludesUI feature carry over; only the look changes. Apply a style to every module in one click, or set each module below. Changing a style reloads the UI."
             )
         )
 
-        local cards = CludesUI.BuildStyleCards(host, -CARDS_TOP, {
+        local cards = CUI.BuildStyleCards(host, -CARDS_TOP, {
             buttonText = "Apply to All",
             -- The card in use fades to half; its larger badge stays whole.
             inUseAlpha = 0.5,
@@ -1365,7 +1366,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             RefreshCards()
             -- Re-run on every page refresh and cached-page restore: a font or
             -- window skin set elsewhere changes what a card has to apply.
-            CludesUI.RegisterWidgetRefresh(RefreshCards)
+            CUI.RegisterWidgetRefresh(RefreshCards)
 
             -- Module picks: every module sits in exactly one look's dropdown,
             -- its saved style until moved, and shows there checked and locked:
@@ -1408,15 +1409,15 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                             -- just reads as fixed here.
                             lockedTooltip = function()
                                 if not Off() then return nil end
-                                return CludesUI.Lf(
+                                return CUI.Lf(
                                     "Enable %1$s to change its style.",
-                                    CludesUI.L(module.enableName or module.display)
+                                    CUI.L(module.enableName or module.display)
                                 )
                             end,
                         }
                     end
                 end
-                local dropdown, ddRefresh = CludesUI.BuildVisOptsCBDropdown(
+                local dropdown, ddRefresh = CUI.BuildVisOptsCBDropdown(
                     host,
                     handle.card:GetWidth(),
                     host:GetFrameLevel() + 3,
@@ -1440,7 +1441,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             applyBtn:SetFrameLevel(host:GetFrameLevel() + 3)
             Pix.Size(applyBtn, BTN_W, BTN_H)
             Pix.Point(applyBtn, "TOP", host, "TOP", 0, -BTN_TOP)
-            CludesUI.MakeStyledButton(applyBtn, "Apply Styles", 16, CludesUI.WB_COLOURS, function()
+            CUI.MakeStyledButton(applyBtn, "Apply Styles", 16, CUI.WB_COLOURS, function()
                 local changes = {}
                 for idx = 1, #MODULES do
                     local module = MODULES[idx]
@@ -1452,7 +1453,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                 PromptStyleChanges(changes)
             end)
             RefreshPicks()
-            CludesUI.RegisterWidgetRefresh(RefreshPicks)
+            CUI.RegisterWidgetRefresh(RefreshPicks)
             host:HookScript("OnHide", function()
                 if next(pending) then
                     wipe(pending)

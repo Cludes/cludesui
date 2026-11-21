@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_DruidMana.lua  (WoW Forever only)
 --  Mana Bar: a druid's mana while in a form that shows rage or energy, and
@@ -21,7 +22,7 @@ local LINE_H = 3
 local holderFrame, barFrame, line, textValue
 local lastMana, ruleEnds
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local function UsesMana()
@@ -32,7 +33,7 @@ end
 -- Druid in a form whose bar is not mana, or Always Show for a mana user.
 local function Wanted()
     if not (Enabled() and UsesMana()) then return false end
-    if CludesUI._unlockActive or Get("always") then return true end
+    if CUI._unlockActive or Get("always") then return true end
     local _, class = UnitClass("player")
     return class == "DRUID" and UnitPowerType("player") ~= MANA
 end
@@ -46,9 +47,9 @@ local function Build()
     barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local color = PowerBarColor and PowerBarColor.MANA or { r = 0, g = 0.55, b = 1 }
     barFrame:GetStatusBarTexture():SetVertexColor(color.r, color.g, color.b)
-    CludesUI.Kit.Panel(barFrame, 0.85)
+    CUI.Kit.Panel(barFrame, 0.85)
     textValue = barFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(textValue, 10, "essentials")
+    CUI.Kit.Font(textValue, 10, "essentials")
     textValue:SetPoint("CENTER")
     line = CreateFrame("StatusBar", nil, holderFrame)
     line:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -115,7 +116,7 @@ local function Apply()
         eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         if not ticker then ticker = C_Timer.NewTicker(0.05, Tick) end
-        if not CludesUI._unlockActive then F.Place(holderFrame) end
+        if not CUI._unlockActive then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
         if ticker then
@@ -127,7 +128,7 @@ local function Apply()
     UpdateMana()
 end
 
-CludesUI._DruidMana = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
+CUI._DruidMana = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
 
 F.Start(Apply, {
     key = "CUI_ManaBar",

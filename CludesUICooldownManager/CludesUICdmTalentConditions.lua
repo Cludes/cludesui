@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUICdmTalentConditions.lua
 --  Per-spell Talent Conditions for cooldown/utility icons: the icon shows only
@@ -32,13 +33,13 @@ local _, mod = ...
 local wipe = wipe
 local tremove = table.remove
 
-local Hold = CludesUI.TalentConditionsHold
+local Hold = CUI.TalentConditionsHold
 
 -- Talent edit landed (TRAIT_CONFIG_UPDATED and friends): forget every node.
-mod.TalentCondInvalidate = CludesUI.TalentCondInvalidate
+mod.TalentCondInvalidate = CUI.TalentCondInvalidate
 
 -- True when the node (or, for a choice node, that side of it) is taken right now.
-mod.TalentCondIsTaken = CludesUI.TalentCondIsTaken
+mod.TalentCondIsTaken = CUI.TalentCondIsTaken
 
 -- True when every condition in the list holds (an empty or missing list holds).
 function mod.TalentConditionsHold(conds) return Hold(conds) end

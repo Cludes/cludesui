@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_GlowOptions.lua -- shared glow option controls. Each glow setting
 --  is a SITE descriptor: host ("icon"/"bar"/"engine"), view or toShared/
@@ -15,15 +16,15 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  live, and the template leaves the site alone while it holds.
 
 local GlowOpts = {}
-CludesUI.GlowOptions = GlowOpts
+CUI.GlowOptions = GlowOpts
 
 -- The glow engine loads in the parent addon, before any options file.
-local G = CludesUI.Glows
+local G = CUI.Glows
 
 -- The options page pool (CludesUI_FramePool.lua, the options addon's first
 -- file): a frame made below on a pool host is handed out again, reset to new,
 -- when that host is built again. Captured once here.
-local CreateFrame, PoolGen = CludesUI._Pool.CreateFrame, CludesUI._Pool.Gen
+local CreateFrame, PoolGen = CUI._Pool.CreateFrame, CUI._Pool.Gen
 
 -------------------------------------------------------------------------------
 --  Style value mapping
@@ -275,7 +276,7 @@ function GlowOpts.DropdownSpec(desc, textValue, tooltip)
             local function commit()
                 desc.set("style", val)
                 GlowOpts.Changed(desc)
-                C_Timer.After(0, function() CludesUI:RefreshPage() end)
+                C_Timer.After(0, function() CUI:RefreshPage() end)
             end
             if desc.confirm then
                 desc.confirm(val, commit)
@@ -299,7 +300,7 @@ local function CogChanged(desc)
     _cogRefreshQueued = true
     C_Timer.After(0, function()
         _cogRefreshQueued = false
-        CludesUI:RefreshPage()
+        CUI:RefreshPage()
     end)
 end
 
@@ -405,7 +406,7 @@ local function ColorRow(desc, off)
         return function()
             desc.set("mode", m)
             GlowOpts.Changed(desc)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
     end
     local dc = desc.defaultColor
@@ -440,7 +441,7 @@ local function ColorRow(desc, off)
                     if desc.get("mode") ~= "custom" then
                         desc.set("mode", "custom")
                         GlowOpts.Changed(desc)
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     elseif self._eabOrigClick then
                         self._eabOrigClick(self)
                     end
@@ -451,7 +452,7 @@ local function ColorRow(desc, off)
                 refreshAlpha = modeAlpha("class"),
                 onClick = pick("class"),
                 getValue = function()
-                    local color = CludesUI.GetClassColor(CludesUI._playerClass)
+                    local color = CUI.GetClassColor(CUI._playerClass)
                     return color.r, color.g, color.b, 1
                 end,
             },
@@ -482,7 +483,7 @@ function GlowOpts.PopupRows(desc, styleLabel, hidePixel)
             local function commit()
                 desc.set("style", val)
                 GlowOpts.Changed(desc)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end
             if desc.confirm then
                 desc.confirm(val, commit)
@@ -506,8 +507,8 @@ end
 -- optional free half-region (a "Glow Color" label) that takes the swatches.
 -- A style-only lock (desc.styleDisabled) leaves both live.
 function GlowOpts.AttachInline(region, desc, colorRgn)
-    if CludesUI._prebuilding or not region then return end
-    local Pix = CludesUI.PanelPP
+    if CUI._prebuilding or not region then return end
+    local Pix = CUI.PanelPP
     local caps = desc.caps or {}
     local function siteOff() return desc.disabled and desc.disabled() end
     local function off()
@@ -530,11 +531,11 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
     -- requirement (resolved like its dropdown's), no glow to color, a style
     -- that takes no color, or a color that comes from elsewhere.
     local function colorLockTip()
-        if siteOff() then return CludesUI.ResolveDisabledTip(desc) end
-        if not GlowOpts.Renders(desc) then return CludesUI.DisabledTooltip(NO_STYLE_TIP) end
-        if NoColor(desc) then return CludesUI.DisabledTooltip(NO_COLOR_TIP) end
+        if siteOff() then return CUI.ResolveDisabledTip(desc) end
+        if not GlowOpts.Renders(desc) then return CUI.DisabledTooltip(NO_STYLE_TIP) end
+        if NoColor(desc) then return CUI.DisabledTooltip(NO_COLOR_TIP) end
         if desc.colorDisabledTooltip then
-            return CludesUI.DisabledTooltip(desc.colorDisabledTooltip, "disabled")
+            return CUI.DisabledTooltip(desc.colorDisabledTooltip, "disabled")
         end
     end
     local level = region:GetFrameLevel() + 3
@@ -548,9 +549,9 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
         block:EnableMouse(true)
         block:SetScript("OnEnter", function(self)
             local tipText = colorLockTip()
-            if tipText then CludesUI.ShowWidgetTooltip(self, tipText) end
+            if tipText then CUI.ShowWidgetTooltip(self, tipText) end
         end)
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         return block
     end
 
@@ -562,7 +563,7 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
     if colorInCog then table.insert(rowList, 1, ColorRow(desc, colorOff)) end
     if #rowList > 0 then
         local hasExtra = (desc.cogRows and #desc.cogRows > 0) or colorInCog
-        cog = CludesUI.BuildInlineCog(region, {
+        cog = CUI.BuildInlineCog(region, {
             title = "Glow Settings",
             rows = rowList,
             captureRegion = region,
@@ -573,9 +574,9 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
             -- Whichever lock holds, as the sentence shown: the site's own
             -- requirement, else a glow to set (rows beyond Pixel's), else Pixel Glow.
             disabledTooltip = function()
-                if siteOff() then return CludesUI.ResolveDisabledTip(desc) end
-                if hasExtra then return CludesUI.DisabledTooltip(NO_STYLE_TIP) end
-                return CludesUI.DisabledTooltip("Pixel Glow")
+                if siteOff() then return CUI.ResolveDisabledTip(desc) end
+                if hasExtra then return CUI.DisabledTooltip(NO_STYLE_TIP) end
+                return CUI.DisabledTooltip("Pixel Glow")
             end,
             rawTooltip = true,
         })
@@ -585,7 +586,7 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
         -- The swatches are the cog's first row (above).
     elseif caps.mode then
         local srgn = colorRgn or region
-        local customSw, defaultSw, classSw = CludesUI.BuildTrioColorSwatch(srgn, level, {
+        local customSw, defaultSw, classSw = CUI.BuildTrioColorSwatch(srgn, level, {
             getMode = function() return desc.get("mode") or "custom" end,
             setMode = function(m) desc.set("mode", m) end,
             getCustomRGB = function()
@@ -597,7 +598,7 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
             -- Mode clicks: the trio's highlight and page status refresh via widget refresh.
             onChange = function()
                 GlowOpts.Changed(desc)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             hasClassColor = true,
             disabled = colorOff,
@@ -624,7 +625,7 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
             block:SetShown(o)
         end
         SyncColorLock()
-        CludesUI.RegisterWidgetRefresh(SyncColorLock)
+        CUI.RegisterWidgetRefresh(SyncColorLock)
     end
 end
 
@@ -636,9 +637,9 @@ end
 local PREVIEW_ICON = 136197
 
 function GlowOpts.BuildPreview(hostFrame, desc, options)
-    if CludesUI._prebuilding or not hostFrame then return end
+    if CUI._prebuilding or not hostFrame then return end
     options = options or {}
-    local Pix = CludesUI.PanelPP
+    local Pix = CUI.PanelPP
     local isBar = options.bar
     if isBar == nil then isBar = desc.host == "bar" end
     local wid = options.width or (isBar and 110 or 36)
@@ -699,7 +700,7 @@ function GlowOpts.BuildPreview(hostFrame, desc, options)
     frame:SetScript("OnShow", Refresh)
     -- Latest build only: descriptors outlive page rebuilds, a list would grow.
     desc._preview, desc._previewFrame = Refresh, frame
-    CludesUI.RegisterWidgetRefresh(Refresh)
+    CUI.RegisterWidgetRefresh(Refresh)
     Refresh()
     return frame, Refresh
 end
@@ -907,16 +908,16 @@ end
 --  of the 0-4 slider), sizeMax (default 80), fontKey (default "options").
 --  Returns the y below the link.
 -------------------------------------------------------------------------------
-function CludesUI.BuildIconEffects(widget, sy, opts)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PP or CludesUI.PanelPP
+function CUI.BuildIconEffects(widget, sy, opts)
+    local W = CUI.Widgets
+    local Pix = CUI.PP or CUI.PanelPP
     if not (W and Pix) then return sy end
     local hh
     local MEDIA_MP = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 
     local entries = opts.entries
 
-    local GlowOpts = CludesUI.GlowOptions
+    local GlowOpts = CUI.GlowOptions
 
     -- One "ICON EFFECTS" section block per list entry.
     for bi = 1, #entries do
@@ -946,17 +947,17 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
             dx:SetTexture(MEDIA_MP .. "cui-close.png")
             del:SetScript("OnEnter", function(self)
                 self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Delete"))
+                CUI.ShowWidgetTooltip(self, CUI.L("Delete"))
             end)
             del:SetScript("OnLeave", function(self)
                 self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
             local blockIdx = bi
             del:SetScript("OnClick", function()
                 table.remove(entries, blockIdx)
                 opts.apply()
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end)
         end
 
@@ -1008,7 +1009,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
         sy = sy - hh
         do
             local region = bRow._leftRegion
-            local swatch = CludesUI.BuildColorSwatch(region, bRow:GetFrameLevel() + 3, function()
+            local swatch = CUI.BuildColorSwatch(region, bRow:GetFrameLevel() + 3, function()
                 local color = entry.borderColor or { r = 0, g = 0, b = 0 }
                 return color.r or 0, color.g or 0, color.b or 0, 1
             end, function(red, green, blue)
@@ -1023,18 +1024,18 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
     -- "Add Icon Effects Per-Filter" accent text link (centered)
     do
         local ar, ag, ab = 1, 0.82, 0.30
-        if CludesUI.GetAccentColor then
-            ar, ag, ab = CludesUI.GetAccentColor()
+        if CUI.GetAccentColor then
+            ar, ag, ab = CUI.GetAccentColor()
         end
         local addBtn = CreateFrame("Button", nil, widget)
         addBtn:SetHeight(22)
         addBtn:SetPoint("TOP", widget, "TOP", 0, sy - 17)
         addBtn:SetFrameLevel(widget:GetFrameLevel() + 2)
         local labelFS = addBtn:CreateFontString(nil, "OVERLAY")
-        local fp = (CludesUI.GetFontPath(opts.fontKey or "options")) or "Fonts\\FRIZQT__.TTF"
+        local fp = (CUI.GetFontPath(opts.fontKey or "options")) or "Fonts\\FRIZQT__.TTF"
         labelFS:SetFont(fp, 16, "")
         labelFS:SetPoint("CENTER", addBtn, "CENTER", 0, 0)
-        labelFS:SetText(CludesUI.L("Add Icon Effects Per-Filter"))
+        labelFS:SetText(CUI.L("Add Icon Effects Per-Filter"))
         labelFS:SetTextColor(ar, ag, ab)
         labelFS:SetAlpha(0.9)
         addBtn:SetWidth(labelFS:GetStringWidth() + 8)
@@ -1042,7 +1043,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
         addBtn:SetScript("OnLeave", function() labelFS:SetAlpha(0.9) end)
         addBtn:SetScript("OnClick", function()
             opts.addEntry()
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
         end)
         sy = sy - 17 - 22 - 8
     end
@@ -1061,7 +1062,7 @@ end
 --  editor's text-input popup), accent ({ r, g, b }). Returns the scroll
 --  frame, its child and the y below the last row.
 -------------------------------------------------------------------------------
-function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
+function CUI.BuildFilterSidebar(side, sideW, filters, opts)
     local MEDIA_FE = "Interface\\AddOns\\CludesUI\\media\\icons\\"
     local eg = opts.accent
     local sideScroll = CreateFrame("ScrollFrame", nil, side)
@@ -1084,13 +1085,13 @@ function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
         local rbg = frow:CreateTexture(nil, "BACKGROUND")
         rbg:SetAllPoints()
         rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0)
-        local rl = CludesUI.MakeFont(frow, 12, nil, 1, 1, 1)
+        local rl = CUI.MakeFont(frow, 12, nil, 1, 1, 1)
         rl:SetAlpha(isSel and 0.95 or 0.6)
         rl:SetPoint("LEFT", frow, "LEFT", 10, 0)
         rl:SetPoint("RIGHT", frow, "RIGHT", f.preset and -8 or -42, 0)
         rl:SetJustifyH("LEFT")
         rl:SetWordWrap(false)
-        rl:SetText(CludesUI.L(f.name) or f.name)
+        rl:SetText(CUI.L(f.name) or f.name)
         if isSel then
             local accent = frow:CreateTexture(nil, "ARTWORK", nil, 2)
             accent:SetSize(2, 26)
@@ -1122,18 +1123,18 @@ function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
             dx:SetTexture(MEDIA_FE .. "cui-close.png")
             del:SetScript("OnEnter", function(self)
                 self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Delete"))
+                CUI.ShowWidgetTooltip(self, CUI.L("Delete"))
             end)
             del:SetScript("OnLeave", function(self)
                 self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
             del:SetScript("OnClick", function()
-                CludesUI:ShowConfirmPopup({
-                    title = CludesUI.L("Delete Filter"),
-                    message = CludesUI.L(opts.deleteMessage),
-                    confirmText = CludesUI.L("Delete"),
-                    cancelText = CludesUI.L("Cancel"),
+                CUI:ShowConfirmPopup({
+                    title = CUI.L("Delete Filter"),
+                    message = CUI.L(opts.deleteMessage),
+                    confirmText = CUI.L("Delete"),
+                    cancelText = CUI.L("Cancel"),
                     onConfirm = function()
                         opts.delete(f.id)
                         opts.apply()
@@ -1156,18 +1157,18 @@ function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
             ex:SetTexture(MEDIA_FE .. "cui-edit.png")
             edit:SetScript("OnEnter", function(self)
                 self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Edit"))
+                CUI.ShowWidgetTooltip(self, CUI.L("Edit"))
             end)
             edit:SetScript("OnLeave", function(self)
                 self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
             edit:SetScript("OnClick", function()
                 opts.input({
-                    title = CludesUI.L("Rename Filter"),
+                    title = CUI.L("Rename Filter"),
                     placeholder = opts.renamePlaceholder(f),
-                    confirmText = CludesUI.L("Rename"),
-                    cancelText = CludesUI.L("Cancel"),
+                    confirmText = CUI.L("Rename"),
+                    cancelText = CUI.L("Cancel"),
                     onConfirm = function(textValue)
                         opts.rename(f.id, textValue)
                         opts.rebuild()
@@ -1177,14 +1178,14 @@ function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
         end
         fy = fy - 27
     end
-    local addFilterBtn = CludesUI.BuildPopupButton(sideChild, sideW - 16, 26, "Add Filter", function()
+    local addFilterBtn = CUI.BuildPopupButton(sideChild, sideW - 16, 26, "Add Filter", function()
         opts.input({
-            title = CludesUI.L("Add Filter"),
-            message = CludesUI.L("Name the new filter."),
-            confirmText = CludesUI.L("Add"),
-            cancelText = CludesUI.L("Cancel"),
+            title = CUI.L("Add Filter"),
+            message = CUI.L("Name the new filter."),
+            confirmText = CUI.L("Add"),
+            cancelText = CUI.L("Cancel"),
             onConfirm = function(textValue)
-                local f = opts.add((textValue and textValue ~= "" and textValue) or CludesUI.L("New Filter"))
+                local f = opts.add((textValue and textValue ~= "" and textValue) or CUI.L("New Filter"))
                 if f then opts.onAdded(f.id) end
                 opts.rebuild()
             end,
@@ -1202,8 +1203,8 @@ end
 --  shown; keepKey names the one kept frame the pool dresses again on every
 --  open. Returns the dimmer and the dialog.
 -------------------------------------------------------------------------------
-function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
-    local PoolKept, PoolOwned = CludesUI._Pool.Kept, CludesUI._Pool.Owned
+function CUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
+    local PoolKept, PoolOwned = CUI._Pool.Kept, CUI._Pool.Owned
     local shade = PoolKept(owner, keepKey, "Frame", UIParent)
     shade:SetFrameStrata("FULLSCREEN_DIALOG")
     shade:SetAllPoints(UIParent)
@@ -1216,7 +1217,7 @@ function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
         shade:Hide()
         owner[slot] = nil
     end)
-    local dimTex = CludesUI.SolidTex(shade, "BACKGROUND", 0, 0, 0, 0.25)
+    local dimTex = CUI.SolidTex(shade, "BACKGROUND", 0, 0, 0, 0.25)
     dimTex:SetAllPoints()
     owner[slot] = shade
 
@@ -1226,14 +1227,14 @@ function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
     dialog:SetFrameStrata("FULLSCREEN_DIALOG")
     dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
     dialog:EnableMouse(true)
-    local popBg = CludesUI.SolidTex(dialog, "BACKGROUND", 0.062, 0.070, 0.082, 1)
+    local popBg = CUI.SolidTex(dialog, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     popBg:SetAllPoints()
-    CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
-    dialog:SetScale((CludesUI.GetPopupScale and CludesUI.GetPopupScale()) or 1)
+    CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
+    dialog:SetScale((CUI.GetPopupScale and CUI.GetPopupScale()) or 1)
 
-    local title = CludesUI.MakeFont(dialog, 16, "", 1, 1, 1)
+    local title = CUI.MakeFont(dialog, 16, "", 1, 1, 1)
     title:SetPoint("TOP", dialog, "TOP", 0, -18)
-    title:SetText(CludesUI.L("Edit Filters"))
+    title:SetText(CUI.L("Edit Filters"))
 
     -- Close button (top-right): the borderless X (the boxed close-popup
     -- variant reads as a framed button here).
@@ -1290,13 +1291,13 @@ end
 --  Toggles repaint the row in place, so the list keeps its scroll position.
 --  Sizes child to fit.
 -------------------------------------------------------------------------------
-function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
+function CUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
     local MEDIA_FE = "Interface\\AddOns\\CludesUI\\media\\icons\\"
     local eg, spells = opts.accent, opts.spells
     local y = 0
 
     local function Heading(text)
-        local heading = CludesUI.MakeFont(child, 14, nil, 0.5, 0.5, 0.5)
+        local heading = CUI.MakeFont(child, 14, nil, 0.5, 0.5, 0.5)
         heading:SetPoint("TOPLEFT", child, "TOPLEFT", 2, y - 10)
         heading:SetText(text)
         local rule = child:CreateTexture(nil, "ARTWORK")
@@ -1343,12 +1344,12 @@ function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
         local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        local border = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
+        local border = CUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
         local fill = boxFrame:CreateTexture(nil, "ARTWORK")
         fill:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 2, -2)
         fill:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -2, 2)
         fill:SetColorTexture(eg.r, eg.g, eg.b, 1)
-        CludesUI.RoundBody(boxFrame, fill, 2)
+        CUI.RoundBody(boxFrame, fill, 2)
         local icon = row:CreateTexture(nil, "ARTWORK")
         icon:SetSize(22, 22)
         icon:SetPoint("LEFT", boxFrame, "RIGHT", 6, 0)
@@ -1357,7 +1358,7 @@ function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
         icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         local canRemove = opts.removable(id)
         local label =
-            CludesUI.MakeFont(row, 13, nil, tint and tint.r or 1, tint and tint.g or 1, tint and tint.b or 1)
+            CUI.MakeFont(row, 13, nil, tint and tint.r or 1, tint and tint.g or 1, tint and tint.b or 1)
         label:SetPoint("LEFT", icon, "RIGHT", 6, 0)
         label:SetPoint("RIGHT", row, "RIGHT", canRemove and -24 or -6, 0)
         label:SetJustifyH("LEFT")
@@ -1416,7 +1417,7 @@ function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
         end
     end
     if y == 0 then
-        local empty = CludesUI.MakeFont(child, 12, nil, 1, 1, 1)
+        local empty = CUI.MakeFont(child, 12, nil, 1, 1, 1)
         empty:SetAlpha(0.4)
         empty:SetPoint("TOPLEFT", child, "TOPLEFT", 4, -6)
         empty:SetText(opts.emptyText)
@@ -1435,11 +1436,11 @@ end
 --  renamePlaceholder, apply(), rebuild(), input(popupOpts). Returns the pane,
 --  the scroll frame and its child.
 -------------------------------------------------------------------------------
-function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
-    local L = CludesUI.L
+function CUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
+    local L = CUI.L
     local ar, ag, ab = 1, 0.82, 0.30
-    if CludesUI.GetAccentColor then
-        ar, ag, ab = CludesUI.GetAccentColor()
+    if CUI.GetAccentColor then
+        ar, ag, ab = CUI.GetAccentColor()
     end
     local function Added(ok)
         if ok then
@@ -1453,7 +1454,7 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
     pane:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -(sideW + 12), 12)
     pane:SetFrameLevel(dialog:GetFrameLevel() + 1)
 
-    local title = CludesUI.MakeFont(pane, 13, nil, 1, 1, 1)
+    local title = CUI.MakeFont(pane, 13, nil, 1, 1, 1)
     title:SetAlpha(0.9)
     title:SetPoint("TOPLEFT", pane, "TOPLEFT", 2, -2)
     title:SetText(L(sel.name))
@@ -1462,7 +1463,7 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
         link:SetSize(54, 16)
         link:SetPoint("LEFT", title, "RIGHT", 10, 0)
         link:SetFrameLevel(pane:GetFrameLevel() + 2)
-        local text = CludesUI.MakeFont(link, 11, nil, ar, ag, ab)
+        local text = CUI.MakeFont(link, 11, nil, ar, ag, ab)
         text:SetAlpha(0.9)
         text:SetPoint("LEFT")
         text:SetText(L("Rename"))
@@ -1501,7 +1502,7 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
         )
         return items
     end
-    local search = CludesUI.BuildVisOptsCBDropdown(
+    local search = CUI.BuildVisOptsCBDropdown(
         pane,
         170,
         pane:GetFrameLevel() + 5,
@@ -1525,7 +1526,7 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
         end
     end
 
-    local addId = CludesUI.BuildPopupButton(pane, 110, 24, "Add Spell ID", function()
+    local addId = CUI.BuildPopupButton(pane, 110, 24, "Add Spell ID", function()
         opts.input({
             title = L("Add Spell ID"),
             message = L("Enter the spell ID to add to this filter."),

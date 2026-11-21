@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end
-if not CludesUI.IS_FOREVER then return end
+local CUI = CludesUI
+if not CUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  Blocks\Supplies.lua - Info Bar block (WoW Forever): class resources.
 --
@@ -313,28 +314,28 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         table.sort(order)
     end
 
-    local function Name(res) return (res.id and C_Item.GetItemNameByID(res.id)) or CludesUI.L(res.label) end
+    local function Name(res) return (res.id and C_Item.GetItemNameByID(res.id)) or CUI.L(res.label) end
 
     local function ShowTooltip()
         local s = blockCfg.settings or {}
         mod.Tip_Begin(button)
-        mod.Tip_AddLine(CludesUI.L("Class Resources"), 1, 1, 1)
+        mod.Tip_AddLine(CUI.L("Class Resources"), 1, 1, 1)
         local listed = 0
         for _, id in ipairs(order) do
             local res = byItem[id] or (ranged and RangedKind(id))
             if res and (res ~= ammo or ammo.active) and mod.ClassResourceShown(s, res.key) then
                 local name = C_Item.GetItemNameByID(id) or Name(res)
-                if byUses[id] then name = name .. " - " .. CludesUI.L("Remaining uses") end
+                if byUses[id] then name = name .. " - " .. CUI.L("Remaining uses") end
                 local value = counts[id] == nil and "?" or tostring(counts[id])
-                if res.tooltipOnly then value = CludesUI.L(counts[id] > 0 and "Available" or "Missing") end
+                if res.tooltipOnly then value = CUI.L(counts[id] > 0 and "Available" or "Missing") end
                 mod.Tip_AddDouble(name, value, 0.8, 0.8, 0.8, 1, 1, 1)
                 listed = listed + 1
             end
         end
-        if listed == 0 then mod.Tip_AddLine(CludesUI.L("No class resources in inventory"), 0.6, 0.6, 0.6) end
-        if next(loading) then mod.Tip_AddLine(CludesUI.L("Loading item data..."), 0.6, 0.6, 0.6) end
+        if listed == 0 then mod.Tip_AddLine(CUI.L("No class resources in inventory"), 0.6, 0.6, 0.6) end
+        if next(loading) then mod.Tip_AddLine(CUI.L("Loading item data..."), 0.6, 0.6, 0.6) end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddLine(CludesUI.L("Right-click to edit visible items."), 0.6, 0.6, 0.6)
+        mod.Tip_AddLine(CUI.L("Right-click to edit visible items."), 0.6, 0.6, 0.6)
         mod.Tip_Show()
     end
 
@@ -392,7 +393,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         local blank = res == none
         local value
         if blank then
-            value = CludesUI.L("None")
+            value = CUI.L("None")
         else
             value = res.unknown and "?"
                 or (BreakUpLargeNumbers and BreakUpLargeNumbers(res.count) or tostring(res.count))
@@ -507,11 +508,11 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
     button:SetScript("OnClick", function(_, mouseButton)
         if mouseButton ~= "RightButton" then return end
         if InCombatLockdown() then
-            CludesUI.PrintError("Cannot open options during combat.")
+            CUI.PrintError("Cannot open options during combat.")
             return
         end
         if not mod.OpenBlockSettings then
-            CludesUI:EnsureLoaded() -- the settings load on demand
+            CUI:EnsureLoaded() -- the settings load on demand
         end
         if mod.OpenBlockSettings then mod.OpenBlockSettings(barCtx.id, blockCfg.id, "resources") end
     end)

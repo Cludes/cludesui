@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Style.lua
 --
@@ -12,7 +13,7 @@ local Inner = mod._internals
 if not Inner or Inner.broken then return end
 Inner.broken = true
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local floor, min, max = math.floor, math.min, math.max
 
 local ERB, ResolveBandConfig = Inner.ERB, Inner.ResolveBandConfig
@@ -30,7 +31,7 @@ Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(val) 
 -------------------------------------------------------------------------------
 
 -- Bar Textures (shared with options)
-local CAST_BAR_TEXTURES, CAST_BAR_TEXTURE_NAMES, CAST_BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables(true)
+local CAST_BAR_TEXTURES, CAST_BAR_TEXTURE_NAMES, CAST_BAR_TEXTURE_ORDER = CUI.BuildBarTextureTables(true)
 -- Cast-bar-only extra entry: Blizzard's own atlas fill, second in the list.
 CAST_BAR_TEXTURES["blizzard"] = "ATLAS"
 CAST_BAR_TEXTURE_NAMES["blizzard"] = "Blizzard"
@@ -41,7 +42,7 @@ _G._CURB_CastBarTextureOrder = CAST_BAR_TEXTURE_ORDER
 _G._CURB_CastBarTextureNames = CAST_BAR_TEXTURE_NAMES
 
 -- Health/Power bar texture tables (shared with options dropdown)
-local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables(true)
+local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CUI.BuildBarTextureTables(true)
 _G._CURB_BarTextures = BAR_TEXTURES
 _G._CURB_BarTextureOrder = BAR_TEXTURE_ORDER
 _G._CURB_BarTextureNames = BAR_TEXTURE_NAMES
@@ -49,9 +50,9 @@ _G._CURB_BarTextureNames = BAR_TEXTURE_NAMES
 -- Append SharedMedia statusbar textures to both texture tables via the shared
 -- CludesUI helper. Safe to call multiple times; dupes skipped inside it.
 local function AppendSharedMediaTextures()
-    if not CludesUI.AppendSharedMediaTextures then return end
-    CludesUI.AppendSharedMediaTextures(CAST_BAR_TEXTURE_NAMES, CAST_BAR_TEXTURE_ORDER, nil, CAST_BAR_TEXTURES)
-    CludesUI.AppendSharedMediaTextures(BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER, nil, BAR_TEXTURES)
+    if not CUI.AppendSharedMediaTextures then return end
+    CUI.AppendSharedMediaTextures(CAST_BAR_TEXTURE_NAMES, CAST_BAR_TEXTURE_ORDER, nil, CAST_BAR_TEXTURES)
+    CUI.AppendSharedMediaTextures(BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER, nil, BAR_TEXTURES)
 end
 
 -- Player Cast Bar
@@ -89,7 +90,7 @@ function mod.ERB_CastStyle()
         mod._erbCastStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it.
         mod._erbFvCast = val == "blizzard"
-            and CludesUI.IS_FOREVER == true
+            and CUI.IS_FOREVER == true
             and callback.useForeverStyle == true
     end
     return val
@@ -122,7 +123,7 @@ mod._erbBarsSlotKeys = {
     "general.classicBorderAllSepB",
 }
 -- WoW Forever: the Swing Timer's texture rides the bars' slots.
-if CludesUI.IS_FOREVER == true then mod._erbBarsSlotKeys[#mod._erbBarsSlotKeys + 1] = "swingTimer.texture" end
+if CUI.IS_FOREVER == true then mod._erbBarsSlotKeys[#mod._erbBarsSlotKeys + 1] = "swingTimer.texture" end
 function mod.ERB_SeedStockCast(callback)
     if not callback or callback.stockTextureSeeded then return end
     callback.stockTextureSeeded = true
@@ -167,7 +168,7 @@ function mod.ERB_SeedStockBars(profile, styleKey)
                 s, s, s
         end
     end
-    local st = CludesUI.IS_FOREVER == true and profile.swingTimer
+    local st = CUI.IS_FOREVER == true and profile.swingTimer
     if st and not st.classicTextureSeeded then
         st.classicTextureSeeded = true
         st.texture = "plating"
@@ -207,7 +208,7 @@ mod.ERB_BLIZZ_BAR_FILL = "UI-HUD-CoolDownManager-Bar"
 -- client.
 function mod.ERB_StockAtlas(texture, name, ...)
     if mod.ERB_CastForever() then return texture:SetAtlas(name, ...) end
-    return CludesUI.StockAtlas(texture, name, ...)
+    return CUI.StockAtlas(texture, name, ...)
 end
 -------------------------------------------------------------------------------
 --  Classic WoW UI: the vanilla cast bar frame and spark, plain files. The
@@ -232,7 +233,7 @@ mod.ERB_CLASSIC = {
 -- shared default), which shrinks the whole vanilla frame (caps, rims and
 -- their reach) together.
 function mod.ERB_ClassicFrameK(conf)
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     if not CF then return 1 end
     return CF.ScaleK(conf and conf.stockBorderScale)
 end
@@ -241,7 +242,7 @@ end
 -- (the frame's reach is fixed at a given scale k, so the bar's size does not
 -- enter; a vertical bar turns it with the art).
 function mod.ERB_ClassicMatchPad(wid, hgt, vertical, key)
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     if not CF then return 0, 0 end
     return CF.Pad(key or 1, vertical)
 end
@@ -272,7 +273,7 @@ function mod.ERB_EuiBorderPad(cfg)
     if not cfg then return nil end
     local bs = cfg.borderSize or 0
     local texture = cfg.borderTexture or "solid"
-    return CludesUI.BorderMatchPad(
+    return CUI.BorderMatchPad(
         bs,
         texture,
         cfg.borderTextureOffset,
@@ -281,7 +282,7 @@ function mod.ERB_EuiBorderPad(cfg)
         cfg.borderTextureShiftY,
         "resourcebars",
         bs,
-        CludesUI.BorderPx(cfg.borderSizePx, bs, texture),
+        CUI.BorderPx(cfg.borderSizePx, bs, texture),
         nil,
         cfg.borderA
     )
@@ -314,17 +315,17 @@ end
 function mod.ERB_SeparatorArt(cfg, pick, role)
     local texture = cfg and cfg.borderTexture or "solid"
     local key = (pick and pick ~= "match") and pick or texture
-    local filePath = CludesUI.GetBorderCompanion(key, role)
+    local filePath = CUI.GetBorderCompanion(key, role)
     if not filePath then
         key = "pixels"
-        filePath = CludesUI.GetBorderCompanion(key, role)
+        filePath = CUI.GetBorderCompanion(key, role)
     end
-    local size = CludesUI.GetBorderCompanion(key, "sepSize") or 16
+    local size = CUI.GetBorderCompanion(key, "sepSize") or 16
     local bs = cfg and cfg.borderSize or 0
-    if bs > 0 and CludesUI.GetBorderCompanion(texture, "sepSize") then
-        local px = CludesUI.BorderPx(cfg.borderSizePx, bs, texture)
+    if bs > 0 and CUI.GetBorderCompanion(texture, "sepSize") then
+        local px = CUI.BorderPx(cfg.borderSizePx, bs, texture)
         if px then return filePath, math.max(1, floor(px + 0.5)) * Pix.mult / 16, size, true end
-        local EM = CludesUI.BORDER_EDGE_MAP
+        local EM = CUI.BORDER_EDGE_MAP
         return filePath, (EM[bs] or EM[1]) / 16, size, false
     end
     return filePath, 1, size, false
@@ -349,14 +350,14 @@ do
     -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
     -- options addon fills it in place), read through this block local and never
     -- through the public slot, so a slot written later cannot reach the live bars.
-    local POOL = CludesUI._Pool
+    local POOL = CUI._Pool
     function mod.ERB_Separators(barFrame, c, hOn, level, slots, total, isVertical, isReversed)
         local owner = barFrame._erbSep
         local gaps = (slots and total and total > 1) and (total - 1) or 0
         if not hOn and gaps == 0 then
             if owner and owner:IsShown() then
                 owner:Hide()
-                CludesUI.RegisterPxReapply(owner, nil)
+                CUI.RegisterPxReapply(owner, nil)
             end
             return
         end
@@ -386,7 +387,7 @@ do
         owner:Show()
         -- Art sized from an exact Border Size is pixels at UIParent scale: re-placed
         -- (no rebuild) when the pixel grid moves, only while it is.
-        CludesUI.RegisterPxReapply(owner, mod.ERB_SepPlace(owner) and mod.ERB_SepPlace or nil)
+        CUI.RegisterPxReapply(owner, mod.ERB_SepPlace(owner) and mod.ERB_SepPlace or nil)
     end
 end -- POOL block
 -- Places a separator host's pieces from its last build; also the UI-scale
@@ -554,7 +555,7 @@ function mod.ERB_PowerLift(pp)
         or false
     local strata = pb:GetFrameStrata()
     if on and not pp.borderBehind then
-        local gs, sequence = gb.frameStrata or "MEDIUM", CludesUI.FRAME_STRATA_ORDER_FULL
+        local gs, sequence = gb.frameStrata or "MEDIUM", CUI.FRAME_STRATA_ORDER_FULL
         local gr, br = 0, 0
         for index = 1, #sequence do
             if sequence[index] == gs then gr = index end
@@ -648,11 +649,11 @@ function mod.ERB_CastDividerArt(texture, show, iconTex, onRight, cfg, stock)
         show
         and cfg.iconDividerArt
         and not stock
-        and CludesUI.GetBorderCompanion(cfg.borderTexture, "sepV")
+        and CUI.GetBorderCompanion(cfg.borderTexture, "sepV")
     then
         texture._erbArt, texture._erbIcon, texture._erbRight, texture._erbC =
             true, iconTex, onRight and true or false, cfg
-        CludesUI.RegisterPxReapply(
+        CUI.RegisterPxReapply(
             texture,
             mod.ERB_PlaceDividerArt(texture, iconTex, onRight, cfg) and mod.ERB_DividerReapply or nil
         )
@@ -662,7 +663,7 @@ function mod.ERB_CastDividerArt(texture, show, iconTex, onRight, cfg, stock)
         texture._erbArt, texture._erbIcon, texture._erbC = nil, nil, nil
         texture:SetTexCoord(0, 1, 0, 1)
         texture:SetVertexColor(1, 1, 1, 1)
-        CludesUI.RegisterPxReapply(texture, nil)
+        CUI.RegisterPxReapply(texture, nil)
     end
     return false
 end
@@ -694,7 +695,7 @@ mod._erbPadKeys =
 -- every layout pass re-runs it.
 function mod.ERB_SeatClassicChrome(texture, rect, thick, vertical, key)
     if not (texture and rect) then return end
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     if not CF then return end
     -- `tex` is the handle the callers own: the nine-slice pieces ride its
     -- parent on its layer, created once, and the handle itself draws nothing.
@@ -717,7 +718,7 @@ end
 -- the previous one on the pass that flips it); nil reads it from the host.
 -- `k` is the frame scale (ERB_ClassicFrameK; nil = full size).
 do
-    local POOL = CludesUI._Pool -- read as in ns.ERB_Separators' block
+    local POOL = CUI._Pool -- read as in ns.ERB_Separators' block
     function mod.ERB_ApplyClassicBarChrome(owner, rect, fw, fh, vertical, key)
         if not owner then return end
         rect = rect or owner

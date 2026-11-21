@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Immunities.lua -- Raid Lead: Immunities on You.
 --
@@ -95,7 +96,7 @@ local function Build()
     if not added then
         rejected = true
         c:Hide()
-        CludesUI.Print("|cff4cc9f0Raid Lead:|r Immunities on You could not be set up: " .. tostring(err))
+        CUI.Print("|cff4cc9f0Raid Lead:|r Immunities on You could not be set up: " .. tostring(err))
         return
     end
     boxHolder = c
@@ -127,10 +128,10 @@ eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:SetScript("OnEvent", function()
     if InCombatLockdown() then return end
     Build()
-    if registered or not anchor or not CludesUI.RegisterUnlockElements then return end
+    if registered or not anchor or not CUI.RegisterUnlockElements then return end
     registered = true
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = "RLEAD_Immunities",
             label = "Immunities on You",
             group = "Raid Lead",

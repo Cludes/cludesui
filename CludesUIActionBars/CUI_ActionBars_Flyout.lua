@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI Action Bars - Spell Flyout Reskin
 --  Reskins Blizzard's native SpellFlyout buttons to match the parent bar's
@@ -41,8 +42,8 @@ local function SkinBlizzardFlyoutButton(
         fd.blizzStripped = true
         local nt = button.NormalTexture or button:GetNormalTexture()
         if nt then nt:SetAlpha(0) end
-        if button.IconMask and CludesUI and CludesUI._hiddenParent then
-            button.IconMask:SetParent(CludesUI._hiddenParent)
+        if button.IconMask and CUI and CUI._hiddenParent then
+            button.IconMask:SetParent(CUI._hiddenParent)
         end
     end
 
@@ -56,7 +57,7 @@ local function SkinBlizzardFlyoutButton(
         mask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         mask:ClearAllPoints()
         if brdSz and brdSz >= 1 then
-            local Pix = CludesUI and CludesUI.PP
+            local Pix = CUI and CUI.PP
             if Pix then
                 Pix.Point(mask, "TOPLEFT", button, "TOPLEFT", 1, -1)
                 Pix.Point(mask, "BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
@@ -77,7 +78,7 @@ local function SkinBlizzardFlyoutButton(
         local iconExp = (SHAPE_ICON_EXPAND or 0) + shapeOffset + ((zoom or 0) - shapeDefault) * 200
         if iconExp < 0 then iconExp = 0 end
         local halfIE = iconExp / 2
-        local Pix = CludesUI and CludesUI.PP
+        local Pix = CUI and CUI.PP
         if Pix then
             iconTex:ClearAllPoints()
             Pix.Point(iconTex, "TOPLEFT", button, "TOPLEFT", -halfIE, halfIE)
@@ -116,7 +117,7 @@ local function SkinBlizzardFlyoutButton(
             borderTex:Hide()
         end
 
-        if fd.borders and CludesUI and CludesUI.PP then CludesUI.PP.HideBorder(button) end
+        if fd.borders and CUI and CUI.PP then CUI.PP.HideBorder(button) end
     else
         -- Square / cropped / none
         if fd.shapeMask then
@@ -140,7 +141,7 @@ local function SkinBlizzardFlyoutButton(
             iconTex:SetTexCoord(0, 1, 0, 1)
         end
 
-        local Pix = CludesUI and CludesUI.PP
+        local Pix = CUI and CUI.PP
         if Pix then
             if brdOn then
                 if not fd.borders then

@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ConsumableBar.lua  (WoW Forever only)
 --  Consumable Bar: the consumables in your bags on a bar you can click,
@@ -49,7 +50,7 @@ local holderFrame
 local buttons = {}
 local dirty = true
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 
 -- subclass -> category order index, for the categories turned on.
 local function WantedSubs()
@@ -103,7 +104,7 @@ local function Button(index)
     widget.cd = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
     widget.cd:SetAllPoints()
     widget.count = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.count, 11, "essentials")
+    CUI.Kit.Font(widget.count, 11, "essentials")
     widget.count:SetPoint("BOTTOMRIGHT", -2, 2)
     widget:SetScript("OnEnter", function(self)
         if not self.itemID then return end
@@ -192,14 +193,14 @@ local function Apply()
         eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         eventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
+        if not CUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
     end
     Layout()
 end
 
-CludesUI._ConsumableBar = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply, Categories = CATEGORIES }
+CUI._ConsumableBar = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply, Categories = CATEGORIES }
 
 F.Start(Apply, {
     key = "CUI_ConsumableBar",

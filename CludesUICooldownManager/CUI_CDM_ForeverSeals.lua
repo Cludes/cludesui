@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_ForeverSeals.lua
 --
@@ -21,7 +22,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  aura icon engine and its hooks stay for custom buffs.
 -------------------------------------------------------------------------------
 local _, mod = ...
-if CludesUI.IS_FOREVER ~= true then return end
+if CUI.IS_FOREVER ~= true then return end
 local _, playerClass = UnitClass("player")
 if playerClass ~= "PALADIN" then return end
 if not mod.CDM_AuraIconProvider then return end
@@ -51,7 +52,7 @@ mod.CDM_SEALS_SPELL = SEALS
 -- Seals frame, the stand-in stands down.
 local S = { cd = {} }
 
-local IsSecret = CludesUI.IsSecret
+local IsSecret = CUI.IsSecret
 
 -- Blizzard's API copy of an entry's info is never secret.
 local function IsSealsInfo(details)

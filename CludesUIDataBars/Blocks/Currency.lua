@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\Currency.lua - Info Bar block: one currency the player picks.
 --
@@ -71,7 +72,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         if not cfg.currencyId then
             -- Bar text is set directly, not through the tooltip helpers that
             -- translate, so it is translated here.
-            text = CludesUI.L(L["SELECT_CURRENCY"])
+            text = CUI.L(L["SELECT_CURRENCY"])
         elseif skinData then
             text = Number(skinData.quantity)
         else
@@ -190,11 +191,11 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         if not Settings().currencyId then
             -- Nothing picked: the game's panel cannot pick one, so open the block's settings.
             if InCombatLockdown() then
-                CludesUI.PrintError("Cannot open options during combat.")
+                CUI.PrintError("Cannot open options during combat.")
                 return
             end
             if not mod.OpenBlockSettings then
-                CludesUI:EnsureLoaded() -- the settings load on demand
+                CUI:EnsureLoaded() -- the settings load on demand
             end
             if mod.OpenBlockSettings then mod.OpenBlockSettings(barCtx.id, blockCfg.id, "currency") end
         elseif C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then

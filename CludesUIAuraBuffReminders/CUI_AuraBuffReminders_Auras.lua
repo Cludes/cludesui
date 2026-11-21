@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Auras.lua
 --
@@ -48,7 +49,7 @@ local function SnapshotPlayerAuras()
     end
     -- Also snapshots non-whitelisted auras (e.g. Devotion Aura) going secret when a
     -- partymate combats first. 12.1: index scan hard-errors under restrictions (M+/raid) even OOC; whitelisted lookups still work, extras skipped.
-    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then return end
+    if CUI.AuraKit and CUI.AuraKit.AurasRestricted() then return end
     for auraIndex = 1, AURA_SCAN_LIMIT do
         local auraInfo = C_UnitAuras.GetAuraDataByIndex("player", auraIndex, "HELPFUL")
         if not auraInfo then break end
@@ -97,7 +98,7 @@ function _AC.ensureNames()
     _AC.wellFed, _AC.sawIcon = nil, false
     if InCombat() then return end
     -- 12.1: index scans hard-error under restrictions even out of combat.
-    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then return end
+    if CUI.AuraKit and CUI.AuraKit.AurasRestricted() then return end
     for auraIndex = 1, AURA_SCAN_LIMIT do
         local auraInfo = C_UnitAuras.GetAuraDataByIndex("player", auraIndex, "HELPFUL")
         if not auraInfo then break end
@@ -218,7 +219,7 @@ local function _unitHasBuff(unit, spellIdList)
     if
         not combatNow
         and not UnitIsUnit(unit, "player")
-        and not (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted())
+        and not (CUI.AuraKit and CUI.AuraKit.AurasRestricted())
     then
         for auraIndex = 1, AURA_SCAN_LIMIT do
             local auraInfo = C_UnitAuras.GetAuraDataByIndex(unit, auraIndex, "HELPFUL")
@@ -268,7 +269,7 @@ end
 -- True if the buff's source is the player. Non-player units: OOC iteration only, false in combat (caller uses the snapshot).
 local function _unitHasBuffFromPlayer(unit, spellIdList, strictSource)
     local combatNow = InCombat()
-    local restricted = CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()
+    local restricted = CUI.AuraKit and CUI.AuraKit.AurasRestricted()
     local idLookup = _idLookupScratch
     wipe(idLookup)
     for jdx = 1, #spellIdList do
@@ -513,7 +514,7 @@ function REMIND.GetOwnOtherAuraData(unitToken, spellID)
         -- combat a miss proves nothing; under restriction out of combat only a
         -- whitelisted non-secret id reads a trustworthy miss.
         if InCombat() then return nil, nil end
-        if not NON_SECRET_SPELL_IDS[spellID] and CludesUI.AuraKit.AurasRestricted() then return nil, nil end
+        if not NON_SECRET_SPELL_IDS[spellID] and CUI.AuraKit.AurasRestricted() then return nil, nil end
         return false, nil
     end
     return true, auraInfo
@@ -718,7 +719,7 @@ end
 -- ownership, allowing the caller to suppress rather than false-fire.
 function REMIND.PlayerOwnBuffOnGroupOrSelf(spellIdList)
     if not spellIdList or not spellIdList[1] then return true end
-    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
+    if CUI.AuraKit and CUI.AuraKit.AurasRestricted() then
         for auraIndex = 1, #spellIdList do
             if not NON_SECRET_SPELL_IDS[spellIdList[auraIndex]] then return nil end
         end
@@ -844,7 +845,7 @@ local BUFF_BENEFICIARIES = {
 -- Shout raises melee attack power only (a hunter shoots with ranged).
 if REMIND.FOREVER then
     -- The shared Intellect family's list (the Raid Frames Missing Buffs reads it too).
-    BUFF_BENEFICIARIES.intellect = CludesUI.FOREVER_BUFF_FAMILIES.ai.beneficiaries
+    BUFF_BENEFICIARIES.intellect = CUI.FOREVER_BUFF_FAMILIES.ai.beneficiaries
     BUFF_BENEFICIARIES.attackPower = {
         DRUID = true,
         PALADIN = true,
@@ -987,7 +988,7 @@ function REMIND.UnitBenefits(unit, benefit)
     -- unassigned ("NONE") or secret roles fall through to the class answer.
     -- Effective role: the player's spec wins over a stale assigned role. On
     -- WoW Forever every mana user wants Intellect, whatever the role.
-    local roleName = CludesUI.UnitEffectiveRole(unit)
+    local roleName = CUI.UnitEffectiveRole(unit)
     if roleName ~= nil and not isSecret(roleName) then
         if benefit == "intellect" and not REMIND.FOREVER then
             if

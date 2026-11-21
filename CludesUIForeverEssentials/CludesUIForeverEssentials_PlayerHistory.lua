@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_PlayerHistory.lua  (WoW Forever only)
 --  Player History: the players you group with, remembered on this computer:
@@ -49,7 +50,7 @@ local function Readable(v) return type(v) == "string" and not Secret(v) and v ~=
 local function IsPlayerGUID(g)
     return type(g) == "string" and not Secret(g) and #g <= 64 and g:find("^Player%-") ~= nil
 end
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 
 local function Cap(text, max)
     if #text <= max then return text end
@@ -355,7 +356,7 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
                     tooltip:AddLine(tbl.label, 1, 0.3, 0.3)
                 end
             else
-                tooltip:AddLine("Note", CludesUI.Kit.Accent())
+                tooltip:AddLine("Note", CUI.Kit.Accent())
             end
             if note.text then tooltip:AddLine(note.text, 1, 1, 1, true) end
         end
@@ -510,7 +511,7 @@ local function Refresh()
         local region = rows[i]
         if not region then
             region = content:CreateFontString(nil, "OVERLAY")
-            CludesUI.Kit.Font(region, 12, "essentials")
+            CUI.Kit.Font(region, 12, "essentials")
             region:SetJustifyH("LEFT")
             region:SetWidth(500)
             region:SetWordWrap(false)
@@ -547,7 +548,7 @@ function module.ShowPlayerHistory()
         win = CreateFrame("Frame", "CludesUIPlayerHistory", UIParent)
         win:SetSize(540, 420)
         win:SetPoint("CENTER")
-        CludesUI.Kit.Panel(win, 0.95)
+        CUI.Kit.Panel(win, 0.95)
         win:SetMovable(true)
         win:EnableMouse(true)
         win:RegisterForDrag("LeftButton")
@@ -555,19 +556,19 @@ function module.ShowPlayerHistory()
         win:SetScript("OnDragStop", win.StopMovingOrSizing)
         win:SetFrameStrata("HIGH")
         local label = win:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(label, 15, "essentials")
+        CUI.Kit.Font(label, 15, "essentials")
         label:SetPoint("TOPLEFT", 10, -8)
         label:SetText("Player History")
-        CludesUI.Kit.AccentText(label)
+        CUI.Kit.AccentText(label)
         win.count = win:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(win.count, 11, "essentials")
+        CUI.Kit.Font(win.count, 11, "essentials")
         win.count:SetPoint("LEFT", label, "RIGHT", 10, 0)
-        local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
+        local close = CUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
         close:SetPoint("TOPRIGHT", -5, -5)
-        search = CludesUI.Kit.Input(win, 200, 20, "Search a name or tag", "essentials")
+        search = CUI.Kit.Input(win, 200, 20, "Search a name or tag", "essentials")
         search:SetPoint("TOPLEFT", 10, -34)
         search:HookScript("OnTextChanged", Refresh)
-        scroll = (CludesUI.Kit.Scroll(win))
+        scroll = (CUI.Kit.Scroll(win))
         scroll:SetPoint("TOPLEFT", 10, -58)
         scroll:SetPoint("BOTTOMRIGHT", -30, 10)
         content = CreateFrame("Frame", nil, scroll)
@@ -635,7 +636,7 @@ local function Apply()
     end
 end
 
-CludesUI._PlayerHistory = {
+CUI._PlayerHistory = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CludesUICdmTbbDecimals.lua
 --  12.1-only engine-driven decimal duration text for Tracking Bars.
@@ -354,7 +355,7 @@ local function BuildContainer(desired)
 end
 
 function ns.TBBDecimals_Sync()
-    AK = AK or (CludesUI and CludesUI.AuraKit)
+    AK = AK or (CUI and CUI.AuraKit)
     if not AK then return end
 
     local desired, sig = CollectDesired()

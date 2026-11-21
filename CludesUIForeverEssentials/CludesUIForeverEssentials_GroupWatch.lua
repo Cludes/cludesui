@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GroupWatch.lua  (WoW Forever only)
 --  Healer Mana: every healer in your group and their mana, lowest first,
@@ -15,7 +16,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 local function AurasSecret()
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
@@ -229,8 +230,8 @@ local function PaintRows(entries)
         region:SetPoint("TOPLEFT", PAD, -PAD - (index - 1) * step)
         region:SetPoint("TOPRIGHT", -PAD, -PAD - (index - 1) * step)
         region:SetHeight(step)
-        CludesUI.Kit.Font(region.name, size, "essentials")
-        CludesUI.Kit.Font(region.pct, size, "essentials")
+        CUI.Kit.Font(region.name, size, "essentials")
+        CUI.Kit.Font(region.pct, size, "essentials")
         region.icon:SetSize(size, size)
         region.name:ClearAllPoints()
         region.name:SetPoint("LEFT", drinks and (size + ICON_GAP) or 0, 0)
@@ -275,7 +276,7 @@ end
 
 local function HMRedraw()
     if not hmFrame then return end
-    if CludesUI._unlockActive and HM.Enabled() then
+    if CUI._unlockActive and HM.Enabled() then
         PaintRows(SAMPLE)
         hmFrame:Show()
         return
@@ -356,7 +357,7 @@ HMApply = function()
     end
     if not hmFrame then
         hmFrame = CreateFrame("Frame", "CludesUIHealerMana", UIParent)
-        CludesUI.Kit.Panel(hmFrame, 0.75)
+        CUI.Kit.Panel(hmFrame, 0.75)
     end
     for _, event in ipairs({ "GROUP_ROSTER_UPDATE", "PLAYER_ROLES_ASSIGNED", "PLAYER_ENTERING_WORLD" }) do
         hmEvents:RegisterEvent(event)
@@ -370,7 +371,7 @@ HMApply = function()
         end
     end
     Watch()
-    if not CludesUI._unlockActive then HM.Place(hmFrame) end
+    if not CUI._unlockActive then HM.Place(hmFrame) end
     HMRedraw()
 end
 
@@ -446,7 +447,7 @@ end
 
 local function Restyle()
     local size = PT.Get("size")
-    CludesUI.Kit.Font(ptFrame.text, size, "essentials")
+    CUI.Kit.Font(ptFrame.text, size, "essentials")
     ptFrame.text:ClearAllPoints()
     if PT.Get("showIcon") then
         ptFrame.icon:SetSize(size + 12, size + 12)
@@ -514,7 +515,7 @@ end
 
 local function PTUpdate()
     if not ptFrame then return end
-    if CludesUI._unlockActive and PT.Enabled() then
+    if CUI._unlockActive and PT.Enabled() then
         ptFrame.text:SetText(PT.Get("missingText"))
         ptFrame:SetAlpha(1)
         ptFrame:Show()
@@ -575,7 +576,7 @@ local function PTApply()
     ptEvents:RegisterUnitEvent("UNIT_HEALTH", "pet")
     ptEvents:RegisterUnitEvent("UNIT_MAXHEALTH", "pet")
     if CLASS == "WARLOCK" then ptEvents:RegisterUnitEvent("UNIT_AURA", "player") end
-    if not CludesUI._unlockActive then PT.Place(ptFrame) end
+    if not CUI._unlockActive then PT.Place(ptFrame) end
     PTUpdate()
 end
 
@@ -596,7 +597,7 @@ PT.Start(PTApply, {
     noSizeMatchTarget = true,
 })
 
-CludesUI._GroupWatch = {
+CUI._GroupWatch = {
     healer = { Get = HM.Get, Cfg = HM.Cfg, Apply = HMApply },
     pet = { Get = PT.Get, Cfg = PT.Cfg, Apply = PTApply },
 }

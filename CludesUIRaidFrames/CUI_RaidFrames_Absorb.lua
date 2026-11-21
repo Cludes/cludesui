@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Absorb.lua
 --
@@ -172,7 +173,7 @@ end
 -- opacity (backing opacity is the caller's).
 mod.ApplyMaxHealthStyle = function(barFrame, style, prefs)
     if not barFrame then return end
-    CludesUI.ApplyMaxHealthStyle(barFrame, style or "maxHealthStripes", prefs, mod.ResolveAbsorbStyleTex)
+    CUI.ApplyMaxHealthStyle(barFrame, style or "maxHealthStripes", prefs, mod.ResolveAbsorbStyleTex)
     mod.RF_ApplyFillRotation(barFrame)
 end
 
@@ -645,7 +646,7 @@ local function CreateAbsorbBar(btnFrame, health)
 
     -- Reduced max health bar: black bg + red striped overlay on the right side (forward-declared above for ReanchorAbsorbToFill).
     reducedBar = CreateFrame("StatusBar", nil, health)
-    reducedBar:SetStatusBarTexture(CludesUI.MAX_HEALTH_STRIPES_TEX)
+    reducedBar:SetStatusBarTexture(CUI.MAX_HEALTH_STRIPES_TEX)
     local rmhFill = reducedBar:GetStatusBarTexture()
     if rmhFill then
         rmhFill:SetDrawLayer("ARTWORK", 3)

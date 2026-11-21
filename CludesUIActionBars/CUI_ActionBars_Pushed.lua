@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Pushed.lua
 --
@@ -69,7 +70,7 @@ do
     local function _applyBorderEdges(edges, button, brdSize, cr, cg, callback)
         edges._active = true
         local anchor = button.icon or button.Icon or button
-        local Pix = CludesUI.PP
+        local Pix = CUI.PP
         for jdx = 1, 4 do
             edges[jdx]:SetVertexColor(cr, cg, callback, 1)
         end
@@ -168,7 +169,7 @@ mod._ixBarEligible = function(barId)
             (shape == "none" or shape == "cropped")
             and texture ~= ""
             and texture ~= "solid"
-            and CludesUI.ResolveBorderTexture(texture)
+            and CUI.ResolveBorderTexture(texture)
         then
             success = ResolveBorderThickness(cfg) > 0
         end
@@ -186,7 +187,7 @@ end
 mod._ixStyle = function(button, fd, cfg)
     local owner = fd.ixHost
     local sz, px = ResolveBorderThickness(cfg)
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         owner,
         sz,
         fd.ixR or 1,
@@ -203,7 +204,7 @@ mod._ixStyle = function(button, fd, cfg)
         nil,
         px
     )
-    local edge = CludesUI._bdBorderData[owner]
+    local edge = CUI._bdBorderData[owner]
     if edge then edge:SetFrameLevel(mod._eabBorderLevel(button, cfg.borderBehind, cfg.borderAboveEffects)) end
     fd.ixStyled = true
 end
@@ -214,7 +215,7 @@ end
 mod._ixPaint = function(button, fd)
     local wid = fd.ixBorder
     if not wid then return end
-    local bdData = CludesUI._bdBorderData
+    local bdData = CUI._bdBorderData
     local edge = bdData[fd.ixHost]
     local c
     if edge then
@@ -351,7 +352,7 @@ mod._ixRole = function(button, s, role, enabled)
         end
         mod._ixPaint(button, fd)
         if fd.ixStyled and not (fd.ixPush or fd.ixHover or fd.ixCast) then
-            CludesUI.HideBorderStyle(fd.ixHost)
+            CUI.HideBorderStyle(fd.ixHost)
             fd.ixStyled = nil
         end
     end

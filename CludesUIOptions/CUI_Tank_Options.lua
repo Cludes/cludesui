@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Tank_Options.lua
 --  The Tank Kit pages of the CludesUI settings panel: Frame, Alerts, Tools.
@@ -6,7 +7,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  calls the module's refresh functions, so a change shows on the frame at once.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUITank"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 local PAGE_FRAME = "Frame"
@@ -15,7 +16,7 @@ local PAGE_TOOLS = "Tools"
 
 local GLOBAL_FONT = "__global" -- dropdown key for "use the CludesUI font"
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     local K = mod.K
     local function DB() return mod.DB() end
     local function Frame() return _G.CoTankAuras end
@@ -26,8 +27,8 @@ CludesUI.AtOptionsLogin(function()
 
     -- Rebuilds the open page after a change that adds or removes rows.
     local function Rebuild()
-        CludesUI:InvalidatePageCache()
-        CludesUI:RefreshPage(true)
+        CUI:InvalidatePageCache()
+        CUI:RefreshPage(true)
     end
 
     local function IconsChanged()
@@ -95,11 +96,11 @@ CludesUI.AtOptionsLogin(function()
     --  Frame page
     ---------------------------------------------------------------------------
     local function BuildFramePage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         _, height = W:SectionHeader(hostFrame, "TEXT", cursorY)
         cursorY = cursorY - height
@@ -595,12 +596,12 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildAlertsPage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
         local saved = DB()
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
         mod.SpellData.SeedDefaults(saved)
 
         _, height = W:SectionHeader(hostFrame, "ALERT", cursorY)
@@ -708,11 +709,11 @@ CludesUI.AtOptionsLogin(function()
     --  Tools page
     ---------------------------------------------------------------------------
     local function BuildToolsPage(_, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         _, height = W:SectionHeader(hostFrame, "FRAME", cursorY)
         cursorY = cursorY - height
@@ -733,8 +734,8 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Opens Layout Mode, where every CludesUI frame is moved and resized.",
             onClick = function()
                 if InCombatLockdown() then return end
-                CludesUI:EnsureUnlockCore()
-                if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
+                CUI:EnsureUnlockCore()
+                if CUI._openUnlockMode then CUI._openUnlockMode() end
             end,
         })
         cursorY = cursorY - height
@@ -811,7 +812,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Register the module
     ---------------------------------------------------------------------------
-    CludesUI:RegisterModule(ADDON_NAME, {
+    CUI:RegisterModule(ADDON_NAME, {
         title = "Tank Kit",
         description = "For tanks: your co-tank's health, debuffs and defensives, and TAUNT alerts.",
         pages = { PAGE_FRAME, PAGE_ALERTS, PAGE_TOOLS },
@@ -826,7 +827,7 @@ CludesUI.AtOptionsLogin(function()
             mod.SpellData.SeedDefaults(mod.DB())
             local f = Frame()
             if f then mod.ResetPosition(f) end
-            CludesUI:InvalidatePageCache()
+            CUI:InvalidatePageCache()
             ReloadUI()
         end,
     })

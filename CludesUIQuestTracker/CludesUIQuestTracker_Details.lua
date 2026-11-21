@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then return end
+local CUI = CludesUI
+if not CUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_Details.lua - our quest details window (WoW Forever).
 --
@@ -90,17 +91,17 @@ local drawn -- what the window shows, as one string
 local dragged = false -- the player moved it: it no longer follows the tracker
 
 local function Accent()
-    local color = CludesUI.CLUDES_GREEN
+    local color = CUI.CLUDES_GREEN
     return color.r, color.g, color.b
 end
 
 local function Dim()
-    local color = CludesUI.TEXT_DIM
+    local color = CUI.TEXT_DIM
     return color.r, color.g, color.b, color.a
 end
 
 local function Style(text, size)
-    local outline = CludesUI.GetFontOutlineFlag("questTracker")
+    local outline = CUI.GetFontOutlineFlag("questTracker")
     if not pcall(text.SetFont, text, EQT.GetFont(), size, outline) then
         text:SetFont("Fonts/FRIZQT__.TTF", size, outline)
     end
@@ -159,7 +160,7 @@ local function AddMark(done, y)
 end
 
 local function TileAtRest(tile)
-    local color = CludesUI.BORDER_COLOR
+    local color = CUI.BORDER_COLOR
     tile.frame:SetColor(color.r, color.g, color.b, 0.15)
 end
 
@@ -185,14 +186,14 @@ local function NewTile()
     local bgTex = tile:CreateTexture(nil, "BACKGROUND")
     bgTex:SetAllPoints()
     bgTex:SetColorTexture(TILE_BG[1], TILE_BG[2], TILE_BG[3], TILE_BG[4])
-    tile.frame = CludesUI.MakeBorder(tile, 1, 1, 1, 0.15)
+    tile.frame = CUI.MakeBorder(tile, 1, 1, 1, 0.15)
     local holder = CreateFrame("Frame", nil, tile)
     holder:SetSize(TILE - 8, TILE - 8)
     holder:SetPoint("LEFT", 4, 0)
     tile.icon = holder:CreateTexture(nil, "ARTWORK")
     tile.icon:SetAllPoints()
     tile.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    tile.quality = CludesUI.MakeBorder(holder, 0, 0, 0, 1)
+    tile.quality = CUI.MakeBorder(holder, 0, 0, 0, 1)
     tile.count = holder:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
     tile.count:SetPoint("BOTTOMRIGHT", 1, 0)
     tile.name = tile:CreateFontString(nil, "OVERLAY")
@@ -411,7 +412,7 @@ end
 local function Button(label, onClick)
     local button = CreateFrame("Button", nil, window)
     button:SetSize((WIDTH - PAD * 2 - GAP * 3) / 4, BUTTON_H)
-    local _, _, text = CludesUI.MakeStyledButton(button, label, 11, CludesUI.WB_COLOURS, onClick)
+    local _, _, text = CUI.MakeStyledButton(button, label, 11, CUI.WB_COLOURS, onClick)
     text:SetWidth(button:GetWidth() - 6)
     text:SetWordWrap(false)
     button.label = text
@@ -419,7 +420,7 @@ local function Button(label, onClick)
 end
 
 local function Divider(y, fromBottom)
-    local color = CludesUI.BORDER_COLOR
+    local color = CUI.BORDER_COLOR
     local line = window:CreateTexture(nil, "BORDER")
     line:SetColorTexture(color.r, color.g, color.b, 0.15)
     line:SetHeight(1)
@@ -447,8 +448,8 @@ local function Build()
     local bgTex = window:CreateTexture(nil, "BACKGROUND")
     bgTex:SetAllPoints()
     bgTex:SetColorTexture(PANEL_BG[1], PANEL_BG[2], PANEL_BG[3], PANEL_BG[4])
-    local color = CludesUI.BORDER_COLOR
-    CludesUI.MakeBorder(window, color.r, color.g, color.b, 0.15)
+    local color = CUI.BORDER_COLOR
+    CUI.MakeBorder(window, color.r, color.g, color.b, 0.15)
 
     -- The header: an accent bar, the title, the level line.
     window.bar = window:CreateTexture(nil, "ARTWORK")
@@ -527,7 +528,7 @@ local function Build()
         questID = nil
         drawn = nil
     end)
-    CludesUI.RegisterEscapeClose(window)
+    CUI.RegisterEscapeClose(window)
 end
 
 -- Opens the window for a quest; a second click on the same quest closes it.

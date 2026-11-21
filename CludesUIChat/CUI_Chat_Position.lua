@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Chat_Position.lua
 --
@@ -36,7 +37,7 @@ local CFD, EnsureChatClampInsets = Inner.CFD, Inner.EnsureChatClampInsets
 -- Mode's Lua overrides, which from our code would mark Edit Mode's anchor
 -- sweep and the frame's snap state as written by us. Every anchor write of
 -- ours goes through the saved C methods instead.
-local ClearFramePoints, SetFramePoint = CludesUI.ClearFramePoints, CludesUI.SetFramePoint
+local ClearFramePoints, SetFramePoint = CUI.ClearFramePoints, CUI.SetFramePoint
 
 -------------------------------------------------------------------------------
 --  Edit Mode store. Blizzard's saved-dimensions restore skips the main window
@@ -97,8 +98,8 @@ local function EMChatResolve()
     if not (C_EditMode and C_EditMode.GetLayouts and C_EditMode.SaveLayouts) then return nil end
     local sysChat, setEnum, layEnum = EMChatEnums()
     if not sysChat then return nil end
-    if CludesUI.EditModeOpen() then return nil end
-    local blob, numPresets = CludesUI.EditModeLayoutsForSave()
+    if CUI.EditModeOpen() then return nil end
+    local blob, numPresets = CUI.EditModeLayoutsForSave()
     if not blob then return nil end
     local isActive = blob.activeLayout
     if type(isActive) ~= "number" then return nil end
@@ -192,7 +193,7 @@ local function ChatAnchorTarget(conf, cf1)
     local px, py = place and place.x, place and place.y
     if not (place and place.point and px and py) then return nil end
     local relPoint = place.relPoint or place.point
-    local PPa = CludesUI and CludesUI.PP
+    local PPa = CUI and CUI.PP
     if PPa then
         local es = cf1:GetEffectiveScale()
         -- Per axis: an offset that places the frame's middle (the centre, TOP
@@ -265,7 +266,7 @@ local function EMChatSetRow(layout, sys, ident, value, pairID)
         sys.settings[#sys.settings + 1] = { setting = ident, value = value }
         return
     end
-    CludesUI.NoteEditModeSetting(layout, sys, ident, row.value, value, nil, pairID)
+    CUI.NoteEditModeSetting(layout, sys, ident, row.value, value, nil, pairID)
     row.value = value
 end
 
@@ -273,7 +274,7 @@ end
 -- each change noted for Uninstall CUI first.
 local function EMChatWrite(layout, sys, setEnum, wid, hgt)
     if not EMChatAnchorAgrees(sys) then
-        CludesUI.NoteEditModeAnchor(layout, sys, emAnchor)
+        CUI.NoteEditModeAnchor(layout, sys, emAnchor)
         local ai = sys.anchorInfo
         if type(ai) ~= "table" then
             ai = {}
@@ -349,7 +350,7 @@ function mod.EMChatResetStore()
     if not (sys and mgr and mgr.GetDefaultSystemAnchorInfo and mgr.GetDefaultSettingForSystem) then return end
     local okA, def = pcall(mgr.GetDefaultSystemAnchorInfo, mgr, sysChat)
     if not (okA and type(def) == "table") then return end
-    CludesUI.NoteEditModeAnchor(record, sys, def)
+    CUI.NoteEditModeAnchor(record, sys, def)
     sys.anchorInfo = def
     sys.anchorInfo2 = nil
     sys.isInDefaultPosition = true
@@ -377,9 +378,9 @@ end
 local RunChatStoreSync
 RunChatStoreSync = function()
     mod._emSyncQueued = nil
-    if mod._chatSizingActive or CludesUI._unlockActive or CludesUI._firstInstallPending then return end
+    if mod._chatSizingActive or CUI._unlockActive or CUI._firstInstallPending then return end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("ChatEMStoreSync", RunChatStoreSync)
+        CUI.CombatQueue.Defer("ChatEMStoreSync", RunChatStoreSync)
         return
     end
     mod.EMChatSync()
@@ -617,7 +618,7 @@ function mod.SetChatScreenPoint(anchorPoint)
     local conf = CHAT.DB()
     if not (conf and POINT_FRAC[anchorPoint]) then return end
     conf.chatScreenPoint = anchorPoint
-    if not CludesUI._unlockActive then PlaceChat() end
+    if not CUI._unlockActive then PlaceChat() end
 end
 
 -- The left and bottom edges a saved spot puts a w x h chat at, in
@@ -639,7 +640,7 @@ local chatReassert = CreateFrame("Frame")
 chatReassert:Hide()
 chatReassert:SetScript("OnUpdate", function(self)
     self:Hide()
-    if mod._chatSizingActive or CludesUI._unlockActive then return end
+    if mod._chatSizingActive or CUI._unlockActive then return end
     local conf = CHAT.DB()
     if conf and conf.chatPosition then PlaceChat() end
 end)
@@ -786,8 +787,8 @@ end
 function CHAT.SuppressChatEditModeSelection()
     local cf1 = _G.ChatFrame1
     if not cf1 then return end
-    CludesUI.SetEditModeChildInert(cf1.Selection, true)
-    CludesUI.SetEditModeChildInert(cf1.EditModeResizeButton, true)
+    CUI.SetEditModeChildInert(cf1.Selection, true)
+    CUI.SetEditModeChildInert(cf1.EditModeResizeButton, true)
 end
 mod._CaptureChatPositionGenesis = CaptureChatPositionGenesis
 mod._GenesisSettle = GenesisSettle

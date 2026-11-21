@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_PetSummon.lua  (WoW Forever only)
 --  Auto Summon Pet: once the game takes the companion pet away (death,
@@ -105,7 +106,7 @@ local function Summon()
     timer = nil
     if not IsEnabled() or userDismissed or C_PetJournal.GetSummonedPetGUID() then return end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("PetSummon", Queue)
+        CUI.CombatQueue.Defer("PetSummon", Queue)
         return
     end
     if not CanSummonNow() then return end
@@ -208,7 +209,7 @@ local function AddMenuEntry(ownerFrame, root)
     if not (petGUID and ShowsOwn()) then return end
     root:CreateDivider()
     root:CreateCheckbox(
-        CludesUI.L("Favorite for This Character"),
+        CUI.L("Favorite for This Character"),
         function() return IsOwnFavorite(petGUID) end,
         function()
             SetOwnFavorite(petGUID, not IsOwnFavorite(petGUID))
@@ -280,7 +281,7 @@ local function ApplyPetSummon(fresh)
 end
 -- Options-page entry points. Favorites per Character changed: only the
 -- journal's stars and menu follow (RefreshJournal).
-CludesUI._PetSummon = {
+CUI._PetSummon = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = ApplyPetSummon,

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Paging.lua
 --
@@ -48,7 +49,7 @@ EAB_VTABLE.PAGING_STATES = {
         { id = "harm", macro = "[harm]", label = "Hostile Target" },
     },
     -- Shared with the CDM's Stance Bar hide (CludesUI_VisibilityRules.lua).
-    class = CludesUI.CLASS_PAGING_STATES,
+    class = CUI.CLASS_PAGING_STATES,
 }
 
 -- The five modifier and target states, each with its group: Modifier Paging
@@ -101,7 +102,7 @@ function EAB_VTABLE.GetAutoPagingOptOuts(barId)
     if barId ~= "MainBar" then return false, false end
     local bs = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars.MainBar
     if not bs then return false, false end
-    local noSky = bs.disableSkyridingPaging and not CludesUI.IS_FOREVER
+    local noSky = bs.disableSkyridingPaging and not CUI.IS_FOREVER
     return bs.disableFormPaging and true or false, noSky and true or false
 end
 
@@ -118,7 +119,7 @@ end
 -- its own bonus bar gives it.
 local FOREVER_FORM_STATE = { [768] = "cat", [5487] = "bear", [9634] = "bear" }
 local FOREVER_FORM_PAGE = { cat = 7, bear = 9 }
-local FOREVER_DRUID = CludesUI.IS_FOREVER == true and select(2, UnitClass("player")) == "DRUID"
+local FOREVER_DRUID = CUI.IS_FOREVER == true and select(2, UnitClass("player")) == "DRUID"
 
 -- The clauses ("[form:1] 9; [form:3,nostealth] 7") or nil with none. A form
 -- takes the page picked for its state in pagingConfig, else its own page
@@ -193,7 +194,7 @@ function EAB_VTABLE.BuildPagingConditions(barId, pagingConfig, defaultPage)
     end
     -- WoW Forever: every class pages bar 1 by its stance/form offset (6 + offset), so
     -- the implicit fallback covers every offset after any explicit per-form pick.
-    if barId == "MainBar" and not noForm and CludesUI.IS_FOREVER then
+    if barId == "MainBar" and not noForm and CUI.IS_FOREVER then
         parts[#parts + 1] = "[bonusbar:1] 7; [bonusbar:2] 8; [bonusbar:3] 9; [bonusbar:4] 10"
     end
     -- The druid form clauses (see ForeverFormClauses): a form's picked page,
@@ -262,7 +263,7 @@ local function GetClassPagingConditions()
 
     -- Class-specific form paging (page 1 only, per the ordering above)
     if not noForm then
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             -- WoW Forever pages bar 1 natively by the stance/form offset for EVERY
             -- class (vanilla warrior stances, druid forms, rogue stealth): page 6 + offset.
             -- Mirror it exactly so ACTIONBUTTONn and the icon agree in every stance.
@@ -423,7 +424,7 @@ local function SetupPagingFrame()
 
     -- Page number text
     local pageText = frame:CreateFontString(nil, "OVERLAY")
-    pageText:SetFont(STANDARD_TEXT_FONT, 12, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+    pageText:SetFont(STANDARD_TEXT_FONT, 12, (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
     pageText:SetTextColor(1, 1, 1, 0.9)
     pageText:SetText("1")
     frame._pageText = pageText
@@ -579,7 +580,7 @@ LayoutPagingFrame = function()
     frame._pageText:SetFont(
         STANDARD_TEXT_FONT,
         textSize,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
 
     frame._upBtn:ClearAllPoints()

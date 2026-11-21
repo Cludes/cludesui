@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI__General_Options.lua -- Global Settings module (CVar-based settings
 --  shared by all CludesUI addons).
@@ -12,7 +13,7 @@ local ADDON_NAME = ...
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- The account-wide settings table, made if it is not there yet, for a write.
 local function Account()
@@ -48,7 +49,7 @@ local IS_STANDALONE = type(ADDON_NAME) == "string" and ADDON_NAME:find("Standalo
 --  Exports ONLY on explicit "No" or a completed picker pick -- escaping
 --  either popup produces NO export.
 -------------------------------------------------------------------------------
-function CludesUI.RunCDMSpellExportFlow(activeName, exportFn)
+function CUI.RunCDMSpellExportFlow(activeName, exportFn)
     local function pickThenExport()
         local specs = {}
         local sp = CludesUIDB
@@ -56,7 +57,7 @@ function CludesUI.RunCDMSpellExportFlow(activeName, exportFn)
             and CludesUIDB.spellAssignments.profiles
             and CludesUIDB.spellAssignments.profiles[activeName]
             and CludesUIDB.spellAssignments.profiles[activeName].specProfiles
-        local num = CludesUI.IS_FOREVER and 0 or ((GetNumSpecializations and GetNumSpecializations()) or 0)
+        local num = CUI.IS_FOREVER and 0 or ((GetNumSpecializations and GetNumSpecializations()) or 0)
         for idx = 1, num do
             local specID = GetSpecializationInfo and GetSpecializationInfo(idx)
             if specID then
@@ -70,8 +71,8 @@ function CludesUI.RunCDMSpellExportFlow(activeName, exportFn)
             end
         end
         -- WoW Forever: one row, the store key the player's class uses.
-        if CludesUI.IS_FOREVER then
-            local ident = CludesUI.ForeverClassSpec(nil, CludesUI.SpecHasStringEntry, sp or {}, true)
+        if CUI.IS_FOREVER then
+            local ident = CUI.ForeverClassSpec(nil, CUI.SpecHasStringEntry, sp or {}, true)
             if ident then
                 local key = tostring(ident)
                 local d = sp and sp[key]
@@ -82,27 +83,27 @@ function CludesUI.RunCDMSpellExportFlow(activeName, exportFn)
                 }
             end
         end
-        CludesUI:ShowCDMSpecPickerPopup({
-            title = CludesUI.L("Export CDM Spells"),
+        CUI:ShowCDMSpecPickerPopup({
+            title = CUI.L("Export CDM Spells"),
             foreverAllKeys = true,
-            subtitle = CludesUI.L(
+            subtitle = CUI.L(
                 "This can't change which spells the user tracks in Blizzard's CDM.\nIt's recommended to also share your Blizzard CDM layout for any spec you choose here."
             ),
             subtitleColor = { 1, 0.82, 0.2 },
             subtitleAtBottom = true,
-            confirmText = CludesUI.L("Export"),
+            confirmText = CUI.L("Export"),
             specs = specs,
             onConfirm = function(selectedSpecs) exportFn(true, selectedSpecs) end,
             onCancel = function() end, -- cancel / Esc / click-off: just close, NO export
         })
     end
-    CludesUI:ShowConfirmPopup({
-        title = CludesUI.L("Include CDM Spell Layout?"),
-        message = CludesUI.L(
+    CUI:ShowConfirmPopup({
+        title = CUI.L("Include CDM Spell Layout?"),
+        message = CUI.L(
             "Include your Cooldown Manager spell layout (which spells sit on which bars) plus all per-spell settings for any specs you choose."
         ),
-        confirmText = CludesUI.L("Yes"),
-        cancelText = CludesUI.L("No"),
+        confirmText = CUI.L("Yes"),
+        cancelText = CUI.L("No"),
         onConfirm = function() pickThenExport() end,
         onCancel = function() exportFn(false, nil) end, -- "No": export WITHOUT layout
         onDismiss = function() end, -- Esc / click-off: just close, NO export
@@ -113,15 +114,15 @@ end
 -- also cover the trailing "(Korean)"-style Latin text), so a plain per-entry
 -- font from the locale system's own glyph table beats a multi-script family.
 local function LP_FontFor(locale)
-    local func = CludesUI.LocaleGlyphFont
-    return (func and func(locale)) or (CludesUI.MEDIA_PATH .. "fonts\\Expressway.TTF")
+    local func = CUI.LocaleGlyphFont
+    return (func and func(locale)) or (CUI.MEDIA_PATH .. "fonts\\Expressway.TTF")
 end
 
 -------------------------------------------------------------------------------
 --  Patch-notes content for the What's New page (newest first). Entry `nav`
 --  deep-links via NavigateToElementSettings(module, page, section, preSelect, highlight).
 -------------------------------------------------------------------------------
-CludesUI._WHATSNEW_PATCHES = {
+CUI._WHATSNEW_PATCHES = {
     {
         version = "1.1.0",
         heroes = {
@@ -135,7 +136,7 @@ CludesUI._WHATSNEW_PATCHES = {
                 title = "New Layout Mode bar",
                 desc = "A toolbar across the top of the screen: square toggle buttons with captions, the element filter, and Exit and Save & Exit on the right. Opening it plays a new animation.",
                 onClick = function()
-                    if CludesUI.OpenUnlockMode then CludesUI:OpenUnlockMode() end
+                    if CUI.OpenUnlockMode then CUI:OpenUnlockMode() end
                 end,
             },
         },
@@ -476,10 +477,10 @@ CludesUI._WHATSNEW_PATCHES = {
 -------------------------------------------------------------------------------
 
 -- Wait for CludesUI to exist
-CludesUI.AtOptionsLogin(function()
-    local Pix = CludesUI.PanelPP
+CUI.AtOptionsLogin(function()
+    local Pix = CUI.PanelPP
 
-    local GLOBAL_KEY = CludesUI.GLOBAL_KEY or "_CUIGlobal"
+    local GLOBAL_KEY = CUI.GLOBAL_KEY or "_CUIGlobal"
     local floor = math.floor
     local ceil = math.ceil
     local max = math.max
@@ -491,7 +492,7 @@ CludesUI.AtOptionsLogin(function()
 
     local function SetCVarSafe(cvar, value)
         if InCombatLockdown() then return end
-        CludesUI.SetCVar(cvar, value)
+        CUI.SetCVar(cvar, value)
     end
 
     -- Graphics and sound settings (Optimize My FPS and Graphics, its Restore and
@@ -543,7 +544,7 @@ CludesUI.AtOptionsLogin(function()
     --  General page
     ---------------------------------------------------------------------------
     local function BuildGeneralPage(page, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
@@ -600,7 +601,7 @@ CludesUI.AtOptionsLogin(function()
             end
             local curContrast = tonumber(GetCVar("Contrast")) or 50
             if curContrast <= 55 then SetGfxCVar("Contrast", curContrast + 10) end
-            local refreshList = CludesUI._widgetRefreshList
+            local refreshList = CUI._widgetRefreshList
             if refreshList then
                 for idx = 1, #refreshList do
                     refreshList[idx]()
@@ -618,7 +619,7 @@ CludesUI.AtOptionsLogin(function()
             end
             if backup["Contrast"] then SetGfxCVar("Contrast", backup["Contrast"]) end
             CludesUIDB.gfxBackup = nil
-            local rl2 = CludesUI._widgetRefreshList
+            local rl2 = CUI._widgetRefreshList
             if rl2 then
                 for idx = 1, #rl2 do
                     rl2[idx]()
@@ -722,7 +723,7 @@ CludesUI.AtOptionsLogin(function()
         -- Reset ALL: a typed confirm, then the wipe and a reload (the wipe runs
         -- as RequestReload's pre-reload work).
         local function ConfirmResetAll()
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = "Reset ALL Settings",
                 -- The wipe replaces the whole account store, profiles included.
                 message = "Are you sure you want to reset ALL CUI addon settings to their defaults? This deletes ALL of your profiles, not just the current one, and reloads your UI.",
@@ -731,9 +732,9 @@ CludesUI.AtOptionsLogin(function()
                 confirmText = "Reset All & Reload",
                 cancelText = "Cancel",
                 onConfirm = function()
-                    CludesUI.RequestReload(
-                        CludesUI.L("Reset ALL Settings"),
-                        CludesUI.L("Reload to finish resetting CUI."),
+                    CUI.RequestReload(
+                        CUI.L("Reset ALL Settings"),
+                        CUI.L("Reload to finish resetting CUI."),
                         ResetAllNow
                     )
                 end,
@@ -746,17 +747,17 @@ CludesUI.AtOptionsLogin(function()
         local function UninstallRefused()
             local msg
             if InCombatLockdown() then
-                msg = CludesUI.L(
+                msg = CUI.L(
                     "Uninstalling reloads the UI and cannot run in combat. Leave combat and try again."
                 )
-            elseif CludesUI.EditModeOpen() then
-                msg = CludesUI.L("Close Edit Mode first, then try again.")
+            elseif CUI.EditModeOpen() then
+                msg = CUI.L("Close Edit Mode first, then try again.")
             end
             if not msg then return false end
-            CludesUI:ShowConfirmPopup({
-                title = CludesUI.L("Uninstall CUI"),
+            CUI:ShowConfirmPopup({
+                title = CUI.L("Uninstall CUI"),
                 message = msg,
-                confirmText = CludesUI.L("OK"),
+                confirmText = CUI.L("OK"),
                 hideCancel = true,
             })
             return true
@@ -768,34 +769,34 @@ CludesUI.AtOptionsLogin(function()
         -- checked again there, and reload = true would reload even when it is refused.
         local function ConfirmUninstall()
             if UninstallRefused() then return end
-            local message = CludesUI.L(
+            local message = CUI.L(
                 "Puts back the game settings CUI changed, such as nameplate, action bar, chat and tooltip options, and turns CUI off for every character, then reloads the UI."
-            ) .. "\n\n" .. CludesUI.L(
+            ) .. "\n\n" .. CUI.L(
                 "Your profiles are kept, so you can turn CUI back on later in the AddOns list."
             )
             if CludesUIDB and CludesUIDB.gfxBackup then
                 message = message
                     .. "\n\n"
-                    .. CludesUI.L(
+                    .. CUI.L(
                         "Graphics changed by Optimize My FPS and Graphics stay as they are. To undo them, click Restore My Graphics Settings first."
                     )
             end
-            CludesUI:ShowConfirmPopup({
-                title = CludesUI.L("Uninstall CUI"),
+            CUI:ShowConfirmPopup({
+                title = CUI.L("Uninstall CUI"),
                 message = message,
-                disclaimer = (not CludesUI.UninstallKnowsOriginals())
-                        and CludesUI.L(
+                disclaimer = (not CUI.UninstallKnowsOriginals())
+                        and CUI.L(
                             "CUI was installed before it kept a record of your original settings, so the settings it still manages go back to the game's defaults."
                         )
                     or nil,
-                confirmText = CludesUI.L("Uninstall & Reload"),
-                cancelText = CludesUI.L("Cancel"),
+                confirmText = CUI.L("Uninstall & Reload"),
+                cancelText = CUI.L("Cancel"),
                 onConfirm = function()
                     if UninstallRefused() then return end
-                    CludesUI.RequestReload(
-                        CludesUI.L("Uninstall CUI"),
-                        CludesUI.L("Reload to finish uninstalling CUI."),
-                        CludesUI.Uninstall
+                    CUI.RequestReload(
+                        CUI.L("Uninstall CUI"),
+                        CUI.L("Reload to finish uninstalling CUI."),
+                        CUI.Uninstall
                     )
                 end,
             })
@@ -824,17 +825,17 @@ CludesUI.AtOptionsLogin(function()
                 .. "Contrast - Boosted by +10 (if currently 55 or below)\n"
                 .. "Enable Reverb - Disabled (spell and interrupt audio cues stay crisp)\n\n"
                 .. "These settings prioritize frame rate and visual clarity over environmental detail. Textures stay high quality so your character and the world still look perfect."
-            CludesUI:ShowInfoPopup({
+            CUI:ShowInfoPopup({
                 title = "FPS & Graphics Optimization",
-                content = CludesUI.L(
+                content = CUI.L(
                     "This feature optimizes your in-game graphics settings to give you the best combination of high FPS and visual clarity."
                 )
                     .. "\n\n"
-                    .. CludesUI.L(
+                    .. CUI.L(
                         "After optimizing, the button changes to 'Restore My Graphics Settings', which reverts every change."
                     )
                     .. "\n\n\n"
-                    .. CludesUI.L(CHANGES),
+                    .. CUI.L(CHANGES),
             })
         end
 
@@ -845,7 +846,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         local themeValues = {}
-        for _, name in ipairs(CludesUI.THEME_ORDER) do
+        for _, name in ipairs(CUI.THEME_ORDER) do
             themeValues[name] = name
         end
 
@@ -856,15 +857,15 @@ CludesUI.AtOptionsLogin(function()
             text = "CUI Options Theme",
             tooltip = "The look of this options window: its frame art and colours.",
             values = themeValues,
-            order = CludesUI.THEME_ORDER,
-            getValue = function() return CludesUI.GetActiveTheme() end,
+            order = CUI.THEME_ORDER,
+            getValue = function() return CUI.GetActiveTheme() end,
             setValue = function(val)
-                CludesUI.SetActiveTheme(val)
+                CUI.SetActiveTheme(val)
                 -- Re-resolve the accent so the sidebar highlight tracks the theme.
-                if CludesUI.RefreshAccent then
-                    CludesUI.RefreshAccent() -- ApplyAccentLive already refreshes the page
+                if CUI.RefreshAccent then
+                    CUI.RefreshAccent() -- ApplyAccentLive already refreshes the page
                 else
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
             end,
         }, {
@@ -875,47 +876,47 @@ CludesUI.AtOptionsLogin(function()
                 {
                     tooltip = "Class Color",
                     getValue = function()
-                        local cr, cg, cb = CludesUI.GetPlayerClassColor()
+                        local cr, cg, cb = CUI.GetPlayerClassColor()
                         return cr, cg, cb, 1
                     end,
                     setValue = function() end,
                     onClick = function()
                         -- Per-profile: set use-class, then re-resolve + apply live.
-                        CludesUI.SetActiveProfileAccent(nil, true)
-                        CludesUI.RefreshAccent()
-                        CludesUI:RefreshPage()
+                        CUI.SetActiveProfileAccent(nil, true)
+                        CUI.RefreshAccent()
+                        CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        return (select(1, CludesUI.GetActiveAccentState())) and 1 or 0.3
+                        return (select(1, CUI.GetActiveAccentState())) and 1 or 0.3
                     end,
                 },
                 {
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local _, ca = CludesUI.GetActiveAccentState()
+                        local _, ca = CUI.GetActiveAccentState()
                         if ca then return ca.r, ca.g, ca.b, 1 end
-                        return CludesUI.DEFAULT_ACCENT_R,
-                            CludesUI.DEFAULT_ACCENT_G,
-                            CludesUI.DEFAULT_ACCENT_B,
+                        return CUI.DEFAULT_ACCENT_R,
+                            CUI.DEFAULT_ACCENT_G,
+                            CUI.DEFAULT_ACCENT_B,
                             1
                     end,
                     setValue = function(red, green, blue)
                         -- Persists per-profile (custom + useClass=false), applies live.
-                        CludesUI.SetAccentColor(red, green, blue)
+                        CUI.SetAccentColor(red, green, blue)
                     end,
                     onClick = function(self)
-                        if select(1, CludesUI.GetActiveAccentState()) then
+                        if select(1, CUI.GetActiveAccentState()) then
                             -- Switch class -> custom: clear the per-profile class flag and re-resolve (profile custom -> global -> theme).
-                            CludesUI.SetActiveProfileAccent(nil, false)
-                            CludesUI.RefreshAccent()
-                            CludesUI:RefreshPage()
+                            CUI.SetActiveProfileAccent(nil, false)
+                            CUI.RefreshAccent()
+                            CUI:RefreshPage()
                             return
                         end
                         if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
-                        return (select(1, CludesUI.GetActiveAccentState())) and 0.3 or 1
+                        return (select(1, CUI.GetActiveAccentState())) and 0.3 or 1
                     end,
                 },
             },
@@ -923,26 +924,26 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         -- Inline color swatch on CUI Options Theme (left region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rightRegion = themeRow._leftRegion -- the theme dropdown's slot
-            local function customColorOff() return CludesUI.GetActiveTheme() ~= "Custom Color" end
+            local function customColorOff() return CUI.GetActiveTheme() ~= "Custom Color" end
 
             local tcGet = function()
                 local db = CludesUIDB
                 local sa = db and db.accentColor
                 if sa then return sa.r, sa.g, sa.b, 1 end
-                return CludesUI.GetAccentColor()
+                return CUI.GetAccentColor()
             end
             local tcSet = function(red, green, blue)
                 Account().accentColor = { r = red, g = green, b = blue }
                 -- Only update the window background, not the accent color
-                if CludesUI._applyBgTint then CludesUI._applyBgTint(red, green, blue) end
+                if CUI._applyBgTint then CUI._applyBgTint(red, green, blue) end
             end
             local tcSwatch, tcUpdateSwatch =
-                CludesUI.BuildColorSwatch(rightRegion, rightRegion:GetFrameLevel() + 5, tcGet, tcSet, nil, 20)
+                CUI.BuildColorSwatch(rightRegion, rightRegion:GetFrameLevel() + 5, tcGet, tcSet, nil, 20)
             Pix.Point(tcSwatch, "RIGHT", rightRegion._control, "LEFT", -12, 0)
             rightRegion._lastInline = tcSwatch
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 local off = customColorOff()
                 tcSwatch:SetAlpha(off and 0.15 or 1)
                 tcSwatch:EnableMouse(not off)
@@ -952,13 +953,13 @@ CludesUI.AtOptionsLogin(function()
             tcSwatch:EnableMouse(not customColorOff())
             tcSwatch:SetScript("OnEnter", function(self)
                 if customColorOff() then
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         self,
                         "This option is only available for the Custom Color Theme"
                     )
                 end
             end)
-            tcSwatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            tcSwatch:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         end
 
         -- CUI Options Language (Row 2's right slot): options-panel display language (auto-detects the client; untranslated text falls back to English).
@@ -967,7 +968,7 @@ CludesUI.AtOptionsLogin(function()
             -- _noLoc: the language list itself is never translated, so a player who booted the wrong language can always read and change it.
             local langValues = {
                 _noLoc = true,
-                ["auto"] = { text = CludesUI.L("Automatic (Client)") },
+                ["auto"] = { text = CUI.L("Automatic (Client)") },
                 ["enUS"] = { text = "English" },
                 ["deDE"] = { text = "Deutsch" },
                 ["frFR"] = { text = "Français" },
@@ -1001,10 +1002,10 @@ CludesUI.AtOptionsLogin(function()
             end
             -- "auto"'s own text is translated, not a fixed native-script name, so
             -- its script follows the ACTIVE locale rather than its own key.
-            langValues["auto"].font = LP_FontFor(CludesUI.LOCALE)
+            langValues["auto"].font = LP_FontFor(CUI.LOCALE)
 
             local function LanguageReload()
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = "Reload Required",
                     message = "Changing the language requires a UI reload.",
                     confirmText = "Reload Now",
@@ -1053,8 +1054,8 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Sets the scale of the whole game UI. 0.53 = 0.5333 and 0.71 = 0.7111",
             tooltipOnControl = true,
             getValue = function()
-                if CludesUI._uiScaleDragVal then return CludesUI._uiScaleDragVal end
-                return CludesUIDB and CludesUIDB.ppUIScale or CludesUI.PP.PixelBestSize()
+                if CUI._uiScaleDragVal then return CUI._uiScaleDragVal end
+                return CludesUIDB and CludesUIDB.ppUIScale or CUI.PP.PixelBestSize()
             end,
             setValue = function(val)
                 if not CludesUIDB then CludesUIDB = {} end
@@ -1062,22 +1063,22 @@ CludesUI.AtOptionsLogin(function()
                 if math.abs(val - 0.53) < 0.005 then val = 0.5333333333 end
                 -- Snap 0.71 to exact pixel-perfect 0.7111... (768/1080)
                 if math.abs(val - 0.71) < 0.005 then val = 0.7111111111 end
-                CludesUI._uiScaleDragVal = val
+                CUI._uiScaleDragVal = val
                 CludesUIDB.ppUIScaleAuto = false
-                local mf = CludesUI._mainFrame
+                local mf = CUI._mainFrame
                 local panelScaleBefore
                 if mf then panelScaleBefore = mf:GetEffectiveScale() end
-                CludesUI.PP.SetUIScale(val)
+                CUI.PP.SetUIScale(val)
                 if mf and panelScaleBefore then
                     local newEff = UIParent:GetEffectiveScale()
                     if newEff > 0 then mf:SetScale(panelScaleBefore / newEff) end
                 end
-                if not CludesUI._uiScaleCleanup then
-                    CludesUI._uiScaleCleanup = true
+                if not CUI._uiScaleCleanup then
+                    CUI._uiScaleCleanup = true
                     C_Timer.After(0, function()
-                        if not CludesUI._sliderDragging then
-                            CludesUI._uiScaleDragVal = nil
-                            CludesUI:ShowConfirmPopup({
+                        if not CUI._sliderDragging then
+                            CUI._uiScaleDragVal = nil
+                            CUI:ShowConfirmPopup({
                                 title = "UI Scale Changed",
                                 message = "Blizzard's Edit Mode snapping may not work correctly until you reload your UI.",
                                 confirmText = "Reload Now",
@@ -1085,7 +1086,7 @@ CludesUI.AtOptionsLogin(function()
                                 reload = true,
                             })
                         end
-                        CludesUI._uiScaleCleanup = false
+                        CUI._uiScaleCleanup = false
                     end)
                 end
             end,
@@ -1124,15 +1125,15 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.hideSyncIcons or false end,
             setValue = function(val)
                 Account().hideSyncIcons = val
-                if CludesUI._refreshAllSyncIcons then CludesUI._refreshAllSyncIcons() end
+                if CUI._refreshAllSyncIcons then CUI._refreshAllSyncIcons() end
             end,
         })
         cursorY = cursorY - height
         -- CUI Buttons checkbox-dropdown (left region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = cuiBtnRow._leftRegion
             if region._control then region._control:Hide() end
-            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
@@ -1156,9 +1157,9 @@ CludesUI.AtOptionsLogin(function()
                     elseif keyName == "minimap" then
                         CludesUIDB.showMinimapButton = val
                         if val then
-                            CludesUI.ShowMinimapButton()
+                            CUI.ShowMinimapButton()
                         else
-                            CludesUI.HideMinimapButton()
+                            CUI.HideMinimapButton()
                         end
                     end
                 end
@@ -1166,12 +1167,12 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
             region._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
         end
         -- Cog with "Only Hide Fully Synced" toggle on Disable Sync Icons (right region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = cuiBtnRow._rightRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Sync Icon Options",
                 rows = {
                     {
@@ -1180,7 +1181,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function() return CludesUIDB and CludesUIDB.hideSyncIconsOnlyFull or false end,
                         set = function(val)
                             Account().hideSyncIconsOnlyFull = val
-                            if CludesUI._refreshAllSyncIcons then CludesUI._refreshAllSyncIcons() end
+                            if CUI._refreshAllSyncIcons then CUI._refreshAllSyncIcons() end
                         end,
                     },
                 },
@@ -1199,47 +1200,47 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Show nine source points after clicking Anchor in Layout Mode. Choose a source point, then a target point. Turning this off hides the handles and preserves saved point anchors.",
             getValue = function() return CludesUIDB and CludesUIDB.unlockPointHandles == true end,
             setValue = function(val)
-                CludesUI.SetPointAnchorHandles(val)
-                CludesUI:RefreshPage()
+                CUI.SetPointAnchorHandles(val)
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
             text = "Overlap Cycling",
             tooltip = "Scroll with the chosen modifier to cycle overlapping frames in Layout Mode.",
-            values = CludesUI.UNLOCK_OVERLAP_LABELS,
+            values = CUI.UNLOCK_OVERLAP_LABELS,
             order = { "disabled", "scroll", "shiftscroll", "controlscroll", "altscroll" },
-            getValue = function() return CludesUI.GetUnlockOverlapMethod() end,
+            getValue = function() return CUI.GetUnlockOverlapMethod() end,
             setValue = function(val)
                 CludesUIDB = CludesUIDB or {}
                 CludesUIDB.unlockOverlapMethod = val
-                if CludesUI.RefreshUnlockOverlapMethod then CludesUI.RefreshUnlockOverlapMethod() end
+                if CUI.RefreshUnlockOverlapMethod then CUI.RefreshUnlockOverlapMethod() end
             end,
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineSwatches(pointAnchorRow._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineSwatches(pointAnchorRow._leftRegion, {
                 {
                     tooltip = "Connector Lines Color",
                     hasAlpha = true,
-                    getValue = function() return CludesUI.GetPointAnchorColor("line") end,
+                    getValue = function() return CUI.GetPointAnchorColor("line") end,
                     setValue = function(red, green, blue, a)
-                        CludesUI.SetPointAnchorColor("line", red, green, blue, a)
+                        CUI.SetPointAnchorColor("line", red, green, blue, a)
                     end,
                 },
                 {
                     tooltip = "Border Color",
                     hasAlpha = true,
-                    getValue = function() return CludesUI.GetPointAnchorColor("border") end,
+                    getValue = function() return CUI.GetPointAnchorColor("border") end,
                     setValue = function(red, green, blue, a)
-                        CludesUI.SetPointAnchorColor("border", red, green, blue, a)
+                        CUI.SetPointAnchorColor("border", red, green, blue, a)
                     end,
                 },
                 {
                     tooltip = "Point Color",
                     hasAlpha = true,
-                    getValue = function() return CludesUI.GetPointAnchorColor("point") end,
+                    getValue = function() return CUI.GetPointAnchorColor("point") end,
                     setValue = function(red, green, blue, a)
-                        CludesUI.SetPointAnchorColor("point", red, green, blue, a)
+                        CUI.SetPointAnchorColor("point", red, green, blue, a)
                     end,
                 },
             }, {
@@ -1405,12 +1406,12 @@ CludesUI.AtOptionsLogin(function()
         }
         for idx = #fctFontOrder, 2, -1 do
             local keyName = fctFontOrder[idx]
-            if keyName ~= "---" and not CludesUI.CombatTextFontCoversLocale(keyName) then
+            if keyName ~= "---" and not CUI.CombatTextFontCoversLocale(keyName) then
                 table.remove(fctFontOrder, idx)
             end
         end
         if fctFontOrder[#fctFontOrder] == "---" then fctFontOrder[#fctFontOrder] = nil end
-        CludesUI.AppendSharedMediaFonts(fctFontValues, fctFontOrder)
+        CUI.AppendSharedMediaFonts(fctFontValues, fctFontOrder)
 
         -- Combat Text (checkbox dropdown + size cog) | Combat Text Font. The
         -- dropdown is a view over the floating combat text CVars the client
@@ -1420,9 +1421,9 @@ CludesUI.AtOptionsLogin(function()
         local function DmgOff() return not GetCVarBool("floatingCombatTextCombatDamage_v2") end
         local function HealOff() return not GetCVarBool("floatingCombatTextCombatHealing_v2") end
         local function FxOff() return not GetCVarBool("floatingCombatTextSpellMechanics_v2") end
-        local dmgTip = CludesUI.DisabledTooltip("Damage")
-        local healTip = CludesUI.DisabledTooltip("Healing")
-        local fxTip = CludesUI.DisabledTooltip("Target Effects")
+        local dmgTip = CUI.DisabledTooltip("Damage")
+        local healTip = CUI.DisabledTooltip("Healing")
+        local fxTip = CUI.DisabledTooltip("Target Effects")
         local COMBAT_TEXT = {}
         for _, entry in ipairs({
             { key = "floatingCombatTextCombatDamage_v2", label = "Damage" },
@@ -1476,7 +1477,7 @@ CludesUI.AtOptionsLogin(function()
             order = fctFontOrder,
             getValue = function()
                 local val = CludesUIDB and CludesUIDB.fctFont
-                return val and CludesUI.CombatTextFontCoversLocale(val) and val or "default"
+                return val and CUI.CombatTextFontCoversLocale(val) and val or "default"
             end,
             setValue = function(val)
                 if not CludesUIDB then CludesUIDB = {} end
@@ -1492,7 +1493,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUIDB.fctFontPath = e and e.font
                     CludesUIDB.fctFontPathFor = e and val
                 end
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = "Logout Required",
                     message = "Combat text font changes require a logout to character select to take effect. This is a WoW engine limitation.",
                     confirmText = "Okay",
@@ -1501,9 +1502,9 @@ CludesUI.AtOptionsLogin(function()
             end,
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = combatTextRow._leftRegion
-            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
@@ -1514,8 +1515,8 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
             region._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
-            CludesUI.BuildInlineCog(region, {
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.BuildInlineCog(region, {
                 title = "Combat Text Size",
                 rows = {
                     {
@@ -1536,7 +1537,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Swiftmend Brightness Fix (Druid only): the right slot beside Round
         -- Timer Seconds Down, blank for every other class.
-        local swiftmendCfg = CludesUI.BlankRowCfg()
+        local swiftmendCfg = CUI.BlankRowCfg()
         local _, playerClass = UnitClass("player")
         if playerClass == "DRUID" then
             swiftmendCfg = {
@@ -1564,7 +1565,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.timerSecondsDown == true or false end,
             setValue = function(val)
                 Account().timerSecondsDown = val or nil
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = "Reload Required",
                     message = "Changing how timers round requires a UI reload.",
                     confirmText = "Reload Now",
@@ -1600,7 +1601,7 @@ CludesUI.AtOptionsLogin(function()
                     else
                         ApplyOptimizedGfx()
                     end
-                    if HasGfxBackup() ~= had then CludesUI:RefreshPage(true) end
+                    if HasGfxBackup() ~= had then CUI:RefreshPage(true) end
                 end,
             }, {
                 type = "labeledButton",
@@ -1620,7 +1621,7 @@ CludesUI.AtOptionsLogin(function()
                 onClick = function()
                     local foci = GetMouseFoci and GetMouseFoci()
                     local anchor = (foci and foci[1]) or (GetMouseFocus and GetMouseFocus()) or UIParent
-                    CludesUI._ShowModuleResetMenu(anchor, ConfirmResetAll)
+                    CUI._ShowModuleResetMenu(anchor, ConfirmResetAll)
                 end,
             }, {
                 type = "labeledButton",
@@ -1662,11 +1663,11 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Spell ID on Tooltip",
                 tooltip = "Adds the spell ID to spell tooltips.",
-                getValue = function() return CludesUI.SpellIDOn() end,
+                getValue = function() return CUI.SpellIDOn() end,
                 setValue = function(val)
                     Account().showSpellID = val
                     -- Engine-side combat aura-ID CVar rides this setting.
-                    if CludesUI.SyncAuraSpellIDCVar then CludesUI.SyncAuraSpellIDCVar() end
+                    if CUI.SyncAuraSpellIDCVar then CUI.SyncAuraSpellIDCVar() end
                 end,
             })
             cursorY = cursorY - height
@@ -1681,8 +1682,8 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Re-read live CVars on panel open: widgets call their getter on each build, so a rebuild picks up external changes (addons, /console).
     ---------------------------------------------------------------------------
-    CludesUI:RegisterOnShow(function()
-        if CludesUI:GetActiveModule() == GLOBAL_KEY then CludesUI:RefreshPage() end
+    CUI:RegisterOnShow(function()
+        if CUI:GetActiveModule() == GLOBAL_KEY then CUI:RefreshPage() end
     end)
 
     ---------------------------------------------------------------------------
@@ -1695,34 +1696,34 @@ CludesUI.AtOptionsLogin(function()
     -- shows again. The frame stays its builder's (options page pool): the
     -- next build parents it to the scroll frame again and dresses it again.
     local function HideProfilesRoot()
-        local root = CludesUI._profilesRoot
+        local root = CUI._profilesRoot
         if root then
             root:Hide()
             root:SetParent(nil)
-            CludesUI._profilesRoot = nil
+            CUI._profilesRoot = nil
         end
     end
 
     -- A profiles root build outside a page pass (a cached page shown again):
     -- the refreshers its previous build registered leave the live list first.
     local function RenderProfilesRoot()
-        CludesUI._BeginRootRender("profilesRoot")
+        CUI._BeginRootRender("profilesRoot")
         _G._CUI_BuildProfilesPage(PAGE_PROFILES, nil, -6)
-        CludesUI._EndRootRender("profilesRoot")
+        CUI._EndRootRender("profilesRoot")
     end
 
     -- Profiles and Patch Notes are their own sidebar pages (registered below), so Global Settings owns General + Style + Fonts + Textures + Glows + Colors + Numbers (Style second, beside General), plus Gamepad while a module it configures is loaded.
     local globalPages =
         { PAGE_GENERAL, PAGE_STYLE, PAGE_FONTS, PAGE_TEXTURES, PAGE_GLOWS, PAGE_COLORS, PAGE_NUMBERS }
     if
-        CludesUI.ModuleNS("CludesUIActionBars")
-        or CludesUI.ModuleNS("CludesUIUnitFrames")
-        or CludesUI.ModuleNS("CludesUIResourceBars")
+        CUI.ModuleNS("CludesUIActionBars")
+        or CUI.ModuleNS("CludesUIUnitFrames")
+        or CUI.ModuleNS("CludesUIResourceBars")
     then
         globalPages[#globalPages + 1] = PAGE_GAMEPAD
     end
 
-    CludesUI:RegisterModule(GLOBAL_KEY, {
+    CUI:RegisterModule(GLOBAL_KEY, {
         title = "Global Settings",
         description = "General options for all CludesUI addons.",
         pages = globalPages,
@@ -1730,7 +1731,7 @@ CludesUI.AtOptionsLogin(function()
             -- CleanupProfilesRoot hides/nils the LIVE _profilesRoot, not anything scoped to this pageName. An off-screen search pre-build
             -- cycles pageName through PAGE_GENERAL/PAGE_FONTS/PAGE_TEXTURES/PAGE_COLORS regardless of what the player has open, so it would yank their real Profiles
             -- page away. This module's config.pages never includes PAGE_PROFILES anyway.
-            if CludesUI._prebuilding then
+            if CUI._prebuilding then
                 if page == PAGE_GENERAL then
                     return BuildGeneralPage(page, hostFrame, yOffset)
                 elseif page == PAGE_FONTS then
@@ -1749,7 +1750,7 @@ CludesUI.AtOptionsLogin(function()
                 elseif page == PAGE_COLORS then
                     return _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 elseif page == PAGE_WHATSNEW then
-                    return CludesUI._BuildWhatsNewPage(page, hostFrame, yOffset)
+                    return CUI._BuildWhatsNewPage(page, hostFrame, yOffset)
                 end
                 return
             end
@@ -1775,7 +1776,7 @@ CludesUI.AtOptionsLogin(function()
             elseif page == PAGE_PROFILES then
                 return _G._CUI_BuildProfilesPage(page, hostFrame, yOffset)
             elseif page == PAGE_WHATSNEW then
-                return CludesUI._BuildWhatsNewPage(page, hostFrame, yOffset)
+                return CUI._BuildWhatsNewPage(page, hostFrame, yOffset)
             end
         end,
         -- Number Format: the value type picker and preview header, and one search
@@ -1803,18 +1804,18 @@ CludesUI.AtOptionsLogin(function()
                 -- leave rows writing into stale tables. Rebuild on every return.
                 C_Timer.After(0, function()
                     if
-                        CludesUI:GetActiveModule() == GLOBAL_KEY
-                        and CludesUI:GetActivePage() == PAGE_GLOWS
+                        CUI:GetActiveModule() == GLOBAL_KEY
+                        and CUI:GetActivePage() == PAGE_GLOWS
                     then
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end
                 end)
             end
             if page ~= PAGE_PROFILES then
                 HideProfilesRoot()
-            elseif page == PAGE_PROFILES and not CludesUI._profilesRoot then
+            elseif page == PAGE_PROFILES and not CUI._profilesRoot then
                 C_Timer.After(0, function()
-                    if CludesUI:GetActiveModule() == GLOBAL_KEY and CludesUI:GetActivePage() == page then
+                    if CUI:GetActiveModule() == GLOBAL_KEY and CUI:GetActivePage() == page then
                         RenderProfilesRoot()
                     end
                 end)
@@ -1828,25 +1829,25 @@ CludesUI.AtOptionsLogin(function()
                 SetCVarSafe(record[1], record[2])
             end
             -- Reset style/theme settings (accent color, custom theme, class-colored)
-            CludesUI.ResetTheme()
+            CUI.ResetTheme()
             -- Reset all custom class, power, and resource colors to defaults
             if CludesUIDB then CludesUIDB.customColors = nil end
             -- Reset fonts to defaults
             if CludesUIDB then CludesUIDB.fonts = nil end
-            CludesUI.InvalidateFontCache()
-            CludesUI.ApplyColorsToOUF()
+            CUI.InvalidateFontCache()
+            CUI.ApplyColorsToOUF()
             -- Reset the active profile's Number Format to defaults
-            CludesUI.ResetNumberFormat()
+            CUI.ResetNumberFormat()
             -- Reset panel scale to 100%
-            CludesUI:SetPanelScale(1.0)
+            CUI:SetPanelScale(1.0)
             -- Reset right-click targeting to default (disabled = off)
             if CludesUIDB then
                 CludesUIDB.disableRightClickTarget = false
                 CludesUIDB.disableRightClickTargetAllyCombat = false
                 -- FPS + Secondary Stats are per-profile now; turn them off for the active profile (QoLExtrasSet) so the visible widgets actually clear.
-                if CludesUI.QoLExtrasSet then
-                    CludesUI.QoLExtrasSet("showFPS", false)
-                    CludesUI.QoLExtrasSet("showSecondaryStats", false)
+                if CUI.QoLExtrasSet then
+                    CUI.QoLExtrasSet("showFPS", false)
+                    CUI.QoLExtrasSet("showSecondaryStats", false)
                 end
                 CludesUIDB.guildChatPrivacy = false
                 CludesUIDB.repairWarning = nil
@@ -1855,13 +1856,13 @@ CludesUI.AtOptionsLogin(function()
                 CludesUIDB.ppUIScaleAuto = nil
                 -- Developer settings defaults (Spell ID on Tooltip: unset = on)
                 CludesUIDB.showSpellID = nil
-                if CludesUI.SyncAuraSpellIDCVar then CludesUI.SyncAuraSpellIDCVar() end
+                if CUI.SyncAuraSpellIDCVar then CUI.SyncAuraSpellIDCVar() end
                 CludesUIDB.suppressErrors = true
                 CludesUIDB.timerSecondsDown = nil
                 -- Crosshair: the root is the inherited global default, reset here (per-profile overrides clear with the profile's own reset).
                 -- Root off = profiles without an override inherit "None".
                 CludesUIDB.crosshairSize = "None"
-                if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
+                if CUI._applyCrosshair then CUI._applyCrosshair() end
                 -- Reset unlock mode layout data
                 CludesUIDB.unlockAnchors = nil
                 CludesUIDB.unlockWidthMatch = nil
@@ -1872,20 +1873,20 @@ CludesUI.AtOptionsLogin(function()
                 CludesUIDB.unlockPointColors = nil
                 -- QoL Features are NOT reset here; they have their own module reset
             end
-            if CludesUI._applyRightClickTarget then CludesUI._applyRightClickTarget() end
-            CludesUI._applyHideBlizzardPartyFrame()
+            if CUI._applyRightClickTarget then CUI._applyRightClickTarget() end
+            CUI._applyHideBlizzardPartyFrame()
             -- One call for both: the FPS readout may be drawn by the Secondary
             -- Stats block, so the two owners have to re-evaluate together.
-            if CludesUI._applyFPSDisplay then
-                CludesUI._applyFPSDisplay()
-            elseif CludesUI._applySecondaryStats then
-                CludesUI._applySecondaryStats()
+            if CUI._applyFPSDisplay then
+                CUI._applyFPSDisplay()
+            elseif CUI._applySecondaryStats then
+                CUI._applySecondaryStats()
             end
-            if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
-            if CludesUI._applyGuildChatPrivacy then CludesUI._applyGuildChatPrivacy() end
+            if CUI._applyCrosshair then CUI._applyCrosshair() end
+            if CUI._applyGuildChatPrivacy then CUI._applyGuildChatPrivacy() end
             -- Apply suppress errors default (on)
             SetCVarSafe("scriptErrors", "0")
-            CludesUI:SelectPage(PAGE_GENERAL)
+            CUI:SelectPage(PAGE_GENERAL)
         end,
     })
 
@@ -1902,19 +1903,19 @@ CludesUI.AtOptionsLogin(function()
     local function BuildOverridesModeToggle(hostFrame, cursorY)
         -- Wider than the Raid Frames pair (162): "Conditional Overrides" is a longer label than "Custom Buff Display" and must not clip.
         local BTN_W, BTN_H = 180, 31
-        local seg = CludesUI.BuildSegmentedControl({
+        local seg = CUI.BuildSegmentedControl({
             parent = hostFrame,
             keys = { "spec", "cond" },
             labels = { spec = "Spec Overrides", cond = "Conditional Overrides" },
             width = BTN_W * 2,
             square = true,
             height = BTN_H,
-            getChecked = function(key) return (CludesUI._overridesTabMode or "spec") == key end,
+            getChecked = function(key) return (CUI._overridesTabMode or "spec") == key end,
             onToggle = function(key)
-                if (CludesUI._overridesTabMode or "spec") == key then return end
-                CludesUI._overridesTabMode = key
+                if (CUI._overridesTabMode or "spec") == key then return end
+                CUI._overridesTabMode = key
                 -- Forced: the two builders render entirely different rows.
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         })
         seg:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 14)
@@ -1928,7 +1929,7 @@ CludesUI.AtOptionsLogin(function()
     local PAGE_FULLEXPORT = "Full Export"
 
     local function BuildFullExportPage(hostFrame, yOffset)
-        local PAD = CludesUI.CONTENT_PAD or 40
+        local PAD = CUI.CONTENT_PAD or 40
         local cursorY = yOffset - 10
         local width = hostFrame:GetWidth() - PAD * 2
 
@@ -1937,16 +1938,16 @@ CludesUI.AtOptionsLogin(function()
         warn:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", PAD, cursorY)
         warn:SetWidth(width)
         warn:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
-        local wbg = CludesUI.SolidTex(warn, "BACKGROUND", 0.10, 0.04, 0.04, 0.55)
+        local wbg = CUI.SolidTex(warn, "BACKGROUND", 0.10, 0.04, 0.04, 0.55)
         wbg:SetAllPoints()
-        CludesUI.MakeRoundedBorder(warn, 0.8, 0.2, 0.2, 0.55, wbg)
-        local wtext = CludesUI.MakeFont(warn, 13, nil, 1, 0.55, 0.55, 1)
+        CUI.MakeRoundedBorder(warn, 0.8, 0.2, 0.2, 0.55, wbg)
+        local wtext = CUI.MakeFont(warn, 13, nil, 1, 0.55, 0.55, 1)
         wtext:SetPoint("TOPLEFT", warn, "TOPLEFT", 16, -14)
         wtext:SetWidth(width - 32)
         wtext:SetJustifyH("LEFT")
         wtext:SetSpacing(3)
         wtext:SetText(
-            CludesUI.L(
+            CUI.L(
                 "This export includes cross profile settings that will overwrite the importing user's settings including Utilities, Frame Bindings and more that should typically not be shared with standard profiles. THIS IS NOT RECOMMENDED for public sharing of profiles."
             )
         )
@@ -1959,15 +1960,15 @@ CludesUI.AtOptionsLogin(function()
         button:SetSize(BTN_W, BTN_H)
         button:SetPoint("TOP", hostFrame, "TOP", 0, cursorY)
         button:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
-        local DARK_BG = CludesUI.DARK_BG
-        local bbg = CludesUI.SolidTex(button, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
+        local DARK_BG = CUI.DARK_BG
+        local bbg = CUI.SolidTex(button, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
         bbg:SetAllPoints()
-        local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-        local bbrd = CludesUI.MakeRoundedBorder(button, ACC.r, ACC.g, ACC.b, 0.5, bbg)
-        local blbl = CludesUI.MakeFont(button, 13, nil, ACC.r, ACC.g, ACC.b, 1)
+        local ACC = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+        local bbrd = CUI.MakeRoundedBorder(button, ACC.r, ACC.g, ACC.b, 0.5, bbg)
+        local blbl = CUI.MakeFont(button, 13, nil, ACC.r, ACC.g, ACC.b, 1)
         blbl:SetAlpha(0.8)
         blbl:SetPoint("CENTER")
-        blbl:SetText(CludesUI.L("Export All Data with Profile"))
+        blbl:SetText(CUI.L("Export All Data with Profile"))
         button:SetScript("OnEnter", function()
             blbl:SetAlpha(1)
             if bbrd and bbrd.SetColor then bbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9) end
@@ -1977,13 +1978,13 @@ CludesUI.AtOptionsLogin(function()
             if bbrd and bbrd.SetColor then bbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.5) end
         end)
         button:SetScript("OnClick", function()
-            local str = CludesUI.ExportFullAccountData()
+            local str = CUI.ExportFullAccountData()
             if str then
-                CludesUI:ShowExportPopup(str)
+                CUI:ShowExportPopup(str)
             else
-                CludesUI:ShowInfoPopup({
-                    title = CludesUI.L("Export Failed"),
-                    content = CludesUI.L("Could not build the export string."),
+                CUI:ShowInfoPopup({
+                    title = CUI.L("Export Failed"),
+                    content = CUI.L("Could not build the export string."),
                 })
             end
         end)
@@ -1996,16 +1997,16 @@ CludesUI.AtOptionsLogin(function()
     -- accumulate from the startY handed in), so the toggle's space is already included.
     local function BuildOverridesPage(hostFrame, yOffset)
         local cursorY = yOffset - BuildOverridesModeToggle(hostFrame, yOffset)
-        if (CludesUI._overridesTabMode or "spec") == "cond" then
-            if CludesUI.Conditions_BuildListPage then
-                return CludesUI.Conditions_BuildListPage(hostFrame, cursorY)
+        if (CUI._overridesTabMode or "spec") == "cond" then
+            if CUI.Conditions_BuildListPage then
+                return CUI.Conditions_BuildListPage(hostFrame, cursorY)
             end
-        elseif CludesUI.SpecOverrides_BuildListPage then
-            return CludesUI.SpecOverrides_BuildListPage(hostFrame, cursorY)
+        elseif CUI.SpecOverrides_BuildListPage then
+            return CUI.SpecOverrides_BuildListPage(hostFrame, cursorY)
         end
         return 200
     end
-    CludesUI:RegisterModule(PROFILES_KEY, {
+    CUI:RegisterModule(PROFILES_KEY, {
         title = "Profiles",
         description = "Import, export, and switch CludesUI profiles and presets.",
         pages = { PAGE_PROFILES, PAGE_OVERRIDES, PAGE_FULLEXPORT },
@@ -2013,11 +2014,11 @@ CludesUI.AtOptionsLogin(function()
             -- _G._CUI_BuildProfilesPage bypasses `parent` and builds onto the live shared _scrollFrame, and first checks the active profile against the
             -- current spec -- it can call SwitchProfile/RefreshAllAddons and pop a "Reload Required" confirmation. None of that is safe from a
             -- hidden indexing pass, so skip PAGE_PROFILES; it indexes on the player's first visit.
-            if CludesUI._prebuilding then
+            if CUI._prebuilding then
                 if page == PAGE_OVERRIDES then
                     -- Index the spec list only: the conditional builder is not part of the hidden pre-build pass, and the toggle is chrome.
-                    if CludesUI.SpecOverrides_BuildListPage then
-                        return CludesUI.SpecOverrides_BuildListPage(hostFrame, yOffset)
+                    if CUI.SpecOverrides_BuildListPage then
+                        return CUI.SpecOverrides_BuildListPage(hostFrame, yOffset)
                     end
                     return 200
                 end
@@ -2042,24 +2043,24 @@ CludesUI.AtOptionsLogin(function()
                 HideProfilesRoot()
                 -- The override list changes while the page is cached; rebuild.
                 C_Timer.After(0, function()
-                    if CludesUI:GetActiveModule() == PROFILES_KEY and CludesUI:GetActivePage() == page then
-                        CludesUI:RefreshPage(true)
+                    if CUI:GetActiveModule() == PROFILES_KEY and CUI:GetActivePage() == page then
+                        CUI:RefreshPage(true)
                     end
                 end)
-            elseif not CludesUI._profilesRoot then
+            elseif not CUI._profilesRoot then
                 C_Timer.After(0, function()
-                    if CludesUI:GetActiveModule() == PROFILES_KEY and CludesUI:GetActivePage() == page then
+                    if CUI:GetActiveModule() == PROFILES_KEY and CUI:GetActivePage() == page then
                         RenderProfilesRoot()
                     end
                 end)
             else
                 -- Shared root is alive but the Presets tab may have left its subpage showing; the Profiles tab lands on main. An active API
                 -- import session wins -- re-enter instead of hiding its page.
-                local cfg = CludesUI._apiImportSession
+                local cfg = CUI._apiImportSession
                 if cfg and cfg.state ~= "done" then
-                    if CludesUI._ProfilesConsumeApiImport then CludesUI._ProfilesConsumeApiImport() end
-                elseif CludesUI._ProfilesResetToMain then
-                    CludesUI._ProfilesResetToMain()
+                    if CUI._ProfilesConsumeApiImport then CUI._ProfilesConsumeApiImport() end
+                elseif CUI._ProfilesResetToMain then
+                    CUI._ProfilesResetToMain()
                 end
             end
         end,
@@ -2068,12 +2069,12 @@ CludesUI.AtOptionsLogin(function()
     -- Patch Notes: its own sidebar module. Suite-only, never registered in
     -- standalone builds.
     if not IS_STANDALONE then
-        CludesUI:RegisterModule(PATCHNOTES_KEY, {
+        CUI:RegisterModule(PATCHNOTES_KEY, {
             title = "Patch Notes",
-            description = CludesUI.L("What's new in CludesUI."),
+            description = CUI.L("What's new in CludesUI."),
             pages = { PAGE_WHATSNEW },
             buildPage = function(page, hostFrame, yOffset)
-                return CludesUI._BuildWhatsNewPage(page, hostFrame, yOffset)
+                return CUI._BuildWhatsNewPage(page, hostFrame, yOffset)
             end,
         })
 
@@ -2084,10 +2085,10 @@ CludesUI.AtOptionsLogin(function()
         -- never slides out from under the cursor. Built on the first open.
         local scaleCtl, ScaleCtlRefresh
         local function BuildScaleControl()
-            local ca = CludesUI._clickArea
+            local ca = CUI._clickArea
             if scaleCtl or not ca then return end
-            local MIN = CludesUI.PANEL_SCALE_MIN * 100
-            local MAX = CludesUI.PANEL_SCALE_MAX * 100
+            local MIN = CUI.PANEL_SCALE_MIN * 100
+            local MAX = CUI.PANEL_SCALE_MAX * 100
             local STEP, TRACK_W, PCT_W = 5, 110, 40
             local ctl = CreateFrame("Frame", nil, ca)
             scaleCtl = ctl
@@ -2095,7 +2096,7 @@ CludesUI.AtOptionsLogin(function()
             ctl:SetHeight(24)
             ctl:SetPoint("RIGHT", ca, "TOPRIGHT", -110, -31)
 
-            local pctFs = CludesUI.MakeFont(ctl, 13, nil, 1, 1, 1, 0.9)
+            local pctFs = CUI.MakeFont(ctl, 13, nil, 1, 1, 1, 0.9)
             pctFs:SetWidth(PCT_W)
             pctFs:SetJustifyH("RIGHT")
             pctFs:SetPoint("RIGHT", ctl, "RIGHT", 0, 0)
@@ -2107,15 +2108,15 @@ CludesUI.AtOptionsLogin(function()
             local function Apply(val)
                 ShowPct(val)
                 if math.abs(val - SavedPct()) < 0.01 then return end
-                CludesUI:SetPanelScale(val / 100, track)
+                CUI:SetPanelScale(val / 100, track)
             end
             -- Panel chrome, not page content: the refresh the slider registers
             -- leaves the shown page's refresh list again (ScaleCtlRefresh and the
             -- accent callback below repaint it), so the page's first build
             -- registers what its later builds do.
-            local pageRefresh = CludesUI._widgetRefreshList
+            local pageRefresh = CUI._widgetRefreshList
             local pageRefreshN = #pageRefresh
-            track, valBox, refresh = CludesUI.BuildSliderCore(
+            track, valBox, refresh = CUI.BuildSliderCore(
                 ctl,
                 TRACK_W,
                 4,
@@ -2129,7 +2130,7 @@ CludesUI.AtOptionsLogin(function()
                 STEP,
                 function() return pending or SavedPct() end,
                 function(val)
-                    if CludesUI._sliderDragging then
+                    if CUI._sliderDragging then
                         pending = val
                         ShowPct(val)
                         return
@@ -2145,16 +2146,16 @@ CludesUI.AtOptionsLogin(function()
             valBox:Hide() -- the plain readout replaces the input box
             track:SetPoint("RIGHT", pctFs, "LEFT", -10, 0)
 
-            local labelText = CludesUI.MakeFont(ctl, 13, nil, 1, 1, 1, 0.6)
-            labelText:SetText(CludesUI.L("Window Scale"))
+            local labelText = CUI.MakeFont(ctl, 13, nil, 1, 1, 1, 0.6)
+            labelText:SetText(CUI.L("Window Scale"))
             labelText:SetPoint("RIGHT", track, "LEFT", -16, 0)
             -- The whole control takes the wheel; clicks off the track still reach the
             -- click area below (the window drag).
             ctl:SetWidth(PCT_W + 10 + TRACK_W + 16 + labelText:GetStringWidth())
             ctl:EnableMouseWheel(true)
             ctl:SetScript("OnMouseWheel", function(_, delta)
-                if CludesUI._sliderDragging then return end
-                if CludesUI:StepPanelScale(delta, track) then
+                if CUI._sliderDragging then return end
+                if CUI:StepPanelScale(delta, track) then
                     ShowPct(SavedPct())
                     refresh()
                 end
@@ -2173,19 +2174,19 @@ CludesUI.AtOptionsLogin(function()
             local glowHost = CreateFrame("Frame", nil, ctl)
             glowHost:SetPoint("TOPLEFT", ctl, "TOPLEFT", -10, 6)
             glowHost:SetPoint("BOTTOMRIGHT", ctl, "BOTTOMRIGHT", 8, -6)
-            local PlayGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
-            CludesUI._FlashWindowScale = function()
+            local PlayGlow = CUI.MakeSettingGlow({ color = CUI.CLUDES_GREEN })
+            CUI._FlashWindowScale = function()
                 ScaleCtlRefresh()
                 PlayGlow(glowHost)
             end
-            CludesUI.RegAccent({
+            CUI.RegAccent({
                 type = "callback",
                 fn = function() refresh() end,
             })
             -- Any scale change (this slider, Reset) lands here once its glide ends.
-            if not CludesUI._onScaleChanged then CludesUI._onScaleChanged = {} end
-            CludesUI._onScaleChanged[#CludesUI._onScaleChanged + 1] = function()
-                if not CludesUI._sliderDragging then ScaleCtlRefresh() end
+            if not CUI._onScaleChanged then CUI._onScaleChanged = {} end
+            CUI._onScaleChanged[#CUI._onScaleChanged + 1] = function()
+                if not CUI._sliderDragging then ScaleCtlRefresh() end
             end
         end
         local function ScaleCtlOnShow()
@@ -2195,20 +2196,20 @@ CludesUI.AtOptionsLogin(function()
                 BuildScaleControl()
             end
         end
-        CludesUI:RegisterOnShow(ScaleCtlOnShow)
-        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then ScaleCtlOnShow() end
+        CUI:RegisterOnShow(ScaleCtlOnShow)
+        if CUI._mainFrame and CUI._mainFrame:IsShown() then ScaleCtlOnShow() end
     end
 
     -- Clean up profiles root when panel closes
-    CludesUI:RegisterOnHide(function() HideProfilesRoot() end)
+    CUI:RegisterOnHide(function() HideProfilesRoot() end)
 
     -- Clean up profiles root when switching to any module other than Profiles
-    if CludesUI.SelectModule then
-        hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
+    if CUI.SelectModule then
+        hooksecurefunc(CUI, "SelectModule", function(_, folderName)
             if folderName ~= PROFILES_KEY then HideProfilesRoot() end
         end)
     end
 
     -- HideAllChildren (every page switch) hides the profiles root too.
-    CludesUI._AddScrollRootHider(HideProfilesRoot)
+    CUI._AddScrollRootHider(HideProfilesRoot)
 end)

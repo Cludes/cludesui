@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Visibility.lua
 --
@@ -62,15 +63,15 @@ function EAB_VTABLE.ExtraBars.ShouldShowManagedNonSecureBar(cfg)
     local vis = ABAR.VisibilityCompat.Normalize(cfg)
     if C_PetBattles and C_PetBattles.IsInBattle and C_PetBattles.IsInBattle() then return false end
     if cfg.enabled == false or ABAR.VisibilityCompat.IsNever(cfg) then return false end
-    if CludesUI.CheckVisibilityOptions(cfg) then return false end
+    if CUI.CheckVisibilityOptions(cfg) then return false end
     local status = EAB_VTABLE.ExtraBars.GetManagedNonSecureVisibilityState()
     -- Multi-select path (nil = legacy single mode below; the dragonriding
     -- scalar also routes here, same predicate CheckVisibilityMode uses)
-    if CludesUI and CludesUI.EvalVisibilityExtended then
-        local ext = CludesUI.EvalVisibilityExtended(cfg, "barVisibility", status, CludesUI.VIS_CAPS_DEFAULT)
+    if CUI and CUI.EvalVisibilityExtended then
+        local ext = CUI.EvalVisibilityExtended(cfg, "barVisibility", status, CUI.VIS_CAPS_DEFAULT)
         if ext ~= nil then return ext end
     end
-    if CludesUI and CludesUI.CheckVisibilityMode then return CludesUI.CheckVisibilityMode(vis, status) end
+    if CUI and CUI.CheckVisibilityMode then return CUI.CheckVisibilityMode(vis, status) end
     return vis ~= "never"
 end
 
@@ -314,9 +315,9 @@ function ABAR._PadSync()
     if any ~= (ABAR._padArmed == true) then
         ABAR._padArmed = any
         if any then
-            CludesUI.WatchPad(ABAR, ABAR._PadFlush)
+            CUI.WatchPad(ABAR, ABAR._PadFlush)
         else
-            CludesUI.UnwatchPad(ABAR)
+            CUI.UnwatchPad(ABAR)
         end
         ABAR._padStale = any or nil
     end
@@ -324,7 +325,7 @@ function ABAR._PadSync()
         ABAR._padOn = false
     elseif ABAR._padStale and not InCombatLockdown() then
         ABAR._padStale = nil
-        ABAR._padOn = CludesUI.PadModeOn()
+        ABAR._padOn = CUI.PadModeOn()
     end
     -- A Quick Keybind close taken in combat keeps the bars up until its regen
     -- FinishClose re-runs this.
@@ -409,7 +410,7 @@ function ABAR:RefreshRuntimeVisibility()
                         -- Any is driver-owned, same reason as in ApplyCombatVisibility.
                         elseif
                             barCfg.visibilityMatch ~= "any"
-                            and CludesUI.CheckVisibilityOptionsNonMacro(barCfg)
+                            and CUI.CheckVisibilityOptionsNonMacro(barCfg)
                         then
                             newStr = "hide"
                         else
@@ -423,7 +424,7 @@ function ABAR:RefreshRuntimeVisibility()
                     if not InCombatLockdown() then
                         -- An applied Visibility override replaces the saved combat mode.
                         if
-                            CludesUI.VisOverrideValue(barCfg)
+                            CUI.VisOverrideValue(barCfg)
                             or (
                                 vis ~= "in_combat"
                                 and vis ~= "out_of_combat"
@@ -518,7 +519,7 @@ do
         for _, frame in ipairs(MYSLOT_VIS_FIELDS) do
             func(frame)
         end
-        local optKeys = CludesUI and CludesUI.VIS_OPT_KEYS
+        local optKeys = CUI and CUI.VIS_OPT_KEYS
         if optKeys then
             for _, frame in ipairs(optKeys) do
                 func(frame)
@@ -575,7 +576,7 @@ do
                     -- VIS_OPT_KEYS list): visOnlyVehicle and friends otherwise
                     -- keep feeding CheckVisibilityOptionsNonMacro a hide verdict
                     -- that overrides the forced "always" at the driver site.
-                    local optKeys = CludesUI and CludesUI.VIS_OPT_KEYS
+                    local optKeys = CUI and CUI.VIS_OPT_KEYS
                     if optKeys then
                         for _, frame in ipairs(optKeys) do
                             barCfg[frame] = nil
@@ -612,7 +613,7 @@ do
                 self:ApplyAlwaysShowButtons(details.key)
             end
         end
-        CludesUI:RefreshPage()
+        CUI:RefreshPage()
     end
 end -- do: MYSLOT_VIS_FIELDS scope
 
@@ -676,7 +677,7 @@ function ABAR:ToggleVisKey(key)
     for _, details in ipairs(ALL_BARS) do
         local barCfg = self.db.profile.bars[details.key]
         if barCfg and barCfg.toggleVisKey == key then
-            local saved = CludesUI.VisOverrideValue(barCfg) or barCfg.barVisibility or "always"
+            local saved = CUI.VisOverrideValue(barCfg) or barCfg.barVisibility or "always"
             if saved == "always" or saved == "never" then
                 participants[#participants + 1] = details.key
                 -- A controller-hidden bar counts as hidden (as Never does), so
@@ -719,7 +720,7 @@ function ABAR:RebuildVisToggleBindings()
         local barCfg = self.db.profile.bars[details.key]
         local k = barCfg and barCfg.toggleVisKey
         if k and k ~= "" then
-            local saved = CludesUI.VisOverrideValue(barCfg) or barCfg.barVisibility or "always"
+            local saved = CUI.VisOverrideValue(barCfg) or barCfg.barVisibility or "always"
             if saved == "always" or saved == "never" then
                 if not seen[k] then
                     seen[k] = true
@@ -851,7 +852,7 @@ function ABAR:UpdateHousingVisibility()
             -- lanes included, and BuildVisibilityString already compiles it into a
             -- constant. Checked before the two raw lane reads below, which would otherwise
             -- keep hiding the bar on a lane the override took over.
-            if CludesUI.VisOverrideValue(cfg) then return false end
+            if CUI.VisOverrideValue(cfg) then return false end
             -- Under Any the driver string already carries both halves (Show lanes as
             -- disjuncts, Hide lanes as leading gates, the Lua-only ones resolved at build
             -- time with their own combat escape hatch), and the rebuild below refreshes
@@ -878,7 +879,7 @@ function ABAR:UpdateHousingVisibility()
                 -- bare "hide" is a dead constant once written (the shift-out edge lands
                 -- in combat, where this handler bails), so the marker lets the write
                 -- site bake a combat escape hatch into the string instead.
-                if not (IsMounted and IsMounted()) and CludesUI.IsPlayerMountedLike() then
+                if not (IsMounted and IsMounted()) and CUI.IsPlayerMountedLike() then
                     return "combathide"
                 end
             end
@@ -889,8 +890,8 @@ function ABAR:UpdateHousingVisibility()
             -- authoritative, leaving the narrower shapeshift check above as the only
             -- mount handling on this path. The skyriding-mount lanes can flip into
             -- combat like the form case, so the evaluator flags them "mountaxis".
-            if CludesUI and CludesUI.CheckVisibilityOptionsNonMacro then
-                local nonMacro = CludesUI.CheckVisibilityOptionsNonMacro(cfg, true)
+            if CUI and CUI.CheckVisibilityOptionsNonMacro then
+                local nonMacro = CUI.CheckVisibilityOptionsNonMacro(cfg, true)
                 if nonMacro == "mountaxis" then return "combathide" end
                 if nonMacro then return true end
             end
@@ -919,7 +920,7 @@ function ABAR:UpdateHousingVisibility()
                             and not details.isBlizzardMovable
                             and barFrames[key]
                         local shouldHide = isSecure and ShouldHideNonMacro(barCfg)
-                            or (not isSecure and CludesUI.CheckVisibilityOptions(barCfg))
+                            or (not isSecure and CUI.CheckVisibilityOptions(barCfg))
                         -- Runtime "Toggle Action Bar" override wins over the saved mode and
                         -- non-macro hide checks, as in RefreshRuntimeVisibility: otherwise
                         -- any event routed here (target/group/mount/housing) re-applies the

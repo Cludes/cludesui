@@ -1,14 +1,15 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_PvP_Options.lua
 --  Forever Tools > PvP: enemy detection, Kill on Sight, sharing and extras.
 -------------------------------------------------------------------------------
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end
+if not CUI._ModuleNS["CludesUIForeverEssentials"] then return end
 
 function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
-    local P = CludesUI._PvP
+    local P = CUI._PvP
     if not P then return 0 end
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height
     local rowConf = P.Cfg()
@@ -27,7 +28,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         }
     end
 
-    CludesUI:ClearContentHeader()
+    CUI:ClearContentHeader()
 
     _, height = W:SectionHeader(hostFrame, "ENEMY DETECTION", cursorY)
     cursorY = cursorY - height

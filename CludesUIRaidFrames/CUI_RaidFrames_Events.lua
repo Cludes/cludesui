@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Events.lua
 --
@@ -227,7 +228,7 @@ local function OnEvent(self, evt, arg1, ...)
             -- The re-stack reset the child levels the Color Custom Borders copies took at
             -- their last restyle, which ran in combat before the strata applied; the
             -- fingerprint-gated reload above will not restyle them again.
-            local AK = CludesUI.AuraKit
+            local AK = CUI.AuraKit
             if AK and AK.RestyleSoon then
                 AK.RestyleSoon("rf:dispel:raid")
                 AK.RestyleSoon("rf:dispel:party")

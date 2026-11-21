@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_QuickKeybind.lua
 --
@@ -205,7 +206,7 @@ end
 -- style is on: their D-pad and face buttons drive a cursor or the focus and
 -- would bind here instead.
 _quickKeybindState.ArmMacroPad = function(widget)
-    local wanted = CludesUI.PadNative() and not CludesUI.PadCP() and not CludesUI.PadGamepadUI()
+    local wanted = CUI.PadNative() and not CUI.PadCP() and not CUI.PadGamepadUI()
     if not wanted and not widget._padOn then return end
     -- Binding is out of combat only (BindMacroInput), so is the switch.
     if InCombatLockdown() then return end
@@ -450,8 +451,8 @@ _quickKeybindState.InitButtons = function()
     if _quickKeybindState.buttonsInit then return end
     if not QuickKeybindButtonTemplateMixin then return end
     _quickKeybindState.buttonsInit = true
-    local Pix = CludesUI and CludesUI.PP
-    local ACC = CludesUI and CludesUI.CLUDES_GREEN
+    local Pix = CUI and CUI.PP
+    local ACC = CUI and CUI.CLUDES_GREEN
     for _, details in ipairs(BAR_CONFIG) do
         if not details.isStance and not details.isPetBar then
             local buttons = barButtons[details.key]
@@ -700,8 +701,8 @@ end)--  rearrangement is covered.
     local function ScanABSwiftmend()
         local _, classTok = UnitClass("player")
         if classTok ~= "DRUID" then return end
-        local hook = CludesUI and CludesUI._HookSwiftmendIcon
-        local iconID = CludesUI and CludesUI._SWIFTMEND_ICON
+        local hook = CUI and CUI._HookSwiftmendIcon
+        local iconID = CUI and CUI._SWIFTMEND_ICON
         if not hook or not iconID then return end
         for slot = 1, 180 do
             local button = _G["EABButton" .. slot]

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Events.lua
 --
@@ -93,7 +94,7 @@ eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
 -- axis only re-evaluated when some unrelated event above happened to fire.
 eventFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
 -- Party Mode axis: no game event; the core fires its own edge.
-if CludesUI.RegisterVisEdge then CludesUI.RegisterVisEdge(function() _CDMApplyVisibility() end) end
+if CUI.RegisterVisEdge then CUI.RegisterVisEdge(function() _CDMApplyVisibility() end) end
 -- Vehicle edges for the In Vehicle axis (player-filtered; same reasoning).
 eventFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
 eventFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
@@ -101,7 +102,7 @@ eventFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
 -- the airborne edge (takeoff/landing while staying mounted; probed at load
 -- in CludesUI_Visibility.lua -- absent = the checklist items lock).
 eventFrame:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED")
-if CludesUI._hasGlidingEvent then eventFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
+if CUI._hasGlidingEvent then eventFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
 -- Druid travel/flight/aquatic form needs an explicit re-check for the
 -- visHideMounted option. PLAYER_MOUNT_DISPLAY_CHANGED only fires for real
 -- mounts, and the viewer hooks rebuild icon content on shapeshift but
@@ -184,7 +185,7 @@ local function ScheduleRosterRebuild()
     -- Roster changes (promote, join, leave) don't change spells or bar
     -- routing. Only party frame anchoring needs a refresh. A full
     -- BuildAllCDMBars was causing massive single-frame CPU spikes.
-    CludesUI.InvalidateFrameCache()
+    CUI.InvalidateFrameCache()
     if InCombatLockdown() then
         _rosterRebuildPending = true
         return
@@ -481,7 +482,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken, updateInfo, arg3)
         mod.DisarmOverrideRanges() -- the new spec's overrides re-arm on their own events
         -- Non-rebuild work only. The actual spec change rebuild is driven by SPELLS_CHANGED above
         -- (which fires for both manual and auto swaps). This handler just invalidates caches that need immediate clearing.
-        CludesUI.InvalidateFrameCache()
+        CUI.InvalidateFrameCache()
     end
     RequestUpdate()
 end)
@@ -494,7 +495,7 @@ SLASH_ECME2 = "/cdmeffects"
 SLASH_ECME3 = "/ccdm"
 SlashCmdList.ECME = function(message)
     if InCombatLockdown and InCombatLockdown() then return end
-    CludesUI:ShowModule("CludesUICooldownManager")
+    CUI:ShowModule("CludesUICooldownManager")
 end
 
 -- /cd toggles Blizzard's Cooldown Manager settings: out of combat, a frame
@@ -504,7 +505,7 @@ end
 SlashCmdList.CUIBLIZZCDM = function()
     C_Timer.After(0, function()
         if InCombatLockdown() then
-            CludesUI.PrintError(CludesUI.L("Cannot open the Cooldown Manager during combat."))
+            CUI.PrintError(CUI.L("Cannot open the Cooldown Manager during combat."))
             return
         end
         OpenBlizzardCDMTab()

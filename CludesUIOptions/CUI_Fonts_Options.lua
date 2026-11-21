@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Fonts_Options.lua
 --
@@ -24,7 +25,7 @@ local GLOBAL_KEY = "_CUIGlobal"
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- Session-only card expand state (never saved).
 local _ftExpanded = {}
@@ -37,8 +38,8 @@ local _ftExpanded = {}
 -- the resolution cache must drop even when the user picks Later, because the
 -- new value is already live in the DB.
 local function AskFontReload()
-    CludesUI.InvalidateFontCache()
-    CludesUI:ShowConfirmPopup({
+    CUI.InvalidateFontCache()
+    CUI:ShowConfirmPopup({
         title = "Reload Required",
         message = "Font changed. A UI reload is needed to apply the new font.",
         confirmText = "Reload Now",
@@ -52,7 +53,7 @@ end
 -- font either way), so the card rows lazily create entries and prune them
 -- back out when both values return to global.
 local function FindModuleFontEntry(folder)
-    local fontsDB = CludesUI.GetFontsDB()
+    local fontsDB = CUI.GetFontsDB()
     local entries = fontsDB.moduleFonts
     if not entries then return nil end
     for i = 1, #entries do
@@ -62,7 +63,7 @@ local function FindModuleFontEntry(folder)
 end
 
 local function EnsureModuleFontEntry(folder, display)
-    local fontsDB = CludesUI.GetFontsDB()
+    local fontsDB = CUI.GetFontsDB()
     if not fontsDB.moduleFonts then fontsDB.moduleFonts = {} end
     local record = FindModuleFontEntry(folder)
     if not record then
@@ -73,7 +74,7 @@ local function EnsureModuleFontEntry(folder, display)
 end
 
 local function PruneModuleFontEntry(folder)
-    local fontsDB = CludesUI.GetFontsDB()
+    local fontsDB = CUI.GetFontsDB()
     local record, position = FindModuleFontEntry(folder)
     if
         record
@@ -126,7 +127,7 @@ local function ModuleOutlineCfg(folder, display)
     }
 end
 
-local BLANK, LinkRow, NoteRow = CludesUI.BlankRowCfg, CludesUI.BuildLinkRow, CludesUI.BuildNoteRow
+local BLANK, LinkRow, NoteRow = CUI.BlankRowCfg, CUI.BuildLinkRow, CUI.BuildNoteRow
 
 -------------------------------------------------------------------------------
 --  Per-module card content builders
@@ -137,7 +138,7 @@ local BLANK, LinkRow, NoteRow = CludesUI.BlankRowCfg, CludesUI.BuildLinkRow, Clu
 --  namespace is nil and the card shows only the module font/outline layer.
 -------------------------------------------------------------------------------
 
-local NS = CludesUI.ModuleNS
+local NS = CUI.ModuleNS
 
 local function TileActionBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
@@ -180,7 +181,7 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
             hostFrame,
             cursorY,
             dataBarCfg("Reputation Bar Text Size", "RepBar"),
-            CludesUI.IS_FOREVER and BLANK() or dataBarCfg("House Favor Bar Text Size", "FavorBar")
+            CUI.IS_FOREVER and BLANK() or dataBarCfg("House Favor Bar Text Size", "FavorBar")
         )
         cursorY = cursorY - height
         cursorY = LinkRow(
@@ -198,7 +199,7 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
         cursorY = NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     return cursorY
@@ -213,7 +214,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     local function saved() return mod.db and mod.db.profile end
@@ -376,7 +377,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
         cursorY = NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     return cursorY
@@ -391,7 +392,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     local function saved() return mod.db and mod.db.profile end
@@ -504,7 +505,7 @@ local function TileCooldownManager(hostFrame, cursorY, W, tile)
         cursorY = NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     return cursorY
@@ -519,7 +520,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     local function saved() return _G._CURB_AceDB and _G._CURB_AceDB.profile end
@@ -587,11 +588,11 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     local function saved() return _G._CUABR_AceDB and _G._CUABR_AceDB.profile end
-    local nameFontValues, nameFontOrder = CludesUI.BuildFontDropdownData()
+    local nameFontValues, nameFontOrder = CUI.BuildFontDropdownData()
     _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
     cursorY = cursorY - height
     _, height = W:DualRow(hostFrame, cursorY, {
@@ -705,7 +706,7 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     -- Flat CludesUIDB keys with a parent-published apply fn.
@@ -720,7 +721,7 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             setValue = function(val)
                 if not CludesUIDB then CludesUIDB = {} end
                 CludesUIDB[key] = val
-                local func = CludesUI[applyName]
+                local func = CUI[applyName]
                 if func then func() end
             end,
         }
@@ -777,7 +778,7 @@ local function TileQoL(hostFrame, cursorY, W, tile)
     -- popup, no Battle Res indicator and no Bloodlust Tracker, so their slots
     -- are left out there and the rest close up, with a blank only in an odd
     -- last slot.
-    local FOREVER = CludesUI.IS_FOREVER
+    local FOREVER = CUI.IS_FOREVER
     local slots = {}
     local function addSlot(rowConf) slots[#slots + 1] = rowConf end
     addSlot(ModuleOutlineCfg(tile.folder, tile.display))
@@ -791,12 +792,12 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         max = 30,
         step = 1,
         getValue = function()
-            if CludesUI.QoLExtrasGet then return CludesUI.QoLExtrasGet("fpsTextSize") or 12 end
+            if CUI.QoLExtrasGet then return CUI.QoLExtrasGet("fpsTextSize") or 12 end
             return (CludesUIDB and CludesUIDB.fpsTextSize) or 12
         end,
         setValue = function(val)
-            if CludesUI.QoLExtrasSet then CludesUI.QoLExtrasSet("fpsTextSize", val) end
-            if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+            if CUI.QoLExtrasSet then CUI.QoLExtrasSet("fpsTextSize", val) end
+            if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
         end,
     })
     addSlot(gsize("Durability Warning Text Size", "durWarnTextSize", 10, 50, 30, "_durWarnApplySettings"))
@@ -826,7 +827,7 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         addSlot(brSize("Battle Res Duration Size", "durationSize", 8, 30, 12))
         addSlot(brSize("Battle Res Count Size", "countSize", 8, 20, 11))
         addSlot(brSize("Battle Res Text Size", "textSize", 8, 40, 14))
-        local brFontValues, brFontOrder = CludesUI.BuildFontDropdownData()
+        local brFontValues, brFontOrder = CUI.BuildFontDropdownData()
         addSlot({
             type = "dropdown",
             text = "Battle Res Font",
@@ -884,9 +885,9 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             local ma = db and db.profile and db.profile.movementAlert
             if not ma then return end
             ma.textSize = val
-            if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
-            if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
-            if CludesUI._applyGateway then CludesUI._applyGateway() end
+            if CUI._applyMovementAlert then CUI._applyMovementAlert() end
+            if CUI._applyTimeSpiral then CUI._applyTimeSpiral() end
+            if CUI._applyGateway then CUI._applyGateway() end
         end,
     })
     for i = 1, #slots, 2 do
@@ -905,19 +906,19 @@ local function TileChat(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     local CHAT = mod.ECHAT
     local function saved() return _G._CUCHAT_DB and _G._CUCHAT_DB.profile and _G._CUCHAT_DB.profile.chat end
-    local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
+    local fontValues, fontOrder = CUI.BuildFontDropdownData()
     -- Edit box picker: same faces plus a "Chat Font" inherit entry first,
     -- mirroring the module's own dropdown.
-    local ebValues, ebOrder = CludesUI.BuildFontDropdownData()
+    local ebValues, ebOrder = CUI.BuildFontDropdownData()
     ebValues["__chat"] = { text = "Chat Font" }
     table.insert(ebOrder, 1, "__chat")
     local function ChatReload(msg)
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = "Reload Required",
             message = msg,
             confirmText = "Reload Now",
@@ -988,7 +989,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
     cursorY = cursorY - height
     -- Blizzard Style shows Blizzard's own chat tabs (their stock font), so the
     -- tab font row hides there; Classic's painted tabs still use it.
-    local BS = CludesUI.BlizzStyle
+    local BS = CUI.BlizzStyle
     local function TabFontGate(rowConf)
         if BS and BS.Active("chat") == "blizzard" then BS.Gate("chat", rowConf) end
         return rowConf
@@ -1083,7 +1084,7 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     local function saved() return _G._CUMT_AceDB and _G._CUMT_AceDB.profile end
@@ -1150,7 +1151,7 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
         local profile = saved()
         return profile and profile.kickTracker
     end
-    local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
+    local fontValues, fontOrder = CUI.BuildFontDropdownData()
     _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
         type = "dropdown",
         text = "Timer Font",
@@ -1251,7 +1252,7 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     local function saved() return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm end
@@ -1346,10 +1347,10 @@ local function TileBags(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
-    local function saved() return CludesUI._bagsDB and CludesUI._bagsDB.profile end
+    local function saved() return CUI._bagsDB and CUI._bagsDB.profile end
     local function TextSizes()
         if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then _G.CUI_Bags:RefreshTextSizes() end
         if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshTextSizes then _G.CUI_BankFrame:RefreshTextSizes() end
@@ -1418,7 +1419,7 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     local function saved() return _G._CUMM_DB and _G._CUMM_DB.profile and _G._CUMM_DB.profile.minimap end
@@ -1498,19 +1499,19 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     -- Stock styles keep Blizzard's own tracker text (sized by Edit Mode's
     -- Text Size), so none of these settings apply there.
-    local BS = CludesUI.BlizzStyle
+    local BS = CUI.BlizzStyle
     if BS and BS.Get("questtracker") then
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf(
+            CUI.Lf(
                 "%1$s is active: the tracker keeps Blizzard's own text.",
-                CludesUI.L(BS.Label("questtracker"))
+                CUI.L(BS.Label("questtracker"))
             )
         )
     end
@@ -1542,7 +1543,7 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
             end,
         }
     end
-    local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
+    local fontValues, fontOrder = CUI.BuildFontDropdownData()
     _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
         type = "dropdown",
         text = "Quest Tracker Font",
@@ -1559,7 +1560,7 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
             profile.font = val
             -- The custom tracker (WoW Forever) restyles live.
             if mod.UseCustomTracker and mod.UseCustomTracker() then
-                CludesUI.InvalidateFontCache()
+                CUI.InvalidateFontCache()
                 QTApply()
                 return
             end
@@ -1599,7 +1600,7 @@ local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
         return NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
@@ -1628,12 +1629,12 @@ local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
         setValue = function(val)
             if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.charSheetEnchantSize = val
-            if CludesUI._refreshCharSheetSlotLabels then CludesUI._refreshCharSheetSlotLabels() end
+            if CUI._refreshCharSheetSlotLabels then CUI._refreshCharSheetSlotLabels() end
         end,
     }
     -- WoW Forever has no skyriding (the Dragon Riding HUD never loads there),
     -- so the enchant size sits alone in the last row.
-    _, height = W:DualRow(hostFrame, cursorY, enchSizeCfg, CludesUI.IS_FOREVER and BLANK() or {
+    _, height = W:DualRow(hostFrame, cursorY, enchSizeCfg, CUI.IS_FOREVER and BLANK() or {
         type = "slider",
         text = "Dragonriding Speed Text Size",
         min = 6,
@@ -1672,7 +1673,7 @@ local function TileDataBars(hostFrame, cursorY, W, tile)
         cursorY = NoteRow(
             hostFrame,
             cursorY,
-            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+            CUI.Lf("Enable %1$s to edit its text settings.", CUI.L(tile.display))
         )
     end
     return cursorY
@@ -1698,7 +1699,7 @@ local function TileCombatText(hostFrame, cursorY, W, tile)
         setValue = function(val)
             if InCombatLockdown() then return end
             val = math.floor(val * 10 + 0.5) / 10
-            CludesUI.SetCVar("WorldTextScale_v2", val)
+            CUI.SetCVar("WorldTextScale_v2", val)
         end,
     }, BLANK())
     cursorY = cursorY - height
@@ -1740,12 +1741,12 @@ local TILE_BUILDERS = {
     CludesUIAuraBuffReminders = { TileAuraBuffReminders, "Reminder names, item counts and the mana warning" },
     CludesUIQoL = {
         TileQoL,
-        CludesUI.IS_FOREVER and "Alert and tracker text" or "Alerts, trackers, battle res and popup text",
+        CUI.IS_FOREVER and "Alert and tracker text" or "Alerts, trackers, battle res and popup text",
     },
     CludesUIForeverEssentials = { TileFontOnly, "Font face and outline only" },
     CludesUIBlizzardSkin = {
         TileBlizzardSkin,
-        CludesUI.IS_FOREVER and "Tooltip text scale and enchant text"
+        CUI.IS_FOREVER and "Tooltip text scale and enchant text"
             or "Tooltip text scale, enchant text and dragonriding speed",
     },
     CludesUIFriends = { TileFontOnly, "Font face and outline only" },
@@ -1762,7 +1763,7 @@ local TILE_BUILDERS = {
 
 local function BuildTileList()
     local tiles = {}
-    local roster = CludesUI.ADDON_ROSTER or {}
+    local roster = CUI.ADDON_ROSTER or {}
     for _, record in ipairs(roster) do
         local def = not record.comingSoon and TILE_BUILDERS[record.folder]
         if def then
@@ -1791,23 +1792,23 @@ end
 -------------------------------------------------------------------------------
 
 local function BuildFontCard(hostFrame, cursorY, W, tile)
-    return CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
+    return CUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
         enabled = (not tile.folder) or NS(tile.folder) ~= nil,
         expanded = _ftExpanded,
         descW = 440,
         -- "Aa" glyph rendered in the module's currently resolved face, so the
         -- card shows the active font at a glance.
         glyph = function(heading, enabled)
-            local Pix = CludesUI.PanelPP
+            local Pix = CUI.PanelPP
             local icon = CreateFrame("Frame", nil, heading)
             Pix.Size(icon, 26, 20)
             Pix.Point(icon, "LEFT", heading, "LEFT", 14, 0)
             local glyphText = icon:CreateFontString(nil, "OVERLAY")
             glyphText:SetPoint("CENTER")
             local addonKey = tile.folder
-                and CludesUI._folderToAddonKey
-                and CludesUI._folderToAddonKey[tile.folder]
-            local glyphPath = (CludesUI.GetFontPath(addonKey)) or "Fonts\\FRIZQT__.TTF"
+                and CUI._folderToAddonKey
+                and CUI._folderToAddonKey[tile.folder]
+            local glyphPath = (CUI.GetFontPath(addonKey)) or "Fonts\\FRIZQT__.TTF"
             glyphText:SetFont(glyphPath, 15, "")
             glyphText:SetTextColor(1, 1, 1, enabled and 0.85 or 0.3)
             glyphText:SetText("Aa")
@@ -1816,8 +1817,8 @@ local function BuildFontCard(hostFrame, cursorY, W, tile)
         -- (the old PER ADDON FONTS entry), editable without expanding the card.
         headerDD = tile.hasFontDD
                 and function(heading)
-                    local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-                    local dropdown = CludesUI.BuildDropdownControl(
+                    local fontValues, fontOrder = CUI.BuildFontDropdownData()
+                    local dropdown = CUI.BuildDropdownControl(
                         heading,
                         190,
                         heading:GetFrameLevel() + 2,
@@ -1842,12 +1843,12 @@ local function BuildFontCard(hostFrame, cursorY, W, tile)
                             AskFontReload()
                         end
                     )
-                    CludesUI.PanelPP.Point(dropdown, "RIGHT", heading, "RIGHT", -44, 0)
+                    CUI.PanelPP.Point(dropdown, "RIGHT", heading, "RIGHT", -44, 0)
                     -- A module whose stock style keeps Blizzard's own text: the override
                     -- has nothing to apply to there.
                     local styleKey = TILE_STYLE_KEYS[tile.folder]
-                    if styleKey and CludesUI.BlizzStyle then
-                        CludesUI.BlizzStyle.BlockInline(styleKey, dropdown)
+                    if styleKey and CUI.BlizzStyle then
+                        CUI.BlizzStyle.BlockInline(styleKey, dropdown)
                     end
                     return dropdown
                 end
@@ -1861,8 +1862,8 @@ end
 --  the Window Skins page).
 -------------------------------------------------------------------------------
 do
-    local origNav = CludesUI.NavigateToElementSettings
-    function CludesUI:NavigateToElementSettings(moduleName, page, sectionName, preSelectFn, highlightText)
+    local origNav = CUI.NavigateToElementSettings
+    function CUI:NavigateToElementSettings(moduleName, page, sectionName, preSelectFn, highlightText)
         -- The original refuses in combat: no page state changes then.
         if InCombatLockdown() then
             return origNav(self, moduleName, page, sectionName, preSelectFn, highlightText)
@@ -1875,7 +1876,7 @@ do
                     changed = true
                 end
             end
-            if changed and CludesUI.InvalidatePageCache then CludesUI:InvalidatePageCache() end
+            if changed and CUI.InvalidatePageCache then CUI:InvalidatePageCache() end
         end
         return origNav(self, moduleName, page, sectionName, preSelectFn, highlightText)
     end
@@ -1887,20 +1888,20 @@ end
 -------------------------------------------------------------------------------
 
 function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PanelPP
+    local W = CUI.Widgets
+    local Pix = CUI.PanelPP
     local cursorY = yOffset
     local _, height
 
     hostFrame._showRowDivider = true
 
     -- Reverse folder -> addonKey map for the card glyphs (built once).
-    if not CludesUI._folderToAddonKey then
+    if not CUI._folderToAddonKey then
         local map = {}
-        for key, folder in pairs(CludesUI._addonKeyToFolder or {}) do
+        for key, folder in pairs(CUI._addonKeyToFolder or {}) do
             map[folder] = key
         end
-        CludesUI._folderToAddonKey = map
+        CUI._folderToAddonKey = map
     end
 
     -------------------------------------------------------------------
@@ -1911,32 +1912,32 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
 
     -- Glyph-restricted locales (CJK, Cyrillic): most bundled fonts are Latin-only and cannot render the script, so the picker
     -- offers "System Default" plus external SharedMedia fonts (which may carry the right glyphs).
-    local localeRestricted = CludesUI.LOCALE_FONT_FALLBACK ~= nil
+    local localeRestricted = CUI.LOCALE_FONT_FALLBACK ~= nil
     -- ruRU is only PARTLY restricted: the faces listed in FONT_CYRILLIC carry the full
     -- Cyrillic block (verified cmap), so they are offered as normal entries and
     -- ResolveFontName honours them. CJK keeps the old System-Default-only picker.
-    local localeCyrillic = localeRestricted and CludesUI.LOCALE_SCRIPT == "cyrillic"
+    local localeCyrillic = localeRestricted and CUI.LOCALE_SCRIPT == "cyrillic"
 
     local fontDropValues = {}
     local fontDropOrder = {}
     if localeRestricted then
-        fontDropValues[CludesUI.SYSTEM_FONT_KEY] =
-            { text = "System Default", font = CludesUI.LOCALE_FONT_FALLBACK }
-        fontDropOrder[#fontDropOrder + 1] = CludesUI.SYSTEM_FONT_KEY
+        fontDropValues[CUI.SYSTEM_FONT_KEY] =
+            { text = "System Default", font = CUI.LOCALE_FONT_FALLBACK }
+        fontDropOrder[#fontDropOrder + 1] = CUI.SYSTEM_FONT_KEY
         if localeCyrillic then
             -- Cyrillic-capable bundled faces, kept in FONT_ORDER sequence so the
             -- picker matches the Latin-locale ordering. Latin-only bundles stay out.
-            local FONT_DIR_CYR = CludesUI.MEDIA_PATH .. "fonts\\"
+            local FONT_DIR_CYR = CUI.MEDIA_PATH .. "fonts\\"
             local sepDone = false
-            for _, name in ipairs(CludesUI.FONT_ORDER) do
-                local cyrFile = name ~= "---" and CludesUI.FONT_CYRILLIC[name] and CludesUI.FONT_FILES[name]
+            for _, name in ipairs(CUI.FONT_ORDER) do
+                local cyrFile = name ~= "---" and CUI.FONT_CYRILLIC[name] and CUI.FONT_FILES[name]
                 if cyrFile then
                     if not sepDone then
                         fontDropOrder[#fontDropOrder + 1] = "---"
                         sepDone = true
                     end
                     fontDropValues[name] = {
-                        text = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[name]) or name,
+                        text = (CUI.FONT_DISPLAY_NAMES and CUI.FONT_DISPLAY_NAMES[name]) or name,
                         font = FONT_DIR_CYR .. cyrFile,
                     }
                     fontDropOrder[#fontDropOrder + 1] = name
@@ -1944,35 +1945,35 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             end
         else
             -- Expressway is the informed Latin opt-in, using a distinct sentinel key so the untouched default still maps to System Default.
-            fontDropValues[CludesUI.EXPRESSWAY_FORCED_KEY] = {
+            fontDropValues[CUI.EXPRESSWAY_FORCED_KEY] = {
                 text = "Expressway (Latin only)",
-                font = CludesUI.MEDIA_PATH .. "fonts\\Expressway.TTF",
+                font = CUI.MEDIA_PATH .. "fonts\\Expressway.TTF",
             }
-            fontDropOrder[#fontDropOrder + 1] = CludesUI.EXPRESSWAY_FORCED_KEY
+            fontDropOrder[#fontDropOrder + 1] = CUI.EXPRESSWAY_FORCED_KEY
         end
-        CludesUI.AppendExternalSharedMediaFonts(fontDropValues, fontDropOrder)
+        CUI.AppendExternalSharedMediaFonts(fontDropValues, fontDropOrder)
     else
         -- Blizzard Default first: the client's own standard UI font. The
         -- glyph-restricted branch above skips it (its "System Default" entry
         -- already is the client's own font).
-        fontDropValues[CludesUI.BLIZZARD_FONT_KEY] =
-            { text = "Blizzard Default", font = CludesUI.GetBlizzardFontPath() }
-        fontDropOrder[#fontDropOrder + 1] = CludesUI.BLIZZARD_FONT_KEY
+        fontDropValues[CUI.BLIZZARD_FONT_KEY] =
+            { text = "Blizzard Default", font = CUI.GetBlizzardFontPath() }
+        fontDropOrder[#fontDropOrder + 1] = CUI.BLIZZARD_FONT_KEY
         fontDropOrder[#fontDropOrder + 1] = "---"
-        local FONT_DIR_GLOBAL = CludesUI.MEDIA_PATH .. "fonts\\"
-        for _, name in ipairs(CludesUI.FONT_ORDER) do
+        local FONT_DIR_GLOBAL = CUI.MEDIA_PATH .. "fonts\\"
+        for _, name in ipairs(CUI.FONT_ORDER) do
             if name == "---" then
                 fontDropOrder[#fontDropOrder + 1] = "---"
             else
-                local filePath = CludesUI.FONT_BLIZZARD[name]
-                    or (FONT_DIR_GLOBAL .. (CludesUI.FONT_FILES[name] or "Expressway.TTF"))
-                local displayName = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[name])
+                local filePath = CUI.FONT_BLIZZARD[name]
+                    or (FONT_DIR_GLOBAL .. (CUI.FONT_FILES[name] or "Expressway.TTF"))
+                local displayName = (CUI.FONT_DISPLAY_NAMES and CUI.FONT_DISPLAY_NAMES[name])
                     or name
                 fontDropValues[name] = { text = displayName, font = filePath }
                 fontDropOrder[#fontDropOrder + 1] = name
             end
         end
-        CludesUI.AppendSharedMediaFonts(fontDropValues, fontDropOrder, { keyByName = true })
+        CUI.AppendSharedMediaFonts(fontDropValues, fontDropOrder, { keyByName = true })
     end
 
     local outlineModeValues = {
@@ -1990,18 +1991,18 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         values = fontDropValues,
         order = fontDropOrder,
         getValue = function()
-            local g = CludesUI.GetFontsDB().global or CludesUI.DEFAULT_FONT_NAME
+            local g = CUI.GetFontsDB().global or CUI.DEFAULT_FONT_NAME
             -- Cyrillic locales list Expressway as a normal entry, so an older
             -- __expressway opt-in collapses onto it (same file) instead of falling
             -- through to System Default and misreporting the active face.
-            if localeCyrillic and g == CludesUI.EXPRESSWAY_FORCED_KEY then return "Expressway" end
+            if localeCyrillic and g == CUI.EXPRESSWAY_FORCED_KEY then return "Expressway" end
             -- In glyph-restricted locales a stored Latin-only bundled font maps to the System Default entry; a chosen SM font shows as-is.
-            if localeRestricted and not fontDropValues[g] then return CludesUI.SYSTEM_FONT_KEY end
+            if localeRestricted and not fontDropValues[g] then return CUI.SYSTEM_FONT_KEY end
             return g
         end,
         setValue = function(val)
-            CludesUI.GetFontsDB().global = val
-            local refreshList = CludesUI._widgetRefreshList
+            CUI.GetFontsDB().global = val
+            local refreshList = CUI._widgetRefreshList
             if refreshList then
                 for i2 = 1, #refreshList do
                     refreshList[i2]()
@@ -2016,13 +2017,13 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         values = outlineModeValues,
         order = outlineModeOrder,
         getValue = function()
-            local val = CludesUI.GetFontsDB().outlineMode or "none"
+            local val = CUI.GetFontsDB().outlineMode or "none"
             if val == "shadow" then val = "none" end
             return val
         end,
         setValue = function(val)
-            CludesUI.GetFontsDB().outlineMode = val
-            local refreshList = CludesUI._widgetRefreshList
+            CUI.GetFontsDB().outlineMode = val
+            local refreshList = CUI._widgetRefreshList
             if refreshList then
                 for i2 = 1, #refreshList do
                     refreshList[i2]()
@@ -2032,17 +2033,17 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(globalFontRow._leftRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(globalFontRow._leftRegion, {
             title = "Global Font",
             rows = {
                 {
                     type = "toggle",
                     label = "Apply to All Game Text",
                     tooltip = "Applies your Global Font to Blizzard's default game text (menus, tooltips, quest log, character panes, and more). Requires a UI reload.",
-                    get = function() return CludesUI.GetFontsDB().applyToAllGameText == true end,
+                    get = function() return CUI.GetFontsDB().applyToAllGameText == true end,
                     set = function(val)
-                        CludesUI.GetFontsDB().applyToAllGameText = val and true or false
+                        CUI.GetFontsDB().applyToAllGameText = val and true or false
                         AskFontReload()
                     end,
                 },
@@ -2069,14 +2070,14 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Disable Slug Outline",
         tooltip = "Slug outline renders higher quality outlines compared to the base WoW outline mode but may make outline effects appear slightly thicker.",
-        getValue = function() return CludesUI.IsSlugDisabled() end,
+        getValue = function() return CUI.IsSlugDisabled() end,
         setValue = function(val)
-            CludesUI.GetFontsDB().neverShowSlug = val and true or false
+            CUI.GetFontsDB().neverShowSlug = val and true or false
             AskFontReload()
         end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local oitItems = {
             { key = "actionBars", label = "Action Bars Icons" },
             { key = "unitFrames", label = "Unit Frames Icons" },
@@ -2086,20 +2087,20 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         }
         local region = oitRow._leftRegion
         if region._control then region._control:Hide() end
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             220,
             region:GetFrameLevel() + 2,
             oitItems,
             function(keyName)
-                local fontsDB = CludesUI.GetFontsDB()
+                local fontsDB = CUI.GetFontsDB()
                 local tbl = (fontsDB and fontsDB.outlineIconText)
                     or (CludesUIDB and CludesUIDB.outlineIconText)
                 return not (tbl and tbl[keyName] == false)
             end,
             function(keyName, val)
                 -- Per-profile (rides profile export); seed from the legacy account-global table on first write so other modules' choices carry over.
-                local fontsDB = CludesUI.GetFontsDB()
+                local fontsDB = CUI.GetFontsDB()
                 if type(fontsDB.outlineIconText) ~= "table" then
                     local tbl = {}
                     local seed = CludesUIDB and CludesUIDB.outlineIconText
@@ -2118,7 +2119,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         region._control = checkDrop
         region._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+        CUI.RegisterWidgetRefresh(cbDDRefresh)
     end
 
     -- Name Font: text floating above characters/NPCs. Independent of
@@ -2136,7 +2137,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             -- entry means "leave the engine's name font untouched", which is
             -- the same visual result with the correct do-nothing semantics.
             -- Collapse the separator that followed it so no doubled divider.
-            if keyName ~= CludesUI.BLIZZARD_FONT_KEY then
+            if keyName ~= CUI.BLIZZARD_FONT_KEY then
                 if keyName ~= "---" or nameFontOrder[#nameFontOrder] ~= "---" then
                     nameFontOrder[#nameFontOrder + 1] = keyName
                 end
@@ -2164,17 +2165,17 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             values = nameFontValues,
             order = nameFontOrder,
             getValue = function()
-                local num = CludesUI.GetFontsDB().unitNameFont
+                local num = CUI.GetFontsDB().unitNameFont
                 if not num or not nameFontValues[num] then return NAME_FONT_DEFAULT end
                 return num
             end,
             setValue = function(val)
-                local fdb = CludesUI.GetFontsDB()
+                local fdb = CUI.GetFontsDB()
                 -- nil, not the sentinel, so startup code can tell "leave Blizzard alone" without knowing the key.
                 fdb.unitNameFont = (val ~= NAME_FONT_DEFAULT) and val or nil
                 fdb.unitNameFontPath = (val ~= NAME_FONT_DEFAULT) and nameFontValues[val].font or nil
                 -- No apply call: the engine already cached the global, so the change lands next login (same as Combat Text Font).
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = "Logout Required",
                     message = "Name font changes require a logout to character select to take effect. This is a WoW engine limitation.",
                     confirmText = "Okay",
@@ -2188,12 +2189,12 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             max = 125,
             step = 5,
             tooltip = "Scales the size of Blizzard's default game text (menus, tooltips, quest log, and more). Requires a UI reload.",
-            getValue = function() return CludesUI.GetFontsDB().gameTextScale or 100 end,
+            getValue = function() return CUI.GetFontsDB().gameTextScale or 100 end,
             setValue = function(val)
-                local fontsDB = CludesUI.GetFontsDB()
+                local fontsDB = CUI.GetFontsDB()
                 local changed = (fontsDB.gameTextScale or 100) ~= val
                 if changed then fontsDB.gameTextScale = val ~= 100 and val or nil end
-                if CludesUI._sliderDragging then
+                if CUI._sliderDragging then
                     if changed then gtsPending = true end
                     return
                 end
@@ -2220,19 +2221,19 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
     -- parent-level regions are invisible to the search and float over
     -- filtered results).
     local introHost = CreateFrame("Frame", nil, hostFrame)
-    Pix.Size(introHost, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 44)
+    Pix.Size(introHost, hostFrame:GetWidth() - CUI.CONTENT_PAD * 2, 44)
     -- 10px breathing room above; the host's slack below is trimmed the same
     -- amount so the section title sits tighter under the text.
-    introHost:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY - 10)
-    local intro = CludesUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
+    introHost:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY - 10)
+    local intro = CUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
     intro:SetPoint("TOPLEFT", introHost, "TOPLEFT", 0, -2)
     intro:SetPoint("TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
     intro:SetJustifyH("LEFT")
     intro:SetWordWrap(true)
     intro:SetText(
-        CludesUI.L("A quick view of every font setting in one place.")
+        CUI.L("A quick view of every font setting in one place.")
             .. "\n"
-            .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones.")
+            .. CUI.L("These are the same settings found on each module's own pages, not separate ones.")
     )
     cursorY = cursorY - 48
 

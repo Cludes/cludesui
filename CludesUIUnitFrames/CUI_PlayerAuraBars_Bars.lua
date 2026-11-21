@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Bars.lua
 --
@@ -73,7 +74,7 @@ local restrictionHooked = false
 local function DeferRestrictedApply(gridKey, func, boxHolder, direction)
     local applied = boxHolder and containerDirections[boxHolder]
     if not (applied and applied ~= (direction or "LEFT")) then return false end
-    if not AK then SetAK(CludesUI and CludesUI.AuraKit) end
+    if not AK then SetAK(CUI and CUI.AuraKit) end
     if not (AK and AK.AurasRestricted and AK.AurasRestricted()) then return false end
     restrictedApplies[gridKey] = func
     if not restrictionHooked then
@@ -298,7 +299,7 @@ local function BarPositionKey(buffSide) return buffSide and "buffsPos" or "debuf
 -- uses SnapForES.
 local function SnapBarPos(widget, anchorPt, relPoint, posX, posY, wid, hgt)
     if not (posX and posY) then return posX, posY end
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local es = widget:GetEffectiveScale()
     local isCenterAnchor = (anchorPt == "CENTER" or anchorPt == nil)
         and (relPoint == "CENTER" or relPoint == nil)
@@ -416,9 +417,9 @@ end
 -- position still seeds a parent with no point yet; the anchor then places it.
 local function ApplyBarPosition(hostFrame, buffSide, gridFrame)
     local unlockKey = buffSide and "PAB_Buffs" or "PAB_Debuffs"
-    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
-    if anchored and hostFrame:GetNumPoints() > 0 and CludesUI.ReapplyOwnAnchor then
-        CludesUI.ReapplyOwnAnchor(unlockKey)
+    local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(unlockKey)
+    if anchored and hostFrame:GetNumPoints() > 0 and CUI.ReapplyOwnAnchor then
+        CUI.ReapplyOwnAnchor(unlockKey)
         return
     end
     local pabCfg = PAB()
@@ -437,7 +438,7 @@ local function ApplyBarPosition(hostFrame, buffSide, gridFrame)
     if conf and (conf.growDirection == "CENTER_HORIZONTAL" or conf.growDirection == "CENTER_VERTICAL") then
         pabCfg[posKey] = RebaseBarPositionToCenter(hostFrame, place)
     end
-    if anchored and CludesUI.ReapplyOwnAnchor then CludesUI.ReapplyOwnAnchor(unlockKey) end
+    if anchored and CUI.ReapplyOwnAnchor then CUI.ReapplyOwnAnchor(unlockKey) end
 end
 
 -- Blizzard's player BuffFrame/DebuffFrame are superseded by this module: hide them so
@@ -631,7 +632,7 @@ local function BuffsContentSig(conf, spells, enchSlots)
 end
 
 local function BuildBars()
-    if not AK then SetAK(CludesUI and CludesUI.AuraKit) end
+    if not AK then SetAK(CUI and CUI.AuraKit) end
     if not AK then return end -- 12.1 gated at file top; defensive only
 
     local pabCfg = PAB()
@@ -846,15 +847,15 @@ end
 -- wrapper's DIRECT children for section headers, and PABMP_BuildPage builds past
 -- `parent` into its own root on the shared scroll frame, so nothing is scannable.
 local function MapElementSettings(gridKey, kind, barId)
-    if not CludesUI then return end
-    CludesUI._ELEMENT_SETTINGS_MAP = CludesUI._ELEMENT_SETTINGS_MAP or {}
-    CludesUI._ELEMENT_SETTINGS_MAP[gridKey] = {
+    if not CUI then return end
+    CUI._ELEMENT_SETTINGS_MAP = CUI._ELEMENT_SETTINGS_MAP or {}
+    CUI._ELEMENT_SETTINGS_MAP[gridKey] = {
         module = "CludesUIUnitFrames",
         page = "Player Aura Bars",
         preSelectFn = function()
-            if not CludesUI._setPABSelection then return end
+            if not CUI._setPABSelection then return end
             if not barId then
-                CludesUI._setPABSelection(kind, "default")
+                CUI._setPABSelection(kind, "default")
                 return
             end
             -- Owning bucket resolved at click time, not baked in at registration:
@@ -866,7 +867,7 @@ local function MapElementSettings(gridKey, kind, barId)
             else
                 barFrame, bucket = mod.PAB_GetCustomDebuffBar(barId)
             end
-            if barFrame then CludesUI._setPABSelection(kind, barId, bucket) end
+            if barFrame then CUI._setPABSelection(kind, barId, bucket) end
         end,
     }
 end
@@ -878,8 +879,8 @@ end
 -- from the active aura count, nothing to drag-resize) and noAnchorTarget (a
 -- dynamically-resizing frame is a bad anchor target for other elements).
 function RegisterPABUnlock()
-    if not (CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not (CUI and CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then return end
+    local MK = CUI.MakeUnlockElement
 
     local function MakeBarElement(gridKey, labelText, sequence, buffSide, getParent)
         return MK({
@@ -990,11 +991,11 @@ function RegisterPABUnlock()
     }
     MapElementSettings("PAB_Buffs", "buff")
     MapElementSettings("PAB_Debuffs", "debuff")
-    CludesUI:RegisterUnlockElements(elements, "CludesUIUnitFrames")
+    CUI:RegisterUnlockElements(elements, "CludesUIUnitFrames")
     -- Registration alone only updates the element table; a mover already built
     -- this session keeps the label CreateMover baked into its FontString. No-op
     -- before the first unlock session, so it is safe on the CreateBars path too.
-    if CludesUI.RefreshUnlockElementLabel then CludesUI.RefreshUnlockElementLabel("PAB_Buffs") end
+    if CUI.RefreshUnlockElementLabel then CUI.RefreshUnlockElementLabel("PAB_Buffs") end
 end
 -- Exported for the default-bar enable toggles: re-registering re-runs unlock
 -- mode's Sync, which re-reads isHidden and drops a disabled bar's mover
@@ -1212,8 +1213,8 @@ local function ApplyLiveConfig(buffSide)
         -- direction change. The STORED pos keeps the raw accumulation. Never for an
         -- unlock-anchored bar: the anchor owns its placement and re-applies itself on
         -- a size change.
-        local anchored = CludesUI.IsUnlockAnchored
-            and CludesUI.IsUnlockAnchored(buffSide and "PAB_Buffs" or "PAB_Debuffs")
+        local anchored = CUI.IsUnlockAnchored
+            and CUI.IsUnlockAnchored(buffSide and "PAB_Buffs" or "PAB_Debuffs")
         if (resized or turned) and not anchored then ApplyBarPosition(hostFrame, buffSide, gridFrame) end
     end
 
@@ -1304,7 +1305,7 @@ local function ApplyLiveConfig(buffSide)
                 BuffCandidateExtras(conf)
             )
             if declaredSet.buffs.spells then
-                CludesUI.AuraKit.SetGroupCap(boxHolder, "spells", BuffAuraMax(gridFrame))
+                CUI.AuraKit.SetGroupCap(boxHolder, "spells", BuffAuraMax(gridFrame))
                 boxHolder:SetAuraGroupLayout("spells", BuildGroupLayout(conf, pad, gridFrame.rowGap))
                 local liveIncludeMap = {}
                 for index = 1, #spells do

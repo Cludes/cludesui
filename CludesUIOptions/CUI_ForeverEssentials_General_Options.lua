@@ -1,11 +1,12 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_General_Options.lua
 --  Builds the "General" page inside the Forever Essentials module: its
 --  general quality of life features, one section each.
 -------------------------------------------------------------------------------
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
+if not CUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
 
 -------------------------------------------------------------------------------
 --  NAME FORMAT: one place for every Name Format in the suite, as two checkbox
@@ -31,7 +32,7 @@ end
 
 -- The rows in page order: { text, tooltip, get, set [, disabled, disabledTooltip] }.
 local function NameFormatSources()
-    local entries, MNS = {}, CludesUI.ModuleNS
+    local entries, MNS = {}, CUI.ModuleNS
 
     -- Unit Frames: every text slot (the list the Unit Frames options publish).
     -- The slots that show a name on a frame of ours that is shown (its frame
@@ -181,7 +182,7 @@ local function NameFormatSources()
     end
 
     -- The threat meter (this module; account-wide like its other settings).
-    local TM = CludesUI._ThreatMeter
+    local TM = CUI._ThreatMeter
     entries[#entries + 1] = {
         text = "Threat Meter",
         tooltip = "Player names on the threat meter, for all your characters.",
@@ -197,10 +198,10 @@ local function NameFormatSources()
 end
 
 _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
-    local SU, CS, CT = CludesUI._SpellUprank, CludesUI._ClassicSpellbook, CludesUI._ClassicTalents
-    local MT = CludesUI._MapTravel
-    local BLANK = CludesUI.BlankRowCfg
+    local W = CUI.Widgets
+    local SU, CS, CT = CUI._SpellUprank, CUI._ClassicSpellbook, CUI._ClassicTalents
+    local MT = CUI._MapTravel
+    local BLANK = CUI.BlankRowCfg
     local cursorY = yOffset
     local _, height, heading
     hostFrame._showRowDivider = true
@@ -214,7 +215,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     --  Character. Every control reads and writes its feature's own key and
     --  runs that feature's own apply.
     ---------------------------------------------------------------------------
-    local QR, GS = CludesUI._QuestRewards, CludesUI._GatherSkill
+    local QR, GS = CUI._QuestRewards, CUI._GatherSkill
     _, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
     cursorY = cursorY - height
 
@@ -244,21 +245,21 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     -- Global search sees row labels and tooltips only, so this row's entry,
     -- registered before the row (the index keeps the first one), carries the
     -- dropdown's names as search text; it is never shown.
-    if CludesUI._RegisterSearchEntry then
+    if CUI._RegisterSearchEntry then
         local words = {}
         for idx = 1, #cwItems do
             local s = cwItems[idx].label
             words[#words + 1] = s
-            local loc = CludesUI.L(s)
+            local loc = CUI.L(s)
             if loc ~= s then words[#words + 1] = loc end
         end
-        local labelLoc = CludesUI.L(CW_LABEL)
-        CludesUI._RegisterSearchEntry(
+        local labelLoc = CUI.L(CW_LABEL)
+        CUI._RegisterSearchEntry(
             CW_LABEL,
             labelLoc ~= CW_LABEL and labelLoc or nil,
             table.concat(words, " "),
-            CludesUI._buildingModule,
-            CludesUI._buildingPage,
+            CUI._buildingModule,
+            CUI._buildingPage,
             hostFrame._currentSection and hostFrame._currentSection._sectionName
         )
     end
@@ -279,13 +280,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         tooltip = "Choose which windows open in their classic version.",
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = generalRow._rightRegion
         local byKey = {}
         for idx = 1, #cwItems do
             byKey[cwItems[idx].key] = cwItems[idx]
         end
-        local cwDD, cwRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local cwDD, cwRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             210,
             region:GetFrameLevel() + 2,
@@ -293,10 +294,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             function(key) return byKey[key].read() end,
             function(key, val) byKey[key].write(val) end
         )
-        CludesUI.PanelPP.Point(cwDD, "RIGHT", region, "RIGHT", -20, 0)
+        CUI.PanelPP.Point(cwDD, "RIGHT", region, "RIGHT", -20, 0)
         region._control = cwDD
         region._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cwRefresh)
+        CUI.RegisterWidgetRefresh(cwRefresh)
     end
 
     local rewardRow
@@ -317,12 +318,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         setValue = function(val)
             GS.Cfg().enabled = val
             GS.Apply()
-            CludesUI:RefreshPage() -- the cog's disabled state
+            CUI:RefreshPage() -- the cog's disabled state
         end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(rewardRow._rightRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(rewardRow._rightRegion, {
             title = "Gathering Skill in Tooltips",
             rows = {
                 {
@@ -343,7 +344,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
 
     -- Auto Summon Pet | Favorites per Character
     -- (CludesUIForeverEssentials_PetSummon.lua), while the Pet Journal exists.
-    local PS = CludesUI._PetSummon
+    local PS = CUI._PetSummon
     if PS and C_PetJournal then
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
@@ -353,7 +354,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             setValue = function(val)
                 PS.Cfg().enabled = val
                 PS.Apply(val) -- turning it on also ends an earlier dismissal
-                CludesUI:RefreshPage() -- Favorites per Character's disabled state
+                CUI:RefreshPage() -- Favorites per Character's disabled state
             end,
         }, {
             type = "toggle",
@@ -385,7 +386,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     -- Known Levels: a player's level the game hides as ?? (10+ levels above
     -- you), from when it could last be read (CludesUIForeverEssentials_PvP.lua
     -- keeps it, PvP on or off).
-    local pvp = CludesUI._PvP
+    local pvp = CUI._PvP
     if pvp then
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
@@ -433,8 +434,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             )
         )
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
-            local Pix = CludesUI.PanelPP
+        if not CUI._prebuilding then
+            local Pix = CUI.PanelPP
             -- A module that is switched off stays greyed out and out of "All".
             local itemList = {}
             for idx = 1, #sources do
@@ -446,7 +447,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     lockedFn = source.disabled,
                     excludeFromSummaryFn = source.disabled,
                     lockedTooltip = source.disabled and function()
-                        return CludesUI.DisabledTooltip(source.disabledTooltip)
+                        return CUI.DisabledTooltip(source.disabledTooltip)
                     end or nil,
                 }
             end
@@ -457,7 +458,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 if region._control then region._control:Hide() end
                 -- 260 wide: room for the longest row label (Friendly Player
                 -- Nameplates and its translations); longer ones end in "...".
-                local dropdown, refresh = CludesUI.BuildVisOptsCBDropdown(
+                local dropdown, refresh = CUI.BuildVisOptsCBDropdown(
                     region,
                     260,
                     region:GetFrameLevel() + 2,
@@ -469,13 +470,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                         if not (on or theirs) then return end
                         sources[idx].set((on and theirs) and "full" or (on and part or other))
                         -- The other list reads the new value too.
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end
                 )
                 Pix.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
                 region._control = dropdown
                 region._lastInline = nil
-                CludesUI.RegisterWidgetRefresh(refresh)
+                CUI.RegisterWidgetRefresh(refresh)
             end
             List(row._leftRegion, "first")
             List(row._rightRegion, "last")
@@ -489,8 +490,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     --  CludesUIForeverEssentials_MapTravel.lua | Show Fishing Skill:
     --  CludesUIForeverEssentials_ZoneLevels.lua)
     ---------------------------------------------------------------------------
-    local MR = CludesUI._MapReveal
-    local ZL = CludesUI._ZoneLevels
+    local MR = CUI._MapReveal
+    local ZL = CUI._ZoneLevels
     local function revealOff() return not MR.Get("enabled") end
 
     _, height = W:Spacer(hostFrame, cursorY, 20)
@@ -500,7 +501,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
 
     -- Fade Map While Moving | Show the Game Behind the Map. Runtime in
     -- CludesUIForeverEssentials_MapFade.lua.
-    local MF = CludesUI._MapFade
+    local MF = CUI._MapFade
     local function SetFade(key, val)
         MF.Cfg()[key] = val
         MF.Apply()
@@ -530,7 +531,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         setValue = function(val)
             MR.Cfg().enabled = val
             MR.Apply()
-            CludesUI:RefreshPage() -- the cog's disabled state
+            CUI:RefreshPage() -- the cog's disabled state
         end,
     }, {
         type = "toggle",
@@ -553,7 +554,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         setValue = function(val)
             MT.Cfg().enabled = val
             MT.Apply()
-            CludesUI:RefreshPage() -- the cog's disabled state
+            CUI:RefreshPage() -- the cog's disabled state
         end,
     }, {
         type = "toggle",
@@ -566,8 +567,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(revealRow._leftRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(revealRow._leftRegion, {
             title = "Reveal Unexplored Areas Settings",
             rows = {
                 {
@@ -592,7 +593,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
 
     -- Map Markers: one toggle; the cog picks the sets, all shown until turned
     -- off.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local function setRow(labelText, tooltip, key)
             return {
                 type = "toggle",
@@ -627,7 +628,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "flights"
             ),
         }
-        CludesUI.BuildInlineCog(markersRow._leftRegion, {
+        CUI.BuildInlineCog(markersRow._leftRegion, {
             title = "Map Markers",
             rows = rowList,
             disabled = function() return not MT.Get("enabled") end,
@@ -638,11 +639,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  SIMPLIFIED STATS (item tooltips)
     ---------------------------------------------------------------------------
-    local SS = CludesUI._SimplifiedStats
+    local SS = CUI._SimplifiedStats
     if SS then
         local function Set(keyName, val)
             SS.Cfg()[keyName] = val
-            CludesUI:RefreshPage() -- update the dependent rows' disabled state
+            CUI:RefreshPage() -- update the dependent rows' disabled state
         end
         local function shortenOff() return not SS.Get("shorten") end
         local function colorsOff() return not SS.Get("colors") end
@@ -693,7 +694,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  ACTIVE STANCE, FORM, ASPECT & AURA
     ---------------------------------------------------------------------------
-    local AF = CludesUI._ActiveForm
+    local AF = CUI._ActiveForm
     if AF then
         local function afOff() return not AF.Get("enabled") end
         local function AFSet(key, val)
@@ -711,18 +712,18 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "ACTIVE STANCE, FORM, ASPECT & AURA", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_ActiveForm", disabled = afOff, disabledTooltip = labelText }
         )
 
-        _, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
+        _, height = CUI.BuildVisibilityRow(W, hostFrame, cursorY, {
             leftCfg = {
                 type = "toggle",
                 text = labelText,
                 tooltip = "Shows an icon for your active stance, form, aura or aspect. Hidden while none is active.",
                 getValue = function() return not afOff() end,
-                setValue = CludesUI.SectionToggleSetValue(function(val) AFSet("enabled", val) end),
+                setValue = CUI.SectionToggleSetValue(function(val) AFSet("enabled", val) end),
             },
             -- The table exists once it was turned on, and the row is greyed out
             -- while it is off, so viewing the page saves nothing.
@@ -730,8 +731,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             caps = { partyIncludesRaid = false, luaDragonriding = true, noMouseover = true },
             disabledFn = afOff,
             disabledTooltip = labelText,
-            onChanged = CludesUI.RequestVisibilityUpdate,
-            onOptionChanged = CludesUI.RequestVisibilityUpdate,
+            onChanged = CUI.RequestVisibilityUpdate,
+            onOptionChanged = CUI.RequestVisibilityUpdate,
         })
         cursorY = cursorY - height
 
@@ -760,7 +761,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             cursorY = cursorY - height
 
             -- Border Style | Border Size (+ color swatch)
-            local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+            local texValues, texOrder = CUI.GetBorderTextureDropdown()
             local borderRow
             borderRow, height = W:DualRow(
                 hostFrame,
@@ -775,17 +776,17 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                         local c = AF.Cfg()
                         c.borderTexture = val
                         c.borderTextureOffset, c.borderTextureOffsetY = nil, nil
-                        local color = CludesUI.GetBorderStyleSelectDefaults(val)
+                        local color = CUI.GetBorderStyleSelectDefaults(val)
                         c.borderR, c.borderG, c.borderB, c.borderA = color.r, color.g, color.b, 1
-                        local defaultSize = CludesUI.GetBorderDefaultSize(nil, val)
+                        local defaultSize = CUI.GetBorderDefaultSize(nil, val)
                         if defaultSize then c.borderSize = defaultSize end
                         if c.borderSizePx then c.borderSizePx = false end
                         AF.Apply()
                         -- Rebuild: the offset row follows the Solid / textured pick.
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end,
                 },
-                CludesUI.BorderPxSliderCfg({
+                CUI.BorderPxSliderCfg({
                     text = "Border Size",
                     getStep = function() return AF.Get("borderSize") end,
                     setStep = function(val) AF.Cfg().borderSize = val end,
@@ -797,9 +798,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             )
             cursorY = cursorY - height
 
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = borderRow._rightRegion
-                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
                     region,
                     region:GetFrameLevel() + 5,
                     function()
@@ -815,13 +816,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 )
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -12, 0)
                 region._lastInline = colorSwatch
-                CludesUI.RegisterWidgetRefresh(updateSwatch)
+                CUI.RegisterWidgetRefresh(updateSwatch)
             end
 
             -- Width | Height Offset: only while a textured style is selected.
             local texKey = AF.Get("borderTexture")
             if texKey ~= "" and texKey ~= "solid" then
-                local offL, offR = CludesUI.BorderOffsetRowCfgs({
+                local offL, offR = CUI.BorderOffsetRowCfgs({
                     getTex = function() return AF.Get("borderTexture") end,
                     getStep = function() return AF.Get("borderSize") end,
                     getSizeKey = function() return AF.Get("borderSize") end,
@@ -841,7 +842,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  TRACKING REMINDER
     ---------------------------------------------------------------------------
-    local TR = CludesUI._TrackingReminder
+    local TR = CUI._TrackingReminder
     if TR then
         local function trOff() return not TR.Get("enabled") end
         local function TRSet(key, val)
@@ -852,7 +853,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "TRACKING REMINDER", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_TrackingReminder", disabled = trOff, disabledTooltip = "Tracking Reminder" }
         )
@@ -887,7 +888,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  SWING TIMER
     ---------------------------------------------------------------------------
-    local STm = CludesUI._SwingTimer
+    local STm = CUI._SwingTimer
     if STm then
         local function stOff() return not STm.Get("enabled") end
         local function STSet(key, val)
@@ -898,7 +899,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "SWING TIMER", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_SwingTimer", disabled = stOff, disabledTooltip = "Swing Timer" }
         )
@@ -958,7 +959,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  MANA BAR AND FIVE-SECOND RULE
     ---------------------------------------------------------------------------
-    local DM = CludesUI._DruidMana
+    local DM = CUI._DruidMana
     if DM then
         local function dmOff() return not DM.Get("enabled") end
         local function DMSet(key, val)
@@ -969,7 +970,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "MANA BAR", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_ManaBar", disabled = dmOff, disabledTooltip = "Mana Bar" }
         )
@@ -1012,7 +1013,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  CONSUMABLE BAR
     ---------------------------------------------------------------------------
-    local CB = CludesUI._ConsumableBar
+    local CB = CUI._ConsumableBar
     if CB then
         local function cbOff() return not CB.Get("enabled") end
         local function CBSet(key, val)
@@ -1023,7 +1024,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "CONSUMABLE BAR", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_ConsumableBar", disabled = cbOff, disabledTooltip = "Consumable Bar" }
         )
@@ -1077,7 +1078,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  RAID DEBUFFS
     ---------------------------------------------------------------------------
-    local RD = CludesUI._RaidDebuffs
+    local RD = CUI._RaidDebuffs
     if RD then
         local function rdOff() return not RD.Get("enabled") end
         local function RDSet(key, val)
@@ -1088,7 +1089,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "RAID DEBUFFS", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_RaidDebuffs", disabled = rdOff, disabledTooltip = "Raid Debuffs" }
         )
@@ -1138,7 +1139,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  GEAR SETS
     ---------------------------------------------------------------------------
-    local GS = CludesUI._GearSets
+    local GS = CUI._GearSets
     if GS then
         local function gsOff() return not GS.Get("enabled") end
         local function GSSet(key, val)
@@ -1158,7 +1159,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "GEAR SETS", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_GearSets", disabled = gsOff, disabledTooltip = "Gear Sets" }
         )
@@ -1178,7 +1179,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             getValue = function() return "" end,
             setValue = function(textValue)
                 GS.Save(textValue)
-                C_Timer.After(0.5, function() CludesUI:RefreshPage(true) end)
+                C_Timer.After(0.5, function() CUI:RefreshPage(true) end)
             end,
         })
         cursorY = cursorY - height
@@ -1207,7 +1208,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  INSTANCE TRACKER
     ---------------------------------------------------------------------------
-    local IT = CludesUI._InstanceTracker
+    local IT = CUI._InstanceTracker
     if IT then
         local function itOff() return not IT.Get("enabled") end
         local function ITSet(key, val)
@@ -1218,7 +1219,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "INSTANCE TRACKER", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_InstanceTracker", disabled = itOff, disabledTooltip = "Instance Tracker" }
         )
@@ -1280,7 +1281,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  GROUP INSPECT
     ---------------------------------------------------------------------------
-    if CludesUI._GroupInspect then
+    if CUI._GroupInspect then
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         _, height = W:SectionHeader(hostFrame, "GROUP INSPECT", cursorY)
@@ -1291,7 +1292,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             buttonText = "Open",
             width = 90,
             tooltip = "Everyone in your group with their level, item level and unenchanted slots. Click a name to open the game's inspect window on them. /cinspect opens it too.",
-            onClick = function() CludesUI._GroupInspect.Show() end,
+            onClick = function() CUI._GroupInspect.Show() end,
         }, { type = "label", text = "Players out of range answer when they come closer." })
         cursorY = cursorY - height
     end
@@ -1299,7 +1300,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  COMBAT EXTRAS
     ---------------------------------------------------------------------------
-    local CE = CludesUI._CombatExtras
+    local CE = CUI._CombatExtras
     if CE then
         local function Set(f, key, val)
             f.Cfg()[key] = val
@@ -1359,13 +1360,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  BAG SPACE
     ---------------------------------------------------------------------------
-    local BS = CludesUI._BagSpace
+    local BS = CUI._BagSpace
     if BS then
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "BAG SPACE", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = "CUI_BagSpace",
             disabled = function() return not BS.Get("enabled") end,
             disabledTooltip = "Bag Space",
@@ -1395,7 +1396,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  QUEST AUTOMATION
     ---------------------------------------------------------------------------
-    local QA = CludesUI._QuestAutomation
+    local QA = CUI._QuestAutomation
     if QA then
         local function qaOff() return not QA.Get("enabled") end
         local function QASet(key, val)
@@ -1449,7 +1450,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  ACTION BAR PROFILES
     ---------------------------------------------------------------------------
-    local AP = CludesUI._ActionBarProfiles
+    local AP = CUI._ActionBarProfiles
     if AP then
         local rowConf = AP.Cfg()
         local nameList = AP.Names()
@@ -1464,7 +1465,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         end
         if not values[rowConf.selected or ""] then rowConf.selected = nameList[1] or "" end
         local function Rebuild()
-            C_Timer.After(0.1, function() CludesUI:RefreshPage(true) end)
+            C_Timer.After(0.1, function() CUI:RefreshPage(true) end)
         end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
@@ -1528,7 +1529,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  LOOT SPARKLES
     ---------------------------------------------------------------------------
-    local LS = CludesUI._LootSparkles
+    local LS = CUI._LootSparkles
     if LS then
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
@@ -1547,7 +1548,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  BEST IN SLOT
     ---------------------------------------------------------------------------
-    local BI = CludesUI._BiS
+    local BI = CUI._BiS
     if BI then
         local function BSet(key, val) BI.Cfg()[key] = val and true or false end
         _, height = W:Spacer(hostFrame, cursorY, 20)
@@ -1605,7 +1606,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  PLAYER HISTORY
     ---------------------------------------------------------------------------
-    local PH = CludesUI._PlayerHistory
+    local PH = CUI._PlayerHistory
     if PH then
         local function Set(key, val)
             PH.Cfg()[key] = val
@@ -1667,7 +1668,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  BOAT AND ZEPPELIN TIMERS
     ---------------------------------------------------------------------------
-    local TR2 = CludesUI._Transport
+    local TR2 = CUI._Transport
     if TR2 then
         local function tOff() return not TR2.Get("enabled") end
         local function Set(key, val)
@@ -1678,7 +1679,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "BOAT AND ZEPPELIN TIMERS", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_ShipTimer", disabled = tOff, disabledTooltip = "Boat and Zeppelin Timer" }
         )
@@ -1721,7 +1722,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  TOWN MAP
     ---------------------------------------------------------------------------
-    local TWN = CludesUI._TownMap
+    local TWN = CUI._TownMap
     if TWN then
         local function nOff() return not TWN.Get("enabled") end
         local function Tog(key, textValue, tipText, dis)
@@ -1824,7 +1825,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  PALADIN BLESSINGS
     ---------------------------------------------------------------------------
-    local BL = CludesUI._Blessings
+    local BL = CUI._Blessings
     if BL then
         local function bOff() return not BL.Get("enabled") end
         local function Set(key, val)
@@ -1866,7 +1867,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "PALADIN BLESSINGS", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_BlessingBar", disabled = bOff, disabledTooltip = "Blessing Bar" }
         )
@@ -2048,7 +2049,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  DISCOVERY
     ---------------------------------------------------------------------------
-    local DC = CludesUI._Discovery
+    local DC = CUI._Discovery
     if DC then
         local function dOff() return not DC.Get("enabled") end
         local function Set(key, val)
@@ -2069,7 +2070,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "DISCOVERY", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_DiscoveryTracker", disabled = dOff, disabledTooltip = "Discovery Tracker" }
         )
@@ -2171,7 +2172,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  QUEST LIST AND RARES (Discovery's last two tabs)
     ---------------------------------------------------------------------------
-    local QL = CludesUI._QuestList
+    local QL = CUI._QuestList
     if QL and DC then
         local function qOff() return not DC.Get("enabled") end
         local function Set(key, val)
@@ -2192,7 +2193,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "QUEST LIST AND RARES", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = "CUI_RareAlert",
             disabled = function() return qOff() or not QL.Get("rareAlert") end,
             disabledTooltip = "Rare Alert",
@@ -2283,7 +2284,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  PROFESSIONS
     ---------------------------------------------------------------------------
-    local PF = CludesUI._Professions
+    local PF = CUI._Professions
     if PF then
         local function pOff() return not PF.Get("enabled") end
         local function Set(key, val)
@@ -2331,7 +2332,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
-    local MA = CludesUI._MailAlts
+    local MA = CUI._MailAlts
     if MA then
         local function Tog(key, textValue, tipText)
             return {
@@ -2393,7 +2394,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  LAYERS
     ---------------------------------------------------------------------------
-    local LY = CludesUI._Layers
+    local LY = CUI._Layers
     if LY then
         local lt, ls = LY.tracker, LY.swap
         local function lOff() return not lt.Get("enabled") end
@@ -2405,7 +2406,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "LAYERS", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_LayerTracker", disabled = lOff, disabledTooltip = "Layer Tracker" }
         )
@@ -2442,7 +2443,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  XP PER HOUR AND GROUP XP
     ---------------------------------------------------------------------------
-    local XP = CludesUI._XP
+    local XP = CUI._XP
     if XP then
         local xt, gx = XP.ticker, XP.group
         local function Set(f, key, val)
@@ -2478,7 +2479,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "XP PER HOUR", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_XPTicker", disabled = xOff, disabledTooltip = "XP per Hour" }
         )
@@ -2513,7 +2514,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "GROUP XP", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_GroupXP", disabled = gOff, disabledTooltip = "Group XP" }
         )
@@ -2548,7 +2549,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  RESTOCK AND REMINDERS
     ---------------------------------------------------------------------------
-    local RM = CludesUI._Reminders
+    local RM = CUI._Reminders
     if RM then
         local rs, lk, gr, tp = RM.restock, RM.lock, RM.gear, RM.talents
         local function Set(f, key, val)
@@ -2583,7 +2584,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "RESTOCK REMINDER", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_Restock", disabled = rsOff, disabledTooltip = "Restock Reminder" }
         )
@@ -2685,7 +2686,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "OTHER REMINDERS", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = "CUI_GearReminders",
             disabled = function() return not (gr.Get("worn") or gr.Get("pole")) end,
             disabledTooltip = "Gear Reminders",
@@ -2734,7 +2735,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  MANA EFFICIENCY
     ---------------------------------------------------------------------------
-    local SE = CludesUI._SpellEfficiency
+    local SE = CUI._SpellEfficiency
     if SE then
         local function seOff() return not SE.Get("enabled") end
         local function SESet(key, val) SE.Cfg()[key] = val end
@@ -2819,7 +2820,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  HEALER MANA AND PET TRACKER
     ---------------------------------------------------------------------------
-    local GW = CludesUI._GroupWatch
+    local GW = CUI._GroupWatch
     if GW then
         local hm, pt = GW.healer, GW.pet
         local function Set(f, key, val)
@@ -2832,7 +2833,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "HEALER MANA", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_HealerMana", disabled = hmOff, disabledTooltip = "Healer Mana" }
         )
@@ -2893,7 +2894,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "PET TRACKER", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_PetTracker", disabled = ptOff, disabledTooltip = "Pet Tracker" }
         )
@@ -2962,7 +2963,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  DUNGEON JOURNAL
     ---------------------------------------------------------------------------
-    if CludesUI._Journal then
+    if CUI._Journal then
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         _, height = W:SectionHeader(hostFrame, "DUNGEON JOURNAL", cursorY)
@@ -2973,7 +2974,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             buttonText = "Open",
             width = 90,
             tooltip = "Every dungeon and raid: bosses in kill order, their loot and drop chances, a tip per boss, and the quests. Alt+Shift-click an item to add it to your BiS list. /cjournal opens it too.",
-            onClick = function() CludesUI._Journal.Show() end,
+            onClick = function() CUI._Journal.Show() end,
         }, { type = "label", text = "Opens on the dungeon you are in." })
         cursorY = cursorY - height
     end
@@ -2981,11 +2982,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  STAT WEIGHTS
     ---------------------------------------------------------------------------
-    local SWt = CludesUI._StatWeights
+    local SWt = CUI._StatWeights
     if SWt then
         local rowConf = SWt.Cfg()
         local function Rebuild()
-            C_Timer.After(0.05, function() CludesUI:RefreshPage(true) end)
+            C_Timer.After(0.05, function() CUI:RefreshPage(true) end)
         end
         local values, sequence = { [""] = "Automatic (talents)" }, { "" }
         for _, spec in ipairs(SWt.Specs()) do
@@ -3063,7 +3064,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
-    local JI = CludesUI._JunkItems
+    local JI = CUI._JunkItems
     local function junkOff() return not JI.Get("enabled") end
     -- Every write re-applies the window.
     local function JunkSet(key, val)
@@ -3071,12 +3072,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         JI.Apply()
     end
     local function ClearJunkExclusions()
-        CludesUI:ShowConfirmPopup({
-            title = CludesUI.L("Clear Excluded Items"),
-            message = CludesUI.L(
+        CUI:ShowConfirmPopup({
+            title = CUI.L("Clear Excluded Items"),
+            message = CUI.L(
                 "Every item you middle-clicked away can show in the Junk Items window again."
             ),
-            confirmText = CludesUI.L("Clear"),
+            confirmText = CUI.L("Clear"),
             cancelText = CANCEL,
             onConfirm = JI.ClearExclusions,
         })
@@ -3086,18 +3087,18 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     cursorY = cursorY - height
     heading, height = W:SectionHeader(hostFrame, "JUNK ITEMS", cursorY)
     cursorY = cursorY - height
-    CludesUI.BuildSectionUnlockJump(
+    CUI.BuildSectionUnlockJump(
         heading,
         { key = "CUI_JunkList", disabled = junkOff, disabledTooltip = "Junk Items Window" }
     )
 
-    _, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
+    _, height = CUI.BuildVisibilityRow(W, hostFrame, cursorY, {
         leftCfg = {
             type = "toggle",
             text = "Enable Junk Items Window",
             tooltip = "Shows your cheapest junk in a small window.",
             getValue = function() return not junkOff() end,
-            setValue = CludesUI.SectionToggleSetValue(function(val) JunkSet("enabled", val) end),
+            setValue = CUI.SectionToggleSetValue(function(val) JunkSet("enabled", val) end),
         },
         -- The window's table exists once it was turned on, and the row is
         -- greyed out while it is off, so viewing the page saves nothing.
@@ -3106,8 +3107,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         caps = { partyIncludesRaid = false, luaDragonriding = true, noMouseover = true },
         disabledFn = junkOff,
         disabledTooltip = "Junk Items Window",
-        onChanged = CludesUI.RequestVisibilityUpdate,
-        onOptionChanged = CludesUI.RequestVisibilityUpdate,
+        onChanged = CUI.RequestVisibilityUpdate,
+        onOptionChanged = CUI.RequestVisibilityUpdate,
     })
     cursorY = cursorY - height
 
@@ -3202,20 +3203,20 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             getValue = function() return JI.Get("onlyLowBagSpace") == true end,
             setValue = function(val)
                 JunkSet("onlyLowBagSpace", val)
-                CludesUI:RefreshPage() -- the cog's disabled state
+                CUI:RefreshPage() -- the cog's disabled state
             end,
         }, {
             type = "toggle",
             text = "Use Auctionator Prices",
             tooltip = "Prices items from Auctionator scans.",
-            disabled = function() return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() == nil end,
+            disabled = function() return CUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() == nil end,
             disabledTooltip = "This option requires Auctionator to be loaded.",
             getValue = function() return JI.Get("auctionPrices") == true end,
             setValue = function(val) JunkSet("auctionPrices", val) end,
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(lowRow._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(lowRow._leftRegion, {
                 title = "Only Show When Bag Space Is Low",
                 disabled = function() return JI.Get("onlyLowBagSpace") ~= true end,
                 disabledTooltip = "Only Show When Bag Space Is Low",
@@ -3238,7 +3239,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  FISHING (CludesUIForeverEssentials_Fishing.lua)
     ---------------------------------------------------------------------------
-    local FI = CludesUI._Fishing
+    local FI = CUI._Fishing
     local function SetFish(key, val)
         FI.Cfg()[key] = val
         FI.Apply()
@@ -3251,7 +3252,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     -- The Bobber Indicator's mover exists only while the indicator can show:
     -- the Fishing Key bound with Reel In and Bobber Indicator on (the cog's
     -- rows), so the button names whichever of the three is missing.
-    CludesUI.BuildSectionUnlockJump(heading, {
+    CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_FishingBobber",
         disabled = function() return FI.Get("key") == nil or not FI.Get("reel") or not FI.Get("indicator") end,
         disabledTooltip = function()
@@ -3271,30 +3272,30 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Double-Click to Cast",
         tooltip = "With a fishing pole in hand, double right-click the world to cast.",
-        disabled = function() return CludesUI.PadGamepadUI() end,
+        disabled = function() return CUI.PadGamepadUI() end,
         disabledTooltip = "This option does not work with the Gamepad interface style.",
         getValue = function() return FI.Get("doubleClick") end,
         setValue = function(val)
             SetFish("doubleClick", val)
-            CludesUI:RefreshPage() -- the cog's disabled state
+            CUI:RefreshPage() -- the cog's disabled state
         end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = fishKeyRow._leftRegion
-        local kbBtn, refresh = CludesUI.BuildKeybindButton(region, {
+        local kbBtn, refresh = CUI.BuildKeybindButton(region, {
             w = 140,
             h = 30,
             font = 13,
             get = function() return FI.Get("key") end,
             set = function(val)
                 SetFish("key", val)
-                CludesUI:RefreshPage() -- the cog's disabled state
+                CUI:RefreshPage() -- the cog's disabled state
             end,
             tooltip = "Left-click to set a keybind.\nRight-click to unbind.",
         })
-        CludesUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
-        CludesUI.RegisterWidgetRefresh(refresh)
+        CUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
+        CUI.RegisterWidgetRefresh(refresh)
 
         local function fishRow(labelText, tooltip, key)
             return {
@@ -3307,7 +3308,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         end
         -- A label half has no control: the cog sits left of the keybind
         -- button, which also bounds the label.
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Fishing Key",
             rows = {
                 fishRow(
@@ -3330,7 +3331,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             disabled = function() return FI.Get("key") == nil end,
             disabledTooltip = "Fishing Key",
         })
-        CludesUI.BuildInlineCog(fishKeyRow._rightRegion, {
+        CUI.BuildInlineCog(fishKeyRow._rightRegion, {
             title = "Double-Click to Cast",
             rows = {
                 fishRow(
@@ -3339,9 +3340,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     "clickLure"
                 ),
             },
-            disabled = function() return CludesUI.PadGamepadUI() or not FI.Get("doubleClick") end,
+            disabled = function() return CUI.PadGamepadUI() or not FI.Get("doubleClick") end,
             disabledTooltip = function()
-                if CludesUI.PadGamepadUI() then
+                if CUI.PadGamepadUI() then
                     return "This option does not work with the Gamepad interface style."
                 end
                 return "Double-Click to Cast"

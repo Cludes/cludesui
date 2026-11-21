@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_TooltipSkin.lua
 --
@@ -54,7 +55,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         if colorOverride then
             color = colorOverride
         elseif modeName == "accent" then
-            color = CludesUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
+            color = CUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
         elseif modeName == "class" then
             local _, class = UnitClass("player")
             color = class and RAID_CLASS_COLORS[class] or { r = 1, g = 1, b = 1 }
@@ -62,12 +63,12 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             color = saved[prefixText .. "BorderColor"] or { r = 1, g = 1, b = 1 }
         end
         local alpha = saved[prefixText .. "BorderOpacity"]
-        if alpha == nil then alpha = (modeName == "custom") and CludesUI.RESKIN.BRD_ALPHA or 0.5 end
+        if alpha == nil then alpha = (modeName == "custom") and CUI.RESKIN.BRD_ALPHA or 0.5 end
         return saved, size, key, color, alpha
     end
 
     local function _applyConfiguredBorder(ownerFrame, prefixText, legacySize, colorOverride)
-        if not ownerFrame or not CludesUI.ApplyBorderStyle then return end
+        if not ownerFrame or not CUI.ApplyBorderStyle then return end
         -- Read the level up front: it is the first widget call this makes, so it doubles as the restriction probe (see _ttUsable).
         local okLvl, ownerLevel = pcall(ownerFrame.GetFrameLevel, ownerFrame)
         if not okLvl then return end
@@ -77,7 +78,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             payload.configBorder = CreateFrame("Frame", nil, ownerFrame, "BackdropTemplate")
             payload.configBorder:SetAllPoints(ownerFrame)
             payload.configBorder:EnableMouse(false)
-            if not _PP then _PP = CludesUI.PP end
+            if not _PP then _PP = CUI.PP end
             if _PP and _PP.HideBorder then _PP.HideBorder(ownerFrame) end
         end
         -- Recomputed every apply so Show Behind works live. +4 not +5: the resurrect-accept
@@ -87,8 +88,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         )
         local texture = saved[prefixText .. "BorderTexture"] or "solid"
         -- Exact Border Size (the <prefix>BorderThicknessPx companion); nil = the legacy step above, unchanged.
-        local pixel = CludesUI.BorderPx(saved[prefixText .. "BorderThicknessPx"], size, texture)
-        CludesUI.ApplyBorderStyle(
+        local pixel = CUI.BorderPx(saved[prefixText .. "BorderThicknessPx"], size, texture)
+        CUI.ApplyBorderStyle(
             payload.configBorder,
             size,
             color.r,
@@ -106,14 +107,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             pixel
         )
     end
-    CludesUI._applyBlizzardConfiguredBorder = _applyConfiguredBorder
+    CUI._applyBlizzardConfiguredBorder = _applyConfiguredBorder
 
     -- Removes a border drawn by _applyConfiguredBorder for a setting that went back to its default.
-    CludesUI._hideBlizzardConfiguredBorder = function(ownerFrame)
+    CUI._hideBlizzardConfiguredBorder = function(ownerFrame)
         local payload = ownerFrame and FFD[ownerFrame]
         local border = payload and payload.configBorder
         if not border then return end
-        CludesUI.HideBorderStyle(border)
+        CUI.HideBorderStyle(border)
         border:Hide()
     end
 
@@ -125,7 +126,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         if modeName == nil then modeName = saved.accentReskinElements and "accent" or "native" end
         return modeName
     end
-    CludesUI._getPopupMenuElementMode = _elemColorMode
+    CUI._getPopupMenuElementMode = _elemColorMode
 
     local function _getElementColor()
         local saved = CludesUIDB or {}
@@ -139,37 +140,37 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             if color then return color.r, color.g, color.b end
         end
         -- accent AND native both land here; only the Game Menu header calls this unconditionally under native (branded green) -- others gate first.
-        local color = CludesUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
+        local color = CUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
         return color.r, color.g, color.b
     end
-    CludesUI._getPopupMenuButtonTextColor = _getElementColor
+    CUI._getPopupMenuButtonTextColor = _getElementColor
 
     local function _ttSkin(tip, _, isEmbedded)
         if not tip or tip:IsForbidden() or not _tipsOn() then return end
         -- Embedded tooltips (EmbeddedItemTooltip, reward block inside a world-quest tooltip) render INSIDE a parent; skip bg/border to avoid a nested-tooltip look.
         if isEmbedded or tip.IsEmbedded then return end
         if not _ttUsable(tip) then return end
-        if not _PP then _PP = CludesUI and CludesUI.PP end
+        if not _PP then _PP = CUI and CUI.PP end
         if tip.NineSlice then tip.NineSlice:SetAlpha(0) end
         if not GetFFD(tip).bg then
             GetFFD(tip).bg = tip:CreateTexture(nil, "BACKGROUND", nil, -8)
             GetFFD(tip).bg:SetAllPoints()
         end
         -- Unified user-customizable background (shared with CUI custom tooltips via GetTooltipBg); re-applied each call so a settings change shows immediately.
-        GetFFD(tip).bg:SetColorTexture(CludesUI.GetTooltipBg())
+        GetFFD(tip).bg:SetColorTexture(CUI.GetTooltipBg())
         GetFFD(tip).bg:Show()
         -- Border size/color (Blizz UI Enhanced > Blizzard Tooltip > Border), same reapply-every-call pattern; size 0 hides the border.
-        local _, _, _, _, legacySize = CludesUI.GetTooltipBorder()
+        local _, _, _, _, legacySize = CUI.GetTooltipBorder()
         _applyConfiguredBorder(tip, "tooltip", legacySize)
     end
     -- The same look for Blizzard's tooltip-like frames that are not GameTooltips
     -- (their window packs call it on show).
-    CludesUI._skinBlizzardTooltipFrame = _ttSkin
+    CUI._skinBlizzardTooltipFrame = _ttSkin
 
     local function _ttFonts(tip, startFrom)
         if not tip or tip:IsForbidden() or not _tipsOn() then return end
-        local fp = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
-        local ol = CludesUI.GetFontOutlineFlag("blizzardSkin") or ""
+        local fp = CUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+        local ol = CUI.GetFontOutlineFlag("blizzardSkin") or ""
         local scale = CludesUIDB and CludesUIDB.tooltipFontScale or 1.0
         local titleSize = math.floor(13 * scale + 0.5)
         local bodySize = math.floor(11 * scale + 0.5)
@@ -180,7 +181,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         -- Font families (lines show players' names, guilds and notes), with no
         -- drop shadow, as the lines' own template font has none. A line already
         -- on the family is left alone.
-        local SetFamily = CludesUI.SetFontFamily
+        local SetFamily = CUI.SetFontFamily
         for i = (startFrom or 1), nLines do
             local leftX = _G[label .. "TextLeft" .. i]
             if not leftX then break end
@@ -277,7 +278,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         -- risk). Gate on the LIVE restriction probe: combat lockdown alone
         -- misses between-pull windows in protected instances AND forced
         -- restriction states, which is exactly where this scan detonated.
-        local AK = CludesUI.AuraKit
+        local AK = CUI.AuraKit
         if InCombatLockdown() or (AK and AK.AurasRestricted and AK.AurasRestricted()) then return nil end
 
         for i = 1, 255 do
@@ -360,10 +361,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             and _GameTooltip:IsShown()
             and _tipShownGUID == unitGuid
             and not ttd.ilvlShown
-            and not _tipHasLine(_GameTooltip, CludesUI.L("Item Level"))
+            and not _tipHasLine(_GameTooltip, CUI.L("Item Level"))
         then
             local nBefore = _GameTooltip:NumLines() or 0
-            _GameTooltip:AddDoubleLine(CludesUI.L("Item Level:"), cachedValue.ilvl, 1, 1, 1, 1, 1, 1)
+            _GameTooltip:AddDoubleLine(CUI.L("Item Level:"), cachedValue.ilvl, 1, 1, 1, 1, 1, 1)
             _ttFonts(_GameTooltip, nBefore + 1)
             -- Runs for every source's result, also in combat; pcall'd like the re-Show in
             -- _ttOnShow, since a tainted re-Show can be denied as forbidden access.
@@ -401,7 +402,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         _inspectFrame:RegisterEvent("INSPECT_READY")
     end
     -- Exposed on CludesUI; nothing outside this file reads it today.
-    CludesUI._inspectCache = _ilvlCache
+    CUI._inspectCache = _ilvlCache
 
     -- Re-derive a CLEAN literal group unit token for a GUID by matching it against
     -- tokens we build ourselves (player/raidN/partyN). On secure raid-frame unit
@@ -576,11 +577,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             local s = C_Secrets.ShouldUnitIdentityBeSecret(tu)
             if (_isSecret and _isSecret(s)) or s == true then return end
         end
-        local labelText = CludesUI.L("Targeting:")
+        local labelText = CUI.L("Targeting:")
         local tName, red, green, blue
         if UnitExists(tu) then
             if UnitIsUnit(tu, "player") then
-                tName = CludesUI.L("You")
+                tName = CUI.L("You")
                 red, green, blue = 0.1, 1, 0.1
             else
                 local num = UnitName(tu)
@@ -644,7 +645,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     local function _ttBuffsLayout()
         local c = _ttBuffs
         if not c then return end
-        local AK = CludesUI.AuraKit
+        local AK = CUI.AuraKit
         local saved = CludesUIDB or {}
         if not saved.tooltipShowBuffs then
             c:Hide()
@@ -679,12 +680,12 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         local FD = AnchorUtil.FlowDirection
         AK.SetContainerGrowth(c, FD[p[3]], FD[p[4]])
     end
-    CludesUI._applyTooltipBuffs = _ttBuffsLayout
+    CUI._applyTooltipBuffs = _ttBuffsLayout
 
     local function _ttShowBuffs(unitGuid, unitToken)
         local saved = CludesUIDB
         if not (unitToken and saved and saved.tooltipShowBuffs) then return end
-        local AK = CludesUI.AuraKit
+        local AK = CUI.AuraKit
         if not _ttBuffs then
             -- noTooltips: no hover tooltips (they would take over GameTooltip);
             -- AuraKit keeps the buttons mouse-free through every restyle. Built
@@ -782,7 +783,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         local saved = CludesUIDB
         -- Forever: a hidden ("??") player level the PvP feature knows. Looked up first so
         -- it is written in even when none of the tooltip colour options is on.
-        local knownLevel = unitToken and CludesUI.KnownHiddenLevel and CludesUI.KnownHiddenLevel(unitToken)
+        local knownLevel = unitToken and CUI.KnownHiddenLevel and CUI.KnownHiddenLevel(unitToken)
         if
             not (
                 saved
@@ -839,15 +840,15 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             local lvl = known or UnitEffectiveLevel(unitToken)
             local red, green, blue
             if saved.tooltipLevelColor then
-                red, green, blue = CludesUI.GetLevelColor(unitToken, lvl, true)
+                red, green, blue = CUI.GetLevelColor(unitToken, lvl, true)
             end
-            if red then hex = CludesUI.ColorText("%0", red, green, blue) end
+            if red then hex = CUI.ColorText("%0", red, green, blue) end
             -- Compact line: "90 Tauren" for players, "90 Elite Humanoid" for NPCs.
             local player = UnitIsPlayer(unitToken)
             if saved.tooltipCompactLevel and not (_isSecret and (_isSecret(lvl) or _isSecret(player))) then
                 local parts = _compactParts
                 wipe(parts)
-                parts[1] = CludesUI.ColorText(lvl > 0 and lvl or "??", red, green, blue)
+                parts[1] = CUI.ColorText(lvl > 0 and lvl or "??", red, green, blue)
                 if player then
                     parts[2] = UnitRace(unitToken)
                 else
@@ -1029,7 +1030,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 score
                 and not (_isSecret and _isSecret(score))
                 and score > 0
-                and not _tipHasLine(tip, CludesUI.L("M+ Score:"))
+                and not _tipHasLine(tip, CUI.L("M+ Score:"))
             then
                 local sColor = C_ChallengeMode
                     and C_ChallengeMode.GetDungeonScoreRarityColor
@@ -1038,7 +1039,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 if sColor then
                     red, green, blue = sColor.r, sColor.g, sColor.b
                 end
-                tip:AddDoubleLine(CludesUI.L("M+ Score:"), score, 1, 1, 1, red, green, blue)
+                tip:AddDoubleLine(CUI.L("M+ Score:"), score, 1, 1, 1, red, green, blue)
             end
         end
         -- Mount name from the live helpful aura MountJournal recognizes. Opt-in (default off); per-GUID cached so refresh ticks on an unmounted player never re-walk the aura list.
@@ -1047,7 +1048,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             and unitGuid
             and saved
             and saved.tooltipShowMount
-            and not _tipHasLine(tip, CludesUI.L("Mount:"))
+            and not _tipHasLine(tip, CUI.L("Mount:"))
         then
             local mountLabel, mountCollected
             local cachedValue = _mountCache[unitGuid]
@@ -1082,7 +1083,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 elseif mountCollected == false then
                     valText = mountLabel .. " |TInterface\\RaidFrame\\ReadyCheck-NotReady:0|t"
                 end
-                tip:AddDoubleLine(CludesUI.L("Mount:"), valText, 1, 1, 1, 1, 1, 1)
+                tip:AddDoubleLine(CUI.L("Mount:"), valText, 1, 1, 1, 1, 1, 1)
             end
         end
         _ttShowBuffs(unitGuid, unitToken)
@@ -1115,8 +1116,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                     end
                 end
             end
-            if ilvl and not _tipHasLine(tip, CludesUI.L("Item Level")) then
-                tip:AddDoubleLine(CludesUI.L("Item Level:"), ilvl, 1, 1, 1, 1, 1, 1)
+            if ilvl and not _tipHasLine(tip, CUI.L("Item Level")) then
+                tip:AddDoubleLine(CUI.L("Item Level:"), ilvl, 1, 1, 1, 1, 1, 1)
                 ttd.ilvlShown = true
             end
         end
@@ -1161,7 +1162,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             GameTooltipStatusBar:SetPoint("BOTTOMLEFT", _GameTooltip, "BOTTOMLEFT", 1, 1)
             GameTooltipStatusBar:SetPoint("BOTTOMRIGHT", _GameTooltip, "BOTTOMRIGHT", -1, 1)
             -- Texture + height (the Show Health Strip cog); unset keeps UI-StatusBar at 3px.
-            CludesUI._applyTooltipHealthStripStyle(true)
+            CUI._applyTooltipHealthStripStyle(true)
         end
     end
 
@@ -1221,7 +1222,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         for i = 1, _select("#", widget:GetRegions()) do
             local regionFrame = _select(i, widget:GetRegions())
             if regionFrame and regionFrame:IsObjectType("Texture") and not GetFFD(regionFrame).owned then
-                local RS = CludesUI.RESKIN
+                local RS = CUI.RESKIN
                 regionFrame:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, 1)
                 regionFrame:SetAlpha(RS.CTX_ALPHA)
                 regionFrame:ClearAllPoints()
@@ -1332,12 +1333,12 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         if dialogFrame.BG then dialogFrame.BG:SetAlpha(0) end
         if dialogFrame.NineSlice then dialogFrame.NineSlice:SetAlpha(0) end
         if not GetFFD(dialogFrame).bg then
-            local RS = CludesUI.RESKIN
+            local RS = CUI.RESKIN
             GetFFD(dialogFrame).bg = dialogFrame:CreateTexture(nil, "BACKGROUND", nil, -8)
             GetFFD(dialogFrame).bg:SetAllPoints()
             GetFFD(dialogFrame).bg:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, RS.QT_ALPHA)
             GetFFD(GetFFD(dialogFrame).bg).owned = true
-            if not _PP then _PP = CludesUI and CludesUI.PP end
+            if not _PP then _PP = CUI and CUI.PP end
             if _PP and _PP.CreateBorder then
                 _PP.CreateBorder(dialogFrame, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7)
             end
@@ -1444,7 +1445,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             -- Midnight edit boxes carry their art on a NineSlice child.
             if editField.NineSlice and editField.NineSlice.SetAlpha then editField.NineSlice:SetAlpha(0) end
             -- 6px left padding: box edge extends, text stays put.
-            if CludesUI._WSkinPadInput then CludesUI._WSkinPadInput(editField) end
+            if CUI._WSkinPadInput then CUI._WSkinPadInput(editField) end
             local ebBg = editField:CreateTexture(nil, "BACKGROUND", nil, -6)
             ebBg:SetAllPoints()
             ebBg:SetColorTexture(0.05, 0.05, 0.05, 0.9)
@@ -1454,7 +1455,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             if _elemColorMode() ~= "native" then
                 borderR, borderG, borderB = _getElementColor()
             end
-            if not _PP then _PP = CludesUI and CludesUI.PP end
+            if not _PP then _PP = CUI and CUI.PP end
             if _PP and _PP.CreateBorder then
                 _PP.CreateBorder(editField, borderR, borderG, borderB, 0.5, 1, "OVERLAY", 7)
             end
@@ -1501,7 +1502,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             shade:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 3, -3)
             shade:SetFrameLevel(button:GetFrameLevel() + 5)
             shade:Hide()
-            if not _PP then _PP = CludesUI and CludesUI.PP end
+            if not _PP then _PP = CUI and CUI.PP end
             if _PP and _PP.CreateBorder then _PP.CreateBorder(shade, 1, 1, 1, 1, 2, "OVERLAY", 7) end
             local anim = shade:CreateAnimationGroup()
             anim:SetLooping("BOUNCE")
@@ -1520,7 +1521,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         local shade, ag = _resGlowGet(button)
         if not shade then return end
         -- Color resolved every start so re-shows follow the current element color setting (same source as the popup skin).
-        local ACC = CludesUI.CLUDES_GREEN
+        local ACC = CUI.CLUDES_GREEN
         if _PP and _PP.SetBorderColor then
             if _accentEnabled() and ACC then
                 _PP.SetBorderColor(shade, ACC.r, ACC.g, ACC.b, 1)
@@ -1577,10 +1578,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     end
 
     -- Options-panel entry point: installs hooks on first enable and syncs visible popups on any flip, so no reload is needed.
-    CludesUI._EnsureResurrectGlow = function()
+    CUI._EnsureResurrectGlow = function()
         if _resGlowEnabled() then _resGlowInit() end
         if _resGlowHooked then _resGlowRefreshAll() end
-        if CludesUI._repaintPopupPreview then CludesUI._repaintPopupPreview() end
+        if CUI._repaintPopupPreview then CUI._repaintPopupPreview() end
     end
 
     do
@@ -1597,7 +1598,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 _ttInitData()
                 _ttInitVisual()
             end
-            if CludesUI.SyncAuraTooltipSkin then CludesUI.SyncAuraTooltipSkin() end
+            if CUI.SyncAuraTooltipSkin then CUI.SyncAuraTooltipSkin() end
             if _pmEnabled() then
                 _menuInit()
                 _popupInit()
@@ -1606,7 +1607,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             if _resGlowEnabled() then _resGlowInit() end
         end)
     end
-    CludesUI._initTooltipSkins = function()
+    CUI._initTooltipSkins = function()
         _ttInit()
         _menuInit()
         _popupInit()
@@ -1639,7 +1640,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         local on = _tipsOn()
         -- Extras exist only under the reskin, as on the live tooltip.
         local posX = on and saved or {}
-        local L = CludesUI.L
+        local L = CUI.L
         if _pv.place then _pv.place(tip) end
         -- SetOwner clears the lines and re-owns the tooltip after the header was hidden.
         tip:SetOwner(hostFrame, "ANCHOR_NONE")
@@ -1668,14 +1669,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         local lvl, race = UnitEffectiveLevel("player"), UnitRace("player") or ""
         if _isSecret and _isSecret(lvl) then lvl = 0 end
         local red, green, blue
-        if posX.tooltipLevelColor and CludesUI.GetLevelColor then
-            red, green, blue = CludesUI.GetLevelColor("player", lvl, true)
+        if posX.tooltipLevelColor and CUI.GetLevelColor then
+            red, green, blue = CUI.GetLevelColor("player", lvl, true)
         end
         if posX.tooltipCompactLevel then
-            _pvLine(tip, CludesUI.ColorText(lvl, red, green, blue) .. " " .. race)
+            _pvLine(tip, CUI.ColorText(lvl, red, green, blue) .. " " .. race)
         else
             local textValue = UNIT_TYPE_LEVEL_TEMPLATE:format(lvl, race)
-            if red then textValue = textValue:gsub("%d+", CludesUI.ColorText("%0", red, green, blue), 1) end
+            if red then textValue = textValue:gsub("%d+", CUI.ColorText("%0", red, green, blue), 1) end
             _pvLine(tip, textValue)
         end
 
@@ -1696,7 +1697,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         if
             on
             and saved.tooltipMythicScore ~= false
-            and not CludesUI.IS_FOREVER
+            and not CUI.IS_FOREVER
             and C_PlayerInfo
             and C_PlayerInfo.GetPlayerMythicPlusRatingSummary
         then
@@ -1777,8 +1778,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 topStrip:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
                 topStrip:SetHeight(3)
                 topStrip.bg:Show()
-                if CludesUI._applyTooltipHealthStripStyle then
-                    CludesUI._applyTooltipHealthStripStyle(nil, topStrip)
+                if CUI._applyTooltipHealthStripStyle then
+                    CUI._applyTooltipHealthStripStyle(nil, topStrip)
                 end
             else
                 topStrip:SetPoint("TOPLEFT", tip, "BOTTOMLEFT", 2, -1)
@@ -1798,14 +1799,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     end
 
     -- A write on the Tooltips page: the shown sample paints again.
-    CludesUI._repaintTooltipPreview = function()
+    CUI._repaintTooltipPreview = function()
         local p = _pv.tt and _pv.tt:GetParent()
         if p and p:IsVisible() then _pvPaint() end
     end
 
     -- Shows the sample under parent and paints it. place(tt) runs before the
     -- paint (scale it), place(tt, w, h) after it (anchor it, size the header).
-    function CludesUI.ShowTooltipPreview(hostFrame, place)
+    function CUI.ShowTooltipPreview(hostFrame, place)
         if not _pv.tt then
             _pv.tt = CreateFrame("GameTooltip", "CludesUITooltipPreview", hostFrame, "SharedTooltipTemplate")
             _pv.tt:SetClampedToScreen(false)
@@ -1848,13 +1849,13 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         if _pp.place then _pp.place(frame, frame:GetWidth(), frame:GetHeight()) end
     end
 
-    CludesUI._repaintPopupPreview = function()
+    CUI._repaintPopupPreview = function()
         local p = _pp.f and _pp.f:GetParent()
         if p and p:IsVisible() then _ppPaint() end
     end
 
     -- Same contract as ShowTooltipPreview. Named: _popupSkin builds child names from it.
-    function CludesUI.ShowPopupPreview(hostFrame, place)
+    function CUI.ShowPopupPreview(hostFrame, place)
         local frame = _pp.f
         if not frame then
             frame = CreateFrame("Frame", "CludesUIPopupPreview", hostFrame)
@@ -1886,14 +1887,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     -- hooks can never touch it directly). Build 68914 exposes global styling entry
     -- points for it: resolved DEFENSIVELY (public-env reachability is a field-verify
     -- item) and pcall'd throughout. Applied at login and from tooltip-skin setters; skin off restores the engine default style.
-    function CludesUI.SyncAuraTooltipSkin()
-        CludesUI._repaintTooltipPreview()
+    function CUI.SyncAuraTooltipSkin()
+        CUI._repaintTooltipPreview()
         local inb = _G.AuraContainerInbound
         if not inb then return end
         if _tipsOn() then
             if not inb.SetTooltipBackdrop then return end
-            local cr, cg, cb, ca = CludesUI.GetTooltipBg()
-            local _, _, _, _, legacySize = CludesUI.GetTooltipBorder()
+            local cr, cg, cb, ca = CUI.GetTooltipBg()
+            local _, _, _, _, legacySize = CUI.GetTooltipBorder()
             local saved, size, key, color, alpha = _resolveConfiguredBorder("tooltip", legacySize)
             local details = {
                 backdropInfo = {
@@ -1907,11 +1908,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             -- allows; insets keep the fill on the tooltip.
             if size > 0 then
                 local texture = saved.tooltipBorderTexture or "solid"
-                local pixel = CludesUI.BorderPx(saved.tooltipBorderThicknessPx, size, texture)
-                local edgeFile = CludesUI.ResolveBorderTexture(texture)
+                local pixel = CUI.BorderPx(saved.tooltipBorderThicknessPx, size, texture)
+                local edgeFile = CUI.ResolveBorderTexture(texture)
                 local edge, ox, oy, sx, sy
                 if edgeFile then
-                    edge, ox, oy, sx, sy = CludesUI.BorderPlacement(
+                    edge, ox, oy, sx, sy = CUI.BorderPlacement(
                         size,
                         texture,
                         saved.tooltipBorderOffsetX,
@@ -1925,7 +1926,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 else
                     -- Solid: the PP line, (px or size) whole pixels inside the tooltip.
                     edgeFile = "Interface\\Buttons\\WHITE8X8"
-                    edge, ox, oy, sx, sy = (pixel or size) * CludesUI.PP.mult, 0, 0, 0, 0
+                    edge, ox, oy, sx, sy = (pixel or size) * CUI.PP.mult, 0, 0, 0, 0
                 end
                 details.backdropInfo.edgeFile = edgeFile
                 details.backdropInfo.edgeSize = edge
@@ -2012,8 +2013,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
 
             -- Our dark background + border (create once), anchored to the dialog (not the popup wrapper) so the skin follows if a mover addon drags LFGDungeonReadyDialog independently.
             if not GetFFD(dialogFrame).bg then
-                local RS = CludesUI.RESKIN
-                if not _PP then _PP = CludesUI and CludesUI.PP end
+                local RS = CUI.RESKIN
+                if not _PP then _PP = CUI and CUI.PP end
                 local anchor = dlg or dialogFrame
                 -- SIBLING, not a child. A child frame draws ABOVE its parent's
                 -- own texture regions even at the same frame level, and
@@ -2069,9 +2070,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                                     end)
                                 end
                             end
-                            local ACC = CludesUI.CLUDES_GREEN
+                            local ACC = CUI.CLUDES_GREEN
                             local useAccent = _accentEnabled() and ACC
-                            local RS2 = CludesUI.RESKIN
+                            local RS2 = CUI.RESKIN
                             local btnBg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
                             btnBg:SetAllPoints()
                             GetFFD(btnBg).owned = true
@@ -2143,10 +2144,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 return
             end
             local saved = CludesUIDB or {}
-            local QT = CludesUI.QUEUE_TIMER
+            local QT = CUI.QUEUE_TIMER
             local color = saved.queueTimerTextColor
-            local fontFile = (CludesUI.GetFontPath("extras")) or "Fonts\\FRIZQT__.TTF"
-            CludesUI.PrimeFontShadow(timerLabel, true)
+            local fontFile = (CUI.GetFontPath("extras")) or "Fonts\\FRIZQT__.TTF"
+            CUI.PrimeFontShadow(timerLabel, true)
             timerLabel:SetFont(fontFile, saved.queueTimerTextSize or QT.TEXT_SIZE, "")
             timerLabel:SetTextColor(
                 (color and color.r) or QT.TEXT_R,
@@ -2164,7 +2165,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             )
             timerFill:SetHeight(saved.queueTimerBarHeight or QT.BAR_HEIGHT)
         end
-        CludesUI.RefreshQueueTimerStyle = ApplyTimerStyle
+        CUI.RefreshQueueTimerStyle = ApplyTimerStyle
 
         local function ShowQueueTimer(useEuiStyle)
             local dialogFrame = LFGDungeonReadyPopup
@@ -2187,11 +2188,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
 
                 timerLabel = timerFill:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 
-                CludesUI.RegAccent({
+                CUI.RegAccent({
                     type = "callback",
                     fn = function()
                         if GetFFD(timerFill).style then
-                            local red, green, b = CludesUI.GetAccentColor()
+                            local red, green, b = CUI.GetAccentColor()
                             timerFill:SetStatusBarColor(red, green, b, 0.75)
                         end
                     end,
@@ -2211,7 +2212,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 local mult = (_PP and _PP.mult) or 1
                 timerFill:SetPoint("BOTTOMLEFT", anchorFrame, "BOTTOMLEFT", mult, mult)
                 timerFill:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", -mult, mult)
-                local accR, accG, accB = CludesUI.GetAccentColor()
+                local accR, accG, accB = CUI.GetAccentColor()
                 timerFill:SetStatusBarColor(accR, accG, accB, 0.75)
                 timerBg:SetColorTexture(0, 0, 0, 0.5)
                 timerEdge:Hide()
@@ -2274,12 +2275,12 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             if statusText.NineSlice then statusText.NineSlice:SetAlpha(0) end
             if statusText.Border then statusText.Border:SetAlpha(0) end
             if not GetFFD(statusText).bg then
-                local RS = CludesUI.RESKIN
+                local RS = CUI.RESKIN
                 GetFFD(statusText).bg = statusText:CreateTexture(nil, "BACKGROUND", nil, -8)
                 GetFFD(statusText).bg:SetAllPoints()
                 GetFFD(statusText).bg:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, RS.QT_ALPHA)
                 GetFFD(GetFFD(statusText).bg).owned = true
-                if not _PP then _PP = CludesUI and CludesUI.PP end
+                if not _PP then _PP = CUI and CUI.PP end
                 if _PP and _PP.CreateBorder then
                     _PP.CreateBorder(statusText, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7)
                 end
@@ -2375,12 +2376,12 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             if dialogFrame.NineSlice then dialogFrame.NineSlice:SetAlpha(0) end
             if dialogFrame.Border then dialogFrame.Border:SetAlpha(0) end
             if not GetFFD(dialogFrame).bg then
-                local RS = CludesUI.RESKIN
+                local RS = CUI.RESKIN
                 GetFFD(dialogFrame).bg = dialogFrame:CreateTexture(nil, "BACKGROUND", nil, -8)
                 GetFFD(dialogFrame).bg:SetAllPoints()
                 GetFFD(dialogFrame).bg:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, RS.QT_ALPHA)
                 GetFFD(GetFFD(dialogFrame).bg).owned = true
-                if not _PP then _PP = CludesUI and CludesUI.PP end
+                if not _PP then _PP = CUI and CUI.PP end
                 if _PP and _PP.CreateBorder then
                     _PP.CreateBorder(dialogFrame, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7)
                 end

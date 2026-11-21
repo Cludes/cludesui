@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Nameplates_Options\CoreTextColoring_Options.lua
 --  Nameplates options: the Core Text Coloring section of the Display page,
@@ -7,7 +8,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Positions section; returns y. Shared helpers come from ns._NPO_OptEnv, the
 --  text slots from ns.NPO_TEXT_SLOTS and ns.NPO_TextSlotShown.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUINameplates"]
+local mod = CUI._ModuleNS["CludesUINameplates"]
 if not mod then return end -- module disabled: no options page
 
 local function BuildCoreTextColoring(hostFrame, cursorY, W)
@@ -42,7 +43,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local COLOR_MODE_ORDER_LEVEL = { "custom", "class", "level" }
     local function TextColoringCfg(slotKey, labelText)
         local el = DBVal(slotKey)
-        if el == "none" then return CludesUI.BlankRowCfg() end
+        if el == "none" then return CUI.BlankRowCfg() end
         local values, sequence
         if el == "targetOfTarget" then
             values, sequence = { custom = "Custom", class = "Class" }, COLOR_MODE_ORDER
@@ -65,7 +66,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                 if mod.NP_SlotColorMode(slotKey, saved) ~= val then saved[slotKey .. "ColorMode"] = val end
                 mod.RefreshAllSettings()
                 UpdatePreview()
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         }
     end
@@ -106,7 +107,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                 local color = (saved and (saved[key] or saved[colorKey])) or defaultSet[colorKey]
                 return color.r, color.g, color.b
             end
-            cog = CludesUI.BuildInlineCog(region, {
+            cog = CUI.BuildInlineCog(region, {
                 title = title,
                 captureRegion = region,
                 rows = {
@@ -170,7 +171,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
         -- sit beside the cog, or beside the dropdown on a half without one.
         local anchor = region._lastInline or region._control
         local gap = region._lastInline and -8 or -12
-        local custom, updateCustom = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+        local custom, updateCustom = CUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
             local color = (DB() and DB()[colorKey]) or defaultSet[colorKey]
             return color.r, color.g, color.b
         end, function(red, green, blue)
@@ -180,12 +181,12 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
         Pix.Point(custom, "RIGHT", anchor, "LEFT", gap, 0)
         custom:SetScript("OnEnter", function()
             if isToT and Mode() == "class" then
-                CludesUI.ShowWidgetTooltip(custom, CludesUI.L("NPC Target Color"))
+                CUI.ShowWidgetTooltip(custom, CUI.L("NPC Target Color"))
             else
-                CludesUI.ShowWidgetTooltip(custom, CludesUI.L("Custom Color"))
+                CUI.ShowWidgetTooltip(custom, CUI.L("Custom Color"))
             end
         end)
-        custom:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        custom:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
         -- Hostility / Class: Tapped / Neutral / Hostile left to right, Hostile in
         -- the custom swatch's place.
@@ -194,7 +195,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
             npc, npcUpd = {}, {}
             local prev, prevGap = anchor, gap
             local function NPCSwatch(key, fallbackKey, tipText)
-                local sw, upd = CludesUI.BuildColorSwatch(
+                local sw, upd = CUI.BuildColorSwatch(
                     region,
                     region:GetFrameLevel() + 5,
                     function()
@@ -215,16 +216,16 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                 )
                 Pix.Point(sw, "RIGHT", prev, "LEFT", prevGap, 0)
                 prev, prevGap = sw, -8
-                sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, tipText) end)
-                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:SetScript("OnEnter", function() CUI.ShowWidgetTooltip(sw, tipText) end)
+                sw:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 npc[#npc + 1] = sw
                 npcUpd[#npcUpd + 1] = upd
                 npcSwatchUpdates[#npcSwatchUpdates + 1] = upd
                 return sw
             end
-            NPCSwatch("enemyNameHostileColor", "hostile", CludesUI.L("Hostile Color"))
-            NPCSwatch("enemyNameNeutralColor", "neutral", CludesUI.L("Neutral Color"))
-            NPCSwatch("enemyNameTappedColor", "tapped", CludesUI.L("Tapped Color"))
+            NPCSwatch("enemyNameHostileColor", "hostile", CUI.L("Hostile Color"))
+            NPCSwatch("enemyNameNeutralColor", "neutral", CUI.L("Neutral Color"))
+            NPCSwatch("enemyNameTappedColor", "tapped", CUI.L("Tapped Color"))
         end
 
         local function ShowForMode()
@@ -244,7 +245,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
             -- dropdown itself on a half with neither.
             region._lastInline = (npcOn and npc[#npc]) or (showCustom and custom) or cog
         end
-        CludesUI.RegisterWidgetRefresh(ShowForMode)
+        CUI.RegisterWidgetRefresh(ShowForMode)
         ShowForMode()
     end
 
@@ -256,9 +257,9 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
             hostFrame,
             cursorY,
             TextColoringCfg(l.key, l.coloring),
-            r and TextColoringCfg(r.key, r.coloring) or CludesUI.BlankRowCfg()
+            r and TextColoringCfg(r.key, r.coloring) or CUI.BlankRowCfg()
         )
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             MakeTextColoringInline(row, "_leftRegion", l.key, l.coloring)
             if r then MakeTextColoringInline(row, "_rightRegion", r.key, r.coloring) end
         end

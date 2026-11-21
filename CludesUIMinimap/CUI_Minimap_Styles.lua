@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Styles.lua
 --
@@ -217,7 +218,7 @@ SKIN._MinimapStyle = function()
         -- The WoW Forever variant of Blizzard Style, latched with it: the
         -- Forever client, Blizzard Style, and the sibling useForeverStyle
         -- flag set together with the Blizzard one.
-        local fv = val == "blizzard" and CludesUI.IS_FOREVER == true and m.useForeverStyle == true
+        local fv = val == "blizzard" and CUI.IS_FOREVER == true and m.useForeverStyle == true
         -- Its Border Style Forever Square (where the heavy bronze art
         -- exists): the CludesUI look's square map in that frame, so the
         -- module renders "cui" and every stock site stands down, the
@@ -225,7 +226,7 @@ SKIN._MinimapStyle = function()
         -- variant as it is, Slim Square ("slim") the slim square below;
         -- anything else is Forever Square, the default.
         local fvSlim = fv and m.foreverBorder == "slim"
-        SKIN._fvSquare = fv and not fvSlim and m.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK()
+        SKIN._fvSquare = fv and not fvSlim and m.foreverBorder ~= "circle" and CUI.ForeverHeavyOK()
             or false
         -- Plain Blizzard Style on the Forever client has a Border Style of
         -- its own (blizzBorder): Square, the default there, is the same
@@ -236,11 +237,11 @@ SKIN._MinimapStyle = function()
         -- either square. The variant's own Slim Square is that slim square.
         SKIN._sqSlim = (
             fvSlim
-            or (val == "blizzard" and not fv and CludesUI.IS_FOREVER == true and m.blizzBorder ~= "circle")
+            or (val == "blizzard" and not fv and CUI.IS_FOREVER == true and m.blizzBorder ~= "circle")
         )
-                and CludesUI.ForeverBorderOK()
+                and CUI.ForeverBorderOK()
             or false
-        SKIN._bzCircle = val == "blizzard" and not fv and CludesUI.IS_FOREVER == true and not SKIN._sqSlim
+        SKIN._bzCircle = val == "blizzard" and not fv and CUI.IS_FOREVER == true and not SKIN._sqSlim
         -- The look the profile's flags name (published MinimapForever), before
         -- a square renders it as the CludesUI layout.
         SKIN._fvLook = fv
@@ -285,26 +286,26 @@ end
 -- look. Plain SetAtlas on retail.
 SKIN._StockAtlas = function(texture, name, ...)
     if SKIN._MinimapForever() then return texture:SetAtlas(name, ...) end
-    return CludesUI.StockAtlas(texture, name, ...)
+    return CUI.StockAtlas(texture, name, ...)
 end
 -- Published on the module ns for the Style page and the profile-switch check,
 -- which compare the look the profile flags name: under either square that is
 -- still the look its flags name (Blizzard Style, or Blizzard Style plus its
 -- WoW Forever variant), whatever the module renders.
-CludesUI._ModuleNS[ADDON_NAME].MinimapBlizz = SKIN._MinimapBlizz
-CludesUI._ModuleNS[ADDON_NAME].MinimapStyle = function()
+CUI._ModuleNS[ADDON_NAME].MinimapBlizz = SKIN._MinimapBlizz
+CUI._ModuleNS[ADDON_NAME].MinimapStyle = function()
     local val = SKIN._MinimapStyle()
     if SKIN._fvSquare then return "blizzard" end
     return val
 end
-CludesUI._ModuleNS[ADDON_NAME].MinimapForever = function()
+CUI._ModuleNS[ADDON_NAME].MinimapForever = function()
     if SKIN._styleLatch == nil then SKIN._MinimapStyle() end
     return SKIN._fvLook == true
 end
 -- The options page: a square frame renders this session, and the shape the
 -- map renders.
-CludesUI._ModuleNS[ADDON_NAME].MinimapFvSquare = SKIN._MinimapFvSquare
-CludesUI._ModuleNS[ADDON_NAME].MinimapShape = function()
+CUI._ModuleNS[ADDON_NAME].MinimapFvSquare = SKIN._MinimapFvSquare
+CUI._ModuleNS[ADDON_NAME].MinimapShape = function()
     return SKIN._MapShape(SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap)
 end
 -- Profiles (ProfileChangesStyle's `extra`, handed the incoming minimap
@@ -312,21 +313,21 @@ end
 -- the one latched this session (the latch above, read off `m`), so the
 -- switch asks for a reload. A stored profile keeps no default values, so an
 -- unset Border Style is the square there too.
-CludesUI._ModuleNS[ADDON_NAME].MinimapFvBorderChanged = function(m)
+CUI._ModuleNS[ADDON_NAME].MinimapFvBorderChanged = function(m)
     local sq = nil
     if
         type(m) == "table"
         and not m.useClassicStyle
         and m.useBlizzardStyle
-        and CludesUI.IS_FOREVER == true
+        and CUI.IS_FOREVER == true
     then
         if m.useForeverStyle == true then
             if m.foreverBorder == "slim" then
-                if CludesUI.ForeverBorderOK() then sq = "slim" end
-            elseif m.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK() then
+                if CUI.ForeverBorderOK() then sq = "slim" end
+            elseif m.foreverBorder ~= "circle" and CUI.ForeverHeavyOK() then
                 sq = "heavy"
             end
-        elseif m.blizzBorder ~= "circle" and CludesUI.ForeverBorderOK() then
+        elseif m.blizzBorder ~= "circle" and CUI.ForeverBorderOK() then
             sq = "slim"
         end
     end
@@ -530,7 +531,7 @@ end
 -- map's top.
 SKIN.FV_SQUARE_OUT = 3
 SKIN.FV_SQUARE_TITLE = 27
-SKIN.FV_SLIM_OUT = CludesUI.FOREVER_BORDER.fill
+SKIN.FV_SLIM_OUT = CUI.FOREVER_BORDER.fill
 SKIN.FV_SLIM_TITLE = 24
 SKIN.FV_SLIM_BAND = 0.75
 -- The square frame's outer edge past the map's sides and bottom (and its
@@ -553,11 +554,11 @@ SKIN._ApplyForeverSquare = function(minimap)
             local band = widget:CreateTexture(nil, "BACKGROUND")
             band:SetColorTexture(0, 0, 0, SKIN.FV_SLIM_BAND)
             skinData.fvSlimBand = band
-            skinData.fvSlimRing = CludesUI.ForeverBorder(widget, "ARTWORK")
-            skinData.fvSlimRule = CludesUI.ForeverBorderDivider(widget, "ARTWORK", 1)
+            skinData.fvSlimRing = CUI.ForeverBorder(widget, "ARTWORK")
+            skinData.fvSlimRule = CUI.ForeverBorderDivider(widget, "ARTWORK", 1)
         else
-            widget:SetScale(CludesUI.FOREVER_HEAVY.k)
-            skinData.fvHeavyRim = CludesUI.ForeverHeavy(widget, "ARTWORK")
+            widget:SetScale(CUI.FOREVER_HEAVY.k)
+            skinData.fvHeavyRim = CUI.ForeverHeavy(widget, "ARTWORK")
         end
         skinData.fvFrame = widget
         local slot = CreateFrame("Frame", nil, minimap)
@@ -578,7 +579,7 @@ SKIN._ApplyForeverSquare = function(minimap)
     local o = SKIN._SqOut()
     local topY = title and SKIN._SqTitle() or o
     if slim then
-        CludesUI.ForeverBorderSeat(skinData.fvSlimRing, vis, nil, -o, topY, o, -o)
+        CUI.ForeverBorderSeat(skinData.fvSlimRing, vis, nil, -o, topY, o, -o)
         local band, rule = skinData.fvSlimBand, skinData.fvSlimRule
         band:SetShown(title)
         rule:SetShown(title)
@@ -586,7 +587,7 @@ SKIN._ApplyForeverSquare = function(minimap)
             -- The band from FOREVER_BORDER.fill inside the line (its corners
             -- inside the corner cuts) down to the map's top; the divider
             -- between the side lines' inner edges, its bottom on the map's top.
-            local B = CludesUI.FOREVER_BORDER
+            local B = CUI.FOREVER_BORDER
             band:ClearAllPoints()
             band:SetPoint("TOPLEFT", vis, "TOPLEFT", B.fill - o, topY - B.fill)
             band:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", o - B.fill, 0)
@@ -595,8 +596,8 @@ SKIN._ApplyForeverSquare = function(minimap)
             rule:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", o - B.line, 0)
         end
     else
-        CludesUI.ForeverHeavyTitle(skinData.fvHeavyRim, title)
-        CludesUI.ForeverHeavySeat(skinData.fvHeavyRim, vis, nil, -o, topY, o, -o)
+        CUI.ForeverHeavyTitle(skinData.fvHeavyRim, title)
+        CUI.ForeverHeavySeat(skinData.fvHeavyRim, vis, nil, -o, topY, o, -o)
     end
     widget:Show()
     skinData.fvOuter:ClearAllPoints()
@@ -612,11 +613,11 @@ SKIN._ApplyForeverSquare = function(minimap)
     else
         -- The band between the side rims (their inner edges 3 inside the map's
         -- sides), 2px of air at each end.
-        local barFrame = CludesUI.FOREVER_HEAVY.title
+        local barFrame = CUI.FOREVER_HEAVY.title
         skinData.fvTitleSlot:SetPoint("TOPLEFT", vis, "TOPLEFT", o + 2, topY - barFrame.band)
         skinData.fvTitleSlot:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", -o - 2, topY - barFrame.bandEnd)
     end
-    local ab = CludesUI._ModuleNS.CludesUIActionBars
+    local ab = CUI._ModuleNS.CludesUIActionBars
     if ab then ab.AB_ForeverEyeRelayout() end
 end
 
@@ -629,7 +630,7 @@ end
 -- bottom-left corner (the 45px eye's top-right corner on the frame's outer
 -- corner), clear of the rows the CludesUI layout hangs along the edges.
 SKIN._QueueEyeSpot = function()
-    if not CludesUI.IS_FOREVER then return nil end
+    if not CUI.IS_FOREVER then return nil end
     local sq = SKIN._MinimapFvSquare()
     if not sq and SKIN._MinimapStyle() ~= "blizzard" then return nil end
     local size = SKIN.db.profile.minimap.mapSize or 140
@@ -641,7 +642,7 @@ SKIN._QueueEyeSpot = function()
     local s = size / 198
     return Minimap, -68 * s, -68 * s
 end
-CludesUI._ModuleNS[ADDON_NAME].MinimapQueueEyeSpot = SKIN._QueueEyeSpot
+CUI._ModuleNS[ADDON_NAME].MinimapQueueEyeSpot = SKIN._QueueEyeSpot
 
 -- WoW Forever look: the day/night orb Blizzard hangs on the ring's upper
 -- right (its own sits in the cluster this module hides). Stock geometry: a

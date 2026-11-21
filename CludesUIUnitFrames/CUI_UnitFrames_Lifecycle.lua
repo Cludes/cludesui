@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Lifecycle.lua
 --
@@ -21,16 +22,16 @@ local RegisterUFUnlockElements = Inner.RegisterUFUnlockElements
 local InitializeFrames, SetupOptionsPanel = Inner.InitializeFrames, Inner.SetupOptionsPanel
 local saved -- assigned by CludesUF:OnInitialize below, no setter
 
-local CludesUF = CludesUI.Lite.NewAddon("CludesUIUnitFrames")
+local CludesUF = CUI.Lite.NewAddon("CludesUIUnitFrames")
 
 function CludesUF:OnInitialize()
-    saved = CludesUI.Lite.NewDB("CludesUIUnitFramesDB", defaultSet, true)
+    saved = CUI.Lite.NewDB("CludesUIUnitFramesDB", defaultSet, true)
     Inner.SetDB(saved)
 
     -- A fresh install starts Target of Target on the Target frame's look; a
     -- profile from an earlier version keeps Automatic (no lookSource). Written
     -- here, not a default: the logout strip drops a value equal to its default.
-    if CludesUI._firstInstallPending then
+    if CUI._firstInstallPending then
         local tot = saved.profile.targettarget
         if tot and tot.lookSource == nil then tot.lookSource = "target" end
     end
@@ -38,7 +39,7 @@ function CludesUF:OnInitialize()
     ResolveFontPath()
 
     -- Append SharedMedia textures to runtime tables so SM texture keys resolve
-    CludesUI.AppendSharedMediaTextures(healthBarTextureNames, healthBarTextureOrder, nil, healthBarTextures)
+    CUI.AppendSharedMediaTextures(healthBarTextureNames, healthBarTextureOrder, nil, healthBarTextures)
 
     -- Blizzard options panel is registered centrally in CludesUI.lua
 end
@@ -63,9 +64,9 @@ local function EnableBody()
             profile.stockCastTextureSeeded == nil
             and profile.classicTextureSeeded == nil
             and profile.stockCombatSeededStyle == nil
-            and CludesUI.BankEuiStyleSlot
+            and CUI.BankEuiStyleSlot
         then
-            CludesUI.BankEuiStyleSlot(profile, mod.UF_StyleSlotKeys())
+            CUI.BankEuiStyleSlot(profile, mod.UF_StyleSlotKeys())
         end
         -- WoW Forever's own seed the same way: the other looks' class
         -- resource goes to its Forever-only slot first.
@@ -95,7 +96,7 @@ local function EnableBody()
     -- The options page registers from SetupOptionsPanel: queue it first, so no
     -- error in the shared position pass can leave Unit Frames without one.
     C_Timer.After(0, SetupOptionsPanel)
-    if CludesUI and CludesUI._applySavedPositions then CludesUI._applySavedPositions() end
+    if CUI and CUI._applySavedPositions then CUI._applySavedPositions() end
     C_Timer.After(0, function()
         -- Restore the threat watchers saved enabled (nothing registers when off).
         mod.SyncPlayerThreat()
@@ -251,8 +252,8 @@ do
         if role == "HEALER" then helpSpell = HELP_HEAL[pClass] end
         -- WoW Forever has no spec roles: a healing class counts as its healing
         -- spec and range-checks with its best heal in the spellbook.
-        if CludesUI.IS_FOREVER then
-            local entries = CludesUI.FOREVER_HEAL_SPELLS[pClass]
+        if CUI.IS_FOREVER then
+            local entries = CUI.FOREVER_HEAL_SPELLS[pClass]
             for index = 1, (entries and #entries or 0) do
                 if Known(entries[index]) then
                     helpSpell = entries[index]
@@ -409,7 +410,7 @@ end
 do
     local entries = {}
     local groups = { { pivot = UIParent, frames = entries } }
-    CludesUI.PartySpin_Create({
+    CUI.PartySpin_Create({
         target = "unitFrames",
         collect = function()
             wipe(entries)
@@ -423,8 +424,8 @@ end
 
 -- Party Mode visibility axis (Visibility > Party Mode): no game event, so the
 -- core fires its own edge (re-fired after combat for the secure frames).
-if CludesUI.RegisterVisEdge then
-    CludesUI.RegisterVisEdge(function()
+if CUI.RegisterVisEdge then
+    CUI.RegisterVisEdge(function()
         if mod.UpdateFrameVisibility then mod.UpdateFrameVisibility() end
     end)
 end

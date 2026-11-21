@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then return end -- one spec per class on WoW Forever, nothing to switch: no factory, no loadout hook (the main file drops the block from BLOCK_TYPES too)
+local CUI = CludesUI
+if CUI.IS_FOREVER then return end -- one spec per class on WoW Forever, nothing to switch: no factory, no loadout hook (the main file drops the block from BLOCK_TYPES too)
 -------------------------------------------------------------------------------
 --  Blocks\Spec.lua - Info Bar block: specialisation, loadout and loot spec.
 --
@@ -223,7 +224,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         if title and title ~= "" then
             mod.SetFont(dialog._title, fontSize)
             -- Localize here: these popups SetText directly instead of the Tip_* helpers that normally route fixed strings through the locale.
-            dialog._title:SetText(CludesUI.L(title))
+            dialog._title:SetText(CUI.L(title))
             dialog._title:SetTextColor(1, 1, 1, 1)
             dialog._title:Show()
             maxW = dialog._title:GetStringWidth()
@@ -344,9 +345,9 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
                 end
                 mod.SetFont(fl.l, fontSize)
                 mod.SetFont(fl.r, fontSize)
-                fl.l:SetText(CludesUI.L(footerLines[index][1]))
+                fl.l:SetText(CUI.L(footerLines[index][1]))
                 fl.l:SetTextColor(1, 1, 1, 1)
-                fl.r:SetText(CludesUI.L(footerLines[index][2]))
+                fl.r:SetText(CUI.L(footerLines[index][2]))
                 fl.r:SetTextColor(1, 1, 1, 1)
                 fl.l:ClearAllPoints()
                 fl.l:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD, -yOff)

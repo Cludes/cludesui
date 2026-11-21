@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Refresh.lua
 --
@@ -108,7 +109,7 @@ function REMIND.BuildForeverFamilies()
     local familyOf = REMIND._fvFamilyOf
     if not familyOf then
         familyOf = {}
-        for _, shared in pairs(CludesUI.FOREVER_BUFF_FAMILIES) do
+        for _, shared in pairs(CUI.FOREVER_BUFF_FAMILIES) do
             for _, spellRef in ipairs(shared.ids) do
                 familyOf[spellRef] = shared
             end
@@ -281,7 +282,7 @@ function REMIND.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
         REMIND._fvGroupKeys = dismissKeys
         REMIND._fvGroupN = 0
     end
-    local aurasRestricted = CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()
+    local aurasRestricted = CUI.AuraKit and CUI.AuraKit.AurasRestricted()
     local pickerEnabled = PickerEnabled()
     for _, set in ipairs(groups) do
         local spellIDs = type(set) == "table" and set.ids
@@ -480,7 +481,7 @@ local function CharStore(field)
     end
     local key = keyList[field]
     if not key then
-        key = CludesUI.CharKey("-", storage)
+        key = CUI.CharKey("-", storage)
         keyList[field] = key
     end
     return storage, key
@@ -499,7 +500,7 @@ function REMIND.CollectMageArmor(missing, auraLock, ids)
         REMIND.MAGE_ARMORS,
         last,
         "forever:magearmor",
-        CludesUI.L("Armor")
+        CUI.L("Armor")
     )
     if up and up ~= last and key then
         if not storage then
@@ -801,7 +802,7 @@ function REMIND.CollectForeverWeapons(missing, frameOrder, classKey)
     local low, hideNoItem = frameOrder.weaponLowRank == true, frameOrder.weaponHideNoItem ~= false
     local showBelow = frameOrder.weaponShowBelow or 1
     local warnSec = showBelow > 0 and showBelow * 60 or nil
-    local mhFull, ohFull = CludesUI.L(FV_HANDS[1].label), CludesUI.L(FV_HANDS[2].label)
+    local mhFull, ohFull = CUI.L(FV_HANDS[1].label), CUI.L(FV_HANDS[2].label)
     local mhLabel, ohLabel = ShortLabel(mhFull), ShortLabel(ohFull)
     if mhLabel == ohLabel then
         mhLabel, ohLabel = mhFull, ohFull
@@ -920,7 +921,7 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
     local open = not inPvP
     -- Under the aura lock a secret aura reads absent, so an aura reminder
     -- shows only while none of its spells is secret.
-    local auraLock = CludesUI.AuraKit.AurasRestricted()
+    local auraLock = CUI.AuraKit.AurasRestricted()
     local ids = REMIND._foreverIDs
     if not ids then
         ids = {}
@@ -933,7 +934,7 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
             entry.mode = "texture"
             entry.spellID = REMIND.CAMP_BENEFITS
             entry.texture = Tex(REMIND.CAMP_BENEFITS)
-            entry.label = CludesUI.L("Camp")
+            entry.label = CUI.L("Camp")
             entry.cat = "forever"
             entry.dismissKey = "forever:camp"
             missing[#missing + 1] = entry
@@ -953,7 +954,7 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
             e.mode = "item"
             e.itemID = entry
             e.texture = C_Item.GetItemIconByID(entry) or Tex(REMIND.SLEEPING_BAG_BUFF)
-            e.label = CludesUI.L("Sleeping")
+            e.label = CUI.L("Sleeping")
             e.cat = "forever"
             e.dismissKey = "forever:sleepingbag"
             missing[#missing + 1] = e
@@ -1254,7 +1255,7 @@ function REMIND.CollectForeverRaidBuffs(missing, classFile, inInstance)
         local iAmMissing = sw and sw.iAmMissing == true
         local grouped = IsInGroup()
         local groupClasses = iAmMissing and grouped and REMIND.BuildGroupClassSet() or nil
-        local restricted = CludesUI.AuraKit.AurasRestricted()
+        local restricted = CUI.AuraKit.AurasRestricted()
         for _, buffRec in ipairs(RAID_BUFFS) do
             if rb.enabled[buffRec.key] then
                 local fam = buffRec.fam
@@ -1545,7 +1546,7 @@ local function Refresh()
                 end
                 if #warlockEnforcedPets > 0 and not isAllowed then
                     local entry = AcquireEntry()
-                    REMIND.SetWarlockPetSpell(entry, warlockEnforcedPets, 136216, CludesUI.L("Wrong Demon"))
+                    REMIND.SetWarlockPetSpell(entry, warlockEnforcedPets, 136216, CUI.L("Wrong Demon"))
                     entry.cat = "consumable"
                     entry.dismissKey = "consumable:wrong_pet"
                     missing[#missing + 1] = entry
@@ -1662,12 +1663,12 @@ local function Refresh()
             end
             if (combatIdx > 0 or provider) and combatAnchor then
                 combatAnchor:Show()
-                CludesUI.SetElementVisibility(combatAnchor, true)
+                CUI.SetElementVisibility(combatAnchor, true)
                 LayoutCombatIcons()
             end
             if cursorIndex > 0 and cursorHolder then
                 cursorHolder:Show()
-                CludesUI.SetElementVisibility(cursorHolder, true)
+                CUI.SetElementVisibility(cursorHolder, true)
                 LayoutCursorIcons()
             end
         end
@@ -1729,18 +1730,18 @@ local function Refresh()
         end
         if cursorIndex > 0 then
             cursorHolder:Show()
-            CludesUI.SetElementVisibility(cursorHolder, true)
+            CUI.SetElementVisibility(cursorHolder, true)
             LayoutCursorIcons()
         end
         if iconIdx > 0 or provider then
             LayoutIcons()
-            CludesUI.SetElementVisibility(iconAnchor, true)
+            CUI.SetElementVisibility(iconAnchor, true)
         else
-            CludesUI.SetElementVisibility(iconAnchor, false)
+            CUI.SetElementVisibility(iconAnchor, false)
         end
     else
         REMIND.ParkProviderCastButton()
-        CludesUI.SetElementVisibility(iconAnchor, false)
+        CUI.SetElementVisibility(iconAnchor, false)
     end
 
     -- The pool is rebuilt above. A visible button can now represent another reminder.

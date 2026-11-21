@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Health.lua
 --
@@ -28,12 +29,12 @@ Inner.profileSetters[#Inner.profileSetters + 1] = function(val) p = val end
 
 -- WoW Forever: no health number under 10,000 abbreviates (CludesUI_NumberFormat.lua).
 -- On ns, not a local: this chunk is near its 200-local cap.
-mod.AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
+mod.AbbreviateNumbers = (CUI.IS_FOREVER and CUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
 -- Health, max health and absorb text: the global Number Format for valueType
 -- (the threat gap text keeps the default above).
-mod.AbbreviateValue = CludesUI.AbbreviateValue
+mod.AbbreviateValue = CUI.AbbreviateValue
 -- A format change repaints every plate's health texts, value memo dropped.
-CludesUI.RegisterNumberFormatCallback(function()
+CUI.RegisterNumberFormatCallback(function()
     for _, backing in pairs(mod.plates) do
         if backing.unit then
             backing._hpTxtPct, backing._hpTxtCur, backing._hpTxtMax = nil, nil, nil

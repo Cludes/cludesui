@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUICooldownManager.lua
 --  CDM Look Customization and Cooldown Display
@@ -9,20 +10,20 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewInternals
-        and CludesUI.NewCombatQueue
-        and CludesUI.SetFramePlacer
-        and CludesUI._Pool
-        and CludesUI.NewFrameData
-        and CludesUI.TalentConditionsHold
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewInternals
+        and CUI.NewCombatQueue
+        and CUI.SetFramePlacer
+        and CUI._Pool
+        and CUI.NewFrameData
+        and CUI.TalentConditionsHold
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the loot roll placement uses the parent's frame placer, the hooks file its frame-data constructor, Talent Conditions the parent's talent check)
-CludesUI._ModuleNS["CludesUICooldownManager"] = mod -- LOD options files read this module ns via the registry
+CUI._ModuleNS["CludesUICooldownManager"] = mod -- LOD options files read this module ns via the registry
 
 -- CPU-attribution shell pool: the engine bills a handler's call tree to the addon
 -- whose context created the frame, so frames built later under the parent's dispatch
@@ -49,12 +50,12 @@ end
 
 -- Run-once-after-combat queue (CludesUI_Ticker.lua). Frame taken in the main
 -- chunk, so drained work bills CooldownManager. Keys are per purpose.
-mod.CombatQueue = CludesUI.NewCombatQueue(mod.TakeShell())
+mod.CombatQueue = CUI.NewCombatQueue(mod.TakeShell())
 
 -- Per-addon border texture defaults (same as Action Bars -- same size system)
-CludesUI.RegisterBorderDefaults("cdm", CludesUI.BORDER_DEFAULTS_BUTTONS)
+CUI.RegisterBorderDefaults("cdm", CUI.BORDER_DEFAULTS_BUTTONS)
 
-local ECME = CludesUI.Lite.NewAddon("CludesUICooldownManager")
+local ECME = CUI.Lite.NewAddon("CludesUICooldownManager")
 mod.ECME = ECME
 
 -- Style flags (Global Settings > Style: CludesUI, Blizzard or Classic WoW
@@ -73,7 +74,7 @@ function mod.CdmIconStyle()
         mod._cdmIconStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it.
         mod._cdmFvIcons = val == "blizzard"
-            and CludesUI.IS_FOREVER == true
+            and CUI.IS_FOREVER == true
             and profile.useForeverStyle == true
     end
     return val
@@ -92,7 +93,7 @@ function mod.CdmBarStyle()
             or "cui"
         mod._cdmBarStyle = val
         mod._cdmFvBars = val == "blizzard"
-            and CludesUI.IS_FOREVER == true
+            and CUI.IS_FOREVER == true
             and profile.useForeverStyleBars == true
     end
     return val
@@ -126,7 +127,7 @@ function mod.CdmStockAtlas(texture, name, barList)
         fv = mod.CdmIconsForever()
     end
     if fv then return texture:SetAtlas(name) end
-    return CludesUI.StockAtlas(texture, name)
+    return CUI.StockAtlas(texture, name)
 end
 -- Ring inset as a fraction of the icon size (the viewer anchors its 50px
 -- essential icons at -9/+8, i.e. the ring sits proportionally outside the icon).
@@ -164,7 +165,7 @@ end
 -- Snap to whole physical pixels at the bar's effective scale (same convert-round-convert approach as the border system).
 local function SnapForScale(posX, barScale)
     if posX == 0 then return 0 end
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix then return Pix.Scale(posX) end
     return math.floor(posX + 0.5)
 end
@@ -178,9 +179,9 @@ mod.DEFAULT_MAPPING_NAME = "Buff Name (eg: Divine Purpose)"
 --  Shape Constants (shared with action bars)
 -------------------------------------------------------------------------------
 local CDM_SHAPES = {
-    masks = CludesUI.SHAPE_MASKS,
-    borders = CludesUI.SHAPE_BORDERS,
-    insets = CludesUI.SHAPE_INSETS,
+    masks = CUI.SHAPE_MASKS,
+    borders = CUI.SHAPE_BORDERS,
+    insets = CUI.SHAPE_INSETS,
     iconExpand = 7,
     iconExpandOffsets = {
         circle = 2,
@@ -346,7 +347,7 @@ local RACE_RACIALS = {
 -- Forever's second racials (Perception, Elune's Light, Shatter Curse, Rapid
 -- Regeneration, Cannibalize, Eureka!, Walk on Air) stay ordinary spells: the
 -- CDM keeps one Racial slot and strips every other listed racial from bars.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     table.insert(RACE_RACIALS.Human, 1, 1259718) -- Will to Survive
     table.insert(RACE_RACIALS.NightElf, 1, 20580) -- Shadowmeld
     table.insert(RACE_RACIALS.Troll, 1, 20554) -- Berserking (every class)
@@ -415,7 +416,7 @@ end
 
 -- The potion and healthstone ids of the presets below: the shared consumables
 -- catalogue (CludesUI_BuffPresets.lua), never copied here.
-local CON = CludesUI.CONSUMABLES
+local CON = CUI.CONSUMABLES
 
 -- Custom Aura Bar presets (potions with hardcoded durations). Detection: SPELL_UPDATE_COOLDOWN
 -- (spell just used) drives a reverse swipe for the duration. Exceptions: Bloodlust/Heroism is
@@ -638,7 +639,7 @@ mod.CDM_ITEM_PRESETS = CDM_ITEM_PRESETS
 -- client's own stone icon. Vanilla stones are single-use items on a shared
 -- item cooldown, so the combat lockout is switched off there: the family's
 -- item cooldown drives the swipe for whichever stone is owned.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     local drop = {
         bloodlust = true,
         timespiral = true,
@@ -658,7 +659,7 @@ if CludesUI.IS_FOREVER then
     for _, p in ipairs(CDM_ITEM_PRESETS) do
         if p.key == "healthstone" then
             p.icon = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(5512)) or 134400
-            p.altItemIDs = CludesUI.FOREVER_HEALTHSTONES
+            p.altItemIDs = CUI.FOREVER_HEALTHSTONES
             p.combatLockout = nil
             break
         end
@@ -667,7 +668,7 @@ end
 
 -- Pandemic Glow is the Anti-Clip Glow (CUI_CDM_ForeverAntiClip.lua) where auras
 -- carry no time over on a refresh: WoW Forever. The one gate every reader asks.
-mod.CDM_ANTI_CLIP = CludesUI.IS_FOREVER == true
+mod.CDM_ANTI_CLIP = CUI.IS_FOREVER == true
 
 -- Built after the WoW Forever drop, so they describe the presets this client offers.
 do
@@ -935,7 +936,7 @@ local DEFAULTS = {
 -- broken: true while a part file loads; a file that fails leaves it set and
 -- the files behind it return at their first lines (same for the Hooks and
 -- Buff Bars tables).
-CludesUI.NewInternals(mod, "_internals", {
+CUI.NewInternals(mod, "_internals", {
     _bonusScanSeen = _bonusScanSeen,
     _cdmKeybindCache = _cdmKeybindCache,
     _cdmKeybindRank = _cdmKeybindRank,

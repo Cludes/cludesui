@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Professions.lua  (WoW Forever only)
 --  Professions (/cprof): a page for each of your professions with
@@ -27,11 +28,11 @@ local RANK_LEVEL = { [150] = 10, [225] = 20, [300] = 35 }
 local RANK_TITLE = { [150] = "Journeyman", [225] = "Expert", [300] = "Artisan" }
 local GATHERING = { [182] = "Herbalism Trainer", [393] = "Skinning Trainer" }
 local MINING = 186
-local ACCENT, MUTED, GOLD = CludesUI.Kit.SyncAccent({}), { 0.6, 0.65, 0.7 }, { 1, 0.82, 0 }
+local ACCENT, MUTED, GOLD = CUI.Kit.SyncAccent({}), { 0.6, 0.65, 0.7 }, { 1, 0.82, 0 }
 local ORANGE, YELLOW, GREEN, GREY = { 1, 0.5, 0.25 }, { 1, 1, 0 }, { 0.25, 0.75, 0.25 }, { 0.5, 0.5, 0.5 }
 local function Muted(textValue) return "|cff9aa6b2" .. textValue .. "|r" end
-local function Print(message) CludesUI.Print("|cff4cc9f0Professions:|r " .. message) end
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Print(message) CUI.Print("|cff4cc9f0Professions:|r " .. message) end
+local function Font() return CUI.GetFontPath("essentials") end
 
 local RD
 local function RecipeData()
@@ -481,14 +482,14 @@ end
 
 local function Draw()
     if not (window and window:IsShown()) then return end
-    CludesUI.Kit.SyncAccent(ACCENT)
+    CUI.Kit.SyncAccent(ACCENT)
     rowList:Reset()
     local profs = Professions()
     local posX = 0
     for idx, p in ipairs(profs) do
         local widget = tabButtons[idx]
         if not widget then
-            widget = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
+            widget = CUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
             widget:SetHeight(22)
             tabButtons[idx] = widget
         end
@@ -674,7 +675,7 @@ local function BuildWindow()
     window = CreateFrame("Frame", "CludesUIProfessions", UIParent)
     window:SetSize(WIN_W, WIN_H)
     window:SetPoint("CENTER", 0, 30)
-    CludesUI.Kit.Panel(window, 0.96)
+    CUI.Kit.Panel(window, 0.96)
     window:SetMovable(true)
     window:EnableMouse(true)
     window:RegisterForDrag("LeftButton")
@@ -683,16 +684,16 @@ local function BuildWindow()
     window:SetFrameStrata("HIGH")
     window:SetClampedToScreen(true)
     local title = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(title, 15, "essentials")
+    CUI.Kit.Font(title, 15, "essentials")
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Professions")
-    CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
+    CUI.Kit.AccentText(title)
+    local close = CUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
     window.tabBar = CreateFrame("Frame", nil, window)
     window.tabBar:SetPoint("TOPLEFT", 10, -32)
     window.tabBar:SetSize(WIN_W - 20, 22)
-    local scroll = (CludesUI.Kit.Scroll(window))
+    local scroll = (CUI.Kit.Scroll(window))
     scroll:SetPoint("TOPLEFT", 10, -60)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     contentFrame = CreateFrame("Frame", nil, scroll)
@@ -769,7 +770,7 @@ SlashCmdList.CUIPROF = function(message)
     end
 end
 
-CludesUI._Professions = {
+CUI._Professions = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,

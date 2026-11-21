@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ClassicTalents.lua  (WoW Forever only)
 --  The vanilla talent window, drawn with the client's own art: one tree a
@@ -62,15 +63,15 @@ local queued -- a repaint is due next frame
 -------------------------------------------------------------------------------
 -- The trees whose own name is too long for a tab, by trait group ID.
 local function ShortName(groupID)
-    if groupID == 11326 then return CludesUI.L("Elemental") end -- Elemental Combat
-    if groupID == 11347 then return CludesUI.L("Feral") end -- Feral Combat
-    if groupID == 11622 then return CludesUI.L("Shadow") end -- Shadow Magic
+    if groupID == 11326 then return CUI.L("Elemental") end -- Elemental Combat
+    if groupID == 11347 then return CUI.L("Feral") end -- Feral Combat
+    if groupID == 11622 then return CUI.L("Shadow") end -- Shadow Magic
 end
 
 local function ReadTrees()
     wipe(trees)
     local entries
-    configID, treeID, entries = CludesUI.ForeverTalentTrees()
+    configID, treeID, entries = CUI.ForeverTalentTrees()
     if not entries then return end
     for index, t in ipairs(entries) do
         t.name = ShortName(t.groupID) or t.name
@@ -80,7 +81,7 @@ local function ReadTrees()
 end
 
 -- Each talent's column and row (from 0) in its tree, from the node positions.
-local function Grid(nodes) return CludesUI.TalentTreeGrid(configID, nodes) end
+local function Grid(nodes) return CUI.TalentTreeGrid(configID, nodes) end
 
 local function SpellOf(details)
     local entryID = details.activeEntry and details.activeEntry.entryID or details.entryIDs[1]
@@ -289,14 +290,14 @@ Paint = function()
     local white = HIGHLIGHT_FONT_COLOR
     window.spent:SetText(
         tbl
-                and CludesUI.Lf(
+                and CUI.Lf(
                     "Points spent in %1$s Talents: %2$s",
                     tbl.name,
                     white:WrapTextInColorCode(spent)
                 )
             or ""
     )
-    window.points:SetText(CludesUI.Lf("Talent Points: %s", white:WrapTextInColorCode(unspent)))
+    window.points:SetText(CUI.Lf("Talent Points: %s", white:WrapTextInColorCode(unspent)))
     window.learn:SetEnabled(HasStaged())
     PaintBackground()
 end
@@ -504,8 +505,8 @@ local function Build()
         if evt == "TRAIT_CONFIG_UPDATED" or evt == "ACTIVE_COMBAT_CONFIG_CHANGED" then wipe(staged) end
         QueuePaint()
     end)
-    CludesUI.RegisterEscapeClose(window, { cursor = true })
-    if CludesUI._ShifterAdopt then CludesUI._ShifterAdopt("CUI_ClassicTalents") end
+    CUI.RegisterEscapeClose(window, { cursor = true })
+    if CUI._ShifterAdopt then CUI._ShifterAdopt("CUI_ClassicTalents") end
 end
 
 -- Beside the Classic Spellbook while that is open and in its place while it is
@@ -559,7 +560,7 @@ end
 -- override fires UPDATE_BINDINGS itself, so unchanged keys are left alone.
 local function Bind()
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer(QUEUE_KEY, Bind)
+        CUI.CombatQueue.Defer(QUEUE_KEY, Bind)
         return
     end
     local on = F.Enabled()
@@ -591,7 +592,7 @@ local function Bind()
 end
 
 -- Options-page entry points.
-CludesUI._ClassicTalents = {
+CUI._ClassicTalents = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Bind,

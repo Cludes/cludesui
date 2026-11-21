@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_QoL_RaidTools_Options.lua -- Raid Tools page of the QoL module
 --
@@ -6,22 +7,22 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  dispatches to the builder this file publishes as _G._CUI_BuildRaidToolsPage.
 --  Same arrangement as the Cursor and Upgrade Calculator pages.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIQoL"] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS["CludesUIQoL"] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
-CludesUI.AtLogin(function()
+CUI.AtLogin(function()
     -- NOT gated on CludesUI.Widgets: on this LoadOnDemand addon the
     -- IsLoggedIn() re-fire below runs this handler at FILE SCOPE, before
     -- EnsureLoaded drains _deferredInits -- and the whole Widgets factory
     -- lives in a deferred body, so Widgets is always nil here. BuildPage
     -- reads it at panel-open time, after the drain, which is the only
     -- moment it is needed.
-    if not CludesUI then return end
+    if not CUI then return end
 
     -- Settings live in one slice of the shared QoL profile, so every read here
     -- goes through the same handle the runtime publishes.
@@ -85,17 +86,17 @@ CludesUI.AtLogin(function()
     end
 
     local function BuildPage(page, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height, heading
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         -- Settings preview: with this page in front the windows force shown and fully
         -- expanded, so every change lands visibly instead of the collapse/visibility
         -- rules eating it (the TBB placeholder-mode arrangement). NEVER during Global
         -- Search's hidden pre-build, which builds every page once at startup.
-        if not CludesUI._prebuilding and _G._CUI_RaidTools_Preview then _G._CUI_RaidTools_Preview(true) end
+        if not CUI._prebuilding and _G._CUI_RaidTools_Preview then _G._CUI_RaidTools_Preview(true) end
 
         -- GENERAL
         heading, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
@@ -103,7 +104,7 @@ CludesUI.AtLogin(function()
         -- The Show as choice decides which shell has a mover: the Compact
         -- Band, the Markers window alone, or the Group & Pull window (which
         -- is also the One Window shell and the first of Two Windows).
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = function()
                 local showAs = ShowAsVal()
                 if showAs == "compact" then return "CUI_RaidTools_Compact" end
@@ -134,7 +135,7 @@ CludesUI.AtLogin(function()
             setValue = function(value)
                 Set("mode", value)
                 ApplyRaidTools()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, { type = "label", text = "Toggle Raid Tools" })
         cursorY = cursorY - height
@@ -144,9 +145,9 @@ CludesUI.AtLogin(function()
         -- to capture, right-click to unbind, Escape cancels. The bound key is
         -- an override binding on the secure toggle button, so pressing it
         -- works in combat; only the (re)binding itself waits for combat end.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = kbRow._rightRegion
-            local kbBtn, refresh = CludesUI.BuildKeybindButton(region, {
+            local kbBtn, refresh = CUI.BuildKeybindButton(region, {
                 w = 126,
                 h = 29,
                 level = 4,
@@ -154,21 +155,21 @@ CludesUI.AtLogin(function()
                 -- Spec Overrides: the slot is read before the write (a write
                 -- that rebuilds the page dresses this region again).
                 set = function(value)
-                    local snap = CludesUI._SOAttribution(region)
+                    local snap = CUI._SOAttribution(region)
                     Set("toggleKey", value or false)
                     ApplyRaidTools()
-                    CludesUI._NotifySettingWrite(region, snap)
+                    CUI._NotifySettingWrite(region, snap)
                 end,
                 disabled = ModeNever,
                 disabledTip = "Show Raid Tools",
                 tooltip = "Toggles the Raid Tools panels, in or out of combat.\n\nLeft-click to set a keybind.\nRight-click to unbind.",
             })
-            CludesUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
-            CludesUI.RegisterWidgetRefresh(refresh)
+            CUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
+            CUI.RegisterWidgetRefresh(refresh)
 
             -- Spec Overrides capture: bespoke widget, so its SLOT opts in with a
             -- synthetic accessor (the label cfg carries no get/set of its own).
-            CludesUI.AddCaptureAccessor(region, {
+            CUI.AddCaptureAccessor(region, {
                 type = "keybind",
                 text = "Toggle Raid Tools",
                 getValue = function() return Cfg("toggleKey") end,
@@ -208,7 +209,7 @@ CludesUI.AtLogin(function()
             setValue = function(value)
                 Set("showAs", value)
                 ApplyRaidTools()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
@@ -261,7 +262,7 @@ CludesUI.AtLogin(function()
             setValue = function(value)
                 Set("quickFire", value)
                 ApplyRaidTools()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, { type = "label", text = "Place World Marker" })
         cursorY = cursorY - height
@@ -275,28 +276,28 @@ CludesUI.AtLogin(function()
         )
         cursorY = cursorY - height
 
-        if not CludesUI._prebuilding then
-            local Pix = CludesUI.PanelPP
+        if not CUI._prebuilding then
+            local Pix = CUI.PanelPP
 
             local function AddQuickFireKeybind(regionFrame, key)
-                local btnFrame, refresh = CludesUI.BuildKeybindButton(regionFrame, {
+                local btnFrame, refresh = CUI.BuildKeybindButton(regionFrame, {
                     w = 126,
                     h = 29,
                     level = 4,
                     mouse = true,
                     get = function() return Cfg(key) end,
                     set = function(value)
-                        local snap = CludesUI._SOAttribution(regionFrame)
+                        local snap = CUI._SOAttribution(regionFrame)
                         Set(key, value or false)
                         ApplyRaidTools()
-                        CludesUI._NotifySettingWrite(regionFrame, snap)
+                        CUI._NotifySettingWrite(regionFrame, snap)
                     end,
                     disabled = QuickFireDisabled,
                     disabledTip = function() return ModeNever() and "Show Raid Tools" or "Enable Quick Fire" end,
                 })
                 Pix.Point(btnFrame, "RIGHT", regionFrame, "RIGHT", -20, 0)
-                CludesUI.RegisterWidgetRefresh(refresh)
-                CludesUI.AddCaptureAccessor(regionFrame, {
+                CUI.RegisterWidgetRefresh(refresh)
+                CUI.AddCaptureAccessor(regionFrame, {
                     type = "keybind",
                     text = regionFrame._label and regionFrame._label:GetText() or key,
                     getValue = function() return Cfg(key) end,
@@ -361,7 +362,7 @@ CludesUI.AtLogin(function()
                 "Shows the Disband button. It always asks before disbanding, but hiding it puts it out of misclick range for good.",
                 FullPanelButtonDisabled
             ),
-            CludesUI.IS_FOREVER and { type = "spacer" }
+            CUI.IS_FOREVER and { type = "spacer" }
                 or {
                     type = "toggle",
                     text = "Show Buff Check",
@@ -382,7 +383,7 @@ CludesUI.AtLogin(function()
         cursorY = cursorY - height
 
         -- RAID BUFF CHECK (retail only)
-        if not CludesUI.IS_FOREVER then
+        if not CUI.IS_FOREVER then
             _, height = W:SectionHeader(hostFrame, "RAID BUFF CHECK", cursorY)
             cursorY = cursorY - height
 
@@ -394,7 +395,7 @@ CludesUI.AtLogin(function()
                 setValue = function(value)
                     Set("buffCheck", value)
                     ApplyRaidTools()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             }, {
                 type = "toggle",
@@ -449,22 +450,22 @@ CludesUI.AtLogin(function()
     local function StopPreview()
         if _G._CUI_RaidTools_Preview then _G._CUI_RaidTools_Preview(false) end
     end
-    CludesUI:RegisterOnHide(StopPreview)
+    CUI:RegisterOnHide(StopPreview)
     -- REOPENING the window fires neither buildPage nor onPageCacheRestore --
     -- it just Shows with the previous layout intact -- so the show-side
     -- callback re-enters the preview when our page is still the one in front.
     -- The page string must match PAGE_RAIDTOOLS in CUI_QoL_Options.lua.
-    CludesUI:RegisterOnShow(function()
+    CUI:RegisterOnShow(function()
         if
-            CludesUI:GetActiveModule() == "CludesUIQoL"
-            and CludesUI:GetActivePage() == "Raid Tools"
+            CUI:GetActiveModule() == "CludesUIQoL"
+            and CUI:GetActivePage() == "Raid Tools"
             and _G._CUI_RaidTools_Preview
         then
             _G._CUI_RaidTools_Preview(true)
         end
     end)
-    if CludesUI.SelectModule then
-        hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
+    if CUI.SelectModule then
+        hooksecurefunc(CUI, "SelectModule", function(_, folderName)
             if folderName ~= "CludesUIQoL" then StopPreview() end
         end)
     end

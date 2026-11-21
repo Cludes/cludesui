@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewBuffs.lua
 --
@@ -279,7 +280,7 @@ mod.RefreshPvAuraVisuals = function()
     if not s2 then return end
     local _pvFrames = PvFrames()
     local _reanchor = mod._PvAuraReanchorFrame
-    local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+    local fp = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
 
     local dbZ = s2.debuffIconZoom or 0.08
     local defZ = s2.defIconZoom or 0.08
@@ -314,7 +315,7 @@ mod.RefreshPvAuraVisuals = function()
                             local cdText = ic._cooldown.GetCountdownFontString
                                 and ic._cooldown:GetCountdownFontString()
                             if cdText then
-                                CludesUI.ApplyIconTextFont(cdText, fp, dbDtSz, "raidFrames")
+                                CUI.ApplyIconTextFont(cdText, fp, dbDtSz, "raidFrames")
                                 cdText:SetTextColor(dbDtC.r, dbDtC.g, dbDtC.b)
                                 cdText:ClearAllPoints()
                                 cdText:SetPoint("CENTER", ic, "CENTER", dbDtOX, dbDtOY)
@@ -322,7 +323,7 @@ mod.RefreshPvAuraVisuals = function()
                         end
                     end
                     if ic._count and ic._count:GetText() ~= "" then
-                        CludesUI.ApplyIconTextFont(ic._count, fp, sSz, "raidFrames")
+                        CUI.ApplyIconTextFont(ic._count, fp, sSz, "raidFrames")
                         ic._count:SetTextColor(stc.r, stc.g, stc.b)
                         ic._count:ClearAllPoints()
                         ic._count:SetPoint("BOTTOMRIGHT", ic, "BOTTOMRIGHT", 1 + sOX, -1 + sOY)
@@ -344,7 +345,7 @@ mod.RefreshPvAuraVisuals = function()
                             local cdText = ic._cooldown.GetCountdownFontString
                                 and ic._cooldown:GetCountdownFontString()
                             if cdText then
-                                CludesUI.ApplyIconTextFont(cdText, fp, defDtSz, "raidFrames")
+                                CUI.ApplyIconTextFont(cdText, fp, defDtSz, "raidFrames")
                                 cdText:SetTextColor(defDtC.r, defDtC.g, defDtC.b)
                                 cdText:ClearAllPoints()
                                 cdText:SetPoint("CENTER", ic, "CENTER", defDtOX, defDtOY)

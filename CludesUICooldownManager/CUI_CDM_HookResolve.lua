@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookResolve.lua
 --
@@ -500,16 +501,16 @@ function mod.ApplyActiveOverlays(widget, fd, ss, isActive, edge)
                 fd._sbColorSaved = true
             end
             shapeBorder:SetVertexColor(abR, abG, abB, abA)
-        elseif fd.borderFrame and CludesUI.SetBorderStyleColor then
-            CludesUI.SetBorderStyleColor(fd.borderFrame, abR, abG, abB, abA)
+        elseif fd.borderFrame and CUI.SetBorderStyleColor then
+            CUI.SetBorderStyleColor(fd.borderFrame, abR, abG, abB, abA)
         end
         fd._activeBorderOn = true
     elseif fd._activeBorderOn then
         if shapeBorder and fd._sbColorSaved then
             shapeBorder:SetVertexColor(fd._sbR, fd._sbG, fd._sbB, fd._sbA)
             fd._sbColorSaved = false
-        elseif fd.borderFrame and CludesUI.SetBorderStyleColor then
-            CludesUI.SetBorderStyleColor(
+        elseif fd.borderFrame and CUI.SetBorderStyleColor then
+            CUI.SetBorderStyleColor(
                 fd.borderFrame,
                 (edge and edge.borderR) or 0,
                 (edge and edge.borderG) or 0,

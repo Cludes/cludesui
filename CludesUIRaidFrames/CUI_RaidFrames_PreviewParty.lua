@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewParty.lua
 --
@@ -62,7 +63,7 @@ local function BuildPartyPreviewRoles()
     wipe(mod._partyPvCT)
 
     -- Effective role: the player's spec wins over a stale assigned role
-    local playerRole = CludesUI.UnitEffectiveRole("player")
+    local playerRole = CUI.UnitEffectiveRole("player")
     if playerRole ~= "TANK" and playerRole ~= "HEALER" then playerRole = "DAMAGER" end
 
     -- Slot 1 = player
@@ -495,7 +496,7 @@ local function RefreshPartyPreview()
         mod._partyOC:SetFrameLevel(10)
         if mod._partyOC._title then
             ApplyFont(mod._partyOC._title, 13)
-            mod._partyOC._title:SetText(CludesUI.L("Party Preview"):upper())
+            mod._partyOC._title:SetText(CUI.L("Party Preview"):upper())
             mod._partyOC._title:SetTextColor(1, 1, 1, 0.9)
             mod._partyOC._title:Show()
         end
@@ -615,7 +616,7 @@ local function ShowPartyPreview()
     -- See ShowPreview: never engage the preview (which reparents the real
     -- containers under a hidden frame) unless the options window is open and we
     -- are out of combat. Guards against deferred post-close ShowPartyPreview.
-    if not mod._testMode and not (CludesUI:IsShown()) then return end
+    if not mod._testMode and not (CUI:IsShown()) then return end
     if InCombatLockdown() then return end
     -- Kill any active size preview
     if mod._sizePreviewTier then

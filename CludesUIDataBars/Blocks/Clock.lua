@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\Clock.lua - Info Bar block: the clock.
 --
@@ -89,7 +90,7 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
     local restArt = rest:CreateTexture(nil, "OVERLAY")
     restArt:SetDrawLayer("OVERLAY", 7)
     restArt:SetPoint("CENTER", rest, "CENTER", 0, 5)
-    CludesUI.AddRestFlipbook(rest, restArt, 1.875)
+    CUI.AddRestFlipbook(rest, restArt, 1.875)
     restArt:SetDesaturated(true)
     restArt:SetVertexColor(1, 1, 1, 1)
 
@@ -290,7 +291,7 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
         if mouseButton == "MiddleButton" and IsShiftKeyDown() then
             -- Never mid-combat: a reload drops the player out of the fight.
             if not InCombatLockdown() then
-                CludesUI.RequestReload(CludesUI.L("Reload UI"), CludesUI.L("Reload the UI now?"))
+                CUI.RequestReload(CUI.L("Reload UI"), CUI.L("Reload the UI now?"))
             end
         elseif mouseButton == "LeftButton" then
             if ToggleCalendar then ToggleCalendar() end

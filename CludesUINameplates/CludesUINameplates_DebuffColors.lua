@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end
+local CUI = CludesUI
 local _, mod = ...
 
 -- CUI_DEBUFF_COLORS: declarative aura slots own visibility. Never read aura
@@ -163,7 +164,7 @@ local function BorderSpec()
         local texture = ColorVal("customBorderTexture")
         local size = ColorVal("customBorderSize") or 0
         if size <= 0 then return nil end
-        local px = CludesUI.BorderPx(ColorVal("customBorderSizePx"), size, texture)
+        local px = CUI.BorderPx(ColorVal("customBorderSizePx"), size, texture)
         -- On MEDIUM strata. The border frame sits one level above the bar (one
         -- below it when drawn behind); a textured border draws on that frame,
         -- a Solid one on the pixel border's container one level higher. The
@@ -179,7 +180,7 @@ local function BorderSpec()
                 up = 2,
             }
         else
-            local filePath = CludesUI.ResolveBorderTexture(texture)
+            local filePath = CUI.ResolveBorderTexture(texture)
             if not filePath then return nil end
             s = {
                 kind = "slices",
@@ -205,7 +206,7 @@ local function BorderSpec()
     end
     -- The pixel grid the copy is drawn on: strips in physical pixels
     -- (PP.perfect), slices in UI units of the exact border size (PP.mult).
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     s.key = table.concat({
         s.kind,
         tostring(s.px),
@@ -249,7 +250,7 @@ local function ReadConfig()
     else
         local colorKey = ColorVal("healthBarTexture")
         if mode == "texture" then colorKey = ColorVal("debuffColorsTexture") or colorKey end
-        c.texture = CludesUI.ResolveTexturePath(mod.healthBarTextures, colorKey, WHITE)
+        c.texture = CUI.ResolveTexturePath(mod.healthBarTextures, colorKey, WHITE)
         c.channel = "health"
         parts[#parts + 1] = tostring(c.texture)
     end
@@ -467,7 +468,7 @@ end
 -- Sensor n, pointed at spell. Its mask takes two anchors and a width: a single
 -- point and a size draws displaced inside the plate (see PlaceArrow).
 local function PointSensor(colorKit, num, spell)
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     local filter, ids = AK.Filter(unpack(settings.filterTokens)), { includeSpellIDs = { [spell] = true } }
     local cfg = colorKit.sensors[num]
     if not cfg then
@@ -503,7 +504,7 @@ end
 -- Sensors the bundle did not use are switched off (no UNIT_AURA work).
 local function ParkSensors(colorKit)
     for num = colorKit.used + 1, #colorKit.sensors do
-        CludesUI.AuraKit.SetGroupCap(colorKit.sensors[num].container, SENSOR_KEY, 0)
+        CUI.AuraKit.SetGroupCap(colorKit.sensors[num].container, SENSOR_KEY, 0)
     end
 end
 
@@ -541,7 +542,7 @@ local function ReleaseBundle(b)
     if b.holder then b.holder:Hide() end
     for _, boxHolder in ipairs(b.containers) do
         boxHolder:SetEnabled(false)
-        CludesUI.AuraKit.ReleaseContainer(boxHolder)
+        CUI.AuraKit.ReleaseContainer(boxHolder)
     end
     if b.nameKit then
         b.nameKit.attached = nil
@@ -568,7 +569,7 @@ local function BindBundle(b, unitToken)
 end
 
 local function CreateTintContainer(b, hostFrame)
-    local c = CludesUI.AuraKit.CreateContainerShell(hostFrame, {})
+    local c = CUI.AuraKit.CreateContainerShell(hostFrame, {})
     c:SetAllPoints(b.holder)
     c:SetFrameLevel(b.level)
     b.containers[#b.containers + 1] = c
@@ -647,7 +648,7 @@ local function NewBorderCopy(hostFrame, specInfo, sensorMask)
             pieces[index] = texture
         end
     else
-        for colorKey, coords in pairs(CludesUI.SECRET_BORDER_UV) do
+        for colorKey, coords in pairs(CUI.SECRET_BORDER_UV) do
             local texture = frame:CreateTexture(nil, "OVERLAY")
             texture:SetTexCoord(unpack(coords))
             pieces[colorKey] = texture
@@ -682,7 +683,7 @@ local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, rgb, subLaye
     if specInfo.kind == "strips" then
         local success, es = pcall(frame.GetEffectiveScale, frame)
         if not (success and es and es > 0) then es = 1 end
-        local one = CludesUI.PP.perfect / es
+        local one = CUI.PP.perfect / es
         local t = math.max(one, math.floor(specInfo.px + 0.5) * one)
         for _, texture in ipairs(pieces) do
             texture:SetColorTexture(rgb.r, rgb.g, rgb.b, 1)
@@ -696,7 +697,7 @@ local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, rgb, subLaye
             texture:SetTexture(specInfo.path, true, true)
             texture:SetVertexColor(rgb.r, rgb.g, rgb.b, 1)
         end
-        local edge, aL, aT, aR, aB = CludesUI.SecretBorderGeometry(
+        local edge, aL, aT, aR, aB = CUI.SecretBorderGeometry(
             frame,
             specInfo.size,
             specInfo.tex,
@@ -709,7 +710,7 @@ local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, rgb, subLaye
             nil,
             specInfo.px
         )
-        CludesUI.LayoutSecretBorderEdges(pieces, frame, edge, aL, aT, aR, aB)
+        CUI.LayoutSecretBorderEdges(pieces, frame, edge, aL, aT, aR, aB)
     end
 end
 
@@ -792,7 +793,7 @@ local function HideLooks(colorKit)
 end
 
 local function AddTintSlot(b, boxHolder, colorKey, spell, initialize)
-    CludesUI.AuraKit.AddSlotToContainer(boxHolder, {
+    CUI.AuraKit.AddSlotToContainer(boxHolder, {
         key = colorKey,
         filter = b.config.filterTokens,
         style = STYLE,
@@ -975,7 +976,7 @@ local function MirrorName(backing, shownOnly)
     root:SetFrameLevel(owner:GetFrameLevel() + 1)
     LevelChains(kitKey)
     local fam = name:GetFontObject()
-    if not (fam and CludesUI._fontFamilySet[fam]) then fam = nil end
+    if not (fam and CUI._fontFamilySet[fam]) then fam = nil end
     local font, size, flags
     if not fam then
         font, size, flags = name:GetFont()
@@ -1232,7 +1233,7 @@ function mod.DebuffColors_Refresh()
     if settings.enabled and settings.any then
         settings.comboRuns = GroupComboRuns(settings.combos)
         if settings.name then settings.nameEntries = NameEntries(settings) end
-        local AK = CludesUI.AuraKit
+        local AK = CUI.AuraKit
         AK.styles[STYLE] = AK.styles[STYLE] or { noRegions = true, noTooltips = true }
         mod.DebuffColors_Attach, mod.DebuffColors_Detach = Attach, Detach
         mod.DebuffColors_Threat = Threat
@@ -1260,7 +1261,7 @@ function mod.DebuffColors_Refresh()
     -- rebuild through the shared re-apply on a UI scale change, strips on a
     -- resolution change.
     local border = settings and settings.any and settings.border
-    CludesUI.RegisterPxReapply(
+    CUI.RegisterPxReapply(
         DC,
         (border and border.kind == "slices") and mod.DebuffColors_RequestRefresh or nil
     )
@@ -1297,11 +1298,11 @@ end
 -- slider runs the deferred checks once).
 function mod.DebuffColors_RequestRefresh()
     if not settings and ColorVal("debuffColorsEnabled") ~= true then return end
-    if CludesUI._sliderDragging then
-        local checks = CludesUI._deferredDriftChecks
+    if CUI._sliderDragging then
+        local checks = CUI._deferredDriftChecks
         if not checks then
             checks = {}
-            CludesUI._deferredDriftChecks = checks
+            CUI._deferredDriftChecks = checks
         end
         checks[mod.DebuffColors_RequestRefresh] = true
         return

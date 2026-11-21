@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_HealthIndicators.lua
 --  Opt-in damage absorbs, heal absorbs and max health reduction. Settings
@@ -7,9 +8,9 @@ if CUI_CLIENT_BLOCKED then return end
 local _, mod = ...
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local STYLE_TEX = CludesUI.ABSORB_STYLE_TEX
-local TILED = CludesUI.ABSORB_TILED_STYLES
-local Glow = CludesUI.AbsorbGlow
+local STYLE_TEX = CUI.ABSORB_STYLE_TEX
+local TILED = CUI.ABSORB_TILED_STYLES
+local Glow = CUI.AbsorbGlow
 
 -- The overlays in paint order (heal absorbs over damage absorbs): settings
 -- keys and defaults, read by the options rows too. An absorb is off at style
@@ -60,7 +61,7 @@ end
 -- textures ("sm:" SharedMedia keys land there). The live overlays and the
 -- options dropdown preview both resolve through this.
 function mod.HealthIndicatorTex(style)
-    return STYLE_TEX[style] or CludesUI.ResolveTexturePath(_G._CURB_BarTextures, style, WHITE)
+    return STYLE_TEX[style] or CUI.ResolveTexturePath(_G._CURB_BarTextures, style, WHITE)
 end
 
 local owner, scrollBar -- the health bar and its clipped inner StatusBar (first use)
@@ -132,7 +133,7 @@ end
 -- and the reduction overlay paints it. Fill-edge anchors follow secret health
 -- in the engine; clip frames split absorbs without reading that edge in Lua.
 local function LayoutIndicators()
-    local inset = CludesUI.PP.mult * 0.25
+    local inset = CUI.PP.mult * 0.25
     local wid = math.max(0, owner:GetWidth() - 2 * inset)
     local hgt = math.max(0, owner:GetHeight() - 2 * inset)
     -- Vertical exactly where the health bar is (ApplyBarOrientation).
@@ -364,7 +365,7 @@ local function Deactivate()
     SetEventWanted("UNIT_MAXHEALTH", false)
     SetEventWanted("UNIT_MAX_HEALTH_MODIFIERS_CHANGED", false)
     SetEventWanted("UNIT_HEALTH", false)
-    local inset = CludesUI.PP.mult * 0.25
+    local inset = CUI.PP.mult * 0.25
     scrollBar:ClearAllPoints()
     scrollBar:SetPoint("TOPLEFT", owner, "TOPLEFT", inset, -inset)
     scrollBar:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", -inset, inset)

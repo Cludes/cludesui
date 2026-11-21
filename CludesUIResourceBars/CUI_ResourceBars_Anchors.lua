@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Anchors.lua
 --
@@ -12,7 +13,7 @@ local Inner = mod._internals
 if not Inner or Inner.broken then return end
 Inner.broken = true
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local floor = math.floor
 
 local ERB, SnapXY, IsPowerBarHidden = Inner.ERB, Inner.SnapXY, Inner.IsPowerBarHidden
@@ -51,7 +52,7 @@ local RefreshAnchoredBarsForUnlockTarget
 -- and keeps its old rect, so it never counts. The unit frame auras walk the chain of
 -- these bars docked under the player frame (CUI_UnitFrames_AuraContainers.lua,
 -- ResourceStackBelowFrame), so a bar placed elsewhere is never reserved.
-function CludesUI.ERB_PlayerStackBars()
+function CUI.ERB_PlayerStackBars()
     local p = ERB and ERB.db and ERB.db.profile
     if not p then return nil end
     local barList, num = nil, 0
@@ -83,8 +84,8 @@ end
 
 -- Unlock mode: register with shared CludesUI unlock system
 local function RegisterUnlockElements()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
 
     -- Shared helper: save position to a settings sub-table and apply to frame
     -- centerShiftY: extra Y on a stored CENTER, as the bar's own build adds it.
@@ -93,7 +94,7 @@ local function RegisterUnlockElements()
             if not anchorPoint then return end
             local cfg = getSettings()
             cfg.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-            if not CludesUI._unlockActive then
+            if not CUI._unlockActive then
                 local frame = frame_fn()
                 if frame then
                     frame:ClearAllPoints()
@@ -128,7 +129,7 @@ local function RegisterUnlockElements()
                 local pt = place.point
                 local px, py = place.x, place.y
                 if centerShiftY and pt == "CENTER" and py then py = py + centerShiftY() end
-                local PPa = CludesUI and CludesUI.PP
+                local PPa = CUI and CUI.PP
                 if PPa and px and py then
                     local es = frame:GetEffectiveScale()
                     -- CENTER anchor with stored CENTER offsets: SnapCenterForDim with
@@ -426,7 +427,7 @@ local function RegisterUnlockElements()
             local callback = HealthCfg()
             callback.unlockPos =
                 { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-            if not CludesUI._unlockActive and castBarFrame then
+            if not CUI._unlockActive and castBarFrame then
                 castBarFrame:ClearAllPoints()
                 castBarFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
             end
@@ -514,7 +515,7 @@ local function RegisterUnlockElements()
             if not anchorPoint then return end
             local g = HealthCfg()
             g.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-            if not CludesUI._unlockActive and gcdBarFrame then
+            if not CUI._unlockActive and gcdBarFrame then
                 gcdBarFrame:ClearAllPoints()
                 gcdBarFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
             end
@@ -584,7 +585,7 @@ local function RegisterUnlockElements()
             if not anchorPoint then return end
             local tb = HealthCfg()
             tb.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-            if not CludesUI._unlockActive and totemBarFrame then
+            if not CUI._unlockActive and totemBarFrame then
                 totemBarFrame:ClearAllPoints()
                 totemBarFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
             end
@@ -638,7 +639,7 @@ local function RegisterUnlockElements()
     -- Call Totem Bar (WoW Forever): nil elsewhere.
     if mod.CT_MakeUnlockElement then elements[#elements + 1] = mod.CT_MakeUnlockElement(MK) end
 
-    CludesUI:RegisterUnlockElements(elements, "CludesUIResourceBars")
+    CUI:RegisterUnlockElements(elements, "CludesUIResourceBars")
 end
 
 _G._CURB_RegisterUnlock = RegisterUnlockElements
@@ -656,7 +657,7 @@ local ERB_ANCHOR_FRAMES = {
     playerframe = nil, -- handled separately
 }
 
-local ERB_VALID_ANCHORS = CludesUI.RESOURCE_BAR_ANCHOR_KEYS
+local ERB_VALID_ANCHORS = CUI.RESOURCE_BAR_ANCHOR_KEYS
 
 local function ResolveAnchorFrame(anchorKey)
     local func = ERB_ANCHOR_FRAMES[anchorKey]
@@ -754,7 +755,7 @@ local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, gr
     offsetX = offsetX or 0
     offsetY = offsetY or 0
     -- Snap offsets to physical pixel grid
-    local PPa = CludesUI and CludesUI.PP
+    local PPa = CUI and CUI.PP
     if PPa and PPa.SnapForES then
         local es = widget:GetEffectiveScale()
         offsetX = PPa.SnapForES(offsetX, es)
@@ -833,14 +834,14 @@ local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, gr
         end)
         return true
     elseif anchorKey == "partyframe" then
-        local partyFrame = CludesUI.FindPlayerPartyFrame()
+        local partyFrame = CUI.FindPlayerPartyFrame()
         if not partyFrame then return false end
         local framePoint, targetPoint = AnchorPointsFor()
         widget:ClearAllPoints()
         widget:SetPoint(framePoint, partyFrame, targetPoint, offsetX, offsetY)
         return true
     elseif anchorKey == "playerframe" then
-        local playerFrame = CludesUI.FindPlayerUnitFrame()
+        local playerFrame = CUI.FindPlayerUnitFrame()
         if not playerFrame then return false end
         local framePoint, targetPoint = AnchorPointsFor()
         widget:ClearAllPoints()

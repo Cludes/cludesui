@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CludesUICdmBuffBars.lua
 --  Tracking Bars: StatusBar reskins driven entirely by Blizzard CDM children.
@@ -35,7 +36,7 @@ end
 -------------------------------------------------------------------------------
 --  Textures
 -------------------------------------------------------------------------------
-local TBB_TEXTURES, TBB_TEXTURE_NAMES, TBB_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
+local TBB_TEXTURES, TBB_TEXTURE_NAMES, TBB_TEXTURE_ORDER = CUI.BuildBarTextureTables()
 mod.TBB_TEXTURES = TBB_TEXTURES
 mod.TBB_TEXTURE_ORDER = TBB_TEXTURE_ORDER
 mod.TBB_TEXTURE_NAMES = TBB_TEXTURE_NAMES
@@ -52,7 +53,7 @@ local function FormatTime(remaining)
     return format("%.1f", remaining)
 end
 
-local function SetFont(fontStr, size) CludesUI.ApplyModuleFont(fontStr, nil, size, "cdm") end
+local function SetFont(fontStr, size) CUI.ApplyModuleFont(fontStr, nil, size, "cdm") end
 
 local function SetTBBTextColor(fontStr, conf, prefixText)
     if not fontStr or not conf then return end
@@ -419,7 +420,7 @@ end
 -- that value keeps its own copy and adds a setter; a place that assigns it
 -- calls Set<Name> (built below), which runs them all. ECME is set this way
 -- during BuildTrackedBuffBars (ECME.db is not ready at file load).
-CludesUI.NewInternals(mod, "_buffBarInternals", {
+CUI.NewInternals(mod, "_buffBarInternals", {
     _blizzBarFS = _blizzBarFS,
     _classB = _classB,
     _classG = _classG,

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Actions.lua
 --
@@ -34,7 +35,7 @@ do
     local memo = {}
     function mod.WipeRankCache() wipe(memo) end
     TopRank = function(ident)
-        if not CludesUI.IS_FOREVER or type(ident) ~= "number" then return ident end
+        if not CUI.IS_FOREVER or type(ident) ~= "number" then return ident end
         local hit = memo[ident]
         if hit then return hit end
         local details = C_Spell.GetSpellInfo(ident)
@@ -50,7 +51,7 @@ end
 -- The spell a spell entry casts: exactly its stored rank when picked from a
 -- lower one (slot.rankPinned, Forever only), the highest known rank otherwise.
 local function SlotRank(slot)
-    if slot.rankPinned and CludesUI.IS_FOREVER and type(slot.id) == "number" then return slot.id end
+    if slot.rankPinned and CUI.IS_FOREVER and type(slot.id) == "number" then return slot.id end
     return TopRank(slot.id)
 end
 
@@ -88,7 +89,7 @@ do
         WARLOCK = { battle = 20707 },
     }
     -- WoW Forever: the vanilla spells, every rank ID listed (rank 1 first).
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         REZ_BY_CLASS = {
             PRIEST = { single = { 2006, 2010, 10880, 10881, 20770 } },
             PALADIN = { single = { 7328, 10322, 10324, 20772, 20773 } },
@@ -261,9 +262,9 @@ do
     -- opens in a row rarely draw the same toy.
     function Hearth.Roll()
         local lastID = pickID
-        local kind, ident = CludesUI.ResolveHearthSlot(true)
+        local kind, ident = CUI.ResolveHearthSlot(true)
         if ident == lastID then
-            kind, ident = CludesUI.ResolveHearthSlot(true)
+            kind, ident = CUI.ResolveHearthSlot(true)
         end
         -- The flyout fires every toy as "item"; the toy action is the one the
         -- rest of this module uses for toys.
@@ -716,7 +717,7 @@ local function SlotDisplay(slot)
             local name = details.name
             -- A pinned rank is named with it ("Shadow Bolt (Rank 3)"); nothing
             -- else tells it from the entry that follows the highest rank.
-            if slot.rankPinned and CludesUI.IS_FOREVER then
+            if slot.rankPinned and CUI.IS_FOREVER then
                 local sub = C_Spell.GetSpellSubtext(ident)
                 if sub and sub ~= "" then name = name .. " (" .. sub .. ")" end
             end
@@ -1123,7 +1124,7 @@ local function SlotUsability(slot)
         -- Range against the target is a PROTECTED query in combat and in
         -- protected instances when the target cannot be attacked; the Range
         -- module owns that rule. Skipped = no range tint, usability still applies.
-        local allowed = CludesUI.ItemRangeChecksAllowed
+        local allowed = CUI.ItemRangeChecksAllowed
         if
             C_Item.ItemHasRange(slot.id)
             and allowed
@@ -1179,7 +1180,7 @@ local function SlotFromCursor()
         -- slot that casts the wrong thing.
         if type(c) ~= "number" then return nil end
         -- A lower rank than the highest known one is kept as that rank.
-        if CludesUI.IS_FOREVER and TopRank(c) ~= c then
+        if CUI.IS_FOREVER and TopRank(c) ~= c then
             return { kind = "spell", id = c, rankPinned = true }
         end
         return { kind = "spell", id = c }

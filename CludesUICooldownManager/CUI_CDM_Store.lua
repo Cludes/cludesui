@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Store.lua
 --
@@ -47,7 +48,7 @@ function mod.GetSpecProfilesForProfile(profileName)
             and type(assignments.specProfiles) == "table"
             and next(assignments.specProfiles)
         then
-            local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
+            local DeepCopy = CUI.Lite and CUI.Lite.DeepCopy
             if DeepCopy then specBucket.specProfiles = DeepCopy(assignments.specProfiles) end
         end
         assignments.profiles[profileName] = specBucket
@@ -513,7 +514,7 @@ function mod.CopyCustomSpellToSpecs(barId, spellId, specKeys)
     if not specProfile then return 0 end
     local curKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     local famKey = mod.SettingsFamilyKey(barId)
-    local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
+    local DeepCopy = CUI.Lite and CUI.Lite.DeepCopy
 
     -- Source metadata from the ACTIVE spec (the bar the menu was opened on).
     local srcSd = mod.GetBarSpellData(barId)
@@ -595,9 +596,9 @@ function mod.SpecsWithCustomSpell(spellId)
             and type(profileTbl) == "table"
             and type(profileTbl.barSpells) == "table"
             and not (
-                CludesUI.IS_FOREVER
+                CUI.IS_FOREVER
                 and mod._playerClass
-                and CludesUI.SpecClassOf(tonumber(storeKey)) == mod._playerClass
+                and CUI.SpecClassOf(tonumber(storeKey)) == mod._playerClass
             )
         then
             local found = false

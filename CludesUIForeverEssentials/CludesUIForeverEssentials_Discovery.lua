@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Discovery.lua  (WoW Forever only)
 --  Discovery (/cdiscovery): a window with
@@ -38,12 +39,12 @@ local SPOT_MAP, SPOT_X, SPOT_Y, SPOT_PLACE, SPOT_NOTE = 1, 2, 3, 4, 5
 local TURN_IN = "librarian"
 local SLEEPING_BAG = 211527
 local CHECK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
-local ACCENT = CludesUI.Kit.SyncAccent({}) -- refreshed on each draw
+local ACCENT = CUI.Kit.SyncAccent({}) -- refreshed on each draw
 local MUTED = { 0.6, 0.65, 0.7 }
 local GOLD = { 1, 0.82, 0 }
 local READY = { 0.38, 0.85, 0.5 }
-local function Font() return CludesUI.GetFontPath("essentials") end
-local function Print(message) CludesUI.Print("|cff4cc9f0Discovery:|r " .. message) end
+local function Font() return CUI.GetFontPath("essentials") end
+local function Print(message) CUI.Print("|cff4cc9f0Discovery:|r " .. message) end
 local function Muted(textValue) return "|cff9aa6b2" .. textValue .. "|r" end
 
 local D
@@ -67,7 +68,7 @@ local function Link(title, map, posX, posY, note)
         MAP_PIN_HYPERLINK or "Map Pin"
     )
     local function Say()
-        CludesUI.Print(
+        CUI.Print(
             "|cff4cc9f0Discovery:|r "
                 .. itemLink
                 .. " "
@@ -77,8 +78,8 @@ local function Link(title, map, posX, posY, note)
                 .. Muted(("%.1f, %.1f"):format(posX, posY))
         )
     end
-    if InCombatLockdown() and CludesUI.CombatQueue then
-        CludesUI.CombatQueue.Defer("DiscoveryLink", Say)
+    if InCombatLockdown() and CUI.CombatQueue then
+        CUI.CombatQueue.Defer("DiscoveryLink", Say)
     else
         Say()
     end
@@ -546,8 +547,8 @@ local function NewRows(contentFrame)
             region.right:SetJustifyH("RIGHT")
             -- Fonts now: Acquire clears the right text before Line sizes it,
             -- and the client refuses text on a FontString without a font.
-            CludesUI.Kit.Font(region.text, 12, "essentials")
-            CludesUI.Kit.Font(region.right, 11, "essentials")
+            CUI.Kit.Font(region.text, 12, "essentials")
+            CUI.Kit.Font(region.right, 11, "essentials")
             region.hl = region:CreateTexture(nil, "HIGHLIGHT")
             region.hl:SetAllPoints()
             region.hl:SetColorTexture(1, 1, 1, 0.05)
@@ -586,7 +587,7 @@ local function NewRows(contentFrame)
         local width = contentFrame:GetWidth()
         local indent = options.indent or 0
         local size = options.size or 12
-        CludesUI.Kit.Font(region.text, size, "essentials")
+        CUI.Kit.Font(region.text, size, "essentials")
         region.text:SetTextColor(unpack(options.colour or { 1, 1, 1 }))
         local leftX = indent
         if options.icon then
@@ -599,7 +600,7 @@ local function NewRows(contentFrame)
         region.text:SetPoint("TOPLEFT", region, "TOPLEFT", leftX, -2)
         local rightW = 0
         if options.right then
-            CludesUI.Kit.Font(region.right, 11, "essentials")
+            CUI.Kit.Font(region.right, 11, "essentials")
             region.right:SetTextColor(unpack(options.rightColour or MUTED))
             region.right:SetText(options.right)
             region.right:ClearAllPoints()
@@ -645,7 +646,7 @@ local function BuildWindow()
     window = CreateFrame("Frame", "CludesUIDiscovery", UIParent)
     window:SetSize(WIN_W, WIN_H)
     window:SetPoint("CENTER", 0, 30)
-    CludesUI.Kit.Panel(window, 0.96)
+    CUI.Kit.Panel(window, 0.96)
     window:SetMovable(true)
     window:EnableMouse(true)
     window:RegisterForDrag("LeftButton")
@@ -654,11 +655,11 @@ local function BuildWindow()
     window:SetFrameStrata("HIGH")
     window:SetClampedToScreen(true)
     local title = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(title, 15, "essentials")
+    CUI.Kit.Font(title, 15, "essentials")
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Discovery")
-    CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
+    CUI.Kit.AccentText(title)
+    local close = CUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
     window.tabBar = CreateFrame("Frame", nil, window)
     window.tabBar:SetPoint("TOPLEFT", 10, -32)
@@ -666,7 +667,7 @@ local function BuildWindow()
     window.tools = CreateFrame("Frame", nil, window)
     window.tools:SetPoint("TOPLEFT", 10, -58)
     window.tools:SetSize(WIN_W - 20, 24)
-    scroll = (CludesUI.Kit.Scroll(window))
+    scroll = (CUI.Kit.Scroll(window))
     scroll:SetPoint("TOPLEFT", 10, -86)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     contentFrame = CreateFrame("Frame", nil, scroll)
@@ -682,7 +683,7 @@ local function PaintTabs()
     for index, tab in ipairs(TabOrder()) do
         local widget = tabButtons[index]
         if not widget then
-            widget = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
+            widget = CUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
             widget:SetHeight(22)
             tabButtons[index] = widget
         end
@@ -706,7 +707,7 @@ end
 
 function Redraw()
     if not (window and window:IsShown()) then return end
-    CludesUI.Kit.SyncAccent(ACCENT)
+    CUI.Kit.SyncAccent(ACCENT)
     PaintTabs()
     rowList:Reset()
     for _, childFrame in ipairs({ window.tools:GetChildren() }) do
@@ -901,7 +902,7 @@ local function DrawField(R, tools)
         fieldSwitch = {}
         local posX = 0
         for _, page in ipairs(PAGES) do
-            local widget = CludesUI.Kit.Button(tools, "", 90, 22, nil, { key = "essentials" })
+            local widget = CUI.Kit.Button(tools, "", 90, 22, nil, { key = "essentials" })
             widget:SetSize(90, 22)
             widget:SetPoint("LEFT", tools, "LEFT", posX, 0)
             widget:SetText(PAGE_NAMES[page])
@@ -1013,14 +1014,14 @@ local function TrackerWanted() return On() and (Get("tracker") or Get("bagTracke
 local function BuildTracker()
     tracker = CreateFrame("Frame", "CludesUIDiscoveryTracker", UIParent)
     tracker:SetSize(TRACK_W, 60)
-    CludesUI.Kit.Panel(tracker, 0.85)
+    CUI.Kit.Panel(tracker, 0.85)
     tracker:SetClampedToScreen(true)
     tracker.title = tracker:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(tracker.title, 12, "essentials")
+    CUI.Kit.Font(tracker.title, 12, "essentials")
     tracker.title:SetTextColor(unpack(ACCENT))
     tracker.title:SetPoint("TOPLEFT", 8, -6)
     tracker.title:SetText("DISCOVERY")
-    local close = CludesUI.Kit.Glyph(tracker, "x", function() tracker:Hide() end, nil, "essentials")
+    local close = CUI.Kit.Glyph(tracker, "x", function() tracker:Hide() end, nil, "essentials")
     close:SetSize(20, 20)
     close:SetPoint("TOPRIGHT", -4, -4)
     close:SetScript("OnClick", function()
@@ -1048,7 +1049,7 @@ local function FillTracker(zone)
         for _, book in ipairs(Data().LibraryBooks) do
             if Library.ForMe(book) and Library.Stored(book) then carried = carried + 1 end
         end
-        if #find > 0 or carried > 0 or CludesUI._unlockActive then
+        if #find > 0 or carried > 0 or CUI._unlockActive then
             any = true
             local done, sum = Library.Progress()
             R:Line(("Library Books  %s"):format(Muted(("%d / %d"):format(done, sum))), { colour = GOLD })
@@ -1108,14 +1109,14 @@ local function TrackerRefresh()
     end
     local zone = PlayerZone()
     if zone ~= dismissedZone then dismissedZone = nil end
-    if dismissedZone and not CludesUI._unlockActive then
+    if dismissedZone and not CUI._unlockActive then
         if tracker then tracker:Hide() end
         return
     end
     if not tracker then BuildTracker() end
-    if not CludesUI._unlockActive then F.Place(tracker) end
+    if not CUI._unlockActive then F.Place(tracker) end
     local any = FillTracker(zone)
-    if not any and not CludesUI._unlockActive then
+    if not any and not CUI._unlockActive then
         tracker:Hide()
         return
     end
@@ -1338,7 +1339,7 @@ SlashCmdList.CUIDISCOVERY = function(message)
     OpenWindow(tabs[message] and message or nil)
 end
 
-CludesUI._Discovery = { Get = Get, Cfg = F.Cfg, Apply = Apply, Open = OpenWindow }
+CUI._Discovery = { Get = Get, Cfg = F.Cfg, Apply = Apply, Open = OpenWindow }
 module.DiscoveryFeature = F
 module.DiscoveryOpen = OpenWindow
 

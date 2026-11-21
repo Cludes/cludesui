@@ -1,4 +1,5 @@
 local addonName, mod = ...
+local CUI = CludesUI
 if mod.standalone then return end
 -- Core.lua is loaded before this file (see TOC), so ns.K and ns.DB exist.
 
@@ -44,7 +45,7 @@ function mod.FontPath()
     local value = mod.DB().fontFace
     if value == nil then
         -- No font chosen: follow the CludesUI global font.
-        local filePath = CludesUI and CludesUI.GetFontPath and CludesUI.GetFontPath()
+        local filePath = CUI and CUI.GetFontPath and CUI.GetFontPath()
         if type(filePath) == "string" and filePath ~= "" then return filePath end
         value = mod.K.DEFAULT_FONT_FACE
     end

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 -- CludesUIGroupFinder.lua: premade group filters, list tweaks and the M+
 -- applications bar. Nothing hooks in until it's enabled.
@@ -6,12 +7,12 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.Lite
-        and CludesUI.HELD_BACK_ADDONS
-        and CludesUI.SetFontFamily
-        and CludesUI.PREVIEW_ROSTER
+        CUI
+        and CUI._ModuleNS
+        and CUI.Lite
+        and CUI.HELD_BACK_ADDONS
+        and CUI.SetFontFamily
+        and CUI.PREVIEW_ROSTER
     )
 then
     CUI_CLIENT_BLOCKED = true
@@ -19,12 +20,12 @@ then
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (group titles, applicant names and notes take font families through SetFontFamily, and the settings preview names its samples from PREVIEW_ROSTER)
 -- Held back from this release (CludesUI.HELD_BACK_ADDONS): nothing runs,
 -- and with no namespace published the options page never registers.
-if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then return end
-CludesUI._ModuleNS[ADDON_NAME] = mod -- options file grabs the ns from here
+if CUI.HELD_BACK_ADDONS[ADDON_NAME] then return end
+CUI._ModuleNS[ADDON_NAME] = mod -- options file grabs the ns from here
 
-local GF = CludesUI.Lite.NewAddon(ADDON_NAME)
+local GF = CUI.Lite.NewAddon(ADDON_NAME)
 -- Work on Blizzard frames that waits for combat to end; inert until a Defer.
-mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+mod.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
 
 local DEFAULTS = {
     padding = 12,
@@ -176,7 +177,7 @@ function mod.ResetSettings()
 end
 
 function GF:OnInitialize()
-    saved = CludesUI.Lite.NewDB(
+    saved = CUI.Lite.NewDB(
         "CludesUIGroupFinderDB",
         { profile = { search = DEFAULTS, apps = APPS_DEFAULTS } }
     )
@@ -203,10 +204,10 @@ function GF:OnEnable()
     -- PGF hooks the same panel, so we turn ourselves off while it's loaded.
     if mod.Blocked() then
         mod.SetEnabled(false)
-        CludesUI.Print(
-            CludesUI.COLOR_CODES.BRAND
+        CUI.Print(
+            CUI.COLOR_CODES.BRAND
                 .. "CludesUI|r "
-                .. CludesUI.L("Group Finder has been turned off because Premade Groups Filter is loaded.")
+                .. CUI.L("Group Finder has been turned off because Premade Groups Filter is loaded.")
         )
         return
     end

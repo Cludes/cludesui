@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_ReadyCheck.lua
 --
@@ -38,7 +39,7 @@ local SetupReadyCheckManaWarning = function()
         local c = profile and profile.consumables
         local colour = c and c.rcManaWarnColor
         if colour and colour.r then return colour.r, colour.g, colour.b end
-        local mc = CludesUI.GetPowerColor("MANA")
+        local mc = CUI.GetPowerColor("MANA")
         if mc then return math.min(mc.r * 1.5, 1), math.min(mc.g * 1.5, 1), math.min(mc.b * 1.5, 1) end
         return 0, 0.825, 1
     end
@@ -68,8 +69,8 @@ local SetupReadyCheckManaWarning = function()
             75 + ((c and c.rcManaWarnY) or 0)
         )
         local font = ResolveFontPath(c and c.rcManaWarnFont)
-        local outline = CludesUI.GetFontOutlineFlag("auraBuff")
-        CludesUI.PrimeFontShadow(warnFS, outline == "" and CludesUI.GetFontUseShadow("auraBuff"))
+        local outline = CUI.GetFontOutlineFlag("auraBuff")
+        CUI.PrimeFontShadow(warnFS, outline == "" and CUI.GetFontUseShadow("auraBuff"))
         warnFS:SetFont(font, (c and c.rcManaWarnSize) or 48, outline)
         -- Explicit white instance color: tinted purely via SetVertexColor (curve result); with no instance color it would inherit the primed shadow FontObject's color, which resolves BLACK.
         warnFS:SetTextColor(1, 1, 1, 1)
@@ -111,7 +112,7 @@ local SetupReadyCheckManaWarning = function()
         anim:SetLooping("REPEAT")
         warnFrame._breathe = anim
         REMIND.RCWApplySettings()
-        warnFS:SetText(CludesUI.L("LOW MANA"))
+        warnFS:SetText(CUI.L("LOW MANA"))
     end
 
     -- Only listens for READY_CHECK OOC AND in a raid; GROUP_ROSTER_UPDATE/zone change track raid membership, PLAYER_REGEN toggles combat state.

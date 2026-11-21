@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookCustomBuffs.lua
 --
@@ -12,7 +13,7 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
-local AKWorker = CludesUI.AuraKit.NewBuildWorker()
+local AKWorker = CUI.AuraKit.NewBuildWorker()
 
 local ECME = mod.ECME
 local barDataByKey = mod.barDataByKey
@@ -173,7 +174,7 @@ end
 -- the bar's own icons. PP.Scale (what the other AuraKit consumers use) truncates
 -- instead, and lands a pixel short of the icon sitting next to this one.
 function _AC.SnapPx(val)
-    local onePx = CludesUI.PP and CludesUI.PP.mult
+    local onePx = CUI.PP and CUI.PP.mult
     if not onePx or onePx <= 0 then return val end
     return math.floor(val / onePx + 0.5) * onePx
 end
@@ -215,7 +216,7 @@ function _AC.BuildStyle(edge, fixedIcon)
         end
     end
     local brdA = (edge and edge.borderA) or 1
-    local cdFont = (CludesUI.GetFontPath("cdm"))
+    local cdFont = (CUI.GetFontPath("cdm"))
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
     -- Icon rect. A shaped icon samples OUTSIDE its texture to fill the mask, so
@@ -253,7 +254,7 @@ function _AC.BuildStyle(edge, fixedIcon)
             addonKey = "cdm",
             sizeKey = (edge and edge.borderThickness) or "thin",
             -- Exact size (borderSizePx); nil = the legacy step, as the bar's own icons.
-            edgePx = CludesUI.BorderPx(edge and edge.borderSizePx, brdSize, brdTex),
+            edgePx = CUI.BorderPx(edge and edge.borderSizePx, brdSize, brdTex),
         }
     end
 
@@ -336,7 +337,7 @@ function _AC.InitExtra(btnFrame, skinData)
     skinData.cdmRing:SetSnapToPixelGrid(false)
     skinData.cdmRing:SetTexelSnappingBias(0)
     skinData.cdmRing:Hide()
-    local Kit = CludesUI.AuraKit
+    local Kit = CUI.AuraKit
     local style = Kit and skinData.styleKey and Kit.styles[skinData.styleKey]
     -- Custom Icon art gets a texture of its own instead of a SetTexture on d.icon:
     -- the engine re-stamps the aura's art onto its registered icon on every update,
@@ -388,7 +389,7 @@ end
 function _AC.ApplyExtra(btnFrame, skinData, style)
     local c = style.cdm
     if not c then return end
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
 
     -- Only Show Numbers strips the art down to the countdown. Shown-state as
     -- well as alpha, the same pair ApplyOnlyNumbers uses on the bar's own icons:
@@ -568,7 +569,7 @@ function _AC.ApplyExtra(btnFrame, skinData, style)
         local fKey = c.font .. "|" .. c.durSize
         if skinData.cdmDurFont ~= fKey then
             skinData.cdmDurFont = fKey
-            CludesUI.ApplyIconTextFont(skinData.duration, c.font, c.durSize, "cdm")
+            CUI.ApplyIconTextFont(skinData.duration, c.font, c.durSize, "cdm")
         end
         local aKey = c.durPos .. "|" .. c.durX .. "|" .. c.durY
         if skinData.cdmDurAnchor ~= aKey then
@@ -582,7 +583,7 @@ function _AC.ApplyExtra(btnFrame, skinData, style)
         local fKey = c.font .. "|" .. c.stackSize
         if skinData.cdmStackFont ~= fKey then
             skinData.cdmStackFont = fKey
-            CludesUI.ApplyIconTextFont(skinData.stack, c.font, c.stackSize, "cdm")
+            CUI.ApplyIconTextFont(skinData.stack, c.font, c.stackSize, "cdm")
         end
         local aKey = c.stackPos .. "|" .. c.stackX .. "|" .. c.stackY
         if skinData.cdmStackAnchor ~= aKey then
@@ -619,7 +620,7 @@ function _AC.FixedIconStyleKey(barId, spellRef) return "cdm:aurabuff:" .. barId 
 function _AC.SyncFixedIcons(rec, edge, cis)
     local styles = rec.ciStyles
     if not (styles and cis) then return end
-    local Kit = CludesUI.AuraKit
+    local Kit = CUI.AuraKit
     if not (Kit and Kit.styles) then return end
     for spellRef, ci in pairs(cis) do
         local key = _AC.FixedIconStyleKey(edge.key, spellRef)
@@ -634,7 +635,7 @@ end
 
 -- cis: optional sid -> Custom Icon fileID for the entries that carry one.
 function _AC.Build(rec, barId, edge, sids, sig, cis)
-    local Kit = CludesUI.AuraKit
+    local Kit = CUI.AuraKit
     local barFrame = cdmBarFrames[barId]
     -- Bar not built yet (login race): bail WITHOUT stamping the signature;
     -- the next tracking sync re-queues the build.
@@ -1047,7 +1048,7 @@ function mod.UpdateCustomBuffAuraTracking()
                         end
                         rec.bdRef = edge
                         if rec.sig ~= sig and not rec.queued then
-                            local Kit = CludesUI.AuraKit
+                            local Kit = CUI.AuraKit
                             if Kit and Kit.QueueBuildJob then
                                 rec.queued = true
                                 local barId, bdRef, sidsRef, sigRef, cisRef = edge.key, edge, sids, sig, cis
@@ -1082,7 +1083,7 @@ function mod.UpdateCustomBuffAuraTracking()
             -- Bar lost its aura customs: hide the holder, release the
             -- engine container, forget the build.
             if rec.holder then rec.holder:Hide() end
-            local Kit = CludesUI.AuraKit
+            local Kit = CUI.AuraKit
             if rec.container and Kit and Kit.ReleaseContainer then Kit.ReleaseContainer(rec.container) end
             rec.container = nil
             rec.sig = nil
@@ -1111,7 +1112,7 @@ function mod.RefreshAuraCustomStyle(barId)
     rec.bdRef = edge
     local sig = _AC.StyleSig(edge)
     if rec.styleSig == sig then return end
-    local Kit = CludesUI.AuraKit
+    local Kit = CUI.AuraKit
     if not (Kit and Kit.styles) then return end
     if rec.holder then rec.holder:SetFrameStrata(edge.barStrata or "MEDIUM") end
     local styleKey = "cdm:aurabuff:" .. barId

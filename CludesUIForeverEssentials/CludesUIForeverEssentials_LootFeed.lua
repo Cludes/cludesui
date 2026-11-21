@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_LootFeed.lua  (WoW Forever only)
 --  A stack of short-lived rows for what the player gains: looted items, money,
@@ -13,7 +14,7 @@ local _, module = ...
 -- The options page pool's table (made by the core, filled in place when the
 -- options addon loads): the settings preview reads a dress generation from
 -- it at call time.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local FADE_IN = 0.35
 local FADE_OUT = 0.8
@@ -124,7 +125,7 @@ end
 -------------------------------------------------------------------------------
 --  Rows
 -------------------------------------------------------------------------------
-local function StyleFont(fontStr, size) CludesUI.ApplyModuleFont(fontStr, nil, size, "essentials") end
+local function StyleFont(fontStr, size) CUI.ApplyModuleFont(fontStr, nil, size, "essentials") end
 
 -- Toast plates draw a frame 1 px outside the row, so they need more space.
 local function Gap() return Get("spacing") + (Get("style") == "TOAST" and 2 or 0) end
@@ -158,7 +159,7 @@ local function AnchorHeight(num)
 end
 
 local function Accent()
-    local color = CludesUI.CLUDES_GREEN
+    local color = CUI.CLUDES_GREEN
     if color then return color.r, color.g, color.b end
     return 0.30, 0.79, 0.94
 end
@@ -173,8 +174,8 @@ local function SetBackgroundTexture(texture)
         texture:SetColorTexture(1, 1, 1, 1)
         return
     end
-    if not backgroundTextures then backgroundTextures = CludesUI.BuildBarTextureTables() end
-    texture:SetTexture(CludesUI.ResolveTexturePath(backgroundTextures, key, "Interface\\Buttons\\WHITE8x8"))
+    if not backgroundTextures then backgroundTextures = CUI.BuildBarTextureTables() end
+    texture:SetTexture(CUI.ResolveTexturePath(backgroundTextures, key, "Interface\\Buttons\\WHITE8x8"))
     texture:SetVertexColor(1, 1, 1, 1)
 end
 
@@ -209,7 +210,7 @@ local function ToastChrome(region)
     local o = CreateFrame("Frame", nil, region)
     o:SetPoint("TOPLEFT", -1, 1)
     o:SetPoint("BOTTOMRIGHT", 1, -1)
-    CludesUI.PP.CreateBorder(o, 0, 0, 0, 1, 1, "OVERLAY", 1)
+    CUI.PP.CreateBorder(o, 0, 0, 0, 1, 1, "OVERLAY", 1)
     for _, side in ipairs({ "LEFT", "RIGHT" }) do
         local edge = o:CreateTexture(nil, "OVERLAY", nil, 3)
         edge:SetColorTexture(0, 0, 0, 1)
@@ -233,7 +234,7 @@ local function RowStyle(region)
 end
 
 local function LayoutSeparator(sep)
-    CludesUI.PlaceBorderDividerV(
+    CUI.PlaceBorderDividerV(
         sep.tex,
         sep,
         sep.right,
@@ -253,11 +254,11 @@ local function StyleSeparator(region, style, size, texture, px)
         or not Get("separator")
         or size <= 0
         or (callout and Get("barWidth") <= 0)
-        or not CludesUI.GetBorderCompanion(texture, "sepV")
+        or not CUI.GetBorderCompanion(texture, "sepV")
     then
         if sep then
             sep:Hide()
-            CludesUI.RegisterPxReapply(sep, nil)
+            CUI.RegisterPxReapply(sep, nil)
         end
         return
     end
@@ -273,13 +274,13 @@ local function StyleSeparator(region, style, size, texture, px)
     sep.tex:SetVertexColor(RowColor(region.data, false))
     LayoutSeparator(sep)
     sep:Show()
-    CludesUI.RegisterPxReapply(sep, px and LayoutSeparator or nil)
+    CUI.RegisterPxReapply(sep, px and LayoutSeparator or nil)
 end
 
 local function StyleBorder(region, style)
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local size, texture, owner = Get("borderSize"), Get("borderTexture"), region.lootBorder
-    local px = texture and CludesUI.BorderPx(Get("borderSizePx"), size, texture)
+    local px = texture and CUI.BorderPx(Get("borderSizePx"), size, texture)
     -- The white Pixels artwork takes the item's quality colour without a baked-in tint.
     if texture == "pixels-textured" and region.data.border and Get("qualityBorder") then
         texture = "pixels"
@@ -288,7 +289,7 @@ local function StyleBorder(region, style)
     if size <= 0 or ((style == "BAR" or style == "CALLOUT") and not texture) then
         Pix.HideBorder(region)
         if owner then
-            CludesUI.HideBorderStyle(owner)
+            CUI.HideBorderStyle(owner)
             owner:Hide()
         end
         return
@@ -301,7 +302,7 @@ local function StyleBorder(region, style)
     end
     if not texture or style == "TOAST" then
         if owner then
-            CludesUI.HideBorderStyle(owner)
+            CUI.HideBorderStyle(owner)
             owner:Hide()
         end
         Pix.UpdateBorder(region, size, br, backdrop, bb, 1)
@@ -318,7 +319,7 @@ local function StyleBorder(region, style)
     owner:SetFrameLevel(
         Get("borderBehind") and math.max(0, region:GetFrameLevel() - 1) or region:GetFrameLevel() + 1
     )
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         owner,
         size,
         br,
@@ -537,11 +538,11 @@ local function RowEnter(region)
     elseif Get("style") == "TRAY" then
         local textValue = skinData.text
         if skinData.sub then
-            textValue = textValue .. "\n" .. CludesUI.COLOR_CODES.DIM .. skinData.sub .. "|r"
+            textValue = textValue .. "\n" .. CUI.COLOR_CODES.DIM .. skinData.sub .. "|r"
         end
         if skinData.value then textValue = textValue .. "\n" .. skinData.value end
         region.tip = true
-        CludesUI.ShowWidgetTooltip(region, textValue, { anchor = "left" })
+        CUI.ShowWidgetTooltip(region, textValue, { anchor = "left" })
     end
 end
 
@@ -549,7 +550,7 @@ local function RowLeave(region)
     if GameTooltip:IsOwned(region) then GameTooltip:Hide() end
     if region.tip then
         region.tip = nil
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end
     ArmFade(region)
 end
@@ -583,7 +584,7 @@ local function NewRow(hostFrame)
     region.value:SetPoint("RIGHT", -6, 0)
     region.sub:SetPoint("TOPLEFT", region.icon, "RIGHT", 6, -1)
     region.sub:SetPoint("RIGHT", region.value, "LEFT", -8, 0)
-    CludesUI.PP.CreateBorder(region, 0, 0, 0, 1, 1, "OVERLAY", 2)
+    CUI.PP.CreateBorder(region, 0, 0, 0, 1, 1, "OVERLAY", 2)
     -- Hover only: clicks pass through.
     region:EnableMouseMotion(true)
     region:SetScript("OnEnter", RowEnter)
@@ -721,16 +722,16 @@ local summary, clock
 -- 23m, 1h 5m: started minutes, so a session that has begun never reads 0m
 local function Duration(seconds)
     local minutes = math.ceil(seconds / 60)
-    if minutes < 60 then return string.format(CludesUI.L("%dm"), minutes) end
-    return string.format(CludesUI.L("%dh %dm"), math.floor(minutes / 60), minutes % 60)
+    if minutes < 60 then return string.format(CUI.L("%dm"), minutes) end
+    return string.format(CUI.L("%dh %dm"), math.floor(minutes / 60), minutes % 60)
 end
 
 -- The hourly rate leads; the session's total and length follow, dimmed.
 -- elapsed: seconds since the first loot (0 before it).
 local function PaintSummary(region, sum, elapsed)
     local skinData = region.data
-    skinData.text = CludesUI.Lf("%s / hr", Money(math.floor(sum / math.max(elapsed, RATE_FLOOR) * 3600)))
-    skinData.sub = CludesUI.Lf("%s in %s", Money(sum), Duration(elapsed))
+    skinData.text = CUI.Lf("%s / hr", Money(math.floor(sum / math.max(elapsed, RATE_FLOOR) * 3600)))
+    skinData.sub = CUI.Lf("%s in %s", Money(sum), Duration(elapsed))
     Fill(region)
 end
 
@@ -772,13 +773,13 @@ local RESET_DIM = 0.7
 
 local function ResetEnter(b)
     b.tip = true
-    CludesUI.ShowWidgetTooltip(b, CludesUI.L("Ctrl + Click to reset the session"), { anchor = "left" })
+    CUI.ShowWidgetTooltip(b, CUI.L("Ctrl + Click to reset the session"), { anchor = "left" })
 end
 
 local function ResetLeave(b)
     if not b.tip then return end
     b.tip = nil
-    CludesUI.HideWidgetTooltip()
+    CUI.HideWidgetTooltip()
 end
 
 -- The button takes the mouse only while Ctrl is held (and lights up), so the
@@ -855,7 +856,7 @@ local function PlaceSummary(region)
     StyleFont(region.sub, size)
     region.sub:SetTextColor(RESET_DIM, RESET_DIM, RESET_DIM)
     StyleFont(reset.text, size)
-    reset.text:SetText(CludesUI.L("Reset Session"))
+    reset.text:SetText(CUI.L("Reset Session"))
     reset:SetSize(reset.text:GetStringWidth(), reset.text:GetStringHeight())
     region:ClearAllPoints()
     region:SetPoint(Get("grow") == "UP" and "BOTTOMLEFT" or "TOPLEFT")
@@ -912,12 +913,12 @@ local function ShowItem(itemLink, count, retried, looted, earned)
     local sub, questSub
     if Get("showIlvl") and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor) then
         local ilvl = C_Item.GetDetailedItemLevelInfo(itemLink) or itemLevel
-        if ilvl and ilvl > 0 then sub = CludesUI.Lf("ilvl: %d", ilvl) end
+        if ilvl and ilvl > 0 then sub = CUI.Lf("ilvl: %d", ilvl) end
     elseif classID == Enum.ItemClass.Questitem and ITEM_BIND_QUEST then
         questSub = "|cffffd100" .. ITEM_BIND_QUEST .. "|r"
     end
     if won then
-        won = CludesUI.Lf("Won: %s", won)
+        won = CUI.Lf("Won: %s", won)
         sub = sub and (won .. "  " .. sub) or won
     end
     -- The row shows the tracker's price; the plain vendor one with Use Auctionator Prices off.
@@ -945,7 +946,7 @@ local function ShowMoney(copper)
     copper = Total("money", copper)
     Emit("money", {
         icon = MONEY_ICON,
-        text = CludesUI.L("Money"),
+        text = CUI.L("Money"),
         value = Money(copper),
         amount = copper,
         badge = ShortMoney(copper),
@@ -1038,7 +1039,7 @@ local function ShowSkill(skill, rank)
         text = skill,
         value = rank .. max,
         badge = rank,
-        flat = skill .. " " .. CludesUI.COLOR_CODES.WHITE .. rank .. max .. "|r",
+        flat = skill .. " " .. CUI.COLOR_CODES.WHITE .. rank .. max .. "|r",
     })
 end
 
@@ -1115,11 +1116,11 @@ local function ShowRoll(key, itemLink, itemName, winner, class, roll, retried)
     local textValue
     if winner then
         -- The suite's class colour (custom class colours included); an unknown class stays uncoloured.
-        local cc = class and RAID_CLASS_COLORS[class] and CludesUI.GetClassColor(class)
-        if cc then winner = CludesUI.HexColor(cc.r, cc.g, cc.b) .. winner .. "|r" end
-        textValue = CludesUI.Lf("%s won %s", winner, entry)
+        local cc = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
+        if cc then winner = CUI.HexColor(cc.r, cc.g, cc.b) .. winner .. "|r" end
+        textValue = CUI.Lf("%s won %s", winner, entry)
     else
-        textValue = CludesUI.Lf("Everyone passed on %s", entry)
+        textValue = CUI.Lf("Everyone passed on %s", entry)
     end
     Emit(key, {
         icon = iconTex or UNKNOWN_ICON,
@@ -1280,7 +1281,7 @@ local function Preview()
     if not Enabled() then return end
     CreateAnchor()
     ClearRows()
-    if Get("skills") then ShowSkill(CludesUI.L("Swords"), 42) end
+    if Get("skills") then ShowSkill(CUI.L("Swords"), 42) end
     if Get("reputation") then
         local capital = C_Reputation.GetFactionDataByID(UnitFactionGroup("player") == "Horde" and 76 or 72)
         if capital then ShowReputation(capital.name, 250) end
@@ -1324,7 +1325,7 @@ local function PreviewSamples()
         local capital = C_Reputation.GetFactionDataByID(UnitFactionGroup("player") == "Horde" and 76 or 72)
         if capital then ShowReputation(capital.name, 250) end
     end
-    if Get("skills") then ShowSkill(CludesUI.L("Swords"), 42) end
+    if Get("skills") then ShowSkill(CUI.L("Swords"), 42) end
     collect = nil
     -- Asked for once the samples are in: the callback can run right away.
     if itemList or Get("rolls") then
@@ -1420,7 +1421,7 @@ local function CreateSettingsPreview(hostFrame, availableWidth, onHeightChanged)
 end
 
 -- Options-page entry points.
-CludesUI._LootFeed = {
+CUI._LootFeed = {
     Get = Get,
     Cfg = Cfg,
     Apply = Apply,

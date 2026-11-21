@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_GreatVault.lua
 --  Great Vault reskin.
@@ -7,7 +8,7 @@ local ADDON_NAME, mod = ...
 local LOCK_TEXTURE = "Interface\\LFGFrame\\UI-LFG-ICON-LOCK"
 
 -- External weak-keyed lookup table for frame state (prevents tainting Blizzard frames)
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -------------------------------------------------------------------------------
 --  Config / Theme Access
@@ -72,16 +73,16 @@ local STYLE = {
 local function IsGreatVaultSkinEnabled()
     -- Own toggle (default on), but like every window it honors the profile's
     -- Window Skins kill switch: both resolve to "off" here.
-    return CludesUI.GetBlizzWindowStyle("greatvault") ~= "off"
+    return CUI.GetBlizzWindowStyle("greatvault") ~= "off"
 end
 
 local function BuildThemeContext()
-    local red, green, blue = CludesUI.GetAccentColor()
+    local red, green, blue = CUI.GetAccentColor()
     return {
         accent = { r = red, g = green, b = blue },
-        borderAPI = CludesUI.PP or CludesUI.PanelPP,
-        fontPath = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT,
-        reskin = CludesUI.RESKIN or DEFAULT_RESKIN,
+        borderAPI = CUI.PP or CUI.PanelPP,
+        fontPath = CUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT,
+        reskin = CUI.RESKIN or DEFAULT_RESKIN,
     }
 end
 
@@ -124,7 +125,7 @@ end
 local function ApplyFont(fontString, skinName, size, red, green, blue, a, flags)
     if not fontString then return end
 
-    CludesUI.PrimeFontShadow(fontString, true)
+    CUI.PrimeFontShadow(fontString, true)
     fontString:SetFont((skinName and skinName.fontPath) or STANDARD_TEXT_FONT, size, flags or "")
     fontString:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
 end
@@ -227,7 +228,7 @@ local function EnsureProgressBar(widget, anchorFrame)
 
     local progressFrame = skinData.progressBarFrame
     local anchorFrame = anchorFrame or widget
-    local progressPct = CludesUI.PP or CludesUI.PanelPP
+    local progressPct = CUI.PP or CUI.PanelPP
     local pixel = progressPct and progressPct.Scale and progressPct.Scale(1) or 1
     progressFrame:ClearAllPoints()
     progressFrame:SetPoint("BOTTOMLEFT", anchorFrame, "BOTTOMLEFT", pixel, pixel)

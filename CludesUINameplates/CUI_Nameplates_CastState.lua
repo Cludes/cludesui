@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_CastState.lua
 --
@@ -334,20 +335,20 @@ local function SetupAuraCVars()
         local npcEnum = Enum.NamePlateEnemyNpcAuraDisplay
         if npcCVar and npcEnum then
             if npcEnum.Debuffs then
-                CludesUI.SetCVarBitfield(npcCVar, npcEnum.Debuffs, true, "CludesUINameplates")
+                CUI.SetCVarBitfield(npcCVar, npcEnum.Debuffs, true, "CludesUINameplates")
             end
             if npcEnum.CrowdControl then
-                CludesUI.SetCVarBitfield(npcCVar, npcEnum.CrowdControl, true, "CludesUINameplates")
+                CUI.SetCVarBitfield(npcCVar, npcEnum.CrowdControl, true, "CludesUINameplates")
             end
         end
         local plyCVar = NamePlateConstants.ENEMY_PLAYER_AURA_DISPLAY_CVAR
         local plyEnum = Enum.NamePlateEnemyPlayerAuraDisplay
         if plyCVar and plyEnum then
             if plyEnum.Debuffs then
-                CludesUI.SetCVarBitfield(plyCVar, plyEnum.Debuffs, true, "CludesUINameplates")
+                CUI.SetCVarBitfield(plyCVar, plyEnum.Debuffs, true, "CludesUINameplates")
             end
             if plyEnum.LossOfControl then
-                CludesUI.SetCVarBitfield(plyCVar, plyEnum.LossOfControl, true, "CludesUINameplates")
+                CUI.SetCVarBitfield(plyCVar, plyEnum.LossOfControl, true, "CludesUINameplates")
             end
         end
     end
@@ -360,12 +361,12 @@ local function SetupAuraCVars()
         -- with "Show CUI Friendly Player Nameplates" off we relinquish them entirely to
         -- Blizzard's own settings. Friendly NPC and enemy pet CVars are always managed.
         if showPlayers then
-            CludesUI.SetCVar(
+            CUI.SetCVar(
                 "nameplateShowOnlyNameForFriendlyPlayerUnits",
                 nameOnly and 1 or 0,
                 "CludesUINameplates"
             )
-            CludesUI.SetCVar("UnitNameFriendlyPlayerName", 1, "CludesUINameplates")
+            CUI.SetCVar("UnitNameFriendlyPlayerName", 1, "CludesUINameplates")
             -- Visibility is NOT re-asserted: nameplateShowFriends/nameplateShowFriendlyPlayers
             -- persist across sessions, so forcing them each login would re-show plates the user
             -- deliberately hid. The one-time seed below covers a first install only.
@@ -373,47 +374,47 @@ local function SetupAuraCVars()
                 CludesUIDB.friendlyPlateVisSeeded = true
                 -- Fresh install only: an existing install is stamped WITHOUT forcing, so a
                 -- user who already hid friendly plates keeps that.
-                if CludesUI._firstInstallPending and mod.ForceFriendlyPlayerCVarsOn then
+                if CUI._firstInstallPending and mod.ForceFriendlyPlayerCVarsOn then
                     mod.ForceFriendlyPlayerCVarsOn()
                 end
             end
         end
-        CludesUI.SetCVar("nameplateShowFriendlyNPCs", showNPCs and 1 or 0, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateShowFriendlyNpcs", showNPCs and 1 or 0, "CludesUINameplates")
-        CludesUI.SetCVar(
+        CUI.SetCVar("nameplateShowFriendlyNPCs", showNPCs and 1 or 0, "CludesUINameplates")
+        CUI.SetCVar("nameplateShowFriendlyNpcs", showNPCs and 1 or 0, "CludesUINameplates")
+        CUI.SetCVar(
             "nameplateShowEnemyPets",
             (saved.showEnemyPets == true) and 1 or 0,
             "CludesUINameplates"
         )
         if showPlayers then
-            CludesUI.SetCVar(
+            CUI.SetCVar(
                 "ShowClassColorInFriendlyNameplate",
                 (saved.classColorFriendly ~= false) and 1 or 0,
                 "CludesUINameplates"
             )
         end
-        CludesUI.SetCVar("ShowClassColorInNameplate", 1, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateSize", 3, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateShowAll", 1, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateMinScale", 1, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateOverlapH", 1, "CludesUINameplates")
+        CUI.SetCVar("ShowClassColorInNameplate", 1, "CludesUINameplates")
+        CUI.SetCVar("nameplateSize", 3, "CludesUINameplates")
+        CUI.SetCVar("nameplateShowAll", 1, "CludesUINameplates")
+        CUI.SetCVar("nameplateMinScale", 1, "CludesUINameplates")
+        CUI.SetCVar("nameplateOverlapH", 1, "CludesUINameplates")
         -- nameplateOverlapV is deliberately left alone: it's the user's own vertical-spacing
         -- cvar (Blizzard default 1.10). Our "Stacked Nameplate Spacing" slider layers extra
         -- spacing on top via the stacking-bounds frame.
-        CludesUI.SetCVar("nameplateMaxAlpha", 1, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateMaxAlphaDistance", 40, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateMinAlpha", 0.6, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateMinAlphaDistance", -100000, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateMaxDistance", 60, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateMaxScale", 1, "CludesUINameplates")
+        CUI.SetCVar("nameplateMaxAlpha", 1, "CludesUINameplates")
+        CUI.SetCVar("nameplateMaxAlphaDistance", 40, "CludesUINameplates")
+        CUI.SetCVar("nameplateMinAlpha", 0.6, "CludesUINameplates")
+        CUI.SetCVar("nameplateMinAlphaDistance", -100000, "CludesUINameplates")
+        CUI.SetCVar("nameplateMaxDistance", 60, "CludesUINameplates")
+        CUI.SetCVar("nameplateMaxScale", 1, "CludesUINameplates")
         -- Neutralize Blizzard's selected-target scaling: the CUI plate is a child of the base
         -- nameplate, so Blizzard's scaling shows through our own SetScale (min/max pinned to 1
         -- for the same reason). Pinned to 1, "Scale Target Nameplate" is the sole authority.
-        CludesUI.SetCVar("nameplateSelectedScale", 1, "CludesUINameplates")
-        CludesUI.SetCVar("nameplateTargetBehindMaxDistance", 30, "CludesUINameplates")
-        CludesUI.SetCVar("clampTargetNameplateToScreen", 1, "CludesUINameplates")
+        CUI.SetCVar("nameplateSelectedScale", 1, "CludesUINameplates")
+        CUI.SetCVar("nameplateTargetBehindMaxDistance", 30, "CludesUINameplates")
+        CUI.SetCVar("clampTargetNameplateToScreen", 1, "CludesUINameplates")
         if showPlayers then
-            CludesUI.SetCVar(
+            CUI.SetCVar(
                 "nameplateUseClassColorForFriendlyPlayerUnitNames",
                 mod.FriendlyNameClassCVar(saved),
                 "CludesUINameplates"

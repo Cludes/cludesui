@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Lifecycle.lua
 --
@@ -41,8 +42,8 @@ local _playerRace, _playerClass
 --  Register CDM bars with unlock mode
 -------------------------------------------------------------------------------
 RegisterCDMUnlockElements = function()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
 
     -- Build a lookup of which bars are anchored to which parent
     local anchorChildren = {} -- parentKey -> { childKey1, childKey2, ... }
@@ -76,14 +77,14 @@ RegisterCDMUnlockElements = function()
                 -- returns 0 during unlock mode: movers show and save the BASE.
                 local hasAddOffset = (barInfo.addOffsetX or 0) ~= 0 or (barInfo.addOffsetY or 0) ~= 0
                 do
-                    local xoff = CludesUI._anchorExtraOffset
+                    local xoff = CUI._anchorExtraOffset
                     if not xoff then
                         xoff = {}
-                        CludesUI._anchorExtraOffset = xoff
+                        CUI._anchorExtraOffset = xoff
                     end
                     xoff["CDM_" .. key] = function()
                         local bd3 = barDataByKey[key]
-                        if not bd3 or CludesUI._unlockActive then return 0, 0 end
+                        if not bd3 or CUI._unlockActive then return 0, 0 end
                         return bd3.addOffsetX or 0, bd3.addOffsetY or 0
                     end
                 end
@@ -118,9 +119,9 @@ RegisterCDMUnlockElements = function()
                         if ox == 0 and oy == 0 then return nil end
                         -- Stored in coordinate units; the options sliders show
                         -- physical pixels, so report the same unit here.
-                        local toPx = CludesUI.PP.ToPixels
+                        local toPx = CUI.PP.ToPixels
                         ox, oy = toPx(ox), toPx(oy)
-                        return CludesUI.Lf(
+                        return CUI.Lf(
                             "This bar has an Additional Bar Offset (X %1$s, Y %2$s) set in its options. Layout mode shows the base position; the offset re-applies when you exit.",
                             ox,
                             oy
@@ -181,8 +182,8 @@ RegisterCDMUnlockElements = function()
                         -- post-resize re-anchoring. Unlock mode always provides CENTER coords; convert
                         -- to the resolved anchor, skipping any axis with no extent yet (empty bar).
                         -- Snapped bars always store the plain growth edge: the anchor system's saved-edge consumers only understand single-edge points, so a corner would silently break edge preservation and target follow for them.
-                        local isSnapped = CludesUI.IsUnlockAnchored
-                            and CludesUI.IsUnlockAnchored("CDM_" .. key)
+                        local isSnapped = CUI.IsUnlockAnchored
+                            and CUI.IsUnlockAnchored("CDM_" .. key)
                         local resolved = mod.ResolveGrowAnchorPoint(bd2, isSnapped)
                         if resolved ~= "CENTER" and widget then
                             local fw = widget:GetWidth() or 0
@@ -200,12 +201,12 @@ RegisterCDMUnlockElements = function()
                         -- follow stays off (pure absolute pin). require-re-save: existing bars pick this up only when next dragged + Save & Exit.
                         local tgtx, tgty
                         local tgtL, tgtR, tgtT, tgtB
-                        if grow and grow ~= "CENTER" and CludesUI.GetAnchorTargetCenterUI then
-                            tgtx, tgty = CludesUI.GetAnchorTargetCenterUI("CDM_" .. key)
+                        if grow and grow ~= "CENTER" and CUI.GetAnchorTargetCenterUI then
+                            tgtx, tgty = CUI.GetAnchorTargetCenterUI("CDM_" .. key)
                             -- Corner-follow baseline: the target's edges at save time, captured ONLY when
                             -- anchored to another CDM bar. Lets ApplyAnchorPosition hold a perpendicular (corner) bar against the target edge when the target's width/height changes. nil otherwise -> corner follow stays off.
-                            if CludesUI.GetAnchorTargetEdgesUI then
-                                tgtL, tgtR, tgtT, tgtB = CludesUI.GetAnchorTargetEdgesUI("CDM_" .. key)
+                            if CUI.GetAnchorTargetEdgesUI then
+                                tgtL, tgtR, tgtT, tgtB = CUI.GetAnchorTargetEdgesUI("CDM_" .. key)
                             end
                         end
                         profile.cdmBarPositions[key] = {
@@ -221,7 +222,7 @@ RegisterCDMUnlockElements = function()
                             tgtB = tgtB,
                         }
                         -- Skip rebuild when called from anchor propagation or while unlock mode is active (unlock mode owns positioning then).
-                        if not CludesUI._propagatingSave and not CludesUI._unlockActive then
+                        if not CUI._propagatingSave and not CUI._unlockActive then
                             BuildAllCDMBars()
                         end
                     end,
@@ -274,9 +275,9 @@ RegisterCDMUnlockElements = function()
         end
     end
 
-    if #elements > 0 then CludesUI:RegisterUnlockElements(elements, "CludesUICooldownManager") end
+    if #elements > 0 then CUI:RegisterUnlockElements(elements, "CludesUICooldownManager") end
     -- Expose for ApplyAnchorPosition's growth-direction edge read. Width-independent: stores edge anchor directly (LEFT/RIGHT/TOP).
-    CludesUI._cdmBarPositions = ECME.db.profile.cdmBarPositions
+    CUI._cdmBarPositions = ECME.db.profile.cdmBarPositions
 end
 
 -- "Additional Bar Offset" unlock lifecycle: rides the shared shift-provider
@@ -303,8 +304,8 @@ do
         end
         return false
     end
-    CludesUI._anchorShiftProviders = CludesUI._anchorShiftProviders or {}
-    table.insert(CludesUI._anchorShiftProviders, {
+    CUI._anchorShiftProviders = CUI._anchorShiftProviders or {}
+    table.insert(CUI._anchorShiftProviders, {
         dir = function() return 0 end,
         wants = AnyBarHasAddOffset,
         enter = function()
@@ -325,7 +326,7 @@ do
                     edge.enabled
                     and ((edge.addOffsetX or 0) ~= 0 or (edge.addOffsetY or 0) ~= 0)
                     and (edge.anchorTo or "none") == "none"
-                    and not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. edge.key))
+                    and not (CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("CDM_" .. edge.key))
                 then
                     local widget = cdmBarFrames[edge.key]
                     local place = profile.cdmBarPositions and profile.cdmBarPositions[edge.key]
@@ -338,7 +339,7 @@ do
         restore = function()
             if not AnyBarHasAddOffset() then return end
             BuildAllCDMBars()
-            if CludesUI.PropagateAnchorChain and CludesUI.IsUnlockAnchored then
+            if CUI.PropagateAnchorChain and CUI.IsUnlockAnchored then
                 local profile = ECME and ECME.db and ECME.db.profile
                 local barList = profile and profile.cdmBars and profile.cdmBars.bars
                 if barList then
@@ -347,9 +348,9 @@ do
                         if
                             edge.enabled
                             and ((edge.addOffsetX or 0) ~= 0 or (edge.addOffsetY or 0) ~= 0)
-                            and CludesUI.IsUnlockAnchored("CDM_" .. edge.key)
+                            and CUI.IsUnlockAnchored("CDM_" .. edge.key)
                         then
-                            CludesUI.PropagateAnchorChain("CDM_" .. edge.key)
+                            CUI.PropagateAnchorChain("CDM_" .. edge.key)
                         end
                     end
                 end
@@ -373,13 +374,13 @@ mod.CDMReapplyBarPositions = function()
     local barList = profile and profile.cdmBars and profile.cdmBars.bars
     -- Never inside unlock mode: movers own positions there and a re-place
     -- from saved coords would revert un-saved drags.
-    if not barList or InCombatLockdown() or CludesUI._unlockActive then return end
+    if not barList or InCombatLockdown() or CUI._unlockActive then return end
     for index = 1, #barList do
         local edge = barList[index]
         if edge.enabled and (edge.anchorTo or "none") == "none" then
             local ukey = "CDM_" .. edge.key
-            if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(ukey) then
-                if CludesUI.PropagateAnchorChain then CludesUI.PropagateAnchorChain(ukey) end
+            if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(ukey) then
+                if CUI.PropagateAnchorChain then CUI.PropagateAnchorChain(ukey) end
             else
                 local widget = cdmBarFrames[edge.key]
                 local place = profile.cdmBarPositions and profile.cdmBarPositions[edge.key]
@@ -403,7 +404,7 @@ end
 --  capture and the normal `CDMFinishSetup` path.
 -------------------------------------------------------------------------------
 function ECME:OnInitialize()
-    self.db = CludesUI.Lite.NewDB("CludesUICooldownManagerDB", DEFAULTS, true)
+    self.db = CUI.Lite.NewDB("CludesUICooldownManagerDB", DEFAULTS, true)
 
     -- /cd opens Blizzard's Cooldown Manager settings (SlashCmdList.CUIBLIZZCDM)
     -- only while Quality of Life's "Type /cd to open Blizzard CDM" is on: an
@@ -412,7 +413,7 @@ function ECME:OnInitialize()
     if CludesUIDB and CludesUIDB.blizzCDMSlash == true then SLASH_CUIBLIZZCDM1 = "/cd" end
 
     -- Save spec profile before StripDefaults runs on logout
-    CludesUI.Lite.RegisterPreLogout(function()
+    CUI.Lite.RegisterPreLogout(function()
         local specKey = mod.GetActiveSpecKey()
         if specKey and specKey ~= "0" then SaveCurrentSpecProfile() end
     end)
@@ -456,8 +457,8 @@ function ECME:OnInitialize()
     end
 
     -- Append SharedMedia textures to TBB runtime tables
-    if CludesUI.AppendSharedMediaTextures and mod.TBB_TEXTURE_NAMES then
-        CludesUI.AppendSharedMediaTextures(
+    if CUI.AppendSharedMediaTextures and mod.TBB_TEXTURE_NAMES then
+        CUI.AppendSharedMediaTextures(
             mod.TBB_TEXTURE_NAMES,
             mod.TBB_TEXTURE_ORDER,
             nil,
@@ -554,7 +555,7 @@ function ECME:OnEnable()
     -- reanchor tail in CdmHooks). Removal sync = settled-state triggers only.
 
     -- Enable CDM cooldown viewer (keep Blizzard CDM running in background so we can read its children even while hidden)
-    pcall(CludesUI.SetCVar, "cooldownViewerEnabled", "1", "CludesUICooldownManager")
+    pcall(CUI.SetCVar, "cooldownViewerEnabled", "1", "CludesUICooldownManager")
 
     -- Spec-gated build: only run CDMFinishSetup once a real spec key exists from the live API; if
     -- the API isn't ready, defer until it is. Wait until the truth is known, then build once -- never guess the spec and repair later.
@@ -632,7 +633,7 @@ function ECME:CDMFinishSetup()
     -- settled. Run the unlock-core body early so anchor/propagation functions (ApplyAnchorPosition,
     -- PropagateWidthMatch, etc.) are available for the initial build pass -- NOT EnsureLoaded,
     -- which would pull the LoadOnDemand options addon into every login. CDM SavedVariables are ready by this point.
-    CludesUI:EnsureUnlockCore()
+    CUI:EnsureUnlockCore()
 
     -- Pre-size CDM bar frames using cached icon counts from last session. Purely cosmetic: gives
     -- anchored elements correct dimensions to compute against before the real spell data populates. BuildAllCDMBars below overwrites everything with real data.
@@ -684,7 +685,7 @@ function ECME:CDMFinishSetup()
                                 or (grow == "CENTER" and not barInfo.verticalOrientation)
                             )
                             -- Compute total in integer phys px to avoid PP.Scale floor losing 1 px to floating-point dust on the multiply.
-                            local PPpc = CludesUI and CludesUI.PP
+                            local PPpc = CUI and CUI.PP
                             local onePxPc = PPpc and PPpc.mult or 1
                             local iconWPx = math.floor(iconW / onePxPc + 0.5)
                             local iconHPx = math.floor(iconH / onePxPc + 0.5)
@@ -752,7 +753,7 @@ function ECME:CDMFinishSetup()
         end)
     end
     -- SharedMedia sounds feed the options dropdowns; append regardless.
-    CludesUI.AppendSharedMediaSounds(FOCUSKICK_SOUND_PATHS, FOCUSKICK_SOUND_NAMES, FOCUSKICK_SOUND_ORDER)
+    CUI.AppendSharedMediaSounds(FOCUSKICK_SOUND_PATHS, FOCUSKICK_SOUND_NAMES, FOCUSKICK_SOUND_ORDER)
 
     -- One-time vehicle/petbattle proxy. Drives _CDMApplyVisibility on state change so CDM bars hide while the vehicle UI or pet battle UI is active.
     if not _cdmVehicleProxy then

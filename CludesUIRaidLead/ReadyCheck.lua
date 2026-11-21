@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ReadyCheck.lua -- Raid Lead: gear and cooldown checks on ready check.
 --
@@ -75,9 +76,9 @@ end
 
 local function CooldownsNotReady()
     local result = {}
-    local presets = CludesUI.BUFF_PRESETS
-        and CludesUI.BUFF_PRESETS.spells
-        and CludesUI.BUFF_PRESETS.spells.raidcds
+    local presets = CUI.BUFF_PRESETS
+        and CUI.BUFF_PRESETS.spells
+        and CUI.BUFF_PRESETS.spells.raidcds
     local _, class = UnitClass("player")
     for ident, details in pairs(presets or {}) do
         if details.class == class and IsPlayerSpell(ident) then
@@ -121,9 +122,9 @@ end
 --- Consumables this player lacks, or "?" when the game hides their buffs.
 local function MissingConsumables()
     local restricted = InCombatLockdown()
-        or (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted and CludesUI.AuraKit.AurasRestricted())
+        or (CUI.AuraKit and CUI.AuraKit.AurasRestricted and CUI.AuraKit.AurasRestricted())
     if restricted then return "?" end
-    local prep = CludesUI.RAID_PREP_IDS or {}
+    local prep = CUI.RAID_PREP_IDS or {}
     local result = {}
     if not HasAnyAura(prep.flask) then result[#result + 1] = "Flask" end
     local success, fed = pcall(WellFed)
@@ -156,26 +157,26 @@ end
 local reports = {} -- name -> { dur, ilvl, enchants = {}, cds = {} }
 local window, rowList = nil, {}
 
-local function Font() return CludesUI.GetFontPath(nil) end
+local function Font() return CUI.GetFontPath(nil) end
 
 local function BuildWindow()
     if window then return end
     window = CreateFrame("Frame", "CludesUIRaidLeadReadyCheck", UIParent)
     window:SetSize(520, 60)
     window:SetPoint("TOP", UIParent, "TOP", 0, -140)
-    CludesUI.Kit.Panel(window, 0.92)
+    CUI.Kit.Panel(window, 0.92)
     window:SetMovable(true)
     window:EnableMouse(true)
     window:RegisterForDrag("LeftButton")
     window:SetScript("OnDragStart", window.StartMoving)
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     local title = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(title, 15, nil)
+    CUI.Kit.Font(title, 15, nil)
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Ready Check")
-    CludesUI.Kit.AccentText(title)
+    CUI.Kit.AccentText(title)
     window.title = title
-    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, nil)
+    local close = CUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, nil)
     close:SetPoint("TOPRIGHT", -5, -5)
     window:Hide()
     tinsert(UISpecialFrames, "CludesUIRaidLeadReadyCheck")
@@ -185,7 +186,7 @@ local function Row(idx)
     local fontStr = rowList[idx]
     if not fontStr then
         fontStr = window:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(fontStr, 13, nil)
+        CUI.Kit.Font(fontStr, 13, nil)
         fontStr:SetJustifyH("LEFT")
         fontStr:SetWidth(500)
         fontStr:SetWordWrap(false)

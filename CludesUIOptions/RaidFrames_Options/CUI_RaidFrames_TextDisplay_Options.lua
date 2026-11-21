@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  RaidFrames_Options\CUI_RaidFrames_TextDisplay_Options.lua
 --  Raid Frames options: the texts of the Text Display section. One tile per
@@ -6,7 +7,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  it (texts may share a position), the dropdown picks its mode or removes
 --  it, "+ Add Text" shows a hidden one. Every text keeps its own keys.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIRaidFrames"]
+local mod = CUI._ModuleNS["CludesUIRaidFrames"]
 if not mod then return end -- module disabled: no options page
 
 -- Dropdown entries per kind; "none" is the dropdown's Remove.
@@ -69,11 +70,11 @@ do
     -- runs after the format is stored.
     function CustomText.Edit(key, color, onSave)
         local environ = mod._RFO_OptEnv
-        CludesUI.TextTags.EditPopup({
+        CUI.TextTags.EditPopup({
             cat = mod.RF_TextTags,
             color = color,
             onSave = onSave,
-            tagNotes = { hp = CludesUI.L("shows DEAD or OFFLINE") },
+            tagNotes = { hp = CUI.L("shows DEAD or OFFLINE") },
             get = function() return environ.SVal(key) end,
             set = function(txt) environ.SWrite(key, txt) end,
         })
@@ -82,13 +83,13 @@ do
     -- A copy of a mode list whose Custom entry is an action that opens the popup,
     -- beside Remove in the house red.
     function CustomText.Values(values, edit)
-        return CludesUI.TextTags.MenuValues(values, edit, { removeKey = "none" })
+        return CUI.TextTags.MenuValues(values, edit, { removeKey = "none" })
     end
 
     -- The popup writes the format directly, so Spec Overrides needs an accessor.
     function CustomText.AddAccessor(region, labelText, key)
         local environ = mod._RFO_OptEnv
-        CludesUI.TextTags.AddFormatAccessor(
+        CUI.TextTags.AddFormatAccessor(
             region,
             labelText,
             function() return environ.SVal(key) end,
@@ -111,7 +112,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     local environ = mod._RFO_OptEnv
     local SVal, SWrite, ReloadAndUpdate = environ.SVal, environ.SWrite, environ.ReloadAndUpdate
     local TEXTS, POSITIONS, POS_INDEX = mod.RF_TEXTS, mod.RF_TEXT_POSITIONS, mod.RF_TEXT_POS_INDEX
-    local POS = CludesUI.POSITION_GRID_VALUES
+    local POS = CUI.POSITION_GRID_VALUES
     local LEVEL_DEFAULT = mod.RF_LEVEL_DEFAULT
 
     local function PosOf(tbl)
@@ -144,7 +145,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     local function Notify(tbl) mod._rfTextNotify = { page = options.page, key = tbl.id } end
     local function ApplyTextDisplay()
         ReloadAndUpdate()
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
     end
 
     -- A dropdown pick: a mode, the level format in front of the name, or Remove.
@@ -238,7 +239,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         -- has its own row: it shapes the Top Name Bar too).
         local showsName = tbl.kind == "name"
         if tbl.kind == "custom" then
-            local parsed = CludesUI.TextTags.Parse(mod.RF_TextTags, SVal(tbl.fmt))
+            local parsed = CUI.TextTags.Parse(mod.RF_TextTags, SVal(tbl.fmt))
             showsName = parsed and parsed.has and parsed.has.name and true or false
         end
         if showsName then
@@ -274,14 +275,14 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 set = function(val) environ.SSet(tbl.above, val) end,
             }
         end
-        CludesUI.BuildInlineCog(region, {
-            title = CludesUI.Lf("%1$s Settings", CludesUI.L(tbl.label)),
+        CUI.BuildInlineCog(region, {
+            title = CUI.Lf("%1$s Settings", CUI.L(tbl.label)),
             rows = rowList,
         })
         if tbl.kind ~= "level" then
             local modeKey = tbl.cm
             local function AddColorSwatch(getColor, setColor, mode, opensPicker, tooltip)
-                local sw = CludesUI.BuildColorSwatch(
+                local sw = CUI.BuildColorSwatch(
                     region,
                     region:GetFrameLevel() + 5,
                     getColor,
@@ -295,18 +296,18 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 sw:SetScript("OnClick", function(self)
                     if SVal(modeKey, "custom") ~= mode then
                         -- Attribution read before the write: the rebuild dresses the swatch again.
-                        local snap = CludesUI._SOAttribution(self)
+                        local snap = CUI._SOAttribution(self)
                         environ.SSet(modeKey, mode)
-                        CludesUI._NotifySettingWrite(self, snap)
-                        CludesUI:RefreshPage()
+                        CUI._NotifySettingWrite(self, snap)
+                        CUI:RefreshPage()
                         return
                     end
                     if opensPicker and self._eabOrigClick then self._eabOrigClick(self) end
                 end)
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, tooltip) end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:HookScript("OnEnter", function() CUI.ShowWidgetTooltip(sw, tooltip) end)
+                sw:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 local function vis() sw:SetAlpha(SVal(modeKey, "custom") == mode and 1 or 0.3) end
-                CludesUI.RegisterWidgetRefresh(vis)
+                CUI.RegisterWidgetRefresh(vis)
                 vis()
             end
             AddColorSwatch(function()
@@ -319,18 +320,18 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             end, "custom", true, "Custom Color")
             AddColorSwatch(function()
                 local _, classTok = UnitClass("player")
-                local classColor = classTok and CludesUI.GetClassColor(classTok)
+                local classColor = classTok and CUI.GetClassColor(classTok)
                 if classColor then return classColor.r, classColor.g, classColor.b, 1 end
                 return 1, 1, 1, 1
             end, function() end, "class", false, "Class Color")
             AddColorSwatch(function()
-                local red, green, blue = CludesUI.ResolveActiveAccent()
+                local red, green, blue = CUI.ResolveActiveAccent()
                 return red or 1, green or 1, blue or 1, 1
             end, function() end, "accent", false, "Accent Color")
             if AllowsPower(tbl) then
                 AddColorSwatch(function()
                     local _, pToken = UnitPowerType("player")
-                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    local details = CUI.GetPowerColor(pToken or "MANA")
                     if details then return details.r, details.g, details.b, 1 end
                     return 0, 0.5, 1, 1
                 end, function() end, "power", false, "Power Colored Text")
@@ -342,7 +343,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 modeValues.power = "Power Colored Text"
                 modeOrder[4] = "power"
             end
-            CludesUI.AddCaptureAccessor(region, {
+            CUI.AddCaptureAccessor(region, {
                 type = "dropdown",
                 text = tbl.label .. " Color Mode",
                 values = modeValues,
@@ -430,7 +431,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         if #addOrder > 1 then table.insert(addOrder, 2, "---") end
         addValues._menuOpts = {
             icon = function(key)
-                if key == customId then return CludesUI.TextTags.EDIT_ICON end
+                if key == customId then return CUI.TextTags.EDIT_ICON end
             end,
             iconSize = function() return 12 end,
             iconClearScroll = true,
@@ -453,7 +454,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     cells[#cells + 1] = addCfg
 
     local function Config(cfg)
-        if not cfg then return CludesUI.BlankRowCfg() end
+        if not cfg then return CUI.BlankRowCfg() end
         return cfg.cfg or cfg
     end
     local firstRow
@@ -462,8 +463,8 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         firstRow = firstRow or row
         local region = row[side]
         if cell == addCfg then
-            if not CludesUI._prebuilding then
-                addOpen = CludesUI.AttachButtonMenu(region._control, {
+            if not CUI._prebuilding then
+                addOpen = CUI.AttachButtonMenu(region._control, {
                     width = 220,
                     order = addOrder,
                     values = addValues,
@@ -474,14 +475,14 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             end
             return
         end
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         local tbl = cell.text
         -- Spec Overrides name a captured write after the text, not its position
         -- (several texts may share one).
         if region._captureCfg then
             region._captureCfg = setmetatable({ text = tbl.label }, { __index = region._captureCfg })
         end
-        CludesUI.BuildRowLabelMenu(region, {
+        CUI.BuildRowLabelMenu(region, {
             order = POSITIONS,
             values = POS,
             getValue = function() return PosOf(tbl) end,
@@ -494,8 +495,8 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         if pending and pending.page == options.page and pending.key == tbl.id then
             mod._rfTextNotify = nil
             -- The text read now, while this build's cell is its dress.
-            local snap = CludesUI._SOAttribution(region)
-            CludesUI._NotifySettingWrite(region, snap)
+            local snap = CUI._SOAttribution(region)
+            CUI._NotifySettingWrite(region, snap)
         end
     end
     for idx = 1, #cells, 2 do
@@ -505,7 +506,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         Finish(row, "_rightRegion", cells[idx + 1])
     end
 
-    if not CludesUI._prebuilding and options.page then
+    if not CUI._prebuilding and options.page then
         -- Presets, spec changes and profile switches can alter the list while
         -- the page is cached: what decides the tiles as built, against the stored.
         -- A Custom text's template counts too (its cog's name row follows it).

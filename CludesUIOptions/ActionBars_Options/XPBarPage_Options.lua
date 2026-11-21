@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ActionBars_Options\XPBarPage_Options.lua
 --  Action Bars options: the XP Bar page (BuildXPBarPage), in CORE, CORE TEXT
@@ -13,13 +14,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  cog (with Click Through). Definitions only; the shared helpers come from
 --  ns._ABO_OptEnv (filled by CUI_ActionBars_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIActionBars"]
+local mod = CUI._ModuleNS["CludesUIActionBars"]
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page and every frame it hands out) is reset
 -- and dressed again by the next build instead of made anew; on any other
 -- parent this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 local XP = "XPBar"
 
@@ -191,7 +192,7 @@ local function XPPreviewPaint(noRetry)
     -- The header's width now (a resized panel), else the one it was built at.
     local hdrW = hostFrame:GetWidth()
     if not hdrW or hdrW <= 0 then hdrW = preview.hdrW end
-    local availW = hdrW - CludesUI.CONTENT_PAD * 2
+    local availW = hdrW - CUI.CONTENT_PAD * 2
     -- Started from the last paint's overhang, so an unchanged layout styles
     -- once; a different one is styled again at its own scale, so its 1px
     -- lines snap to it (texts keep their frame-unit places across a rescale).
@@ -243,7 +244,7 @@ XPPreviewRepaint = function(valueOnly, force, noRetry)
     local height = XPPreviewPaint(noRetry)
     if force or height ~= preview.h then
         preview.h = height
-        CludesUI:SetContentHeaderHeightSilent(height)
+        CUI:SetContentHeaderHeightSilent(height)
     end
 end
 
@@ -278,7 +279,7 @@ function mod.ABO_XPPreviewRefresh()
     -- nil: no shown build recorded one (only a shown build runs the header
     -- builder), so there is no preview to compare against: repaint only.
     if preview.pageWanted ~= nil and XPPreviewWanted() ~= preview.pageWanted then
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
     else
         XPPreviewRepaint(false, true)
     end
@@ -291,24 +292,24 @@ mod._dataBarPreview[XP] = XPPreviewRepaint
 
 local function BuildXPBarPage(page, hostFrame, yOffset)
     local ABAR = mod._ABO_OptEnv.EAB
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local K = mod.ABO_DataBarKit(hostFrame)
     local BLIZZ_DIS_TIP, _blizzDis = K.BLIZZ_DIS_TIP, K.BlizzDis
     local function BarCfg() return ABAR.db.profile.bars[XP] end
     local function IsVertical() return BarCfg().orientation == "VERTICAL" end
     -- Row chrome (frames: never on the search pre-build's absorber rows).
-    local chrome = not CludesUI._prebuilding
+    local chrome = not CUI._prebuilding
     local cursorY = yOffset
     local _, height, heading
 
     -- The preview header while the bar is ours and not Never (a style or
     -- Never flip rebuilds the page); no bar selector.
     local hb = mod.ABO_XPHeaderBuilder()
-    if not CludesUI._prebuilding then preview.pageWanted = hb ~= nil end
+    if not CUI._prebuilding then preview.pageWanted = hb ~= nil end
     if hb then
-        CludesUI:SetContentHeader(hb)
+        CUI:SetContentHeader(hb)
     else
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
     end
     hostFrame._showRowDivider = true
 
@@ -319,7 +320,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
     -- The Move in Unlock Mode button on the bar's first section: greyed while
     -- Blizzard's bars are in use, since our bar (and its mover) is not built then.
-    CludesUI.BuildSectionUnlockJump(
+    CUI.BuildSectionUnlockJump(
         heading,
         { key = "XPBar", disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
     )
@@ -331,7 +332,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- shared with Use Blizzard's Rep Bars (Menu, Bags & Rep Bars).
     local styleValues = { cui = "CludesUI", prof = "Professions", default = "Blizz Default" }
     local styleOrder = { "cui", "prof" }
-    if CludesUI._XPBarArtAvailable("forever") then
+    if CUI._XPBarArtAvailable("forever") then
         styleValues.forever = "Forever"
         styleOrder[#styleOrder + 1] = "forever"
     end
@@ -341,14 +342,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     styleValues._menuOpts = {
         onItemHover = function(key, entry)
             if key == "default" and entry then
-                CludesUI.ShowWidgetTooltip(
+                CUI.ShowWidgetTooltip(
                     entry,
                     "Blizz Default also switches the reputation bars to Blizzard's."
                 )
             end
         end,
         onItemLeave = function(key)
-            if key == "default" then CludesUI.HideWidgetTooltip() end
+            if key == "default" then CUI.HideWidgetTooltip() end
         end,
     }
     -- XP Bar Style | Visibility (its cog: Click Through); a Never flip
@@ -361,17 +362,17 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         order = styleOrder,
         -- A frame art this client lacks shows as the CludesUI bar it draws.
         getValue = function()
-            local val = CludesUI._GetXPBarStyle()
+            local val = CUI._GetXPBarStyle()
             return styleValues[val] and val or "cui"
         end,
-        setValue = function(val) K.AfterSwitch(CludesUI._SetXPBarStyle(val)) end,
+        setValue = function(val) K.AfterSwitch(CUI._SetXPBarStyle(val)) end,
     }
     local visRow
-    visRow, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, visOpts)
+    visRow, height = CUI.BuildVisibilityRow(W, hostFrame, cursorY, visOpts)
     cursorY = cursorY - height
     if chrome then
         local region = visRow._rightRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Visibility",
             anchorTo = region._control,
             rows = { K.ClickThroughRow(XP) },
@@ -392,7 +393,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
         getValue = function() return BarCfg().showDividers end,
-        setValue = CludesUI.SectionToggleSetValue(function(val)
+        setValue = CUI.SectionToggleSetValue(function(val)
             BarCfg().showDividers = val
             mod.ApplyDataBarLayout(XP)
         end),
@@ -402,7 +403,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     if chrome then
         -- The 5% Ticks swatch also greys while 5% Line Style is None (its
         -- tooltip then names every lock, the row's included).
-        CludesUI.BuildInlineSwatches(divRowTop._leftRegion, {
+        CUI.BuildInlineSwatches(divRowTop._leftRegion, {
             {
                 tooltip = "5% Ticks",
                 hasAlpha = true,
@@ -470,7 +471,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             setValue = function(val)
                 BarCfg().divider5Style = val
                 mod.ApplyDataBarLayout(XP)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "toggle",
@@ -482,13 +483,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             setValue = function(val)
                 BarCfg().showDividerText = val
                 mod.ApplyDataBarLayout(XP)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
         if chrome then
             local lRgn, rRgn = divRow._leftRegion, divRow._rightRegion
-            CludesUI.BuildInlineCog(lRgn, {
+            CUI.BuildInlineCog(lRgn, {
                 title = "Ticks",
                 anchorTo = lRgn._control,
                 captureRegion = lRgn,
@@ -507,7 +508,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     },
                 },
             })
-            CludesUI.BuildInlineCog(rRgn, {
+            CUI.BuildInlineCog(rRgn, {
                 title = "Divider Text",
                 anchorTo = rRgn._control,
                 captureRegion = rRgn,
@@ -647,7 +648,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     end
     local function RelayoutBar()
         mod.ApplyDataBarLayout(XP)
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
     end
     -- Moves a text to the first free place at another position: its value and
     -- Show Rested, with its size and offsets unless either end is the bar text.
@@ -709,7 +710,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end
     end
     local function EntryLabel(e)
-        local base = CludesUI.L(e.pos.label)
+        local base = CUI.L(e.pos.label)
         return e.rank > 1 and (base .. " " .. e.rank) or base
     end
     -- Every text but the bar text draws on a horizontal bar only.
@@ -724,7 +725,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         if not mod.XPTextItems(val, BarCfg(), labelScratch) then return nil end
         local nameList = {}
         for num = 1, #labelScratch do
-            nameList[num] = CludesUI.L(ITEM_LABEL[labelScratch[num]])
+            nameList[num] = CUI.L(ITEM_LABEL[labelScratch[num]])
         end
         return table.concat(nameList, " - ")
     end
@@ -767,13 +768,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- whose slot is read before the write (a rebuild may dress the row again
     -- for another setting).
     local function WriteSlot(stem, i, val, region)
-        local snap = region and CludesUI._SOAttribution(region)
+        local snap = region and CUI._SOAttribution(region)
         local s, key = BarCfg(), SlotKey(stem, i)
         local _, legacy = SlotChoices(stem, i, scratch)
         if legacy and s[key .. "Rested"] == nil then s[key .. "Rested"] = true end
         s[key] = val
         mod.ApplyDataBarLayout(XP)
-        if region then CludesUI._NotifySettingWrite(region, snap) end
+        if region then CUI._NotifySettingWrite(region, snap) end
     end
 
     -- Show Rested: the rested XP after the text's first Current %, Current or
@@ -845,12 +846,12 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             end
             emptied = (#result == 0)
             WriteSlot(stem, i, emptied and "none" or table.concat(result, ","), region)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
         local control = region._control
         local ddW = control and control:GetWidth() or 0
         if ddW < 50 then ddW = 210 end
-        local checkDrop, cbRefresh = CludesUI.BuildReorderCBDropdown(
+        local checkDrop, cbRefresh = CUI.BuildReorderCBDropdown(
             region,
             ddW,
             region:GetFrameLevel() + 2,
@@ -863,9 +864,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 onHead = function()
                     emptied = nil
                     -- the row's slot, read before the write and the rebuild
-                    local snap = CludesUI._SOAttribution(region)
+                    local snap = CUI._SOAttribution(region)
                     ClearSlot(stem, i)
-                    CludesUI._NotifySettingWrite(region, snap)
+                    CUI._NotifySettingWrite(region, snap)
                     RelayoutBar()
                 end,
                 tail = SOLO_ITEMS,
@@ -875,7 +876,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 onTail = function(keyName)
                     emptied = nil
                     WriteSlot(stem, i, keyName, region)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 openOrder = function()
                     if SlotChoices(stem, i, own) ~= "top" then return nil end
@@ -892,13 +893,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     if emptied and not Shows(stem, i) then
                         emptied = nil
                         -- the row's slot, read before the write and the rebuild
-                        local snap = CludesUI._SOAttribution(region)
+                        local snap = CUI._SOAttribution(region)
                         ClearSlot(stem, i)
-                        CludesUI._NotifySettingWrite(region, snap)
+                        CUI._NotifySettingWrite(region, snap)
                         RelayoutBar()
                     end
                 end,
-                summaryLabel = function() return ValueLabel(SlotRaw(stem, i)) or CludesUI.L("None") end,
+                summaryLabel = function() return ValueLabel(SlotRaw(stem, i)) or CUI.L("None") end,
             }
         )
         local p1, rel, p2, ax, ay
@@ -909,19 +910,19 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         if p1 then
             checkDrop:SetPoint(p1, rel, p2, ax, ay)
         else
-            CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         end
         region._control = checkDrop
         region._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cbRefresh)
+        CUI.RegisterWidgetRefresh(cbRefresh)
         -- What the text shows, on the list while it is closed (the name above
         -- it is the position button, with its own tooltip).
         checkDrop:HookScript("OnEnter", function(self)
             if self._ddMenu and self._ddMenu:IsShown() then return end
-            CludesUI.ShowWidgetTooltip(self, SLOT_TIP)
+            CUI.ShowWidgetTooltip(self, SLOT_TIP)
         end)
-        checkDrop:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        checkDrop:HookScript("OnClick", function() CludesUI.HideWidgetTooltip() end)
+        checkDrop:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+        checkDrop:HookScript("OnClick", function() CUI.HideWidgetTooltip() end)
         -- The list has no disabled state of its own: grey it and block clicks;
         -- the row's disabled overlay explains the lock.
         local function SyncLockedLook()
@@ -930,7 +931,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             checkDrop:EnableMouse(not off)
         end
         SyncLockedLook()
-        CludesUI.RegisterWidgetRefresh(SyncLockedLook)
+        CUI.RegisterWidgetRefresh(SyncLockedLook)
     end
     -- A text's cog (all but the bar text): its Size, offsets and Show Rested.
     local function SlotCog(region, e)
@@ -976,7 +977,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             },
         }
         rowList[#rowList + 1] = RestedRow(stem, i)
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = EntryLabel(e),
             anchorTo = region._control,
             captureRegion = region,
@@ -997,7 +998,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         POS_ORDER[#POS_ORDER + 1] = p.stem
     end
     local function ChevronHoverColor()
-        local ac = CludesUI.CLUDES_GREEN
+        local ac = CUI.CLUDES_GREEN
         if ac.r > 0.9 and ac.g > 0.9 and ac.b > 0.9 then return 0.72, 0.72, 0.72 end
         return ac.r, ac.g, ac.b
     end
@@ -1021,36 +1022,36 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 labelText:SetTextColor(red, green, blue)
             else
                 arrow:SetVertexColor(1, 1, 1)
-                labelText:SetTextColor(CludesUI.TEXT_WHITE_R, CludesUI.TEXT_WHITE_G, CludesUI.TEXT_WHITE_B)
+                labelText:SetTextColor(CUI.TEXT_WHITE_R, CUI.TEXT_WHITE_G, CUI.TEXT_WHITE_B)
             end
         end
         PaintChevron(false)
         local function OnEnter()
             if EntryLocked(e) then
                 local tipText = SlotLockTip()
-                CludesUI.ShowWidgetTooltip(
+                CUI.ShowWidgetTooltip(
                     button,
-                    _blizzDis() and tipText or CludesUI.DisabledTooltip(tipText)
+                    _blizzDis() and tipText or CUI.DisabledTooltip(tipText)
                 )
                 return
             end
             PaintChevron(true)
-            if not (dropMenu and dropMenu:IsShown()) then CludesUI.ShowWidgetTooltip(button, MOVE_TIP) end
+            if not (dropMenu and dropMenu:IsShown()) then CUI.ShowWidgetTooltip(button, MOVE_TIP) end
         end
         local function OnLeave()
             if not (dropMenu and dropMenu:IsShown()) then PaintChevron(false) end
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end
         button:SetScript("OnEnter", OnEnter)
         button:SetScript("OnLeave", OnLeave)
         -- The list's label stand-in: the menu writes the picked name there,
         -- never over the text's own name.
-        local proxyLbl = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+        local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local function EnsureMenu()
             if dropMenu then return dropMenu end
             local refresh
-            dropMenu, _, refresh = CludesUI.BuildDropdownMenu(
+            dropMenu, _, refresh = CUI.BuildDropdownMenu(
                 button,
                 170,
                 POS_ORDER,
@@ -1062,21 +1063,21 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 function(val)
                     if val == e.pos.stem then return nil end
                     if val ~= "Center" and IsVertical() then
-                        return CludesUI.DisabledTooltip("Horizontal Orientation")
+                        return CUI.DisabledTooltip("Horizontal Orientation")
                     end
                     if not FreeIndex(val) then return true end
                 end
             )
             -- The standard open/close behaviour (scale, click-away, scroll-away);
             -- the button keeps its own look and clicks.
-            CludesUI.WireDropdownScripts(
+            CUI.WireDropdownScripts(
                 button,
                 proxyLbl,
                 NO_PAINT,
                 NO_PAINT,
                 dropMenu,
                 refresh,
-                CludesUI.RD_DD_COLOURS,
+                CUI.RD_DD_COLOURS,
                 true
             )
             button:HookScript("OnEnter", OnEnter)
@@ -1087,7 +1088,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end
         button:SetScript("OnClick", function()
             if EntryLocked(e) then return end
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
             local m = EnsureMenu()
             if m:IsShown() then
                 m:Hide()
@@ -1099,7 +1100,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             if dropMenu then dropMenu:Hide() end
         end)
         local function SyncLockedLook() arrow:SetShown(not EntryLocked(e)) end
-        CludesUI.RegisterWidgetRefresh(SyncLockedLook)
+        CUI.RegisterWidgetRefresh(SyncLockedLook)
         SyncLockedLook()
     end
 
@@ -1113,13 +1114,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         local button = region._control
         -- Its own hover look, kept past the menu wiring (which takes the scripts).
         local enter, leave = button:GetScript("OnEnter"), button:GetScript("OnLeave")
-        local proxyLbl = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+        local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local dropMenu
         local function EnsureMenu()
             if dropMenu then return dropMenu end
             local refresh
-            dropMenu, _, refresh = CludesUI.BuildDropdownMenu(
+            dropMenu, _, refresh = CUI.BuildDropdownMenu(
                 button,
                 ADD_W,
                 POS_ORDER,
@@ -1130,21 +1131,21 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 "regular",
                 function(val)
                     if IsVertical() then
-                        if val ~= "Center" then return CludesUI.DisabledTooltip("Horizontal Orientation") end
+                        if val ~= "Center" then return CUI.DisabledTooltip("Horizontal Orientation") end
                         if Shows("Center", 1) then return true end
                         return nil
                     end
                     if not FreeIndex(val) then return true end
                 end
             )
-            CludesUI.WireDropdownScripts(
+            CUI.WireDropdownScripts(
                 button,
                 proxyLbl,
                 NO_PAINT,
                 NO_PAINT,
                 dropMenu,
                 refresh,
-                CludesUI.RD_DD_COLOURS,
+                CUI.RD_DD_COLOURS,
                 true
             )
             button:HookScript("OnEnter", enter)
@@ -1191,7 +1192,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     end
     cells[#cells + 1] = addCfg
     local function CellCfg(c)
-        if c == nil then return CludesUI.BlankRowCfg() end
+        if c == nil then return CUI.BlankRowCfg() end
         if c == addCfg then return addCfg end
         return EntryCfg(c)
     end
@@ -1212,8 +1213,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         -- slot read now, while this build's row holds it.
         if addedKey and addedKey == SlotKey(cfg.pos.stem, cfg.i) then
             addedKey = nil
-            local snap = CludesUI._SOAttribution(region)
-            CludesUI._NotifySettingWrite(region, snap)
+            local snap = CUI._SOAttribution(region)
+            CUI._NotifySettingWrite(region, snap)
         end
     end
     for keyName = 1, #cells, 2 do
@@ -1248,12 +1249,12 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         setValue = function(val)
             BarCfg().showTextBg = val
             mod.ApplyDataBarLayout(XP)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     })
     cursorY = cursorY - height
     if chrome then
-        CludesUI.BuildInlineSwatches(textBgRow._rightRegion, {
+        CUI.BuildInlineSwatches(textBgRow._rightRegion, {
             {
                 tooltip = "Background Color",
                 hasAlpha = true,
@@ -1336,9 +1337,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             mod.ApplyDataBarLayout(XP)
             -- Another kind needs its own inline control: rebuild.
             if FillKind() ~= was then
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             else
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end
         end,
     }, {
@@ -1362,13 +1363,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     if chrome then
         local region = fillRow._leftRegion
         if Custom() then
-            CludesUI.BuildInlineSwatches(
+            CUI.BuildInlineSwatches(
                 region,
                 K.ColorSwatches(XP),
                 { size = 20, disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
             )
         elseif FillKind() == "gradient" then
-            CludesUI.BuildInlineSwatches(region, {
+            CUI.BuildInlineSwatches(region, {
                 {
                     tooltip = "Gradient Start Color",
                     hasAlpha = true,
@@ -1400,7 +1401,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 rawTooltip = true,
             })
         else
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Fill Animation",
                 anchorTo = region._control,
                 captureRegion = region,
@@ -1476,12 +1477,12 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             BarCfg().barBgOpacity = val
             mod.ApplyDataBarLayout(XP)
             -- The colour swatch locks at 0%: refresh only on that edge.
-            if (was <= 0) ~= (val <= 0) then CludesUI:RefreshPage() end
+            if (was <= 0) ~= (val <= 0) then CUI:RefreshPage() end
         end,
     }, K.TexCfg(XP))
     cursorY = cursorY - height
     if chrome then
-        CludesUI.BuildInlineSwatches(bgRow._leftRegion, {
+        CUI.BuildInlineSwatches(bgRow._leftRegion, {
             {
                 tooltip = "Background Color",
                 getValue = function()
@@ -1522,14 +1523,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         setValue = function(val)
             BarCfg().questOverlay = val
             mod.ApplyDataBarLayout(XP)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
-    }, CludesUI.BlankRowCfg())
+    }, CUI.BlankRowCfg())
     cursorY = cursorY - height
     if chrome then
         local region = questRow._leftRegion
         local function overlayOff() return _blizzDis() or not BarCfg().questOverlay end
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Quest XP Overlay",
             captureRegion = region,
             disabled = overlayOff,
@@ -1547,7 +1548,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     set = function(val)
                         BarCfg().questOverlayCompleted = val or nil
                         mod.ApplyDataBarLayout(XP)
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
                 {
@@ -1562,7 +1563,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 },
             },
         })
-        CludesUI.BuildInlineSwatches(region, {
+        CUI.BuildInlineSwatches(region, {
             {
                 tooltip = "Completed Color",
                 hasAlpha = true,

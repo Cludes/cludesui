@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Stock.lua
 --
@@ -23,7 +24,7 @@ local _, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 
@@ -59,14 +60,14 @@ local CLASSIC_AGG_TC = { 0.0078125, 0.5546875, 0.0078125, 0.2734375 }
 local _classicHlOK -- probed once
 
 local function PX(widget)
-    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local Pix = CUI.PP or CUI.PanelPP
     local es = widget:GetEffectiveScale()
     if not es or es <= 0 then es = 1 end
     return ((Pix and Pix.perfect) or 1) / es
 end
 
 local function ColorSides(widget, cols)
-    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local Pix = CUI.PP or CUI.PanelPP
     local c = Pix and Pix.GetBorders(widget)
     if not c then return end
     -- Drop the ring's single stored colour: every re-snap (its own first
@@ -86,7 +87,7 @@ end
 -- `power`: the owner's power StatusBar (ours), for the Classic divider.
 function mod.RF_StockBuild(ownerFrame, stockStyle, powerBar)
     if stockStyle.stockEdge or not (mod.RF_Stock and mod.RF_Stock()) then return end
-    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local Pix = CUI.PP or CUI.PanelPP
     if not Pix then return end
     -- On the Buff / Debuff Manager preview's replica (a frame of the options
     -- page pool, CludesUI_FramePool.lua) these pieces are pooled with it and
@@ -270,7 +271,7 @@ function mod.RF_StockHighlight(stockStyle, bf, cfg, hover, target)
             color and color.g or 1,
             color and color.b or 1,
             cfg.hoverBorderAlpha or 1,
-            CludesUI.BorderPx(cfg.hoverBorderSizePx, hs, "solid")
+            CUI.BorderPx(cfg.hoverBorderSizePx, hs, "solid")
         )
     else
         mod.ApplyHighlightBorder(bf, SOLID_S, nil, 0, 0, 0, 0)
@@ -807,7 +808,7 @@ local function SetArt(texture, a)
     if a.atlas then
         -- The retail art on every client (WoW Forever swaps the frame's
         -- atlas); sized by the seat pass, never useAtlasSize.
-        CludesUI.StockAtlas(texture, a.atlas)
+        CUI.StockAtlas(texture, a.atlas)
     else
         texture:SetTexture(a.file)
     end
@@ -825,7 +826,7 @@ local function MakeBevel(barFrame, mask)
     for index = 1, 4 do
         local tex = barFrame:CreateTexture(nil, "OVERLAY", nil, -3)
         tex:SetTexture(WHITE)
-        local Pix = CludesUI.PP or CludesUI.PanelPP
+        local Pix = CUI.PP or CUI.PanelPP
         if Pix and Pix.DisablePixelSnap then Pix.DisablePixelSnap(tex) end
         if mask then tex:AddMaskTexture(mask) end
         sh[index] = tex
@@ -946,12 +947,12 @@ function mod.RF_KitBuild(ownerFrame, stockStyle, health, powerBar, bdr)
     local kit = mod.RF_PartyKit()
     local K = kit and mod.RF_KITS[kit]
     if not K then return end
-    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local Pix = CUI.PP or CUI.PanelPP
     stockStyle.kit = kit
     stockStyle.kitOwner, stockStyle.kitHealth, stockStyle.kitPower = ownerFrame, health, powerBar
     -- Unlock mode's settings link for the party mover: the kit's size lives
     -- in Frame Scale (the Frame Width row is hidden). Latched per session.
-    local map = CludesUI._ELEMENT_SETTINGS_MAP
+    local map = CUI._ELEMENT_SETTINGS_MAP
     if map and not mod._kitUnlockLink then
         mod._kitUnlockLink = true
         map.RF_PartyFrames = {
@@ -1033,12 +1034,12 @@ function mod.RF_KitBuild(ownerFrame, stockStyle, health, powerBar, bdr)
     -- on every client, like the art (WoW Forever redrew these names).
     if K.health.mask then
         local hm = health:CreateMaskTexture()
-        CludesUI.StockMask(hm, K.health.mask)
+        CUI.StockMask(hm, K.health.mask)
         stockStyle.kitHMask = hm
         if K.bevel then stockStyle.kitHShade = MakeBevel(health, hm) end
         if powerBar and K.power.mask then
             local pm = powerBar:CreateMaskTexture()
-            CludesUI.StockMask(pm, K.power.mask)
+            CUI.StockMask(pm, K.power.mask)
             stockStyle.kitPMask = pm
             local pbg = stockStyle.powerBg or stockStyle._powerBg
             if pbg then pbg:AddMaskTexture(pm) end
@@ -1061,7 +1062,7 @@ function mod.RF_ApplyPartyKit(ownerFrame, stockStyle, cfg, unitToken, force)
     local health, powerBar, owner = stockStyle.kitHealth, stockStyle.kitPower, stockStyle.kitHost
     -- The pixel grid the seat pass snaps to joins the memo (a live UI-scale
     -- change re-seats on the next pass).
-    local P = CludesUI.PP
+    local P = CUI.PP
     local es = ownerFrame:GetEffectiveScale()
     local pixel = ((P and P.perfect) or 0) / ((es and es > 0) and es or 1)
     local locked = InCombatLockdown()

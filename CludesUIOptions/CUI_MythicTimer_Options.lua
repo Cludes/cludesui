@@ -1,10 +1,11 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_MythicTimer_Options.lua  --  Settings pages for Mythic+ Tools
 --  (Mythic+ Timer / Kick Tracker / Cast Bars / Target & Focus Bars / Run Summary)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIMythicTimer"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 local PAGE_DISPLAY = "Mythic+ Timer"
@@ -19,12 +20,12 @@ local PAGE_KT = "Kick Tracker"
 -- (CludesUI_FramePool.lua, the options addon's first file), which hands a
 -- kept page its previous build's frames back reset to new; on any other
 -- parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- A length on a frame's physical pixel grid (onePx: one pixel in its units).
 local function PvSnap(value, onePx) return math.floor(value / onePx + 0.5) * onePx end
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     local saved
     C_Timer.After(0, function() saved = _G._CUMT_AceDB end)
 
@@ -50,12 +51,12 @@ CludesUI.AtOptionsLogin(function()
 
     local function ApplyTimer()
         if _G._CUMT_ApplyTimer then _G._CUMT_ApplyTimer() end
-        CludesUI:RefreshPage()
+        CUI:RefreshPage()
     end
 
     local function RebuildPage()
         if _G._CUMT_ApplyTimer then _G._CUMT_ApplyTimer() end
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
     end
 
     -- One-line stand-ins for the closures the Mythic+ Timer rows repeat.
@@ -81,7 +82,7 @@ CludesUI.AtOptionsLogin(function()
         return function(value)
             Set(key, value)
             ApplyTimer()
-            if repaint then CludesUI:RefreshPage() end
+            if repaint then CUI:RefreshPage() end
         end
     end
 
@@ -138,7 +139,7 @@ CludesUI.AtOptionsLogin(function()
     local function PvPlaceColumn(st, col, idx, num, colW, blockH)
         local host, heading = col.host, st.hdr
         local own = st.scale * col.fit
-        local onePx = CludesUI.PP.perfect / host:GetEffectiveScale()
+        local onePx = CUI.PP.perfect / host:GetEffectiveScale()
         local x = ((idx - 1) - (num - 1) / 2) * colW
         local y = blockH / 2 - PV_TITLE_H
         host:ClearAllPoints()
@@ -161,7 +162,7 @@ CludesUI.AtOptionsLogin(function()
         st.scale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
         local cols = st.cols
         local num = #cols
-        local colW = (width - 2 * CludesUI.CONTENT_PAD) / num
+        local colW = (width - 2 * CUI.CONTENT_PAD) / num
         local shown, tallest = 0, 0
         for _, col in ipairs(cols) do
             if col.host:GetParent() ~= heading then col.host:SetParent(heading) end
@@ -182,8 +183,8 @@ CludesUI.AtOptionsLogin(function()
             -- Written silently (the page shifts down instead of sliding under
             -- the header), and only when it moves by half a physical pixel.
             local es = heading:GetEffectiveScale()
-            local px = es > 0 and CludesUI.PP.perfect / es or 1
-            if math.abs(heading:GetHeight() - H) >= px * 0.5 then CludesUI:SetContentHeaderHeightSilent(H) end
+            local px = es > 0 and CUI.PP.perfect / es or 1
+            if math.abs(heading:GetHeight() - H) >= px * 0.5 then CUI:SetContentHeaderHeightSilent(H) end
         end
         return H
     end
@@ -204,9 +205,9 @@ CludesUI.AtOptionsLogin(function()
                 col.def = def
                 -- Not pooled: a sample must never hang under a pooled frame.
                 col.host = col.host or _G.CreateFrame("Frame", nil, heading)
-                local label = CludesUI.MakeFont(titles, 11, nil, 1, 1, 1)
+                local label = CUI.MakeFont(titles, 11, nil, 1, 1, 1)
                 label:SetAlpha(0.6)
-                label:SetText(CludesUI.L(def.title))
+                label:SetText(CUI.L(def.title))
                 col.fs = label
             end
             st.hdrW = hdrW
@@ -264,19 +265,19 @@ CludesUI.AtOptionsLogin(function()
             panel:HookScript("OnHide", function()
                 if TimerCfg("showPreview") ~= true then return end
                 _setPreview(false)
-                CludesUI:RefreshPage() -- the toggle shows off at once
+                CUI:RefreshPage() -- the toggle shows off at once
             end)
         end
     end
     local function BuildPage(pageName, hostFrame, yOffset)
         _installPreviewAutoOff()
 
-        local W = CludesUI.Widgets
-        local Pix = CludesUI.PP
+        local W = CUI.Widgets
+        local Pix = CUI.PP
         local cursorY = yOffset
         local _, row, height, heading
 
-        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
+        if CUI.ClearContentHeader then CUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
 
         local function ApplyTimerBorder()
@@ -293,13 +294,13 @@ CludesUI.AtOptionsLogin(function()
         -- A cover that swallows clicks on a swatch while it is unavailable and
         -- names the requirement on hover (tip: text, or a function giving it).
         local function Cover(sw, tip)
-            local cover = CludesUI.NewSwatchBlocker(sw)
+            local cover = CUI.NewSwatchBlocker(sw)
             cover:SetScript("OnEnter", function()
                 local text = tip
                 if type(text) == "function" then text = text() end
-                CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(text or "the module"))
+                CUI.ShowWidgetTooltip(sw, CUI.DisabledTooltip(text or "the module"))
             end)
-            cover:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            cover:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             return cover
         end
         -- A colour stored as { r, g, b } under key, def* for what is unset.
@@ -352,7 +353,7 @@ CludesUI.AtOptionsLogin(function()
         -- DISPLAY
         heading, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = "EMT_MythicTimer",
             disabled = ModOff,
             disabledTooltip = "Enable Mythic+ Timer",
@@ -389,7 +390,7 @@ CludesUI.AtOptionsLogin(function()
         -- The preview eye on the enable toggle: a sample run in the timer
         -- window while the page is open (off again when the panel closes,
         -- _installPreviewAutoOff). None in the search pre-build.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local slot = row._leftRegion
             local eye = CreateFrame("Button", nil, slot)
             eye:SetSize(26, 26)
@@ -400,15 +401,15 @@ CludesUI.AtOptionsLogin(function()
             glyph:SetAllPoints()
             local TIP = { width = 175 }
             -- Resting strength: faint while the timer is off.
-            local function Rest(button) CludesUI.SetGlyphAlpha(button, ModOff() and 0.15 or 0.4) end
+            local function Rest(button) CUI.SetGlyphAlpha(button, ModOff() and 0.15 or 0.4) end
             local function Paint()
                 -- The icon files are named backwards: EYE_INVISIBLE_ICON draws the open eye.
                 local open = TimerCfg("showPreview") == true
-                glyph:SetTexture(open and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
+                glyph:SetTexture(open and CUI.EYE_INVISIBLE_ICON or CUI.EYE_VISIBLE_ICON)
                 Rest(eye)
             end
             Paint()
-            CludesUI.RegisterWidgetRefresh(Paint)
+            CUI.RegisterWidgetRefresh(Paint)
             eye:SetScript("OnClick", function()
                 if not ModOff() then
                     _setPreview(TimerCfg("showPreview") ~= true)
@@ -417,15 +418,15 @@ CludesUI.AtOptionsLogin(function()
             end)
             eye:SetScript("OnEnter", function(self)
                 if ModOff() then
-                    CludesUI.ShowWidgetTooltip(self, CludesUI.DisabledTooltip("Enable Mythic+ Timer"), TIP)
+                    CUI.ShowWidgetTooltip(self, CUI.DisabledTooltip("Enable Mythic+ Timer"), TIP)
                 else
-                    CludesUI.SetGlyphAlpha(self, 0.7)
-                    CludesUI.ShowWidgetTooltip(self, "Show/Hide Preview", TIP)
+                    CUI.SetGlyphAlpha(self, 0.7)
+                    CUI.ShowWidgetTooltip(self, "Show/Hide Preview", TIP)
                 end
             end)
             eye:SetScript("OnLeave", function(self)
                 Rest(self)
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
         end
 
@@ -461,9 +462,9 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         -- Inline RESIZE cog on Scale: Frame Width slider
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = scaleRow._leftRegion
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 title = "Frame Width",
                 rows = {
                     {
@@ -515,7 +516,7 @@ CludesUI.AtOptionsLogin(function()
             setValue = function(value)
                 Set("customBorderStyle", value)
                 ApplyTimerBorder()
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         })
         cursorY = cursorY - height
@@ -543,7 +544,7 @@ CludesUI.AtOptionsLogin(function()
             end
             -- Named apart from texValues/texOrder (the bar texture lists) on
             -- purpose: a mix-up once wrote a border key into barTexture.
-            local borderTexValues, borderTexOrder = CludesUI.GetBorderTextureDropdown()
+            local borderTexValues, borderTexOrder = CUI.GetBorderTextureDropdown()
             borderTexValues.shadow = nil
             for idx = #borderTexOrder, 1, -1 do
                 if borderTexOrder[idx] == "shadow" then table.remove(borderTexOrder, idx) end
@@ -575,21 +576,21 @@ CludesUI.AtOptionsLogin(function()
                         }) do
                             Set(key, nil)
                         end
-                        local col = CludesUI.GetBorderSelectColor(value)
+                        local col = CUI.GetBorderSelectColor(value)
                             or (value ~= "solid" and WHITE)
                             or BLACK
                         Set("borderR", col.r)
                         Set("borderG", col.g)
                         Set("borderB", col.b)
                         Set("borderA", 1)
-                        local size = CludesUI.GetBorderDefaultSize("MythicPlus", value)
+                        local size = CUI.GetBorderDefaultSize("MythicPlus", value)
                         if size then Set("borderSize", size) end
                         if TimerCfg("borderSizePx") then Set("borderSizePx", false) end
                         ApplyTimerBorder()
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end,
                 },
-                CludesUI.BorderPxSliderCfg({
+                CUI.BorderPxSliderCfg({
                     text = "Border Size",
                     disabled = _borderOff,
                     disabledTooltip = _borderReq,
@@ -600,7 +601,7 @@ CludesUI.AtOptionsLogin(function()
                     setPx = Quiet("borderSizePx"),
                     apply = function()
                         ApplyTimerBorder()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
             )
@@ -610,7 +611,7 @@ CludesUI.AtOptionsLogin(function()
             -- the page measures the same either way.
             local borderTex = TimerCfg("borderTexture") or "solid"
             if borderTex ~= "" and borderTex ~= "solid" then
-                local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                     addonKey = "MythicPlus",
                     getTex = Or("borderTexture", "solid"),
                     getStep = Or("borderSize", 0),
@@ -628,7 +629,7 @@ CludesUI.AtOptionsLogin(function()
                 row, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
                 cursorY = cursorY - height
             end
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 -- A shift: the stored one, else the style's default for its size
                 -- (slot 3 of GetBorderDefaults for X, 4 for Y).
                 local function Shift(axis, slot)
@@ -645,7 +646,7 @@ CludesUI.AtOptionsLogin(function()
                             return (
                                 select(
                                     slot,
-                                    CludesUI.GetBorderDefaults(
+                                    CUI.GetBorderDefaults(
                                         "MythicPlus",
                                         TimerCfg("borderTexture") or "solid",
                                         TimerCfg("borderSize") or 1
@@ -660,7 +661,7 @@ CludesUI.AtOptionsLogin(function()
                     }
                 end
                 local left = bsRow._leftRegion
-                CludesUI.BuildInlineCog(left, {
+                CUI.BuildInlineCog(left, {
                     title = "Border Options",
                     -- Greys with the bars only: Apply to Forces Bar lives here.
                     disabled = _barsOff,
@@ -673,7 +674,7 @@ CludesUI.AtOptionsLogin(function()
                             set = function(value)
                                 Set("borderApplyToForces", value)
                                 ApplyTimerBorder()
-                                CludesUI:RefreshPage()
+                                CUI:RefreshPage()
                             end,
                         },
                         Shift("X", 3),
@@ -685,7 +686,7 @@ CludesUI.AtOptionsLogin(function()
                 -- The border colour, left of the Border Size control.
                 local right = bsRow._rightRegion
                 local anchor = right._control
-                local sw, repaint = CludesUI.BuildColorSwatch(
+                local sw, repaint = CUI.BuildColorSwatch(
                     right,
                     right:GetFrameLevel() + 3,
                     function()
@@ -712,7 +713,7 @@ CludesUI.AtOptionsLogin(function()
                     sw:SetAlpha(off and 0.3 or 1)
                     cover:SetShown(off)
                 end
-                CludesUI.RegisterWidgetRefresh(Sync)
+                CUI.RegisterWidgetRefresh(Sync)
                 Sync()
             end
         end
@@ -729,7 +730,7 @@ CludesUI.AtOptionsLogin(function()
             isDisabled,
             disabledTip
         )
-            local sw, repaint = CludesUI.BuildColorSwatch(
+            local sw, repaint = CUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
                 StoredRgb(colorKey, defR, defG, defB),
@@ -749,7 +750,7 @@ CludesUI.AtOptionsLogin(function()
                 sw:SetAlpha(off and 0.3 or 1)
                 cover:SetShown(off and true or false)
             end
-            CludesUI.RegisterWidgetRefresh(Sync)
+            CUI.RegisterWidgetRefresh(Sync)
             Sync()
             return sw
         end
@@ -775,9 +776,9 @@ CludesUI.AtOptionsLogin(function()
             local function Follow(on)
                 Set(useAccentKey, on)
                 ApplyTimer()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end
-            local accent, repaintAccent = CludesUI.BuildColorSwatch(
+            local accent, repaintAccent = CUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
                 function()
@@ -785,7 +786,7 @@ CludesUI.AtOptionsLogin(function()
                     if followColor then
                         red, green, blue = followColor()
                     else
-                        red, green, blue = CludesUI.ResolveActiveAccent()
+                        red, green, blue = CUI.ResolveActiveAccent()
                     end
                     return red, green, blue, 1
                 end,
@@ -796,7 +797,7 @@ CludesUI.AtOptionsLogin(function()
             accent:SetScript("OnClick", function() Follow(true) end)
             Chain(region, accent)
 
-            local custom, repaintCustom = CludesUI.BuildColorSwatch(
+            local custom, repaintCustom = CUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
                 StoredRgb(colorKey, defR, defG, defB),
@@ -820,8 +821,8 @@ CludesUI.AtOptionsLogin(function()
             -- Hover names the colour; the cover takes over while unavailable.
             for _, pair in ipairs({ { accent, followTip or "Accent Color" }, { custom, "Custom Color" } }) do
                 local sw, name = pair[1], pair[2]
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, name) end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:HookScript("OnEnter", function() CUI.ShowWidgetTooltip(sw, name) end)
+                sw:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 sw._block = Cover(sw, disabledTip)
             end
 
@@ -835,7 +836,7 @@ CludesUI.AtOptionsLogin(function()
                 accent._block:SetShown(off and true or false)
                 custom._block:SetShown(off and true or false)
             end
-            CludesUI.RegisterWidgetRefresh(Sync)
+            CUI.RegisterWidgetRefresh(Sync)
             Sync()
         end
 
@@ -883,8 +884,8 @@ CludesUI.AtOptionsLogin(function()
         })
         -- Regular-cog settings popup on Show Title: Show Dungeon Name (default on;
         -- when off the title shows only the +key level, not the dungeon name).
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(row._leftRegion, {
                 title = "Title",
                 gap = 6,
                 rows = {
@@ -953,8 +954,8 @@ CludesUI.AtOptionsLogin(function()
             setValue = Keep("titleAffixPosition", true),
         })
         -- Inline Affix Size cog on Show Affix (cog before swatch), then the Affix Color swatch
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(row._leftRegion, {
                 title = "Affix Size",
                 gap = 6,
                 rows = {
@@ -982,7 +983,7 @@ CludesUI.AtOptionsLogin(function()
                 "Show Affix"
             )
             -- Title/Affix Spacing cog on Position (now the right-side widget)
-            CludesUI.BuildInlineCog(row._rightRegion, {
+            CUI.BuildInlineCog(row._rightRegion, {
                 title = "Title/Affix Spacing",
                 gap = 6,
                 rows = {
@@ -1042,7 +1043,7 @@ CludesUI.AtOptionsLogin(function()
         _, height = W:SectionHeader(hostFrame, "TIMER", cursorY)
         cursorY = cursorY - height
 
-        local timerFontValues, timerFontOrder = CludesUI.BuildFontDropdownData()
+        local timerFontValues, timerFontOrder = CUI.BuildFontDropdownData()
         -- Timer Size only drives the standalone clock; the in-bar timer text has a fixed size.
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
@@ -1082,7 +1083,7 @@ CludesUI.AtOptionsLogin(function()
             order = timerFontOrder,
             getValue = Or("timerFont", "__global"),
             setValue = Keep("timerFont"),
-        }, CludesUI.BlankRowCfg())
+        }, CUI.BlankRowCfg())
         cursorY = cursorY - height
 
         _, height = W:SectionHeader(hostFrame, "TIMER BAR", cursorY)
@@ -1103,9 +1104,9 @@ CludesUI.AtOptionsLogin(function()
             getValue = IsTrue("timerInBar"),
             setValue = Keep("timerInBar", true),
         })
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             -- These rows only affect the in-bar timer, so the cog also requires Move Timer Inside Bar.
-            CludesUI.BuildInlineCog(row._rightRegion, {
+            CUI.BuildInlineCog(row._rightRegion, {
                 title = "In-Bar Timer",
                 gap = 6,
                 rows = {
@@ -1182,7 +1183,7 @@ CludesUI.AtOptionsLogin(function()
             setValue = Keep("barTexture"),
         })
         -- Inline cog on Bar Texture: the bar's background texture
-        CludesUI.BuildInlineCog(row._rightRegion, {
+        CUI.BuildInlineCog(row._rightRegion, {
             title = "Bar Texture",
             gap = 6,
             rows = {
@@ -1237,7 +1238,7 @@ CludesUI.AtOptionsLogin(function()
             local function attach(region)
                 -- Inline RESIZE cog (white text / size / x / y) on the toggle first so it
                 -- sits adjacent to the control, before the swatch (cog-before-swatch rule).
-                CludesUI.BuildInlineCog(region, {
+                CUI.BuildInlineCog(region, {
                     title = labelText .. " Timer Text",
                     gap = 6,
                     rows = {
@@ -1356,8 +1357,8 @@ CludesUI.AtOptionsLogin(function()
         }, p3cfg)
         -- Inline cog first so it sits adjacent to the control, then the Tick Color
         -- swatch (TICKS style only) left of it (cog-before-swatch rule).
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(row._leftRegion, {
                 title = "Ticks / Gaps",
                 gap = 6,
                 rows = {
@@ -1408,7 +1409,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Row 2: +2 Threshold | +1 Threshold
         row, height = W:DualRow(hostFrame, cursorY, p2cfg, p1cfg)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             p2attach(row._leftRegion)
             p1attach(row._rightRegion)
         end
@@ -1463,8 +1464,8 @@ CludesUI.AtOptionsLogin(function()
             getValue = Or("enemyForcesPctPos", "LABEL"),
             setValue = Keep("enemyForcesPctPos"),
         })
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(row._leftRegion, {
                 title = "Enemy Forces Text",
                 gap = 6,
                 rows = {
@@ -1530,9 +1531,9 @@ CludesUI.AtOptionsLogin(function()
             getValue = Or("enemyBarTexture", "none"),
             setValue = Keep("enemyBarTexture"),
         })
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             -- The background texture cog, then the fill colour (accent or custom) as inline swatches.
-            CludesUI.BuildInlineCog(row._rightRegion, {
+            CUI.BuildInlineCog(row._rightRegion, {
                 title = "Bar Texture",
                 gap = 6,
                 rows = {
@@ -1563,7 +1564,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- The pull bar's default color is the forces fill color (accent or custom).
         local function _enemyBarColor()
-            if TimerCfg("enemyBarUseAccent") ~= false then return CludesUI.ResolveActiveAccent() end
+            if TimerCfg("enemyBarUseAccent") ~= false then return CUI.ResolveActiveAccent() end
             local color = TimerCfg("enemyBarColor")
             if color then return color.r or 0.35, color.g or 0.55, color.b or 0.8 end
             return 0.35, 0.55, 0.8
@@ -1601,7 +1602,7 @@ CludesUI.AtOptionsLogin(function()
                 ApplyTimer()
             end,
         })
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             -- Pull color: follows the enemy bar color by default, or a custom color.
             _AttachInlineAccentSwatches(
                 row._rightRegion,
@@ -1640,8 +1641,8 @@ CludesUI.AtOptionsLogin(function()
             getValue = Or("objectivesSize", 12),
             setValue = Keep("objectivesSize"),
         })
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(row._leftRegion, {
                 title = "Boss Position",
                 gap = 6,
                 rows = {
@@ -1727,8 +1728,8 @@ CludesUI.AtOptionsLogin(function()
         })
         -- Split Compare cog: strict scoping (only meaningful for the level scopes,
         -- since Per Dungeon is the fallback it removes) and the upcoming-split target.
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._rightRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(row._rightRegion, {
                 title = "Split Compare",
                 gap = 6,
                 rows = {
@@ -1849,7 +1850,7 @@ CludesUI.AtOptionsLogin(function()
                 if not c then return end
                 c[key] = cast(value)
                 redraw()
-                if repaint then CludesUI:RefreshPage() end
+                if repaint then CUI:RefreshPage() end
             end
         end
         local function Same(value) return value end
@@ -2017,7 +2018,7 @@ CludesUI.AtOptionsLogin(function()
     -- engine (no per-frame Lua), so only the C-side styles apply.
     local mtImpGlowDesc
     do
-        local GO = CludesUI.GlowOptions
+        local GO = CUI.GlowOptions
         mtImpGlowDesc = {
             host = "engine",
             caps = { mode = true, params = true, bg = true },
@@ -2032,7 +2033,7 @@ CludesUI.AtOptionsLogin(function()
                 if field == "style" then return c.importantGlowStyle or 1 end
                 if field == "mode" then return c.importantGlowColorMode or "custom" end
                 if field == "color" then return tsbAcc.Rgb("importantGlowColor", 1, 0.2, 0.2)() end
-                return CludesUI.GlowOptions.FlatGet(c, "importantGlow", field)
+                return CUI.GlowOptions.FlatGet(c, "importantGlow", field)
             end,
             -- Style 0 switches the glow off and keeps the last style.
             set = function(field, a, b2, c2)
@@ -2044,7 +2045,7 @@ CludesUI.AtOptionsLogin(function()
                 elseif field == "mode" then
                     c.importantGlowColorMode = a
                 else
-                    CludesUI.GlowOptions.FlatSet(c, "importantGlow", field, a, b2, c2)
+                    CUI.GlowOptions.FlatSet(c, "importantGlow", field, a, b2, c2)
                 end
             end,
         }
@@ -2061,11 +2062,11 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildTSBPage(pageName, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, row, height
 
-        CludesUI:SetContentHeader(tsbBuilder)
+        CUI:SetContentHeader(tsbBuilder)
         hostFrame._showRowDivider = true
 
         local A = Accessors(TSB, TSBRefresh)
@@ -2105,13 +2106,13 @@ CludesUI.AtOptionsLogin(function()
             })
         end
         local function Cog(region, tip, title, rows)
-            CludesUI.BuildInlineCog(region, { tip = tip, title = title, rows = rows })
+            CUI.BuildInlineCog(region, { tip = tip, title = title, rows = rows })
         end
 
         local heading
         heading, height = W:SectionHeader(hostFrame, "CAST BARS", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "EMT_TargetedSpellBars", disabled = Off, disabledTooltip = REQ }
         )
@@ -2136,10 +2137,10 @@ CludesUI.AtOptionsLogin(function()
                 setValue = function() end,
             })
         )
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local slot = row._rightRegion
             if slot._control then slot._control:Hide() end
-            local where, whereRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local where, whereRefresh = CUI.BuildVisOptsCBDropdown(
                 slot,
                 220,
                 slot:GetFrameLevel() + 2,
@@ -2153,10 +2154,10 @@ CludesUI.AtOptionsLogin(function()
                 nil,
                 { disabled = Off, disabledTooltip = REQ, emptyLabel = "All" }
             )
-            CludesUI.PanelPP.Point(where, "RIGHT", slot, "RIGHT", -20, 0)
+            CUI.PanelPP.Point(where, "RIGHT", slot, "RIGHT", -20, 0)
             slot._control = where
             slot._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(whereRefresh)
+            CUI.RegisterWidgetRefresh(whereRefresh)
         end
 
         Row(
@@ -2233,7 +2234,7 @@ CludesUI.AtOptionsLogin(function()
         )
 
         Row(Toggle("Show Icon", "showIcon", A.NotOff), Toggle("Show Spell Name", "showSpellName", A.NotOff))
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             Cog(row._leftRegion, "Spell Icon Settings", "Spell Icon Settings", {
                 {
                     type = "toggle",
@@ -2262,7 +2263,7 @@ CludesUI.AtOptionsLogin(function()
                 "Show who each spell is being cast on, exactly like the nameplate cast bars."
             )
         )
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             Cog(row._leftRegion, "Cast Timer Settings", "Cast Timer", TextRows(A, "timer", 20, 10))
             local targetRows = TextRows(A, "target", 20, 10)
             local getColor, setColor = A.Rgb("targetColor", 1, 1, 1)
@@ -2289,7 +2290,7 @@ CludesUI.AtOptionsLogin(function()
         _, height = W:SectionHeader(hostFrame, "INTERRUPT AND VISIBILITY", cursorY)
         cursorY = cursorY - height
 
-        local GO = CludesUI.GlowOptions
+        local GO = CUI.GlowOptions
 
         -- Cast Colors (the kick-ready and uninterruptible tints are always
         -- on; a cog holds the opt-in Important Cast tint) | Important Cast
@@ -2303,7 +2304,7 @@ CludesUI.AtOptionsLogin(function()
                 "Glow the bar when the enemy casts a spell Blizzard flags as important."
             )
         )
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             Cog(row._leftRegion, "Important Cast Color", "Important Cast Color", {
                 {
                     type = "toggle",
@@ -2330,7 +2331,7 @@ CludesUI.AtOptionsLogin(function()
                 "Show the enemy's raid target marker to the left of the spell name."
             )
         )
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             Cog(row._leftRegion, "Range Fade Settings", "Fade Out of Interrupt Range", {
                 {
                     type = "slider",
@@ -2366,11 +2367,11 @@ CludesUI.AtOptionsLogin(function()
     --  Target/Focus Bars page
     ---------------------------------------------------------------------------
     local function BuildTFBPage(pageName, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, row, height
 
-        CludesUI:SetContentHeader(tfbBuilder)
+        CUI:SetContentHeader(tfbBuilder)
         hostFrame._showRowDivider = true
 
         local texValues, texOrder = BuildBarTexDropdown()
@@ -2415,7 +2416,7 @@ CludesUI.AtOptionsLogin(function()
                 })
             end
             local function Cog(region, tip, title, rows)
-                CludesUI.BuildInlineCog(region, {
+                CUI.BuildInlineCog(region, {
                     tip = tip,
                     title = title,
                     disabled = Off,
@@ -2438,7 +2439,7 @@ CludesUI.AtOptionsLogin(function()
             local heading
             heading, height = W:SectionHeader(hostFrame, header, cursorY)
             cursorY = cursorY - height
-            CludesUI.BuildSectionUnlockJump(heading, {
+            CUI.BuildSectionUnlockJump(heading, {
                 key = (which == "target") and "EMT_TargetCastBar" or "EMT_FocusCastBar",
                 disabled = Off,
                 disabledTooltip = REQ,
@@ -2464,7 +2465,7 @@ CludesUI.AtOptionsLogin(function()
             Row(Slider("Width", "width", 80, 600, 260), Slider("Height", "height", 6, 60, 22))
 
             Row(Toggle("Show Spell Name", "showSpellName"), Toggle("Show Cast Timer", "showTimer"))
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 Cog(
                     row._leftRegion,
                     "Spell Name Settings",
@@ -2493,7 +2494,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 )
             )
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 -- The colours belong to both bars; only the text size is per bar.
                 local getColor, setColor = S.Rgb("targetColor", 1, 1, 1)
                 Cog(row._rightRegion, "Spell Target Settings", "Spell Target", {
@@ -2563,8 +2564,8 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(row._leftRegion, {
                 tip = "Cast Color Settings",
                 title = "Cast Color",
                 rows = {
@@ -2593,7 +2594,7 @@ CludesUI.AtOptionsLogin(function()
             })
             local getMid, setMid = S.Rgb("midCastColor", 0.318, 0.820, 0.357)
             local getTick, setTick = S.Rgb("kickTickColor", 1, 1, 1)
-            CludesUI.BuildInlineCog(row._rightRegion, {
+            CUI.BuildInlineCog(row._rightRegion, {
                 tip = "Kick Hint Settings",
                 title = "Kick Ready Mid-Cast Hint",
                 rows = {
@@ -2619,9 +2620,9 @@ CludesUI.AtOptionsLogin(function()
             getValue = S.NotOff("interruptedFlash"),
             setValue = S.Flag("interruptedFlash"),
         }, { type = "label", text = "" })
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local getFlash, setFlash = S.Rgb("interruptedColor", 0.8, 0, 0)
-            CludesUI.BuildInlineCog(row._leftRegion, {
+            CUI.BuildInlineCog(row._leftRegion, {
                 tip = "Interrupted Flash Settings",
                 title = "Interrupted Flash",
                 rows = { { type = "colorpicker", label = "Flash Color", get = getFlash, set = setFlash } },
@@ -2666,11 +2667,11 @@ CludesUI.AtOptionsLogin(function()
     local function RSOff() return not RSOn() end
 
     local function BuildRSPage(pageName, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
-        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
+        if CUI.ClearContentHeader then CUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
 
         local REQ = "Enable Run Summary"
@@ -2711,24 +2712,24 @@ CludesUI.AtOptionsLogin(function()
 
         -- Two 312x38 buttons across the top, centred with a 40px gap between.
         do
-            local PPn = CludesUI.PanelPP
+            local PPn = CUI.PanelPP
             local BTN_W, BTN_H, GAP = 312, 38, 40
             local ROW_H = BTN_H + 20
             local strip = CreateFrame("Frame", nil, hostFrame)
-            PPn.Size(strip, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-            PPn.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
+            PPn.Size(strip, hostFrame:GetWidth() - CUI.CONTENT_PAD * 2, ROW_H)
+            PPn.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY)
             local function Action(label, point, dx, onClick)
                 local button = CreateFrame("Button", nil, strip)
                 PPn.Size(button, BTN_W, BTN_H)
                 PPn.Point(button, point, strip, "CENTER", dx, 0)
                 button:SetFrameLevel(strip:GetFrameLevel() + 1)
-                CludesUI.MakeStyledButton(button, label, 14, CludesUI.WB_COLOURS, onClick)
+                CUI.MakeStyledButton(button, label, 14, CUI.WB_COLOURS, onClick)
             end
             Action("Show Preview", "RIGHT", -(GAP / 2), function()
                 if mod.RS_ShowPreview then mod.RS_ShowPreview() end
             end)
             Action("Clear Run History", "LEFT", GAP / 2, function()
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = "Clear Run History",
                     message = "Delete every recorded Mythic+ run for this character?",
                     confirmText = "Delete",
@@ -2750,7 +2751,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = RSOn,
                 setValue = function(value)
                     RSSet("enabled", value and true or false)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             },
             Switch(
@@ -2813,7 +2814,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- RegisterModule
-    CludesUI:RegisterModule("CludesUIMythicTimer", {
+    CUI:RegisterModule("CludesUIMythicTimer", {
         title = "Mythic+ Tools",
         description = "Mythic+ timer, Kick Tracker, cast bars and target/focus bars.",
         pages = { PAGE_DISPLAY, PAGE_KT, PAGE_TSB, PAGE_TFB, PAGE_RS },

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Info.lua - the clock, location and coordinates text.
 --
@@ -28,7 +29,7 @@ Inner.locationBgSetters[#Inner.locationBgSetters + 1] = function(v) locationBg =
 
 local function Profile() return SKIN.db and SKIN.db.profile.minimap end
 
-local function ApplyMinimapFont(text, size) CludesUI.ApplyModuleFont(text, nil, size, "minimap") end
+local function ApplyMinimapFont(text, size) CUI.ApplyModuleFont(text, nil, size, "minimap") end
 
 -- The colour of the descriptive bits (the clock's AM/PM, "fps"/"ms"): the
 -- accent, the chosen colour, or white; the values themselves stay white.

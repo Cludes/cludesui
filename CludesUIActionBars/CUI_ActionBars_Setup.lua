@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Setup.lua
 --
@@ -61,13 +62,13 @@ local function SyncEditModeIconCounts()
     -- layoutInfo for the whole session and pushes that copy whole on Save, so a write from here
     -- is either discarded by the next Save or discards the edit in progress. This runs again on
     -- the next options close, so skipping costs nothing.
-    if CludesUI.EditModeOpen() then return end
+    if CUI.EditModeOpen() then return end
 
     -- SaveLayouts replaces the character's ENTIRE layout set (the client holds it and writes it
     -- at logout), so the payload has to have the shape Blizzard always passes: the presets
     -- first, then the saved layouts, with activeLayout an index into that merged list. When
     -- the presets cannot be resolved, skip the write entirely rather than send the short list.
-    local layoutInfo, numPresets = CludesUI.EditModeLayoutsForSave()
+    local layoutInfo, numPresets = CUI.EditModeLayoutsForSave()
     if not layoutInfo then return end
 
     -- Build desired icon counts keyed by systemIndex (all bars are system 0).
@@ -117,12 +118,12 @@ local function SyncEditModeIconCounts()
                     local wanted = desired[systemInfo.systemIndex]
                     for _, s in ipairs(systemInfo.settings) do
                         if wanted and s.setting == ICON_COUNT_SETTING and s.value < wanted then
-                            CludesUI.NoteEditModeSetting(layoutInfo, systemInfo, s.setting, s.value, wanted)
+                            CUI.NoteEditModeSetting(layoutInfo, systemInfo, s.setting, s.value, wanted)
                             s.value = wanted
                             didChange = true
                         end
                         if HIDE_BAR_ART_SETTING and s.setting == HIDE_BAR_ART_SETTING then
-                            CludesUI.NoteEditModeSetting(layoutInfo, systemInfo, s.setting, s.value, 1, 0)
+                            CUI.NoteEditModeSetting(layoutInfo, systemInfo, s.setting, s.value, 1, 0)
                             if s.value ~= 1 then
                                 s.value = 1
                                 didChange = true
@@ -190,10 +191,10 @@ function ABAR:FinishSetup()
             -- Combat reload: non-protected setup only; secure handler does the rest.
             -- Stock bar disposal (including ActionBarParent) already happened at
             -- file load time. OverrideActionBar is fully Blizzard-owned.
-            CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_1", "1", "CludesUIActionBars")
-            CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_2", "1", "CludesUIActionBars")
-            CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_3", "1", "CludesUIActionBars")
-            CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_4", "1", "CludesUIActionBars")
+            CUI.SetCVar("SHOW_MULTI_ACTIONBAR_1", "1", "CludesUIActionBars")
+            CUI.SetCVar("SHOW_MULTI_ACTIONBAR_2", "1", "CludesUIActionBars")
+            CUI.SetCVar("SHOW_MULTI_ACTIONBAR_3", "1", "CludesUIActionBars")
+            CUI.SetCVar("SHOW_MULTI_ACTIONBAR_4", "1", "CludesUIActionBars")
 
             -- Create bar frames and buttons (no protected ops)
             for _, details in ipairs(BAR_CONFIG) do
@@ -286,12 +287,12 @@ function ABAR:FinishSetup()
             -- Reapply unlock-mode positions + anchor chains now that bars exist.
             -- (The CUI_UnlockMode hook on EAB.ApplyAll doesn't fire because
             -- ApplyAll is a local function, not on the addon table.)
-            if CludesUI._applySavedPositions then
+            if CUI._applySavedPositions then
                 -- NOTE: C_Timer callbacks do not run during the loading screen, so on a
                 -- combat reload this fires after lockdown has re-engaged. The in-window
                 -- pass lives in CUI_UnlockMode's synchronous PLAYER_LOGIN handler; this
                 -- delayed pass is the settle correction once element sizes stabilize.
-                C_Timer_After(1.5, CludesUI._applySavedPositions)
+                C_Timer_After(1.5, CUI._applySavedPositions)
             end
             ApplyKeyDownCVar()
             self:SyncEditModeIcons()
@@ -472,8 +473,8 @@ function ABAR:FinishSetup()
                         -- see is a bar they cannot drop a spell onto, so surfacing one
                         -- that did not strictly need it is the harmless direction.
                         local conditioned = vis ~= "always" and vis ~= "never"
-                        if not conditioned and CludesUI.VisHasAnyOption then
-                            conditioned = CludesUI.VisHasAnyOption(cfg)
+                        if not conditioned and CUI.VisHasAnyOption then
+                            conditioned = CUI.VisHasAnyOption(cfg)
                         end
                         if conditioned then
                             _gridSurfacedBars[details.key] = true
@@ -640,11 +641,11 @@ function ABAR:FinishSetup()
         local scaler = mod.TakeShell()
         scaler._eabW, scaler._eabH = UIParent:GetSize()
         local function ReapplySavedBarPositions()
-            if CludesUI._unlockActive or CludesUI._unlockModeSessionActive then return end
+            if CUI._unlockActive or CUI._unlockModeSessionActive then return end
             RestoreBarPositions()
             -- Anchored bars take their spot from the anchor, not the record.
             -- The helper lives in the unlock core, built at PLAYER_LOGIN.
-            local reapply = CludesUI.ReapplyUnlockAnchor
+            local reapply = CUI.ReapplyUnlockAnchor
             local adb = CludesUIDB and CludesUIDB.unlockAnchors
             if reapply and adb then
                 local barList = ABAR.db.profile.bars
@@ -674,7 +675,7 @@ function ABAR:FinishSetup()
         scaler:SetScript("OnEvent", function(scrollFrame)
             local wid, hgt = UIParent:GetSize()
             if wid == scrollFrame._eabW and hgt == scrollFrame._eabH then return end
-            if CludesUI._unlockActive or CludesUI._unlockModeSessionActive then return end
+            if CUI._unlockActive or CUI._unlockModeSessionActive then return end
             scrollFrame._eabW, scrollFrame._eabH = wid, hgt
             if InCombatLockdown() then
                 mod.CombatQueue.Defer("EABReapplyBarPositions", ReapplySavedBarPositions)
@@ -967,9 +968,9 @@ function ABAR:FinishSetup()
     self:RegisterEvent("PLAYER_UPDATE_RESTING", function() self:UpdateHousingVisibility() end)
     -- Party Mode axis: no game event, so the core fires its own edge
     -- (CludesUI.FireVisEdge, re-fired after combat for secure bars).
-    if CludesUI.RegisterVisEdge and not self._partyVisEdge then
+    if CUI.RegisterVisEdge and not self._partyVisEdge then
         self._partyVisEdge = true
-        CludesUI.RegisterVisEdge(function() self:UpdateHousingVisibility() end)
+        CUI.RegisterVisEdge(function() self:UpdateHousingVisibility() end)
     end
     -- Vehicle edges for the In Vehicle axis (same reasoning as Resting; the
     -- sync is gated + coalesced, so the rare fire costs a flag check).
@@ -981,7 +982,7 @@ function ABAR:FinishSetup()
     -- CludesUI_Visibility.lua; the secure bars need neither -- their
     -- state driver re-evaluates [advflyable,flying] natively).
     self:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED", function() self:UpdateHousingVisibility() end)
-    if CludesUI._hasGlidingEvent then
+    if CUI._hasGlidingEvent then
         self:RegisterEvent("PLAYER_IS_GLIDING_CHANGED", function() self:UpdateHousingVisibility() end)
     end
     -- Immediate soft-target override: when the only "target" is a soft-interact NPC
@@ -1071,7 +1072,7 @@ function ABAR:FinishSetup()
     -- five relevant events here, ride the shared visibility dispatcher: it already watches
     -- exactly that set, pcall-wraps each updater and defers one frame (imperceptible for
     -- alpha). Same registration Friends, Quest Tracker and Damage Meters use.
-    CludesUI.RegisterVisibilityUpdater(function() ABAR:RefreshHoverGatedAlpha() end)
+    CUI.RegisterVisibilityUpdater(function() ABAR:RefreshHoverGatedAlpha() end)
     local lastI, lastE, lastF, lastT
     local function PollSoftTargetState()
         if InCombatLockdown() then return end
@@ -1619,7 +1620,7 @@ function ABAR:FinishSetup()
         -- StanceBar:Update() unless the mouse and keyboard bars are on, so the
         -- reused StanceButtons get no icon until a form changes. Paint the
         -- icons here as its UpdateState does, never on the cooldown event.
-        local paintIcons = evt ~= "UPDATE_SHAPESHIFT_COOLDOWN" and CludesUI.PadGamepadUI()
+        local paintIcons = evt ~= "UPDATE_SHAPESHIFT_COOLDOWN" and CUI.PadGamepadUI()
         local numForms = GetNumShapeshiftForms()
         for index = 1, numForms do
             local button = _G["StanceButton" .. index]

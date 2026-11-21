@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Groups.lua
 --
@@ -558,7 +559,7 @@ local function ApplyGroupConfig(
         end
         -- Hidden links (subtracted classes) stay declared so their chain negations
         -- keep excluding them from the catch-all, but render nothing themselves.
-        CludesUI.AuraKit.SetGroupCap(boxHolder, effKey, itemLink.hidden and 0 or effectiveMax)
+        CUI.AuraKit.SetGroupCap(boxHolder, effKey, itemLink.hidden and 0 or effectiveMax)
         boxHolder:SetAuraGroupLayout(effKey, layout)
         boxHolder:SetAuraGroupCandidateFilters(effKey, candidateFilters)
         if sortMethod ~= nil and sortDirection ~= nil then
@@ -572,7 +573,7 @@ local function ApplyGroupConfig(
     -- metadata, not group keys.
     for key in pairs(declaredSet) do
         if not isActive[key] and key:sub(1, 7) ~= "__cand|" then
-            CludesUI.AuraKit.SetGroupCap(boxHolder, key, 0)
+            CUI.AuraKit.SetGroupCap(boxHolder, key, 0)
         end
     end
 end
@@ -588,10 +589,10 @@ local function RetireContainer(boxHolder, declaredSet)
     if not boxHolder then return end
     if declaredSet then
         for key in pairs(declaredSet) do
-            if key:sub(1, 7) ~= "__cand|" then pcall(CludesUI.AuraKit.SetGroupCap, boxHolder, key, 0) end
+            if key:sub(1, 7) ~= "__cand|" then pcall(CUI.AuraKit.SetGroupCap, boxHolder, key, 0) end
         end
     end
-    pcall(CludesUI.AuraKit.SetGroupCap, boxHolder, "spells", 0)
+    pcall(CUI.AuraKit.SetGroupCap, boxHolder, "spells", 0)
     AK.ReleaseContainer(boxHolder)
 end
 

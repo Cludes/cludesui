@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_FocusKick.lua
 --
@@ -293,7 +294,7 @@ local function EnsureFocusKickProxy()
     end
     _focusKickProxy._arm = function()
         if not kickTicker then
-            kickTicker = CludesUI.Tick.NewAnimTicker(_focusKickProxy, FocusKickTick, _FOCUSKICK_TICK_INTERVAL)
+            kickTicker = CUI.Tick.NewAnimTicker(_focusKickProxy, FocusKickTick, _FOCUSKICK_TICK_INTERVAL)
         end
         kickTicker.Start()
     end
@@ -306,7 +307,7 @@ end
 mod.EnsureFocusKickProxy = EnsureFocusKickProxy
 
 -- Sound dropdown data: built-in CludesUI sounds + LibSharedMedia sounds appended at runtime via CludesUI.AppendSharedMediaSounds.
-local FOCUSKICK_SOUND_PATHS, FOCUSKICK_SOUND_NAMES, FOCUSKICK_SOUND_ORDER = CludesUI.BuildAlertSoundTables()
+local FOCUSKICK_SOUND_PATHS, FOCUSKICK_SOUND_NAMES, FOCUSKICK_SOUND_ORDER = CUI.BuildAlertSoundTables()
 mod.FOCUSKICK_SOUND_PATHS = FOCUSKICK_SOUND_PATHS
 mod.FOCUSKICK_SOUND_NAMES = FOCUSKICK_SOUND_NAMES
 mod.FOCUSKICK_SOUND_ORDER = FOCUSKICK_SOUND_ORDER
@@ -677,12 +678,12 @@ local function FRSafeFont(p)
     return p
 end
 local function FRGlobalFont()
-    if CludesUI and CludesUI.GetFontPath then return FRSafeFont(CludesUI.GetFontPath("cdm")) end
+    if CUI and CUI.GetFontPath then return FRSafeFont(CUI.GetFontPath("cdm")) end
     return _FR_FALLBACK_FONT
 end
 local function FROutlineFlag()
-    if CludesUI and CludesUI.GetFontOutlineFlag then
-        local frame = CludesUI.GetFontOutlineFlag("cdm")
+    if CUI and CUI.GetFontOutlineFlag then
+        local frame = CUI.GetFontOutlineFlag("cdm")
         if frame and frame ~= "" then return frame end
     end
     return "NONE"
@@ -705,11 +706,11 @@ local function FRSetFontSafe(fontStr, filePath, size, flags)
 end
 local function FRApplyFontShadow(fontStr)
     if not fontStr then return end
-    local useShadow = (CludesUI.GetFontUseShadow("cdm")) and true or false
+    local useShadow = (CUI.GetFontUseShadow("cdm")) and true or false
     -- Font is set by FRSetFontSafe before this call; capture and restore it so
     -- priming the shadow FontObject does not change the typeface.
     local _pf, _ps, _pfl = fontStr:GetFont()
-    CludesUI.PrimeFontShadow(fontStr, useShadow)
+    CUI.PrimeFontShadow(fontStr, useShadow)
     if _pf then fontStr:SetFont(_pf, _ps, _pfl) end
 end
 
@@ -828,7 +829,7 @@ local function ShowFocusReminder(unitToken)
     -- Color: accent mode reads the live CLUDES_GREEN; custom mode reads the stored RGB. Re-SetTextColor only if the resolved color changed.
     local red, green, blue
     if edge.focusReminderUseAccent then
-        local brandGreen = CludesUI.CLUDES_GREEN
+        local brandGreen = CUI.CLUDES_GREEN
         red = (brandGreen and brandGreen.r) or 0.298
         green = (brandGreen and brandGreen.g) or 0.788
         blue = (brandGreen and brandGreen.b) or 0.941

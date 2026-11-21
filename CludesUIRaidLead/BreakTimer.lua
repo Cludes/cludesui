@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  BreakTimer.lua -- Raid Lead: a shared break countdown.
 --
@@ -22,7 +23,7 @@ function mod.BreakSettings()
     return cfg
 end
 
-local function Say(textValue) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
+local function Say(textValue) CUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
 
 local bar, labelText, ticker
 local current -- { ends, total, from, warned }
@@ -32,11 +33,11 @@ local function Build()
     bar = CreateFrame("StatusBar", "CludesUIRaidLeadBreak", UIParent)
     bar:SetSize(W, H)
     bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    local ar, ag, ab = CludesUI.Kit.Accent()
+    local ar, ag, ab = CUI.Kit.Accent()
     bar:GetStatusBarTexture():SetVertexColor(ar, ag, ab, 0.9)
-    CludesUI.Kit.Panel(bar, 0.85)
+    CUI.Kit.Panel(bar, 0.85)
     labelText = bar:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(labelText, 13, nil)
+    CUI.Kit.Font(labelText, 13, nil)
     labelText:SetPoint("CENTER")
     bar:Hide()
     mod.ApplyBreakPosition()
@@ -123,11 +124,11 @@ local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered
 eventFrame:SetScript("OnEvent", function()
-    if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
+    if registered or InCombatLockdown() or not CUI.RegisterUnlockElements then return end
     Build()
     registered = true
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = "RLEAD_Break",
             label = "Break Timer",
             group = "Raid Lead",

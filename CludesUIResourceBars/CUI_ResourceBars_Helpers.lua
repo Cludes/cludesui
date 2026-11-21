@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Options.lua
 --  Registers the Resource Bars module with CludesUI
@@ -8,7 +9,7 @@ local ADDON_NAME, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place), read through this local and never through
 -- the public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local function DB()
     local saved = _G._CURB_AceDB
@@ -27,11 +28,11 @@ mod._CURB_IsThresholdCardShadowed = function(entries, position)
     -- WoW Forever: the class resolves as one spec (ns.ForeverThresholdPick; nil
     -- = All Specs only), so a live card naming specs of the player's class, none
     -- of them that one, never applies on this character.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         local pick = mod.ForeverThresholdPick(entries)
         if not mod.ThresholdCardLiveFor(current, pick) then
             for _, spec in ipairs(current.specIDs) do
-                if CludesUI.IsPlayerSpec(spec) and mod.ThresholdCardLiveFor(current, spec) then
+                if CUI.IsPlayerSpec(spec) and mod.ThresholdCardLiveFor(current, spec) then
                     return true
                 end
             end
@@ -103,9 +104,9 @@ end
 mod.ERB_SimpleOverrideOverlay = function(hostFrame, topY, botY, sectionKey)
     if not topY then return end
     if not (_G._CURB_CurSpecOverridesSection and _G._CURB_CurSpecOverridesSection(sectionKey)) then return end
-    local EGc = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-    local CPAD = CludesUI.CONTENT_PAD or 45
-    local Pix = CludesUI.PanelPP or CludesUI.PP
+    local EGc = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+    local CPAD = CUI.CONTENT_PAD or 45
+    local Pix = CUI.PanelPP or CUI.PP
     -- On an options page (an options page pool host) the overlay is pooled
     -- with the page.
     local shade = POOL.CreateFrame("Button", nil, hostFrame)
@@ -117,13 +118,13 @@ mod.ERB_SimpleOverrideOverlay = function(hostFrame, topY, botY, sectionKey)
     local obg = shade:CreateTexture(nil, "BACKGROUND")
     obg:SetAllPoints()
     obg:SetColorTexture(13 / 255, 17 / 255, 25 / 255, 0.9)
-    local olbl = CludesUI.MakeFont(shade, 12, nil, 1, 1, 1)
+    local olbl = CUI.MakeFont(shade, 12, nil, 1, 1, 1)
     olbl:SetPoint("CENTER")
     olbl:SetTextColor(1, 1, 1, 0.7)
     olbl:SetText(
-        CludesUI.L("Active spec uses Advanced settings")
+        CUI.L("Active spec uses Advanced settings")
             .. "   \226\128\148   "
-            .. CludesUI.L("click to edit")
+            .. CUI.L("click to edit")
     )
     mod.ERB_OverlayHealOnShow(shade, obg, olbl, 0.9)
     shade:SetScript("OnEnter", function() olbl:SetTextColor(EGc.r, EGc.g, EGc.b, 1) end)
@@ -137,9 +138,9 @@ mod.ERB_SimpleOverrideOverlay = function(hostFrame, topY, botY, sectionKey)
             and C_SpecializationInfo.GetSpecializationInfo(position)
         if current then profile.advancedSelectedSpec = current end
         profile.barDisplayMode = "advanced"
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
         -- Clicking to edit navigates to the top of the Advanced page
-        CludesUI:ScrollToTop()
+        CUI:ScrollToTop()
     end)
 end
 
@@ -157,10 +158,10 @@ local SpecName = function(specID)
     if specID == 0 then return "All Specs" end
     -- WoW Forever: the spec and class names from the shared spec table, in the
     -- same "<Spec> <Class>" shape as below.
-    if CludesUI.IS_FOREVER then
-        local token = CludesUI.SpecClassOf(specID)
+    if CUI.IS_FOREVER then
+        local token = CUI.SpecClassOf(specID)
         if token then
-            local sn, cn = CludesUI.RetailSpecName(specID), CludesUI.ForeverClassName(token)
+            local sn, cn = CUI.RetailSpecName(specID), CUI.ForeverClassName(token)
             return sn and (sn .. " " .. cn) or cn
         end
     end
@@ -178,14 +179,14 @@ mod.EntryLabel = function(record)
     local nameList = {}
     -- WoW Forever: a class the card holds whole reads as the class; a partial
     -- class lists its specs, so cards for different specs stay distinct.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         local held, done = {}, {}
         for _, spellRef in ipairs(record.specIDs) do
             held[spellRef] = true
         end
         for _, spellRef in ipairs(record.specIDs) do
-            local token = CludesUI.SpecClassOf(spellRef)
-            local classIDs = CludesUI.ForeverClassSpecIDs(token)
+            local token = CUI.SpecClassOf(spellRef)
+            local classIDs = CUI.ForeverClassSpecIDs(token)
             if not classIDs then
                 nameList[#nameList + 1] = SpecName(spellRef)
             elseif not done[token] then
@@ -198,7 +199,7 @@ mod.EntryLabel = function(record)
                     end
                 end
                 if whole then
-                    nameList[#nameList + 1] = CludesUI.ForeverClassName(token)
+                    nameList[#nameList + 1] = CUI.ForeverClassName(token)
                 else
                     for i = 1, #classIDs do
                         if held[classIDs[i]] then nameList[#nameList + 1] = SpecName(classIDs[i]) end
@@ -224,7 +225,7 @@ mod.IsBarTypeSecondary = function()
     if details and details.power == "IGNOREPAIN_BAR" then return true end -- Prot Warrior Ignore Pain bar
     -- WoW Forever: no bar-type class resource exists there (the runtime never
     -- builds one), so the retail spec positions below do not apply.
-    if CludesUI.IS_FOREVER then return false end
+    if CUI.IS_FOREVER then return false end
     if castFrame == "DRUID" and specInfo == 1 then return true end -- Balance (Astral Power bar)
     if castFrame == "SHAMAN" and specInfo == 1 then return true end -- Elemental
     if castFrame == "PRIEST" and specInfo == 3 then return true end -- Shadow
@@ -284,7 +285,7 @@ mod.ThresholdNoticeInfo = function(edge)
     if not entries or #entries == 0 then return nil end
     local activeSpecID = _G._CURB_ResolveSpecIDCached and _G._CURB_ResolveSpecIDCached()
     -- WoW Forever: the spec the thresholds resolve as (ns.ForeverThresholdPick; nil = All Specs only).
-    if CludesUI.IS_FOREVER then activeSpecID = mod.ForeverThresholdPick(entries) end
+    if CUI.IS_FOREVER then activeSpecID = mod.ForeverThresholdPick(entries) end
     local nameList, seen, isActive = {}, {}, false
     for _, record in ipairs(entries) do
         if ThresholdEntryConfigured(edge, record) then

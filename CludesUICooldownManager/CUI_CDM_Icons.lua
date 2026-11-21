@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Icons.lua
 --
@@ -22,7 +23,7 @@ local ApplyShapeToCDMIcon
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot, so nothing written to that slot later reaches the live icons.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local _inCombat = false
 Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val) _inCombat = val end
@@ -89,21 +90,21 @@ ApplyShapeToCDMIcon = function(iconTex, shapeKey, barInfo, shapeBorder)
         local bdrTarget = (frameData and frameData.borderFrame) or iconTex
         if stockArt then
             -- Blizzard Style draws no CUI border (the ring overlay is the frame).
-        elseif frameData and frameData.borderFrame or CludesUI.PP.GetBorders(iconTex) then
+        elseif frameData and frameData.borderFrame or CUI.PP.GetBorders(iconTex) then
             local texKey = barInfo.borderTexture or "solid"
             -- Exact size (borderSizePx) belongs to the bar's own step: a per-icon
             -- override that differs from it fails the step compare and stays legacy,
             -- one equal to it takes the bar's px like the other two paint paths.
-            local edgePx = CludesUI.BorderPx(barInfo.borderSizePx, borderSz, texKey)
+            local edgePx = CUI.BorderPx(barInfo.borderSizePx, borderSz, texKey)
             -- "Show Behind": set the border frame's level BEFORE styling so the
             -- textured backdrop inherits it. +13 = in front (+14 for the Pixels styles), level-1 = behind.
             if frameData and frameData.borderFrame then
                 frameData.borderFrame:SetFrameLevel(
                     barInfo.borderBehind and math.max(0, iconTex:GetFrameLevel() - 1)
-                        or (iconTex:GetFrameLevel() + (CludesUI._pixelArtBorders[texKey] and 14 or 13))
+                        or (iconTex:GetFrameLevel() + (CUI._pixelArtBorders[texKey] and 14 or 13))
                 )
             end
-            CludesUI.ApplyBorderStyle(
+            CUI.ApplyBorderStyle(
                 bdrTarget,
                 borderSz,
                 brdR,
@@ -199,15 +200,15 @@ ApplyShapeToCDMIcon = function(iconTex, shapeKey, barInfo, shapeBorder)
     local halfIE = iconExp / 2
     if texture then
         texture:ClearAllPoints()
-        CludesUI.PP.Point(texture, "TOPLEFT", iconTex, "TOPLEFT", -halfIE, halfIE)
-        CludesUI.PP.Point(texture, "BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", halfIE, -halfIE)
+        CUI.PP.Point(texture, "TOPLEFT", iconTex, "TOPLEFT", -halfIE, halfIE)
+        CUI.PP.Point(texture, "BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", halfIE, -halfIE)
     end
 
     -- Mask position (inset for border)
     mask:ClearAllPoints()
     if borderSz >= 1 then
-        CludesUI.PP.Point(mask, "TOPLEFT", iconTex, "TOPLEFT", 1, -1)
-        CludesUI.PP.Point(mask, "BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", -1, 1)
+        CUI.PP.Point(mask, "TOPLEFT", iconTex, "TOPLEFT", 1, -1)
+        CUI.PP.Point(mask, "BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", -1, 1)
     else
         mask:SetAllPoints(iconTex)
     end
@@ -220,10 +221,10 @@ ApplyShapeToCDMIcon = function(iconTex, shapeKey, barInfo, shapeBorder)
 
     -- Hide square borders (both PP and textured)
     local bdrTarget2 = (frameData and frameData.borderFrame) or iconTex
-    if frameData and frameData.borderFrame or CludesUI.PP.GetBorders(iconTex) then
-        CludesUI.PP.HideBorder(bdrTarget2)
-        if CludesUI._bdBorderData then
-            local bdFrame = CludesUI._bdBorderData[bdrTarget2]
+    if frameData and frameData.borderFrame or CUI.PP.GetBorders(iconTex) then
+        CUI.PP.HideBorder(bdrTarget2)
+        if CUI._bdBorderData then
+            local bdFrame = CUI._bdBorderData[bdrTarget2]
             if bdFrame then bdFrame:Hide() end
         end
     end
@@ -326,8 +327,8 @@ function ns.ApplyShapeToOverlay(iconTex, origIcon, origCooldown, barInfo)
     local halfIE = iconExp / 2
     if origIcon then
         origIcon:ClearAllPoints()
-        CludesUI.PP.Point(origIcon, "TOPLEFT", iconTex, "TOPLEFT", -halfIE, halfIE)
-        CludesUI.PP.Point(origIcon, "BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", halfIE, -halfIE)
+        CUI.PP.Point(origIcon, "TOPLEFT", iconTex, "TOPLEFT", -halfIE, halfIE)
+        CUI.PP.Point(origIcon, "BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", halfIE, -halfIE)
         local insetPx = CDM_SHAPES.insets[shapeKey] or 17
         local visRatio = (128 - 2 * insetPx) / 128
         local growBy = ((1 / visRatio) - 1) * 0.5
@@ -419,7 +420,7 @@ function ns.StyleOverlayCooldownText(origCooldown, barInfo, shapeBorder, iconSca
     local cdY = (shapeBorder and shapeBorder.cooldownTextY) or (barInfo and barInfo.cooldownTextY) or 0
     for _, region in pairs({ origCooldown:GetRegions() }) do
         if region and region.GetObjectType and region:GetObjectType() == "FontString" then
-            CludesUI.ApplyIconTextFont(region, cdFont, cdSize, "cdm")
+            CUI.ApplyIconTextFont(region, cdFont, cdSize, "cdm")
             region:SetTextColor(cdR, cdG, cdB)
             ns.AnchorCooldownText(region, origCooldown, cdPosition, cdX, cdY)
         end
@@ -795,7 +796,7 @@ local function RefreshCDMIconAppearance(barId)
                         if nColor == "custom" then
                             sgR, sgG, sgB = nR, nG, nB
                         elseif sgMode == "class" then
-                            local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                            local classColor = CUI.GetClassColor(CUI._playerClass)
                             if classColor then
                                 sgR, sgG, sgB = classColor.r, classColor.g, classColor.b
                             end
@@ -839,7 +840,7 @@ local function RefreshCDMIconAppearance(barId)
                 pcall(
                     cooldown.SetFrameLevel,
                     cooldown,
-                    iconTex:GetFrameLevel() + (CludesUI._pixelArtBorders[barInfo.borderTexture] and 13 or 14)
+                    iconTex:GetFrameLevel() + (CUI._pixelArtBorders[barInfo.borderTexture] and 13 or 14)
                 )
                 -- Per-icon Duration Text override (ssb) falls back to the bar's values. Only Show
                 -- Numbers no longer forces this on: hiding the duration (bar toggle or per-icon) under it leaves just the stack count.
@@ -958,7 +959,7 @@ local function RefreshCDMIconAppearance(barId)
                     -- overrides the engine's stale baseline (raw SetFont vs SetCountdownFont); off-center anchors are where a missed or stomped anchor first becomes visible.
                     for _, region in pairs({ cooldown:GetRegions() }) do
                         if region and region.GetObjectType and region:GetObjectType() == "FontString" then
-                            CludesUI.ApplyIconTextFont(region, cdFont, cdSize, "cdm")
+                            CUI.ApplyIconTextFont(region, cdFont, cdSize, "cdm")
                             region:SetTextColor(cdR, cdG, cdB)
                             ns.AnchorCooldownText(region, cooldown, cdPosition, cdX, cdY)
                         end
@@ -969,9 +970,9 @@ local function RefreshCDMIconAppearance(barId)
             local bdrTgt = (frameData and frameData.borderFrame) or iconTex
             if stockArt then
             -- Blizzard Style: no CUI border or background (ring + mask instead).
-            elseif frameData and frameData.borderFrame or CludesUI.PP.GetBorders(iconTex) then
+            elseif frameData and frameData.borderFrame or CUI.PP.GetBorders(iconTex) then
                 local textureKey = barInfo.borderTexture or "solid"
-                CludesUI.ApplyBorderStyle(
+                CUI.ApplyBorderStyle(
                     bdrTgt,
                     borderSize,
                     barInfo.borderR or 0,
@@ -986,7 +987,7 @@ local function RefreshCDMIconAppearance(barId)
                     "cdm",
                     barInfo.borderThickness or "thin",
                     true,
-                    CludesUI.BorderPx(barInfo.borderSizePx, borderSize, textureKey)
+                    CUI.BorderPx(barInfo.borderSizePx, borderSize, textureKey)
                 )
             end
             -- Update background

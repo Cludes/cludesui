@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Defaults.lua
 --
@@ -135,7 +136,7 @@ local DEFAULTS = {
         },
         primary = {
             -- Off by default on WoW Forever (vanilla content), on everywhere else.
-            enabled = (CludesUI.IS_FOREVER ~= true),
+            enabled = (CUI.IS_FOREVER ~= true),
             smoothBars = false,
             width = 214,
             height = 14,
@@ -240,7 +241,7 @@ local DEFAULTS = {
             -- (CUI_ResourceBars_ForeverDruidMana.lua). Exists only on Forever,
             -- so retail profiles stay unchanged. gap: space between the two
             -- bars (not used Inside); the text keys mirror the Power Bar's own.
-            foreverDruidMana = (CludesUI.IS_FOREVER == true) and {
+            foreverDruidMana = (CUI.IS_FOREVER == true) and {
                 enabled = false,
                 position = "below", -- "below","above","inside"
                 gap = 2,
@@ -262,7 +263,7 @@ local DEFAULTS = {
         },
         secondary = {
             -- Off by default on WoW Forever (vanilla content), on everywhere else.
-            enabled = (CludesUI.IS_FOREVER ~= true),
+            enabled = (CUI.IS_FOREVER ~= true),
             smoothBars = false,
             pipWidth = 214,
             pipHeight = 20,
@@ -685,7 +686,7 @@ local DEFAULTS = {
         -- WoW Forever: Blizzard's call totem bar in the Totem Bar look
         -- (CUI_ResourceBars_CallTotemBar.lua). Off by default; the table exists
         -- only on that client, so retail profiles never gain the key.
-        callTotemBar = (CludesUI.IS_FOREVER == true) and {
+        callTotemBar = (CUI.IS_FOREVER == true) and {
             enabled = false,
             iconSize = 30,
             spacing = 2,

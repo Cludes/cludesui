@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ActionBarProfiles.lua  (WoW Forever only)
 --  Action Bar Profiles: save every action bar slot (spells, items, macros,
@@ -17,7 +18,7 @@ local MAX_SLOT = 180
 local F = module.Feature("actionBarProfiles", { enabled = true, bindings = false })
 local Get = F.Get
 
-local function Say(textValue) CludesUI.Print("|cff4cc9f0Action Bars:|r " .. textValue) end
+local function Say(textValue) CUI.Print("|cff4cc9f0Action Bars:|r " .. textValue) end
 local function Plain(val, kind)
     if not (issecretvalue and issecretvalue(val)) and type(val) == (kind or "number") then return val end
 end
@@ -155,7 +156,7 @@ function module.LoadActionProfile(name)
     )
 end
 
-CludesUI._ActionBarProfiles = {
+CUI._ActionBarProfiles = {
     Get = Get,
     Cfg = F.Cfg,
     Names = module.ActionProfileNames,

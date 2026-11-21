@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarUnlock.lua
 --
@@ -22,12 +23,12 @@ Inner.ecmeSetters[#Inner.ecmeSetters + 1] = function(val) ECME = val end
 --  Unlock Mode Registration
 -------------------------------------------------------------------------------
 function mod.RegisterTBBUnlockElements()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
+    if not CUI or not CUI.RegisterUnlockElements then return end
     if not ECME or not ECME.db then return end
     -- Per-spec unlock-link views: this path can run on spec change before a TBB build (CDM
     -- setup registers synchronously so anchor data is ready for CollectAndReanchor), so sync the link stores here too.
     mod.SyncTBBUnlockLinks()
-    local MK = CludesUI.MakeUnlockElement
+    local MK = CUI.MakeUnlockElement
     -- Never call UnregisterUnlockElement for TBB keys -- it triggers PruneStaleLinks which
     -- destroys saved anchor data in unlockAnchors. Instead, just overwrite registrations;
     -- the isHidden callback handles hiding movers for bars that don't exist in the current spec.
@@ -51,10 +52,10 @@ function mod.RegisterTBBUnlockElements()
             elements[#elements + 1] = MK({
                 key = "TBB_" .. posKey,
                 label = isGroupMover
-                        and (mod.TBBGroupName(barGid) or CludesUI.Lf("Tracking Bar Group %d", barGid))
-                    or CludesUI.Lf(
+                        and (mod.TBBGroupName(barGid) or CUI.Lf("Tracking Bar Group %d", barGid))
+                    or CUI.Lf(
                         "Tracking Bar: %s",
-                        mod.TBBCustomName(conf) or conf.name or CludesUI.Lf("Bar %d", position)
+                        mod.TBBCustomName(conf) or conf.name or CUI.Lf("Bar %d", position)
                     ),
                 group = "Cooldown Manager",
                 order = 650,
@@ -116,7 +117,7 @@ function mod.RegisterTBBUnlockElements()
                     -- width/height ARE the total footprint (icon included), so matching reads the stored dims directly.
                     local tbl = mod.GetTrackedBuffBars()
                     local c = tbl.bars and tbl.bars[position]
-                    local PPg = CludesUI and CludesUI.PP
+                    local PPg = CUI and CUI.PP
                     local sn = PPg and PPg.Snap or function(val) return val end
                     if c then return sn(c.width or 270), sn(c.height or 24) end
                     return 270, 24
@@ -126,11 +127,11 @@ function mod.RegisterTBBUnlockElements()
                     local c = tbl.bars and tbl.bars[position]
                     if not c then return end
                     local frame = tbbFrames[position]
-                    local PPt = CludesUI and CludesUI.PP
+                    local PPt = CUI and CUI.PP
                     wid = PPt and PPt.Snap(wid) or math.floor(wid + 0.5)
                     -- Persist during unlock (manual) AND match propagation, so a width match TO
                     -- another element survives the next BuildTrackedBuffBars instead of reverting to the slider value.
-                    if CludesUI._unlockActive or CludesUI._propagatingMatch then
+                    if CUI._unlockActive or CUI._propagatingMatch then
                         c.width = wid
                         -- Grouped bars share width: fan this out to the rest of the group
                         -- (covers unlock drag-resize AND a width-MATCH on the group anchor, both routing through here).
@@ -142,11 +143,11 @@ function mod.RegisterTBBUnlockElements()
                     local tbl = mod.GetTrackedBuffBars()
                     local c = tbl.bars and tbl.bars[position]
                     if not c then return end
-                    local PPt = CludesUI and CludesUI.PP
+                    local PPt = CUI and CUI.PP
                     hgt = PPt and PPt.Snap(hgt) or math.floor(hgt + 0.5)
                     local frame = tbbFrames[position]
                     -- Persist during unlock AND match propagation (see setWidth).
-                    if CludesUI._unlockActive or CludesUI._propagatingMatch then
+                    if CUI._unlockActive or CUI._propagatingMatch then
                         c.height = hgt
                         mod.PropagateTBBGroupSize(position, "height", hgt)
                     end
@@ -175,7 +176,7 @@ function mod.RegisterTBBUnlockElements()
                             end
                         end
                     end
-                    if not CludesUI._unlockActive then
+                    if not CUI._unlockActive then
                         local frame = tbbFrames[position]
                         if frame then
                             frame:ClearAllPoints()
@@ -206,10 +207,10 @@ function mod.RegisterTBBUnlockElements()
         -- Alias map: the anchor bar's frame carries the move/resize hooks under its per-bar
         -- TBB_ key; children anchored to the group's stable TBBG_ key need those notifications
         -- too. Rebuilt each registration pass (anchor index shifts on edits/deletes).
-        local aliases = CludesUI._unlockKeyAliases
+        local aliases = CUI._unlockKeyAliases
         if not aliases then
             aliases = {}
-            CludesUI._unlockKeyAliases = aliases
+            CUI._unlockKeyAliases = aliases
         end
         for key, val in pairs(aliases) do
             if type(val) == "string" and val:find("^TBBG_") then aliases[key] = nil end
@@ -221,7 +222,7 @@ function mod.RegisterTBBUnlockElements()
             if anchorIdx then aliases["TBB_" .. anchorIdx] = "TBBG_" .. gk end
             elements[#elements + 1] = MK({
                 key = "TBBG_" .. gk,
-                label = CludesUI.Lf("Tracking Bars: %1$s", record.name or gk),
+                label = CUI.Lf("Tracking Bars: %1$s", record.name or gk),
                 group = "Cooldown Manager",
                 order = 651,
                 noResize = true,
@@ -263,7 +264,7 @@ function mod.RegisterTBBUnlockElements()
                     local ai = groupId and mod.TBBGroupAnchorIndex(groupId)
                     local tbl = mod.GetTrackedBuffBars()
                     local c = ai and tbl.bars and tbl.bars[ai]
-                    local PPg = CludesUI and CludesUI.PP
+                    local PPg = CUI and CUI.PP
                     local sn = PPg and PPg.Snap or function(val) return val end
                     if c then return sn(c.width or 270), sn(c.height or 24) end
                     -- Memberless spec: the registry's last-stamped anchor size
@@ -277,11 +278,11 @@ function mod.RegisterTBBUnlockElements()
                     local ai = groupId and mod.TBBGroupAnchorIndex(groupId)
                     local tbl = mod.GetTrackedBuffBars()
                     local c = ai and tbl.bars and tbl.bars[ai]
-                    local PPt = CludesUI and CludesUI.PP
+                    local PPt = CUI and CUI.PP
                     wid = PPt and PPt.Snap(wid) or math.floor(wid + 0.5)
                     if c then
                         local frame = tbbFrames[ai]
-                        if CludesUI._unlockActive or CludesUI._propagatingMatch then
+                        if CUI._unlockActive or CUI._propagatingMatch then
                             c.width = wid
                             mod.PropagateTBBGroupSize(ai, "width", wid)
                         end
@@ -299,7 +300,7 @@ function mod.RegisterTBBUnlockElements()
                     -- no resize.
                     local e = mod.TBBGlobalGroup(gk)
                     if not (e and (e.shiftNoBar == "Up" or e.shiftNoBar == "Down")) then return end
-                    if CludesUI._unlockActive or CludesUI._propagatingMatch then e.width = wid end
+                    if CUI._unlockActive or CUI._propagatingMatch then e.width = wid end
                     local scrollFrame = mod.TBBStandinFrame and mod.TBBStandinFrame(gk)
                     if scrollFrame then scrollFrame:SetWidth(wid) end
                 end,
@@ -308,11 +309,11 @@ function mod.RegisterTBBUnlockElements()
                     local ai = groupId and mod.TBBGroupAnchorIndex(groupId)
                     local tbl = mod.GetTrackedBuffBars()
                     local c = ai and tbl.bars and tbl.bars[ai]
-                    local PPt = CludesUI and CludesUI.PP
+                    local PPt = CUI and CUI.PP
                     hgt = PPt and PPt.Snap(hgt) or math.floor(hgt + 0.5)
                     if c then
                         local frame = tbbFrames[ai]
-                        if CludesUI._unlockActive or CludesUI._propagatingMatch then
+                        if CUI._unlockActive or CUI._propagatingMatch then
                             c.height = hgt
                             mod.PropagateTBBGroupSize(ai, "height", hgt)
                         end
@@ -325,7 +326,7 @@ function mod.RegisterTBBUnlockElements()
                     -- re-shift to the matched size.
                     local e = mod.TBBGlobalGroup(gk)
                     if not (e and (e.shiftNoBar == "Up" or e.shiftNoBar == "Down")) then return end
-                    if CludesUI._unlockActive or CludesUI._propagatingMatch then e.height = hgt end
+                    if CUI._unlockActive or CUI._propagatingMatch then e.height = hgt end
                     local scrollFrame = mod.TBBStandinFrame and mod.TBBStandinFrame(gk)
                     if scrollFrame then scrollFrame:SetHeight(hgt) end
                 end,
@@ -333,7 +334,7 @@ function mod.RegisterTBBUnlockElements()
                     local e = mod.TBBGlobalGroup(gk)
                     if not e then return end
                     e.pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                    if not CludesUI._unlockActive then mod.BuildTrackedBuffBars() end
+                    if not CUI._unlockActive then mod.BuildTrackedBuffBars() end
                 end,
                 loadPos = function()
                     local e = mod.TBBGlobalGroup(gk)
@@ -348,11 +349,11 @@ function mod.RegisterTBBUnlockElements()
         end
     end
 
-    if #elements > 0 then CludesUI:RegisterUnlockElements(elements, "CludesUICooldownManager") end
+    if #elements > 0 then CUI:RegisterUnlockElements(elements, "CludesUICooldownManager") end
 
     -- Fallback anchors: bars/groups may have appeared or vanished for this spec -- let
     -- opted-in children re-evaluate (no-op when nobody opted in, or before the unlock module has loaded).
-    if CludesUI.NotifyFallbackTargetsChanged then CludesUI.NotifyFallbackTargetsChanged() end
+    if CUI.NotifyFallbackTargetsChanged then CUI.NotifyFallbackTargetsChanged() end
 end
 _G._CUCME_RegisterTBBUnlock = mod.RegisterTBBUnlockElements
 

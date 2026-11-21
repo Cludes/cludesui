@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_DataBars.lua
 --
@@ -47,8 +48,8 @@ local DATA_BAR_COLORS = {
 
 -- Data bar textures: the suite's built-in bar texture set + SharedMedia, on ns.
 do
-    local lookup, nameList, sequence = CludesUI.BuildBarTextureTables()
-    CludesUI.AppendSharedMediaTextures(nameList, sequence, nil, lookup)
+    local lookup, nameList, sequence = CUI.BuildBarTextureTables()
+    CUI.AppendSharedMediaTextures(nameList, sequence, nil, lookup)
     mod.dataBarTextures = lookup
     mod.dataBarTextureNames = nameList
     mod.dataBarTextureOrder = sequence
@@ -56,7 +57,7 @@ end
 
 function mod.ResolveDataBarTexture(key)
     if key and key ~= "none" then
-        local filePath = CludesUI.ResolveTexturePath(mod.dataBarTextures, key, nil)
+        local filePath = CUI.ResolveTexturePath(mod.dataBarTextures, key, nil)
         if filePath then return filePath end
     end
     return "Interface\\BUTTONS\\WHITE8X8"
@@ -67,7 +68,7 @@ end
 function mod.ResolveDataBarColor(cfg, red, green, blue)
     local mode = cfg and cfg.colorMode
     if mode == "accent" then
-        local ACC = CludesUI.CLUDES_GREEN
+        local ACC = CUI.CLUDES_GREEN
         if ACC then return ACC.r or red, ACC.g or green, ACC.b or blue end
     elseif mode == "custom" then
         local color = cfg.customColor
@@ -78,7 +79,7 @@ function mod.ResolveDataBarColor(cfg, red, green, blue)
 end
 
 -- Accent-mode bars repaint live when the user changes the accent color.
-CludesUI.RegAccent({
+CUI.RegAccent({
     type = "callback",
     fn = function()
         for _, bk in ipairs({ "XPBar", "RepBar", "FavorBar" }) do
@@ -107,7 +108,7 @@ mod.ApplyDataBarBorder = function(holderFrame, cfg)
     if not cfg.customBorder then
         if holderFrame._cbOn then
             holderFrame._cbOn = nil
-            CludesUI.HideBorderStyle(owner)
+            CUI.HideBorderStyle(owner)
             owner:Hide()
             -- An XP bar art frame keeps the line hidden.
             if line and not holderFrame._xpArtOn then line:Show() end
@@ -129,7 +130,7 @@ mod.ApplyDataBarBorder = function(holderFrame, cfg)
     local texture = cfg.borderTexture or "solid"
     local color = cfg.borderColor
     local sz, px = ResolveBorderThickness(cfg)
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         owner,
         sz,
         color and color.r or 0,
@@ -148,7 +149,7 @@ mod.ApplyDataBarBorder = function(holderFrame, cfg)
     )
     local topY = lvl + 2
     if texture ~= "" and texture ~= "solid" then
-        local edge = CludesUI._bdBorderData[owner]
+        local edge = CUI._bdBorderData[owner]
         if edge then
             if cfg.borderBehind then topY = lvl end
             edge:SetFrameLevel(topY)
@@ -267,7 +268,7 @@ function mod.StyleDataBarFrame(widget, cfg)
 
     -- Centered growth on resize is handled by the centralized unlock mode
     -- position system (NotifyElementResized re-applies CENTER anchor).
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix then
         Pix.Size(widget, wid, hgt)
     else
@@ -299,9 +300,9 @@ function mod.StyleDataBarFrame(widget, cfg)
         -- Read live, not FONT_PATH: that load-time capture misses a standalone's
         -- saved fonts and a login spec-profile switch.
         widget._text:SetFont(
-            CludesUI.GetFontPath("actionBars"),
+            CUI.GetFontPath("actionBars"),
             cfg.textSize or 9,
-            CludesUI.GetFontOutlineFlag("actionBars")
+            CUI.GetFontOutlineFlag("actionBars")
         )
         mod.DataBarPlaceText(widget, cfg)
         if widget._isXP then mod.XPBarTextSlots(widget, cfg) end
@@ -322,7 +323,7 @@ local function ApplyDataBarLayout(barId)
         mod.StyleDataBarFrame(widget, s)
         -- The Custom Border's reach for width / height matching (value-compared
         -- and deferred; a no-op in unlock mode and before the bar is registered).
-        CludesUI.MatchPadChanged(barId)
+        CUI.MatchPadChanged(barId)
         if widget._updateFunc then widget._updateFunc() end
     end
     mod.RefreshDataBarPreview(barId)
@@ -353,7 +354,7 @@ local function CreateDataBarFrame(barId, updateFunc, hostFrame)
     -- Pixel-perfect background
     local backdrop = holderFrame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetColorTexture(0.06, 0.06, 0.08, 0.85)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix then
         Pix.SetInside(backdrop, holderFrame, 1, 1)
     else
@@ -363,8 +364,8 @@ local function CreateDataBarFrame(barId, updateFunc, hostFrame)
     holderFrame._bg = backdrop
 
     -- Pixel-perfect 1px border via MakeBorder
-    if CludesUI and CludesUI.MakeBorder then
-        holderFrame._border = CludesUI.MakeBorder(holderFrame, 0, 0, 0, 1)
+    if CUI and CUI.MakeBorder then
+        holderFrame._border = CUI.MakeBorder(holderFrame, 0, 0, 0, 1)
     end
 
     local barFrame =
@@ -395,12 +396,12 @@ local function CreateDataBarFrame(barId, updateFunc, hostFrame)
     holderFrame._textHost = textHost
 
     local textValue = textHost:CreateFontString(nil, "OVERLAY")
-    CludesUI.PrimeFontShadow(textValue, CludesUI.GetFontUseShadow("actionBars"))
+    CUI.PrimeFontShadow(textValue, CUI.GetFontUseShadow("actionBars"))
     local sInit = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars and ABAR.db.profile.bars[barId]
     textValue:SetFont(
-        CludesUI.GetFontPath("actionBars"),
+        CUI.GetFontPath("actionBars"),
         sInit and sInit.textSize or 9,
-        CludesUI.GetFontOutlineFlag("actionBars")
+        CUI.GetFontOutlineFlag("actionBars")
     )
     textValue:SetPoint("CENTER", sInit and sInit.textOffsetX or 0, sInit and sInit.textOffsetY or 0)
     textValue:SetTextColor(1, 1, 1, 1)
@@ -514,7 +515,7 @@ local function UpdateRepBar()
         local paragonVal, paragonThreshold = C_Reputation.GetFactionParagonInfo(factionID)
         if paragonVal and paragonThreshold then
             isParagon = true
-            standing = CludesUI.L("Paragon")
+            standing = CUI.L("Paragon")
             currentStanding = paragonVal % paragonThreshold
             currentReactionThreshold = 0
             nextReactionThreshold = paragonThreshold
@@ -546,7 +547,7 @@ local function UpdateRepBar()
                 return
             end
             reaction = 10
-            standing = CludesUI.L("Renown")
+            standing = CUI.L("Renown")
             currentReactionThreshold = 0
             nextReactionThreshold = majorData.renownLevelThreshold
             currentStanding = majorData.renownReputationEarned or 0
@@ -614,7 +615,7 @@ local function CreateRepBar()
         if not standing or standing == "" then
             standing = _G["FACTION_STANDING_LABEL" .. (payload.reaction or 4)] or ""
         end
-        GameTooltip:AddDoubleLine(CludesUI.L("Standing"), standing, 1, 1, 1, 1, 1, 1)
+        GameTooltip:AddDoubleLine(CUI.L("Standing"), standing, 1, 1, 1, 1, 1, 1)
         local current = self._tipCurrent
             or ((payload.currentStanding or 0) - (payload.currentReactionThreshold or 0))
         local maximum = self._tipMaximum
@@ -622,7 +623,7 @@ local function CreateRepBar()
         if maximum <= 0 then maximum = 1 end
         local pct = (current / maximum) * 100
         GameTooltip:AddDoubleLine(
-            CludesUI.L("Reputation"),
+            CUI.L("Reputation"),
             format("%s / %s (%.1f%%)", BreakUpLargeNumbers(current), BreakUpLargeNumbers(maximum), pct),
             1,
             1,
@@ -663,7 +664,7 @@ end
 -- Block-scoped + ns export: the file-scope local budget is nearly at the
 -- Lua 5.1 200 cap. WoW Forever has no housing: there the block never runs,
 -- so no bar is built, nothing registers and ns._CreateFavorBar stays nil.
-if not CludesUI.IS_FOREVER then
+if not CUI.IS_FOREVER then
     local favorState -- { level, displayLevel, favor, needed } from the last payload
     local favorEv, favorArmed
     local ArmFavorEvents -- forward: mutual recursion with UpdateFavorBar
@@ -726,7 +727,7 @@ if not CludesUI.IS_FOREVER then
 
         local pct = (current / st.needed) * 100
         textValue:SetText(
-            format(CludesUI.L("House Level %d: %d / %d"), st.displayLevel or 1, current, st.needed)
+            format(CUI.L("House Level %d: %d / %d"), st.displayLevel or 1, current, st.needed)
         )
 
         -- Auto-size text if bar is too narrow (too short, for text rotated to
@@ -808,9 +809,9 @@ if not CludesUI.IS_FOREVER then
             if not st or not st.needed or st.needed <= 0 then return end
             GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
             GameTooltip:ClearLines()
-            GameTooltip:AddLine(CludesUI.L("House Favor"), 1, 1, 1)
+            GameTooltip:AddLine(CUI.L("House Favor"), 1, 1, 1)
             GameTooltip:AddDoubleLine(
-                CludesUI.L("House Level"),
+                CUI.L("House Level"),
                 tostring(st.displayLevel or 1),
                 1,
                 1,
@@ -822,7 +823,7 @@ if not CludesUI.IS_FOREVER then
             local current = math.min(st.favor or 0, st.needed)
             local pct = (current / st.needed) * 100
             GameTooltip:AddDoubleLine(
-                CludesUI.L("Favor"),
+                CUI.L("Favor"),
                 format("%s / %s (%.1f%%)", BreakUpLargeNumbers(current), BreakUpLargeNumbers(st.needed), pct),
                 1,
                 1,
@@ -832,7 +833,7 @@ if not CludesUI.IS_FOREVER then
                 1
             )
             GameTooltip:AddDoubleLine(
-                CludesUI.L("Remaining"),
+                CUI.L("Remaining"),
                 BreakUpLargeNumbers(st.needed - current),
                 1,
                 1,
@@ -862,8 +863,8 @@ end -- not IS_FOREVER
 --  clearPosition callbacks.
 -------------------------------------------------------------------------------
 local function RegisterDataBarsWithUnlockMode()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
     local elements = {}
     local orderBase = 300
     for position, details in ipairs(EXTRA_BARS) do
@@ -893,7 +894,7 @@ local function RegisterDataBarsWithUnlockMode()
                     if not (cfg and cfg.customBorder) then return nil end
                     local sz, px = ResolveBorderThickness(cfg)
                     local color = cfg.borderColor
-                    return CludesUI.BorderMatchPad(
+                    return CUI.BorderMatchPad(
                         sz,
                         cfg.borderTexture or "solid",
                         cfg.borderTextureOffset,
@@ -909,13 +910,13 @@ local function RegisterDataBarsWithUnlockMode()
                 end,
                 setWidth = function(_, wid)
                     local cfg = ABAR.db.profile.bars[bk]
-                    local PPab = CludesUI and CludesUI.PP
+                    local PPab = CUI and CUI.PP
                     if cfg then cfg.width = PPab and PPab.Snap(wid) or math.floor(wid + 0.5) end
                     ApplyDataBarLayout(bk)
                 end,
                 setHeight = function(_, hgt)
                     local cfg = ABAR.db.profile.bars[bk]
-                    local PPab = CludesUI and CludesUI.PP
+                    local PPab = CUI and CUI.PP
                     if cfg then cfg.height = PPab and PPab.Snap(hgt) or math.floor(hgt + 0.5) end
                     ApplyDataBarLayout(bk)
                 end,
@@ -928,7 +929,7 @@ local function RegisterDataBarsWithUnlockMode()
                             y = posY,
                         }
                     end
-                    if not CludesUI._unlockActive then
+                    if not CUI._unlockActive then
                         local widget = dataBarFrames[bk]
                         if widget and anchorPoint and posX and posY then
                             widget:ClearAllPoints()
@@ -951,7 +952,7 @@ local function RegisterDataBarsWithUnlockMode()
                     if place and place.point then
                         local pt, rpt = place.point, place.relPoint or place.point
                         local px, py = place.x, place.y
-                        local PPa = CludesUI and CludesUI.PP
+                        local PPa = CUI and CUI.PP
                         if PPa and px and py then
                             local es = widget:GetEffectiveScale()
                             local isCenterAnchor = (pt == "CENTER") and (rpt == "CENTER")
@@ -977,7 +978,7 @@ local function RegisterDataBarsWithUnlockMode()
             })
         end
     end
-    CludesUI:RegisterUnlockElements(elements, "CludesUIActionBars")
+    CUI:RegisterUnlockElements(elements, "CludesUIActionBars")
 end
 
 function EAB_VTABLE.ExtraBars.CreateManagedDataBarFrames()
@@ -1009,13 +1010,13 @@ function EAB_VTABLE.ExtraBars.RestoreSavedDataBarPositions()
 end
 
 function EAB_VTABLE.ExtraBars.RegisterDataBarsWithUnlockModeWhenReady()
-    if CludesUI and CludesUI.RegisterUnlockElements then
+    if CUI and CUI.RegisterUnlockElements then
         RegisterDataBarsWithUnlockMode()
         return
     end
 
     C_Timer_After(1, function()
-        if CludesUI and CludesUI.RegisterUnlockElements then RegisterDataBarsWithUnlockMode() end
+        if CUI and CUI.RegisterUnlockElements then RegisterDataBarsWithUnlockMode() end
     end)
 end
 
@@ -1079,7 +1080,7 @@ function mod.SetUseBlizzardDataBars(val)
     for _, details in ipairs(EXTRA_BARS) do
         local k = details.key
         -- WoW Forever builds no House Favor bar: never a reload for it there.
-        if details.isDataBar and not (k == "FavorBar" and CludesUI.IS_FOREVER) then
+        if details.isDataBar and not (k == "FavorBar" and CUI.IS_FOREVER) then
             local widget = dataBarFrames[k]
             if not widget then
                 if not val then needsReload = true end

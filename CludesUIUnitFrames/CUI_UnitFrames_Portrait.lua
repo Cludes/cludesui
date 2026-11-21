@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Portrait.lua
 --
@@ -10,11 +11,11 @@ local _, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local math_max = math.max
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local frameList, UnsnapTex = Inner.frames, Inner.UnsnapTex
@@ -35,7 +36,7 @@ end
 
 local UF_ICONS_PATH = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 local CLASS_FULL_SPRITE_BASE = UF_ICONS_PATH .. "class-full\\"
-local CLASS_FULL_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
+local CLASS_FULL_COORDS = CUI.CLASS_ICON_SPRITE_COORDS
 
 -- Apply a class icon from the sprite sheet. mirror = true swaps the cell's
 -- left/right coords (Mirror Portrait); the coords are written on every paint.
@@ -371,16 +372,16 @@ do
     local listening = false
     local function Reapply()
         for m, a in pairs(mirrored) do
-            m:SetAlpha(CludesUI.UIScaledAlpha(a))
+            m:SetAlpha(CUI.UIScaledAlpha(a))
         end
     end
     function mod.UF_SetModelAlpha(modelFrame, a)
         mirrored[modelFrame] = a
         if not listening then
             listening = true
-            CludesUI.OnUIAlphaChanged(Reapply)
+            CUI.OnUIAlphaChanged(Reapply)
         end
-        modelFrame:SetAlpha(CludesUI.UIScaledAlpha(a))
+        modelFrame:SetAlpha(CUI.UIScaledAlpha(a))
     end
 end
 
@@ -678,11 +679,11 @@ function mod.UF_AttachEngineFrame(widget, unitId, polled)
 end
 
 -- Mask and border paths for detached portrait shapes.
-local PORTRAIT_MASKS = CludesUI.SHAPE_MASKS
-local PORTRAIT_BORDERS = CludesUI.SHAPE_BORDERS
+local PORTRAIT_MASKS = CUI.SHAPE_MASKS
+local PORTRAIT_BORDERS = CUI.SHAPE_BORDERS
 
 -- Top pixel inset for each mask shape (px from edge to visible portrait area in 128px mask)
-local MASK_INSETS = CludesUI.SHAPE_INSETS
+local MASK_INSETS = CUI.SHAPE_INSETS
 
 -- Shared with CUI_PlayerAuraBars_Style.lua (same addon/ns), which reuses
 -- this shape media set for Player Aura Bars' iconShape feature.
@@ -761,7 +762,7 @@ function mod.UF_PlaceWinglessDragon(texture, owner, atlas, mirrored, classColor,
     local cc
     if classColor then
         local _, tok = UnitClass("player")
-        cc = tok and CludesUI.GetClassColor(tok)
+        cc = tok and CUI.GetClassColor(tok)
     end
     texture:SetDesaturated(cc and true or false)
     if cc then
@@ -1020,7 +1021,7 @@ end
 -- draw). "border" follows the frame's Border Style (frameTex): its ring
 -- companion, nil for a style without one.
 function mod.UF_OuterRingPath(ringKey, frameTex)
-    local GBC = CludesUI.GetBorderCompanion
+    local GBC = CUI.GetBorderCompanion
     if ringKey == "border" then return GBC(frameTex, "ring") end
     if ringKey == "pixels" or ringKey == "pixels-textured" then return GBC(ringKey, "ring") end
     if ringKey == "pixels-shadow" then return GBC("pixels", "ringShadow") end
@@ -1283,7 +1284,7 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
             -- Dark mode: always the player's own class color.
             local _, classFile = UnitClass("player")
             if classFile then
-                local color = CludesUI.GetClassColor(classFile)
+                local color = CUI.GetClassColor(classFile)
                 if color then
                     bR, bG, bB = color.r, color.g, color.b
                 end
@@ -1293,7 +1294,7 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
             -- for NPCs, tapped grey).
             local _, classFile = UnitClass(portraitUnit)
             if UnitIsPlayer(portraitUnit) and not issecretvalue(classFile) and classFile then
-                local color = CludesUI.GetClassColor(classFile)
+                local color = CUI.GetClassColor(classFile)
                 if color then
                     bR, bG, bB = color.r, color.g, color.b
                 end
@@ -1315,7 +1316,7 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
             -- Fallback: player class color.
             local _, classFile = UnitClass("player")
             if classFile then
-                local color = CludesUI.GetClassColor(classFile)
+                local color = CUI.GetClassColor(classFile)
                 if color then
                     bR, bG, bB = color.r, color.g, color.b
                 end
@@ -1930,7 +1931,7 @@ local PORTRAIT_CLICK = {
 }
 -- True while the frame wants its click overlay (CludesUI.SyncPortraitClick).
 function mod.UF_SyncPortraitClick(widget)
-    if widget and widget.Portrait then return CludesUI.SyncPortraitClick(widget, PORTRAIT_CLICK) end
+    if widget and widget.Portrait then return CUI.SyncPortraitClick(widget, PORTRAIT_CLICK) end
 end
 
 Inner.ApplyClassIconTexture, Inner.ApplyDetachedPortraitShape =

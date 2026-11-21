@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Apply.lua
 --
@@ -40,7 +41,7 @@ function ABAR:ApplyBordersForBar(barId)
     -- Border reach counts in size matching (the bar's getMatchPad reads these
     -- settings): re-push the bar's matches when it moved. At entry so the look
     -- and square-icon returns below report too; the re-push is deferred.
-    if CludesUI.MatchPadChanged then CludesUI.MatchPadChanged(barId) end
+    if CUI.MatchPadChanged then CUI.MatchPadChanged(barId) end
     if not self.db.profile.squareIcons then return end
     if mod.AB_Style() ~= "cui" then return end
     local barCfg = self.db.profile.bars[barId]
@@ -320,7 +321,7 @@ function ABAR:ApplyFontsForBar(barId)
     if not barCfg then return end
     local buttons = barButtons[barId]
     if not buttons then return end
-    local fontFile = CludesUI.GetFontPath("actionBars") or FONT_PATH
+    local fontFile = CUI.GetFontPath("actionBars") or FONT_PATH
     local hideKB = barCfg.hideKeybind
     local kbSize = barCfg.keybindFontSize or 12
     -- Stance/pet bar buttons are smaller (30px vs 45px) shrink keybind text
@@ -377,7 +378,7 @@ function ABAR:ApplyFontsForBar(barId)
                 if textValue == RANGE_INDICATOR or textValue == "\226\128\162" then textValue = "" end
                 hotkeyText:SetText(textValue)
                 hotkeyText:Show()
-                CludesUI.ApplyIconTextFont(hotkeyText, fontFile, kbSize, "actionBars")
+                CUI.ApplyIconTextFont(hotkeyText, fontFile, kbSize, "actionBars")
                 hotkeyText:SetTextColor(kbColor.r, kbColor.g, kbColor.b)
                 -- Anchor unset (the default) = the stock placement below; the
                 -- nil test is the whole cost of the feature while it is off.
@@ -393,7 +394,7 @@ function ABAR:ApplyFontsForBar(barId)
         -- Count / charges text
         local countText = button.Count
         if countText then
-            CludesUI.ApplyIconTextFont(countText, fontFile, ctSize, "actionBars")
+            CUI.ApplyIconTextFont(countText, fontFile, ctSize, "actionBars")
             countText:SetTextColor(ctColor.r, ctColor.g, ctColor.b)
             if not (ctAnchor and ABAR.PlaceButtonText(countText, button, ctAnchor, ctOX, ctOY)) then
                 countText:ClearAllPoints()
@@ -409,11 +410,11 @@ function ABAR:ApplyFontsForBar(barId)
                 macroName:SetAlpha(0)
             else
                 macroName:SetAlpha(1)
-                CludesUI.PrimeFontShadow(macroName, false)
+                CUI.PrimeFontShadow(macroName, false)
                 macroName:SetFont(
                     fontFile,
                     macroSize,
-                    (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+                    (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
                 )
                 macroName:SetTextColor(macroColor.r, macroColor.g, macroColor.b)
                 if
@@ -478,7 +479,7 @@ end
 --  Cooldown Countdown Font Override
 -------------------------------------------------------------------------------
 function EAB_VTABLE.CooldownFonts.GetSettings(cfg)
-    return (CludesUI.GetFontPath("actionBars")) or FONT_PATH,
+    return (CUI.GetFontPath("actionBars")) or FONT_PATH,
         cfg.cooldownFontSize or 12,
         cfg.cooldownTextXOffset or 0,
         cfg.cooldownTextYOffset or 0,
@@ -539,7 +540,7 @@ function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontFile, cdSize, cdOX, 
     for ri = 1, #regions do
         local regionFrame = regions[ri]
         if regionFrame and regionFrame.GetObjectType and regionFrame:GetObjectType() == "FontString" then
-            CludesUI.ApplyIconTextFont(regionFrame, fontFile, eff, "actionBars")
+            CUI.ApplyIconTextFont(regionFrame, fontFile, eff, "actionBars")
             regionFrame:SetTextColor(cr, cg, callback)
             regionFrame:ClearAllPoints()
             regionFrame:SetPoint("CENTER", cdFrame, "CENTER", cdOX, cdOY)
@@ -762,8 +763,8 @@ function ABAR:ApplyBackgroundForBar(barId)
         local bgTex = barBackgrounds[barId]
         if bgTex then
             bgTex.fill:Hide()
-            if CludesUI and CludesUI.ApplyBorderStyle then
-                CludesUI.ApplyBorderStyle(bgTex.border, 0, 0, 0, 0, barCfg.bgBorderTexture or "solid")
+            if CUI and CUI.ApplyBorderStyle then
+                CUI.ApplyBorderStyle(bgTex.border, 0, 0, 0, 0, barCfg.bgBorderTexture or "solid")
             else
                 bgTex.border:Hide()
             end
@@ -818,14 +819,14 @@ function ABAR:ApplyBackgroundForBar(barId)
     border:ClearAllPoints()
     border:SetPoint("TOPLEFT", widget, "TOPLEFT", leftX, topY)
     border:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", right, bottom)
-    if CludesUI and CludesUI.ApplyBorderStyle then
+    if CUI and CUI.ApplyBorderStyle then
         local bc = barCfg.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
         local thicknessKey = barCfg.bgBorderThickness or "none"
         local thickness = mod.BORDER_THICKNESS and mod.BORDER_THICKNESS[thicknessKey]
         local borderSize = thickness and thickness.regular or 0
         -- Exact size (bgBorderThicknessPx) while it pairs with this step and texture; nil = legacy path.
-        local bgPx = CludesUI.BorderPx(barCfg.bgBorderThicknessPx, borderSize, barCfg.bgBorderTexture)
-        CludesUI.ApplyBorderStyle(
+        local bgPx = CUI.BorderPx(barCfg.bgBorderThicknessPx, borderSize, barCfg.bgBorderTexture)
+        CUI.ApplyBorderStyle(
             border,
             borderSize,
             bc.r,

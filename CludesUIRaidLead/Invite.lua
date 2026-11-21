@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Invite.lua -- Raid Lead: invite a saved list and promote assistants.
 --
@@ -12,7 +13,7 @@ local _, mod = ...
 
 local PARTY_MAX = 5
 
-local function Say(textValue) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
+local function Say(textValue) CUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
 
 local function Settings()
     local profile = mod.RaidLeadDB()

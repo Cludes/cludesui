@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIActionBars.lua  Custom Action Bars
 --  Own secure action bar frames AND buttons (EABButton/ActionBarButtonTemplate),
@@ -10,27 +11,27 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewInternals
-        and CludesUI.NewCombatQueue
-        and CludesUI.SetFramePoint
-        and CludesUI.HideFrame
-        and CludesUI._Pool
-        and CludesUI.PadGamepadUI
-        and CludesUI.PadModeOn
-        and CludesUI.RequestTimePlayed
-        and CludesUI.FormatDuration
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewInternals
+        and CUI.NewCombatQueue
+        and CUI.SetFramePoint
+        and CUI.HideFrame
+        and CUI._Pool
+        and CUI.PadGamepadUI
+        and CUI.PadModeOn
+        and CUI.RequestTimePlayed
+        and CUI.FormatDuration
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the extra bars move Edit Mode systems through the parent's SetFramePoint, and Blizzard's main bar hides through its HideFrame; WoW Forever's Gamepad interface style is read through its PadGamepadUI, and Hide Bar When Using Gamepad follows its PadModeOn; the XP bar's Time This Level asks /played through RequestTimePlayed and its time texts read FormatDuration)
-CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
-local ABAR = CludesUI.Lite.NewAddon(ADDON_NAME)
+CUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+local ABAR = CUI.Lite.NewAddon(ADDON_NAME)
 mod.EAB = ABAR
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 -- CPU-attribution shell pool: the engine bills a handler's whole call tree to the addon
 -- whose context CREATED the frame it entered through, so frames born in build/enable
@@ -59,7 +60,7 @@ end
 -- "Run once after combat" for every combat-gated deferral in this file. The shell is
 -- taken in the main chunk, so drained work bills ActionBars. Keys are per purpose, and
 -- sites that defer the same work share a key (e.g. "UpdateKeybinds").
-mod.CombatQueue = CludesUI.NewCombatQueue(mod.TakeShell())
+mod.CombatQueue = CUI.NewCombatQueue(mod.TakeShell())
 
 -- Count text visibility through the count fontstring's ALPHA, never its text
 -- -- text is co-owned: Blizzard's mixin keeps SPELL_UPDATE_CHARGES registered
@@ -306,7 +307,7 @@ end
 -- with the Blizzard flag, adds the Forever-only pieces. A LIVE read like
 -- AB_Style; false on every other client.
 function mod.AB_Forever()
-    if CludesUI.IS_FOREVER ~= true then return false end
+    if CUI.IS_FOREVER ~= true then return false end
     local profile = ABAR.db and ABAR.db.profile
     if not (profile and profile.useForeverStyle == true) then return false end
     return mod.AB_Style() == "blizzard"
@@ -330,7 +331,7 @@ end
 -- look. Plain SetAtlas on retail.
 function mod.AB_StockAtlas(texture, label, ...)
     if mod.AB_Forever() then return texture:SetAtlas(label, ...) end
-    return CludesUI.StockAtlas(texture, label, ...)
+    return CUI.StockAtlas(texture, label, ...)
 end
 
 -- The button shape the bar LAYOUT sizes for. Stock styles draw no custom
@@ -510,7 +511,7 @@ local EXTRA_BARS = {
 -- WoW Forever has no extra action bar (no binding, no Edit Mode system for
 -- it): no holder, mover or visibility row there, and its container is left
 -- to Blizzard.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     for index = #EXTRA_BARS, 1, -1 do
         if EXTRA_BARS[index].key == "ExtraActionButton" then table.remove(EXTRA_BARS, index) end
     end
@@ -534,9 +535,9 @@ end
 
 -- Expose AB bar keys immediately so unlock mode's ApplyAnchorPosition can gate
 -- edge logic to CDM/AB without waiting for deferred RegisterWithUnlockMode.
-if not CludesUI._abBarKeys then CludesUI._abBarKeys = {} end
+if not CUI._abBarKeys then CUI._abBarKeys = {} end
 for _, details in ipairs(BAR_CONFIG) do
-    CludesUI._abBarKeys[details.key] = true
+    CUI._abBarKeys[details.key] = true
 end
 
 local BAR_DROPDOWN_VALUES = {}
@@ -607,7 +608,7 @@ end
 -- correct only where the SHARED value is meant (sync copies, the setter itself).
 function ABAR.VisibilityCompat.IsNever(cfg)
     if not cfg then return false end
-    local shade = CludesUI.VisOverrideValue(cfg)
+    local shade = CUI.VisOverrideValue(cfg)
     if shade then return shade == "never" end
     return (cfg.alwaysHidden or cfg.barVisibility == "never") and true or false
 end
@@ -635,12 +636,12 @@ function ABAR.VisibilityCompat.Copy(dst, source, dstNoGroupModes)
     -- consistent). Group-axis items are stripped for targets that can't express them
     -- (Pet Bar); the stripped selection re-normalizes through the shared setter,
     -- routing the scalar back through ApplyMode to keep the legacy booleans synced.
-    if CludesUI and CludesUI.VisCopySelection then
-        CludesUI.VisCopySelection(
+    if CUI and CUI.VisCopySelection then
+        CUI.VisCopySelection(
             dst,
             source,
             "barVisibility",
-            dstNoGroupModes and CludesUI.VIS_CAPS_NO_GROUP or nil,
+            dstNoGroupModes and CUI.VIS_CAPS_NO_GROUP or nil,
             ABAR.VisibilityCompat.ApplyMode
         )
     else
@@ -653,7 +654,7 @@ end
 --  Media paths
 -------------------------------------------------------------------------------
 local MEDIA_DIR = "Interface\\AddOns\\CludesUIActionBars\\Media\\"
-local FONT_PATH = (CludesUI.GetFontPath("actionBars"))
+local FONT_PATH = (CUI.GetFontPath("actionBars"))
     or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 local HIGHLIGHT_TEXTURES = {
     MEDIA_DIR .. "highlight-2.png",
@@ -662,9 +663,9 @@ local HIGHLIGHT_TEXTURES = {
 }
 mod.HIGHLIGHT_TEXTURES = HIGHLIGHT_TEXTURES
 
-local SHAPE_MASKS = CludesUI.SHAPE_MASKS
-local SHAPE_BORDERS = CludesUI.SHAPE_BORDERS
-local SHAPE_INSETS = CludesUI.SHAPE_INSETS
+local SHAPE_MASKS = CUI.SHAPE_MASKS
+local SHAPE_BORDERS = CUI.SHAPE_BORDERS
+local SHAPE_INSETS = CUI.SHAPE_INSETS
 local SHAPE_ZOOM_DEFAULTS = {
     none = 5.5,
     cropped = 2,
@@ -723,7 +724,7 @@ mod.BORDER_THICKNESS_DEFAULT_REGULAR = "thin"
 mod.BORDER_THICKNESS_DEFAULT_SHAPE = "strong"
 
 -- Per-addon border texture defaults (central registry)
-CludesUI.RegisterBorderDefaults("actionbars", CludesUI.BORDER_DEFAULTS_BUTTONS)
+CUI.RegisterBorderDefaults("actionbars", CUI.BORDER_DEFAULTS_BUTTONS)
 
 -------------------------------------------------------------------------------
 --  Defaults
@@ -977,9 +978,9 @@ if defaultSet.profile.bars.FavorBar then defaultSet.profile.bars.FavorBar.always
 
 -- Blizzard data bar override (let Blizzard control XP + Rep via Edit Mode). WoW
 -- Forever keeps Blizzard's own bars by default (the per-client default rule).
-defaultSet.profile.useBlizzardDataBars = (CludesUI.IS_FOREVER == true)
+defaultSet.profile.useBlizzardDataBars = (CUI.IS_FOREVER == true)
 -- Equipped Item Color (Effects > Item Information): on by default on WoW Forever only.
-defaultSet.profile.showEquippedBorder = (CludesUI.IS_FOREVER == true)
+defaultSet.profile.showEquippedBorder = (CUI.IS_FOREVER == true)
 -- Stock vehicle / override bar suppression. Opt-in, and inert until switched
 -- on: no frame, no events and no hook exist while it is false.
 defaultSet.profile.hideBlizzardVehicleBar = false
@@ -1147,7 +1148,7 @@ end
 -- Unlock mode blanks a bar for one frame around a resize (0, then 1) and
 -- reports both writes here, so a later fade still starts where the frame
 -- really is. Frames this addon never wrote stay untracked.
-function CludesUI._EABNoteAlpha(widget, a)
+function CUI._EABNoteAlpha(widget, a)
     if _fadeAlpha[widget] ~= nil then _fadeAlpha[widget] = a end
 end
 
@@ -1169,7 +1170,7 @@ local function ResolveBorderThickness(cfg)
         return record.shape, nil
     else
         local sz = record.regular
-        return sz, CludesUI.BorderPx(cfg.borderThicknessPx, sz, cfg.borderTexture)
+        return sz, CUI.BorderPx(cfg.borderThicknessPx, sz, cfg.borderTexture)
     end
 end
 mod.ResolveBorderThickness = ResolveBorderThickness
@@ -1301,7 +1302,7 @@ local STOCK_BAR_DISPOSAL = {
 -- The three ...Setters lists: a file that keeps one of these values registers
 -- a setter here; the place that assigns it writes through SetSecureRefsReady,
 -- SetPagingFrame or SetIsApplyingAll, built below, which runs them all.
-CludesUI.NewInternals(mod, "_internals", {
+CUI.NewInternals(mod, "_internals", {
     BAR_CONFIG = BAR_CONFIG,
     _fadeAlpha = _fadeAlpha,
     _quickKeybindState = _quickKeybindState,

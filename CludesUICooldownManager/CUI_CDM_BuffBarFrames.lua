@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarFrames.lua
 --
@@ -217,7 +218,7 @@ local function SetupTBBThresholdOverlay(barFrame, conf)
     local scrollBar = barFrame._bar
     if not scrollBar then return end
     local texPath =
-        CludesUI.ResolveTexturePath(TBB_TEXTURES, conf.texture or "none", "Interface\\Buttons\\WHITE8x8")
+        CUI.ResolveTexturePath(TBB_TEXTURES, conf.texture or "none", "Interface\\Buttons\\WHITE8x8")
     local orient = conf.verticalOrientation and "VERTICAL" or "HORIZONTAL"
     local reverse = conf.reverseFill and true or false
 
@@ -353,7 +354,7 @@ local function ApplyTBBTickMarks(scrollBar, conf, tickCache, isVert, tickParent)
         return
     end
 
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local hostFrame = tickParent or scrollBar
     while #tickCache < #vals do
         local tex = hostFrame:CreateTexture(nil, "OVERLAY", nil, 7)
@@ -527,7 +528,7 @@ local function ApplyTBBChargeHashLines(barFrame, conf, maxCharges)
         divBars[i]:Hide()
     end
 
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local lineWidth = Pix and Pix.Scale(width) or width
     local halfLine = lineWidth / 2
     for i = 1, maxCharges - 1 do
@@ -718,7 +719,7 @@ end
 -- turn counter-clockwise. One-time regions, geometry memoized by the seat.
 mod.CDM_CLASSIC_BAR_SPARK = "Interface\\CastingBar\\UI-CastingBar-Spark"
 mod.ApplyTBBClassicChrome = function(barFrame, scrollBar, isVert, thick, pct)
-    local CF = CludesUI.ClassicFrame
+    local CF = CUI.ClassicFrame
     if not CF then return end
     local art = barFrame._classicArt
     if not art then
@@ -827,7 +828,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
     -- icon included: the wrap is exactly width x height and a shown icon carves its
     -- square out of the fill. Horizontal: width=long side, height=short side.
     -- Vertical: width=short side, height=long side.
-    local PPt = CludesUI and CludesUI.PP
+    local PPt = CUI and CUI.PP
     local snap = PPt and PPt.Snap or function(val) return val end
     local wid = snap(conf.width or 270)
     local hgt = snap(conf.height or 24)
@@ -876,7 +877,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
 
     -- Texture
     local texPath =
-        CludesUI.ResolveTexturePath(TBB_TEXTURES, conf.texture or "none", "Interface\\Buttons\\WHITE8x8")
+        CUI.ResolveTexturePath(TBB_TEXTURES, conf.texture or "none", "Interface\\Buttons\\WHITE8x8")
     if blizzBar and not classicBar then
         -- The viewer's bar atlas (tinted by Fill Color below). _lastTexPath
         -- stays a real file path: the charge hash fill re-reads it. Classic
@@ -1116,13 +1117,13 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
         local textureKey = conf.borderTexture or "solid"
         -- Exact size (borderSizePx) for the bar's own step; a stock style forces 0 and stays legacy.
         local edgePx
-        if not blizzBar then edgePx = CludesUI.BorderPx(conf.borderSizePx, bSz, textureKey) end
+        if not blizzBar then edgePx = CUI.BorderPx(conf.borderSizePx, bSz, textureKey) end
         -- Border container is a child of the bar: +6 draws in front of the fill AND above
         -- the tick marks at sb+4 (=bar+5, which would tie and lose to the lazily-created
         -- tick overlay); "Show Behind" uses level-1. Set BEFORE ApplyBorderStyle so the textured backdrop inherits it.
         local baseLvl = barFrame:GetFrameLevel()
         barFrame._barBorder:SetFrameLevel(conf.borderBehind and math.max(0, baseLvl - 1) or (baseLvl + 6))
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             barFrame._barBorder,
             bSz,
             conf.borderR or 0,
@@ -1170,7 +1171,7 @@ mod.ApplyTBBBarSettings = ApplyTrackedBuffBarSettings
 -- the bar: its effective scale (a position scale rides on it) is the grid the
 -- border's anchors snap to.
 function mod.TBBBorderMatchPad(conf, widget)
-    if not conf or not CludesUI.BorderMatchPad or mod.CdmBlizzBars() then return nil end
+    if not conf or not CUI.BorderMatchPad or mod.CdmBlizzBars() then return nil end
     local bSz = conf.borderSize or 0
     local textureKey = conf.borderTexture or "solid"
     if textureKey == "solid" then return nil end
@@ -1179,7 +1180,7 @@ function mod.TBBBorderMatchPad(conf, widget)
         local success, s = pcall(widget.GetEffectiveScale, widget)
         if success then es = s end
     end
-    return CludesUI.BorderMatchPad(
+    return CUI.BorderMatchPad(
         bSz,
         textureKey,
         conf.borderTextureOffset,
@@ -1188,7 +1189,7 @@ function mod.TBBBorderMatchPad(conf, widget)
         conf.borderTextureShiftY,
         "resourcebars",
         bSz,
-        CludesUI.BorderPx(conf.borderSizePx, bSz, textureKey),
+        CUI.BorderPx(conf.borderSizePx, bSz, textureKey),
         nil,
         1,
         es

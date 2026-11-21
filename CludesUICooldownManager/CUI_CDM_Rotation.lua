@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Rotation.lua
 --
@@ -51,7 +52,7 @@ local function CDMIconsForSpell(spellId, result)
 end
 
 -- Plugin API (PLUGINS_API.md): the CDM icons currently showing spellID.
-function CludesUI.GetCDMIconsForSpell(spellId, result)
+function CUI.GetCDMIconsForSpell(spellId, result)
     result = result or {}
     if type(spellId) ~= "number" or (issecretvalue and issecretvalue(spellId)) or spellId <= 0 then
         wipe(result)
@@ -157,7 +158,7 @@ do
     local function _rotResolveColor(conf)
         local mode = conf and conf.rotationAssistColorMode or "default"
         if mode == "class" then
-            local color = CludesUI.GetClassColor(CludesUI._playerClass)
+            local color = CUI.GetClassColor(CUI._playerClass)
             if color then return color.r, color.g, color.b end
         elseif mode == "custom" then
             return conf.rotationAssistColorR or 1,

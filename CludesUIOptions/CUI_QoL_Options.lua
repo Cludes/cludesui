@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_QoL_Options.lua
 --  Registers the Quality of Life sidebar addon with its two tabs:
@@ -9,12 +10,12 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -- NavigateToElementSettings tuple (_ELEMENT_SETTINGS_MAP, What's New nav)
 -- and every GetActivePage() comparison carries them as strings and fails
 -- SILENTLY on a mismatch. Renaming one means updating every consumer.
-if not CludesUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
+if not CUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- The account-wide settings table, made if it is not there yet, for a write.
 local function Account()
@@ -28,13 +29,13 @@ end
 local function AccountFieldThen(settingKey)
     return function(value)
         Account()[settingKey] = value
-        CludesUI:RefreshPage()
+        CUI:RefreshPage()
     end
 end
 local function AccountFieldThen2(settingKey)
     return function(value)
         Account()[settingKey] = value
-        if CludesUI._applyTargetDistanceFrame then CludesUI._applyTargetDistanceFrame() end
+        if CUI._applyTargetDistanceFrame then CUI._applyTargetDistanceFrame() end
     end
 end
 
@@ -57,13 +58,13 @@ local transformsPopup
 local transformsStaged = {}
 
 local function ShowTransformsPopup()
-    local payload = CludesUI.HideTransformsData
+    local payload = CUI.HideTransformsData
     if not payload then return end
 
     if not transformsPopup then
-        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-        local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-        local Pix = CludesUI.PanelPP
+        local FONT = CUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        local ACC = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+        local Pix = CUI.PanelPP
         local COL_W, COL_GAP = 190, 12
         local CONTENT_LEFT, CONTENT_RIGHT, CONTENT_TOP = 41, 36, 118
         local HDR_H, ROW_H = 30, 26
@@ -83,7 +84,7 @@ local function ShowTransformsPopup()
 
         local POPUP_W = CONTENT_LEFT + CONTENT_RIGHT + numCols * COL_W + (numCols - 1) * COL_GAP
         local POPUP_H = CONTENT_TOP + HDR_H + 4 + maxRows * ROW_H + 24 + 39 + 38
-        local ppScale = CludesUI.GetPopupScale() or 1
+        local ppScale = CUI.GetPopupScale() or 1
 
         local shade = CreateFrame("Frame", nil, UIParent)
         shade:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -98,31 +99,31 @@ local function ShowTransformsPopup()
         dimTex:SetColorTexture(0, 0, 0, 0.25)
 
         local dialog = CreateFrame("Frame", nil, shade)
-        dialog:SetScale(CludesUI.PopupBump(1))
+        dialog:SetScale(CUI.PopupBump(1))
         dialog:SetFrameStrata("FULLSCREEN_DIALOG")
         dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
         dialog:SetSize(POPUP_W, POPUP_H)
-        dialog:SetPoint("CENTER", CludesUI._mainFrame or UIParent, "CENTER", 0, 0)
+        dialog:SetPoint("CENTER", CUI._mainFrame or UIParent, "CENTER", 0, 0)
         dialog:EnableMouse(true)
-        local popFrame = CludesUI._popupFrames
+        local popFrame = CUI._popupFrames
         if popFrame then popFrame[#popFrame + 1] = { popup = dialog, dimmer = shade } end
 
         local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.062, 0.070, 0.082, 1)
-        CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
+        CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
 
         local title = dialog:CreateFontString(nil, "OVERLAY")
         title:SetFont(FONT, 22, "")
         title:SetTextColor(1, 1, 1, 1)
         title:SetPoint("TOP", dialog, "TOP", 0, -32)
-        title:SetText(CludesUI.L("Hide Item Transforms"))
+        title:SetText(CUI.L("Hide Item Transforms"))
 
         local subMenu = dialog:CreateFontString(nil, "OVERLAY")
         subMenu:SetFont(FONT, 14, "")
         subMenu:SetTextColor(1, 1, 1, 0.45)
         subMenu:SetPoint("TOP", title, "BOTTOM", 0, -8)
-        subMenu:SetText(CludesUI.L("Checked transforms are removed automatically when applied to you."))
+        subMenu:SetText(CUI.L("Checked transforms are removed automatically when applied to you."))
 
         local rowList = {}
         local function RefreshRows()
@@ -149,7 +150,7 @@ local function ShowTransformsPopup()
         checkAllBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
         local checkAllText = checkAllBtn:CreateFontString(nil, "OVERLAY")
         checkAllText:SetFont(FONT, 14, "")
-        checkAllText:SetText(CludesUI.L("Check All"))
+        checkAllText:SetText(CUI.L("Check All"))
         checkAllText:SetTextColor(1, 1, 1, 0.45)
         checkAllText:SetPoint("CENTER")
         checkAllBtn:SetSize(checkAllText:GetStringWidth() + 4, 20)
@@ -172,7 +173,7 @@ local function ShowTransformsPopup()
         uncheckAllBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
         local uncheckAllText = uncheckAllBtn:CreateFontString(nil, "OVERLAY")
         uncheckAllText:SetFont(FONT, 14, "")
-        uncheckAllText:SetText(CludesUI.L("Uncheck All"))
+        uncheckAllText:SetText(CUI.L("Uncheck All"))
         uncheckAllText:SetTextColor(1, 1, 1, 0.45)
         uncheckAllText:SetPoint("CENTER")
         uncheckAllBtn:SetSize(uncheckAllText:GetStringWidth() + 4, 20)
@@ -188,7 +189,7 @@ local function ShowTransformsPopup()
             heading:SetFont(FONT, 17, "")
             heading:SetTextColor(1, 1, 1, 0.7)
             heading:SetPoint("TOPLEFT", dialog, "TOPLEFT", colX + 4, -(CONTENT_TOP + 8))
-            heading:SetText(CludesUI.L(payload.labels[category] or category))
+            heading:SetText(CUI.L(payload.labels[category] or category))
 
             local itemList = catItems[category] or {}
             for idx, entry in ipairs(itemList) do
@@ -210,12 +211,12 @@ local function ShowTransformsPopup()
                 local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
                 boxBg:SetAllPoints()
                 boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                line._boxBorder = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
+                line._boxBorder = CUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
                 local check = boxFrame:CreateTexture(nil, "ARTWORK")
                 check:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
                 check:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
                 check:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-                CludesUI.RoundBody(boxFrame, check, 1)
+                CUI.RoundBody(boxFrame, check, 1)
                 line._check = check
 
                 local labelFS = line:CreateFontString(nil, "OVERLAY")
@@ -225,7 +226,7 @@ local function ShowTransformsPopup()
                 labelFS:SetJustifyH("LEFT")
                 labelFS:SetWordWrap(false)
                 labelFS:SetTextColor(1, 1, 1, 0.65)
-                labelFS:SetText(CludesUI.L(entry.label))
+                labelFS:SetText(CUI.L(entry.label))
 
                 line:SetScript("OnEnter", function() labelFS:SetTextColor(1, 1, 1, 0.95) end)
                 line:SetScript("OnLeave", function() labelFS:SetTextColor(1, 1, 1, 0.65) end)
@@ -245,11 +246,11 @@ local function ShowTransformsPopup()
         local applyBg = applyButton:CreateTexture(nil, "BACKGROUND")
         applyBg:SetAllPoints()
         applyBg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-        local applyBrd = CludesUI.MakeRoundedBorder(applyButton, ACC.r, ACC.g, ACC.b, 0.9, applyBg)
+        local applyBrd = CUI.MakeRoundedBorder(applyButton, ACC.r, ACC.g, ACC.b, 0.9, applyBg)
         local applyLbl = applyButton:CreateFontString(nil, "OVERLAY")
         applyLbl:SetFont(FONT, 16, "")
         applyLbl:SetPoint("CENTER")
-        applyLbl:SetText(CludesUI.L("Apply"))
+        applyLbl:SetText(CUI.L("Apply"))
         applyLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
         applyButton:SetScript("OnEnter", function()
             applyLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
@@ -270,7 +271,7 @@ local function ShowTransformsPopup()
                     tbl[entry.key] = staged -- stored deviations only
                 end
             end
-            if CludesUI._applyHideTransforms then CludesUI._applyHideTransforms() end
+            if CUI._applyHideTransforms then CUI._applyHideTransforms() end
             shade:Hide()
         end)
 
@@ -278,7 +279,7 @@ local function ShowTransformsPopup()
         shade:SetScript("OnMouseDown", function(self)
             if not dialog:IsMouseOver() then self:Hide() end
         end)
-        CludesUI.PopupTakeKeys(dialog, shade)
+        CUI.PopupTakeKeys(dialog, shade)
         dialog:SetScript("OnKeyDown", function(self, settingKey)
             if InCombatLockdown() then return end
             if settingKey == "ESCAPE" then
@@ -295,7 +296,7 @@ local function ShowTransformsPopup()
 
     -- Seed the staged state from the saved settings, then show
     for _, entry in ipairs(payload.items) do
-        transformsStaged[entry.key] = CludesUI.GetHideTransformItem(entry.key) and true or false
+        transformsStaged[entry.key] = CUI.GetHideTransformItem(entry.key) and true or false
     end
     transformsPopup._refreshRows()
     transformsPopup._dimmer:Show()
@@ -306,8 +307,8 @@ end
 --  CludesUIQoL_SelfCombatText.lua, settings through its SCT_Get/SCT_Set)
 -------------------------------------------------------------------------------
 local function BuildSelfCombatTextSection(hostFrame, cursorY)
-    local W = CludesUI.Widgets
-    local qns = CludesUI._ModuleNS["CludesUIQoL"]
+    local W = CUI.Widgets
+    local qns = CUI._ModuleNS["CludesUIQoL"]
     local SCTGet, SCTSet = qns.SCT_Get, qns.SCT_Set
     local _, height, heading
 
@@ -315,7 +316,7 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
     cursorY = cursorY - height
 
     local function sctOff() return not SCTGet("enabled") end
-    CludesUI.BuildSectionUnlockJump(
+    CUI.BuildSectionUnlockJump(
         heading,
         { key = "CUI_SelfCombatText", disabled = sctOff, disabledTooltip = "Self Combat Text" }
     )
@@ -328,7 +329,7 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
             getValue = function() return SCTGet(settingKey) end,
             setValue = function(val)
                 SCTSet(settingKey, val)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }
     end
@@ -346,8 +347,8 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
     end
     -- A category toggle's colour, locked while the feature or that category is off
     local function sctSwatch(region, settingKey, colorKey, labelText)
-        if CludesUI._prebuilding then return end
-        CludesUI.BuildInlineSwatches(region, {
+        if CUI._prebuilding then return end
+        CUI.BuildInlineSwatches(region, {
             {
                 disabled = function() return sctOff() or not SCTGet(settingKey) end,
                 disabledTooltip = function() return sctOff() and "Self Combat Text" or labelText end,
@@ -366,7 +367,7 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
         text = "Self Combat Text",
         tooltip = "Shows your damage taken, healing, avoids and combat enter/leave above the player frame instead of Blizzard's combat text, whose other messages are hidden while this is on. Move it in Layout Mode.",
         getValue = function() return not sctOff() end,
-        setValue = CludesUI.SectionToggleSetValue(function(val) SCTSet("enabled", val) end),
+        setValue = CUI.SectionToggleSetValue(function(val) SCTSet("enabled", val) end),
     }, {
         type = "slider",
         text = "Combat Text Size",
@@ -379,8 +380,8 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
         setValue = function(val) SCTSet("size", val) end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(sctRow._leftRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(sctRow._leftRegion, {
             disabled = sctOff,
             disabledTooltip = "Self Combat Text",
             title = "Self Combat Text",
@@ -440,7 +441,7 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
     )
     cursorY = cursorY - height
 
-    local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
+    local fontValues, fontOrder = CUI.BuildFontDropdownData()
     fontValues["__combat"] = { text = "Combat Text Font" }
     table.insert(fontOrder, 1, "__combat")
     _, height = W:DualRow(
@@ -489,7 +490,7 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
     return cursorY
 end
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  QoL Features page
     ---------------------------------------------------------------------------
@@ -499,7 +500,7 @@ CludesUI.AtOptionsLogin(function()
     local macroFactoryOpen = {}
     local macroFactorySection
     local function MacroFactoryGlyph(heading)
-        local Pix = CludesUI.PanelPP
+        local Pix = CUI.PanelPP
         local icon = heading:CreateTexture(nil, "ARTWORK")
         Pix.Size(icon, 22, 22)
         Pix.Point(icon, "LEFT", heading, "LEFT", 17, 0)
@@ -510,8 +511,8 @@ CludesUI.AtOptionsLogin(function()
     -- first, so the jump lands on the open factory (a jump to any other row of
     -- the page leaves the card as it is).
     do
-        local origNav = CludesUI.NavigateToElementSettings
-        function CludesUI:NavigateToElementSettings(moduleName, page, sectionName, preSelectFn, highlightText)
+        local origNav = CUI.NavigateToElementSettings
+        function CUI:NavigateToElementSettings(moduleName, page, sectionName, preSelectFn, highlightText)
             -- The original refuses in combat: no page state changes then.
             if InCombatLockdown() then
                 return origNav(self, moduleName, page, sectionName, preSelectFn, highlightText)
@@ -524,17 +525,17 @@ CludesUI.AtOptionsLogin(function()
                 and not macroFactoryOpen.macroFactory
             then
                 macroFactoryOpen.macroFactory = true
-                CludesUI:InvalidatePageCache()
+                CUI:InvalidatePageCache()
             end
             return origNav(self, moduleName, page, sectionName, preSelectFn, highlightText)
         end
     end
 
     local function BuildQoLPage(page, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height, heading
-        local Pix = CludesUI.PanelPP
+        local Pix = CUI.PanelPP
 
         hostFrame._showRowDivider = true
 
@@ -549,30 +550,30 @@ CludesUI.AtOptionsLogin(function()
         -- index, and the hidden search pre-build builds the header only: it never
         -- builds the section and never parks the one on screen. WoW Forever has no
         -- Macro Factory: no card there.
-        if CludesUI.BuildMacroFactory and not CludesUI.IS_FOREVER then
-            local prebuilding = CludesUI._prebuilding
+        if CUI.BuildMacroFactory and not CUI.IS_FOREVER then
+            local prebuilding = CUI._prebuilding
             local mfTile = {
                 key = "macroFactory",
                 display = "Macro Factory",
-                desc = CludesUI.L(
+                desc = CUI.L(
                     "Ready-made macros for potions, food, trinkets and focus, plus a set for your spec"
                 ),
                 buildContent = function(_, cy)
                     if prebuilding then return cy end
-                    CludesUI._searchIndexSuppress = true
-                    local mfH = CludesUI.BuildMacroFactory(hostFrame, cy, Pix)
-                    CludesUI._searchIndexSuppress = nil
+                    CUI._searchIndexSuppress = true
+                    local mfH = CUI.BuildMacroFactory(hostFrame, cy, Pix)
+                    CUI._searchIndexSuppress = nil
                     return cy - mfH
                 end,
             }
             macroFactorySection = mfTile.display .. " " .. mfTile.desc
-            cursorY = CludesUI.BuildModuleCard(hostFrame, cursorY, W, mfTile, {
+            cursorY = CUI.BuildModuleCard(hostFrame, cursorY, W, mfTile, {
                 enabled = true,
                 expanded = macroFactoryOpen,
                 descW = 560,
                 glyph = MacroFactoryGlyph,
             })
-            if not macroFactoryOpen.macroFactory and not prebuilding then CludesUI.ParkMacroFactory() end
+            if not macroFactoryOpen.macroFactory and not prebuilding then CUI.ParkMacroFactory() end
         end
 
         ---------------------------------------------------------------------------
@@ -622,7 +623,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                     if not any then saved.hideAlertToasts = false end
                 end
-                if CludesUI._applyHideAlertToasts then CludesUI._applyHideAlertToasts() end
+                if CUI._applyHideAlertToasts then CUI._applyHideAlertToasts() end
             end
             local function Toast(settingKey, labelText, aliasName)
                 return {
@@ -635,7 +636,7 @@ CludesUI.AtOptionsLogin(function()
             end
 
             -- alias: the row's old label, kept as search text.
-            local RETAIL = not CludesUI.IS_FOREVER
+            local RETAIL = not CUI.IS_FOREVER
             local itemList = {}
             itemList[#itemList + 1] = {
                 key = "hideBlizzardPartyFrame",
@@ -645,7 +646,7 @@ CludesUI.AtOptionsLogin(function()
                 read = function() return CludesUIDB and CludesUIDB.hideBlizzardPartyFrame or false end,
                 write = function(val)
                     QDB().hideBlizzardPartyFrame = val
-                    CludesUI._applyHideBlizzardPartyFrame()
+                    CUI._applyHideBlizzardPartyFrame()
                 end,
             }
             if RETAIL then
@@ -657,7 +658,7 @@ CludesUI.AtOptionsLogin(function()
                     read = function() return CludesUIDB and CludesUIDB.hideTalkingHead or false end,
                     write = function(val)
                         QDB().hideTalkingHead = val
-                        CludesUI._applyHideTalkingHead()
+                        CUI._applyHideTalkingHead()
                     end,
                 }
                 itemList[#itemList + 1] = {
@@ -668,7 +669,7 @@ CludesUI.AtOptionsLogin(function()
                     read = function() return CludesUIDB and CludesUIDB.muteTalkingHead == true end,
                     write = function(val)
                         QDB().muteTalkingHead = val
-                        CludesUI._applyHideTalkingHead()
+                        CUI._applyHideTalkingHead()
                     end,
                 }
             end
@@ -680,7 +681,7 @@ CludesUI.AtOptionsLogin(function()
                 read = function() return CludesUIDB and CludesUIDB.hideTutorials or false end,
                 write = function(val)
                     QDB().hideTutorials = val
-                    if CludesUI._applyHideTutorials then CludesUI._applyHideTutorials() end
+                    if CUI._applyHideTutorials then CUI._applyHideTutorials() end
                 end,
             }
             itemList[#itemList + 1] = {
@@ -693,8 +694,8 @@ CludesUI.AtOptionsLogin(function()
                     QDB().hideErrorMessages = val
                     -- Turning it off takes effect at the next reload; the apply
                     -- returns true while one is due.
-                    if CludesUI._applyHideErrorMessages and CludesUI._applyHideErrorMessages() then
-                        CludesUI:ShowConfirmPopup({
+                    if CUI._applyHideErrorMessages and CUI._applyHideErrorMessages() then
+                        CUI:ShowConfirmPopup({
                             title = "Reload Required",
                             message = "Hidden error messages come back after a UI reload.",
                             confirmText = "Reload Now",
@@ -712,8 +713,8 @@ CludesUI.AtOptionsLogin(function()
                 read = function() return CludesUIDB and CludesUIDB.hideLootHistory or false end,
                 write = function(val)
                     QDB().hideLootHistory = val
-                    if CludesUI._applyHideLootHistory then CludesUI._applyHideLootHistory() end
-                    CludesUI:RefreshPage() -- the Loot Rolls Window cog follows
+                    if CUI._applyHideLootHistory then CUI._applyHideLootHistory() end
+                    CUI:RefreshPage() -- the Loot Rolls Window cog follows
                 end,
             }
             if RETAIL then
@@ -725,7 +726,7 @@ CludesUI.AtOptionsLogin(function()
                     read = function() return CludesUIDB and CludesUIDB.hideBanners or false end,
                     write = function(val)
                         QDB().hideBanners = val
-                        if CludesUI._applyHideBanners then CludesUI._applyHideBanners() end
+                        if CUI._applyHideBanners then CUI._applyHideBanners() end
                     end,
                 }
             end
@@ -739,7 +740,7 @@ CludesUI.AtOptionsLogin(function()
                 read = function() return not (CludesUIDB and CludesUIDB.suppressErrors == false) end,
                 write = function(val)
                     QDB().suppressErrors = val
-                    if not InCombatLockdown() then CludesUI.SetCVar("scriptErrors", val and "0" or "1") end
+                    if not InCombatLockdown() then CUI.SetCVar("scriptErrors", val and "0" or "1") end
                 end,
             }
             if RETAIL then
@@ -751,25 +752,25 @@ CludesUI.AtOptionsLogin(function()
             -- Global search sees row labels and tooltips only, so this row's
             -- entry, registered before the row (the index keeps the first one),
             -- carries the checklist's names as search text; it is never shown.
-            if CludesUI._RegisterSearchEntry then
+            if CUI._RegisterSearchEntry then
                 local words = {}
                 local function Word(s)
                     if not s then return end
                     words[#words + 1] = s
-                    local loc = CludesUI.L(s)
+                    local loc = CUI.L(s)
                     if loc ~= s then words[#words + 1] = loc end
                 end
                 for idx = 1, #itemList do
                     Word(itemList[idx].label)
                     Word(itemList[idx].alias)
                 end
-                local labelLoc = CludesUI.L(HBE_LABEL)
-                CludesUI._RegisterSearchEntry(
+                local labelLoc = CUI.L(HBE_LABEL)
+                CUI._RegisterSearchEntry(
                     HBE_LABEL,
                     labelLoc ~= HBE_LABEL and labelLoc or nil,
                     table.concat(words, " "),
-                    CludesUI._buildingModule,
-                    CludesUI._buildingPage,
+                    CUI._buildingModule,
+                    CUI._buildingPage,
                     hostFrame._currentSection and hostFrame._currentSection._sectionName
                 )
             end
@@ -789,13 +790,13 @@ CludesUI.AtOptionsLogin(function()
             )
             cursorY = cursorY - height
 
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local leftRegion = row1._leftRegion
                 local byKey = {}
                 for idx = 1, #itemList do
                     byKey[itemList[idx].key] = itemList[idx]
                 end
-                local hbeDD, hbeDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                local hbeDD, hbeDDRefresh = CUI.BuildVisOptsCBDropdown(
                     leftRegion,
                     210,
                     leftRegion:GetFrameLevel() + 2,
@@ -806,7 +807,7 @@ CludesUI.AtOptionsLogin(function()
                 Pix.Point(hbeDD, "RIGHT", leftRegion, "RIGHT", -20, 0)
                 leftRegion._control = hbeDD
                 leftRegion._lastInline = nil
-                CludesUI.RegisterWidgetRefresh(hbeDDRefresh)
+                CUI.RegisterWidgetRefresh(hbeDDRefresh)
 
                 -- Loot Rolls Window cog (mode + auto-close delay), left of the list
                 local function lootHistOff() return not (CludesUIDB and CludesUIDB.hideLootHistory) end
@@ -814,7 +815,7 @@ CludesUI.AtOptionsLogin(function()
                 local function delayOff()
                     return lootHistOff() or (CludesUIDB and CludesUIDB.lootHistoryMode) ~= "autoclose"
                 end
-                CludesUI.BuildInlineCog(leftRegion, {
+                CUI.BuildInlineCog(leftRegion, {
                     title = "Loot Rolls Window Settings",
                     minWidth = 300,
                     rows = {
@@ -826,7 +827,7 @@ CludesUI.AtOptionsLogin(function()
                             get = function() return (CludesUIDB and CludesUIDB.lootHistoryMode) or "hide" end,
                             set = function(val)
                                 QDB().lootHistoryMode = val
-                                if CludesUI._applyHideLootHistory then CludesUI._applyHideLootHistory() end
+                                if CUI._applyHideLootHistory then CUI._applyHideLootHistory() end
                             end,
                         },
                         {
@@ -839,7 +840,7 @@ CludesUI.AtOptionsLogin(function()
                             get = function() return (CludesUIDB and CludesUIDB.lootHistoryDelay) or 5 end,
                             set = function(val)
                                 QDB().lootHistoryDelay = val
-                                if CludesUI._applyHideLootHistory then CludesUI._applyHideLootHistory() end
+                                if CUI._applyHideLootHistory then CUI._applyHideLootHistory() end
                             end,
                         },
                     },
@@ -850,7 +851,7 @@ CludesUI.AtOptionsLogin(function()
 
                 -- Cog on Skip Cinematics (right region)
                 local function cinematicsOff() return not (CludesUIDB and CludesUIDB.skipCinematics) end
-                CludesUI.BuildInlineCog(row1._rightRegion, {
+                CUI.BuildInlineCog(row1._rightRegion, {
                     title = "Cinematic Settings",
                     rows = {
                         {
@@ -875,7 +876,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.quickLoot or false end,
             setValue = function(val)
                 Account().quickLoot = val
-                if CludesUI._applyQuickLoot then CludesUI._applyQuickLoot() end
+                if CUI._applyQuickLoot then CUI._applyQuickLoot() end
             end,
         }, {
             type = "toggle",
@@ -910,11 +911,11 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         -- Cog on Auto Repair (left region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = repairRow._leftRegion
             local function repairOff() return not (CludesUIDB and CludesUIDB.autoRepair ~= false) end
 
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 title = "Auto Repair Settings",
                 rows = {
                     {
@@ -949,8 +950,8 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.hideTransforms or false end,
             setValue = function(val)
                 Account().hideTransforms = val
-                if CludesUI._applyHideTransforms then CludesUI._applyHideTransforms() end
-                CludesUI:RefreshPage() -- update the picker cog disabled state
+                if CUI._applyHideTransforms then CUI._applyHideTransforms() end
+                CUI:RefreshPage() -- update the picker cog disabled state
             end,
         }, {
             type = "toggle",
@@ -959,8 +960,8 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.autoGossip or false end,
             setValue = function(val)
                 Account().autoGossip = val
-                if CludesUI._applyAutoGossip then CludesUI._applyAutoGossip() end
-                CludesUI:RefreshPage()
+                if CUI._applyAutoGossip then CUI._applyAutoGossip() end
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
@@ -968,12 +969,12 @@ CludesUI.AtOptionsLogin(function()
         -- Inline picker cog on Hide Item Transforms (left slot): opens the item
         -- checklist popup. Dimmed and inert while the toggle is off, mirroring
         -- the resource-bar spec-picker button.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = transformRow._leftRegion
             local function hitOff() return not (CludesUIDB and CludesUIDB.hideTransforms) end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 gap = 9,
-                tip = CludesUI.L("Choose which transforms are removed"),
+                tip = CUI.L("Choose which transforms are removed"),
                 disabled = hitOff,
                 disabledTooltip = "Hide Item Transforms",
                 show = function() ShowTransformsPopup() end,
@@ -981,11 +982,11 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Cog on Auto Select Single Gossip (right slot)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rightRegion = transformRow._rightRegion
             local function gossipOff() return not (CludesUIDB and CludesUIDB.autoGossip) end
 
-            CludesUI.BuildInlineCog(rightRegion, {
+            CUI.BuildInlineCog(rightRegion, {
                 title = "Auto Gossip Settings",
                 rows = {
                     {
@@ -1030,12 +1031,12 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Type /cd to open Blizzard CDM",
                 tooltip = "Lets /cd open or close Blizzard's Cooldown Manager settings.",
-                disabled = function() return not CludesUI._ModuleNS["CludesUICooldownManager"] end,
+                disabled = function() return not CUI._ModuleNS["CludesUICooldownManager"] end,
                 disabledTooltip = "Cooldown Manager",
                 getValue = function() return CludesUIDB and CludesUIDB.blizzCDMSlash == true end,
                 setValue = function(val)
                     Account().blizzCDMSlash = val and true or nil
-                    CludesUI:ShowConfirmPopup({
+                    CUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "The /cd change applies after a UI reload.",
                         confirmText = "Reload Now",
@@ -1044,7 +1045,7 @@ CludesUI.AtOptionsLogin(function()
                     })
                 end,
             },
-            CludesUI.IS_FOREVER and CludesUI.BlankRowCfg()
+            CUI.IS_FOREVER and CUI.BlankRowCfg()
                 or {
                     type = "toggle",
                     text = "AH Current Expansion Only",
@@ -1065,9 +1066,9 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
         -- The FPS Counter is the section's first mover, so the header's button
         -- takes it; the button explains itself while the counter is off.
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = "CUI_FPS",
-            disabled = function() return not CludesUI.QoLExtrasGet("showFPS") end,
+            disabled = function() return not CUI.QoLExtrasGet("showFPS") end,
             disabledTooltip = "Show FPS Counter",
         })
 
@@ -1076,19 +1077,19 @@ CludesUI.AtOptionsLogin(function()
         fpsRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show FPS Counter",
-            getValue = function() return CludesUI.QoLExtrasGet("showFPS") or false end,
+            getValue = function() return CUI.QoLExtrasGet("showFPS") or false end,
             setValue = function(val)
-                CludesUI.QoLExtrasSet("showFPS", val)
-                if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
-                CludesUI:RefreshPage()
+                CUI.QoLExtrasSet("showFPS", val)
+                if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
+                CUI:RefreshPage()
             end,
         }, { type = "label", text = "FPS Toggle Keybind" })
         cursorY = cursorY - height
 
         -- Inline cog + color swatches on the FPS toggle (left region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = fpsRow._leftRegion
-            local function fpsOff() return not CludesUI.QoLExtrasGet("showFPS") end
+            local function fpsOff() return not CUI.QoLExtrasGet("showFPS") end
 
             -- Inline class + custom colour swatches, the same convention as the
             -- Secondary Stats row: the active mode renders at full alpha, the
@@ -1096,39 +1097,39 @@ CludesUI.AtOptionsLogin(function()
             local function fpsMode()
                 -- No mode saved: custom -- the look before the mode existed,
                 -- which is white until a colour is actually picked.
-                return CludesUI.QoLExtrasGet("fpsColorMode") or "custom"
+                return CUI.QoLExtrasGet("fpsColorMode") or "custom"
             end
             local fpsUpdateState -- forward: swatches reference it from OnClick
             local function fpsSetMode(val)
-                CludesUI.QoLExtrasSet("fpsColorMode", val)
-                if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+                CUI.QoLExtrasSet("fpsColorMode", val)
+                if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
                 if fpsUpdateState then fpsUpdateState() end
             end
 
             local fpsSwGet = function()
-                local color = CludesUI.QoLExtrasGet("fpsColor")
+                local color = CUI.QoLExtrasGet("fpsColor")
                 if color then return color.r, color.g, color.b, color.a end
                 return 1, 1, 1, 1
             end
             local fpsSwSet = function(red, green, blue, a)
-                CludesUI.QoLExtrasSet("fpsColor", { r = red, g = green, b = blue, a = a })
-                CludesUI.QoLExtrasSet("fpsColorMode", "custom")
-                if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+                CUI.QoLExtrasSet("fpsColor", { r = red, g = green, b = blue, a = a })
+                CUI.QoLExtrasSet("fpsColorMode", "custom")
+                if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
                 if fpsUpdateState then fpsUpdateState() end
             end
 
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 title = "FPS Counter Settings",
                 rows = {
                     {
                         type = "toggle",
                         label = "Attach to Secondary Stats",
-                        disabled = function() return not CludesUI.QoLExtrasGet("showSecondaryStats") end,
+                        disabled = function() return not CUI.QoLExtrasGet("showSecondaryStats") end,
                         disabledTooltip = "Secondary Stat Display",
-                        get = function() return CludesUI.QoLExtrasGet("fpsAttachToStats") or false end,
+                        get = function() return CUI.QoLExtrasGet("fpsAttachToStats") or false end,
                         set = function(val)
-                            CludesUI.QoLExtrasSet("fpsAttachToStats", val)
-                            if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+                            CUI.QoLExtrasSet("fpsAttachToStats", val)
+                            if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
                         end,
                     },
                     -- Attached rows take the Secondary Stats font size, so this
@@ -1140,45 +1141,45 @@ CludesUI.AtOptionsLogin(function()
                         max = 30,
                         step = 1,
                         disabled = function()
-                            return CludesUI._fpsAttachedToStats and CludesUI._fpsAttachedToStats() or false
+                            return CUI._fpsAttachedToStats and CUI._fpsAttachedToStats() or false
                         end,
                         disabledTooltip = "Attach to Secondary Stats",
                         requireState = "disabled",
-                        get = function() return CludesUI.QoLExtrasGet("fpsTextSize") or 12 end,
+                        get = function() return CUI.QoLExtrasGet("fpsTextSize") or 12 end,
                         set = function(val)
-                            CludesUI.QoLExtrasSet("fpsTextSize", val)
-                            if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+                            CUI.QoLExtrasSet("fpsTextSize", val)
+                            if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
                         end,
                     },
                     {
                         type = "toggle",
                         label = "Show Local MS",
                         get = function()
-                            local sl = CludesUI.QoLExtrasGet("fpsShowLocalMS")
+                            local sl = CUI.QoLExtrasGet("fpsShowLocalMS")
                             if sl == nil then return true end
                             return sl
                         end,
                         set = function(val)
-                            CludesUI.QoLExtrasSet("fpsShowLocalMS", val)
-                            if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+                            CUI.QoLExtrasSet("fpsShowLocalMS", val)
+                            if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
                         end,
                     },
                     {
                         type = "toggle",
                         label = "Show World MS",
-                        get = function() return CludesUI.QoLExtrasGet("fpsShowWorldMS") or false end,
+                        get = function() return CUI.QoLExtrasGet("fpsShowWorldMS") or false end,
                         set = function(val)
-                            CludesUI.QoLExtrasSet("fpsShowWorldMS", val)
-                            if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+                            CUI.QoLExtrasSet("fpsShowWorldMS", val)
+                            if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
                         end,
                     },
                     {
                         type = "toggle",
                         label = "Hide Local/World Label",
-                        get = function() return CludesUI.QoLExtrasGet("fpsHideLabel") or false end,
+                        get = function() return CUI.QoLExtrasGet("fpsHideLabel") or false end,
                         set = function(val)
-                            CludesUI.QoLExtrasSet("fpsHideLabel", val)
-                            if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+                            CUI.QoLExtrasSet("fpsHideLabel", val)
+                            if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
                         end,
                     },
                     {
@@ -1187,10 +1188,10 @@ CludesUI.AtOptionsLogin(function()
                         min = 1,
                         max = 5,
                         step = 1,
-                        get = function() return CludesUI.QoLExtrasGet("fpsUpdateInterval") or 3 end,
+                        get = function() return CUI.QoLExtrasGet("fpsUpdateInterval") or 3 end,
                         set = function(val)
-                            CludesUI.QoLExtrasSet("fpsUpdateInterval", val)
-                            if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
+                            CUI.QoLExtrasSet("fpsUpdateInterval", val)
+                            if CUI._applyFPSDisplay then CUI._applyFPSDisplay() end
                         end,
                     },
                 },
@@ -1201,7 +1202,7 @@ CludesUI.AtOptionsLogin(function()
 
             -- Custom swatch (nearest the cog): a click switches to custom
             -- mode first; a second click opens the picker.
-            local fpsSwatch, fpsUpdateSwatch = CludesUI.BuildColorSwatch(
+            local fpsSwatch, fpsUpdateSwatch = CUI.BuildColorSwatch(
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 fpsSwGet,
@@ -1223,11 +1224,11 @@ CludesUI.AtOptionsLogin(function()
             leftRegion._lastInline = fpsSwatch
 
             -- Class-colour swatch: live player class colour.
-            local fpsClassSw, fpsUpdClass = CludesUI.BuildColorSwatch(
+            local fpsClassSw, fpsUpdClass = CUI.BuildColorSwatch(
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 function()
-                    local classColor = CludesUI.GetClassColor(select(2, UnitClass("player")))
+                    local classColor = CUI.GetClassColor(select(2, UnitClass("player")))
                     if classColor then return classColor.r, classColor.g, classColor.b end
                     return 1, 1, 1
                 end,
@@ -1241,8 +1242,8 @@ CludesUI.AtOptionsLogin(function()
 
             local fpsTips = { { fpsClassSw, "Class Color" }, { fpsSwatch, "Custom Color" } }
             for _, entry in ipairs(fpsTips) do
-                entry[1]:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(entry[1], entry[2]) end)
-                entry[1]:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                entry[1]:HookScript("OnEnter", function() CUI.ShowWidgetTooltip(entry[1], entry[2]) end)
+                entry[1]:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             end
 
             -- Blocking overlays while Show FPS Counter is off (shown from the
@@ -1250,12 +1251,12 @@ CludesUI.AtOptionsLogin(function()
             local fpsBlocks = {}
             for _, entry in ipairs(fpsTips) do
                 local sw = entry[1]
-                local block = CludesUI.NewSwatchBlocker(sw)
+                local block = CUI.NewSwatchBlocker(sw)
                 block:SetScript(
                     "OnEnter",
-                    function() CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip("Show FPS Counter")) end
+                    function() CUI.ShowWidgetTooltip(sw, CUI.DisabledTooltip("Show FPS Counter")) end
                 )
-                block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 fpsBlocks[#fpsBlocks + 1] = block
             end
 
@@ -1273,14 +1274,14 @@ CludesUI.AtOptionsLogin(function()
                 fpsClassSw:SetAlpha(m == "class" and 1 or 0.3)
                 fpsSwatch:SetAlpha(m == "custom" and 1 or 0.3)
             end
-            CludesUI.RegisterWidgetRefresh(fpsUpdateState)
+            CUI.RegisterWidgetRefresh(fpsUpdateState)
             fpsUpdateState()
         end
 
         -- FPS Toggle Keybind (built into right region of fpsRow)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rightRegion = fpsRow._rightRegion
-            local kbBtn, refresh = CludesUI.BuildKeybindButton(rightRegion, {
+            local kbBtn, refresh = CUI.BuildKeybindButton(rightRegion, {
                 w = 140,
                 h = 30,
                 font = 13,
@@ -1300,7 +1301,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             })
             Pix.Point(kbBtn, "RIGHT", rightRegion, "RIGHT", -20, 0)
-            CludesUI.RegisterWidgetRefresh(refresh)
+            CUI.RegisterWidgetRefresh(refresh)
         end
 
         -- Row 2: Low Durability Warning (left, with cog+eye+swatch) | Disable Right Click Targeting (right)
@@ -1312,9 +1313,9 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.repairWarning ~= false end,
             setValue = function(val)
                 Account().repairWarning = val
-                if CludesUI._syncDurWarnEvents then CludesUI._syncDurWarnEvents() end
-                if not val and CludesUI._durWarnHidePreview then CludesUI._durWarnHidePreview() end
-                CludesUI:RefreshPage()
+                if CUI._syncDurWarnEvents then CUI._syncDurWarnEvents() end
+                if not val and CUI._durWarnHidePreview then CUI._durWarnHidePreview() end
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -1331,14 +1332,14 @@ CludesUI.AtOptionsLogin(function()
         -- The backend stays two independent booleans; the dropdown is purely a
         -- front-end grouping, so existing disableRightClickTarget users are kept
         -- exactly as-is and Allies is additive (defaults off).
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rcRgn = durWarnRow._rightRegion
             if rcRgn._control then rcRgn._control:Hide() end
             local rcItems = {
                 { key = "enemy", label = "Enemies" },
                 { key = "ally", label = "Allies In Combat" },
             }
-            local rcCB, rcCBRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local rcCB, rcCBRefresh = CUI.BuildVisOptsCBDropdown(
                 rcRgn,
                 200,
                 rcRgn:GetFrameLevel() + 2,
@@ -1355,22 +1356,22 @@ CludesUI.AtOptionsLogin(function()
                     else
                         CludesUIDB.disableRightClickTargetAllyCombat = val
                     end
-                    if CludesUI._applyRightClickTarget then CludesUI._applyRightClickTarget() end
+                    if CUI._applyRightClickTarget then CUI._applyRightClickTarget() end
                 end
             )
             Pix.Point(rcCB, "RIGHT", rcRgn, "RIGHT", -20, 0)
             rcRgn._control = rcCB
             rcRgn._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(rcCBRefresh)
+            CUI.RegisterWidgetRefresh(rcCBRefresh)
         end
 
         -- Inline: eyeball | color swatch | cog on the durability warning toggle
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = durWarnRow._leftRegion
             local function durOff() return CludesUIDB and CludesUIDB.repairWarning == false end
 
             -- Cog popup for durability settings (rightmost inline, closest to toggle)
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 title = "Durability Settings",
                 rows = {
                     {
@@ -1382,7 +1383,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function() return (CludesUIDB and CludesUIDB.durWarnTextSize) or 30 end,
                         set = function(val)
                             Account().durWarnTextSize = val
-                            if CludesUI._durWarnApplySettings then CludesUI._durWarnApplySettings() end
+                            if CUI._durWarnApplySettings then CUI._durWarnApplySettings() end
                         end,
                     },
                     {
@@ -1395,7 +1396,7 @@ CludesUI.AtOptionsLogin(function()
                         set = function(val)
                             Account().durWarnYOffset = val
                             CludesUIDB.durWarnPos = nil -- clear custom pos so slider always takes effect
-                            if CludesUI._durWarnPreview then CludesUI._durWarnPreview() end
+                            if CUI._durWarnPreview then CUI._durWarnPreview() end
                         end,
                     },
                     {
@@ -1407,7 +1408,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function() return CludesUIDB and CludesUIDB.durWarnThreshold or 40 end,
                         set = AccountField("durWarnThreshold"),
                     },
-                    CludesUI.IS_FOREVER
+                    CUI.IS_FOREVER
                             and {
                                 type = "toggle",
                                 label = "Ignore Thrown Weapons",
@@ -1417,7 +1418,7 @@ CludesUI.AtOptionsLogin(function()
                                 end,
                                 set = function(val)
                                     Account().durWarnIgnoreThrown = val
-                                    if CludesUI._syncDurWarnEvents then CludesUI._syncDurWarnEvents() end
+                                    if CUI._syncDurWarnEvents then CUI._syncDurWarnEvents() end
                                 end,
                             }
                         or nil,
@@ -1435,9 +1436,9 @@ CludesUI.AtOptionsLogin(function()
             end
             local durSwSet = function(red, green, blue)
                 Account().durWarnColor = { r = red, g = green, b = blue }
-                if CludesUI._applyDurWarn then CludesUI._applyDurWarn() end
+                if CUI._applyDurWarn then CUI._applyDurWarn() end
             end
-            local durSwatch, durUpdateSwatch = CludesUI.BuildColorSwatch(
+            local durSwatch, durUpdateSwatch = CUI.BuildColorSwatch(
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 durSwGet,
@@ -1449,16 +1450,16 @@ CludesUI.AtOptionsLogin(function()
             leftRegion._lastInline = durSwatch
 
             -- Disabled overlay for swatch when durability warning is off
-            local durSwBlock = CludesUI.NewSwatchBlocker(durSwatch)
+            local durSwBlock = CUI.NewSwatchBlocker(durSwatch)
             durSwBlock:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(durSwatch, CludesUI.DisabledTooltip("Low Durability Warning"))
+                    CUI.ShowWidgetTooltip(durSwatch, CUI.DisabledTooltip("Low Durability Warning"))
                 end
             )
-            durSwBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            durSwBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 local isOff = durOff()
                 if isOff then
                     durSwatch:SetAlpha(0.3)
@@ -1478,15 +1479,15 @@ CludesUI.AtOptionsLogin(function()
             end
 
             -- Eye icon to toggle durability warning preview (left of swatch)
-            local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-            local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
+            local EYE_VISIBLE = CUI.EYE_VISIBLE_ICON
+            local EYE_INVISIBLE = CUI.EYE_INVISIBLE_ICON
             local durabilityPreview = false
             local eyeButton = CreateFrame("Button", nil, leftRegion)
             eyeButton:SetSize(26, 26)
             eyeButton:SetPoint("RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
             leftRegion._lastInline = eyeButton
             eyeButton:SetFrameLevel(leftRegion:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeButton, durOff() and 0.15 or 0.4)
+            CUI.SetGlyphAlpha(eyeButton, durOff() and 0.15 or 0.4)
             local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
             local function RefreshDurEye()
@@ -1498,48 +1499,48 @@ CludesUI.AtOptionsLogin(function()
             end
             RefreshDurEye()
             eyeButton:SetScript("OnEnter", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(self, "Preview durability warning")
+                CUI.SetGlyphAlpha(self, 0.7)
+                CUI.ShowWidgetTooltip(self, "Preview durability warning")
             end)
             eyeButton:SetScript("OnLeave", function(self)
-                CludesUI.HideWidgetTooltip()
-                CludesUI.SetGlyphAlpha(self, 0.4)
+                CUI.HideWidgetTooltip()
+                CUI.SetGlyphAlpha(self, 0.4)
             end)
             eyeButton:SetScript("OnClick", function(self)
                 durabilityPreview = not durabilityPreview
                 RefreshDurEye()
                 if durabilityPreview then
-                    if CludesUI._applyDurWarn then CludesUI._applyDurWarn() end
-                    if CludesUI._durWarnPreview then CludesUI._durWarnPreview() end
+                    if CUI._applyDurWarn then CUI._applyDurWarn() end
+                    if CUI._durWarnPreview then CUI._durWarnPreview() end
                 else
-                    if CludesUI._durWarnHidePreview then CludesUI._durWarnHidePreview() end
+                    if CUI._durWarnHidePreview then CUI._durWarnHidePreview() end
                 end
             end)
 
             -- Blocking overlay for eye when durability warning is off
-            local eyeBlock = CludesUI.NewSwatchBlocker(eyeButton)
+            local eyeBlock = CUI.NewSwatchBlocker(eyeButton)
             eyeBlock:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(eyeButton, CludesUI.DisabledTooltip("Low Durability Warning"))
+                    CUI.ShowWidgetTooltip(eyeButton, CUI.DisabledTooltip("Low Durability Warning"))
                 end
             )
-            eyeBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            eyeBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 local isOff = durOff()
                 if isOff then
                     durabilityPreview = false
                     RefreshDurEye()
-                    CludesUI.SetGlyphAlpha(eyeButton, 0.15)
+                    CUI.SetGlyphAlpha(eyeButton, 0.15)
                     eyeBlock:Show()
                 else
-                    CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+                    CUI.SetGlyphAlpha(eyeButton, 0.4)
                     eyeBlock:Hide()
                 end
             end)
             local eyeInitOff = durOff()
-            CludesUI.SetGlyphAlpha(eyeButton, eyeInitOff and 0.15 or 0.4)
+            CUI.SetGlyphAlpha(eyeButton, eyeInitOff and 0.15 or 0.4)
             if eyeInitOff then
                 eyeBlock:Show()
             else
@@ -1552,19 +1553,19 @@ CludesUI.AtOptionsLogin(function()
         row4, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Secondary Stat Display",
-            tooltip = CludesUI.IS_FOREVER and "Displays your character stats at the top left of the screen."
+            tooltip = CUI.IS_FOREVER and "Displays your character stats at the top left of the screen."
                 or "Displays secondary stat percentages (Crit, Haste, Mastery, Vers) at the top left of the screen.",
-            getValue = function() return CludesUI.QoLExtrasGet("showSecondaryStats") or false end,
+            getValue = function() return CUI.QoLExtrasGet("showSecondaryStats") or false end,
             setValue = function(val)
-                CludesUI.QoLExtrasSet("showSecondaryStats", val)
+                CUI.QoLExtrasSet("showSecondaryStats", val)
                 -- Turning the block off has to release an attached FPS readout
                 -- back to its own frame, so route through the shared apply.
-                if CludesUI._applyFPSDisplay then
-                    CludesUI._applyFPSDisplay()
-                elseif CludesUI._applySecondaryStats then
-                    CludesUI._applySecondaryStats()
+                if CUI._applyFPSDisplay then
+                    CUI._applyFPSDisplay()
+                elseif CUI._applySecondaryStats then
+                    CUI._applySecondaryStats()
                 end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "toggle",
@@ -1573,26 +1574,26 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.guildChatPrivacy or false end,
             setValue = function(val)
                 Account().guildChatPrivacy = val
-                if CludesUI._applyGuildChatPrivacy then CludesUI._applyGuildChatPrivacy() end
+                if CUI._applyGuildChatPrivacy then CUI._applyGuildChatPrivacy() end
             end,
         })
         cursorY = cursorY - height
 
         -- Inline cog + color swatches on Secondary Stat Display (left region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = row4._leftRegion
-            local function statsOff() return not CludesUI.QoLExtrasGet("showSecondaryStats") end
+            local function statsOff() return not CUI.QoLExtrasGet("showSecondaryStats") end
 
             -- Cog popup: stat visibility/order + tertiary swatch pair + Scale
             local function tsMode()
-                local m = CludesUI.QoLExtrasGet("tertiaryStatsColorMode")
+                local m = CUI.QoLExtrasGet("tertiaryStatsColorMode")
                 if m then return m end
                 -- No mode saved: an old profile with a stored color was using it.
-                return CludesUI.QoLExtrasGet("tertiaryStatsColor") and "custom" or "class"
+                return CUI.QoLExtrasGet("tertiaryStatsColor") and "custom" or "class"
             end
             local function tsSetMode(val)
-                CludesUI.QoLExtrasSet("tertiaryStatsColorMode", val)
-                if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                CUI.QoLExtrasSet("tertiaryStatsColorMode", val)
+                if CUI._applySecondaryStats then CUI._applySecondaryStats() end
             end
             local STAT_LABELS = {
                 crit = "Crit",
@@ -1614,7 +1615,7 @@ CludesUI.AtOptionsLogin(function()
                 "speed",
             }
             local function StatItems()
-                local sequence = CludesUI._secondaryStatsOrder and CludesUI._secondaryStatsOrder()
+                local sequence = CUI._secondaryStatsOrder and CUI._secondaryStatsOrder()
                     or DEFAULT_STAT_ORDER
                 local itemList = {}
                 for _, settingKey in ipairs(sequence) do
@@ -1627,19 +1628,19 @@ CludesUI.AtOptionsLogin(function()
             local coloredRow = {
                 type = "toggle",
                 label = "Colored Values",
-                get = function() return CludesUI.QoLExtrasGet("coloredPercentages") or false end,
+                get = function() return CUI.QoLExtrasGet("coloredPercentages") or false end,
                 set = function(val)
-                    CludesUI.QoLExtrasSet("coloredPercentages", val)
-                    if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                    CUI.QoLExtrasSet("coloredPercentages", val)
+                    if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                 end,
             }
             local abbreviateRow = {
                 type = "toggle",
                 label = "Abbreviate Stat Labels",
-                get = function() return CludesUI.QoLExtrasGet("secondaryStatsAbbreviateLabels") or false end,
+                get = function() return CUI.QoLExtrasGet("secondaryStatsAbbreviateLabels") or false end,
                 set = function(val)
-                    CludesUI.QoLExtrasSet("secondaryStatsAbbreviateLabels", val)
-                    if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                    CUI.QoLExtrasSet("secondaryStatsAbbreviateLabels", val)
+                    if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                 end,
             }
             local scaleRow = {
@@ -1649,13 +1650,13 @@ CludesUI.AtOptionsLogin(function()
                 max = 200,
                 step = 5,
                 get = function()
-                    local place = CludesUI.QoLExtrasGet("secondaryStatsPos")
+                    local place = CUI.QoLExtrasGet("secondaryStatsPos")
                     return math.floor(((place and place.scale) or 1.0) * 100 + 0.5)
                 end,
                 set = function(val)
                     -- Shallow-copy so we never mutate the shared account-wide
                     -- fallback table in place; the write lands per-profile.
-                    local prev = CludesUI.QoLExtrasGet("secondaryStatsPos")
+                    local prev = CUI.QoLExtrasGet("secondaryStatsPos")
                     local newPos = {}
                     if prev then
                         for pk, preview in pairs(prev) do
@@ -1663,16 +1664,16 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end
                     newPos.scale = val / 100
-                    CludesUI.QoLExtrasSet("secondaryStatsPos", newPos)
-                    if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                    CUI.QoLExtrasSet("secondaryStatsPos", newPos)
+                    if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                 end,
             }
             local cogRows, cogBtn, cogShow
-            if CludesUI.IS_FOREVER then
+            if CUI.IS_FOREVER then
                 -- WoW Forever has no ratings or tertiaries: its stat catalog is
                 -- picked in the grouped Choose Stats window
                 -- (CUI_QoL_StatPicker.lua) and the shown stats ordered here.
-                local FV_STAT = CludesUI._ModuleNS["CludesUIQoL"].FvStats.byKey
+                local FV_STAT = CUI._ModuleNS["CludesUIQoL"].FvStats.byKey
                 cogRows = {
                     coloredRow,
                     abbreviateRow,
@@ -1682,7 +1683,7 @@ CludesUI.AtOptionsLogin(function()
                         action = function()
                             -- The window takes the cog popup's place under the cog.
                             cogShow._popupFrame:Hide()
-                            CludesUI._ShowStatPicker(cogBtn)
+                            CUI._ShowStatPicker(cogBtn)
                         end,
                     },
                     {
@@ -1690,12 +1691,12 @@ CludesUI.AtOptionsLogin(function()
                         label = "Reorder Shown Stats",
                         maxVisible = 12,
                         items = function()
-                            local isHidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
+                            local isHidden = CUI.QoLExtrasGet("secondaryStatsHidden")
                             local itemList = {}
-                            for _, settingKey in ipairs(CludesUI._secondaryStatsOrder()) do
+                            for _, settingKey in ipairs(CUI._secondaryStatsOrder()) do
                                 if not (type(isHidden) == "table" and isHidden[settingKey]) then
                                     itemList[#itemList + 1] =
-                                        { key = settingKey, label = CludesUI.L(FV_STAT[settingKey].label) }
+                                        { key = settingKey, label = CUI.L(FV_STAT[settingKey].label) }
                                 end
                             end
                             return itemList
@@ -1707,11 +1708,11 @@ CludesUI.AtOptionsLogin(function()
                                 sequence[#sequence + 1] = settingKey
                                 seen[settingKey] = true
                             end
-                            for _, settingKey in ipairs(CludesUI._secondaryStatsOrder()) do
+                            for _, settingKey in ipairs(CUI._secondaryStatsOrder()) do
                                 if not seen[settingKey] then sequence[#sequence + 1] = settingKey end
                             end
-                            CludesUI.QoLExtrasSet("secondaryStatsOrder", sequence)
-                            CludesUI._applySecondaryStats()
+                            CUI.QoLExtrasSet("secondaryStatsOrder", sequence)
+                            CUI._applySecondaryStats()
                         end,
                     },
                     scaleRow,
@@ -1723,21 +1724,21 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Show Raw Rating",
-                        get = function() return CludesUI.QoLExtrasGet("showSecondaryStatsRaw") or false end,
+                        get = function() return CUI.QoLExtrasGet("showSecondaryStatsRaw") or false end,
                         set = function(val)
-                            CludesUI.QoLExtrasSet("showSecondaryStatsRaw", val)
-                            if val then CludesUI.QoLExtrasSet("showSecondaryStatsBoth", false) end
-                            if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                            CUI.QoLExtrasSet("showSecondaryStatsRaw", val)
+                            if val then CUI.QoLExtrasSet("showSecondaryStatsBoth", false) end
+                            if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                         end,
                     },
                     {
                         type = "toggle",
                         label = "Show % and Raw",
-                        get = function() return CludesUI.QoLExtrasGet("showSecondaryStatsBoth") or false end,
+                        get = function() return CUI.QoLExtrasGet("showSecondaryStatsBoth") or false end,
                         set = function(val)
-                            CludesUI.QoLExtrasSet("showSecondaryStatsBoth", val)
-                            if val then CludesUI.QoLExtrasSet("showSecondaryStatsRaw", false) end
-                            if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                            CUI.QoLExtrasSet("showSecondaryStatsBoth", val)
+                            if val then CUI.QoLExtrasSet("showSecondaryStatsRaw", false) end
+                            if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                         end,
                     },
                     {
@@ -1746,11 +1747,11 @@ CludesUI.AtOptionsLogin(function()
                         items = StatItems,
                         hint = "Drag to Reorder",
                         get = function(settingKey)
-                            local isHidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
+                            local isHidden = CUI.QoLExtrasGet("secondaryStatsHidden")
                             return not (type(isHidden) == "table" and isHidden[settingKey])
                         end,
                         set = function(settingKey, isShown)
-                            local old = CludesUI.QoLExtrasGet("secondaryStatsHidden")
+                            local old = CUI.QoLExtrasGet("secondaryStatsHidden")
                             local isHidden = {}
                             if type(old) == "table" then
                                 for keyName, val in pairs(old) do
@@ -1768,16 +1769,16 @@ CludesUI.AtOptionsLogin(function()
                             else
                                 isHidden[settingKey] = true
                             end
-                            CludesUI.QoLExtrasSet("secondaryStatsHidden", isHidden)
-                            if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                            CUI.QoLExtrasSet("secondaryStatsHidden", isHidden)
+                            if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                         end,
                         setOrder = function(keyList)
                             local sequence = {}
                             for idx, settingKey in ipairs(keyList) do
                                 sequence[idx] = settingKey
                             end
-                            CludesUI.QoLExtrasSet("secondaryStatsOrder", sequence)
-                            if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                            CUI.QoLExtrasSet("secondaryStatsOrder", sequence)
+                            if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                         end,
                     },
                     -- Class / custom swatch pair, the same convention as the
@@ -1787,7 +1788,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "multiswatch",
                         label = "Tertiary Label Color",
                         disabled = function()
-                            local isHidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
+                            local isHidden = CUI.QoLExtrasGet("secondaryStatsHidden")
                             return type(isHidden) == "table"
                                 and isHidden.leech
                                 and isHidden.avoidance
@@ -1798,7 +1799,7 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 tooltip = "Class Color",
                                 getValue = function()
-                                    local classColor = CludesUI.GetClassColor(select(2, UnitClass("player")))
+                                    local classColor = CUI.GetClassColor(select(2, UnitClass("player")))
                                     if classColor then return classColor.r, classColor.g, classColor.b end
                                     return 1, 1, 1
                                 end,
@@ -1808,17 +1809,17 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 tooltip = "Custom Color",
                                 getValue = function()
-                                    local color = CludesUI.QoLExtrasGet("tertiaryStatsColor")
+                                    local color = CUI.QoLExtrasGet("tertiaryStatsColor")
                                     if color then return color.r, color.g, color.b end
                                     return 1, 1, 1
                                 end,
                                 setValue = function(red, green, blue)
-                                    CludesUI.QoLExtrasSet(
+                                    CUI.QoLExtrasSet(
                                         "tertiaryStatsColor",
                                         { r = red, g = green, b = blue }
                                     )
-                                    CludesUI.QoLExtrasSet("tertiaryStatsColorMode", "custom")
-                                    if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                                    CUI.QoLExtrasSet("tertiaryStatsColorMode", "custom")
+                                    if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                                 end,
                                 -- First click switches to custom; a second opens the picker.
                                 onClick = function(self, ...)
@@ -1835,7 +1836,7 @@ CludesUI.AtOptionsLogin(function()
                     scaleRow,
                 }
             end
-            cogBtn, cogShow = CludesUI.BuildInlineCog(leftRegion, {
+            cogBtn, cogShow = CUI.BuildInlineCog(leftRegion, {
                 title = "Secondary Stats Settings",
                 rows = cogRows,
                 disabled = statsOff,
@@ -1846,34 +1847,34 @@ CludesUI.AtOptionsLogin(function()
             -- minimap border's swatch-row convention: the active mode renders
             -- at full alpha, the others dimmed, each with a naming tooltip.
             local function ssMode()
-                local m = CludesUI.QoLExtrasGet("secondaryStatsColorMode")
+                local m = CUI.QoLExtrasGet("secondaryStatsColorMode")
                 if m then return m end
                 -- No mode saved: a stored color was in use, otherwise class
                 -- color -- the pre-mode default look.
-                return CludesUI.QoLExtrasGet("secondaryStatsColor") and "custom" or "class"
+                return CUI.QoLExtrasGet("secondaryStatsColor") and "custom" or "class"
             end
             local ssUpdateState -- forward: swatches reference it from OnClick
             local function ssSetMode(val)
-                CludesUI.QoLExtrasSet("secondaryStatsColorMode", val)
-                if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                CUI.QoLExtrasSet("secondaryStatsColorMode", val)
+                if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                 if ssUpdateState then ssUpdateState() end
             end
 
             -- Custom swatch (nearest the cog): stored custom colour. A
             -- click switches to custom mode first; a second click opens the
             -- picker (same two-step as the minimap border swatches).
-            local ssCustom, ssUpdCustom = CludesUI.BuildColorSwatch(
+            local ssCustom, ssUpdCustom = CUI.BuildColorSwatch(
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 function()
-                    local color = CludesUI.QoLExtrasGet("secondaryStatsColor")
+                    local color = CUI.QoLExtrasGet("secondaryStatsColor")
                     if color then return color.r, color.g, color.b end
                     return 1, 1, 1
                 end,
                 function(red, green, blue)
-                    CludesUI.QoLExtrasSet("secondaryStatsColor", { r = red, g = green, b = blue })
-                    CludesUI.QoLExtrasSet("secondaryStatsColorMode", "custom")
-                    if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+                    CUI.QoLExtrasSet("secondaryStatsColor", { r = red, g = green, b = blue })
+                    CUI.QoLExtrasSet("secondaryStatsColorMode", "custom")
+                    if CUI._applySecondaryStats then CUI._applySecondaryStats() end
                     if ssUpdateState then ssUpdateState() end
                 end,
                 nil,
@@ -1893,11 +1894,11 @@ CludesUI.AtOptionsLogin(function()
             leftRegion._lastInline = ssCustom
 
             -- Class-colour swatch: live player class colour.
-            local ssClass, ssUpdClass = CludesUI.BuildColorSwatch(
+            local ssClass, ssUpdClass = CUI.BuildColorSwatch(
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 function()
-                    local classColor = CludesUI.GetClassColor(select(2, UnitClass("player")))
+                    local classColor = CUI.GetClassColor(select(2, UnitClass("player")))
                     if classColor then return classColor.r, classColor.g, classColor.b end
                     return 1, 1, 1
                 end,
@@ -1911,7 +1912,7 @@ CludesUI.AtOptionsLogin(function()
 
             -- Multicolored swatch (outermost): the per-stat palette, previewed
             -- by its first hue (crit gold).
-            local ssMulti, ssUpdMulti = CludesUI.BuildColorSwatch(
+            local ssMulti, ssUpdMulti = CUI.BuildColorSwatch(
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 function() return 1, 209 / 255, 0 end,
@@ -1926,8 +1927,8 @@ CludesUI.AtOptionsLogin(function()
             local ssTips =
                 { { ssMulti, "Multicolored" }, { ssClass, "Class Color" }, { ssCustom, "Custom Color" } }
             for _, entry in ipairs(ssTips) do
-                entry[1]:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(entry[1], entry[2]) end)
-                entry[1]:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                entry[1]:HookScript("OnEnter", function() CUI.ShowWidgetTooltip(entry[1], entry[2]) end)
+                entry[1]:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             end
 
             -- Blocking overlays while Secondary Stat Display is off (shown from
@@ -1935,14 +1936,14 @@ CludesUI.AtOptionsLogin(function()
             local ssBlocks = {}
             for _, entry in ipairs(ssTips) do
                 local sw = entry[1]
-                local block = CludesUI.NewSwatchBlocker(sw)
+                local block = CUI.NewSwatchBlocker(sw)
                 block:SetScript(
                     "OnEnter",
                     function()
-                        CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip("Secondary Stat Display"))
+                        CUI.ShowWidgetTooltip(sw, CUI.DisabledTooltip("Secondary Stat Display"))
                     end
                 )
-                block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 ssBlocks[#ssBlocks + 1] = block
             end
 
@@ -1962,31 +1963,31 @@ CludesUI.AtOptionsLogin(function()
                 ssClass:SetAlpha(m == "class" and 1 or 0.3)
                 ssCustom:SetAlpha(m == "custom" and 1 or 0.3)
             end
-            CludesUI.RegisterWidgetRefresh(ssUpdateState)
+            CUI.RegisterWidgetRefresh(ssUpdateState)
             ssUpdateState()
         end
 
         -- Row 4: Rested Indicator (left; mirrored in the Unit Frames player
         -- EXTRAS, CludesUI.RestedIndicatorCfg) |
         local restedRow
-        restedRow, height = W:DualRow(hostFrame, cursorY, CludesUI.RestedIndicatorCfg(), {
+        restedRow, height = W:DualRow(hostFrame, cursorY, CUI.RestedIndicatorCfg(), {
             type = "toggle",
             text = "Target Distance (Range) Text",
             tooltip = "Shows the approximate distance to your current target as movable on-screen text (default 30-35). Use the cog for format, alignment, and text size; use Layout Mode to position or Anchor to your Player Frame.",
             getValue = function() return CludesUIDB and CludesUIDB.targetDistanceEnabled or false end,
             setValue = function(val)
                 Account().targetDistanceEnabled = val
-                if CludesUI._applyTargetDistance then CludesUI._applyTargetDistance() end
-                CludesUI:RefreshPage()
+                if CUI._applyTargetDistance then CUI._applyTargetDistance() end
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
 
         -- Inline cog on Rested Indicator (left region): Animated, Size, X/Y offsets
-        CludesUI.BuildRestedIndicatorCog(restedRow._leftRegion)
+        CUI.BuildRestedIndicatorCog(restedRow._leftRegion)
 
         -- Target Distance settings cog (right slot of the Rested row)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = restedRow._rightRegion
             local function tdOff() return not (CludesUIDB and CludesUIDB.targetDistanceEnabled) end
 
@@ -2003,7 +2004,7 @@ CludesUI.AtOptionsLogin(function()
             }
             local tdAlignOrder = { "LEFT", "CENTER", "RIGHT" }
 
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Target Distance Settings",
                 minWidth = 280,
                 rows = {
@@ -2044,8 +2045,8 @@ CludesUI.AtOptionsLogin(function()
                         type = "dropdown",
                         label = "Frame Strata",
                         tooltip = "Controls the order that overlapping elements display in. Set higher to show above other elements.",
-                        values = CludesUI.FRAME_STRATA_LABELS,
-                        order = CludesUI.FRAME_STRATA_ORDER_BASE,
+                        values = CUI.FRAME_STRATA_LABELS,
+                        order = CUI.FRAME_STRATA_ORDER_BASE,
                         get = function() return (CludesUIDB and CludesUIDB.targetDistanceStrata) or "HIGH" end,
                         set = AccountFieldThen2("targetDistanceStrata"),
                     },
@@ -2066,15 +2067,15 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.mapCoords or false end,
             setValue = function(val)
                 Account().mapCoords = val
-                if CludesUI._applyMapCoords then CludesUI._applyMapCoords() end
-                CludesUI:RefreshPage()
+                if CUI._applyMapCoords then CUI._applyMapCoords() end
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
         -- Cog on Show Coordinates on Map (right region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local function coordsOff() return not (CludesUIDB and CludesUIDB.mapCoords) end
-            CludesUI.BuildInlineCog(pingRow._rightRegion, {
+            CUI.BuildInlineCog(pingRow._rightRegion, {
                 title = "Map Coordinates Settings",
                 rows = {
                     {
@@ -2086,7 +2087,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function() return (CludesUIDB and CludesUIDB.mapCoordsTextSize) or 12 end,
                         set = function(val)
                             Account().mapCoordsTextSize = val
-                            if CludesUI._applyMapCoords then CludesUI._applyMapCoords() end
+                            if CUI._applyMapCoords then CUI._applyMapCoords() end
                         end,
                     },
                 },
@@ -2095,9 +2096,9 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "Show Coordinates on Map",
             })
         end
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = pingRow._leftRegion
-            local kbBtn, refresh = CludesUI.BuildKeybindButton(region, {
+            local kbBtn, refresh = CUI.BuildKeybindButton(region, {
                 w = 140,
                 h = 30,
                 font = 13,
@@ -2108,12 +2109,12 @@ CludesUI.AtOptionsLogin(function()
                     local base = val and val:match("[^%-]+$")
                     if base == "BUTTON1" or base == "BUTTON2" then return end
                     CludesUIDB.envPingKey = val
-                    if CludesUI._applyEnvPing then CludesUI._applyEnvPing() end
+                    if CUI._applyEnvPing then CUI._applyEnvPing() end
                 end,
                 tooltip = "While held, left-clicking the world sends a ping that ignores units and only targets the environment.\n\nLeft-click to set a keybind.\nRight-click to unbind.",
             })
             Pix.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
-            CludesUI.RegisterWidgetRefresh(refresh)
+            CUI.RegisterWidgetRefresh(refresh)
         end
 
         -- Auto-Accept Resurrection: right of Row 6, or its own row on WoW Forever.
@@ -2124,13 +2125,13 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.autoAcceptRes or false end,
             setValue = function(val)
                 Account().autoAcceptRes = val
-                if CludesUI._applyAutoAcceptRes then CludesUI._applyAutoAcceptRes() end
-                CludesUI:RefreshPage()
+                if CUI._applyAutoAcceptRes then CUI._applyAutoAcceptRes() end
+                CUI:RefreshPage()
             end,
         }
         local function BuildResCog(region)
-            if CludesUI._prebuilding then return end
-            CludesUI.BuildInlineCog(region, {
+            if CUI._prebuilding then return end
+            CUI.BuildInlineCog(region, {
                 title = "Auto-Accept Resurrection",
                 rows = {
                     {
@@ -2148,7 +2149,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Row 6: Transparent World Map Sidebars (left) | Auto-Accept Resurrection. Not offered
         -- on WoW Forever: Forever Essentials has its own map background option there.
-        if not CludesUI.IS_FOREVER then
+        if not CUI.IS_FOREVER then
             local sidebarsRow
             sidebarsRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
@@ -2157,16 +2158,16 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function() return CludesUIDB and CludesUIDB.mapSidebarsClear or false end,
                 setValue = function(val)
                     Account().mapSidebarsClear = val
-                    if CludesUI._applyMapSidebars then CludesUI._applyMapSidebars() end
-                    CludesUI:RefreshPage()
+                    if CUI._applyMapSidebars then CUI._applyMapSidebars() end
+                    CUI:RefreshPage()
                 end,
             }, resCfg)
             cursorY = cursorY - height
             BuildResCog(sidebarsRow._rightRegion)
             -- Cog on Transparent World Map Sidebars (left region)
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local function sidebarsOff() return not (CludesUIDB and CludesUIDB.mapSidebarsClear) end
-                CludesUI.BuildInlineCog(sidebarsRow._leftRegion, {
+                CUI.BuildInlineCog(sidebarsRow._leftRegion, {
                     title = "World Map Sidebars Settings",
                     rows = {
                         {
@@ -2178,7 +2179,7 @@ CludesUI.AtOptionsLogin(function()
                             get = function() return (CludesUIDB and CludesUIDB.mapSidebarsOpacity) or 0 end,
                             set = function(val)
                                 Account().mapSidebarsOpacity = val
-                                if CludesUI._applyMapSidebars then CludesUI._applyMapSidebars() end
+                                if CUI._applyMapSidebars then CUI._applyMapSidebars() end
                             end,
                         },
                     },
@@ -2189,7 +2190,7 @@ CludesUI.AtOptionsLogin(function()
             end
         else
             local resRow
-            resRow, height = W:DualRow(hostFrame, cursorY, resCfg, CludesUI.BlankRowCfg())
+            resRow, height = W:DualRow(hostFrame, cursorY, resCfg, CUI.BlankRowCfg())
             cursorY = cursorY - height
             BuildResCog(resRow._leftRegion)
         end
@@ -2221,7 +2222,7 @@ CludesUI.AtOptionsLogin(function()
         -- "Custom" if enabled) -- i.e. H/V widths differ or don't match a preset.
         -- Checked regardless of None so a saved custom config can be restored.
         local function crosshairIsCustom()
-            local PRESETS = CludesUI.CROSSHAIR_PRESETS
+            local PRESETS = CUI.CROSSHAIR_PRESETS
             local s = cursorGet("crosshairSize")
             local sizeForBase = (s and s ~= "None" and s) or "Normal"
             local base = (PRESETS and (PRESETS[sizeForBase] or PRESETS.Normal)) or { width = 2 }
@@ -2263,7 +2264,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 local size = cursorGet("crosshairSize") or "None"
                 if size == "None" then return "None" end
-                local PRESETS = CludesUI.CROSSHAIR_PRESETS
+                local PRESETS = CUI.CROSSHAIR_PRESETS
                 local base = (PRESETS and (PRESETS[size] or PRESETS.Normal)) or { width = 2 }
                 local hw = cursorGet("crosshairHWidth") or base.width
                 local vw = cursorGet("crosshairVWidth") or base.width
@@ -2283,13 +2284,13 @@ CludesUI.AtOptionsLogin(function()
                 -- and the cog reflects them. Length is not touched: it defaults
                 -- to the preset length (40) only while unset, and once a user
                 -- customises it, it persists across preset changes.
-                local preset = CludesUI.CROSSHAIR_PRESETS and CludesUI.CROSSHAIR_PRESETS[val]
+                local preset = CUI.CROSSHAIR_PRESETS and CUI.CROSSHAIR_PRESETS[val]
                 if preset then
                     p.crosshairHWidth = preset.width
                     p.crosshairVWidth = preset.width
                 end
-                if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
-                CludesUI:RefreshPage()
+                if CUI._applyCrosshair then CUI._applyCrosshair() end
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -2312,7 +2313,7 @@ CludesUI.AtOptionsLogin(function()
         --   always | combat | instances | instances_combat
         -- "Always" is the base state. Picking it
         -- clears the others; clearing both reverts to it.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local visRgn = crosshairRow._rightRegion
             if visRgn._control then visRgn._control:Hide() end
 
@@ -2334,7 +2335,7 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Show only while in a dungeon, raid, arena or battleground. Combine with Combat to show only during instanced combat.",
                 },
             }
-            local visCB, visCBRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local visCB, visCBRefresh = CUI.BuildVisOptsCBDropdown(
                 visRgn,
                 200,
                 visRgn:GetFrameLevel() + 2,
@@ -2366,7 +2367,7 @@ CludesUI.AtOptionsLogin(function()
                         nv = "instances"
                     end
                     cset("crosshairVisibility", nv)
-                    if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
+                    if CUI._applyCrosshair then CUI._applyCrosshair() end
                 end
             )
             Pix.Point(visCB, "RIGHT", visRgn, "RIGHT", -20, 0)
@@ -2381,9 +2382,9 @@ CludesUI.AtOptionsLogin(function()
             visBlock:EnableMouse(true)
             visBlock:SetScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(visCB, "Enable the crosshair to set its visibility.") end
+                function() CUI.ShowWidgetTooltip(visCB, "Enable the crosshair to set its visibility.") end
             )
-            visBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            visBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function visUpdateDisabled()
                 if crosshairOff() then
                     visCB:SetAlpha(0.4)
@@ -2393,23 +2394,23 @@ CludesUI.AtOptionsLogin(function()
                     visBlock:Hide()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(visCBRefresh)
-            CludesUI.RegisterWidgetRefresh(visUpdateDisabled)
+            CUI.RegisterWidgetRefresh(visCBRefresh)
+            CUI.RegisterWidgetRefresh(visUpdateDisabled)
             visUpdateDisabled()
         end
 
         -- Inline cog on the crosshair dropdown (left region) for expanded options
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = crosshairRow._leftRegion
             local function chCogOff() return crosshairOff() end
             local function presetThick()
                 local s = cursorGet("crosshairSize")
-                local PRESETS = CludesUI.CROSSHAIR_PRESETS
+                local PRESETS = CUI.CROSSHAIR_PRESETS
                 local p = PRESETS and (PRESETS[s] or PRESETS.Normal)
                 return (p and p.width) or 2
             end
             local function applyCH()
-                if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
+                if CUI._applyCrosshair then CUI._applyCrosshair() end
             end
             local function dbset(keyName, val)
                 cset(keyName, val)
@@ -2510,8 +2511,8 @@ CludesUI.AtOptionsLogin(function()
                     type = "dropdown",
                     label = "Frame Strata",
                     tooltip = "Controls the order that overlapping elements display in. Set higher to show above other elements.",
-                    values = CludesUI.FRAME_STRATA_LABELS,
-                    order = CludesUI.FRAME_STRATA_ORDER_BASE,
+                    values = CUI.FRAME_STRATA_LABELS,
+                    order = CUI.FRAME_STRATA_ORDER_BASE,
                     get = function() return cursorGet("crosshairStrata") or "MEDIUM" end,
                     set = function(val) dbset("crosshairStrata", val) end,
                 },
@@ -2525,15 +2526,15 @@ CludesUI.AtOptionsLogin(function()
                     get = function() return cursorGet("crosshairHpalMelee") == true end,
                     set = function(val)
                         cset("crosshairHpalMelee", val)
-                        if CludesUI._RefreshCrosshairCutoffRange then
-                            CludesUI._RefreshCrosshairCutoffRange()
+                        if CUI._RefreshCrosshairCutoffRange then
+                            CUI._RefreshCrosshairCutoffRange()
                         end
                         applyCH()
                     end,
                 }
             end
 
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 title = "Crosshair Options",
                 rows = chCogRows,
                 gap = 9,
@@ -2543,7 +2544,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Inline color swatch on the crosshair dropdown (left region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = crosshairRow._leftRegion
 
             local chSwGet = function()
@@ -2553,9 +2554,9 @@ CludesUI.AtOptionsLogin(function()
             end
             local chSwSet = function(red, green, blue, a)
                 cset("crosshairColor", { r = red, g = green, b = blue, a = a or 1 })
-                if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
+                if CUI._applyCrosshair then CUI._applyCrosshair() end
             end
-            local chSwatch, chUpdateSwatch = CludesUI.BuildColorSwatch(
+            local chSwatch, chUpdateSwatch = CUI.BuildColorSwatch(
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 chSwGet,
@@ -2566,16 +2567,16 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(chSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
             leftRegion._lastInline = chSwatch
 
-            local chSwBlock = CludesUI.NewSwatchBlocker(chSwatch)
+            local chSwBlock = CUI.NewSwatchBlocker(chSwatch)
             chSwBlock:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(chSwatch, CludesUI.DisabledTooltip("Character Crosshair"))
+                    CUI.ShowWidgetTooltip(chSwatch, CUI.DisabledTooltip("Character Crosshair"))
                 end
             )
-            chSwBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            chSwBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 local isOff = crosshairOff()
                 if isOff then
                     chSwatch:SetAlpha(0.3)
@@ -2602,10 +2603,10 @@ CludesUI.AtOptionsLogin(function()
             text = "Color Out of Range",
             tooltip = function()
                 local text =
-                    CludesUI.L("Changes the crosshair color when your current target is out of range.")
-                if CludesUI._getCrosshairCutoffRange then
-                    local range = CludesUI._getCrosshairCutoffRange()
-                    text = text .. " " .. CludesUI.Lf("Currently active range cutoff: %1$syd.", range)
+                    CUI.L("Changes the crosshair color when your current target is out of range.")
+                if CUI._getCrosshairCutoffRange then
+                    local range = CUI._getCrosshairCutoffRange()
+                    text = text .. " " .. CUI.Lf("Currently active range cutoff: %1$syd.", range)
                 end
                 return text
             end,
@@ -2615,13 +2616,13 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return cursorGet("crosshairMeleeColorEnabled") == true end,
             setValue = function(val)
                 cset("crosshairMeleeColorEnabled", val)
-                if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
-                CludesUI:RefreshPage()
+                if CUI._applyCrosshair then CUI._applyCrosshair() end
+                CUI:RefreshPage()
             end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
         -- Inline color swatch (disabled when toggle is off or crosshair is None)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = meleeRow._leftRegion
             local function meleeOff() return crosshairOff() or cursorGet("crosshairMeleeColorEnabled") ~= true end
             local mcGet = function()
@@ -2631,22 +2632,22 @@ CludesUI.AtOptionsLogin(function()
             end
             local mcSet = function(red, green, blue, a)
                 cset("crosshairMeleeColor", { r = red, g = green, b = blue, a = a or 1 })
-                if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
+                if CUI._applyCrosshair then CUI._applyCrosshair() end
             end
             local mcSwatch, mcUpdate =
-                CludesUI.BuildColorSwatch(leftRegion, leftRegion:GetFrameLevel() + 5, mcGet, mcSet, true, 20)
+                CUI.BuildColorSwatch(leftRegion, leftRegion:GetFrameLevel() + 5, mcGet, mcSet, true, 20)
             Pix.Point(mcSwatch, "RIGHT", leftRegion._control, "LEFT", -12, 0)
             leftRegion._lastInline = mcSwatch
 
-            local mcBlock = CludesUI.NewSwatchBlocker(mcSwatch)
+            local mcBlock = CUI.NewSwatchBlocker(mcSwatch)
             mcBlock:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(mcSwatch, CludesUI.DisabledTooltip("Color Out of Range"))
+                    CUI.ShowWidgetTooltip(mcSwatch, CUI.DisabledTooltip("Color Out of Range"))
                 end
             )
-            mcBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-            CludesUI.RegisterWidgetRefresh(function()
+            mcBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+            CUI.RegisterWidgetRefresh(function()
                 local isOff = meleeOff()
                 mcSwatch:SetAlpha(isOff and 0.3 or 1)
                 if isOff then
@@ -2675,7 +2676,7 @@ CludesUI.AtOptionsLogin(function()
         ---------------------------------------------------------------------------
         --  GROUP FINDER (INSTANCES on WoW Forever)
         ---------------------------------------------------------------------------
-        _, height = W:SectionHeader(hostFrame, CludesUI.IS_FOREVER and "INSTANCES" or "GROUP FINDER", cursorY)
+        _, height = W:SectionHeader(hostFrame, CUI.IS_FOREVER and "INSTANCES" or "GROUP FINDER", cursorY)
         cursorY = cursorY - height
 
         -- Auto Insert Keystone | Announce Instance Reset, then Quick Signup |
@@ -2699,7 +2700,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.instanceResetAnnounce or false end,
             setValue = function(val)
                 Account().instanceResetAnnounce = val
-                if CludesUI._applyInstanceResetAnnounce then CludesUI._applyInstanceResetAnnounce() end
+                if CUI._applyInstanceResetAnnounce then CUI._applyInstanceResetAnnounce() end
             end,
         }
         local quickCfg = {
@@ -2709,7 +2710,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.quickSignup or false end,
             setValue = function(val)
                 Account().quickSignup = val
-                CludesUI._applyQuickSignup()
+                CUI._applyQuickSignup()
             end,
         }
         local persistCfg = {
@@ -2719,13 +2720,13 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.persistSignupNote or false end,
             setValue = function(val)
                 Account().persistSignupNote = val
-                CludesUI._applyPersistSignupNote()
-                CludesUI:RefreshPage()
+                CUI._applyPersistSignupNote()
+                CUI:RefreshPage()
             end,
         }
         local noteRow
-        if CludesUI.IS_FOREVER then
-            _, height = W:DualRow(hostFrame, cursorY, announceCfg, CludesUI.BlankRowCfg())
+        if CUI.IS_FOREVER then
+            _, height = W:DualRow(hostFrame, cursorY, announceCfg, CUI.BlankRowCfg())
             cursorY = cursorY - height
         else
             _, height = W:DualRow(hostFrame, cursorY, autoKeyCfg, announceCfg)
@@ -2734,28 +2735,28 @@ CludesUI.AtOptionsLogin(function()
             cursorY = cursorY - height
         end
 
-        if noteRow and not CludesUI._prebuilding then
+        if noteRow and not CUI._prebuilding then
             local rightRegion = noteRow._rightRegion
             local function persistOff() return not (CludesUIDB and CludesUIDB.persistSignupNote) end
 
-            CludesUI.BuildInlineCog(rightRegion, {
+            CUI.BuildInlineCog(rightRegion, {
                 gap = 9,
                 tip = "Edit the saved signup note.",
                 disabled = persistOff,
                 disabledTooltip = "Persistent Signup Note",
                 show = function()
-                    CludesUI:ShowInputPopup({
+                    CUI:ShowInputPopup({
                         title = "Signup Note",
                         message = "Saved between reloads and relogs. In Group Finder, choose Copy, press Ctrl+C, then Ctrl+V.",
                         placeholder = "Enter signup note...",
-                        initialText = CludesUI.GetPersistentSignupNote(),
+                        initialText = CUI.GetPersistentSignupNote(),
                         maxLetters = 63,
                         inputHeight = 70,
                         multiline = true,
                         showCount = true,
                         allowEmpty = true,
                         confirmText = "Save",
-                        onConfirm = function(note) CludesUI.SetPersistentSignupNote(note or "") end,
+                        onConfirm = function(note) CUI.SetPersistentSignupNote(note or "") end,
                     })
                 end,
             })
@@ -2780,7 +2781,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 Account().hideScreenshotStatus = val
-                if CludesUI._applyScreenshotStatus then CludesUI._applyScreenshotStatus() end
+                if CUI._applyScreenshotStatus then CUI._applyScreenshotStatus() end
             end,
         }, {
             type = "toggle",
@@ -2789,7 +2790,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.trainAllButton or false end,
             setValue = function(val)
                 Account().trainAllButton = val
-                if CludesUI._applyTrainAllButton then CludesUI._applyTrainAllButton() end
+                if CUI._applyTrainAllButton then CUI._applyTrainAllButton() end
             end,
         })
         cursorY = cursorY - height
@@ -2803,7 +2804,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return CludesUIDB and CludesUIDB.autoUnwrapCollections or false end,
             setValue = function(val)
                 Account().autoUnwrapCollections = val
-                if CludesUI._applyAutoUnwrap then CludesUI._applyAutoUnwrap() end
+                if CUI._applyAutoUnwrap then CUI._applyAutoUnwrap() end
             end,
         }, {
             type = "toggle",
@@ -2815,20 +2816,20 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 Account().autoOpenContainers = val
-                if CludesUI._applyAutoOpenContainers then CludesUI._applyAutoOpenContainers() end
-                CludesUI:RefreshPage()
+                if CUI._applyAutoOpenContainers then CUI._applyAutoOpenContainers() end
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
 
         -- Cog on Auto Open Containers (right region)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rightRegion = autoOpenContainerRow._rightRegion
             local function autoOpenContainerOff()
                 return not (CludesUIDB and CludesUIDB.autoOpenContainers == true)
             end
 
-            CludesUI.BuildInlineCog(rightRegion, {
+            CUI.BuildInlineCog(rightRegion, {
                 title = "Auto Open Containers Settings",
                 rows = {
                     {
@@ -2850,7 +2851,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         set = function(val)
                             Account().autoOpenContainersHoldCappedArtisanPayouts = val
-                            if CludesUI._applyAutoOpenContainers then CludesUI._applyAutoOpenContainers() end
+                            if CUI._applyAutoOpenContainers then CUI._applyAutoOpenContainers() end
                         end,
                     },
                 },
@@ -2862,43 +2863,43 @@ CludesUI.AtOptionsLogin(function()
 
         -- Bonus Roll Confirmation. Not offered on WoW Forever: no bonus rolls
         -- there, so the row is not built and the runtime block does not exist.
-        if not CludesUI.IS_FOREVER then
+        if not CUI.IS_FOREVER then
             local bonusRollRow
             local function bonusRollConflict() return C_AddOns.IsAddOnLoaded("BonusRollConfirm") end
             bonusRollRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
-                text = CludesUI.L("Bonus Roll Confirmation"),
-                tooltip = CludesUI.L(
+                text = CUI.L("Bonus Roll Confirmation"),
+                tooltip = CUI.L(
                     "Asks before spending a bonus roll and shows your loot specialization. Use the cog to also confirm Pass."
                 ),
                 disabled = bonusRollConflict,
-                disabledTooltip = CludesUI.L(
+                disabledTooltip = CUI.L(
                     "BonusRollConfirm is loaded and handles confirmation. Disable that addon and reload to use this feature."
                 ),
                 rawTooltip = true,
                 getValue = function() return CludesUIDB and CludesUIDB.bonusRollConfirmation == true end,
                 setValue = function(val)
                     Account().bonusRollConfirmation = val
-                    if CludesUI._applyBonusRollConfirmation then CludesUI._applyBonusRollConfirmation() end
-                    CludesUI:RefreshPage()
+                    if CUI._applyBonusRollConfirmation then CUI._applyBonusRollConfirmation() end
+                    CUI:RefreshPage()
                 end,
-            }, CludesUI.BlankRowCfg())
+            }, CUI.BlankRowCfg())
             cursorY = cursorY - height
-            if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(bonusRollRow._leftRegion, {
-                    title = CludesUI.L("Bonus Roll Settings"),
+            if not CUI._prebuilding then
+                CUI.BuildInlineCog(bonusRollRow._leftRegion, {
+                    title = CUI.L("Bonus Roll Settings"),
                     rows = {
                         {
                             type = "toggle",
-                            label = CludesUI.L("Only Confirm Roll"),
-                            tooltip = CludesUI.L(
+                            label = CUI.L("Only Confirm Roll"),
+                            tooltip = CUI.L(
                                 "Pass immediately without confirmation. Turn off to confirm both Roll and Pass."
                             ),
                             get = function() return not CludesUIDB or CludesUIDB.bonusRollOnly ~= false end,
                             set = function(val)
                                 Account().bonusRollOnly = val
-                                if CludesUI._applyBonusRollConfirmation then
-                                    CludesUI._applyBonusRollConfirmation()
+                                if CUI._applyBonusRollConfirmation then
+                                    CUI._applyBonusRollConfirmation()
                                 end
                             end,
                         },
@@ -2907,7 +2908,7 @@ CludesUI.AtOptionsLogin(function()
                     disabled = function()
                         return bonusRollConflict() or not (CludesUIDB and CludesUIDB.bonusRollConfirmation)
                     end,
-                    disabledTooltip = CludesUI.L("Bonus Roll Confirmation"),
+                    disabledTooltip = CUI.L("Bonus Roll Confirmation"),
                 })
             end
         end -- not IS_FOREVER
@@ -2927,7 +2928,7 @@ CludesUI.AtOptionsLogin(function()
     local pages = { PAGE_QOL, PAGE_RAIDTOOLS, PAGE_CURSOR, PAGE_SHIFTER, PAGE_MOVEMENT }
     -- No item upgrade system on WoW Forever: the Upgrader tab is not offered there
     -- (its resident file returns at load, so the page builder never exists either).
-    if not CludesUI.IS_FOREVER then pages[#pages + 1] = PAGE_UPGCALC end
+    if not CUI.IS_FOREVER then pages[#pages + 1] = PAGE_UPGCALC end
     local searchTerms = {
         "brez",
         "bres",
@@ -2995,7 +2996,7 @@ CludesUI.AtOptionsLogin(function()
     -- Terms for features WoW Forever does not have (the Battle Res indicator,
     -- the Macro Factory) are dropped there, so a sidebar search for them does
     -- not list this module; retail keeps the full list.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         local foreverDrop = {
             ["brez"] = true,
             ["bres"] = true,
@@ -3007,7 +3008,7 @@ CludesUI.AtOptionsLogin(function()
             if foreverDrop[searchTerms[idx]] then table.remove(searchTerms, idx) end
         end
     end
-    CludesUI:RegisterModule("CludesUIQoL", {
+    CUI:RegisterModule("CludesUIQoL", {
         title = "Utilities",
         description = "Quality of life features and custom cursor.",
         pages = pages,
@@ -3017,7 +3018,7 @@ CludesUI.AtOptionsLogin(function()
             -- builds (the CDM tracking-bars placeholder arrangement); window
             -- close and module switches are handled in the Raid Tools options
             -- file. Global Search's hidden pre-build never touches it.
-            if page ~= PAGE_RAIDTOOLS and not CludesUI._prebuilding and _G._CUI_RaidTools_Preview then
+            if page ~= PAGE_RAIDTOOLS and not CUI._prebuilding and _G._CUI_RaidTools_Preview then
                 _G._CUI_RaidTools_Preview(false)
             end
             if page == PAGE_QOL then return BuildQoLPage(page, hostFrame, yOffset) end
@@ -3042,7 +3043,7 @@ CludesUI.AtOptionsLogin(function()
         -- its settings preview off without this (the CDM tracking-bars
         -- arrangement: mirror the flag on BOTH paths).
         onPageCacheRestore = function(page)
-            if CludesUI._prebuilding then return end
+            if CUI._prebuilding then return end
             if _G._CUI_RaidTools_Preview then _G._CUI_RaidTools_Preview(page == PAGE_RAIDTOOLS) end
         end,
         resetScope = "account",
@@ -3088,13 +3089,13 @@ CludesUI.AtOptionsLogin(function()
                 CludesUIDB.hideErrorMessages = false
                 CludesUIDB.hideTutorials = false
                 -- Hands the tutorial CVars back before the reset's reload.
-                if CludesUI._applyHideTutorials then CludesUI._applyHideTutorials() end
+                if CUI._applyHideTutorials then CUI._applyHideTutorials() end
                 CludesUIDB.hideLootHistory = false
                 CludesUIDB.lootHistoryMode = nil
                 CludesUIDB.lootHistoryDelay = nil
-                if CludesUI._applyHideLootHistory then CludesUI._applyHideLootHistory() end
+                if CUI._applyHideLootHistory then CUI._applyHideLootHistory() end
                 -- Talking Head does not exist on WoW Forever.
-                if CludesUI._applyHideTalkingHead then CludesUI._applyHideTalkingHead() end
+                if CUI._applyHideTalkingHead then CUI._applyHideTalkingHead() end
                 CludesUIDB.hideBanners = false
                 CludesUIDB.hideAlertToasts = false
                 CludesUIDB.hideAlertToastsLoot = nil
@@ -3156,38 +3157,38 @@ CludesUI.AtOptionsLogin(function()
             if _G._CUBS_ResetCursor then _G._CUBS_ResetCursor() end
             -- Battle Res and Bloodlust do not exist on WoW Forever.
             if _G._CUI_BattleRes_Reset then _G._CUI_BattleRes_Reset() end
-            CludesUI._applyHideBlizzardPartyFrame()
-            if CludesUI._applyBonusRollConfirmation then CludesUI._applyBonusRollConfirmation() end
-            if CludesUI._applyHideErrorMessages then CludesUI._applyHideErrorMessages() end
-            if CludesUI._applyAnnounceGroupDeaths then CludesUI._applyAnnounceGroupDeaths() end
-            if CludesUI._applyCombatAlert then CludesUI._applyCombatAlert() end
-            if CludesUI._applyPotionAlert then CludesUI._applyPotionAlert() end
-            if CludesUI._applyTalentAlert then CludesUI._applyTalentAlert() end
-            if CludesUI._applyTargetDistance then CludesUI._applyTargetDistance() end
-            if CludesUI._applyHideTransforms then CludesUI._applyHideTransforms() end
-            if CludesUI._applyQuickSignup then CludesUI._applyQuickSignup() end
-            if CludesUI._applyPersistSignupNote then CludesUI._applyPersistSignupNote() end
-            if CludesUI._applyQuickLoot then CludesUI._applyQuickLoot() end
-            if CludesUI._applyAutoGossip then CludesUI._applyAutoGossip() end
-            if CludesUI._applyInstanceResetAnnounce then CludesUI._applyInstanceResetAnnounce() end
-            if CludesUI._applyAutoOpenContainers then CludesUI._applyAutoOpenContainers() end
-            if CludesUI._ShutdownShifter then CludesUI._ShutdownShifter() end
+            CUI._applyHideBlizzardPartyFrame()
+            if CUI._applyBonusRollConfirmation then CUI._applyBonusRollConfirmation() end
+            if CUI._applyHideErrorMessages then CUI._applyHideErrorMessages() end
+            if CUI._applyAnnounceGroupDeaths then CUI._applyAnnounceGroupDeaths() end
+            if CUI._applyCombatAlert then CUI._applyCombatAlert() end
+            if CUI._applyPotionAlert then CUI._applyPotionAlert() end
+            if CUI._applyTalentAlert then CUI._applyTalentAlert() end
+            if CUI._applyTargetDistance then CUI._applyTargetDistance() end
+            if CUI._applyHideTransforms then CUI._applyHideTransforms() end
+            if CUI._applyQuickSignup then CUI._applyQuickSignup() end
+            if CUI._applyPersistSignupNote then CUI._applyPersistSignupNote() end
+            if CUI._applyQuickLoot then CUI._applyQuickLoot() end
+            if CUI._applyAutoGossip then CUI._applyAutoGossip() end
+            if CUI._applyInstanceResetAnnounce then CUI._applyInstanceResetAnnounce() end
+            if CUI._applyAutoOpenContainers then CUI._applyAutoOpenContainers() end
+            if CUI._ShutdownShifter then CUI._ShutdownShifter() end
             if _G._CUI_AutoLogging_Check then _G._CUI_AutoLogging_Check() end
-            CludesUI._ModuleNS["CludesUIQoL"].SCT_Reset()
-            CludesUI:InvalidatePageCache()
+            CUI._ModuleNS["CludesUIQoL"].SCT_Reset()
+            CUI:InvalidatePageCache()
         end,
         -- Tears down Duration Warning, Raid Tools, and Movement Alert
         -- previews on module switch (Movement Alert also stops its ticker).
         onModuleLeave = function()
-            if CludesUI._durWarnHidePreview then CludesUI._durWarnHidePreview() end
+            if CUI._durWarnHidePreview then CUI._durWarnHidePreview() end
             if _G._CUI_RaidTools_Preview then _G._CUI_RaidTools_Preview(false) end
-            if CludesUI._MovementAlertPreview then CludesUI._MovementAlertPreview(false) end
+            if CUI._MovementAlertPreview then CUI._MovementAlertPreview(false) end
         end,
     })
 
     SLASH_EQOL1 = "/qol"
     SlashCmdList.EQOL = function()
         if InCombatLockdown and InCombatLockdown() then return end
-        CludesUI:ShowModule("CludesUIQoL")
+        CUI:ShowModule("CludesUIQoL")
     end
 end)

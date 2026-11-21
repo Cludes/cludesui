@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewRoles.lua
 --
@@ -39,7 +40,7 @@ local function BuildPreviewRoles()
     wipe(previewClassTokens)
 
     -- Effective role: the player's spec wins over a stale assigned role
-    local playerRole = CludesUI.UnitEffectiveRole("player")
+    local playerRole = CUI.UnitEffectiveRole("player")
     if playerRole ~= "TANK" and playerRole ~= "HEALER" then playerRole = "DAMAGER" end
     previewRoles[1] = playerRole
     local _, pct = UnitClass("player")

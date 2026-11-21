@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIAuraBuffReminders.lua
 --  Raid Buffs, Auras, and Consumables reminders: clickable SecureActionButton icons
@@ -8,19 +9,19 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewInternals
-        and CludesUI._Pool
-        and CludesUI.RAID_PREP_IDS
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewInternals
+        and CUI._Pool
+        and CUI.RAID_PREP_IDS
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
-CludesUI._ModuleNS[ADDON_NAME] = select(2, ...) -- LOD options files read this module ns via the registry
+CUI._ModuleNS[ADDON_NAME] = select(2, ...) -- LOD options files read this module ns via the registry
 
-local REMIND = CludesUI.Lite.NewAddon("CludesUIAuraBuffReminders")
+local REMIND = CUI.Lite.NewAddon("CludesUIAuraBuffReminders")
 
 -- WoW Forever runs a reduced module: the Raid Buffs section over that client's
 -- own buffs (EABR.CollectForeverRaidBuffs) and one Forever-only section (the
@@ -30,7 +31,7 @@ local REMIND = CludesUI.Lite.NewAddon("CludesUIAuraBuffReminders")
 -- options sections off. Both values live on EABR, where every split file reads
 -- them; retail reads FOREVER as false at each gate and nothing else changes
 -- there.
-REMIND.FOREVER = CludesUI.IS_FOREVER == true
+REMIND.FOREVER = CUI.IS_FOREVER == true
 REMIND.CAMP_BENEFITS = 1229741
 REMIND.SLEEPING_BAG_BUFF = 429959
 REMIND.SLEEPING_BAG_ITEM = 211527
@@ -154,7 +155,7 @@ if REMIND.FOREVER then
             HUNTER = {
                 {
                     key = "aspect",
-                    label = CludesUI.L("Aspect"),
+                    label = CUI.L("Aspect"),
                     on = true,
                     own = true,
                     lines = {
@@ -173,8 +174,8 @@ if REMIND.FOREVER then
             PALADIN = {
                 {
                     key = "blessing",
-                    label = CludesUI.L("Blessing"),
-                    menu = CludesUI.L("Blessings"),
+                    label = CUI.L("Blessing"),
+                    menu = CUI.L("Blessings"),
                     on = true,
                     ownMemory = true,
                     lines = {
@@ -186,8 +187,8 @@ if REMIND.FOREVER then
                 },
                 {
                     key = "paladinaura",
-                    label = CludesUI.L("Aura"),
-                    menu = CludesUI.L("Important Auras"),
+                    label = CUI.L("Aura"),
+                    menu = CUI.L("Important Auras"),
                     on = true,
                     own = true,
                     lines = {
@@ -208,7 +209,7 @@ if REMIND.FOREVER then
             SHAMAN = {
                 {
                     key = "shield",
-                    label = CludesUI.L("Shield"),
+                    label = CUI.L("Shield"),
                     on = true,
                     lines = {
                         { 324, 325, 905, 945, 8134, 10431, 10432 },
@@ -219,7 +220,7 @@ if REMIND.FOREVER then
             WARLOCK = {
                 {
                     key = "demonarmor",
-                    label = CludesUI.L("Armor"),
+                    label = CUI.L("Armor"),
                     on = true,
                     lines = { { 687, 696, 706, 1086, 11733, 11734, 11735 } },
                 },
@@ -275,7 +276,7 @@ local function ResolveGlowTint(profile)
     if not profile then return nil end
     EnsureGlowModeMigrated(profile)
     if profile.glowColorMode == "class" then
-        local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+        local classColor = CUI.GetClassColor(CUI._playerClass)
         return classColor.r, classColor.g, classColor.b
     end
     if profile.glowColorMode ~= "custom" then return nil end
@@ -339,18 +340,18 @@ end
 --  Font resolution (uses global font system)
 -------------------------------------------------------------------------------
 local function ResolveFontPath(fontName)
-    if fontName and fontName ~= "__global" and CludesUI and CludesUI.ResolveFontName then
-        local filePath = CludesUI.ResolveFontName(fontName)
+    if fontName and fontName ~= "__global" and CUI and CUI.ResolveFontName then
+        local filePath = CUI.ResolveFontName(fontName)
         if filePath and filePath ~= "" then return filePath end
     end
-    if CludesUI and CludesUI.GetFontPath then return CludesUI.GetFontPath("auraBuff") end
+    if CUI and CUI.GetFontPath then return CUI.GetFontPath("auraBuff") end
     return "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 end
 local _cachedOutline
 local function SetABRFont(fontStr, font, size)
     if not (fontStr and fontStr.SetFont) then return end
-    if not _cachedOutline then _cachedOutline = CludesUI.GetFontOutlineFlag("auraBuff") end
-    CludesUI.PrimeFontShadow(fontStr, _cachedOutline == "" and CludesUI.GetFontUseShadow("auraBuff"))
+    if not _cachedOutline then _cachedOutline = CUI.GetFontOutlineFlag("auraBuff") end
+    CUI.PrimeFontShadow(fontStr, _cachedOutline == "" and CUI.GetFontUseShadow("auraBuff"))
     fontStr:SetFont(font, size, _cachedOutline)
 end
 
@@ -376,7 +377,7 @@ local LABEL_CLASS_OVERRIDES = {
 }
 local function ShortLabel(name, classOverride)
     if classOverride and LABEL_CLASS_OVERRIDES[classOverride] then
-        return CludesUI.L(LABEL_CLASS_OVERRIDES[classOverride])
+        return CUI.L(LABEL_CLASS_OVERRIDES[classOverride])
     end
     if LABEL_OVERRIDES[name] then return LABEL_OVERRIDES[name] end
     return name:match("^(%S+)") or name
@@ -725,7 +726,7 @@ local NON_SECRET_SPELL_IDS = {
 -- broken: true while an CUI_AuraBuffReminders_*.lua file loads; a file that
 -- fails leaves it set, and the files behind it return at their first lines.
 local mod = select(2, ...)
-CludesUI.NewInternals(mod, "_abrInternals", {
+CUI.NewInternals(mod, "_abrInternals", {
     _B = _B,
     AURA_SCAN_LIMIT = AURA_SCAN_LIMIT,
     CacheInstanceInfo = CacheInstanceInfo,

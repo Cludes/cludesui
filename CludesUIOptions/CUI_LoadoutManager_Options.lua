@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_LoadoutManager_Options.lua  --  Settings page for the Loadout Manager
 --
@@ -8,19 +9,19 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  edit scope rebuilds the page, since its tooltips and the copy cog name it.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUILoadoutManager"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 local PAGE_DISPLAY = "Loadout Manager"
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     local function DB() return mod.DB() end
 
-    local function ApplyLoadouts(force) CludesUI:RefreshPage(force and true or nil) end
+    local function ApplyLoadouts(force) CUI:RefreshPage(force and true or nil) end
 
     -- The module calls this when its state changes.
     mod.OnStateChanged = function()
-        if CludesUI:GetActiveModule() ~= ADDON_NAME then return end
+        if CUI:GetActiveModule() ~= ADDON_NAME then return end
         ApplyLoadouts()
     end
 
@@ -35,26 +36,26 @@ CludesUI.AtOptionsLogin(function()
     --  Text helpers. Widget labels and tooltips are translated where the
     --  widgets draw them; the lines this page writes itself go through L/Lf.
     ---------------------------------------------------------------------------
-    local DIM = CludesUI.COLOR_CODES.DIM
+    local DIM = CUI.COLOR_CODES.DIM
     local function Dimmed(textValue) return DIM .. tostring(textValue) .. "|r" end
 
     -- Assigned names in the suite accent, read on every call so a theme change
     -- lands with the next refresh.
     local function Accent(textValue)
-        local color = CludesUI.CLUDES_GREEN
-        return CludesUI.HexColor(color.r, color.g, color.b) .. tostring(textValue) .. "|r"
+        local color = CUI.CLUDES_GREEN
+        return CUI.HexColor(color.r, color.g, color.b) .. tostring(textValue) .. "|r"
     end
 
-    local ALL_SPECS_TEXT = CludesUI.L("All Specs")
-    local TXT_NOT_SET = Dimmed(CludesUI.L("not set"))
-    local TXT_NO_GEAR = Dimmed(CludesUI.L("no gear"))
-    local TXT_NO_TALENTS = Dimmed(CludesUI.L("no talents"))
+    local ALL_SPECS_TEXT = CUI.L("All Specs")
+    local TXT_NOT_SET = Dimmed(CUI.L("not set"))
+    local TXT_NO_GEAR = Dimmed(CUI.L("no gear"))
+    local TXT_NO_TALENTS = Dimmed(CUI.L("no talents"))
     local TXT_SLASH = Dimmed(" / ")
-    local TXT_NOTHING_HERE = Dimmed(CludesUI.L("nothing assigned here"))
-    local TXT_OUTSIDE = Dimmed(CludesUI.L("not in an instance"))
-    local TXT_OPEN_WORLD = Dimmed(CludesUI.L("open world"))
-    local TXT_UNKNOWN = Dimmed(CludesUI.L("unknown"))
-    local TXT_PICK_SAVED = Dimmed(CludesUI.L("pick a saved instance"))
+    local TXT_NOTHING_HERE = Dimmed(CUI.L("nothing assigned here"))
+    local TXT_OUTSIDE = Dimmed(CUI.L("not in an instance"))
+    local TXT_OPEN_WORLD = Dimmed(CUI.L("open world"))
+    local TXT_UNKNOWN = Dimmed(CUI.L("unknown"))
+    local TXT_PICK_SAVED = Dimmed(CUI.L("pick a saved instance"))
 
     -- One assignment slot as "gear / talents", or "not set".
     local function PairSummary(gearName, talentStored)
@@ -86,13 +87,13 @@ CludesUI.AtOptionsLogin(function()
     }
 
     local INSTANCE_KIND = {
-        party = CludesUI.L("Dungeon"),
-        raid = CludesUI.L("Raid"),
-        scenario = CludesUI.L("Scenario"),
-        arena = CludesUI.L("Arena"),
-        pvp = CludesUI.L("Battleground"),
+        party = CUI.L("Dungeon"),
+        raid = CUI.L("Raid"),
+        scenario = CUI.L("Scenario"),
+        arena = CUI.L("Arena"),
+        pvp = CUI.L("Battleground"),
     }
-    local INSTANCE_KIND_OTHER = CludesUI.L("Instance")
+    local INSTANCE_KIND_OTHER = CUI.L("Instance")
 
     ---------------------------------------------------------------------------
     --  Edit scope: "All Specs" plus one entry per specialization, set only by
@@ -183,7 +184,7 @@ CludesUI.AtOptionsLogin(function()
         local values, sequence = { _noLoc = true }, {}
         if menuOpts then values._menuOpts = menuOpts end
         -- The search prebuild indexes the row, never its list.
-        if CludesUI._prebuilding then return values, sequence, Noop, Noop end
+        if CUI._prebuilding then return values, sequence, Noop, Noop end
         local entries, sig = entriesFn()
         FillValues(values, sequence, noneText, entries)
         local dropdownBtn
@@ -237,13 +238,13 @@ CludesUI.AtOptionsLogin(function()
     local function SourceText(level, key, scope)
         local layer = scope and tostring(mod.SpecName(scope)) or ALL_SPECS_TEXT
         if level == "difficulty" then
-            return Dimmed(CludesUI.Lf("(this instance, %1$s only, %2$s)", DifficultyName(), layer))
+            return Dimmed(CUI.Lf("(this instance, %1$s only, %2$s)", DifficultyName(), layer))
         elseif level == "instance" then
-            return Dimmed(CludesUI.Lf("(this instance, %1$s)", layer))
+            return Dimmed(CUI.Lf("(this instance, %1$s)", layer))
         elseif level == "type" then
             local details = TYPE_INFO[key]
-            local typeName = details and CludesUI.L(details.label) or tostring(key)
-            return Dimmed(CludesUI.Lf("(%1$s default, %2$s)", typeName, layer))
+            local typeName = details and CUI.L(details.label) or tostring(key)
+            return Dimmed(CUI.Lf("(%1$s default, %2$s)", typeName, layer))
         end
         return ""
     end
@@ -294,7 +295,7 @@ CludesUI.AtOptionsLogin(function()
     -- of its own shows the whole line on hover while it is cut. Call after
     -- those controls are built.
     local function AddLiveLabel(regionFrame, prefixText, valueFn)
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         local labelText = regionFrame and regionFrame._label
         if not labelText then return end
         local bound = regionFrame._lastInline or regionFrame._control
@@ -308,16 +309,16 @@ CludesUI.AtOptionsLogin(function()
             regionFrame._labelTruncated = labelText:IsTruncated()
         end
         Update()
-        CludesUI.RegisterWidgetRefresh(Update)
+        CUI.RegisterWidgetRefresh(Update)
         if not regionFrame._labelHasHit then
             local hit = CreateFrame("Frame", nil, regionFrame)
             hit:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
             hit:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
             hit:SetMouseClickEnabled(false)
             hit:SetScript("OnEnter", function()
-                if labelText:IsTruncated() then CludesUI.ShowWidgetTooltip(labelText, labelText:GetText()) end
+                if labelText:IsTruncated() then CUI.ShowWidgetTooltip(labelText, labelText:GetText()) end
             end)
-            hit:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            hit:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             regionFrame._labelRevealHit = hit
         end
     end
@@ -326,7 +327,7 @@ CludesUI.AtOptionsLogin(function()
     -- the first one built sits rightmost. tip shows while enabled, disabledTip
     -- (a sentence, or a function returning one) while disabled.
     local function InlineButton(regionFrame, textValue, onClick, tipText, disabledFn, disabledTip)
-        CludesUI.BuildInlineButton(regionFrame, textValue, onClick, {
+        CUI.BuildInlineButton(regionFrame, textValue, onClick, {
             width = 58,
             tip = tipText,
             disabled = disabledFn,
@@ -340,7 +341,7 @@ CludesUI.AtOptionsLogin(function()
     -- while the page is on screen.
     local pageWatch
     local function WatchPage(hostFrame)
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         if not pageWatch then
             pageWatch = CreateFrame("Frame")
             pageWatch._searchIgnore = true -- the inline search never hides it
@@ -356,13 +357,13 @@ CludesUI.AtOptionsLogin(function()
     --  Page
     ---------------------------------------------------------------------------
     local function BuildPage(page, hostFrame, yOffset)
-        local W = CludesUI.Widgets
-        local Pix = CludesUI.PanelPP
+        local W = CUI.Widgets
+        local Pix = CUI.PanelPP
         local cursorY = yOffset
         local _, height
 
         hostFrame._showRowDivider = true
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
         WatchPage(hostFrame)
 
         local scopeName = ScopeLabel()
@@ -404,10 +405,10 @@ CludesUI.AtOptionsLogin(function()
         )
         cursorY = cursorY - height
 
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = swapRow._rightRegion
             if region._control then region._control:Hide() end
-            local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 170,
                 region:GetFrameLevel() + 2,
@@ -436,9 +437,9 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
             region._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbRefresh)
+            CUI.RegisterWidgetRefresh(cbRefresh)
 
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Auto-Swap",
                 rows = {
                     {
@@ -498,8 +499,8 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Spec assignments win over All Specs.",
         })
         cursorY = cursorY - height
-        AddLiveLabel(whereRow._leftRegion, CludesUI.L("Location"), LocationText)
-        AddLiveLabel(whereRow._rightRegion, CludesUI.L("Specialization"), function()
+        AddLiveLabel(whereRow._leftRegion, CUI.L("Location"), LocationText)
+        AddLiveLabel(whereRow._rightRegion, CUI.L("Specialization"), function()
             local specID = mod.GetCurrentSpecID()
             return specID and Accent(mod.SpecName(specID)) or TXT_UNKNOWN
         end)
@@ -512,12 +513,12 @@ CludesUI.AtOptionsLogin(function()
             { type = "label", text = "Talents Here", tooltip = "The talent loadout that applies here." }
         )
         cursorY = cursorY - height
-        AddLiveLabel(hereRow._leftRegion, CludesUI.L("Gear Here"), function()
+        AddLiveLabel(hereRow._leftRegion, CUI.L("Gear Here"), function()
             local gear, level, key, scope = mod.ResolveGear(mod.GetContext())
             if not gear then return TXT_NOTHING_HERE end
             return Accent(gear) .. "  " .. SourceText(level, key, scope)
         end)
-        AddLiveLabel(hereRow._rightRegion, CludesUI.L("Talents Here"), function()
+        AddLiveLabel(hereRow._rightRegion, CUI.L("Talents Here"), function()
             local talent, level, key, scope = mod.ResolveTalent(mod.GetContext())
             local name = mod.TalentDisplayName(talent)
             if not name then return TXT_NOTHING_HERE end
@@ -531,18 +532,18 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         local gearValues, gearOrder, gearUpdate, gearAttach =
-            LivePicker(DIM .. CludesUI.L("No gear set") .. "|r", GearEntries, {
+            LivePicker(DIM .. CUI.L("No gear set") .. "|r", GearEntries, {
                 icon = function(key)
                     local icon = gearIcons[key]
                     if icon then return icon, 0.08, 0.92, 0.08, 0.92 end
                 end,
             })
         local talentValues, talentOrder, talentUpdate, talentAttach =
-            LivePicker(DIM .. CludesUI.L("No talent loadout") .. "|r", TalentEntries)
+            LivePicker(DIM .. CUI.L("No talent loadout") .. "|r", TalentEntries)
         -- Both lists refill before their dropdowns repaint (refreshers run in
         -- registration order).
-        CludesUI.RegisterWidgetRefresh(gearUpdate)
-        CludesUI.RegisterWidgetRefresh(talentUpdate)
+        CUI.RegisterWidgetRefresh(gearUpdate)
+        CUI.RegisterWidgetRefresh(talentUpdate)
 
         -- A pick counts only while its list holds it: a renamed or deleted
         -- set, or a loadout of another spec, reads as no pick.
@@ -603,7 +604,7 @@ CludesUI.AtOptionsLogin(function()
         gearAttach(pickRow._leftRegion._control)
         talentAttach(pickRow._rightRegion._control)
 
-        CludesUI.BuildInlineCog(pickRow._leftRegion, {
+        CUI.BuildInlineCog(pickRow._leftRegion, {
             title = "Gear Sets",
             rows = {
                 {
@@ -645,20 +646,20 @@ CludesUI.AtOptionsLogin(function()
 
         -- Copy cog: one button per other layer. CopyScopeFrom replaces this
         -- layer outright, so the cog closes and a confirmation asks first.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local current = mod.GetScope()
-            local copyTitle = CludesUI.Lf("Copy Into %1$s", scopeName)
+            local copyTitle = CUI.Lf("Copy Into %1$s", scopeName)
             local rowList, cogShow = {}, nil
             local function AddCopy(sourceID, name)
                 rowList[#rowList + 1] = {
                     type = "button",
-                    label = CludesUI.Lf("Copy From %1$s", name),
+                    label = CUI.Lf("Copy From %1$s", name),
                     action = function()
                         local popFrame = cogShow and cogShow._popupFrame
                         if popFrame and popFrame:IsShown() then popFrame:Hide() end
-                        CludesUI:ShowConfirmPopup({
+                        CUI:ShowConfirmPopup({
                             title = copyTitle,
-                            message = CludesUI.Lf(
+                            message = CUI.Lf(
                                 "Replace every %1$s assignment with a copy of the %2$s assignments?",
                                 scopeName,
                                 name
@@ -680,7 +681,7 @@ CludesUI.AtOptionsLogin(function()
             if #rowList > 0 then
                 cogShow = select(
                     2,
-                    CludesUI.BuildInlineCog(scopeRow._leftRegion, {
+                    CUI.BuildInlineCog(scopeRow._leftRegion, {
                         title = copyTitle,
                         minWidth = 220,
                         rows = rowList,
@@ -697,9 +698,9 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         -- The Save and Clear tips name the scope the buttons write to.
-        local saveTip = CludesUI.Lf("Save the picked loadout here for %1$s.", scopeName)
-        local clearTip = CludesUI.Lf("Clear what is saved here for %1$s.", scopeName)
-        local nothingTip = CludesUI.Lf("Nothing saved here for %1$s.", scopeName)
+        local saveTip = CUI.Lf("Save the picked loadout here for %1$s.", scopeName)
+        local clearTip = CUI.Lf("Clear what is saved here for %1$s.", scopeName)
+        local nothingTip = CUI.Lf("Nothing saved here for %1$s.", scopeName)
 
         local instRow
         instRow, height = W:DualRow(
@@ -743,7 +744,7 @@ CludesUI.AtOptionsLogin(function()
             )
             AddLiveLabel(
                 regionFrame,
-                perDiff and CludesUI.L("This Difficulty") or CludesUI.L("Any Difficulty"),
+                perDiff and CUI.L("This Difficulty") or CUI.L("Any Difficulty"),
                 function()
                     local inside, g, t = InstanceSlot(perDiff)
                     if not inside then return TXT_OUTSIDE end
@@ -758,8 +759,8 @@ CludesUI.AtOptionsLogin(function()
         -- The list refills before the dropdown repaints (refreshers run in
         -- registration order), so a cleared entry never shows as picked.
         local savedValues, savedOrder, savedUpdate, savedAttach =
-            LivePicker(DIM .. CludesUI.L("Pick an instance") .. "|r", SavedEntries)
-        CludesUI.RegisterWidgetRefresh(savedUpdate)
+            LivePicker(DIM .. CUI.L("Pick an instance") .. "|r", SavedEntries)
+        CUI.RegisterWidgetRefresh(savedUpdate)
 
         local savedRow
         savedRow, height = W:DualRow(hostFrame, cursorY, {
@@ -767,7 +768,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Saved Instances",
             values = savedValues,
             order = savedOrder,
-            tooltip = CludesUI.Lf("Every instance saved for %1$s.", scopeName),
+            tooltip = CUI.Lf("Every instance saved for %1$s.", scopeName),
             getValue = function()
                 if pickedSaved and savedValues[pickedSaved] then return pickedSaved end
                 return NONE
@@ -793,12 +794,12 @@ CludesUI.AtOptionsLogin(function()
                 if e then mod.ClearInstanceAssignment(e.key) end
                 ApplyLoadouts()
             end,
-            CludesUI.Lf("Clear the picked instance for %1$s.", scopeName),
+            CUI.Lf("Clear the picked instance for %1$s.", scopeName),
             function() return PickedSavedEntry() == nil end,
             "Pick a saved instance first."
         )
-        local nothingSaved = Dimmed(CludesUI.Lf("nothing saved for %1$s", scopeName))
-        AddLiveLabel(savedRow._rightRegion, CludesUI.L("Assignment"), function()
+        local nothingSaved = Dimmed(CUI.Lf("nothing saved for %1$s", scopeName))
+        AddLiveLabel(savedRow._rightRegion, CUI.L("Assignment"), function()
             local e = PickedSavedEntry()
             if e then return PairSummary(e.gear, e.talent) end
             if #savedOrder <= 1 then return nothingSaved end
@@ -812,7 +813,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         local function TypeHalf(details)
-            if not details then return CludesUI.BlankRowCfg() end
+            if not details then return CUI.BlankRowCfg() end
             return { type = "label", text = details.label, tooltip = TYPE_TIPS[details.key] }
         end
 
@@ -820,7 +821,7 @@ CludesUI.AtOptionsLogin(function()
         -- name the type and the scope.
         local function TypeControls(regionFrame, details)
             local key = details.key
-            local typeName = CludesUI.L(details.label)
+            local typeName = CUI.L(details.label)
             local function IsSet()
                 local g, t = TypeSlot(key)
                 return g ~= nil or t ~= nil
@@ -832,9 +833,9 @@ CludesUI.AtOptionsLogin(function()
                     mod.ClearType(key)
                     ApplyLoadouts()
                 end,
-                CludesUI.Lf("Clear the %1$s default for %2$s.", typeName, scopeName),
+                CUI.Lf("Clear the %1$s default for %2$s.", typeName, scopeName),
                 function() return not IsSet() end,
-                CludesUI.Lf("No %1$s default saved for %2$s.", typeName, scopeName)
+                CUI.Lf("No %1$s default saved for %2$s.", typeName, scopeName)
             )
             InlineButton(
                 regionFrame,
@@ -844,7 +845,7 @@ CludesUI.AtOptionsLogin(function()
                     mod.AssignType(key)
                     ApplyLoadouts()
                 end,
-                CludesUI.Lf("Save the picked loadout as the %1$s default for %2$s.", typeName, scopeName),
+                CUI.Lf("Save the picked loadout as the %1$s default for %2$s.", typeName, scopeName),
                 function() return not CanSave() end,
                 SaveBlockedTip
             )
@@ -873,7 +874,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Register the module
     ---------------------------------------------------------------------------
-    CludesUI:RegisterModule(ADDON_NAME, {
+    CUI:RegisterModule(ADDON_NAME, {
         title = PAGE_DISPLAY,
         description = "Applies gear sets and talent loadouts automatically per instance type and specialization.",
         pages = { PAGE_DISPLAY },

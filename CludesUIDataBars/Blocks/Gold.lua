@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\Gold.lua - Info Bar block: gold, the session and every character.
 --
@@ -28,7 +29,7 @@ local K = mod.BlockKit
 local format, concat = string.format, table.concat
 local floor, max, min, abs = math.floor, math.max, math.min, math.abs
 
-local Ledger = CludesUI.GetGoldLedger()
+local Ledger = CUI.GetGoldLedger()
 
 -- This session, shared by every gold block.
 local session = { earned = 0, spent = 0, lastMoney = nil, tokenPrice = nil }
@@ -355,7 +356,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             -- rest still count in the total. Shift shows everyone, with no
             -- row limit; WoW Forever has no floor (vanilla balances are small).
             local all = IsShiftKeyDown()
-            local noFloor = all or CludesUI.IS_FOREVER
+            local noFloor = all or CUI.IS_FOREVER
             local floorCopper = 10000 * 10000
             local sum, keys = 0, {}
             for key, entry in pairs(chars) do
@@ -411,7 +412,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             if bank and bank > 0 then
                 if realmCount > 1 then mod.Tip_AddLine(" ") end
                 mod.Tip_AddColumns(
-                    CludesUI.L("Warbank"),
+                    CUI.L("Warbank"),
                     mod.MoneyTokens(bank, small, icons, true),
                     1,
                     0.82,
@@ -423,7 +424,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             mod.Tip_AddDouble(L["TOTAL"], Money(sum), 1, 1, 1, 1, 1, 1)
         elseif not tracking and cfg.tipCharacters ~= false then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(CludesUI.L("Account gold tracking is disabled"), 0.6, 0.6, 0.6)
+            mod.Tip_AddLine(CUI.L("Account gold tracking is disabled"), 0.6, 0.6, 0.6)
         end
         if cfg.tipToken ~= false and session.tokenPrice and session.tokenPrice > 0 then
             mod.Tip_AddLine(" ")
@@ -459,7 +460,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
     button:SetScript("OnClick", function(_, mouseButton)
         if mouseButton == "RightButton" and IsControlKeyDown() and IsShiftKeyDown() then
             mod.Tip_Hide(button)
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = "Reset Gold Data",
                 message = "Clear the gold of every character and the warbank? This character and the warbank are recorded again at once, the others when they next log in.",
                 confirmText = "Reset",

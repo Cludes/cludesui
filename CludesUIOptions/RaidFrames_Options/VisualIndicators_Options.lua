@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  RaidFrames_Options\VisualIndicators_Options.lua
 --  Raid Frames options: the Indicators, Dispels, Top Name Bar, Friendly Boss
@@ -6,14 +7,14 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  party pages. Called by BuildVisualSections after BuildVisualBars; returns y.
 --  Shared helpers come from ns._RFO_OptEnv.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIRaidFrames"]
+local mod = CUI._ModuleNS["CludesUIRaidFrames"]
 if not mod then return end -- module disabled: no options page
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host (a kept page wrapper or cog popup and every frame it hands out) are
 -- reset and dressed again by the next build instead of made anew; elsewhere
 -- this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- Panel close turns the Healer Mana preview off and resets the eye of each
 -- tab's latest build (ns._eye[ctx]): registered once for the session, by the
@@ -77,13 +78,13 @@ local function BuildVisualIndicators(
 
     -- Eyeball: toggle indicator visibility on preview (raid + party); none in
     -- the search pre-build (it indexes nothing, and the header is a stand-in there)
-    if not CludesUI._prebuilding then
-        local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-        local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
+    if not CUI._prebuilding then
+        local EYE_VISIBLE = CUI.EYE_VISIBLE_ICON
+        local EYE_INVISIBLE = CUI.EYE_INVISIBLE_ICON
 
         local indLabel
         for _, region in ipairs({ indicatorHeader:GetRegions() }) do
-            if region.GetText and CludesUI.EnKey(region:GetText()) == "INDICATORS" then
+            if region.GetText and CUI.EnKey(region:GetText()) == "INDICATORS" then
                 indLabel = region
                 break
             end
@@ -96,7 +97,7 @@ local function BuildVisualIndicators(
             eyeButton:SetPoint("LEFT", indicatorHeader, "BOTTOMLEFT", 85, 8)
         end
         eyeButton:SetFrameLevel(indicatorHeader:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        CUI.SetGlyphAlpha(eyeButton, 0.4)
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
 
@@ -106,11 +107,11 @@ local function BuildVisualIndicators(
         local function RefreshIndicatorEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
-                CludesUI.SetGlyphAlpha(eyeButton, 0.15)
+                CUI.SetGlyphAlpha(eyeButton, 0.15)
                 return
             end
             eyeTex:SetTexture(mod._indicatorsVisible and EYE_INVISIBLE or EYE_VISIBLE)
-            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+            CUI.SetGlyphAlpha(eyeButton, 0.4)
         end
         EYE.refreshIndicatorEye = RefreshIndicatorEye
         RefreshIndicatorEye()
@@ -137,25 +138,25 @@ local function BuildVisualIndicators(
         end)
         eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
-                CludesUI.ShowWidgetTooltip(self, "Enable preview to use")
+                CUI.ShowWidgetTooltip(self, "Enable preview to use")
                 return
             end
-            CludesUI.SetGlyphAlpha(self, 0.7)
-            CludesUI.ShowWidgetTooltip(
+            CUI.SetGlyphAlpha(self, 0.7)
+            CUI.ShowWidgetTooltip(
                 self,
                 mod._indicatorsVisible and "Hide indicators on preview" or "Show indicators on preview"
             )
         end)
         eyeButton:SetScript("OnLeave", function(self)
-            if not IsPreviewOff() then CludesUI.SetGlyphAlpha(self, 0.4) end
-            CludesUI.HideWidgetTooltip()
+            if not IsPreviewOff() then CUI.SetGlyphAlpha(self, 0.4) end
+            CUI.HideWidgetTooltip()
         end)
     end -- close do (indicators eyeball)
 
     -- WoW Forever: Missing Buffs, first in the section (runtime in
     -- CUI_RaidFrames_ForeverMissingBuffs.lua). The raid marker row's
     -- shape: Position (None turns it off) | Size, offsets in the cog.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         local mbPositionValues = {
             none = "None",
             topleft = "Top Left",
@@ -198,7 +199,7 @@ local function BuildVisualIndicators(
                     SWrite("showMissingBuffs", true)
                     SSet("missingBuffsPosition", val)
                 end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -335,9 +336,9 @@ local function BuildVisualIndicators(
                         local rowList = {}
                         for _, token in ipairs(ROLE_CLASSES[role]) do
                             local name = LOCALIZED_CLASS_NAMES_MALE[token] or token
-                            local color = CludesUI.GetClassColor(token)
+                            local color = CUI.GetClassColor(token)
                             local r = ListRow(
-                                CludesUI.HexColor(color.r, color.g, color.b) .. name .. "|r",
+                                CUI.HexColor(color.r, color.g, color.b) .. name .. "|r",
                                 function() return Own(token) or Picked() end,
                                 function(entries) SetOwn(token, entries) end
                             )
@@ -347,7 +348,7 @@ local function BuildVisualIndicators(
                             rowList[#rowList + 1] = r
                         end
                         local popFrame = dropdownBtn:GetParent()
-                        local _, show = CludesUI.BuildCogPopup({
+                        local _, show = CUI.BuildCogPopup({
                             title = ROLE_TITLE[role],
                             rows = rowList,
                             noOwnerDim = true,
@@ -449,10 +450,10 @@ local function BuildVisualIndicators(
             -- The icons' glow: the shared glow controls (also listed on
             -- Global Settings > Glows); the Pixel Glow rows show only
             -- while Pixel Glow is picked.
-            for _, r in ipairs(CludesUI.GlowOptions.PopupRows(MissingGlowDesc(SVal, SWrite), "Glow", true)) do
+            for _, r in ipairs(CUI.GlowOptions.PopupRows(MissingGlowDesc(SVal, SWrite), "Glow", true)) do
                 rowList[#rowList + 1] = r
             end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Missing Buffs",
                 rows = rowList,
                 disabled = function() return not SVal("showMissingBuffs", true) end,
@@ -463,7 +464,7 @@ local function BuildVisualIndicators(
 
     local RI_STYLES = mod.ROLE_ICON_STYLES
     -- Effective role: the player's spec wins over a stale assigned role
-    local playerRole = CludesUI.UnitEffectiveRole("player")
+    local playerRole = CUI.UnitEffectiveRole("player")
     local roleStyleValues = {
         none = "None",
         modern = "Modern",
@@ -512,7 +513,7 @@ local function BuildVisualIndicators(
         getValue = SValRow("roleIconStyle", "modern"),
         setValue = function(val)
             SSet("roleIconStyle", val)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "dropdown",
@@ -528,7 +529,7 @@ local function BuildVisualIndicators(
     })
     cursorY = cursorY - height
     -- Right side placeholder dropdown is swapped for a checkbox dropdown.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local rightRegion = row._rightRegion
         if rightRegion._control then rightRegion._control:Hide() end
         local function ShowRoleItems()
@@ -555,7 +556,7 @@ local function BuildVisualIndicators(
             return itemList
         end
         local roleKeyMap = { tank = "showRoleForTank", healer = "showRoleForHealer", dps = "showRoleForDPS" }
-        local checkDrop = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop = CUI.BuildVisOptsCBDropdown(
             rightRegion,
             170,
             rightRegion:GetFrameLevel() + 2,
@@ -569,7 +570,7 @@ local function BuildVisualIndicators(
     end
     do
         local region = row._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Role Icons",
             rows = {
                 {
@@ -580,7 +581,7 @@ local function BuildVisualIndicators(
                     set = function(val)
                         SSet("roleText", val)
                         if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
                 {
@@ -614,7 +615,7 @@ local function BuildVisualIndicators(
         bottom = "Bottom",
         bottomright = "Bottom Right",
     }
-    local rolePositionOrder = CludesUI.POSITION_GRID_ORDER
+    local rolePositionOrder = CUI.POSITION_GRID_ORDER
     -- Attach Role Icons (Top Name Bar section) takes over the role icon's placement
     local function RoleAttached() return SVal("roleIconOnNameBar", false) and SVal("topNameBarEnabled", false) end
     local roleRow2
@@ -652,9 +653,9 @@ local function BuildVisualIndicators(
         }
     )
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = roleRow2._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Role Icon Offset",
             disabled = RoleAttached,
             disabledTooltip = "Attach Role Icons",
@@ -722,7 +723,7 @@ local function BuildVisualIndicators(
                 SWrite("showRaidMarker", true)
                 SSet("raidMarkerPosition", val)
             end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "slider",
@@ -739,7 +740,7 @@ local function BuildVisualIndicators(
 
     do
         local region = row._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Marker Offset",
             rows = {
                 {
@@ -767,7 +768,7 @@ local function BuildVisualIndicators(
     -- Rows below Marker Position are the less-common indicators. The RAID tab collapses them behind the shared session expander (BuildLessCommonExpander in CludesUI_Widgets_RowAddons.lua); the party tab always shows them.
     local lessCommonOpen = true
     if not optionState._partyCtx then
-        lessCommonOpen, cursorY = CludesUI.BuildLessCommonExpander(
+        lessCommonOpen, cursorY = CUI.BuildLessCommonExpander(
             hostFrame,
             cursorY,
             "rfIndicators",
@@ -787,7 +788,7 @@ local function BuildVisualIndicators(
             bottom = "Bottom",
             bottomright = "Bottom Right",
         }
-        local readyCheckPositionOrder = CludesUI.POSITION_GRID_ORDER
+        local readyCheckPositionOrder = CUI.POSITION_GRID_ORDER
         local rcRow
         rcRow, height = W:DualRow(
             hostFrame,
@@ -811,9 +812,9 @@ local function BuildVisualIndicators(
             }
         )
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = rcRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Ready Check / Summon / Rez",
                 rows = {
                     {
@@ -898,9 +899,9 @@ local function BuildVisualIndicators(
             setValue = SSetRow("statusTextSize"),
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = stRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Status Text",
                 rows = {
                     {
@@ -933,9 +934,9 @@ local function BuildVisualIndicators(
                 },
             })
         end
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = stRow._rightRegion
-            local colorSwatch = CludesUI.BuildColorSwatch(region, stRow:GetFrameLevel() + 3, function()
+            local colorSwatch = CUI.BuildColorSwatch(region, stRow:GetFrameLevel() + 3, function()
                 local color = SGet("statusTextColor")
                 if color then return color.r, color.g, color.b, 1 end
                 return 1, 1, 1, 1
@@ -981,7 +982,7 @@ local function BuildVisualIndicators(
             getValue = function() return SVal("showLeaderIcon", false) and "kit" or "none" end,
             setValue = function(val)
                 SSet("showLeaderIcon", val ~= "none")
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         } or {
             type = "dropdown",
@@ -999,7 +1000,7 @@ local function BuildVisualIndicators(
                     SWrite("showLeaderIcon", true)
                     SSet("leaderIconPosition", val)
                 end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -1015,7 +1016,7 @@ local function BuildVisualIndicators(
         cursorY = cursorY - height
         do
             local region = row._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Leader Icon",
                 rows = {
                     {
@@ -1105,7 +1106,7 @@ local function BuildVisualIndicators(
                     SSet("combatIndicatorPosition", val)
                 end
                 if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -1119,9 +1120,9 @@ local function BuildVisualIndicators(
             setValue = SSetRow("combatIndicatorSize"),
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = ciRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Combat Icon",
                 rows = {
                     {
@@ -1172,9 +1173,9 @@ local function BuildVisualIndicators(
                 },
             })
         end
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = ciRow._rightRegion
-            local colorSwatch = CludesUI.BuildColorSwatch(region, ciRow:GetFrameLevel() + 3, function()
+            local colorSwatch = CUI.BuildColorSwatch(region, ciRow:GetFrameLevel() + 3, function()
                 local color = SGet("combatIndicatorCustomColor")
                 if color then return color.r, color.g, color.b, 1 end
                 return 1, 0.2, 0.2, 1
@@ -1204,9 +1205,9 @@ local function BuildVisualIndicators(
                 setValue = SSetRow("groupNumberSize"),
             })
             cursorY = cursorY - height
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = gnRow._rightRegion
-                local colorSwatch = CludesUI.BuildColorSwatch(region, gnRow:GetFrameLevel() + 3, function()
+                local colorSwatch = CUI.BuildColorSwatch(region, gnRow:GetFrameLevel() + 3, function()
                     local color = SGet("groupNumberColor")
                     if color then return color.r, color.g, color.b, color.a or 0.75 end
                     return 1, 1, 1, 0.75
@@ -1217,9 +1218,9 @@ local function BuildVisualIndicators(
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 region._lastInline = colorSwatch
             end
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = gnRow._leftRegion
-                CludesUI.BuildInlineCog(region, {
+                CUI.BuildInlineCog(region, {
                     title = "Group Number Offset",
                     rows = {
                         {
@@ -1290,7 +1291,7 @@ local function BuildVisualIndicators(
                     SWrite("showPingMarker", true)
                     SSet("pingMarkerPosition", val)
                 end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -1304,9 +1305,9 @@ local function BuildVisualIndicators(
             setValue = SSetRow("pingMarkerSize"),
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = pingRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Ping Marker Offset",
                 rows = {
                     {
@@ -1333,7 +1334,7 @@ local function BuildVisualIndicators(
     end -- close the less-common-indicators collapse wrapper
     -- While expanded the shared link re-renders here in its "Hide ..." form; no-op while collapsed or in party ctx.
     if not optionState._partyCtx then
-        cursorY = CludesUI.FinishLessCommonExpander(
+        cursorY = CUI.FinishLessCommonExpander(
             hostFrame,
             cursorY,
             "rfIndicators",
@@ -1352,13 +1353,13 @@ local function BuildVisualIndicators(
 
     -- Eyeball: toggle dispel visibility on preview (raid + party); none in
     -- the search pre-build (it indexes nothing, and the header is a stand-in there)
-    if not CludesUI._prebuilding then
-        local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-        local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
+    if not CUI._prebuilding then
+        local EYE_VISIBLE = CUI.EYE_VISIBLE_ICON
+        local EYE_INVISIBLE = CUI.EYE_INVISIBLE_ICON
 
         local dispLabel
         for _, region in ipairs({ dispelHeader:GetRegions() }) do
-            if region.GetText and CludesUI.EnKey(region:GetText()) == "DISPELS" then
+            if region.GetText and CUI.EnKey(region:GetText()) == "DISPELS" then
                 dispLabel = region
                 break
             end
@@ -1371,7 +1372,7 @@ local function BuildVisualIndicators(
             eyeButton:SetPoint("LEFT", dispelHeader, "BOTTOMLEFT", 85, 8)
         end
         eyeButton:SetFrameLevel(dispelHeader:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        CUI.SetGlyphAlpha(eyeButton, 0.4)
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
 
@@ -1380,11 +1381,11 @@ local function BuildVisualIndicators(
         local function RefreshDispelEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
-                CludesUI.SetGlyphAlpha(eyeButton, 0.15)
+                CUI.SetGlyphAlpha(eyeButton, 0.15)
                 return
             end
             eyeTex:SetTexture(mod._dispelsVisible and EYE_INVISIBLE or EYE_VISIBLE)
-            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+            CUI.SetGlyphAlpha(eyeButton, 0.4)
         end
         EYE.refreshDispelEye = RefreshDispelEye
         RefreshDispelEye()
@@ -1403,18 +1404,18 @@ local function BuildVisualIndicators(
         end)
         eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
-                CludesUI.ShowWidgetTooltip(self, "Enable preview to use")
+                CUI.ShowWidgetTooltip(self, "Enable preview to use")
                 return
             end
-            CludesUI.SetGlyphAlpha(self, 0.7)
-            CludesUI.ShowWidgetTooltip(
+            CUI.SetGlyphAlpha(self, 0.7)
+            CUI.ShowWidgetTooltip(
                 self,
                 mod._dispelsVisible and "Hide dispels on preview" or "Show dispels on preview"
             )
         end)
         eyeButton:SetScript("OnLeave", function(self)
-            if not IsPreviewOff() then CludesUI.SetGlyphAlpha(self, 0.4) end
-            CludesUI.HideWidgetTooltip()
+            if not IsPreviewOff() then CUI.SetGlyphAlpha(self, 0.4) end
+            CUI.HideWidgetTooltip()
         end)
     end -- close do (dispels eyeball)
 
@@ -1436,7 +1437,7 @@ local function BuildVisualIndicators(
         getValue = SValRow("dispelOverlay", "fill"),
         setValue = function(val)
             SSet("dispelOverlay", val)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "slider",
@@ -1499,13 +1500,13 @@ local function BuildVisualIndicators(
                 SSet("showDispelIcons", true)
                 SSet("dispelIconPosition", val)
             end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     })
     cursorY = cursorY - height
     do
         local region = row._rightRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function() return not SVal("showDispelIcons", false) end,
             disabledTooltip = "This option requires a Type Icon Position other than None",
             title = "Dispel Icon",
@@ -1542,9 +1543,9 @@ local function BuildVisualIndicators(
     end
     -- Cog on the Dispel Border slider: thickness in physical pixels of the engine-tinted dispel ring on dispellable debuff ICONS,
     -- and Color Custom Borders (the frame's own border copied in the dispel type color).
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = row._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Dispel Border",
             rows = {
                 {
@@ -1678,7 +1679,7 @@ local function BuildVisualIndicators(
             type = "toggle",
             text = "Enable Top Name Bar",
             getValue = SValRow("topNameBarEnabled", false),
-            setValue = CludesUI.SectionToggleSetValue(function(val) SSet("topNameBarEnabled", val) end),
+            setValue = CUI.SectionToggleSetValue(function(val) SSet("topNameBarEnabled", val) end),
         }, TNBOff() and { type = "label", text = "" } or {
             type = "slider",
             text = "Height",
@@ -1690,13 +1691,13 @@ local function BuildVisualIndicators(
         })
         cursorY = cursorY - height
 
-        if not TNBOff() and not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._rightRegion, {
+        if not TNBOff() and not CUI._prebuilding then
+            CUI.BuildInlineCog(row._rightRegion, {
                 disabled = function()
                     local key = SGet("borderTexture")
                     return TNBOff()
-                        or CludesUI.BlizzStyle.Get("raidframes")
-                        or not CludesUI._pixelArtBorders[key]
+                        or CUI.BlizzStyle.Get("raidframes")
+                        or not CUI._pixelArtBorders[key]
                 end,
                 disabledTooltip = function()
                     return TNBOff() and "Enable Top Name Bar" or "Pixels or Pixels Textured Border Style"
@@ -1744,9 +1745,9 @@ local function BuildVisualIndicators(
                 setValue = SSetRow("topNameBarTextSize"),
             })
             cursorY = cursorY - height
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = tnbRow2._leftRegion
-                local bgSwatch = CludesUI.BuildColorSwatch(region, tnbRow2:GetFrameLevel() + 3, function()
+                local bgSwatch = CUI.BuildColorSwatch(region, tnbRow2:GetFrameLevel() + 3, function()
                     local color = SGet("topNameBarBgColor")
                     if color then return color.r, color.g, color.b, 1 end
                     return 17 / 255, 17 / 255, 17 / 255, 1
@@ -1759,7 +1760,7 @@ local function BuildVisualIndicators(
             end
             do
                 local region = tnbRow2._rightRegion
-                CludesUI.BuildInlineCog(region, {
+                CUI.BuildInlineCog(region, {
                     title = "Text Offset",
                     rows = {
                         {
@@ -1802,10 +1803,10 @@ local function BuildVisualIndicators(
             })
             cursorY = cursorY - height
             -- Custom rightmost (opens picker), class leftmost. Clicking switches topNameBarTextColorMode; the inactive one dims. Custom is added FIRST so it sits next to the dropdown.
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = tnbRow3._leftRegion
                 local function AddTNBSwatch(getColor, setColor, mode, opensPicker, tooltip)
-                    local sw = CludesUI.BuildColorSwatch(
+                    local sw = CUI.BuildColorSwatch(
                         region,
                         tnbRow3:GetFrameLevel() + 3,
                         getColor,
@@ -1819,19 +1820,19 @@ local function BuildVisualIndicators(
                     sw:SetScript("OnClick", function(self)
                         if SVal("topNameBarTextColorMode", "class") ~= mode then
                             SSet("topNameBarTextColorMode", mode)
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                             return
                         end
                         if opensPicker and self._eabOrigClick then self._eabOrigClick(self) end
                     end)
                     if tooltip then
-                        sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, tooltip) end)
-                        sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                        sw:HookScript("OnEnter", function() CUI.ShowWidgetTooltip(sw, tooltip) end)
+                        sw:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                     end
                     local function vis()
                         sw:SetAlpha(SVal("topNameBarTextColorMode", "class") == mode and 1 or 0.3)
                     end
-                    CludesUI.RegisterWidgetRefresh(vis)
+                    CUI.RegisterWidgetRefresh(vis)
                     vis()
                 end
                 -- Custom (rightmost): editable, opens the picker when active.
@@ -1862,12 +1863,12 @@ local function BuildVisualIndicators(
                 getValue = SValRow("roleIconOnNameBar", false),
                 setValue = function(val)
                     SSet("roleIconOnNameBar", val)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
-            }, CludesUI.BlankRowCfg())
+            }, CUI.BlankRowCfg())
             cursorY = cursorY - height
-            if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(tnbRow4._leftRegion, {
+            if not CUI._prebuilding then
+                CUI.BuildInlineCog(tnbRow4._leftRegion, {
                     title = "Role Icon Position",
                     disabled = function() return not SVal("roleIconOnNameBar", false) end,
                     disabledTooltip = "Attach Role Icons",
@@ -1875,8 +1876,8 @@ local function BuildVisualIndicators(
                         {
                             type = "dropdown",
                             label = "Position",
-                            values = CludesUI.POSITION_GRID_VALUES,
-                            order = CludesUI.POSITION_GRID_ORDER,
+                            values = CUI.POSITION_GRID_VALUES,
+                            order = CUI.POSITION_GRID_ORDER,
                             get = SValRow("roleNameBarPosition", "left"),
                             set = SSetRow("roleNameBarPosition"),
                         },
@@ -1932,10 +1933,10 @@ local function BuildVisualIndicators(
             order = { "never", "healers", "always" },
             getValue = function() return FBSet().display or "never" end,
             -- Rows below are HIDDEN while Never; only the Never <-> enabled flip forces the full rebuild.
-            setValue = CludesUI.DependentSetValue(FBEnabled, function(val)
+            setValue = CUI.DependentSetValue(FBEnabled, function(val)
                 FBSet().display = val
                 mod.FB_Apply()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end),
         }, (not FBEnabled()) and { type = "label", text = "" } or {
             type = "dropdown",
@@ -1947,16 +1948,16 @@ local function BuildVisualIndicators(
                 FBSet().position = val
                 if val ~= "free" then mod.FB_SetMoverShown(false) end
                 mod.FB_Apply()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
         -- Inline cog on the display dropdown: Show in Dungeons (opt-in;
         -- the group gate is raid-only without it). Dimmed while Never,
         -- like every row below the dropdown.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = row._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 disabled = function() return not FBEnabled() end,
                 disabledTooltip = FB_DISABLED_TIP,
                 title = "Friendly Boss Group",
@@ -1994,7 +1995,7 @@ local function BuildVisualIndicators(
                     enabled = FBEnabled,
                     enabledTip = FB_DISABLED_TIP,
                 })
-                CludesUI.BuildInlineCog(row, {
+                CUI.BuildInlineCog(row, {
                     anchorTo = button,
                     chain = false,
                     disabled = function() return not (FBEnabled() and FBSet().position == "free") end,
@@ -2015,9 +2016,9 @@ local function BuildVisualIndicators(
                     },
                 })
             end
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = row._rightRegion
-                local colorSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
+                local colorSwatch = CUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
                     local color = FBSet().healthColor
                     if color then return color.r, color.g, color.b, 1 end
                     return 23 / 255, 172 / 255, 49 / 255, 1
@@ -2028,19 +2029,19 @@ local function BuildVisualIndicators(
                 colorSwatch:SetPoint("RIGHT", region, "RIGHT", -20, 0)
                 region._lastInline = colorSwatch
                 -- Dimming alone leaves the swatch clickable; this blocks it.
-                local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
+                local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
                 swatchBlock:SetScript(
                     "OnEnter",
-                    function() CludesUI.ShowWidgetTooltip(colorSwatch, FB_DISABLED_TIP) end
+                    function() CUI.ShowWidgetTooltip(colorSwatch, FB_DISABLED_TIP) end
                 )
-                swatchBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                swatchBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 local function UpdateFBSwatch()
                     local on = FBEnabled()
                     colorSwatch:SetAlpha(on and 1 or 0.3)
                     swatchBlock:SetShown(not on)
                     if region._label then region._label:SetAlpha(on and 1 or 0.3) end
                 end
-                CludesUI.RegisterWidgetRefresh(UpdateFBSwatch)
+                CUI.RegisterWidgetRefresh(UpdateFBSwatch)
                 UpdateFBSwatch()
             end
 
@@ -2102,19 +2103,19 @@ local function BuildVisualIndicators(
             tooltip = "Automatically duplicates the raid's tanks into the Extra Frames group. Shares the frame cap with hotkey picks.",
             getValue = function() return ExtraFramesCfg().showTanks == true end,
             -- Rows below are HIDDEN while unconfigured (no tanks toggle AND no hotkey); only a configured-state flip forces the rebuild.
-            setValue = CludesUI.DependentSetValue(XFConfigured, function(val)
+            setValue = CUI.DependentSetValue(XFConfigured, function(val)
                 ExtraFramesCfg().showTanks = val
                 mod.XF_Apply()
                 -- Feature may have just gone dark; the mover can't stay up.
                 if not XFConfigured() then mod.XF_SetMoverShown(false) end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end),
         })
         cursorY = cursorY - height
         -- Inline cog on Show Tanks: tank auto-include options.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = row._rightRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Show Tanks Options",
                 rows = {
                     {
@@ -2130,9 +2131,9 @@ local function BuildVisualIndicators(
                 },
             })
         end
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = row._leftRegion
-            local kbBtn, refresh = CludesUI.BuildKeybindButton(row, {
+            local kbBtn, refresh = CUI.BuildKeybindButton(row, {
                 w = 140,
                 h = 26,
                 font = 13,
@@ -2154,14 +2155,14 @@ local function BuildVisualIndicators(
                     if not XFConfigured() then mod.XF_SetMoverShown(false) end
                     -- Hidden rows below: a configured-state flip needs the full rebuild, not the fast refresh.
                     if XFConfigured() ~= wasConfigured then
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     else
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end
                 end,
             })
-            CludesUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
-            CludesUI.RegisterWidgetRefresh(refresh)
+            CUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
+            CUI.RegisterWidgetRefresh(refresh)
         end
 
         -- Rows 2-4 are HIDDEN while unconfigured (no tanks toggle AND no hotkey); the triggers above rebuild when that state flips.
@@ -2178,7 +2179,7 @@ local function BuildVisualIndicators(
                     if val ~= "free" then mod.XF_SetMoverShown(false) end
                     mod.XF_Apply()
                     -- Full rebuild: the Grow/Wrap Direction row only exists while the position is Free Move.
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             }, { type = "label", text = "Free Move Position" })
             cursorY = cursorY - height
@@ -2218,7 +2219,7 @@ local function BuildVisualIndicators(
                         -- Keep the legacy key coherent for exports/older reads.
                         set.freeHorizontal = (val == "RIGHT" or val == "LEFT")
                         XFReapply()
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end,
                 }, {
                     type = "dropdown",
@@ -2241,7 +2242,7 @@ local function BuildVisualIndicators(
                 cursorY = cursorY - height
                 do
                     local region = row._rightRegion
-                    CludesUI.BuildInlineCog(region, {
+                    CUI.BuildInlineCog(region, {
                         title = "Row Wrapping",
                         rows = {
                             {
@@ -2295,7 +2296,7 @@ local function BuildVisualIndicators(
             -- regardless of the extra frames' custom size).
             do
                 local region = row._leftRegion
-                CludesUI.BuildInlineCog(region, {
+                CUI.BuildInlineCog(region, {
                     title = "Extra Frame Size",
                     rows = {
                         {
@@ -2355,7 +2356,7 @@ local function BuildVisualIndicators(
             local p = PFTab().position
             if p == "free" or (p == "owner" and onParty) then return p end
         end
-        local BLANK = CludesUI.BlankRowCfg
+        local BLANK = CUI.BlankRowCfg
 
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
@@ -2363,13 +2364,13 @@ local function BuildVisualIndicators(
             tooltip = "Adds your group's pets beside these frames, with their health, name, range and click-casting.",
             getValue = function() return PFEnabled() end,
             -- Rows below are HIDDEN while off; only the on/off flip forces the rebuild.
-            setValue = CludesUI.DependentSetValue(PFEnabled, function(val)
+            setValue = CUI.DependentSetValue(PFEnabled, function(val)
                 PFSet()[tabKey] = val and true or false
                 mod.PF_Apply()
                 -- The Move Frames button goes with the page rebuild; the overlay can't stay up.
                 if not val and mod.PF_IsMoverShown(tabKey) then mod.PF_SetMoverShown(false) end
                 RedrawPetPreview()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end),
         }, (not PFEnabled()) and BLANK() or {
             type = "dropdown",
@@ -2390,7 +2391,7 @@ local function BuildVisualIndicators(
                 mod.PF_Apply()
                 RedrawPetPreview()
                 -- A new last row needs the full rebuild.
-                CludesUI:RefreshPage(PFPlacement() ~= before)
+                CUI:RefreshPage(PFPlacement() ~= before)
             end,
         })
         cursorY = cursorY - height
@@ -2492,7 +2493,7 @@ local function BuildVisualIndicators(
     -- only: both tabs build this section and the display's settings are
     -- shared. Greyed while the mode is None, when the display has no mover.
     if not optionState._partyCtx then
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = "RF_HealerMana",
             disabled = function()
                 local hm = saved.profile.healerMana
@@ -2540,7 +2541,7 @@ local function BuildVisualIndicators(
     })
     cursorY = cursorY - height
     -- Cog: buff/HoT aura-icon tooltips (Buff Manager), hidden by default and opt-in here. This is the ONLY gate on the aura tip: the dropdown's tooltip mode governs the UNIT tooltip and must NOT veto an aura tip enabled here (see ns.RaidFrameTooltipAllowed).
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = row._rightRegion
         local tipRows
         -- 4-state on the same key: true/nil=hidden, false=shown, "cursor"=shown at cursor, "combat"=hidden during combat.
@@ -2574,7 +2575,7 @@ local function BuildVisualIndicators(
                 end,
             },
         }
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Tooltip Settings",
             rows = tipRows,
         })
@@ -2631,7 +2632,7 @@ local function BuildVisualIndicators(
                     if hm.colorMode == "power" then
                         hm.colorMode = "custom"
                         RebuildHealthMarkers()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                         return
                     end
                     if self._eabOrigClick then self._eabOrigClick(self) end
@@ -2643,7 +2644,7 @@ local function BuildVisualIndicators(
                 getValue = function()
                     -- Same resolver chain as the runtime rows: the global
                     -- custom power color first, stock mana color after.
-                    local details = CludesUI.GetPowerColor("MANA")
+                    local details = CUI.GetPowerColor("MANA")
                     if details then return details.r, details.g, details.b, 1 end
                     local mc = PowerBarColor and PowerBarColor.MANA
                     if mc then return mc.r, mc.g, mc.b, 1 end
@@ -2654,7 +2655,7 @@ local function BuildVisualIndicators(
                     local hm = HealerManaCfg()
                     hm.colorMode = "power"
                     RebuildHealthMarkers()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 refreshAlpha = function() return (HealerManaCfg().colorMode == "power") and 1 or 0.3 end,
             },
@@ -2662,9 +2663,9 @@ local function BuildVisualIndicators(
     })
     cursorY = cursorY - height
     -- Inline cog (text settings) + preview eyeball on the toggle
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = hmRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Healer Mana Display",
             rows = {
                 {
@@ -2750,14 +2751,14 @@ local function BuildVisualIndicators(
             },
         })
 
-        local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-        local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
+        local EYE_VISIBLE = CUI.EYE_VISIBLE_ICON
+        local EYE_INVISIBLE = CUI.EYE_INVISIBLE_ICON
         local eyeButton = CreateFrame("Button", nil, region)
         eyeButton:SetSize(26, 26)
         eyeButton:SetPoint("RIGHT", region._lastInline, "LEFT", -4, 0)
         region._lastInline = eyeButton
         eyeButton:SetFrameLevel(region:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        CUI.SetGlyphAlpha(eyeButton, 0.4)
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         eyeTex:SetTexture(EYE_VISIBLE)
@@ -2768,19 +2769,19 @@ local function BuildVisualIndicators(
             RefreshHMEye()
         end)
         eyeButton:SetScript("OnEnter", function(s)
-            CludesUI.SetGlyphAlpha(s, 0.7)
-            CludesUI.ShowWidgetTooltip(
+            CUI.SetGlyphAlpha(s, 0.7)
+            CUI.ShowWidgetTooltip(
                 s,
                 mod._hmPreview and "Hide the preview" or "Preview the display at its position"
             )
         end)
         eyeButton:SetScript("OnLeave", function(s)
-            CludesUI.SetGlyphAlpha(s, 0.4)
-            CludesUI.HideWidgetTooltip()
+            CUI.SetGlyphAlpha(s, 0.4)
+            CUI.HideWidgetTooltip()
         end)
         if not hmEyeOnHide then
             hmEyeOnHide = true
-            CludesUI:RegisterOnHide(StopHMPreviewOnHide)
+            CUI:RegisterOnHide(StopHMPreviewOnHide)
         end
     end
 
@@ -2801,7 +2802,7 @@ local function BuildVisualIndicators(
                 return function()
                     PGS()[modeKey] = m
                     ApplyPowerGlow()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
             end
             local function Alpha(m)
@@ -2833,7 +2834,7 @@ local function BuildVisualIndicators(
                     hasAlpha = false,
                     refreshAlpha = Alpha("class"),
                     getValue = function()
-                        local color = CludesUI.GetClassColor(CludesUI._playerClass)
+                        local color = CUI.GetClassColor(CUI._playerClass)
                         if color then return color.r, color.g, color.b, 1 end
                         return 1, 1, 1, 1
                     end,
@@ -2845,7 +2846,7 @@ local function BuildVisualIndicators(
                     hasAlpha = false,
                     refreshAlpha = Alpha("accent"),
                     getValue = function()
-                        local red, green, b = CludesUI.ResolveActiveAccent()
+                        local red, green, b = CUI.ResolveActiveAccent()
                         return red or 1, green or 1, b or 1, 1
                     end,
                     setValue = function() end,
@@ -2865,7 +2866,7 @@ local function BuildVisualIndicators(
                 ApplyPowerGlow()
                 -- The mover's isHidden verdict changed: re-register.
                 if mod._RFRegisterUnlock then mod._RFRegisterUnlock() end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "multiSwatch",
@@ -2902,7 +2903,7 @@ local function BuildVisualIndicators(
             swatches = PGModeSwatches("borderColorMode", "borderColor"),
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = pgRow._leftRegion
             local function SizeRow(labelText, key)
                 return {
@@ -2919,7 +2920,7 @@ local function BuildVisualIndicators(
                     end,
                 }
             end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Player Group Label",
                 disabled = PGOff,
                 disabledTooltip = "Player Group Label",
@@ -2976,43 +2977,43 @@ local function BuildVisualIndicators(
                 },
             })
 
-            local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-            local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
+            local EYE_VISIBLE = CUI.EYE_VISIBLE_ICON
+            local EYE_INVISIBLE = CUI.EYE_INVISIBLE_ICON
             local eyeButton = CreateFrame("Button", nil, region)
             eyeButton:SetSize(26, 26)
             eyeButton:SetPoint("RIGHT", region._lastInline, "LEFT", -4, 0)
             region._lastInline = eyeButton
             eyeButton:SetFrameLevel(region:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+            CUI.SetGlyphAlpha(eyeButton, 0.4)
             local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
             eyeTex:SetTexture(EYE_VISIBLE)
             local function PaintPowerGlowEye()
                 eyeTex:SetTexture(mod._pgPreview and EYE_INVISIBLE or EYE_VISIBLE)
                 eyeButton:SetEnabled(not PGOff())
-                CludesUI.SetGlyphAlpha(eyeButton, PGOff() and 0.15 or 0.4)
+                CUI.SetGlyphAlpha(eyeButton, PGOff() and 0.15 or 0.4)
             end
             EYE.refreshPGEye = PaintPowerGlowEye
-            CludesUI.RegisterWidgetRefresh(PaintPowerGlowEye)
+            CUI.RegisterWidgetRefresh(PaintPowerGlowEye)
             PaintPowerGlowEye()
             eyeButton:SetScript("OnClick", function()
                 if mod.PG_SetPreview then mod.PG_SetPreview(not mod._pgPreview) end
                 PaintPowerGlowEye()
             end)
             eyeButton:SetScript("OnEnter", function(s)
-                CludesUI.SetGlyphAlpha(s, 0.7)
-                CludesUI.ShowWidgetTooltip(
+                CUI.SetGlyphAlpha(s, 0.7)
+                CUI.ShowWidgetTooltip(
                     s,
                     mod._pgPreview and "Hide the preview" or "Preview the label at its position"
                 )
             end)
             eyeButton:SetScript("OnLeave", function(s)
-                CludesUI.SetGlyphAlpha(s, 0.4)
-                CludesUI.HideWidgetTooltip()
+                CUI.SetGlyphAlpha(s, 0.4)
+                CUI.HideWidgetTooltip()
             end)
             if not pgEyeOnHide then
                 pgEyeOnHide = true
-                CludesUI:RegisterOnHide(StopPGPreviewOnHide)
+                CUI:RegisterOnHide(StopPGPreviewOnHide)
             end
         end
     end
@@ -3026,7 +3027,7 @@ local function BuildVisualIndicators(
         setValue = function(val)
             if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.hideBlizzardPartyFrame = val
-            CludesUI._applyHideBlizzardPartyFrame()
+            CUI._applyHideBlizzardPartyFrame()
         end,
     }, {
         type = "multiSwatch",
@@ -3076,8 +3077,8 @@ local function BuildVisualIndicators(
         type = "dropdown",
         text = "Frame Strata",
         tooltip = "Controls the display order of raid and party frames. Set higher to show above other elements.",
-        values = CludesUI.FRAME_STRATA_LABELS,
-        order = CludesUI.FRAME_STRATA_ORDER_BASE,
+        values = CUI.FRAME_STRATA_LABELS,
+        order = CUI.FRAME_STRATA_ORDER_BASE,
         getValue = SValRow("frameStrata", "LOW"),
         setValue = function(val)
             -- Reload after changing strata to restore child frame levels.

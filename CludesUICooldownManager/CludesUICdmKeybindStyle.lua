@@ -1,13 +1,14 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 local _, mod = ...
 
 -- Shared by live icons and the options preview. No events, hooks or polling.
 -- Decorations belong to CUI's text overlay, never to a Blizzard frame.
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot, so nothing written to that slot later reaches the live icons.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 local badges
 local anchors = {
     TOPLEFT = true,
@@ -131,16 +132,16 @@ function mod.StyleCDMKeybind(textValue, edge, anchor, scale, fontFile)
     end
     scale = scale or 1
     local font = edge.keybindFont
-    if font and font ~= "__global" then fontFile = CludesUI.ResolveFontName(font) end
+    if font and font ~= "__global" then fontFile = CUI.ResolveFontName(font) end
     local size = (edge.keybindSize or 10) * scale
     local outline = edge.keybindOutline
     if outline == "NONE" then
         -- The suite's plain text: no outline token, drop shadow.
-        CludesUI.ApplyModuleFont(textValue, fontFile, size, "cdm", "")
+        CUI.ApplyModuleFont(textValue, fontFile, size, "cdm", "")
     elseif outline == "OUTLINE" or outline == "THICKOUTLINE" then
-        CludesUI.ApplyModuleFont(textValue, fontFile, size, "cdm", CludesUI.SlugFlag(outline .. ", SLUG"))
+        CUI.ApplyModuleFont(textValue, fontFile, size, "cdm", CUI.SlugFlag(outline .. ", SLUG"))
     else
-        CludesUI.ApplyIconTextFont(textValue, fontFile, size, "cdm")
+        CUI.ApplyIconTextFont(textValue, fontFile, size, "cdm")
     end
     local anchorPoint = edge.keybindAnchor
     if not anchors[anchorPoint] then

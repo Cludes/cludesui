@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\Stats.lua - Info Bar blocks: FPS, latency, durability, combat.
 --
@@ -623,7 +624,7 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
         local collapsed = OnlyInCombat() and state ~= 1
         if not collapsed and not contentFrame:IsShown() then contentFrame:Show() end
         mod.SetFont(label, fontSize, barCtx.cfg)
-        label:SetText(CludesUI.L(Words(state)))
+        label:SetText(CUI.L(Words(state)))
         Paint()
         if InCombatLockdown() then
             K.MaybeRelayout(self)
@@ -646,9 +647,9 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
             -- The wider of the two labels (which one depends on the language),
             -- so combat starting or ending never resizes the block.
             mod.SetFont(ruler, fontSize, barCtx.cfg)
-            ruler:SetText(CludesUI.L(Words(0)))
+            ruler:SetText(CUI.L(Words(0)))
             local outW = ruler:GetStringWidth() or 30
-            ruler:SetText(CludesUI.L(Words(1)))
+            ruler:SetText(CUI.L(Words(1)))
             local width = max(30, mod.SnapToPixelGrid(max(outW, ruler:GetStringWidth() or 30)) + 2)
             label:SetWidth(width)
             widget:SetSize(width, barH)

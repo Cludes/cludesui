@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_MythicTimer_KickTracker_Options.lua
 --  Builds the "Kick Tracker" page inside the Mythic+ Tools module: the
@@ -7,7 +8,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Definitions only: CUI_MythicTimer_Options.lua registers the module and
 --  dispatches the page to ns._KT_BuildPage.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIMythicTimer"]
+local mod = CUI._ModuleNS["CludesUIMythicTimer"]
 if not mod then return end -- module disabled: no options page
 
 local REQ = "Kick Tracker"
@@ -155,14 +156,14 @@ end
 -- on (its plate registry exists, the runtime's own test), else Blizzard's or
 -- another addon's. The Position Offsets cog shows the pair that applies.
 local function NoCUIPlates()
-    local m = CludesUI._ModuleNS.CludesUINameplates
+    local m = CUI._ModuleNS.CludesUINameplates
     return not (m and m.plates)
 end
 local function CUIPlatesOn() return not NoCUIPlates() end
 
 -- The shared position labels, in this row's own order (the menu lists only
 -- the keys the order names).
-local TIMER_POS_VALUES = CludesUI.POSITION_GRID_VALUES
+local TIMER_POS_VALUES = CUI.POSITION_GRID_VALUES
 local TIMER_POS_ORDER = { "center", "topleft", "topright", "bottomleft", "bottomright" }
 
 -- Icon Effects: one checkbox dropdown over three settings keys.
@@ -210,7 +211,7 @@ local MARKER_ORDER = { "0", "1", "2", "3", "4", "5", "6", "7", "8" }
 local markerValues
 local function MarkerValues()
     if not markerValues then
-        markerValues = { _noLoc = true, ["0"] = CludesUI.L("None") }
+        markerValues = { _noLoc = true, ["0"] = CUI.L("None") }
         for idx = 1, 8 do
             markerValues[tostring(idx)] = _G["RAID_TARGET_" .. idx]
         end
@@ -239,7 +240,7 @@ local function AnnounceDefault() return mod.KT_AnnounceDefault and mod.KT_Announ
 local function EditAnnounceText()
     local current = KickGet("announceText", nil)
     if type(current) ~= "string" or current == "" then current = AnnounceDefault() end
-    CludesUI:ShowInputPopup({
+    CUI:ShowInputPopup({
         title = "Edit Announce Text",
         message = "Sent in party chat at the ready check. {marker} stands for your raid marker. Empty brings the default line back.",
         placeholder = "Enter your announce line...",
@@ -257,29 +258,29 @@ local function EditAnnounceText()
 end
 
 mod._KT_BuildPage = function(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, row, height
 
-    CludesUI:SetContentHeader(mod._KT_HeaderBuilder)
+    CUI:SetContentHeader(mod._KT_HeaderBuilder)
     hostFrame._showRowDivider = true
 
     -- The experimental notice between the header preview and the settings, in
     -- the empty-selection warning's red. The page wrapper is a pool host, so a
     -- rebuild hands this font string back instead of making a new one.
-    if not CludesUI._prebuilding then
-        local pad = CludesUI.CONTENT_PAD
-        local warn = CludesUI.MakeFont(hostFrame, 15, nil, 1, 0.4, 0.4)
+    if not CUI._prebuilding then
+        local pad = CUI.CONTENT_PAD
+        local warn = CUI.MakeFont(hostFrame, 15, nil, 1, 0.4, 0.4)
         warn:SetJustifyH("CENTER")
         warn:SetWordWrap(true)
         warn:SetSpacing(4)
         warn:SetWidth(hostFrame:GetWidth() - pad * 2)
         warn:SetText(
-            CludesUI.L(
+            CUI.L(
                 "Like all current kick trackers, this feature is experimental and may stop working if\nBlizzard decides to hotfix the workaround that makes this possible."
             )
         )
-        CludesUI.PP.Point(warn, "TOPLEFT", hostFrame, "TOPLEFT", pad, cursorY - 10)
+        CUI.PP.Point(warn, "TOPLEFT", hostFrame, "TOPLEFT", pad, cursorY - 10)
         cursorY = cursorY - 10 - math.ceil(warn:GetStringHeight()) - 2
     end
 
@@ -291,7 +292,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         text = "Enable Kick Tracker",
         tooltip = "Who in the group kicked each enemy and when their interrupt comes back, read from Blizzard's own damage meter (which must be on). Others' cooldowns follow their class, spec and talents, read before a key starts; yours follow your own talents.",
         getValue = On,
-        setValue = CludesUI.SectionToggleSetValue(function(val)
+        setValue = CUI.SectionToggleSetValue(function(val)
             -- The runtime alone: the section rebuild that follows builds
             -- the header again and paints its samples then.
             local c = KickCfg()
@@ -311,10 +312,10 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         setValue = function() end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = row._rightRegion
         if region._control then region._control:Hide() end
-        local whereDD, whereRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local whereDD, whereRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             220,
             region:GetFrameLevel() + 2,
@@ -328,10 +329,10 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             nil,
             { disabled = Off, disabledTooltip = REQ, emptyLabel = "All" }
         )
-        CludesUI.PanelPP.Point(whereDD, "RIGHT", region, "RIGHT", -20, 0)
+        CUI.PanelPP.Point(whereDD, "RIGHT", region, "RIGHT", -20, 0)
         region._control = whereDD
         region._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(whereRefresh)
+        CUI.RegisterWidgetRefresh(whereRefresh)
     end
 
     row, height = W:DualRow(hostFrame, cursorY, {
@@ -358,13 +359,13 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
     -- The red warning on the dropdown while the nameplate icons are on with
     -- no marker set (the standard empty-selection warning), with a dismiss
     -- button beside it that waves it off for good, account-wide.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = row._leftRegion
         if region and region._control then
-            CludesUI.AttachEmptyFilterWarn(
+            CUI.AttachEmptyFilterWarn(
                 region,
                 region._control,
-                CludesUI.L("Nameplate Kick Icons use this to auto-assign kicks when a mob is first marked."),
+                CUI.L("Nameplate Kick Icons use this to auto-assign kicks when a mob is first marked."),
                 function()
                     return not PlatesOn()
                         or (tonumber(KickGet("focusMarker", 0)) or 0) ~= 0
@@ -392,7 +393,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = PlatesOn,
             setValue = function(val)
                 Set("showPlates", val and true or false)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -429,8 +430,8 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             setValue = SetPosition,
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._rightRegion, {
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(row._rightRegion, {
                 tip = "Position Offsets",
                 title = "Position Offsets",
                 disabled = PlatesOff,
@@ -493,7 +494,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = function() return KickGet("showTimer", true) == true end,
             setValue = function(val)
                 Set("showTimer", val and true or false)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -507,12 +508,12 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             setValue = function() end,
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             -- Icon Effects: the checkbox dropdown over its three keys, in
             -- place of the row's placeholder dropdown.
             local fxRgn = row._rightRegion
             if fxRgn._control then fxRgn._control:Hide() end
-            local fxDD, fxRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local fxDD, fxRefresh = CUI.BuildVisOptsCBDropdown(
                 fxRgn,
                 220,
                 fxRgn:GetFrameLevel() + 2,
@@ -526,11 +527,11 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 nil,
                 { disabled = PlatesOff, disabledTooltip = REQ_PLATES, emptyLabel = "None" }
             )
-            CludesUI.PanelPP.Point(fxDD, "RIGHT", fxRgn, "RIGHT", -20, 0)
+            CUI.PanelPP.Point(fxDD, "RIGHT", fxRgn, "RIGHT", -20, 0)
             fxRgn._control = fxDD
             fxRgn._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(fxRefresh)
-            CludesUI.BuildInlineCog(row._leftRegion, {
+            CUI.RegisterWidgetRefresh(fxRefresh)
+            CUI.BuildInlineCog(row._leftRegion, {
                 tip = "Timer Settings",
                 title = "Cooldown Timer",
                 disabled = function() return PlatesOff() or KickGet("showTimer", true) ~= true end,
@@ -583,7 +584,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabledTooltip = REQ_PLATES,
             getValue = function() return KickGet("aboveOverlap", true) ~= false end,
             setValue = function(val) Set("aboveOverlap", val and true or false) end,
-        }, CludesUI.BlankRowCfg())
+        }, CUI.BlankRowCfg())
         cursorY = cursorY - height
 
         -- The Move in Unlock Mode button on the bars' first section, built
@@ -591,7 +592,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         local heading
         heading, height = W:SectionHeader(hostFrame, "BARS", cursorY)
         cursorY = cursorY - height
-        CludesUI.BuildSectionUnlockJump(
+        CUI.BuildSectionUnlockJump(
             heading,
             { key = "EMT_KickBars", disabled = BarsHidden, disabledTooltip = REQ_BARS }
         )
@@ -603,7 +604,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = BarsOn,
             setValue = function(val)
                 Set("showBars", val and true or false)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -693,7 +694,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                     setValue = function() end,
                     onClick = function()
                         Set("barBgMode", "class")
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     refreshAlpha = function() return KickGet("barBgMode", "class") ~= "custom" and 1 or 0.3 end,
                 },
@@ -716,7 +717,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                     onClick = function(self)
                         if KickGet("barBgMode", "class") ~= "custom" then
                             Set("barBgMode", "custom")
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                             return
                         end
                         if self._eabOrigClick then self._eabOrigClick(self) end
@@ -758,14 +759,14 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             setValue = function(val) Set("barIncludeSelf", val and true or false) end,
         })
         cursorY = cursorY - height
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             -- Display Elements: the checkbox dropdown over its four keys, in
             -- place of the row's placeholder dropdown, and its cog beside it:
             -- the icon's side and one text size for the name and the timer
             -- (the Fonts page sets the two apart).
             local elRgn = row._leftRegion
             if elRgn._control then elRgn._control:Hide() end
-            local elDD, elRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local elDD, elRefresh = CUI.BuildVisOptsCBDropdown(
                 elRgn,
                 220,
                 elRgn:GetFrameLevel() + 2,
@@ -779,11 +780,11 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 nil,
                 { disabled = BarsHidden, disabledTooltip = REQ_BARS, emptyLabel = "None" }
             )
-            CludesUI.PanelPP.Point(elDD, "RIGHT", elRgn, "RIGHT", -20, 0)
+            CUI.PanelPP.Point(elDD, "RIGHT", elRgn, "RIGHT", -20, 0)
             elRgn._control = elDD
             elRgn._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(elRefresh)
-            CludesUI.BuildInlineCog(elRgn, {
+            CUI.RegisterWidgetRefresh(elRefresh)
+            CUI.BuildInlineCog(elRgn, {
                 tip = "Element Settings",
                 title = "Display Elements",
                 disabled = BarsHidden,

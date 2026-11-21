@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI or CludesUI.IS_FOREVER then return end
+local CUI = CludesUI
+if not CUI or CUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIABR_BeaconMPlus.lua
 --  Beacon M+ Reminders (retail, Holy Paladin; CORE > Beacon M+ Reminders, off
@@ -70,7 +71,7 @@ end
 -- The tank's Raid Frames button: the party frames, or the raid frames when the
 -- party is shown on them.
 local function TankButton(unitToken)
-    local rf = CludesUI._ModuleNS["CludesUIRaidFrames"]
+    local rf = CUI._ModuleNS["CludesUIRaidFrames"]
     if not rf then return end
     return FindIn(rf._partyAllButtons, unitToken) or FindIn(rf._allButtons, unitToken)
 end
@@ -89,7 +90,7 @@ local function InitButton(btnFrame, skinData)
     glow:SetAllPoints(btnFrame)
     glow:SetFrameLevel(btnFrame:GetFrameLevel() + 2)
     glow:EnableMouse(false)
-    local Glows = CludesUI.Glows
+    local Glows = CUI.Glows
     -- The button runs the animation itself (12.1.5): Blizzard plays it while
     -- the button shows the Beacon and stops it otherwise, so every button
     -- carries the glow; the icon above is its own (the button re-registers it
@@ -98,7 +99,7 @@ local function InitButton(btnFrame, skinData)
     -- can ever show carries the glow.
     if
         not Glows.BindEngineHost(glow, btnFrame, skinData, iconTex)
-        and not CludesUI.AuraKit.ButtonCanShow(btnFrame)
+        and not CUI.AuraKit.ButtonCanShow(btnFrame)
     then
         return
     end
@@ -112,7 +113,7 @@ end
 -- again (an unchanged one returns at once).
 local function RetryGlow(btnFrame, skinData)
     local glow = skinData.abrBeaconGlow
-    if glow then CludesUI.Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine") end
+    if glow then CUI.Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine") end
 end
 
 local function EnsureContainer(unitToken)
@@ -123,7 +124,7 @@ local function EnsureContainer(unitToken)
         end
         return
     end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     AK.styles[STYLE_KEY] = AK.styles[STYLE_KEY]
         or { noRegions = true, width = ICON_SIZE, height = ICON_SIZE, applyExtra = RetryGlow }
     owner = CreateFrame("Frame", nil, UIParent)

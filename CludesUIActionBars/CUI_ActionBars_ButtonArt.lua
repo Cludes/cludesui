@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_ButtonArt.lua
 --
@@ -14,7 +15,7 @@ local ipairs, pcall = ipairs, pcall
 local max = math.max
 local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local EFD = mod.EFD
 
 local ABAR, EAB_VTABLE = mod.EAB, mod.EAB_VTABLE
@@ -188,7 +189,7 @@ function mod.AB_StockNormal(buttonFrame)
     if not a then return end
     local l = strlower(a)
     if l == "ui-hud-actionbar-iconframe-addrow" or l == "ui-hud-actionbar-iconframe" then
-        CludesUI.StockAtlas(normalTex, a)
+        CUI.StockAtlas(normalTex, a)
     end
 end
 
@@ -474,8 +475,8 @@ local function MakeButtonSquare(buttonFrame)
     _quickKeybindState.art.InitializeButton(buttonFrame)
     HideTexture(buttonFrame.FlyoutBorderShadow)
     if buttonFrame.BorderShadow then
-        if CludesUI and CludesUI._hiddenParent then
-            buttonFrame.BorderShadow:SetParent(CludesUI._hiddenParent)
+        if CUI and CUI._hiddenParent then
+            buttonFrame.BorderShadow:SetParent(CUI._hiddenParent)
         else
             HideTexture(buttonFrame.BorderShadow)
         end
@@ -584,7 +585,7 @@ end
 local function EnsureBorders(buttonFrame)
     local frameData = EFD(buttonFrame)
     if frameData.borders then return frameData.borders end
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix then
         Pix.CreateBorder(buttonFrame, 0, 0, 0, 1, 1, "OVERLAY", 2)
         frameData.borders = Pix.GetBorders(buttonFrame)
@@ -639,13 +640,13 @@ local function ApplyButtonBorders(
     above
 )
     MakeButtonSquare(buttonFrame)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local frameData = EFD(buttonFrame)
     if not on then
         if frameData.borders then Pix.HideBorder(buttonFrame) end
         -- Also hide textured border if present
-        if CludesUI._bdBorderData then
-            local backdropFrame = CludesUI._bdBorderData[buttonFrame]
+        if CUI._bdBorderData then
+            local backdropFrame = CUI._bdBorderData[buttonFrame]
             if backdropFrame then backdropFrame:Hide() end
         end
         frameData.borderKey = nil
@@ -689,7 +690,7 @@ local function ApplyButtonBorders(
                 if ppC._right then ppC._right:SetAlpha(0) end
             end
         end
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             buttonFrame,
             sz,
             cr,
@@ -710,16 +711,16 @@ local function ApplyButtonBorders(
         -- in front of the icon, level-1 draws behind it. "Border Above Effects"
         -- raises it over the effects; turning it off lands back on the rule
         -- above on the next apply. Solid borders unaffected.
-        if texKey ~= "solid" and CludesUI._bdBorderData then
-            local backdropFrame = CludesUI._bdBorderData[buttonFrame]
+        if texKey ~= "solid" and CUI._bdBorderData then
+            local backdropFrame = CUI._bdBorderData[buttonFrame]
             if backdropFrame then
                 backdropFrame:SetFrameLevel(mod._eabBorderLevel(buttonFrame, behind, above))
             end
         end
         if frameData.borders and frameData.shapeMask and frameData.shapeMask:IsShown() then
             Pix.HideBorder(buttonFrame)
-            if CludesUI._bdBorderData then
-                local backdropFrame = CludesUI._bdBorderData[buttonFrame]
+            if CUI._bdBorderData then
+                local backdropFrame = CUI._bdBorderData[buttonFrame]
                 if backdropFrame then backdropFrame:Hide() end
             end
         end
@@ -916,7 +917,7 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
                 local color = cfg and cfg.borderColor or { r = 0, g = 0, b = 0, a = 1 }
                 local sz, px = ResolveBorderThickness(cfg)
                 local thKey = cfg.borderThickness or "thin"
-                CludesUI.ApplyBorderStyle(
+                CUI.ApplyBorderStyle(
                     buttonFrame,
                     sz,
                     color.r,
@@ -933,8 +934,8 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
                     nil,
                     px
                 )
-                if CludesUI._bdBorderData then
-                    local backdropFrame = CludesUI._bdBorderData[buttonFrame]
+                if CUI._bdBorderData then
+                    local backdropFrame = CUI._bdBorderData[buttonFrame]
                     if backdropFrame then
                         backdropFrame:SetFrameLevel(
                             mod._eabBorderLevel(buttonFrame, cfg.borderBehind, cfg.borderAboveEffects)
@@ -946,8 +947,8 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
             end
         elseif frameData.borders then
             Pix.HideBorder(buttonFrame)
-            if CludesUI._bdBorderData then
-                local backdropFrame = CludesUI._bdBorderData[buttonFrame]
+            if CUI._bdBorderData then
+                local backdropFrame = CUI._bdBorderData[buttonFrame]
                 if backdropFrame then backdropFrame:Hide() end
             end
         end
@@ -1128,8 +1129,8 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
     -- Hide square borders (both PP and textured)
     if frameData.borders then
         Pix.HideBorder(buttonFrame)
-        if CludesUI._bdBorderData then
-            local backdropFrame = CludesUI._bdBorderData[buttonFrame]
+        if CUI._bdBorderData then
+            local backdropFrame = CUI._bdBorderData[buttonFrame]
             if backdropFrame then backdropFrame:Hide() end
         end
     end

@@ -1,19 +1,20 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Loot_Options.lua
 --  Builds the "Loot" page inside the Forever Essentials module: a live
 --  preview of the feed in the content header, then its settings.
 -------------------------------------------------------------------------------
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
+if not CUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
 
 -- The preview surface in the content header. Exported so the module's
 -- getHeaderBuilder can hand it back when the page cache outlives its header.
 local function HeaderBuilder(header, width)
     local building = true
-    local view = CludesUI._LootFeed.CreateSettingsPreview(header, width, function(height)
+    local view = CUI._LootFeed.CreateSettingsPreview(header, width, function(height)
         if not building and header:IsVisible() and math.abs(header:GetHeight() - height) > 1 then
-            CludesUI:SetContentHeaderHeightSilent(height)
+            CUI:SetContentHeaderHeightSilent(height)
         end
     end)
     building = false
@@ -25,20 +26,20 @@ local STYLES = { BOX = "Box", BAR = "Accent Bar", TRAY = "Icon Tray", TOAST = "L
 local STYLE_ORDER = { "BOX", "BAR", "TRAY", "TOAST" }
 
 _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
-    local LF = CludesUI._LootFeed
-    local BLANK = CludesUI.BlankRowCfg
+    local W = CUI.Widgets
+    local LF = CUI._LootFeed
+    local BLANK = CUI.BlankRowCfg
     local cursorY = yOffset
     local _, height, heading
     hostFrame._showRowDivider = true
 
-    CludesUI:SetContentHeader(HeaderBuilder)
+    CUI:SetContentHeader(HeaderBuilder)
 
     local function off() return not LF.Get("enabled") end
     local function itemsOff() return off() or not LF.Get("items") end
     -- Auction prices count only while the tracker or an item price shows, and
     -- only with the price addon's API at hand.
-    local function auctionSource() return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() ~= nil end
+    local function auctionSource() return CUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() ~= nil end
     local function pricesUnused() return not (LF.Get("tracker") or (LF.Get("items") and LF.Get("showPrice"))) end
     local function auctionOff() return off() or not auctionSource() or pricesUnused() end
     local function auctionTip()
@@ -54,7 +55,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     local function ApplyLootFeed()
         LF.Apply()
         LF.RefreshPreview()
-        CludesUI:RefreshPage()
+        CUI:RefreshPage()
     end
     -- Binds cfg to setting key; apply runs after a change (none: the next row
     -- shown picks it up). Greyed out while the feed is off unless disabled is
@@ -87,7 +88,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     end
     -- An inline swatch for the prefix .. "R" / "G" / "B" colour.
     local function Swatch(regionFrame, prefixText, tooltip, disabled, disabledTooltip)
-        CludesUI.BuildInlineSwatches(regionFrame, {
+        CUI.BuildInlineSwatches(regionFrame, {
             {
                 tooltip = tooltip,
                 disabled = disabled,
@@ -112,7 +113,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     heading, height = W:SectionHeader(hostFrame, "LOOT FEED", cursorY)
     cursorY = cursorY - height
-    CludesUI.BuildSectionUnlockJump(
+    CUI.BuildSectionUnlockJump(
         heading,
         { key = "CUI_LootFeed", disabled = off, disabledTooltip = "Loot Feed" }
     )
@@ -142,10 +143,10 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         cursorY,
         Bind({ type = "dropdown", text = "Style", values = STYLES, order = STYLE_ORDER }, "style", function()
             LF.ApplyStyle()
-            if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                CludesUI.RepositionBarToMover("CUI_LootFeed")
+            if CUI._unlockActive and CUI.RepositionBarToMover then
+                CUI.RepositionBarToMover("CUI_LootFeed")
             end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end),
         Bind(
             {
@@ -218,10 +219,10 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         Toggle("tracker", "Gold per Hour Tracker", "Pins a row with your gold per hour.", function()
             LF.Apply()
             LF.ApplyStyle()
-            if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                CludesUI.RepositionBarToMover("CUI_LootFeed")
+            if CUI._unlockActive and CUI.RepositionBarToMover then
+                CUI.RepositionBarToMover("CUI_LootFeed")
             end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end)
     )
     cursorY = cursorY - height
@@ -268,7 +269,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         cursorY,
         Toggle("showPrice", "Show Item Price", "Shows what the looted stack is worth.", function()
             LF.RefreshPreview()
-            CludesUI:RefreshPage() -- Use Auctionator Prices greys with it
+            CUI:RefreshPage() -- Use Auctionator Prices greys with it
         end, itemsOff, "Items"),
         Toggle(
             "auctionPrices",
@@ -342,7 +343,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
     cursorY = cursorY - height
 
-    local _, textureValues, textureOrder = CludesUI.BuildBarTextureTables()
+    local _, textureValues, textureOrder = CUI.BuildBarTextureTables()
     local displayRow
     displayRow, height = W:DualRow(
         hostFrame,
@@ -367,9 +368,9 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         })
     )
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then Swatch(displayRow._rightRegion, "bg", "Background Color") end
+    if not CUI._prebuilding then Swatch(displayRow._rightRegion, "bg", "Background Color") end
 
-    local borderValues, borderOrder = CludesUI.GetBorderTextureDropdown()
+    local borderValues, borderOrder = CUI.GetBorderTextureDropdown()
     local borderRow
     borderRow, height = W:DualRow(
         hostFrame,
@@ -386,16 +387,16 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                 c.borderTexture = val
                 c.borderTextureOffset, c.borderTextureOffsetY = nil, nil
                 c.borderTextureShiftX, c.borderTextureShiftY = nil, nil
-                local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
+                local color, behind = CUI.GetBorderStyleSelectDefaults(val)
                 c.borderR, c.borderG, c.borderB, c.borderBehind = color.r, color.g, color.b, behind
-                local size = CludesUI.GetBorderDefaultSize(nil, val)
+                local size = CUI.GetBorderDefaultSize(nil, val)
                 if size then c.borderSize = size end
                 if c.borderSizePx then c.borderSizePx = false end
                 LF.ApplyStyle()
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         }, nil, nil, borderOff, function() return off() and "Loot Feed" or "Style" end),
-        CludesUI.BorderPxSliderCfg({
+        CUI.BorderPxSliderCfg({
             trackWidth = 120,
             tooltip = "0 hides the border.",
             disabled = borderOff,
@@ -410,13 +411,13 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             setPx = function(val) LF.Cfg().borderSizePx = val end,
             apply = function()
                 LF.ApplyStyle()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
     )
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        local offsetX, offsetY = CludesUI.BorderOffsetCogRows({
+    if not CUI._prebuilding then
+        local offsetX, offsetY = CUI.BorderOffsetCogRows({
             getTex = function() return LF.Get("borderTexture") end,
             getStep = function() return LF.Get("borderSize") end,
             getPx = function() return LF.Get("borderSizePx") end,
@@ -440,7 +441,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                 end,
             }
         end
-        CludesUI.BuildInlineCog(borderRow._leftRegion, {
+        CUI.BuildInlineCog(borderRow._leftRegion, {
             title = "Border Options",
             disabled = function()
                 local texture = LF.Get("borderTexture")
@@ -469,7 +470,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                     disabled = function()
                         return LF.Get("borderSize") == 0
                             or (style() == "TRAY" and LF.Get("barWidth") == 0)
-                            or not CludesUI.GetBorderCompanion(LF.Get("borderTexture"), "sepV")
+                            or not CUI.GetBorderCompanion(LF.Get("borderTexture"), "sepV")
                     end,
                     disabledTooltip = function()
                         if style() == "TRAY" and LF.Get("barWidth") == 0 then return "Accent Bar Width" end

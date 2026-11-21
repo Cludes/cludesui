@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Runtime.lua
 --
@@ -984,7 +985,7 @@ local function SpecSync(_, _, unitToken)
     if unitToken and unitToken ~= "player" then return end
     local profile = P()
     if not (profile and profile.enabled) then return end
-    CludesUI._RefreshSpecID()
+    CUI._RefreshSpecID()
     local sig = ActiveSignature()
     if sig == activeSig then return end
     activeSig = sig
@@ -1222,7 +1223,7 @@ end
 
 function EQD:OnInitialize()
     MigrateLegacySV()
-    SetDB(CludesUI.Lite.NewDB("CludesUIQuickdrawDB", DB_DEFAULTS))
+    SetDB(CUI.Lite.NewDB("CludesUIQuickdrawDB", DB_DEFAULTS))
     -- The profile itself is converted by P(), on first touch, so that switching
     -- profile mid-session converts the incoming one too. See MigrateNames.
     _G._CUQD_AceDB = saved

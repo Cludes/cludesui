@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\ItemLevel.lua - Info Bar block: average item level.
 --
@@ -36,7 +37,7 @@ end
 local function Show(v, decimals) return v and format("%." .. decimals .. "f", v) or "-" end
 
 -- The game's own translated "Item Level" label, else ours.
-local function LongLabel() return STAT_AVERAGE_ITEM_LEVEL or CludesUI.L(L["ITEM_LEVEL"]) end
+local function LongLabel() return STAT_AVERAGE_ITEM_LEVEL or CUI.L(L["ITEM_LEVEL"]) end
 
 mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
@@ -84,7 +85,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
         -- the game's own translated label.
         local prefix = cfg.prefix or "short"
         if prefix == "short" then
-            return CludesUI.L(L["ILVL"]) .. " " .. body
+            return CUI.L(L["ILVL"]) .. " " .. body
         elseif prefix == "long" then
             return LongLabel() .. " " .. body
         end

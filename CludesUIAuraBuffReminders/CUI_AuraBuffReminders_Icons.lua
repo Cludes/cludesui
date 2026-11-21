@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Icons.lua
 --
@@ -69,7 +70,7 @@ do
 
     function mod.IconShapeMasked(profile)
         local shape = profile and profile.iconShape
-        return shape and shape ~= "none" and shape ~= "cropped" and CludesUI.SHAPE_MASKS[shape] ~= nil
+        return shape and shape ~= "none" and shape ~= "cropped" and CUI.SHAPE_MASKS[shape] ~= nil
     end
 
     function mod.CropPercent(profile)
@@ -117,15 +118,15 @@ do
         if masked then
             if not status.mask then status.mask = frame:CreateMaskTexture() end
             status.mask:SetTexture(
-                CludesUI.SHAPE_MASKS[shape],
+                CUI.SHAPE_MASKS[shape],
                 "CLAMPTOBLACKADDITIVE",
                 "CLAMPTOBLACKADDITIVE"
             )
             status.mask:ClearAllPoints()
             if inset > 0 then
                 -- CDM keeps the icon inside the ring; the ring itself is unmasked.
-                CludesUI.PP.Point(status.mask, "TOPLEFT", frame, "TOPLEFT", inset, -inset)
-                CludesUI.PP.Point(status.mask, "BOTTOMRIGHT", frame, "BOTTOMRIGHT", -inset, inset)
+                CUI.PP.Point(status.mask, "TOPLEFT", frame, "TOPLEFT", inset, -inset)
+                CUI.PP.Point(status.mask, "BOTTOMRIGHT", frame, "BOTTOMRIGHT", -inset, inset)
             else
                 status.mask:SetAllPoints(frame)
             end
@@ -141,9 +142,9 @@ do
             if not status.glowExtra then status.glowExtra = {} end
             -- Outline glows extend beyond the inset icon mask, like CDM's proc glows.
             status.glowExtra.shapeMask = status.mask
-            status.glowExtra.maskPath = CludesUI.SHAPE_MASKS[shape]
-            status.glowExtra.borderPath = CludesUI.SHAPE_BORDERS[shape]
-            local visible = (128 - 2 * (CludesUI.SHAPE_INSETS[shape] or 17)) / 128
+            status.glowExtra.maskPath = CUI.SHAPE_MASKS[shape]
+            status.glowExtra.borderPath = CUI.SHAPE_BORDERS[shape]
+            local visible = (128 - 2 * (CUI.SHAPE_INSETS[shape] or 17)) / 128
             local half = (0.5 - zoom) / visible
             iconTex:SetTexCoord(0.5 - half, 0.5 + half, 0.5 - half, 0.5 + half)
         else
@@ -170,7 +171,7 @@ do
             status.glowExtra.panel = panelFrame or nil
             return status.glowExtra
         end
-        return panelFrame and CludesUI.Glows.PANEL_EXTRA or nil
+        return panelFrame and CUI.Glows.PANEL_EXTRA or nil
     end
 
     -- Secure icons are skipped in combat (ApplyIconBorder); the combat-end
@@ -220,7 +221,7 @@ local function GetStrata() return db and db.profile.display.frameStrata or "MEDI
 -- core's paths capture it, so a later write to the public slot never reaches
 -- this path. A block local.
 do
-    local POOL = CludesUI._Pool
+    local POOL = CUI._Pool
     function REMIND.ApplyIconBorder(frame, protectedOwner)
         if not frame or (protectedOwner and InCombatLockdown()) then return end
         local p = db and db.profile and db.profile.display
@@ -255,16 +256,16 @@ do
             -- Shape art has its own thickness units; never send it through the
             -- rectangular border cache, which must repaint after switching back.
             if border._eabrSize ~= nil then
-                CludesUI.ApplyBorderStyle(border, 0, red, green, blue, a, "solid")
+                CUI.ApplyBorderStyle(border, 0, red, green, blue, a, "solid")
                 border._eabrSize = nil
             end
             border:SetFrameLevel(level)
             -- Clearing rectangular art at size zero also hides its host.
             if not border:IsShown() then border:Show() end
-            CludesUI.PP:ApplyMaskedShapeBorder(
+            CUI.PP:ApplyMaskedShapeBorder(
                 border,
                 nil,
-                CludesUI.SHAPE_BORDERS[p.iconShape],
+                CUI.SHAPE_BORDERS[p.iconShape],
                 size > 0 and 7 or 0,
                 red,
                 green,
@@ -273,7 +274,7 @@ do
             )
             return
         elseif frame._eabrShape then
-            CludesUI.PP:HideMaskedShapeBorder(border)
+            CUI.PP:HideMaskedShapeBorder(border)
         end
 
         -- Layout refreshes can be frequent in a raid. Restyle only when an actual
@@ -298,7 +299,7 @@ do
         end
 
         border:SetFrameLevel(level)
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             border,
             size,
             red,
@@ -313,7 +314,7 @@ do
             "aurabuffreminders",
             size,
             nil,
-            CludesUI.BorderPx(pxRaw, size, texture)
+            CUI.BorderPx(pxRaw, size, texture)
         )
         border._eabrSize, border._eabrTexture, border._eabrPx = size, texture, pxRaw
         border._eabrR, border._eabrG, border._eabrB, border._eabrA = red, green, blue, a
@@ -438,7 +439,7 @@ local function HideCombatIcons()
         end
     end
     if REMIND.SetProviderCastCombatVisible then REMIND.SetProviderCastCombatVisible(false) end
-    if combatAnchor then CludesUI.SetElementVisibility(combatAnchor, false) end
+    if combatAnchor then CUI.SetElementVisibility(combatAnchor, false) end
 end
 
 local function ShowCombatIcon(m)
@@ -570,7 +571,7 @@ local function HideCursorIcons()
         end
     end
     wipe(cursorActiveIcons)
-    if cursorAnchor then CludesUI.SetElementVisibility(cursorAnchor, false) end
+    if cursorAnchor then CUI.SetElementVisibility(cursorAnchor, false) end
     ReleaseCursorAnchor()
 end
 
@@ -891,7 +892,7 @@ do
             end
         end
         if button._eabrShape then extra = mod.IconGlowExtra(button) end
-        CludesUI.Glows.StartSpecGlow(wrapper, specInfo, sz, hgt, "icon", extra)
+        CUI.Glows.StartSpecGlow(wrapper, specInfo, sz, hgt, "icon", extra)
         wrapper:SetAlpha(1)
         wrapper:Show()
     end
@@ -977,10 +978,10 @@ function REMIND.ShowIconTooltip(frame)
                 GameTooltip:SetSpellByID(frame._tooltipSpell)
             end
             if frame._outOfStock then
-                GameTooltip:AddLine(CludesUI.L("You don't have this item in your bags"), 1, 0.3, 0.3, true)
+                GameTooltip:AddLine(CUI.L("You don't have this item in your bags"), 1, 0.3, 0.3, true)
             elseif frame._substitute then
                 GameTooltip:AddLine(
-                    CludesUI.L("Your preferred food is out - using a backup you own"),
+                    CUI.L("Your preferred food is out - using a backup you own"),
                     1,
                     0.82,
                     0,
@@ -992,7 +993,7 @@ function REMIND.ShowIconTooltip(frame)
         if not success then GameTooltip:Hide() end
     elseif frame._tooltipLabel and frame._tooltipLabel ~= "" then
         -- Plain-text reminders use the suite tooltip, never GameTooltip.
-        CludesUI.ShowWidgetTooltip(frame, tostring(frame._tooltipLabel))
+        CUI.ShowWidgetTooltip(frame, tostring(frame._tooltipLabel))
     end
 end
 
@@ -1000,7 +1001,7 @@ function REMIND.HideIconTooltip(frame)
     if frame and (frame._tooltipItem or frame._tooltipSpell) then
         GameTooltip:Hide()
     else
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end
 end
 
@@ -1018,7 +1019,7 @@ function REMIND.NotifyCombatClickDisabled()
     if REMIND._clickHintAt and nowTime - REMIND._clickHintAt < 2.5 then return end
     REMIND._clickHintAt = nowTime
     if UIErrorsFrame then
-        UIErrorsFrame:AddMessage(CludesUI.L("Click-to-use is disabled in combat"), 1.0, 0.3, 0.3, 1.0)
+        UIErrorsFrame:AddMessage(CUI.L("Click-to-use is disabled in combat"), 1.0, 0.3, 0.3, 1.0)
     end
 end
 
@@ -1048,7 +1049,7 @@ do
         return textValue
     end
     -- Custom text until the player saves their own (shows where the token goes).
-    local function RequestExample() return CludesUI.Lf("Could I get %1$s, please?", REQUEST_TOKEN) end
+    local function RequestExample() return CUI.Lf("Could I get %1$s, please?", REQUEST_TOKEN) end
     local function HasRequestToken(textValue) return textValue:find(TOKEN_PATTERN) ~= nil end
     _G._CUABR_REQUEST_TOKEN = REQUEST_TOKEN
     _G._CUABR_HasRequestToken = HasRequestToken
@@ -1069,7 +1070,7 @@ do
         if C_ChatInfo.InChatMessagingLockdown() then
             if UIErrorsFrame then
                 UIErrorsFrame:AddMessage(
-                    CludesUI.L("Buff requests cannot be sent right now"),
+                    CUI.L("Buff requests cannot be sent right now"),
                     1.0,
                     0.3,
                     0.3,
@@ -1088,7 +1089,7 @@ do
         if custom and HasRequestToken(custom) then
             message = custom:gsub(TOKEN_PATTERN, (name:gsub("%%", "%%%%")))
         else
-            message = CludesUI.Lf("%1$s, please!", name)
+            message = CUI.Lf("%1$s, please!", name)
         end
         C_ChatInfo.SendChatMessage(CutBytes(message, 255), channel)
     end
@@ -1332,7 +1333,7 @@ function REMIND.ApplyIconExpiry(frame, m)
         binding = C_DurationUtil.CreateDurationTextBinding()
         binding:SetFontString(count)
         binding:SetDuration(frame._expiryDuration)
-        local fmt = CludesUI.AuraKit.GetDurationFormatter(false)
+        local fmt = CUI.AuraKit.GetDurationFormatter(false)
         if fmt then binding:SetFormatter(fmt) end
         frame._expiryBinding = binding
     end

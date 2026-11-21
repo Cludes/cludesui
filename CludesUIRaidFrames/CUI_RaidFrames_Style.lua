@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Style.lua
 --
@@ -14,7 +15,7 @@ Inner.broken = true
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local floor = math.floor
 local max = math.max
@@ -331,7 +332,7 @@ function mod.ApplyHighlightBorder(bf, cfg, size, red, green, blue, a, px)
     local texKey = cfg.borderTexture or "solid"
     if not size or size <= 0 then
         if bf._hlBorderSize then
-            CludesUI.ApplyBorderStyle(bf, 0, red, green, blue, a, texKey)
+            CUI.ApplyBorderStyle(bf, 0, red, green, blue, a, texKey)
             -- Keep the cache when the style call bailed (still shown) so the next one retries the hide.
             if not bf:IsShown() then bf._hlBorderSize = nil end
         end
@@ -340,10 +341,10 @@ function mod.ApplyHighlightBorder(bf, cfg, size, red, green, blue, a, px)
     -- IsShown: a base restyle to Border Size 0 hides the frame without clearing the cache,
     -- so the size alone would let a hover/target repaint after one land on a hidden border.
     if bf._hlBorderSize == size and bf._hlBorderPx == px and bf:IsShown() then
-        CludesUI.SetBorderStyleColor(bf, red, green, blue, a)
+        CUI.SetBorderStyleColor(bf, red, green, blue, a)
         return
     end
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         bf,
         size,
         red,
@@ -391,8 +392,8 @@ function mod.RF_ClearPowerBorderArt(owner)
     if not owner or not owner._powerArtKey then return end
     if owner._powerArtTex then owner._powerArtTex:Hide() end
     if owner._powerArtSeam then owner._powerArtSeam:Hide() end
-    CludesUI.HideBorderStyle(owner)
-    CludesUI.RegisterPxReapply(owner, nil)
+    CUI.HideBorderStyle(owner)
+    CUI.RegisterPxReapply(owner, nil)
     Pix.ShowBorder(owner)
     owner._powerArtKey = nil
     owner._powerArtMode = nil
@@ -401,7 +402,7 @@ end
 function mod.RF_LayoutPowerBorderArt(owner)
     if not owner:IsShown() or not owner._powerArtKey then return end
     if owner._powerArtMode == "border" then
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             owner,
             owner._powerArtSize,
             owner._powerArtR,
@@ -426,8 +427,8 @@ function mod.RF_LayoutPowerBorderArt(owner)
     local es = owner:GetEffectiveScale()
     if not (es and es > 0.01) then es = UIParent:GetEffectiveScale() end
     local thick =
-        CludesUI.BorderCompanionThickness(owner._powerArtKey, owner._powerArtSize, owner._powerArtPx, es)
-    local realPP = CludesUI.PP
+        CUI.BorderCompanionThickness(owner._powerArtKey, owner._powerArtSize, owner._powerArtPx, es)
+    local realPP = CUI.PP
     local raise = realPP.SnapForES(thick * 5 / 32, es) - realPP.perfect / es
     local t = owner._powerArtTex
     t:ClearAllPoints()
@@ -453,7 +454,7 @@ function mod.RF_ApplyPowerBorderArt(owner, cfg, force, preview, nameBar)
     )
         and not mod.RF_Stock()
         and cfg.borderTexture
-    if not CludesUI._pixelArtBorders[key] or (mode ~= "divider" and mode ~= "border") then
+    if not CUI._pixelArtBorders[key] or (mode ~= "divider" and mode ~= "border") then
         mod.RF_ClearPowerBorderArt(owner)
         return false
     end
@@ -473,13 +474,13 @@ function mod.RF_ApplyPowerBorderArt(owner, cfg, force, preview, nameBar)
         owner:Show()
         return true
     end
-    CludesUI.HideBorderStyle(owner)
+    CUI.HideBorderStyle(owner)
     if owner._powerArtTex then owner._powerArtTex:Hide() end
     if owner._powerArtSeam then owner._powerArtSeam:Hide() end
     owner._powerArtKey, owner._powerArtMode = key, mode
     owner._powerArtEdge = (nameBar and not cfg.topNameBarBottom) and "BOTTOM" or "TOP"
     owner._powerArtSize = size
-    owner._powerArtPx = CludesUI.BorderPx(cfg.borderSizePx, size, key)
+    owner._powerArtPx = CUI.BorderPx(cfg.borderSizePx, size, key)
     local color = cfg.borderColor
     owner._powerArtR, owner._powerArtG, owner._powerArtB =
         color and color.r or 0, color and color.g or 0, color and color.b or 0
@@ -499,12 +500,12 @@ function mod.RF_ApplyPowerBorderArt(owner, cfg, force, preview, nameBar)
             Pix.DisablePixelSnap(t)
             owner._powerArtTex = t
         end
-        t:SetTexture(CludesUI.GetBorderCompanion(key, "sepH"))
+        t:SetTexture(CUI.GetBorderCompanion(key, "sepH"))
         t:SetVertexColor(owner._powerArtR, owner._powerArtG, owner._powerArtB, owner._powerArtAlpha)
     end
     owner:Show()
     mod.RF_LayoutPowerBorderArt(owner)
-    CludesUI.RegisterPxReapply(
+    CUI.RegisterPxReapply(
         owner,
         (mode == "divider" and not preview) and mod.RF_LayoutPowerBorderArt or nil
     )
@@ -519,7 +520,7 @@ function mod.RF_ApplyTopNameDivider(tnb, cfg, preview)
         or not cfg.topNameBarEnabled
         or cfg.topNameBarDivider ~= true
         or mod.RF_Stock()
-        or not CludesUI._pixelArtBorders[key]
+        or not CUI._pixelArtBorders[key]
         or (cfg.borderSize or 1) <= 0
         or (cfg.topNameBarHeight or 20) < 4
     then
@@ -1034,7 +1035,7 @@ local function StyleButton(btnFrame)
         if boxHolder then boxHolder:SetFrameLevel(lvl + 1) end
         -- A textured style draws on a backdrop child levelled only at style time: carry
         -- it too, so the raise also clears the Color Custom Borders copies (base + 1).
-        local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[skinData.borderFrame]
+        local edge = CUI._bdBorderData and CUI._bdBorderData[skinData.borderFrame]
         if edge then edge:SetFrameLevel(lvl) end
     end
 
@@ -1081,12 +1082,12 @@ local function StyleButton(btnFrame)
             local color = cfg.hoverBorderColor or { r = 1, g = 1, b = 1 }
             red, green, blue, a = color.r, color.g, color.b, cfg.hoverBorderAlpha or 1
             raised, hlSize = true, cfg.hoverBorderSize or 1
-            hlPx = CludesUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
+            hlPx = CUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
         elseif skinData._isTarget and cfg.targetBorderEnabled ~= false then
             local color = cfg.targetBorderColor or { r = 1, g = 1, b = 1 }
             red, green, blue, a = color.r, color.g, color.b, cfg.targetBorderAlpha or 1
             raised, hlSize = true, cfg.targetBorderSize or 1
-            hlPx = CludesUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
+            hlPx = CUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
         elseif skinData._aggroBdr and cfg.threatCustomBorder == true and mod.RF_CustomBorderOn(cfg) then
             -- The threat color, raised like hover/target so it also covers the dispel
             -- Color Custom Borders copies (base + 9). Settings re-checked live: a
@@ -1106,7 +1107,7 @@ local function StyleButton(btnFrame)
             red, green, blue = mod.RF_VisibleHighlight(cfg, red, green, blue)
         end
         skinData.borderFrame._hlBorderSize = nil
-        CludesUI.SetBorderStyleColor(skinData.borderFrame, red, green, blue, a)
+        CUI.SetBorderStyleColor(skinData.borderFrame, red, green, blue, a)
         if
             cfg.powerBorderMatchColor == true
             and skinData.powerBorderFrame
@@ -1137,32 +1138,32 @@ local function StyleButton(btnFrame)
         local compact = mod.RF_ButtonCompact(skinData, cfg)
         if compact or skinData._compactBorder then skinData._compactBorder = compact end
         if compact then
-            CludesUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
+            CUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
             PaintBorder()
-            CludesUI.RoundCorners(btnFrame, 0)
+            CUI.RoundCorners(btnFrame, 0)
             return
         end
         -- Stock styles: the CludesUI border stands down for the stock edge
         -- (for the art under the Party Frames kit).
         if skinData.kit then
             skinData.borderFrame:SetFrameLevel(pl + 8)
-            CludesUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
+            CUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
             skinData.borderFrame._hlBorderSize = nil
             PaintBorder()
-            CludesUI.RoundCorners(btnFrame, 0)
+            CUI.RoundCorners(btnFrame, 0)
             return
         end
         if skinData.stockEdge then
             skinData.borderFrame:SetFrameLevel(pl + 8)
-            CludesUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
+            CUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
             skinData.borderFrame._hlBorderSize = nil
             mod.RF_StockSeat(skinData)
             PaintBorder()
-            CludesUI.RoundCorners(btnFrame, 0)
+            CUI.RoundCorners(btnFrame, 0)
             return
         end
         skinData.borderFrame:SetFrameLevel(cfg.borderBehind and math.max(0, pl - 1) or (pl + 8))
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             skinData.borderFrame,
             bs,
             bc.r,
@@ -1177,14 +1178,14 @@ local function StyleButton(btnFrame)
             "unitframes",
             bs,
             nil,
-            CludesUI.BorderPx(cfg.borderSizePx, bs, texKey)
+            CUI.BorderPx(cfg.borderSizePx, bs, texKey)
         )
         PaintBorder()
         -- Rounded corners (CludesUI_RoundedCorners.lua; nothing at radius 0).
         -- The power border rides in the body so its edge strips round too.
         local radius = cfg.cornerRadius or 0
         if radius > 0 then
-            CludesUI.RoundCorners(btnFrame, radius, {
+            CUI.RoundCorners(btnFrame, radius, {
                 roots = { skinData.health, skinData.power, skinData.topNameBar, skinData.powerBorderFrame },
                 textures = { skinData.bg },
                 border = skinData.borderFrame,
@@ -1192,7 +1193,7 @@ local function StyleButton(btnFrame)
                 corners = cfg.cornerMask,
             })
         else
-            CludesUI.RoundCorners(btnFrame, 0)
+            CUI.RoundCorners(btnFrame, 0)
         end
     end
     if mod.RF_Stock() and not skinData.kit then mod.RF_StockBuild(btnFrame, skinData, skinData.power) end
@@ -1389,8 +1390,8 @@ mod._StyleButtonSecure = function(btnFrame)
     btnFrame:SetAttribute("*type1", "target")
     -- The engine gates SecureUnitButton's togglemenu; route right-click through a SecureActionButton
     -- proxy so the menu (and protected items like Set Focus) works without taint (*type2 = "click").
-    if CludesUI.AttachSecureUnitMenu then
-        CludesUI.AttachSecureUnitMenu(btnFrame)
+    if CUI.AttachSecureUnitMenu then
+        CUI.AttachSecureUnitMenu(btnFrame)
     else
         btnFrame:SetAttribute("type2", "togglemenu")
         btnFrame:SetAttribute("*type2", "togglemenu")

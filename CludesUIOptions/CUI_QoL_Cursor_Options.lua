@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CursorLite_Options.lua
 --  Registers the Cursor Lite module with CludesUI.
@@ -6,13 +7,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Does NOT touch cursor tracking logic.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIQoL"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 local PAGE_CURSOR = "Cursor"
 local PAGE_UNLOCK = "Layout Mode"
@@ -24,8 +25,8 @@ local SECTION_CAST = "CAST BAR"
 local strupper, strgsub, strmatch, strsub = string.upper, string.gsub, string.match, string.sub
 local floor = math.floor
 
-CludesUI.AtOptionsLogin(function()
-    local Pix = CludesUI.PP
+CUI.AtOptionsLogin(function()
+    local Pix = CUI.PP
 
     ---------------------------------------------------------------------------
     --  DB helpers
@@ -106,11 +107,11 @@ CludesUI.AtOptionsLogin(function()
     --  Cursor Circle page  (Appearance + GCD + Cast Bar sections)
     ---------------------------------------------------------------------------
     local function BuildCursorPage(page, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height, row, heading
 
-        CludesUI:ClearContentHeader()
+        CUI:ClearContentHeader()
 
         -----------------------------------------------------------------------
         --  APPEARANCE
@@ -128,7 +129,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
-            setValue = CludesUI.DependentSetValue(function()
+            setValue = CUI.DependentSetValue(function()
                 local profile = DB()
                 return profile and (profile.enabled ~= false)
             end, function(val)
@@ -136,7 +137,7 @@ CludesUI.AtOptionsLogin(function()
                 if not profile then return end
                 profile.enabled = val
                 ApplyCursor()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end),
         }, {
             type = "multiSwatch",
@@ -164,7 +165,7 @@ CludesUI.AtOptionsLogin(function()
                             profile.useClassColor = false
                             profile.useAccentColor = false
                             ApplyCursor()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                             return
                         end
                         if self._eabOrigClick then self._eabOrigClick(self) end
@@ -191,7 +192,7 @@ CludesUI.AtOptionsLogin(function()
                         profile.useClassColor = true
                         profile.useAccentColor = false
                         ApplyCursor()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
                         local profile = DB()
@@ -203,7 +204,7 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Accent Color",
                     hasAlpha = false,
                     getValue = function()
-                        local ar, ag, ab = CludesUI.GetAccentColor()
+                        local ar, ag, ab = CUI.GetAccentColor()
                         return ar, ag, ab
                     end,
                     setValue = function() end,
@@ -213,7 +214,7 @@ CludesUI.AtOptionsLogin(function()
                         profile.useAccentColor = true
                         profile.useClassColor = false
                         ApplyCursor()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
                         local profile = DB()
@@ -225,7 +226,7 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
         -- Block overlay on the right region when Cursor Circle is disabled
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rightRegion = row._rightRegion
             local circleBlock = CreateFrame("Frame", nil, rightRegion)
             circleBlock:SetAllPoints()
@@ -233,9 +234,9 @@ CludesUI.AtOptionsLogin(function()
             circleBlock:EnableMouse(true)
             circleBlock:SetScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(rightRegion, CludesUI.DisabledTooltip("Cursor Circle")) end
+                function() CUI.ShowWidgetTooltip(rightRegion, CUI.DisabledTooltip("Cursor Circle")) end
             )
-            circleBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            circleBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function UpdateCircleBlock()
                 local profile = DB()
                 local off = not profile or profile.enabled == false
@@ -244,7 +245,7 @@ CludesUI.AtOptionsLogin(function()
                 if rightRegion._label then rightRegion._label:SetAlpha(off and 0.3 or 1) end
             end
             UpdateCircleBlock()
-            CludesUI.RegisterWidgetRefresh(UpdateCircleBlock)
+            CUI.RegisterWidgetRefresh(UpdateCircleBlock)
         end
 
         -- Rows below are HIDDEN entirely while the Cursor Circle is off (the
@@ -408,7 +409,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
         -- The circle has a mover only while enabled and detached from the
         -- cursor, so the button names whichever of the two it still needs.
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = "ECL_GCD",
             disabled = function()
                 local gcdCfg = GCD_DB()
@@ -425,12 +426,12 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return GCD_DB().enabled or false end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
-            setValue = CludesUI.DependentSetValue(
+            setValue = CUI.DependentSetValue(
                 function() return GCD_DB().enabled or false end,
                 function(val)
                     GCD_DB().enabled = val
                     ApplyGcdCircle()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
             ),
         }, {
@@ -456,7 +457,7 @@ CludesUI.AtOptionsLogin(function()
                             gcdCfg.useClassColor = false
                             gcdCfg.useAccentColor = false
                             ApplyGcdCircle()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                             return
                         end
                         if self._eabOrigClick then self._eabOrigClick(self) end
@@ -482,7 +483,7 @@ CludesUI.AtOptionsLogin(function()
                         gcdCfg.useClassColor = true
                         gcdCfg.useAccentColor = false
                         ApplyGcdCircle()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
                         local gcdCfg = GCD_DB()
@@ -494,7 +495,7 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Accent Color",
                     hasAlpha = false,
                     getValue = function()
-                        local ar, ag, ab = CludesUI.GetAccentColor()
+                        local ar, ag, ab = CUI.GetAccentColor()
                         return ar, ag, ab
                     end,
                     setValue = function() end,
@@ -503,7 +504,7 @@ CludesUI.AtOptionsLogin(function()
                         gcdCfg.useAccentColor = true
                         gcdCfg.useClassColor = false
                         ApplyGcdCircle()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
                         local gcdCfg = GCD_DB()
@@ -515,7 +516,7 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
         -- Block overlay on the right region when GCD Circle is disabled
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rightRegion = row._rightRegion
             local gcdBlock = CreateFrame("Frame", nil, rightRegion)
             gcdBlock:SetAllPoints()
@@ -523,9 +524,9 @@ CludesUI.AtOptionsLogin(function()
             gcdBlock:EnableMouse(true)
             gcdBlock:SetScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(rightRegion, CludesUI.DisabledTooltip("GCD Circle")) end
+                function() CUI.ShowWidgetTooltip(rightRegion, CUI.DisabledTooltip("GCD Circle")) end
             )
-            gcdBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            gcdBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function UpdateGCDBlock()
                 local off = not GCD_DB().enabled
                 gcdBlock:SetShown(off)
@@ -533,7 +534,7 @@ CludesUI.AtOptionsLogin(function()
                 if rightRegion._label then rightRegion._label:SetAlpha(off and 0.3 or 1) end
             end
             UpdateGCDBlock()
-            CludesUI.RegisterWidgetRefresh(UpdateGCDBlock)
+            CUI.RegisterWidgetRefresh(UpdateGCDBlock)
         end
 
         -- Rows below are HIDDEN entirely while the GCD Circle is off (the
@@ -583,7 +584,7 @@ CludesUI.AtOptionsLogin(function()
                 setValue = function(val)
                     GCD_DB().attached = val
                     ApplyGcdCircle()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
             cursorY = cursorY - height
@@ -620,7 +621,7 @@ CludesUI.AtOptionsLogin(function()
         heading, height = W:SectionHeader(hostFrame, SECTION_CAST, cursorY)
         cursorY = cursorY - height
         -- As the GCD circle: a mover only while enabled and detached.
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = "ECL_Cast",
             disabled = function()
                 local cfg = Cast_DB()
@@ -637,12 +638,12 @@ CludesUI.AtOptionsLogin(function()
             getValue = function() return Cast_DB().enabled or false end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
-            setValue = CludesUI.DependentSetValue(
+            setValue = CUI.DependentSetValue(
                 function() return Cast_DB().enabled or false end,
                 function(val)
                     Cast_DB().enabled = val
                     ApplyCastCircle()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
             ),
         }, {
@@ -668,7 +669,7 @@ CludesUI.AtOptionsLogin(function()
                             cfg.useClassColor = false
                             cfg.useAccentColor = false
                             ApplyCastCircle()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                             return
                         end
                         if self._eabOrigClick then self._eabOrigClick(self) end
@@ -694,7 +695,7 @@ CludesUI.AtOptionsLogin(function()
                         cfg.useClassColor = true
                         cfg.useAccentColor = false
                         ApplyCastCircle()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
                         local cfg = Cast_DB()
@@ -706,7 +707,7 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Accent Color",
                     hasAlpha = false,
                     getValue = function()
-                        local ar, ag, ab = CludesUI.GetAccentColor()
+                        local ar, ag, ab = CUI.GetAccentColor()
                         return ar, ag, ab
                     end,
                     setValue = function() end,
@@ -715,7 +716,7 @@ CludesUI.AtOptionsLogin(function()
                         cfg.useAccentColor = true
                         cfg.useClassColor = false
                         ApplyCastCircle()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
                         local cfg = Cast_DB()
@@ -727,7 +728,7 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
         -- Block overlay on the right region when Cast Bar Circle is disabled
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local rightRegion = row._rightRegion
             local castBlock = CreateFrame("Frame", nil, rightRegion)
             castBlock:SetAllPoints()
@@ -736,10 +737,10 @@ CludesUI.AtOptionsLogin(function()
             castBlock:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(rightRegion, CludesUI.DisabledTooltip("Cast Bar Circle"))
+                    CUI.ShowWidgetTooltip(rightRegion, CUI.DisabledTooltip("Cast Bar Circle"))
                 end
             )
-            castBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            castBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function UpdateCastBlock()
                 local off = not Cast_DB().enabled
                 castBlock:SetShown(off)
@@ -747,11 +748,11 @@ CludesUI.AtOptionsLogin(function()
                 if rightRegion._label then rightRegion._label:SetAlpha(off and 0.3 or 1) end
             end
             UpdateCastBlock()
-            CludesUI.RegisterWidgetRefresh(UpdateCastBlock)
+            CUI.RegisterWidgetRefresh(UpdateCastBlock)
         end
 
         -- Inline cog on Enable Cast Bar Circle for "Show Spark"
-        CludesUI.BuildInlineCog(row._leftRegion, {
+        CUI.BuildInlineCog(row._leftRegion, {
             title = "Cast Bar Settings",
             disabled = function() return not Cast_DB().enabled end,
             disabledTooltip = "Cast Bar Circle",
@@ -818,7 +819,7 @@ CludesUI.AtOptionsLogin(function()
                 setValue = function(val)
                     Cast_DB().attached = val
                     ApplyCastCircle()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
             cursorY = cursorY - height

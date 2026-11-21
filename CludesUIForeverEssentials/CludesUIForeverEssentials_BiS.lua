@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_BiS.lua  (WoW Forever only)
 --  Best in Slot: your own BiS list, one item per gear slot, shared by every
@@ -23,8 +24,8 @@ local _, module = ...
 local F = module.Feature("bis", { enabled = true, tooltip = true, alert = true })
 local Get = F.Get
 
-local function Say(textValue) CludesUI.Print("|cff4cc9f0BiS:|r " .. textValue) end
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Say(textValue) CUI.Print("|cff4cc9f0BiS:|r " .. textValue) end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local SLOTS = { -- inventory slot, name, in window order
@@ -188,7 +189,7 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         if slot then
             tooltip:AddLine(
                 ("|cffff9933*|r %sBiS for %s|r%s"):format(
-                    CludesUI.Kit.AccentHex(),
+                    CUI.Kit.AccentHex(),
                     SLOT_NAME[slot],
                     module.Owned(ident) and "  |cff60d080(yours)|r" or ""
                 )
@@ -257,7 +258,7 @@ local function Build()
     window = CreateFrame("Frame", "CludesUIBiSWindow", UIParent)
     window:SetSize(420, 74 + #SLOTS * ROW_H)
     window:SetPoint("CENTER", 0, 40)
-    CludesUI.Kit.Panel(window, 0.95)
+    CUI.Kit.Panel(window, 0.95)
     window:SetMovable(true)
     window:EnableMouse(true)
     window:RegisterForDrag("LeftButton")
@@ -265,12 +266,12 @@ local function Build()
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     window:SetFrameStrata("HIGH")
     window.title = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(window.title, 15, "essentials")
+    CUI.Kit.Font(window.title, 15, "essentials")
     window.title:SetPoint("TOPLEFT", 10, -8)
-    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
+    local close = CUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
     window.hint = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(window.hint, 11, "essentials")
+    CUI.Kit.Font(window.hint, 11, "essentials")
     window.hint:SetPoint("BOTTOMLEFT", 10, 8)
     window.hint:SetText(
         "|cff9aa6b2Alt+Shift-click an item to add or remove it. Right-click a row to clear it.|r"
@@ -283,7 +284,7 @@ local function Build()
         region:RegisterForClicks("AnyUp")
         region.slot = slot[1]
         region.label = region:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(region.label, 12, "essentials")
+        CUI.Kit.Font(region.label, 12, "essentials")
         region.label:SetPoint("LEFT")
         region.label:SetWidth(70)
         region.label:SetJustifyH("LEFT")
@@ -293,7 +294,7 @@ local function Build()
         region.icon:SetPoint("LEFT", 74, 0)
         region.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         region.text = region:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(region.text, 12, "essentials")
+        CUI.Kit.Font(region.text, 12, "essentials")
         region.text:SetPoint("LEFT", region.icon, "RIGHT", 6, 0)
         region.text:SetWidth(310)
         region.text:SetJustifyH("LEFT")
@@ -349,7 +350,7 @@ Refresh = function()
         end
     end
     window.title:SetText(
-        ("%sBest in Slot|r  |cff9aa6b2%d of %d yours|r"):format(CludesUI.Kit.AccentHex(), have, sum)
+        ("%sBest in Slot|r  |cff9aa6b2%d of %d yours|r"):format(CUI.Kit.AccentHex(), have, sum)
     )
 end
 
@@ -366,7 +367,7 @@ nameEv:SetScript("OnEvent", function()
     if Refresh then Refresh() end
 end)
 
-CludesUI._BiS = {
+CUI._BiS = {
     Get = Get,
     Cfg = F.Cfg,
     Show = module.ShowBis,

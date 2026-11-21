@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Text.lua
 --
@@ -66,7 +67,7 @@ do
         [11] = _G.DEBUFF_TYPE_BLEED_COLOR,
     }
     mod.Colors = colors
-    CludesUI._UFColors = colors
+    CUI._UFColors = colors
 
     -- Health value pass: min/max plus current (offline paints a full bar, the
     -- behavior users already see), native interpolation via the bar's own
@@ -147,10 +148,10 @@ do
             part._cuiPNum, part._cuiPTok = nil, nil
         else
             part._cuiPNum = powerNum
-            part._cuiPTok = (not issecretvalue(ptoken) and ptoken) or CludesUI.POWER_ENUM_TO_KEY[powerNum]
+            part._cuiPTok = (not issecretvalue(ptoken) and ptoken) or CUI.POWER_ENUM_TO_KEY[powerNum]
         end
         if part._manaRegenSpark then
-            CludesUI.ManaRegenSpark.SetMana(
+            CUI.ManaRegenSpark.SetMana(
                 "uf",
                 not issecretvalue(powerNum) and powerNum == Enum.PowerType.Mana
             )
@@ -211,7 +212,7 @@ end
 -- The global master reads and sets every frame's effective Dark Mode choice.
 do
     local UNITS = { "player", "target", "focus", "targettarget", "focustarget", "pet", "boss" }
-    CludesUI.RegisterDarkModeToggle({
+    CUI.RegisterDarkModeToggle({
         id = "unitFrames",
         isOn = function()
             if not (saved and saved.profile) then return false end
@@ -241,7 +242,7 @@ end
 -- WoW Forever offers no Smart Text (it chooses by spec, and Forever has no specs):
 -- a "smart" saved there reads as the value (CludesUI.PowerTextFormat).
 local function CUI_IsSmartPowerPercent(displayedPowerType)
-    if CludesUI.IS_FOREVER then return false end
+    if CUI.IS_FOREVER then return false end
     local _, classFile = UnitClass("player")
     if not classFile then return false end
     -- Druid/Monk shift displayed power with form/spec: percent only while the bar shows
@@ -271,7 +272,7 @@ local function CUI_IsSmartPowerPercent(displayedPowerType)
     return false
 end
 mod.CUI_IsSmartPowerPercent = CUI_IsSmartPowerPercent
-CludesUI.IsSmartPowerPercent = CUI_IsSmartPowerPercent
+CUI.IsSmartPowerPercent = CUI_IsSmartPowerPercent
 
 -- Show Decimal on Text (global): AbbreviateNumbers config emitting one decimal per
 -- magnitude band (240500 -> "240.5k", 2405000 -> "2.4m"). AbbreviateNumbers runs in
@@ -285,7 +286,7 @@ CludesUI.IsSmartPowerPercent = CUI_IsSmartPowerPercent
 -- the shared number engine's thousand/wan/yi units instead of k/m/b, so these
 -- frames read the same as Damage Meters and the gold bar on those clients.
 local function DecimalAbbrevConfig(skinData, shortHealth)
-    local g = CludesUI.NumberAbbrevGlyphs()
+    local g = CUI.NumberAbbrevGlyphs()
     if g then
         return {
             breakpointData = {
@@ -341,19 +342,19 @@ local function DecimalAbbrevConfig(skinData, shortHealth)
 end
 -- WoW Forever: nothing under 10,000 abbreviates, so the k band starts there and
 -- the thousand band goes (the shared engine's trim, CludesUI_NumberFormat.lua).
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     local bands = DecimalAbbrevConfig
     DecimalAbbrevConfig = function(skinData, shortHealth)
         local conf = bands(skinData, shortHealth)
-        if not shortHealth then conf.breakpointData = CludesUI.ForeverAbbrevTiers(conf.breakpointData) end
+        if not shortHealth then conf.breakpointData = CUI.ForeverAbbrevTiers(conf.breakpointData) end
         return conf
     end
 end
 
 -- Health, max health and absorb values without a decimal config: the global
 -- Number Format for valueType (CludesUI_NumberFormat.lua).
-mod.AbbreviateValue = CludesUI.AbbreviateValue
-CludesUI.RegisterNumberFormatCallback(function() mod.RefreshAllUnitNames() end)
+mod.AbbreviateValue = CUI.AbbreviateValue
+CUI.RegisterNumberFormatCallback(function() mod.RefreshAllUnitNames() end)
 
 -- Health Short always abbreviates from 1,000 with one decimal.
 function mod.AbbreviateShortHealth(hp)
@@ -453,8 +454,8 @@ do
         return function(unitToken)
             if not unitToken or not UnitExists(unitToken) then return "" end
             if status then
-                if not UnitIsConnected(unitToken) then return CludesUI.L("OFFLINE") end
-                if UnitIsDeadOrGhost(unitToken) then return CludesUI.L("DEAD") end
+                if not UnitIsConnected(unitToken) then return CUI.L("OFFLINE") end
+                if UnitIsDeadOrGhost(unitToken) then return CUI.L("DEAD") end
             end
             local hp = getHP(unitToken) or 0
             if shortHealth then return mod.AbbreviateShortHealth(hp) end
@@ -498,8 +499,8 @@ do
     TagFns.perhp = PercentHP
     TagFns.perhpnosign = function(unitToken)
         if not unitToken or not UnitExists(unitToken) then return "" end
-        if not UnitIsConnected(unitToken) then return CludesUI.L("OFFLINE") end
-        if UnitIsDeadOrGhost(unitToken) then return CludesUI.L("DEAD") end
+        if not UnitIsConnected(unitToken) then return CUI.L("OFFLINE") end
+        if UnitIsDeadOrGhost(unitToken) then return CUI.L("DEAD") end
         return PercentHP(unitToken)
     end
 end
@@ -522,12 +523,12 @@ local PLAYER_POWER_ALT = {
 -- Forced display power type for the player (number = Enum.PowerType, nil =
 -- UnitPowerType decides). Shared by the bar's GetDisplayPower, the color
 -- resolver and the options preview so all three agree.
-function CludesUI.GetPlayerPowerOverride()
+function CUI.GetPlayerPowerOverride()
     if not (saved and saved.profile) then return nil end
     local _, classFile = UnitClass("player")
     -- WoW Forever has no retail specs, so the spec tables below never apply
     -- there: only the druid "Power Type: Mana" choice, under its own string key.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         if classFile ~= "DRUID" then return nil end
         local shade = saved.profile.player and saved.profile.player.powerTypeOverride
         return (shade and shade.foreverDruid) and 0 or nil
@@ -576,7 +577,7 @@ TagFns.level = function(unit)
     if l and issecretvalue and issecretvalue(l) then return l end
     if not l or l <= 0 then
         -- Forever: a hidden player level the PvP feature knows.
-        return CludesUI.KnownHiddenLevel and CludesUI.KnownHiddenLevel(unit) or "??"
+        return CUI.KnownHiddenLevel and CUI.KnownHiddenLevel(unit) or "??"
     end
     return l
 end
@@ -593,7 +594,7 @@ mod.ResolveUnitNameColor = function(unitToken)
         local _, classKey = UnitClass(unitToken)
         if not issecretvalue(classKey) and classKey then
             -- The suite's Class Colors (custom colors, Class Color Darken), as the health bar.
-            local color = CludesUI.GetClassColor(classKey)
+            local color = CUI.GetClassColor(classKey)
             if color then return color.r, color.g, color.b end
         end
         return nil
@@ -618,7 +619,7 @@ end
 -- hands it to SetFormattedText untouched).
 -- Returns ok, r, g, b -- ok is a PLAIN boolean, r/g/b may be SECRET, only safe as setter args.
 local function ResolveRestrictedClassColor(unitToken, classKey)
-    local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, classKey)
+    local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(unitToken, classKey)
     if success then return true, red, green, blue end
     if C_ClassColor and C_ClassColor.GetClassColor then
         local color = C_ClassColor.GetClassColor(classKey)
@@ -640,7 +641,7 @@ mod.ResolveBgClassColor = function(classUnit)
     if UnitIsPlayer(classUnit) or (UnitInPartyIsAI and UnitInPartyIsAI(classUnit)) then
         local _, classTok = UnitClass(classUnit)
         if issecretvalue(classTok) then return ResolveRestrictedClassColor(classUnit, classTok) end
-        local cc = classTok and CludesUI.GetClassColor(classTok)
+        local cc = classTok and CUI.GetClassColor(classTok)
         if cc then return true, cc.r, cc.g, cc.b end
         return false
     end
@@ -652,7 +653,7 @@ end
 -- registered brand) so one provider checkbox controls every CUI module; standalone =
 -- our renamed folder name, which always contains "Standalone" (rename-immune token).
 -- On ns for the Lua 5.1 200-local ceiling.
-mod.EXT_NICK = CludesUI.EXT_NICK
+mod.EXT_NICK = CUI.EXT_NICK
 mod.NICK_ADDON = addonName:find("Standalone") and addonName or mod.EXT_NICK.addon
 
 -- Resolve a unit's display name through MethodInternal's authoritative surface
@@ -685,18 +686,18 @@ function mod.ResolveUnitNickname(unitToken)
             if type(dn) == "string" and not (issecretvalue and issecretvalue(dn)) and dn ~= "" then
                 return dn
             end
-            return CludesUI.WithSurname(name, surname)
+            return CUI.WithSurname(name, surname)
         end
     end
     -- Master toggle (Unit Frames > main frames > Display, default OFF): when off,
     -- skip the remaining provider lookups and show the raw unit name (display-safe;
     -- with the surname on WoW Forever).
     if not (saved and saved.profile and saved.profile.showNicknames) then
-        return CludesUI.WithSurname(name, surname)
+        return CUI.WithSurname(name, surname)
     end
     -- CludesUI's own nicknames (Raid Lead > Nicknames), set and synced with the guild.
-    if not nameSecret and CludesUI.GetNickname then
-        local own = CludesUI.GetNickname(name)
+    if not nameSecret and CUI.GetNickname then
+        local own = CUI.GetNickname(name)
         if own then return own end
     end
     if not nameSecret and NSAPI and NSAPI.GetName then
@@ -753,7 +754,7 @@ function mod.ResolveUnitNickname(unitToken)
         end
     end
     if display then return display end
-    return CludesUI.WithSurname(name, surname)
+    return CUI.WithSurname(name, surname)
 end
 
 -- Nickname-aware replacement for the stock [name] tag (see ContentToTag). Returns
@@ -998,15 +999,15 @@ do
     P.levelcol = function(unit)
         local l = TagFns.level(unit)
         if issecretvalue(l) or l == "" then return l end
-        local red, green, blue = CludesUI.GetLevelColor(unit, (l == "??") and -1 or l)
-        return CludesUI.ColorText(l, red, green, blue)
+        local red, green, blue = CUI.GetLevelColor(unit, (l == "??") and -1 or l)
+        return CUI.ColorText(l, red, green, blue)
     end
     -- Same, with friendly units in their difficulty color too (Include Friendly).
     P.levelcolall = function(unit)
         local l = TagFns.level(unit)
         if issecretvalue(l) or l == "" then return l end
-        local red, green, blue = CludesUI.GetLevelColor(unit, (l == "??") and -1 or l, true)
-        return CludesUI.ColorText(l, red, green, blue)
+        local red, green, blue = CUI.GetLevelColor(unit, (l == "??") and -1 or l, true)
+        return CUI.ColorText(l, red, green, blue)
     end
     P.name = TagFns.name
     P.tgtcol = TagFns.tgtcol
@@ -1032,8 +1033,8 @@ do
     -- curhpshort does.
     P.curhp = function(unit)
         if not unit or not UnitExists(unit) then return "" end
-        if not UnitIsConnected(unit) then return CludesUI.L("OFFLINE") end
-        if UnitIsDeadOrGhost(unit) then return CludesUI.L("DEAD") end
+        if not UnitIsConnected(unit) then return CUI.L("OFFLINE") end
+        if UnitIsDeadOrGhost(unit) then return CUI.L("DEAD") end
         return scrollFrame("%d", UnitHealth(unit) or 0)
     end
     P.maxhp = function(unit)
@@ -1072,7 +1073,7 @@ do
     end
     -- [absorb:abr], [healabsorb:abr]: empty at zero like the full tags. The presets
     -- above keep "0" because ApplyAbsorbGate clips their whole zone instead.
-    local IsZeroValue = CludesUI.IsZeroValue
+    local IsZeroValue = CUI.IsZeroValue
     local function AbsorbShortTag(get)
         return function(unit)
             if not unit or not UnitExists(unit) then return "" end
@@ -1125,9 +1126,9 @@ do
         local color = prefs[prefixText .. "TargetSepColor"]
         local esc
         if type(color) == "table" then
-            esc = CludesUI.HexColor(color.r or 1, color.g or 1, color.b or 1)
+            esc = CUI.HexColor(color.r or 1, color.g or 1, color.b or 1)
         else
-            esc = CludesUI.COLOR_CODES.WHITE
+            esc = CUI.COLOR_CODES.WHITE
         end
         local colored = esc .. sep .. "|r"
         return function(unit)
@@ -1224,13 +1225,13 @@ do
     -- (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
     local function Shaped(piece, modeName, ofTarget)
         if modeName ~= "last" then
-            return function(unitToken) return CludesUI.ShortName(piece(unitToken), modeName) end
+            return function(unitToken) return CUI.ShortName(piece(unitToken), modeName) end
         end
         return function(unitToken)
-            if CludesUI.OwnSurnameHidden(ofTarget and unitToken and (unitToken .. "target") or unitToken) then
+            if CUI.OwnSurnameHidden(ofTarget and unitToken and (unitToken .. "target") or unitToken) then
                 return ""
             end
-            return CludesUI.ShortName(piece(unitToken), modeName)
+            return CUI.ShortName(piece(unitToken), modeName)
         end
     end
     for _, modeName in ipairs({ "first", "last", "abbr" }) do
@@ -1242,7 +1243,7 @@ do
     -- Custom content: the slot's own format string (<prefix>CustomFormat),
     -- parsed by CludesUI.TextTags against this binding of the unit schema.
     -- Options, preview and the width estimate read the same catalog.
-    local TAG_CATALOG = CludesUI.TextTags.Bind(CludesUI.TextTags.UNIT, {
+    local TAG_CATALOG = CUI.TextTags.Bind(CUI.TextTags.UNIT, {
         ["hp"] = P.curhp,
         ["hp:abr"] = P.curhpshort,
         ["hp:max"] = P.maxhp,
@@ -1274,7 +1275,7 @@ do
     --- for "none"/unknown. nametotarget builds its settings-closure separator.
     function mod.ContentToZone(contentFrame, prefixText, prefs)
         if contentFrame == "custom" then
-            local parsed = CludesUI.TextTags.Parse(TAG_CATALOG, prefs and prefs[prefixText .. "CustomFormat"])
+            local parsed = CUI.TextTags.Parse(TAG_CATALOG, prefs and prefs[prefixText .. "CustomFormat"])
             if not parsed then return nil end
             local keyList, map, pieceList = parsed.keys, TAG_CATALOG.map, {}
             local lvlCol = prefs.levelDifficultyColor
@@ -1335,14 +1336,14 @@ do
     -- Each twin asks CludesUI.UnitNameFormat for the unit whose name it
     -- shows (WoW Forever: First / Last Name leave a non-player's name whole).
     do
-        local short, unitMode = CludesUI.ShortName, CludesUI.UnitNameFormat
+        local short, unitMode = CUI.ShortName, CUI.UnitNameFormat
         local nameFn, tgtFn = P.name, P.tgtname
         local twinsByMode = {}
         local base = mod.ContentToZone
         function mod.ContentToZone(contentFrame, prefixText, prefs)
             local fmt, pieceList, static = base(contentFrame, prefixText, prefs)
             local modeName = fmt and prefs and prefs[prefixText .. "NameFormat"]
-            if modeName and CludesUI.IsNameFormat(modeName) then
+            if modeName and CUI.IsNameFormat(modeName) then
                 local twins = twinsByMode[modeName]
                 if not twins then
                     twins = {

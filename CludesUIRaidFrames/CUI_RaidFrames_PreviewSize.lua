@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewSize.lua
 --
@@ -159,7 +160,7 @@ mod._ShowSizePreview = function(tier)
     end
 
     -- Font for the unit-number label
-    local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+    local fontFile = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
     local nameSize = cfg.nameSize or 10
 
     -- Group slot origins along the growth flow, normalized over MOVER_GROUPS
@@ -282,7 +283,7 @@ mod._ShowSizePreview = function(tier)
         -- Thin neutral outline so each block and the spacing between them reads clearly.
         if frame._border and Pix then
             frame._border:SetFrameLevel(frame:GetFrameLevel() + 2)
-            CludesUI.ApplyBorderStyle(
+            CUI.ApplyBorderStyle(
                 frame._border,
                 1,
                 0.7,
@@ -301,7 +302,7 @@ mod._ShowSizePreview = function(tier)
 
         -- Centered unit number.
         if frame._nameText then
-            CludesUI.ApplyModuleFont(frame._nameText, fontFile, math.max(11, nameSize), "raidFrames")
+            CUI.ApplyModuleFont(frame._nameText, fontFile, math.max(11, nameSize), "raidFrames")
             frame._nameText:SetText(tostring(index))
             frame._nameText:SetTextColor(0.9, 0.9, 0.9)
             frame._nameText:SetWidth(bw)

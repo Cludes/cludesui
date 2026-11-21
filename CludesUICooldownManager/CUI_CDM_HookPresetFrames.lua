@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookPresetFrames.lua
 --
@@ -585,16 +586,16 @@ local function GetOrCreatePlaceholderFrame(barId, spellId, iconID, identKey)
             if bd2.hidePlaceholderIcon or self._missingHidden then return end
             -- Honor the global "Show Tooltips" visibility mode (Blizzard Skin).
             if
-                CludesUI
-                and CludesUI._tooltipSuppressedByMode
-                and CludesUI._tooltipSuppressedByMode(GameTooltip)
+                CUI
+                and CUI._tooltipSuppressedByMode
+                and CUI._tooltipSuppressedByMode(GameTooltip)
             then
                 return
             end
             GameTooltip_SetDefaultAnchor(GameTooltip, self)
             GameTooltip:SetSpellByID(self._phSpellID)
-            if CludesUI and CludesUI._repointTooltipAtCursor then
-                CludesUI._repointTooltipAtCursor(GameTooltip)
+            if CUI and CUI._repointTooltipAtCursor then
+                CUI._repointTooltipAtCursor(GameTooltip)
             end
             GameTooltip:Show()
         end)
@@ -723,7 +724,7 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
     frame.cooldownInfo = nil
     frame.layoutIndex = 99999
     local countFS = frame:CreateFontString(nil, "OVERLAY")
-    CludesUI.ApplyIconTextFont(countFS, GetCDMFont(), 11, "cdm")
+    CUI.ApplyIconTextFont(countFS, GetCDMFont(), 11, "cdm")
     countFS:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2)
     frame._itemCountText = countFS
     frame:SetScript("OnEnter", function(self)
@@ -733,9 +734,9 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
         if not bd2 or not bd2.showTooltip then return end
         -- Honor the global "Show Tooltips" visibility mode (Blizzard Skin).
         if
-            CludesUI
-            and CludesUI._tooltipSuppressedByMode
-            and CludesUI._tooltipSuppressedByMode(GameTooltip)
+            CUI
+            and CUI._tooltipSuppressedByMode
+            and CUI._tooltipSuppressedByMode(GameTooltip)
         then
             return
         end
@@ -753,8 +754,8 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
         GameTooltip:SetItemByID(tipID or self._presetItemID)
         -- Re-assert the cursor anchor after content is set (item setters can drop
         -- it under "Anchor to Cursor", leaving the tip invisible). No-op otherwise.
-        if CludesUI and CludesUI._repointTooltipAtCursor then
-            CludesUI._repointTooltipAtCursor(GameTooltip)
+        if CUI and CUI._repointTooltipAtCursor then
+            CUI._repointTooltipAtCursor(GameTooltip)
         end
         GameTooltip:Show()
     end)

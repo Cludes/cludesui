@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_TooltipAnchor.lua
 --
@@ -21,9 +22,9 @@ do
         self:UnregisterAllEvents()
         if not CludesUIDB then CludesUIDB = {} end
         if CludesUIDB.uberTooltipsManual then
-            CludesUI.SetCVar("UberTooltips", CludesUIDB.uberTooltips and "1" or "0", "CludesUIBlizzardSkin")
+            CUI.SetCVar("UberTooltips", CludesUIDB.uberTooltips and "1" or "0", "CludesUIBlizzardSkin")
         else
-            CludesUI.SetCVar("UberTooltips", "1", "CludesUIBlizzardSkin")
+            CUI.SetCVar("UberTooltips", "1", "CludesUIBlizzardSkin")
         end
     end)
 end
@@ -146,7 +147,7 @@ do
     -- anchored to a hidden/unpositioned frame so it never appears. Call this
     -- AFTER content is set and before Show: re-shows + repositions the tracker
     -- and re-points the tooltip. No-op (safe unconditionally) when the cursor anchor or reskin master is off.
-    CludesUI._repointTooltipAtCursor = function(tipFrame)
+    CUI._repointTooltipAtCursor = function(tipFrame)
         if tipFrame ~= GameTooltip then return end
         if CludesUIDB and CludesUIDB.customTooltips == false then return end
         if not (CludesUIDB and CludesUIDB.tooltipAnchorCursor) then return end
@@ -183,7 +184,7 @@ do
         end
     end
 
-    CludesUI._applyTooltipCursorAnchor = function()
+    CUI._applyTooltipCursorAnchor = function()
         if CludesUIDB and CludesUIDB.tooltipAnchorCursor then
             InstallHook()
         elseif cursorAnchor then
@@ -195,7 +196,7 @@ do
     frame:RegisterEvent("PLAYER_LOGIN")
     frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        CludesUI._applyTooltipCursorAnchor()
+        CUI._applyTooltipCursorAnchor()
     end)
 end
 
@@ -216,7 +217,7 @@ do
     local FIXED_W, FIXED_H = 280, 165
     local anchor
 
-    local function ActiveProfile() return CludesUI.GetActiveProfileData() end
+    local function ActiveProfile() return CUI.GetActiveProfileData() end
 
     -- Fixed mode is the permanent baseline: no toggle. Only the reskin master (off = vanilla tooltips) and Anchor to Cursor sideline it.
     local function WantFixed()
@@ -358,9 +359,9 @@ do
         end
         -- An open Unlock Mode session owns the anchor frame (live drags + uncommitted edits): re-parking from saved would snap it back mid-session, so pin to wherever the session has it.
         -- A screen-edge link in Unlock Mode owns the position too: re-parking would pull the box off the edge until the anchor chain moves it back a frame later.
-        if CludesUI._unlockActive then
+        if CUI._unlockActive then
             EnsureSeeded()
-        elseif not CludesUI.IsUnlockAnchored("CUI_TooltipAnchor") then
+        elseif not CUI.IsUnlockAnchored("CUI_TooltipAnchor") then
             PlaceFromSaved()
         end
         tipFrame:SetOwner(hostFrame, "ANCHOR_NONE")
@@ -392,14 +393,14 @@ do
     end)
 
     -- Reposition (and seed if needed) now: login, world entry, reset paths.
-    CludesUI._applyTooltipFixedAnchor = function() PlaceFromSaved() end
+    CUI._applyTooltipFixedAnchor = function() PlaceFromSaved() end
 
     -- Unlock Mode element: a real draggable mover for the tooltip position. Writes ONLY
     -- our per-profile key, never Blizzard's tooltip container. Hidden while Anchor to Cursor is on or the reskin master is off (both leave the fixed anchor inactive).
     local function RegisterUnlock()
-        if not (CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
-        local MK = CludesUI.MakeUnlockElement
-        CludesUI:RegisterUnlockElements({
+        if not (CUI and CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then return end
+        local MK = CUI.MakeUnlockElement
+        CUI:RegisterUnlockElements({
             MK({
                 key = "CUI_TooltipAnchor",
                 label = "Tooltip",

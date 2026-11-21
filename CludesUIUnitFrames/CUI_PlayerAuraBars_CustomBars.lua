@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_CustomBars.lua
 --
@@ -83,9 +84,9 @@ local function DefaultCustomPos(barId) return { point = "CENTER", relPoint = "CE
 -- on the bar object, not a fixed s[BarPositionKey] slot. Same anchored rule too.
 local function ApplyCustomBarPosition(hostFrame, barFrame, barId, isBuff, grid)
     local unlockKey = (isBuff and "PAB_CustomBuff_" or "PAB_CustomDebuff_") .. barId
-    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
-    if anchored and hostFrame:GetNumPoints() > 0 and CludesUI.ReapplyOwnAnchor then
-        CludesUI.ReapplyOwnAnchor(unlockKey)
+    local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(unlockKey)
+    if anchored and hostFrame:GetNumPoints() > 0 and CUI.ReapplyOwnAnchor then
+        CUI.ReapplyOwnAnchor(unlockKey)
         return
     end
     local place = barFrame.pos or DefaultCustomPos(barId)
@@ -97,7 +98,7 @@ local function ApplyCustomBarPosition(hostFrame, barFrame, barId, isBuff, grid)
         local centeredPos = RebaseBarPositionToCenter(hostFrame, place)
         if barFrame.pos or centeredPos ~= place then barFrame.pos = centeredPos end
     end
-    if anchored and CludesUI.ReapplyOwnAnchor then CludesUI.ReapplyOwnAnchor(unlockKey) end
+    if anchored and CUI.ReapplyOwnAnchor then CUI.ReapplyOwnAnchor(unlockKey) end
 end
 
 local function CustomBuffSpellSignature(spells) return table.concat(spells, ",") end
@@ -115,8 +116,8 @@ local function CustomBuffSpellSignature(spells) return table.concat(spells, ",")
 -- bar's key is retired for good and calling UnregisterUnlockElement is correct, not
 -- lossy. Still noResize/noAnchorTarget for the same reason as the default bars.
 local function RegisterPABCustomUnlock()
-    if not (CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not (CUI and CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then return end
+    local MK = CUI.MakeUnlockElement
 
     local prevBuffKeys, prevDebuffKeys = pabRegisteredCustomBuffKeys, pabRegisteredCustomDebuffKeys
     pabRegisteredCustomBuffKeys, pabRegisteredCustomDebuffKeys = {}, {}
@@ -258,17 +259,17 @@ local function RegisterPABCustomUnlock()
         end
     end
 
-    if #elements > 0 then CludesUI:RegisterUnlockElements(elements, "CludesUIUnitFrames") end
+    if #elements > 0 then CUI:RegisterUnlockElements(elements, "CludesUIUnitFrames") end
 
     -- Retire keys for bars deleted since the last call -- safe here (unlike TBB)
     -- because PAB custom-bar ids are permanent, see doc comment above. The
     -- element-options map entry is retired with the mover; a leftover entry would
     -- be harmless (no mover, no cog) but the id is gone for good either way.
-    local elemMap = CludesUI._ELEMENT_SETTINGS_MAP
+    local elemMap = CUI._ELEMENT_SETTINGS_MAP
     if prevBuffKeys then
         for key in pairs(prevBuffKeys) do
             if not pabRegisteredCustomBuffKeys[key] then
-                CludesUI:UnregisterUnlockElement(key)
+                CUI:UnregisterUnlockElement(key)
                 if elemMap then elemMap[key] = nil end
             end
         end
@@ -276,7 +277,7 @@ local function RegisterPABCustomUnlock()
     if prevDebuffKeys then
         for key in pairs(prevDebuffKeys) do
             if not pabRegisteredCustomDebuffKeys[key] then
-                CludesUI:UnregisterUnlockElement(key)
+                CUI:UnregisterUnlockElement(key)
                 if elemMap then elemMap[key] = nil end
             end
         end
@@ -295,7 +296,7 @@ mod.PAB_RegisterCustomUnlock = RegisterPABCustomUnlock
 -- disabled, spell-list-unchanged, full rebuild) without repeating
 -- RegisterPABCustomUnlock() at each early return.
 local function ReloadCustomBuffBarImpl(barId)
-    if not AK then SetAK(CludesUI and CludesUI.AuraKit) end
+    if not AK then SetAK(CUI and CUI.AuraKit) end
     if not AK then return end
     local barFrame, barBucket = mod.PAB_GetCustomBuffBar(barId)
     if not barFrame then
@@ -390,7 +391,7 @@ local function ReloadCustomBuffBarImpl(barId)
             -- when Show All Buffs is off).
             if #spells > 0 then
                 local livePad = barFrame.padding or 5
-                CludesUI.AuraKit.SetGroupCap(boxHolder, "spells", grid.effectiveMax)
+                CUI.AuraKit.SetGroupCap(boxHolder, "spells", grid.effectiveMax)
                 boxHolder:SetAuraGroupLayout("spells", BuildGroupLayout(barFrame, livePad, grid.rowGap))
                 local liveIncludeMap = {}
                 for index = 1, #spells do
@@ -475,7 +476,7 @@ end
 -- the same container. Wrapped for the same reason as PAB_ReloadCustomBuffBar: unlock-
 -- mode registration stays in sync on every exit path.
 local function ReloadCustomDebuffBarImpl(barId)
-    if not AK then SetAK(CludesUI and CludesUI.AuraKit) end
+    if not AK then SetAK(CUI and CUI.AuraKit) end
     if not AK then return end
     local barFrame, barBucket = mod.PAB_GetCustomDebuffBar(barId)
     if not barFrame then

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Update.lua
 --
@@ -73,11 +74,11 @@ Inner.UpdateGCDBarSetters[#Inner.UpdateGCDBarSetters + 1] = function(v) UpdateGC
 -- WoW Forever: no health/power number under 10,000 abbreviates
 -- (CludesUI_NumberFormat.lua). On ns, not a local:
 -- the druid mana bar file reads it too.
-mod.AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
+mod.AbbreviateNumbers = (CUI.IS_FOREVER and CUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
 -- Health text: the global Number Format for valueType (power text keeps the
 -- default above). On ns for the options preview.
-mod.AbbreviateValue = CludesUI.AbbreviateValue
-CludesUI.RegisterNumberFormatCallback(function() Inner.UpdateHealthBar() end)
+mod.AbbreviateValue = CUI.AbbreviateValue
+CUI.RegisterNumberFormatCallback(function() Inner.UpdateHealthBar() end)
 local function UpdateHealthBar()
     if not health or not health:IsShown() then return end
     local healthCfg = _G._CURB_ResolveHealthCfg()
@@ -283,8 +284,8 @@ local function UpdatePrimaryBar()
         powerColor.primary = GetPrimaryPowerType()
         -- WoW Forever mana regen spark: whether this bar shows mana moves
         -- only with the primary power type, so it is reported from here.
-        if CludesUI.ManaRegenSpark and powerColor.pp.manaRegenSpark then
-            CludesUI.ManaRegenSpark.SetMana("erb", powerColor.primary == PT.MANA)
+        if CUI.ManaRegenSpark and powerColor.pp.manaRegenSpark then
+            CUI.ManaRegenSpark.SetMana("erb", powerColor.primary == PT.MANA)
         end
     end
     local primaryCfg = powerColor.pp
@@ -618,7 +619,7 @@ local function UpdatePrimaryBar()
             local percentText = format("%d", pctRaw) .. percentSuffix
             local txt
             if formatStr == "smart" then
-                local isPercent = CludesUI.IsSmartPowerPercent and CludesUI.IsSmartPowerPercent(cachedPrimary)
+                local isPercent = CUI.IsSmartPowerPercent and CUI.IsSmartPowerPercent(cachedPrimary)
                 txt = isPercent and percentText or mod.AbbreviateNumbers(current)
             elseif formatStr == "both" then
                 txt = mod.AbbreviateNumbers(current) .. " | " .. percentText
@@ -1061,7 +1062,7 @@ local function UpdateIronfurBar()
     local barH = classBar:GetHeight() or 0
     local overlayFrame = classBar._ifOverlay
     local showHash = secondaryCfg.guardianShowHashLines ~= false
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local tickW = Pix and (2 * Pix.mult) or 2
     local maxFrac = 0
     local isShown = 0
@@ -1121,7 +1122,7 @@ local function UpdateIronfurBar()
     -- color while the active Ironfur stack count is at or above the threshold.
     local red, green, blue, a
     if secondaryCfg.darkTheme then
-        local _dfr, _dfg, _dfb = CludesUI.GetDarkModeFill()
+        local _dfr, _dfg, _dfb = CUI.GetDarkModeFill()
         red, green, blue, a = _dfr, _dfg, _dfb, 1
     elseif secondaryCfg.classColored ~= false then
         local classColor = CLASS_COLORS[cachedClass]
@@ -1228,7 +1229,7 @@ IP.UpdateHash = function()
         IP.hashTex:SetTexelSnappingBias(0)
         IP.hashTex:SetColorTexture(1, 1, 1, 0.9)
     end
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local tickW = Pix and (2 * Pix.mult) or 2
     local frac = remain / IP.DURATION
     if frac > 1 then frac = 1 end
@@ -1574,7 +1575,7 @@ local function SyncSecondary()
 
     -- Color: dark theme > class colored > custom fill color
     if secondaryCfg.darkTheme then
-        red, green, blue = CludesUI.GetDarkModeFill()
+        red, green, blue = CUI.GetDarkModeFill()
     elseif secondaryCfg.resourceColored then
         -- Per-spec resource/power color; falls back to class color.
         local rr, rg, rb = ERB.ResolveSecondaryResourceColor(powerKind)
@@ -1819,7 +1820,7 @@ local function SyncSecondary()
                             scrollBar:SetMinMaxValues(0, 1)
                             -- Apply the same bar texture if one is set
                             if resourceFrame._texKey then
-                                local filePath = CludesUI.ResolveTexturePath(
+                                local filePath = CUI.ResolveTexturePath(
                                     _G._CURB_BarTextures,
                                     resourceFrame._texKey,
                                     nil
@@ -1902,8 +1903,8 @@ local function SyncSecondary()
         -- Bar-style secondary (e.g. Devourer soul fragments, Elemental maelstrom, Brewmaster stagger)
         if classBar then
             local current, maxCount = 0, pointCap
-            if powerKind == "SOUL_FRAGMENTS_DEVOURER" and CludesUI and CludesUI.GetSoulFragments then
-                current, maxCount = CludesUI.GetSoulFragments()
+            if powerKind == "SOUL_FRAGMENTS_DEVOURER" and CUI and CUI.GetSoulFragments then
+                current, maxCount = CUI.GetSoulFragments()
                 if not maxCount or maxCount <= 0 then maxCount = pointCap end
             elseif powerKind == "MAELSTROM_BAR" then
                 current = UnitPower("player", PT.MAELSTROM) or 0
@@ -2274,7 +2275,7 @@ local function SyncSecondary()
                                 and ERB.db.profile.general
                                 and ERB.db.profile.general.barTexture
                             or "none"
-                        local texPath = CludesUI.ResolveTexturePath(
+                        local texPath = CUI.ResolveTexturePath(
                             _G._CURB_BarTextures,
                             texKey,
                             "Interface\\Buttons\\WHITE8x8"
@@ -2396,15 +2397,15 @@ local function SyncSecondary()
             current = rawCur
             isSecret = true
             maxCount = 6
-        elseif powerKind == "SOUL_FRAGMENTS" and CludesUI and CludesUI.GetSoulFragments then
-            current, maxCount = CludesUI.GetSoulFragments()
+        elseif powerKind == "SOUL_FRAGMENTS" and CUI and CUI.GetSoulFragments then
+            current, maxCount = CUI.GetSoulFragments()
             if not maxCount or maxCount <= 0 then maxCount = pointCap end
-        elseif powerKind == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
-            current, maxCount = CludesUI.GetMaelstromWeapon()
+        elseif powerKind == "MAELSTROM_WEAPON" and CUI and CUI.GetMaelstromWeapon then
+            current, maxCount = CUI.GetMaelstromWeapon()
             -- Enhance 5-bar mode: clamp visual to 5 pips
             if secondaryCfg.enhanceFiveBar and maxCount > 5 then maxCount = 5 end
-        elseif powerKind == "TIP_OF_THE_SPEAR" and CludesUI and CludesUI.GetTipOfTheSpear then
-            current, maxCount = CludesUI.GetTipOfTheSpear()
+        elseif powerKind == "TIP_OF_THE_SPEAR" and CUI and CUI.GetTipOfTheSpear then
+            current, maxCount = CUI.GetTipOfTheSpear()
         elseif powerKind == "WHIRLWIND_STACKS" or powerKind == "SWEEPING_STRIKES" then
             -- Engine slot owns the display (CludesUI_WarriorCharges): the
             -- true count fills the overlay bar C-side. Fall through the shared
@@ -2448,9 +2449,9 @@ local function SyncSecondary()
                 local pc2 = POWER_COLORS[powerKind]
                 if pc2 then
                     red, green, blue = pc2[1], pc2[2], pc2[3]
-                elseif CludesUI and CludesUI.GetResourceColor then
+                elseif CUI and CUI.GetResourceColor then
                     local _, class = UnitClass("player")
-                    local rc = CludesUI.GetResourceColor(class)
+                    local rc = CUI.GetResourceColor(class)
                     if rc then
                         red, green, blue = rc.r, rc.g, rc.b
                     end
@@ -2528,7 +2529,7 @@ local function SyncSecondary()
                             and ERB.db.profile.general
                             and ERB.db.profile.general.barTexture
                         or "none"
-                    local texPath = CludesUI.ResolveTexturePath(
+                    local texPath = CUI.ResolveTexturePath(
                         _G._CURB_BarTextures,
                         texKey,
                         "Interface\\Buttons\\WHITE8x8"
@@ -2964,7 +2965,7 @@ local function SyncSecondary()
                 scrollBar:SetFrameLevel(nextPip:GetFrameLevel())
                 scrollBar:SetMinMaxValues(0, 1)
                 if nextPip._texKey then
-                    local filePath = CludesUI.ResolveTexturePath(_G._CURB_BarTextures, nextPip._texKey, nil)
+                    local filePath = CUI.ResolveTexturePath(_G._CURB_BarTextures, nextPip._texKey, nil)
                     if filePath then scrollBar:SetStatusBarTexture(filePath) end
                 end
                 nextPip._rechargeBar = scrollBar
@@ -3016,9 +3017,9 @@ end
 local function ShouldShowSecondary()
     local secondaryCfg = _G._CURB_ResolveSecondaryCfg()
     -- Check visibility options first
-    if CludesUI.CheckVisibilityOptions(secondaryCfg) then return false end
+    if CUI.CheckVisibilityOptions(secondaryCfg) then return false end
     -- Multi-select / dragonriding path (nil = legacy single mode below)
-    if CludesUI and CludesUI.EvalVisibilityExtended then
+    if CUI and CUI.EvalVisibilityExtended then
         local st = ERB._visState
         if not st then
             st = {}
@@ -3028,7 +3029,7 @@ local function ShouldShowSecondary()
         st.inCombat = isInCombat
         st.inRaid = inRaid
         st.inParty = not inRaid and (IsInGroup and IsInGroup() or false)
-        local ext = CludesUI.EvalVisibilityExtended(secondaryCfg, "visibility", st, CludesUI.VIS_CAPS_DEFAULT)
+        local ext = CUI.EvalVisibilityExtended(secondaryCfg, "visibility", st, CUI.VIS_CAPS_DEFAULT)
         if ext ~= nil then return ext end
     end
     local visible = secondaryCfg.visibility
@@ -3049,9 +3050,9 @@ end
 
 local function ShouldShowBar(barProfile)
     -- Check visibility options first
-    if CludesUI.CheckVisibilityOptions(barProfile) then return false end
+    if CUI.CheckVisibilityOptions(barProfile) then return false end
     -- Multi-select / dragonriding path (nil = legacy single mode below)
-    if CludesUI and CludesUI.EvalVisibilityExtended then
+    if CUI and CUI.EvalVisibilityExtended then
         local st = ERB._visState
         if not st then
             st = {}
@@ -3061,7 +3062,7 @@ local function ShouldShowBar(barProfile)
         st.inCombat = isInCombat
         st.inRaid = inRaid
         st.inParty = not inRaid and (IsInGroup and IsInGroup() or false)
-        local ext = CludesUI.EvalVisibilityExtended(barProfile, "visibility", st, CludesUI.VIS_CAPS_DEFAULT)
+        local ext = CUI.EvalVisibilityExtended(barProfile, "visibility", st, CUI.VIS_CAPS_DEFAULT)
         if ext ~= nil then return ext end
     end
     local visible = barProfile.visibility or "always"
@@ -3106,7 +3107,7 @@ function mod.ERB_MissingWanted(conf, powerKind)
             if not mx or issecretvalue(mx) or mx <= 0 then return false end
         end
     end
-    return (CludesUI.VisOverrideValue(conf) or conf.visibility) ~= "never"
+    return (CUI.VisOverrideValue(conf) or conf.visibility) ~= "never"
 end
 
 -- Step curves: 1 below full, then the bar's rest value at full. A rule-hidden
@@ -3241,12 +3242,12 @@ end
 -- druid mana strip's Inside mode draws: a frame at the inner bar's own level
 -- is covered by its fill (see the hash tick overlay). Read on a cast start and
 -- by a repeat attach during one, never per power event.
-if CludesUI.SpellCostPrediction then
+if CUI.SpellCostPrediction then
     mod.ERB_COST_HOST = {
         PowerType = function() return cachedPrimary end,
         Color = function()
             local primaryCfg = _G._CURB_ResolvePowerCfg()
-            local red, green, b = CludesUI.SpellCostPrediction.Color(primaryCfg)
+            local red, green, b = CUI.SpellCostPrediction.Color(primaryCfg)
             return red, green, b, ((primaryCfg and primaryCfg.fillOpacity) or 100) / 100
         end,
         Mask = function() return mainBar and mainBar._blizzBarMask end,
@@ -3302,10 +3303,10 @@ local function UpdateVisibility()
         if missing then visible = true end
         if visible == true then
             health:Show()
-            CludesUI.SetElementVisibility(health, true)
+            CUI.SetElementVisibility(health, true)
             health:SetAlpha(mod.ERB_MissingBarAlpha(health, healthCfg))
         else
-            CludesUI.SetElementVisibility(health, false)
+            CUI.SetElementVisibility(health, false)
         end
     end
 
@@ -3368,35 +3369,35 @@ local function UpdateVisibility()
         if hostMode or mainBar._missHost then mod.ERB_MissingHost(mainBar, primaryCfg, hostMode, hostLift) end
         if visible == true then
             mainBar:Show()
-            CludesUI.SetElementVisibility(mainBar, true)
+            CUI.SetElementVisibility(mainBar, true)
             mainBar:SetAlpha(mod.ERB_MissingBarAlpha(mainBar, primaryCfg))
         else
-            CludesUI.SetElementVisibility(mainBar, false)
+            CUI.SetElementVisibility(mainBar, false)
         end
         -- WoW Forever mana regen spark (CludesUI_ManaRegenSpark.lua): attached
         -- while this bar can show, mouseover included so a hover reveal finds it
         -- running. Every BuildBars is followed by this pass, so attaching here
         -- also lays the spark out from the orientation BuildBars applied.
-        if CludesUI.ManaRegenSpark then
+        if CUI.ManaRegenSpark then
             if (visible == true or visible == "mouseover") and primaryCfg.manaRegenSpark then
-                CludesUI.ManaRegenSpark.Attach("erb", mainBar._sb, primaryCfg.manaRegenSparkMode == "ticks")
+                CUI.ManaRegenSpark.Attach("erb", mainBar._sb, primaryCfg.manaRegenSparkMode == "ticks")
             else
-                CludesUI.ManaRegenSpark.Detach("erb")
+                CUI.ManaRegenSpark.Detach("erb")
             end
         end
         -- WoW Forever Spell Cost Prediction: attached on the same verdict while
         -- the bar shows mana, so a druid in Bear or Cat Form (or a class with
         -- no mana on a shared profile) hears no cast events. Every form change
         -- refreshes cachedPrimary before this pass.
-        if CludesUI.SpellCostPrediction then
+        if CUI.SpellCostPrediction then
             if
                 (visible == true or visible == "mouseover")
                 and primaryCfg.powerCostPrediction
                 and cachedPrimary == PT.MANA
             then
-                CludesUI.SpellCostPrediction.Attach("erb", mainBar._sb, mod.ERB_COST_HOST)
+                CUI.SpellCostPrediction.Attach("erb", mainBar._sb, mod.ERB_COST_HOST)
             else
-                CludesUI.SpellCostPrediction.Detach("erb")
+                CUI.SpellCostPrediction.Detach("erb")
             end
         end
         -- WoW Forever druid mana bar: its mana events follow this verdict.
@@ -3429,18 +3430,18 @@ local function UpdateVisibility()
         if grp then mod._erbGrpS = (visible == true) and not artOn and not classFrame._erbMouseTrack end
         if artHost then
             if visible == true then
-                CludesUI.SetElementVisibility(artHost, true)
+                CUI.SetElementVisibility(artHost, true)
                 artHost:SetAlpha(mod.ResolveBarAlpha(secondaryCfg))
             else
-                CludesUI.SetElementVisibility(artHost, false)
+                CUI.SetElementVisibility(artHost, false)
             end
         end
         if visible == true and not artOn then
             classFrame:Show()
-            CludesUI.SetElementVisibility(classFrame, true)
+            CUI.SetElementVisibility(classFrame, true)
             classFrame:SetAlpha(mod.ResolveBarAlpha(secondaryCfg))
         else
-            CludesUI.SetElementVisibility(classFrame, false)
+            CUI.SetElementVisibility(classFrame, false)
         end
     end
 
@@ -3466,7 +3467,7 @@ end
 -- 20 Hz drain + text; with the Power Bar's Smooth Bars item on, the engine eases
 -- the fill between fires.
 -- Re-armed by UNIT_AURA via ns.ArmTick.
-mod.EMTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
+mod.EMTick = CUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     if mod.EMB121_Owns then return end
     if cachedPrimary ~= "EBON_MIGHT" then return end
     if not (mainBar and mainBar:IsShown() and mainBar:GetAlpha() > 0) then return end
@@ -3494,7 +3495,7 @@ end, 0.05)
 -- Guardian Ironfur / Prot Ignore Pain moving-hash motion: the only continuously
 -- moving visuals outside the cast bar. 30 Hz keeps it fluid at a seventh of
 -- frame-rate cost; both update paths are change-gated internally.
-mod.MotionTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
+mod.MotionTick = CUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     local cs = cachedSecondary
     if not (cs and classBar and classBar:IsShown() and classBar:GetAlpha() > 0) then return end
     if cs.power == "IRONFUR_BAR" then
@@ -3512,7 +3513,7 @@ end, 1 / 30)
 -- 10Hz, Evoker Essence recharge at 20Hz. ONE ticker at a 20Hz base; 10Hz jobs
 -- skip every other fire. All paths funnel into UpdateSecondaryResource, whose
 -- value early-out makes an unchanged poll nearly free.
-mod.PollTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
+mod.PollTick = CUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     local cs = cachedSecondary
     -- Blizzard Class Resource Art stands in: nothing to poll (the ticker stops).
     if not cs or mod._erbArtOn then return end
@@ -3825,7 +3826,7 @@ end
 -- GCD bar ticker: 20 Hz; the eased SetValue inside UpdateGCDBar carries the
 -- fill between fires. Runs only while a GCD is live, and the final fire
 -- renders the idle state before the loop stops itself.
-mod.GCDTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
+mod.GCDTick = CUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     UpdateGCDBar()
     return gcdBarFrame and gcdBarFrame._gcdStart ~= nil
 end, 0.05)

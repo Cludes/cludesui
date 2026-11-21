@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Friends_Options.lua - the Friends List module's settings page.
 --
@@ -14,14 +15,14 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  rows, and the border, accent and banner rows are gated off.
 -------------------------------------------------------------------------------
 local MODULE = "CludesUIFriends"
-local mod = CludesUI._ModuleNS[MODULE] -- published by the module when it loads
+local mod = CUI._ModuleNS[MODULE] -- published by the module when it loads
 if not mod then
     return -- the module is disabled: no page
 end
 
 -- Frames built here go through the options frame pool (a kept page gets its
 -- previous build's frames back, reset); anywhere else this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- The module's settings table, or nil before its saved data exists.
 local function Settings()
@@ -71,14 +72,14 @@ end
 local CHROME_TIP = "The Friends List window skin draws this border (Window Skins > Window Skins)."
 
 local function BuildPage(_, host, yOffset)
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local y = yOffset
     local h, row
 
-    CludesUI:ClearContentHeader()
+    CUI:ClearContentHeader()
 
     -- Rows that only drive our own window are gated off under a stock style.
-    local BS = CludesUI.BlizzStyle
+    local BS = CUI.BlizzStyle
     local function Gate(rowConf)
         if BS then BS.Gate("friends", rowConf) end
         return rowConf
@@ -96,8 +97,8 @@ local function BuildPage(_, host, yOffset)
     _, h = W:DualRow(host, y, {
         type = "dropdown",
         text = "Class Icon Theme",
-        values = CludesUI.FriendsKit.ICON_STYLE_VALUES, -- shared with the WoW Forever Friends card
-        order = CludesUI.FriendsKit.ICON_STYLE_ORDER,
+        values = CUI.FriendsKit.ICON_STYLE_VALUES, -- shared with the WoW Forever Friends card
+        order = CUI.FriendsKit.ICON_STYLE_ORDER,
         getValue = iconGet,
         setValue = iconSet,
     }, Toggle("Class Color Names", "classColorNames", RepaintRows))
@@ -106,7 +107,7 @@ local function BuildPage(_, host, yOffset)
     -- Border Size | Border Color (custom, or the accent colour)
     local sizeGet, sizeSet = Bind("borderSize", function()
         Reapply()
-        CludesUI:RefreshPage()
+        CUI:RefreshPage()
     end, 0)
     local function SwatchAlpha(lit)
         return function()
@@ -164,7 +165,7 @@ local function BuildPage(_, host, yOffset)
                         if cfg.useClassColor then
                             cfg.useClassColor = false
                             Reapply()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         elseif self._eabOrigClick then
                             self._eabOrigClick(self)
                         end
@@ -174,14 +175,14 @@ local function BuildPage(_, host, yOffset)
                 {
                     tooltip = "Accent Colored",
                     hasAlpha = false,
-                    getValue = function() return CludesUI.GetAccentColor() end,
+                    getValue = function() return CUI.GetAccentColor() end,
                     setValue = function() end,
                     onClick = function()
                         local cfg = Settings()
                         if cfg then
                             cfg.useClassColor = true
                             Reapply()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end
                     end,
                     refreshAlpha = SwatchAlpha(function(cfg) return cfg.useClassColor end),
@@ -213,16 +214,16 @@ local function BuildPage(_, host, yOffset)
         ),
         Toggle("Auto-Accept Friend Invites", "autoAcceptFriendInvites", function()
             Call("_CUFR_SyncAutoAccept")
-            CludesUI:RefreshPage() -- the cog's disabled state follows the toggle
+            CUI:RefreshPage() -- the cog's disabled state follows the toggle
         end, false, "Auto-accepts all group invites from people on your friends list")
     )
     y = y - h
 
     -- Guildmates extend the friends auto-accept, so their cog sits on that
     -- toggle and is blocked while it is off.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local guildGet, guildSet = Bind("autoAcceptGuildInvites")
-        CludesUI.BuildInlineCog(row._rightRegion, {
+        CUI.BuildInlineCog(row._rightRegion, {
             title = "Auto Accept Settings",
             rows = {
                 { type = "toggle", label = "Accept Invites from Guildmates", get = guildGet, set = guildSet },
@@ -239,8 +240,8 @@ local function BuildPage(_, host, yOffset)
 end
 
 local function Register()
-    if not CludesUI or not CludesUI.RegisterModule then return end
-    CludesUI:RegisterModule(MODULE, {
+    if not CUI or not CUI.RegisterModule then return end
+    CUI:RegisterModule(MODULE, {
         title = "Friends List",
         description = "Custom friends list with groups, notes, and realm grouping.",
         pages = { "Friends" },
@@ -250,7 +251,7 @@ local function Register()
         onReset = function()
             local db = _G._CUFR_DB
             if db and db.ResetProfile then db:ResetProfile() end
-            CludesUI:InvalidatePageCache()
+            CUI:InvalidatePageCache()
             Reapply()
             Call("_CUFR_SyncAutoAccept")
             RepaintRows()
@@ -259,7 +260,7 @@ local function Register()
 
     SLASH_EFR1 = "/cfr"
     SlashCmdList.EFR = function()
-        if not (InCombatLockdown and InCombatLockdown()) then CludesUI:ShowModule(MODULE) end
+        if not (InCombatLockdown and InCombatLockdown()) then CUI:ShowModule(MODULE) end
     end
 end
 

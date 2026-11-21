@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Rebuild.lua
 --
@@ -142,7 +143,7 @@ _CDMApplyVisibility = function()
     -- One state table per pass for the multi-select visibility engine
     local visState = { inCombat = combatNow, inRaid = raidNow, inParty = partyNow }
 
-    local unlockActive = CludesUI._unlockActive
+    local unlockActive = CUI._unlockActive
 
     for _, barInfo in ipairs(profile.cdmBars.bars) do
         local widget = cdmBarFrames[barInfo.key]
@@ -165,18 +166,18 @@ _CDMApplyVisibility = function()
                 local hideIt = false
 
                 -- Multi-select/dragonriding path: non-nil owns the mode step (priority 3); the legacy single-mode chain below is untouched.
-                local visExt = CludesUI.EvalVisibilityExtended(
+                local visExt = CUI.EvalVisibilityExtended(
                     barInfo,
                     "barVisibility",
                     visState,
-                    CludesUI.VIS_CAPS_DEFAULT
+                    CUI.VIS_CAPS_DEFAULT
                 )
 
                 -- Priority 1: vehicle always hides
                 if inVehicle then
                     hideIt = true
                 -- Priority 2: visibility options (checkbox dropdown)
-                elseif CludesUI.CheckVisibilityOptions(barInfo) then
+                elseif CUI.CheckVisibilityOptions(barInfo) then
                     hideIt = true
                 -- Priority 3: visibility mode (multi-select or dragonriding scalar)
                 elseif visExt ~= nil then
@@ -904,7 +905,7 @@ BuildAllCDMBars = function()
     -- Mark CDM as rebuilding so width/height match propagation gates off (it would otherwise read
     -- transient bar widths sized for the previous spec's icon count and bake them into
     -- _matchPhysWidth on dependent bars). Cleared at the end of CollectAndReanchor when _pendingApplyOnReanchor fires the authoritative ApplyAllWidthHeightMatches pass.
-    if CludesUI then CludesUI._cdmRebuilding = true end
+    if CUI then CUI._cdmRebuilding = true end
 
     -- Ensure ghost bars exist before iterating bars
     EnsureGhostBars()
@@ -945,7 +946,7 @@ BuildAllCDMBars = function()
         -- Restore Blizzard CDM if we're disabled
         RestoreBlizzardCDM()
         for barKey, widget in pairs(cdmBarFrames) do
-            CludesUI.SetElementVisibility(widget, false)
+            CUI.SetElementVisibility(widget, false)
         end
         return
     end
@@ -1035,7 +1036,7 @@ BuildAllCDMBars = function()
     if hookActive and mod.QueueReanchor then
         mod.QueueReanchor()
     else
-        if CludesUI then CludesUI._cdmRebuilding = nil end
+        if CUI then CUI._cdmRebuilding = nil end
     end
     -- Re-apply saved positions now that LayoutCDMBar has set correct frame sizes. Positions are
     -- stored using the edge anchor directly (LEFT for RIGHT-grow, etc.), so SetPoint places the frame at its fixed edge and subsequent SetSize calls grow naturally from that edge.
@@ -1047,7 +1048,7 @@ BuildAllCDMBars = function()
                 local place = profile.cdmBarPositions[barInfo.key]
                 if widget and place and place.point then
                     local unlockKey = "CDM_" .. barInfo.key
-                    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
+                    local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(unlockKey)
                     if not anchored or not widget:GetLeft() then
                         ApplyBarPositionCentered(widget, place, barInfo.key)
                     end
@@ -1057,9 +1058,9 @@ BuildAllCDMBars = function()
     end
     -- Second pass: reapply unlock-mode anchors now that ALL bars are positioned and sized. The
     -- first pass (inside LayoutCDMBar) may have run ReapplyOwnAnchor before the target bar was repositioned (e.g. cooldowns processed before utility). This corrects that.
-    if CludesUI.ReapplyOwnAnchor then
+    if CUI.ReapplyOwnAnchor then
         for _, barInfo in ipairs(profile.cdmBars.bars) do
-            CludesUI.ReapplyOwnAnchor("CDM_" .. barInfo.key)
+            CUI.ReapplyOwnAnchor("CDM_" .. barInfo.key)
         end
     end
     UpdateCDMKeybinds()
@@ -1076,9 +1077,9 @@ BuildAllCDMBars = function()
 
     -- Match pads follow each bar's border settings: a bar whose pad changed is
     -- re-pushed through its matches once, deferred (compare-only here).
-    if CludesUI.MatchPadChanged then
+    if CUI.MatchPadChanged then
         for _, edge in ipairs(profile.cdmBars.bars) do
-            if edge.key then CludesUI.MatchPadChanged(mod._cdmUKey[edge.key]) end
+            if edge.key then CUI.MatchPadChanged(mod._cdmUKey[edge.key]) end
         end
     end
 end
@@ -1093,11 +1094,11 @@ mod.LayoutCDMBar = LayoutCDMBar
 mod.BLIZZ_CDM_FRAMES = BLIZZ_CDM_FRAMES
 mod.CDM_BAR_CATEGORIES = CDM_BAR_CATEGORIES
 mod.MAX_CUSTOM_BARS = MAX_CUSTOM_BARS
-mod.FindPlayerPartyFrame = CludesUI.FindPlayerPartyFrame
+mod.FindPlayerPartyFrame = CUI.FindPlayerPartyFrame
 
 -- Expose LayoutCDMBar globally so unlock mode can trigger rebuilds
-CludesUI.LayoutCDMBar = LayoutCDMBar
-mod.FindPlayerUnitFrame = CludesUI.FindPlayerUnitFrame
+CUI.LayoutCDMBar = LayoutCDMBar
+mod.FindPlayerUnitFrame = CUI.FindPlayerUnitFrame
 mod.RestoreBlizzardCDM = RestoreBlizzardCDM
 mod.HideBlizzardCDM = HideBlizzardCDM
 

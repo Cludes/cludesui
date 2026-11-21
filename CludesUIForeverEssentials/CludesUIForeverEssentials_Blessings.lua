@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Blessings.lua  (WoW Forever only)
 --  Blessings, for paladins: the Blessing Bar (your aura, Righteous Fury, your
@@ -69,7 +70,7 @@ local function IsPaladin() return select(2, UnitClass("player")) == "PALADIN" en
 local function MyName() return (UnitFullName("player")) end
 local function ClassName(class) return LOCALIZED_CLASS_NAMES_MALE[class] or class end
 local function On() return F.Enabled() end
-local function Print(message) CludesUI.Print("|cff4cc9f0Blessings:|r " .. message) end
+local function Print(message) CUI.Print("|cff4cc9f0Blessings:|r " .. message) end
 -- Shared between the sections below (each keeps its own helpers in a do block).
 local HiddenAuras, Remembered, ForgetIfDead, CastSent, NoteCast, CastDone, ForgetCasts
 local OnPallyPower, PP_PREFIX, asked
@@ -1343,7 +1344,7 @@ local YELLOW = { r = 1, g = 0.85, b = 0.3 }
 local BLUE = { r = 0.35, g = 0.6, b = 1 }
 local ICON_CROP = 0.08
 local LABEL_SIZE, LABEL_DROP, LABEL_SIDE, LABEL_COLUMN = 10, 2, 3, 46
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 
 local Look = { rows = 1 }
 
@@ -1356,11 +1357,11 @@ local function LookIcon(widget)
     widget.icon:SetPoint("BOTTOMRIGHT", -1, 1)
     widget.icon:SetTexCoord(ICON_CROP, 1 - ICON_CROP, ICON_CROP, 1 - ICON_CROP)
     widget.mark = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.mark, 14, "essentials")
+    CUI.Kit.Font(widget.mark, 14, "essentials")
     widget.mark:SetPoint("CENTER")
     widget.mark:SetTextColor(RED.r, RED.g, RED.b)
     widget.timer = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.timer, 10, "essentials")
+    CUI.Kit.Font(widget.timer, 10, "essentials")
     widget.timer:SetPoint("BOTTOM", 0, 1)
 end
 
@@ -1391,8 +1392,8 @@ end
 local function LookPlace(widget, barFrame, posX, posY)
     local size = Look.size
     widget:SetSize(size, size)
-    CludesUI.Kit.Font(widget.timer, Look.timerSize, "essentials")
-    if widget.watchText then CludesUI.Kit.Font(widget.watchText, Look.timerSize, "essentials") end
+    CUI.Kit.Font(widget.timer, Look.timerSize, "essentials")
+    if widget.watchText then CUI.Kit.Font(widget.watchText, Look.timerSize, "essentials") end
     widget.edge:SetShown(Look.border ~= "none")
     if widget.label then
         widget.label:SetShown(Look.labels)
@@ -1475,7 +1476,7 @@ local function Watch(widget)
                 iconTex:SetTexCoord(ICON_CROP, 1 - ICON_CROP, ICON_CROP, 1 - ICON_CROP)
                 btnFrame:SetIcon(iconTex)
                 local textValue = btnFrame:CreateFontString(nil, "OVERLAY")
-                CludesUI.Kit.Font(textValue, Get("timerSize"), "essentials")
+                CUI.Kit.Font(textValue, Get("timerSize"), "essentials")
                 widget.watchText = textValue
                 textValue:SetPoint("BOTTOM", 0, 1)
                 btnFrame:SetDurationText(textValue, {})
@@ -1552,7 +1553,7 @@ end
 
 local function OpenMenu(ownerFrame, title, entries, current, choose, noneText, can)
     can = can or Learned
-    CludesUI.Kit.ContextMenu(ownerFrame, function(_, root)
+    CUI.Kit.ContextMenu(ownerFrame, function(_, root)
         root:CreateTitle(title)
         for _, record in ipairs(entries) do
             if can(record) then
@@ -1596,7 +1597,7 @@ local function OwnBlessings(class)
 end
 
 local function ClassMenu(ownerFrame, class)
-    CludesUI.Kit.ContextMenu(ownerFrame, function(_, root)
+    CUI.Kit.ContextMenu(ownerFrame, function(_, root)
         root:CreateTitle(ClassName(class))
         for _, record in ipairs(BLESSINGS) do
             if Learned(record) and (Store().classes[class] == record.key or Allowed(class, record.key)) then
@@ -1646,7 +1647,7 @@ local function Tip(widget, title, body)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText(title, 1, 1, 1)
         local textValue = type(body) == "function" and body() or body
-        local ar, ag, ab = CludesUI.Kit.Accent()
+        local ar, ag, ab = CUI.Kit.Accent()
         if textValue and textValue ~= "" then GameTooltip:AddLine(textValue, ar, ag, ab, true) end
         GameTooltip:Show()
     end)
@@ -1688,10 +1689,10 @@ do
         local row = CreateFrame("Frame", nil, flyout)
         row:SetSize(230, 30)
         row.name = row:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(row.name, 12, "essentials")
+        CUI.Kit.Font(row.name, 12, "essentials")
         row.name:SetPoint("TOPLEFT", 4, -2)
         row.note = row:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(row.note, 10, "essentials")
+        CUI.Kit.Font(row.note, 10, "essentials")
         row.note:SetTextColor(0.6, 0.65, 0.7)
         row.note:SetPoint("TOPLEFT", row.name, "BOTTOMLEFT", 0, -1)
         row.slot = CreateFrame("Frame", nil, row)
@@ -1744,12 +1745,12 @@ do
     function PlayerList.Build(barFrame)
         flyout = CreateFrame("Frame", nil, barFrame)
         flyout:SetPoint("BOTTOMLEFT", barFrame, "TOPLEFT", 0, 18)
-        CludesUI.Kit.Panel(flyout, 0.9)
+        CUI.Kit.Panel(flyout, 0.9)
         flyout.title = flyout:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(flyout.title, 12, "essentials")
-        CludesUI.Kit.AccentText(flyout.title)
+        CUI.Kit.Font(flyout.title, 12, "essentials")
+        CUI.Kit.AccentText(flyout.title)
         flyout.title:SetPoint("TOPLEFT", 8, -6)
-        local close = CludesUI.Kit.Glyph(flyout, "x", function() flyout:Hide() end, nil, "essentials")
+        local close = CUI.Kit.Glyph(flyout, "x", function() flyout:Hide() end, nil, "essentials")
         close:SetSize(22, 22)
         close:SetPoint("TOPRIGHT", -4, -4)
         close:SetScript("OnClick", function() PlayerList.Toggle(flyoutClass) end)
@@ -1991,7 +1992,7 @@ local function NewCell(class)
     cell.class = class
     LookIcon(cell)
     cell.label = cell:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(cell.label, LABEL_SIZE, "essentials")
+    CUI.Kit.Font(cell.label, LABEL_SIZE, "essentials")
     cell.label:SetWordWrap(false)
     cell.label:SetText(ClassName(class))
     local color = RAID_CLASS_COLORS[class]
@@ -2193,7 +2194,7 @@ function Refresh()
         return
     end
     dirty = false
-    if not (On() and IsPaladin() and (Wanted() or CludesUI._unlockActive)) then
+    if not (On() and IsPaladin() and (Wanted() or CUI._unlockActive)) then
         barFrame:Hide()
         K.Clear()
         return
@@ -2216,7 +2217,7 @@ function Refresh()
     PaintAuto()
     EndAuraMemo()
     LookFit(barFrame, posX)
-    barFrame:SetShown(posX > 0 or CludesUI._unlockActive)
+    barFrame:SetShown(posX > 0 or CUI._unlockActive)
 end
 
 function Changed()
@@ -2274,7 +2275,7 @@ local function BuildBar()
         "Left-click: the next blessing. Right-click: the next Greater Blessing. Each goes to whoever needs it most."
     )
     PlayerList.Build(barFrame)
-    if not CludesUI._unlockActive then F.Place(barFrame) end
+    if not CUI._unlockActive then F.Place(barFrame) end
 end
 
 local function RefreshSoon()
@@ -2466,7 +2467,7 @@ do
                 entry:SetScript("OnEnter", function(self)
                     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                     GameTooltip:SetText(self.title or "", 1, 1, 1)
-                    local ar, ag, ab = CludesUI.Kit.Accent()
+                    local ar, ag, ab = CUI.Kit.Accent()
                     if self.body then GameTooltip:AddLine(self.body, ar, ag, ab, true) end
                     GameTooltip:Show()
                 end)
@@ -2491,7 +2492,7 @@ do
     local function WinText(posX, posY, textValue, size, colour, width)
         local entry = WinItem("text")
         entry:SetPoint("TOPLEFT", winContent, "TOPLEFT", posX, posY)
-        CludesUI.Kit.Font(entry.text, size or 12, "essentials")
+        CUI.Kit.Font(entry.text, size or 12, "essentials")
         entry.text:SetTextColor(unpack(colour or { 1, 1, 1 }))
         entry.text:SetWidth(width or 0)
         entry.text:SetWordWrap(width ~= nil)
@@ -2699,7 +2700,7 @@ do
 
     local function WinButton(hostFrame, textValue, posX, onClick, tipText)
         local b =
-            CludesUI.Kit.Button(hostFrame, textValue, 96, 22, onClick, { key = "essentials", tip = tipText })
+            CUI.Kit.Button(hostFrame, textValue, 96, 22, onClick, { key = "essentials", tip = tipText })
         b:SetPoint("TOPLEFT", posX, -34)
         return b
     end
@@ -2708,7 +2709,7 @@ do
         window = CreateFrame("Frame", "CludesUIBlessings", UIParent)
         window:SetSize(WIN_W, WIN_H)
         window:SetPoint("CENTER", 0, 40)
-        CludesUI.Kit.Panel(window, 0.96)
+        CUI.Kit.Panel(window, 0.96)
         window:SetMovable(true)
         window:EnableMouse(true)
         window:RegisterForDrag("LeftButton")
@@ -2717,11 +2718,11 @@ do
         window:SetFrameStrata("HIGH")
         window:SetClampedToScreen(true)
         local title = window:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(title, 15, "essentials")
+        CUI.Kit.Font(title, 15, "essentials")
         title:SetPoint("TOPLEFT", 10, -8)
         title:SetText("Blessings")
-        CludesUI.Kit.AccentText(title)
-        local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
+        CUI.Kit.AccentText(title)
+        local close = CUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
         close:SetPoint("TOPRIGHT", -5, -5)
         WinButton(window, "Auto-Assign", 10, function()
             if Allowed2() then
@@ -2751,7 +2752,7 @@ do
             end
         end, "Saves the plan below to load again with this group.")
         WinButton(window, "Report", 310, function(self)
-            CludesUI.Kit.ContextMenu(self, function(_, root)
+            CUI.Kit.ContextMenu(self, function(_, root)
                 root:CreateTitle("Report the blessings to")
                 for _, channel in ipairs(REPORT_CHANNELS) do
                     if channel.can() then
@@ -2773,7 +2774,7 @@ do
             SyncSoon()
             Print("Asked the group's paladins for their plans.")
         end, "Asks the group's paladins for their plans.")
-        window.free = CludesUI.Kit.Check(
+        window.free = CUI.Kit.Check(
             window,
             "Free Assignment: other paladins may change your blessings without being the leader or an assistant",
             nil,
@@ -2785,14 +2786,14 @@ do
             BroadcastSoon()
             Changed()
         end)
-        winScroll = (CludesUI.Kit.Scroll(window))
+        winScroll = (CUI.Kit.Scroll(window))
         winScroll:SetPoint("TOPLEFT", 10, -92)
         winScroll:SetPoint("BOTTOMRIGHT", -30, 28)
         winContent = CreateFrame("Frame", nil, winScroll)
         winContent:SetSize(WIN_W - 44, 10)
         winScroll:SetScrollChild(winContent)
         window.foot = window:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(window.foot, 11, "essentials")
+        CUI.Kit.Font(window.foot, 11, "essentials")
         window.foot:SetTextColor(0.6, 0.65, 0.7)
         window.foot:SetPoint("BOTTOMLEFT", 10, 8)
         window:Hide()
@@ -2823,7 +2824,7 @@ do
     end
 end
 
-CludesUI._Blessings = {
+CUI._Blessings = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,

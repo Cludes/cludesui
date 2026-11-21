@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Filters.lua
 --
@@ -49,7 +50,7 @@ local function PABEnsure()
 end
 -- WoW Forever: returns through the checked reader above, so a table created
 -- here passes the one-time buff clear before anything writes to it.
-if CludesUI.FvBW then
+if CUI.FvBW then
     PABEnsure = function()
         local saved = mod.db
         if not (saved and saved.profile) then return nil end
@@ -135,10 +136,10 @@ end
 function mod.PAB_OtherClientSpell(frame, ident)
     local filterKey = frame.preset and mod.PAB_PRESET_KEY[frame.name]
     if not filterKey then return false end
-    local here = CludesUI.BUFF_PRESET_IDS[filterKey]
+    local here = CUI.BUFF_PRESET_IDS[filterKey]
     if here and here[ident] then return false end
-    if CludesUI.IS_FOREVER == true then
-        local otherSet = CludesUI.BUFF_PRESET_OTHER_IDS[filterKey]
+    if CUI.IS_FOREVER == true then
+        local otherSet = CUI.BUFF_PRESET_OTHER_IDS[filterKey]
         return (otherSet and otherSet[ident]) == true
     end
     local m = frame.foreverSeeded
@@ -292,7 +293,7 @@ end
 function mod.PAB_AddSpellToFilter(filterId, spellId)
     local frame = mod.PAB_GetFilter(filterId)
     if not (frame and spellId and spellId > 0) then return false end
-    local m = CludesUI.IS_FOREVER ~= true and frame.foreverSeeded or nil
+    local m = CUI.IS_FOREVER ~= true and frame.foreverSeeded or nil
     if frame.spells[spellId] ~= nil and not (m and mod.PAB_OtherClientSpell(frame, spellId)) then
         return false -- already present
     end
@@ -387,7 +388,7 @@ end
 -- alternates into their own keys (seed convention), so each copied primary
 -- fans out to its alternates with the same state.
 function mod.PAB_CopyBM2FiltersIn()
-    local buffRules = CludesUI._BM2FilterBridge
+    local buffRules = CUI._BM2FilterBridge
     local pabCfg = PABEnsure()
     if not (buffRules and pabCfg) then return false end
     local source = buffRules.Filters() or {}
@@ -420,7 +421,7 @@ function mod.PAB_CopyBM2FiltersIn()
             -- Retail: a copied id is the library's live content, no longer a
             -- Forever-seed note.
             local m = typeFilter.foreverSeeded
-            if m and CludesUI.IS_FOREVER ~= true then
+            if m and CUI.IS_FOREVER ~= true then
                 for ident in pairs(spellSet) do
                     m[ident] = nil
                 end
@@ -447,7 +448,7 @@ end
 -- Library ids never change, so indicator assignments and banked spec-override
 -- forks stay valid.
 function mod.PAB_CopyOwnFiltersIntoBM2()
-    local buffRules = CludesUI._BM2FilterBridge
+    local buffRules = CUI._BM2FilterBridge
     local pabCfg = PAB()
     if not (buffRules and pabCfg) then return false end
     -- Alt id -> primary: our registry flattens talent/rank alternates into
@@ -528,7 +529,7 @@ end
 -- Parent-published counterpart of _BM2FilterBridge: lets the Buff Manager's
 -- Filter Editor drive its one-time copy from its side. Absent = this module
 -- is disabled, and its button hides.
-CludesUI._PABFilterBridge = {
+CUI._PABFilterBridge = {
     CopyIntoBM2 = function() return mod.PAB_CopyOwnFiltersIntoBM2() end,
 }
 
@@ -561,7 +562,7 @@ local BM2_FILTER_SEED = {}
 -- module is disabled, and the family heal below must not depend on it).
 local PRESET_ALTS = {}
 do
-    local BP = CludesUI.BUFF_PRESETS
+    local BP = CUI.BUFF_PRESETS
     for i = 1, #BP.filters do
         local def = BP.filters[i]
         local entries = BP.spells[def.key]
@@ -608,7 +609,7 @@ do
         keyByName[BP.filters[i].name] = BP.filters[i].key
         offered[BP.filters[i].key] = true
     end
-    local otherSet = CludesUI.BUFF_PRESET_OTHER_FILTERS
+    local otherSet = CUI.BUFF_PRESET_OTHER_FILTERS
     for i = 1, #otherSet do
         local def = otherSet[i]
         if keyByName[def.name] == nil then keyByName[def.name] = def.key end
@@ -657,7 +658,7 @@ function mod.PAB_ImportBM2Filters()
     -- curate under the preset is noted on the filter (f.foreverSeeded), so
     -- retail keeps it inert when the profile goes back there
     -- (ns.PAB_OtherClientSpell). Nothing is noted on retail.
-    local retailIds = CludesUI.IS_FOREVER == true and CludesUI.BUFF_PRESET_OTHER_IDS or nil
+    local retailIds = CUI.IS_FOREVER == true and CUI.BUFF_PRESET_OTHER_IDS or nil
     local function NoteSeed(frame, filterKey, ident)
         if not retailIds then return end
         local current = retailIds[filterKey]
@@ -880,7 +881,7 @@ function mod.PAB_DeleteCustomBuffBar(ident)
     -- (its bars, or the per-spec disables the sweep clears), which moves it
     -- to the next class spec with data (ns.PAB_ForeverSpecID); a move
     -- re-drives every custom bar once.
-    local fvSid = CludesUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
+    local fvSid = CUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
     if pabCfg.customBuffBars then
         for i = #pabCfg.customBuffBars, 1, -1 do
             if pabCfg.customBuffBars[i].id == ident then table.remove(pabCfg.customBuffBars, i) end
@@ -894,7 +895,7 @@ function mod.PAB_DeleteCustomDebuffBar(ident)
     local pabCfg = PABEnsure()
     if not pabCfg then return end
     -- WoW Forever: same bucket-move check as ns.PAB_DeleteCustomBuffBar.
-    local fvSid = CludesUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
+    local fvSid = CUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
     if pabCfg.customDebuffBars then
         for i = #pabCfg.customDebuffBars, 1, -1 do
             if pabCfg.customDebuffBars[i].id == ident then table.remove(pabCfg.customDebuffBars, i) end
@@ -922,7 +923,7 @@ end
 -- "All Non Healers/Aug" its exact complement.
 local function RoleBucketForSpecID(specID)
     -- WoW Forever specs carry no role (same rule as the RaidFrames twin).
-    if CludesUI.IS_FOREVER then return nil end
+    if CUI.IS_FOREVER then return nil end
     if not specID then return nil end
     if specID == 1473 then return "healers" end
     local role = GetSpecializationInfoByID and select(5, GetSpecializationInfoByID(specID))
@@ -936,7 +937,7 @@ mod.PAB_RoleBucketForSpecID = RoleBucketForSpecID
 
 local function CurrentSpecID()
     -- WoW Forever: the retail spec the player's class acts as.
-    if CludesUI.IS_FOREVER then return mod.PAB_ForeverSpecID() end
+    if CUI.IS_FOREVER then return mod.PAB_ForeverSpecID() end
     local position = GetSpecialization and GetSpecialization()
     return position and GetSpecializationInfo and GetSpecializationInfo(position) or nil
 end
@@ -948,7 +949,7 @@ function mod.PAB_InheritedGroupsFor(bucket)
     local spellRef = m and tonumber(m)
     if not spellRef then return nil end
     -- WoW Forever has no spec roles: a class view inherits All Specs only.
-    if CludesUI.IS_FOREVER then return { "allspecs" } end
+    if CUI.IS_FOREVER then return { "allspecs" } end
     local result = { "allspecs" }
     local roleKey = RoleBucketForSpecID(spellRef)
     if roleKey ~= "healers" then result[#result + 1] = "nonhealer" end
@@ -985,7 +986,7 @@ function mod.PAB_BucketHasData(ident, state)
     if (b.buffBars and #b.buffBars > 0) or (b.debuffBars and #b.debuffBars > 0) then return true end
     local dis = b.inhDis
     if not (dis and next(dis) ~= nil) then return false end
-    if not CludesUI.IS_FOREVER then return true end
+    if not CUI.IS_FOREVER then return true end
     -- WoW Forever renders All Specs and the class's own bucket only, so only
     -- a disable of an All Specs bar counts. Scans the bar arrays in place.
     local pabCfg = PAB()
@@ -1001,7 +1002,7 @@ function mod.PAB_BucketHasData(ident, state)
 end
 function mod.PAB_ForeverSpecID(token)
     local pabCfg = PAB()
-    return CludesUI.ForeverClassSpec(token, mod.PAB_BucketHasData, pabCfg and pabCfg.pabSpecBars)
+    return CUI.ForeverClassSpec(token, mod.PAB_BucketHasData, pabCfg and pabCfg.pabSpecBars)
 end
 -- The bucket a Forever class row edits: the one that class renders.
 function mod.PAB_ForeverKey(token)
@@ -1040,7 +1041,7 @@ function mod.PAB_SetInhDisabled(concreteKey, ident, disabled)
     if not (pabCfg and concreteKey and ident) then return end
     -- WoW Forever: clearing the last per-spec disable can move the bucket
     -- the player's class renders (see ns.PAB_DeleteCustomBuffBar).
-    local fvSid = CludesUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
+    local fvSid = CUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
     local b = SpecBarBucket(pabCfg, concreteKey, true)
     b.inhDis[ident] = disabled and true or nil
     if fvSid and mod.PAB_ForeverSpecID() ~= fvSid then ReloadAllCustomBars() end
@@ -1052,7 +1053,7 @@ local function BucketApplies(bucket, spellRef)
     local m = bucket:match("^spec(%d+)$")
     if m then return spellRef == tonumber(m) end
     -- WoW Forever has no spec roles: no group bucket applies there.
-    if CludesUI.IS_FOREVER then return false end
+    if CUI.IS_FOREVER then return false end
     if not spellRef then return false end
     local roleKey = RoleBucketForSpecID(spellRef)
     if bucket == "nonhealer" then return roleKey ~= "healers" end

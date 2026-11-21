@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarTick.lua
 --
@@ -104,11 +105,11 @@ local function TBBFillVisState()
 end
 
 local function TBBVisibilityHides(conf)
-    if CludesUI.CheckVisibilityOptions(conf) then return true end
+    if CUI.CheckVisibilityOptions(conf) then return true end
 
     local vis = conf.barVisibility or "always"
     local visExt =
-        CludesUI.EvalVisibilityExtended(conf, "barVisibility", _tbbVisState, CludesUI.VIS_CAPS_DEFAULT)
+        CUI.EvalVisibilityExtended(conf, "barVisibility", _tbbVisState, CUI.VIS_CAPS_DEFAULT)
     if visExt ~= nil then return not visExt end
     if vis == "never" then return true end
     if vis == "in_combat" then return not _tbbVisState.inCombat end
@@ -128,7 +129,7 @@ local function TBBUsesVisCondition(conf)
     if vis and vis ~= "always" then return true end
     local vm = conf.visibilityModes
     if type(vm) == "table" and next(vm) then return true end
-    local keyList = CludesUI.VIS_OPT_KEYS
+    local keyList = CUI.VIS_OPT_KEYS
     if keyList then
         for index = 1, #keyList do
             if conf[keyList[index]] then return true end
@@ -214,8 +215,8 @@ function mod.UpdateTrackedBuffBarTimers()
 
     -- Self-heal placeholder mode when the user navigates away from Tracking Bars
     if mod._tbbPlaceholderMode then
-        local am = CludesUI:GetActiveModule()
-        local ap = CludesUI:GetActivePage()
+        local am = CUI:GetActiveModule()
+        local ap = CUI:GetActivePage()
         if am ~= "CludesUICooldownManager" or ap ~= "Tracking Bars" then
             mod._tbbPlaceholderMode = false
             if mod.HideTBBPlaceholders then mod.HideTBBPlaceholders() end

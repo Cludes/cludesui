@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  AuraGlows.lua -- Raid Lead: Aura Glows.
 --
@@ -57,7 +58,7 @@ local function Key(cfg)
 end
 
 local function CanBuild()
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     return AK and AK.CreateContainerShell and not InCombatLockdown() and not AK.AurasRestricted()
 end
 
@@ -92,7 +93,7 @@ local function Rebuild()
         return
     end
     pending = false
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if boxHolder then
         boxHolder:SetEnabled(false)
         boxHolder:Hide()
@@ -133,7 +134,7 @@ local function Rebuild()
     end)
     if not success then
         built = nil
-        CludesUI.Print("|cffff4040Aura Glows could not be set up:|r " .. tostring(err))
+        CUI.Print("|cffff4040Aura Glows could not be set up:|r " .. tostring(err))
     end
 end
 mod.RebuildAuraGlows = function()
@@ -164,10 +165,10 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             holderFrame:SetSize(mod.AuraGlowSettings().size, mod.AuraGlowSettings().size)
             ApplyPosition()
         end
-        if not registered and CludesUI.RegisterUnlockElements and not InCombatLockdown() then
+        if not registered and CUI.RegisterUnlockElements and not InCombatLockdown() then
             registered = true
-            CludesUI:RegisterUnlockElements({
-                CludesUI.MakeUnlockElement({
+            CUI:RegisterUnlockElements({
+                CUI.MakeUnlockElement({
                     key = "RLEAD_AuraGlows",
                     label = "Aura Glows",
                     group = "Raid Lead",

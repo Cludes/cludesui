@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewFrame.lua
 --
@@ -237,7 +238,7 @@ local function CreatePreviewFrame(index, party)
     -- Reduced max health bar (preview): black bg + red striped overlay on right side
     do
         local rmh = CreateFrame("StatusBar", nil, health)
-        rmh:SetStatusBarTexture(CludesUI.MAX_HEALTH_STRIPES_TEX)
+        rmh:SetStatusBarTexture(CUI.MAX_HEALTH_STRIPES_TEX)
         local rmhFill = rmh:GetStatusBarTexture()
         if rmhFill then
             rmhFill:SetDrawLayer("ARTWORK", 3)
@@ -385,12 +386,12 @@ local function CreatePreviewFrame(index, party)
             local color = cfg.hoverBorderColor or { r = 1, g = 1, b = 1 }
             red, green, blue, a = color.r, color.g, color.b, cfg.hoverBorderAlpha or 1
             raised, hlSize = true, cfg.hoverBorderSize or 1
-            hlPx = CludesUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
+            hlPx = CUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
         elseif frame._isTarget and cfg.targetBorderEnabled ~= false then
             local color = cfg.targetBorderColor or { r = 1, g = 1, b = 1 }
             red, green, blue, a = color.r, color.g, color.b, cfg.targetBorderAlpha or 1
             raised, hlSize = true, cfg.targetBorderSize or 1
-            hlPx = CludesUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
+            hlPx = CUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
         elseif frame._pvAggroBdr then
             -- Threat Borders' Color Custom Borders (set by ApplyPreviewData): the threat
             -- color, raised like the real frames, below hover/target and above dispel.
@@ -414,7 +415,7 @@ local function CreatePreviewFrame(index, party)
             bdrFrame:SetFrameLevel(lvl)
             if boxHolder then boxHolder:SetFrameLevel(lvl + 1) end
             -- Textured styles: the backdrop child too, as on live frames.
-            local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[bdrFrame]
+            local edge = CUI._bdBorderData and CUI._bdBorderData[bdrFrame]
             if edge then edge:SetFrameLevel(lvl) end
         end
         if (cfg.borderSize or 1) <= 0 then
@@ -425,7 +426,7 @@ local function CreatePreviewFrame(index, party)
             red, green, blue = mod.RF_VisibleHighlight(cfg, red, green, blue)
         end
         bdrFrame._hlBorderSize = nil
-        CludesUI.SetBorderStyleColor(bdrFrame, red, green, blue, a)
+        CUI.SetBorderStyleColor(bdrFrame, red, green, blue, a)
         if
             cfg.powerBorderMatchColor == true
             and frame._powerBorder
@@ -627,17 +628,17 @@ local function CreatePreviewFrame(index, party)
         local countCarrier = CreateFrame("Frame", nil, di)
         countCarrier:SetAllPoints()
         countCarrier:SetFrameLevel(math.max(cd:GetFrameLevel() + 2, dbdr:GetFrameLevel() + 1))
-        local fpInit = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+        local fpInit = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
         local countFS = countCarrier:CreateFontString(nil, "OVERLAY")
         countFS:SetPoint("BOTTOMRIGHT", di, "BOTTOMRIGHT", 1, -1)
-        CludesUI.ApplyIconTextFont(countFS, fpInit, 8, "raidFrames")
+        CUI.ApplyIconTextFont(countFS, fpInit, 8, "raidFrames")
         countFS:SetTextColor(1, 1, 1)
         countFS:SetText("")
         di._count = countFS
         -- Duration text (on same carrier above cooldown swipe)
         local durFS = countCarrier:CreateFontString(nil, "OVERLAY")
         durFS:SetPoint("CENTER", di, "CENTER", 0, 0)
-        CludesUI.ApplyIconTextFont(durFS, fpInit, 8, "raidFrames")
+        CUI.ApplyIconTextFont(durFS, fpInit, 8, "raidFrames")
         durFS:SetTextColor(1, 1, 1)
         durFS:Hide()
         di._durText = durFS

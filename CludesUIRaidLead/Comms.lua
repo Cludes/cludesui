@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Comms.lua -- Raid Lead: messages between CludesUI users in a group.
 --
@@ -23,7 +24,7 @@ local PART = 200 -- characters of note per message, leaving room for the header
 local PACE = 1.1 -- seconds between messages after the first burst
 local BURST = 8
 
-local function Say(textValue) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
+local function Say(textValue) CUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
 
 local function Channel()
     if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then return "INSTANCE_CHAT" end

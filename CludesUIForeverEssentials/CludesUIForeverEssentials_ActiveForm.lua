@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ActiveForm.lua  (WoW Forever only)
 --  One click-through icon for the active warrior stance, druid form, paladin
@@ -66,7 +67,7 @@ local eventFrame = CreateFrame("Frame")
 local active = false -- shown, with its events registered
 local visRegistered = false -- on the shared visibility dispatcher
 
-local IsSecret = CludesUI.IsSecret
+local IsSecret = CUI.IsSecret
 
 local function BuildBuffIDs()
     if buffIDs then return end
@@ -85,7 +86,7 @@ end
 -- lifts (combat end rescans).
 local function BuffIcon()
     if not buffDirty then return buffIcon end
-    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then return buffIcon end
+    if CUI.AuraKit and CUI.AuraKit.AurasRestricted() then return buffIcon end
     BuildBuffIDs()
     buffDirty = false
     buffIcon, buffInstance = nil, nil
@@ -176,7 +177,7 @@ local function OnEvent(_, evt, _, details, spellID)
     if evt == "UNIT_SPELLCAST_SUCCEEDED" then
         -- Only while the buff scan cannot run (combat): own casts stay readable, a tracked
         -- cast is the new aspect or aura, and the scan reruns once it can.
-        if not (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()) then return end
+        if not (CUI.AuraKit and CUI.AuraKit.AurasRestricted()) then return end
         BuildBuffIDs()
         if IsSecret(spellID) or not (spellID and buffIDs[spellID]) then return end
         buffIcon, buffInstance, buffDirty = (C_Spell.GetSpellTexture(spellID)), nil, true
@@ -189,14 +190,14 @@ local function OnEvent(_, evt, _, details, spellID)
     Refresh()
 end
 
-local function SnappedSize() return CludesUI.PP.SnapForES(Get("iconSize"), UIParent:GetEffectiveScale()) end
+local function SnappedSize() return CUI.PP.SnapForES(Get("iconSize"), UIParent:GetEffectiveScale()) end
 
 local function Style()
     widget:SetSize(SnappedSize(), SnappedSize())
     local z = Get("zoom") / 100
     texture:SetTexCoord(z, 1 - z, z, 1 - z)
     local step, texture = Get("borderSize"), Get("borderTexture")
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         border,
         step,
         Get("borderR"),
@@ -211,7 +212,7 @@ local function Style()
         nil,
         step,
         nil,
-        CludesUI.BorderPx(Read().borderSizePx, step, texture)
+        CUI.BorderPx(Read().borderSizePx, step, texture)
     )
 end
 
@@ -254,7 +255,7 @@ end
 
 local function UpdateVisibility()
     SetActive(
-        (widget and supported and Enabled() and CludesUI.EvalVisibility(Read()) == true) and true or false
+        (widget and supported and Enabled() and CUI.EvalVisibility(Read()) == true) and true or false
     )
 end
 
@@ -263,20 +264,20 @@ local function Apply()
         BuildFrame()
         if not visRegistered then
             visRegistered = true
-            CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
+            CUI.RegisterVisibilityUpdater(UpdateVisibility)
         end
         Style()
-        if not CludesUI._unlockActive then F.Place(widget, true) end
+        if not CUI._unlockActive then F.Place(widget, true) end
     elseif visRegistered then
         visRegistered = false
-        CludesUI.UnregisterVisibilityUpdater(UpdateVisibility)
+        CUI.UnregisterVisibilityUpdater(UpdateVisibility)
     end
     UpdateVisibility()
     Refresh()
 end
 
 -- Entry points for the options page.
-CludesUI._ActiveForm = {
+CUI._ActiveForm = {
     Get = Get,
     Read = Read,
     Cfg = F.Cfg,

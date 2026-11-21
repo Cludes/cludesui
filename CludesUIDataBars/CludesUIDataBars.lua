@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- CludesUIDataBars: user-created multi-bar engine.
 --
 -- ENGINE FILE. Owns DB + fresh profile shape (bars array, monotonic never-reused
@@ -63,22 +64,22 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewCombatQueue
-        and CludesUI._Pool
-        and CludesUI.RequestTimePlayed
-        and CludesUI.FormatDuration
-        and CludesUI.SetFontFamily
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewCombatQueue
+        and CUI._Pool
+        and CUI.RequestTimePlayed
+        and CUI.FormatDuration
+        and CUI.SetFontFamily
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Time Played block asks /played through RequestTimePlayed and formats through FormatDuration; the tooltip rows take font families through SetFontFamily)
-CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
-mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+CUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+mod.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
 
-local WB = CludesUI.Lite.NewAddon("CludesUIDataBars")
+local WB = CUI.Lite.NewAddon("CludesUIDataBars")
 mod.WB = WB
 
 -- Localized-ish string table shared with the Blocks\ files (ns.L).
@@ -210,10 +211,10 @@ local tsort = table.sort
 local floor = math.floor
 local max, min, abs = math.max, math.min, math.abs
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 -- The options page frame pool's table (made by the parent, filled in place when
 -- the options addon loads it): read for its Gen at call time.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local MEDIA = "Interface\\AddOns\\CludesUIDataBars\\media\\"
 mod.MEDIA = MEDIA
@@ -258,7 +259,7 @@ mod.BLOCK_TYPES = {
     {
         key = "mplussummary",
         label = "M+ Summary",
-        available = function() return CludesUI._MythicRuns ~= nil end,
+        available = function() return CUI._MythicRuns ~= nil end,
     },
     { key = "timeplayed", label = "Time Played" },
     { key = "audio", label = "Audio" },
@@ -373,7 +374,7 @@ mod.BlockFactories = {}
 -- template skips its spec block) and their Blocks\*.lua files return before
 -- registering a factory, so a bar saved with one shows an empty slot there
 -- instead of erroring.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     local FOREVER_OFF = { greatvault = true, crests = true, spec = true, mplussummary = true }
     table.insert(mod.BLOCK_TYPES, #mod.BLOCK_TYPES, { key = "supplies", label = "Class Resources" })
     mod.BLOCK_DEFAULTS.supplies = { showIcon = true }
@@ -385,7 +386,7 @@ if CludesUI.IS_FOREVER then
     end
 end
 
-local DeepCopy = CludesUI.Lite.DeepCopy
+local DeepCopy = CUI.Lite.DeepCopy
 
 -------------------------------------------------------------------------------
 --  Profile access
@@ -425,26 +426,26 @@ end
 -- client's own faces. Every font write to such a string passes family.
 function mod.SetFont(fontStr, size, barConf, family)
     if not (fontStr and fontStr.SetFont) then return end
-    local filePath = CludesUI.GetFontPath("dataBars")
-    local flags = CludesUI.GetFontOutlineFlag()
+    local filePath = CUI.GetFontPath("dataBars")
+    local flags = CUI.GetFontOutlineFlag()
     local scale = 100
     if barConf and barConf.fontScale then scale = barConf.fontScale end
     local sz = max(6, floor((size or 11) * scale / 100 + 0.5))
-    local useShadow = flags == "" and CludesUI.GetFontUseShadow()
+    local useShadow = flags == "" and CUI.GetFontUseShadow()
     if family then
         -- The family carries the drop shadow.
-        CludesUI.SetFontFamily(fontStr, filePath, sz, flags, useShadow and true or false)
+        CUI.SetFontFamily(fontStr, filePath, sz, flags, useShadow and true or false)
         return
     end
     -- SetShadowOffset does not render on 12.x; shadows must ride a FontObject.
     -- Prime BEFORE SetFont -- the inherited shadow survives the typeface call.
-    CludesUI.PrimeFontShadow(fontStr, useShadow and true or false)
+    CUI.PrimeFontShadow(fontStr, useShadow and true or false)
     fontStr:SetFont(filePath, sz, flags)
 end
 
 function mod.GetAccent()
-    if CludesUI.GetAccentColor then return CludesUI.GetAccentColor() end
-    local theme = CludesUI.CLUDES_GREEN
+    if CUI.GetAccentColor then return CUI.GetAccentColor() end
+    local theme = CUI.CLUDES_GREEN
     if theme then return theme.r, theme.g, theme.b end
     return 0.298, 0.788, 0.941
 end
@@ -501,7 +502,7 @@ end
 -- any locale-specific algorithm (e.g. CJK wan/yi grouping) live in the
 -- shared CludesUI_NumberFormat.lua, so every module abbreviates the same way.
 local function GoldDisplay(val, abbreviate, forceEnglish)
-    if abbreviate then return CludesUI.AbbreviateNumberFixed(val, forceEnglish) end
+    if abbreviate then return CUI.AbbreviateNumberFixed(val, forceEnglish) end
     return BreakUpLargeNumbers and BreakUpLargeNumbers(val) or tostring(val)
 end
 
@@ -1155,7 +1156,7 @@ do
         if textValue ~= nil and issecretvalue(textValue) then return end
         -- Fixed UI strings resolve through the shared locale; dynamic content
         -- (names, numbers, already-localized strings) has no key, falls back unchanged.
-        textValue = CludesUI.L(textValue)
+        textValue = CUI.L(textValue)
         dataCount = dataCount + 1
         local skinData = payload[dataCount]
         if not skinData then
@@ -1190,8 +1191,8 @@ do
         if not tipText then return end
         clickRow = 0
         if (leftX ~= nil and issecretvalue(leftX)) or (right ~= nil and issecretvalue(right)) then return end
-        leftX = CludesUI.L(leftX)
-        right = CludesUI.L(right) -- see Tip_AddLine
+        leftX = CUI.L(leftX)
+        right = CUI.L(right) -- see Tip_AddLine
         dataCount = dataCount + 1
         local skinData = payload[dataCount]
         if not skinData then
@@ -2454,7 +2455,7 @@ end
 --- reads never, and an override of Never disables one whose scalar does not.
 function mod.VisIsNever(conf)
     if not conf then return true end
-    local shade = CludesUI.VisOverrideValue(conf)
+    local shade = CUI.VisOverrideValue(conf)
     if shade then return shade == "never" end
     return conf.visibility == "never"
 end
@@ -2546,7 +2547,7 @@ function mod.ApplyBar(ident)
 
     ApplyBarPosition(ident)
     -- Back onto its unlock anchor (nil until the unlock core is built).
-    if CludesUI.ReapplyUnlockAnchor then CludesUI.ReapplyUnlockAnchor("EDB_" .. ident) end
+    if CUI.ReapplyUnlockAnchor then CUI.ReapplyUnlockAnchor("EDB_" .. ident) end
     ApplyThemeToHost(barRec.bar, conf.theme, conf.barTexture, not conf.hideBorder)
 
     -- Reconcile block instances against cfg.blocks
@@ -2621,7 +2622,7 @@ function mod.ApplyBar(ident)
     -- and bring held followers to the bar.
     if wasDisabled and mod._edbUnlockRegistered then
         mod.RegisterAllUnlockElements()
-        if CludesUI.PropagateAnchorChain then CludesUI.PropagateAnchorChain("EDB_" .. ident) end
+        if CUI.PropagateAnchorChain then CUI.PropagateAnchorChain("EDB_" .. ident) end
     end
 end
 
@@ -2808,15 +2809,15 @@ do
             local barRec = live[conf.id]
             if barRec and barRec.enabled then
                 local vis
-                if CludesUI.CheckVisibilityOptions(conf) then
+                if CUI.CheckVisibilityOptions(conf) then
                     vis = false
                 else
                     st.inCombat = _inCombat
                     st.inRaid = IsInRaid()
                     st.inParty = (not st.inRaid) and IsInGroup()
                     local ext
-                    if CludesUI.EvalVisibilityExtended then
-                        ext = CludesUI.EvalVisibilityExtended(conf, "visibility", st, mod.EDB_VIS_CAPS)
+                    if CUI.EvalVisibilityExtended then
+                        ext = CUI.EvalVisibilityExtended(conf, "visibility", st, mod.EDB_VIS_CAPS)
                     end
                     if ext ~= nil then
                         vis = ext
@@ -2869,7 +2870,7 @@ do
             for _, event in ipairs(VIS_EVENTS) do
                 visFrame:RegisterEvent(event)
             end
-            if CludesUI._hasGlidingEvent then visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
+            if CUI._hasGlidingEvent then visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
             _inCombat = InCombatLockdown() and true or false
         elseif visFrame then
             visFrame:UnregisterAllEvents()
@@ -2882,7 +2883,7 @@ do
     local moRegistered = {}
     RegisterBarMouseoverProxy = function(ident)
         if moRegistered[ident] then return end
-        if not CludesUI.RegisterMouseoverTarget then return end
+        if not CUI.RegisterMouseoverTarget then return end
         moRegistered[ident] = true
         local proxy = {}
         proxy.GetRect = function()
@@ -2911,7 +2912,7 @@ do
                 SetBarContentShown(ident, false)
             end
         end
-        CludesUI.RegisterMouseoverTarget(proxy, function()
+        CUI.RegisterMouseoverTarget(proxy, function()
             if mod._moEligible[ident] then return true end
             return false
         end)
@@ -3005,11 +3006,11 @@ local function MakeBarElement(barId, orderIdx)
     local function holdAtMover(conf)
         if conf.snapEdge and conf.snapEdge ~= "none" then return end
         local key = "EDB_" .. barId
-        if CludesUI._unlockActive and not CludesUI.IsUnlockAnchored(key) then
-            CludesUI.RepositionBarToMover(key)
+        if CUI._unlockActive and not CUI.IsUnlockAnchored(key) then
+            CUI.RepositionBarToMover(key)
         end
     end
-    return CludesUI.MakeUnlockElement({
+    return CUI.MakeUnlockElement({
         key = "EDB_" .. barId,
         label = labelText,
         group = "Info Bar",
@@ -3098,7 +3099,7 @@ local function MakeBarElement(barId, orderIdx)
 end
 
 function mod.RegisterAllUnlockElements()
-    if not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
+    if not (CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then return end
     local profileTbl = mod.GetProfile()
     if not profileTbl then return end
     local elements = {}
@@ -3106,10 +3107,10 @@ function mod.RegisterAllUnlockElements()
         local barId = profileTbl.bars[i].id
         elements[#elements + 1] = MakeBarElement(barId, i)
         -- Cog deep-link: unlock cog on this element opens the DataBars page.
-        CludesUI._ELEMENT_SETTINGS_MAP = CludesUI._ELEMENT_SETTINGS_MAP or {}
-        CludesUI._ELEMENT_SETTINGS_MAP["EDB_" .. barId] = { module = "CludesUIDataBars", page = "Info Bar" }
+        CUI._ELEMENT_SETTINGS_MAP = CUI._ELEMENT_SETTINGS_MAP or {}
+        CUI._ELEMENT_SETTINGS_MAP["EDB_" .. barId] = { module = "CludesUIDataBars", page = "Info Bar" }
     end
-    if #elements > 0 then CludesUI:RegisterUnlockElements(elements, "CludesUIDataBars") end
+    if #elements > 0 then CUI:RegisterUnlockElements(elements, "CludesUIDataBars") end
     mod._edbUnlockRegistered = true
 end
 
@@ -3552,7 +3553,7 @@ end
 --  Lifecycle
 -------------------------------------------------------------------------------
 function WB:OnInitialize()
-    self.db = CludesUI.Lite.NewDB("CludesUIDataBarsDB", defaultSet)
+    self.db = CUI.Lite.NewDB("CludesUIDataBarsDB", defaultSet)
     -- Cross-character gold ledger is account data (CludesUIDB.goldLedger,
     -- CludesUI.GetGoldLedger()), not profile -- a profile-scoped copy would leak every
     -- character's name/realm/balance into export strings. Drop any old
@@ -3625,7 +3626,7 @@ _G._CUDB_RegisterUnlock = function() mod.RegisterAllUnlockElements() end
 do
     local groups = {}
     local groupOf = setmetatable({}, { __mode = "k" }) -- bar rec -> reused group
-    CludesUI.PartySpin_Create({
+    CUI.PartySpin_Create({
         target = "dataBars",
         collect = function()
             wipe(groups)
@@ -3652,8 +3653,8 @@ end
 
 -- Party Mode visibility axis (Visibility > Party Mode): no game event, so the
 -- core fires its own edge.
-if CludesUI.RegisterVisEdge then
-    CludesUI.RegisterVisEdge(function()
+if CUI.RegisterVisEdge then
+    CUI.RegisterVisEdge(function()
         if mod.UpdateAllBarVisibility then mod.UpdateAllBarVisibility() end
     end)
 end

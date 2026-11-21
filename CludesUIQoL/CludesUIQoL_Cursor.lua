@@ -1,7 +1,8 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 local ADDON_NAME = ...
 
-local ECL = CludesUI.Lite.NewAddon("CludesUICursor")
+local ECL = CUI.Lite.NewAddon("CludesUICursor")
 
 -- Shared with the Quickdraw hub: the full Cludes logo in the parent's
 -- media folder.
@@ -28,7 +29,7 @@ local sin, cos = _G.sin or math.sin, _G.cos or math.cos -- WoW globals are degre
 local GetTime = GetTime
 local GetCursorPosition = GetCursorPosition
 local GetSpellCooldown = C_Spell.GetSpellCooldown
-local GCD_SPELL = CludesUI.GCD_SPELL
+local GCD_SPELL = CUI.GCD_SPELL
 local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
 
@@ -62,11 +63,11 @@ end
 -------------------------------------------------------------------------------
 local function ResolveColor(conf)
     if not conf then return 1, 1, 1 end
-    if conf.useAccentColor and CludesUI.GetAccentColor then return CludesUI.GetAccentColor() end
+    if conf.useAccentColor and CUI.GetAccentColor then return CUI.GetAccentColor() end
     if conf.useClassColor then
         local _, engClass = UnitClass("player")
         local cc = engClass
-            and (CludesUI.GetRawClassColor(engClass) or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[engClass]))
+            and (CUI.GetRawClassColor(engClass) or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[engClass]))
         if cc then return cc.r, cc.g, cc.b end
     end
     return ParseHex(conf.hex or DEF_HEX)
@@ -300,7 +301,7 @@ local function CursorGlueBody(rawX, rawY)
     end
 end
 local function GlueToCursor(on)
-    local M = CludesUI and CludesUI.Mouse
+    local M = CUI and CUI.Mouse
     if not M then return end
     if on then
         -- Snap immediately: the motionOnly subscriber stays parked until the cursor
@@ -539,7 +540,7 @@ local function PaintGcdCircle()
     if gcdCfg.instanceOnly and not InRealInstancedContent() then gcdRoot:Hide() end
     -- Respect combat-only: hide if not in combat
     if gcdCfg.combatOnly and not InCombatLockdown() then gcdRoot:Hide() end
-    if attached and not CludesUI._unlockActive then
+    if attached and not CUI._unlockActive then
         -- When the cursor circle is visible, anchor directly to it.
         -- When the cursor circle is hidden (e.g. instance-only outside an instance),
         -- the cursor frame's OnUpdate stops firing so it no longer tracks the mouse.
@@ -577,7 +578,7 @@ local function PaintGcdCircle()
     else
         gcdRoot:SetScript("OnUpdate", nil)
         -- Skip repositioning during unlock mode (mover owns position)
-        if not CludesUI._unlockActive then _G._CUCL_ApplyGCDPosition() end
+        if not CUI._unlockActive then _G._CUCL_ApplyGCDPosition() end
     end
 end
 
@@ -604,7 +605,7 @@ UpdateVisibility = function()
     -- (ApplyCombatOnlyEvents).
     if showIt and p.combatOnly then showIt = InCombatLockdown() and true or false end
     -- Standard visibility options (returns true if should HIDE)
-    if showIt and CludesUI.CheckVisibilityOptions(p) then showIt = false end
+    if showIt and CUI.CheckVisibilityOptions(p) then showIt = false end
     -- Standard visibility mode (mouseover treated as always for cursor)
     if showIt then
         local mode = p.visibility or "always"
@@ -666,7 +667,7 @@ UpdateVisibility = function()
                 -- Re-apply cursor tracking since cursor visibility may have changed.
                 -- Skip while unlocked: the mover owns position, and re-arming this
                 -- would fight it (see the same gate in ApplyGCDCircle).
-                if gcdCfg.attached ~= false and not CludesUI._unlockActive then
+                if gcdCfg.attached ~= false and not CUI._unlockActive then
                     local cursorShown = frame and frame:IsShown()
                     if cursorShown then
                         gcdRoot:SetScript("OnUpdate", nil)
@@ -708,7 +709,7 @@ UpdateVisibility = function()
                 -- Re-apply cursor tracking since cursor visibility may have changed.
                 -- Skip while unlocked: the mover owns position, and re-arming this
                 -- would fight it (see the same gate in ApplyCastCircle).
-                if cfg.attached ~= false and not CludesUI._unlockActive then
+                if cfg.attached ~= false and not CUI._unlockActive then
                     local cursorShown = frame and frame:IsShown()
                     if cursorShown then
                         castRoot:SetScript("OnUpdate", nil)
@@ -1034,7 +1035,7 @@ local function PaintCastCircle()
     if cfg.instanceOnly and not InRealInstancedContent() then castRoot:Hide() end
     -- Respect combat-only: hide if not in combat
     if cfg.combatOnly and not InCombatLockdown() then castRoot:Hide() end
-    if attached and not CludesUI._unlockActive then
+    if attached and not CUI._unlockActive then
         -- When the cursor circle is visible, anchor directly to it.
         -- When the cursor circle is hidden (e.g. instance-only outside an instance),
         -- the cursor frame's OnUpdate stops firing so it no longer tracks the mouse.
@@ -1072,7 +1073,7 @@ local function PaintCastCircle()
     else
         castRoot:SetScript("OnUpdate", nil)
         -- Skip repositioning during unlock mode (mover owns position)
-        if not CludesUI._unlockActive then _G._CUCL_ApplyCastPosition() end
+        if not CUI._unlockActive then _G._CUCL_ApplyCastPosition() end
     end
 end
 
@@ -1080,8 +1081,8 @@ end
 --  Unlock Mode registration (for detached GCD / Cast circles)
 -------------------------------------------------------------------------------
 local function RegisterUnlockElements()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
 
     local elements = {}
 
@@ -1121,21 +1122,21 @@ local function RegisterUnlockElements()
             setWidth = function(_, wid)
                 local profile = ECL.db and ECL.db.profile
                 if not profile or not profile.gcd then return end
-                local PPg = CludesUI and CludesUI.PP
+                local PPg = CUI and CUI.PP
                 profile.gcd.radius = math.max(PPg and PPg.Snap(wid / 2) or math.floor(wid / 2 + 0.5), 5)
                 PaintGcdCircle()
-                if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                    CludesUI.RepositionBarToMover("ECL_GCD")
+                if CUI._unlockActive and CUI.RepositionBarToMover then
+                    CUI.RepositionBarToMover("ECL_GCD")
                 end
             end,
             setHeight = function(_, hgt)
                 local profile = ECL.db and ECL.db.profile
                 if not profile or not profile.gcd then return end
-                local PPg = CludesUI and CludesUI.PP
+                local PPg = CUI and CUI.PP
                 profile.gcd.radius = math.max(PPg and PPg.Snap(hgt / 2) or math.floor(hgt / 2 + 0.5), 5)
                 PaintGcdCircle()
-                if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                    CludesUI.RepositionBarToMover("ECL_GCD")
+                if CUI._unlockActive and CUI.RepositionBarToMover then
+                    CUI.RepositionBarToMover("ECL_GCD")
                 end
             end,
             savePos = function(key, anchorPoint, relPoint, posX, posY)
@@ -1143,7 +1144,7 @@ local function RegisterUnlockElements()
                 if not profile then return end
                 if not profile.gcd then profile.gcd = {} end
                 profile.gcd.pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                if not CludesUI._unlockActive then PaintGcdCircle() end
+                if not CUI._unlockActive then PaintGcdCircle() end
             end,
             loadPos = function()
                 local g2 = GcdCfg()
@@ -1176,27 +1177,27 @@ local function RegisterUnlockElements()
             setWidth = function(_, wid)
                 local profile = ECL.db and ECL.db.profile
                 if not profile or not profile.castCircle then return end
-                local PPc = CludesUI and CludesUI.PP
+                local PPc = CUI and CUI.PP
                 profile.castCircle.radius =
                     math.max(PPc and PPc.Snap(wid / 2) or math.floor(wid / 2 + 0.5), 5)
                 PaintCastCircle()
-                CludesUI.RepositionBarToMover("ECL_Cast")
+                CUI.RepositionBarToMover("ECL_Cast")
             end,
             setHeight = function(_, hgt)
                 local profile = ECL.db and ECL.db.profile
                 if not profile or not profile.castCircle then return end
-                local PPc = CludesUI and CludesUI.PP
+                local PPc = CUI and CUI.PP
                 profile.castCircle.radius =
                     math.max(PPc and PPc.Snap(hgt / 2) or math.floor(hgt / 2 + 0.5), 5)
                 PaintCastCircle()
-                CludesUI.RepositionBarToMover("ECL_Cast")
+                CUI.RepositionBarToMover("ECL_Cast")
             end,
             savePos = function(key, anchorPoint, relPoint, posX, posY)
                 local profile = ECL.db and ECL.db.profile
                 if not profile then return end
                 if not profile.castCircle then profile.castCircle = {} end
                 profile.castCircle.pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                if not CludesUI._unlockActive then PaintCastCircle() end
+                if not CUI._unlockActive then PaintCastCircle() end
             end,
             loadPos = function()
                 local castCfg = Cast_DB()
@@ -1210,20 +1211,20 @@ local function RegisterUnlockElements()
         })
     end
 
-    if #elements > 0 then CludesUI:RegisterUnlockElements(elements, "CludesUIQoL") end
+    if #elements > 0 then CUI:RegisterUnlockElements(elements, "CludesUIQoL") end
 end
 
 -- Position apply helpers (called from unlock mode and from ApplyGCDCircle/ApplyCastCircle)
 _G._CUCL_ApplyGCDPosition = function()
     if not gcdRoot then return end
     -- Skip for unlock-anchored elements (anchor system is authority)
-    local anchored = CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("ECL_GCD")
+    local anchored = CUI and CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("ECL_GCD")
     if anchored and gcdRoot:GetLeft() then return end
     local gcdCfg = GcdCfg()
     local place = gcdCfg.pos
     if place and place.point then
         local pixel, py = place.x or 0, place.y or 0
-        local PPa = CludesUI and CludesUI.PP
+        local PPa = CUI and CUI.PP
         if PPa then
             local effScale = gcdRoot:GetEffectiveScale()
             local isCenterAnchor = (place.point == "CENTER")
@@ -1248,13 +1249,13 @@ end
 _G._CUCL_ApplyCastPosition = function()
     if not castRoot then return end
     -- Skip for unlock-anchored elements (anchor system is authority)
-    local anchored = CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("ECL_Cast")
+    local anchored = CUI and CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("ECL_Cast")
     if anchored and castRoot:GetLeft() then return end
     local cfg = Cast_DB()
     local place = cfg.pos
     if place and place.point then
         local pixel, py = place.x or 0, place.y or 0
-        local PPa = CludesUI and CludesUI.PP
+        local PPa = CUI and CUI.PP
         if PPa then
             local effScale = castRoot:GetEffectiveScale()
             local isCenterAnchor = (place.point == "CENTER")
@@ -1358,7 +1359,7 @@ function ECL:OnInitialize()
             },
         },
     }
-    local sharedDB = CludesUI.Lite.NewDB("CludesUIQoLDB", cursorDefaults)
+    local sharedDB = CUI.Lite.NewDB("CludesUIQoLDB", cursorDefaults)
     -- Narrow view onto the cursor sub-table so legacy code using
     -- self.db.profile.<key> keeps working without rewrites.
     -- profile is resolved DYNAMICALLY so it follows profile swaps. The profile
@@ -1394,7 +1395,7 @@ function ECL:OnInitialize()
     _G._CUCL_Apply = ApplyCursorLook
     _G._CUCL_UpdateVisibility = UpdateVisibility
     _G._CUCL_ApplyCombatOnlyEvents = ApplyCombatOnlyEvents
-    CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
+    CUI.RegisterVisibilityUpdater(UpdateVisibility)
     _G._CUCL_ApplyGCDCircle = PaintGcdCircle
     _G._CUCL_ApplyCastCircle = PaintCastCircle
     _G._CUCL_RegisterUnlock = RegisterUnlockElements
@@ -1447,7 +1448,7 @@ function ECL:OnEnable()
     -- before the core resolves the profile accent, so Apply() above painted
     -- the parse-time fallback and is never called again. Also covers a
     -- mid-session accent change, which nothing pushed to us before.
-    CludesUI.RegAccent({
+    CUI.RegAccent({
         type = "callback",
         fn = function()
             local profile = ECL.db and ECL.db.profile
@@ -1473,8 +1474,8 @@ function ECL:OnEnable()
         -- Every _unlockActive check in this file only stops a FUTURE re-arm
         -- of the attached cursor-tracking OnUpdate -- none of them tear down
         -- one that's already running, so hook the real unlock open/close here.
-        if CludesUI and CludesUI.RegisterUnlockModeListener then
-            CludesUI:RegisterUnlockModeListener("CludesUIQoL_Cursor", function(active)
+        if CUI and CUI.RegisterUnlockModeListener then
+            CUI:RegisterUnlockModeListener("CludesUIQoL_Cursor", function(active)
                 if active then
                     if gcdRoot then
                         gcdRoot:SetScript("OnUpdate", nil)

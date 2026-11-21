@@ -1,4 +1,5 @@
 local addonName, mod = ...
+local CUI = CludesUI
 if mod.standalone then return end
 -------------------------------------------------------------------------------
 --  externals.lua -- Tank Kit: "Externals on You" and the Layout Mode movers.
@@ -146,21 +147,21 @@ end
 local registered = false
 
 local function RegisterLayoutMode()
-    if registered or not (CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then
+    if registered or not (CUI and CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then
         return
     end
-    local MK = CludesUI.MakeUnlockElement
+    local MK = CUI.MakeUnlockElement
     local widget = _G.CoTankAuras
     if not widget then return end
     registered = true
 
     local function Reposition(key)
-        if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-            CludesUI.RepositionBarToMover(key)
+        if CUI._unlockActive and CUI.RepositionBarToMover then
+            CUI.RepositionBarToMover(key)
         end
     end
 
-    CludesUI:RegisterUnlockElements({
+    CUI:RegisterUnlockElements({
         MK({
             key = "TANK_CoTank",
             label = "Co-Tank",

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Beacon.lua
 --
@@ -144,7 +145,7 @@ end
 
 local function BeaconLayoutIcons()
     -- Beacon icons are merged into the main LayoutIcons row; the separate beacon anchor is hidden (unused).
-    if _B.anchor then CludesUI.SetElementVisibility(_B.anchor, false) end
+    if _B.anchor then CUI.SetElementVisibility(_B.anchor, false) end
 
     -- When cursor-attached, position beacon icons at the cursor anchor
     local useCursor = saved and CursorAttachActive(saved.profile.display) and cursorAnchor
@@ -184,7 +185,7 @@ local function BeaconLayoutIcons()
                 )
             end
             cursorAnchor:Show()
-            CludesUI.SetElementVisibility(cursorAnchor, true)
+            CUI.SetElementVisibility(cursorAnchor, true)
         else
             ReleaseCursorAnchor()
         end
@@ -327,7 +328,7 @@ local function BeaconInit()
     _B.anchor:SetFrameStrata("HIGH")
     _B.anchor:EnableMouse(false)
     _B.anchor:Show()
-    CludesUI.SetElementVisibility(_B.anchor, false)
+    CUI.SetElementVisibility(_B.anchor, false)
     -- Anchor to the combat anchor (created by OnEnable before this call)
     if combatAnchor then
         _B.anchor:SetPoint("CENTER", combatAnchor, "CENTER", 0, -60)

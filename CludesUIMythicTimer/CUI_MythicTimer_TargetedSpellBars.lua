@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_TargetedSpellBars.lua
 --  Targeted Spell Bars (Mythic+ Tools): one movable group of cast bars, one per
@@ -29,14 +30,14 @@ end
 --------------------------------------------------------------------------------
 -- A bar's target text names a player, so the bar texts take a font family
 -- (Cyrillic, Korean and Chinese names draw); no plain SetFont may reach them after it.
-local function SetFSFont(fontStr, size) CludesUI.ApplyModuleFontFamily(fontStr, nil, size, "mythicTimer") end
+local function SetFSFont(fontStr, size) CUI.ApplyModuleFontFamily(fontStr, nil, size, "mythicTimer") end
 
 --------------------------------------------------------------------------------
 --  Shared engines consumed read-only (core addon, loaded before this module).
 --------------------------------------------------------------------------------
-local GetActiveKickSpell = CludesUI.GetActiveKickSpell
-local ComputeCastBarTint = CludesUI.ComputeCastBarTint
-local Glows = CludesUI.Glows
+local GetActiveKickSpell = CUI.GetActiveKickSpell
+local ComputeCastBarTint = CUI.ComputeCastBarTint
+local Glows = CUI.Glows
 
 -- Raid marker sheet texcoords (4x4 grid), same layout as CludesUIRaidFrames.
 local RAID_MARKER_TEXCOORDS = {
@@ -279,13 +280,13 @@ local function StyleBar(holderFrame, conf)
         holderFrame.sb:SetPoint("BOTTOMRIGHT", holderFrame, "BOTTOMRIGHT", 0, 0)
     end
 
-    local texPath = CludesUI.ResolveTexturePath(
+    local texPath = CUI.ResolveTexturePath(
         mod.barTextures,
         conf.texture or "none",
         "Interface\\Buttons\\WHITE8x8"
     ) or "Interface\\Buttons\\WHITE8x8"
     holderFrame.sb:SetStatusBarTexture(texPath)
-    local pp = CludesUI.PP
+    local pp = CUI.PP
     if pp and pp.DisablePixelSnap then pp.DisablePixelSnap(holderFrame.sb:GetStatusBarTexture()) end
     local color = conf.barColor
     if color then holderFrame.sb:SetStatusBarColor(color.r, color.g, color.b) end
@@ -666,8 +667,8 @@ local function ArmTimerTicker()
     local needed = conf
         and (conf.showTimer ~= false or conf.oorEnabled or (GetActiveKickSpell and GetActiveKickSpell()))
     if not needed then return end
-    if not timerTicker and CludesUI.Tick and CludesUI.Tick.NewAnimTicker then
-        timerTicker = CludesUI.Tick.NewAnimTicker(MakeContainer(), TimerBody, 0.1)
+    if not timerTicker and CUI.Tick and CUI.Tick.NewAnimTicker then
+        timerTicker = CUI.Tick.NewAnimTicker(MakeContainer(), TimerBody, 0.1)
     end
     if timerTicker then
         TimerBody()
@@ -1305,8 +1306,8 @@ end
 --  the mover is hidden while the feature is disabled.
 --------------------------------------------------------------------------------
 local function RegisterUnlock()
-    local MK = CludesUI.MakeUnlockElement
-    CludesUI:RegisterUnlockElements({
+    local MK = CUI.MakeUnlockElement
+    CUI:RegisterUnlockElements({
         MK({
             key = "EMT_TargetedSpellBars",
             label = "Cast Bars",
@@ -1345,7 +1346,7 @@ local function RegisterUnlock()
                 local conf = Cfg()
                 if not (conf and posX and posY) then return end
                 conf.pos = { centerX = posX, centerY = posY }
-                if not CludesUI._unlockActive then PlaceContainer() end
+                if not CUI._unlockActive then PlaceContainer() end
             end,
             loadPos = function()
                 local conf = Cfg()
@@ -1361,13 +1362,13 @@ local function RegisterUnlock()
         }),
     }, "CludesUIMythicTimer")
 
-    if CludesUI.RegisterUnlockModeListener then
-        CludesUI:RegisterUnlockModeListener("EMT_TargetedSpellBars", function(unlockActive)
+    if CUI.RegisterUnlockModeListener then
+        CUI:RegisterUnlockModeListener("EMT_TargetedSpellBars", function(unlockActive)
             local conf = Cfg()
             if not (conf and conf.enabled == true) then return end
             -- Sample bars while placing; back to live content on exit.
             mod.TSB_SetPreview(unlockActive == true)
-            local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("EMT_TargetedSpellBars")
+            local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("EMT_TargetedSpellBars")
             if not anchored then PlaceContainer() end
         end)
     end

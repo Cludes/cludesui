@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Init.lua
 --
@@ -32,10 +33,10 @@ function ABAR:OnInitialize()
     local rawDB = CludesUIActionBarsDB
     local isFirstInstall = not rawDB or not rawDB.profiles or (rawDB.profiles and not next(rawDB.profiles))
 
-    self.db = CludesUI.Lite.NewDB("CludesUIActionBarsDB", defaultSet, true)
+    self.db = CUI.Lite.NewDB("CludesUIActionBarsDB", defaultSet, true)
     self:RefreshCustomFadeGate()
     -- Expose for ApplyAnchorPosition's growth-direction edge read.
-    CludesUI._abBarPositions = self.db.profile.barPositions
+    CUI._abBarPositions = self.db.profile.barPositions
 
     -- Slot-export safety net: a session that ended with that addon's window
     -- open (e.g. /reload) left the real bar visibility settings swapped to
@@ -69,7 +70,7 @@ function ABAR:OnInitialize()
         -- saved growth edges / follow baselines through this reference; a stale
         -- pointer would read and write another profile's saved positions.
         if ABAR.db and ABAR.db.profile and ABAR.db.profile.barPositions then
-            CludesUI._abBarPositions = ABAR.db.profile.barPositions
+            CUI._abBarPositions = ABAR.db.profile.barPositions
         end
         -- Toggle keys participate by the effective mode, which an override or a
         -- profile swap can change. Before ApplyAll so a dropped toggle state is
@@ -307,7 +308,7 @@ function ABAR:OnInitialize()
     end
 
     SLASH_CLUDESACTIONBARS1 = "/cab"
-    SlashCmdList["CLUDESACTIONBARS"] = function(message) CludesUI:ShowModule("CludesUIActionBars") end
+    SlashCmdList["CLUDESACTIONBARS"] = function(message) CUI:ShowModule("CludesUIActionBars") end
 
     SLASH_EABQUICKKEYBIND1 = "/kb"
     SlashCmdList["EABQUICKKEYBIND"] = function(message)
@@ -427,7 +428,7 @@ function ABAR:OnFirstLogin()
     -- UpdateBottomActionBarPositions: the secondary container height - 1, the
     -- main one height + 4), and a status bar that shows later never covers
     -- them. Only while the containers and the bar sit where Edit Mode puts them.
-    if CludesUI.IS_FOREVER and self.db.profile.useBlizzardDataBars then
+    if CUI.IS_FOREVER and self.db.profile.useBlizzardDataBars then
         local mainC, secC = _G.MainStatusTrackingBarContainer, _G.SecondaryStatusTrackingBarContainer
         local function AtDefault(frame)
             if not frame.IsInDefaultPosition then return true end

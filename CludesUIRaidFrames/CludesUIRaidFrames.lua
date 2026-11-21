@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIRaidFrames.lua
 --  Custom raid frames built on SecureGroupHeaderTemplate.
@@ -8,31 +9,31 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewInternals
-        and CludesUI.NewCombatQueue
-        and CludesUI.SetFrameScale
-        and CludesUI.HideFrame
-        and CludesUI._Pool
-        and CludesUI.NewFrameData
-        and CludesUI.AbbreviateValue
-        and CludesUI.IsZeroValue
-        and CludesUI.UnitNameFormat
-        and CludesUI.OwnSurnameHidden
-        and CludesUI.ApplyModuleFontFamily
-        and CludesUI.SetFontFamily
-        and CludesUI.UIScaledAlpha
-        and CludesUI.OnUIAlphaChanged
-        and CludesUI.PREVIEW_ROSTER
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewInternals
+        and CUI.NewCombatQueue
+        and CUI.SetFrameScale
+        and CUI.HideFrame
+        and CUI._Pool
+        and CUI.NewFrameData
+        and CUI.AbbreviateValue
+        and CUI.IsZeroValue
+        and CUI.UnitNameFormat
+        and CUI.OwnSurnameHidden
+        and CUI.ApplyModuleFontFamily
+        and CUI.SetFontFamily
+        and CUI.UIScaledAlpha
+        and CUI.OnUIAlphaChanged
+        and CUI.PREVIEW_ROSTER
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Blizzard raid and party frame suppression hides and scales through the parent's HideFrame and SetFrameScale, and the health texts format through the parent's AbbreviateValue, the [absorb:abr] tags blank at zero through its IsZeroValue, and the Name Format asks its UnitNameFormat, and the [name:last] and [target:last] tags its OwnSurnameHidden, and the texts that show names take their font family through its ApplyModuleFontFamily and SetFontFamily, and the 3D portraits follow a faded UI through its UIScaledAlpha and OnUIAlphaChanged, and the preview names its members from its PREVIEW_ROSTER)
-CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+CUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
 
-local ERF = CludesUI.Lite.NewAddon(ADDON_NAME)
+local ERF = CUI.Lite.NewAddon(ADDON_NAME)
 mod.ERF = ERF
 _G.CludesUIRaidFrames = ERF
 
@@ -40,14 +41,14 @@ _G.CludesUIRaidFrames = ERF
 -- PLAYER_REGEN_DISABLED) reading the GLOBAL CludesUI from an event frame
 -- still in a secure execution context raise benign self-taint; table-field
 -- reads do not.
-mod.CludesUI = CludesUI
+mod.CludesUI = CUI
 
 -- Addon name external nickname providers key us by. Suite = the brand
 -- "CludesUI" (what providers register support for); standalone = our
 -- renamed folder name (ADDON_NAME), the per-addon key. "Standalone" survives
 -- the standalone token rename, so detection is rename-immune and the
 -- "CludesUI" literal is only reached in the suite.
-mod.EXT_NICK = CludesUI.EXT_NICK
+mod.EXT_NICK = CUI.EXT_NICK
 mod.NICK_ADDON = ADDON_NAME:find("Standalone") and ADDON_NAME or mod.EXT_NICK.addon
 
 -- Keep subgroup identity separate from its visual slot. Invalid imported
@@ -141,7 +142,7 @@ end
 
 -- "Run once after combat" for one-shot combat-gated deferrals. The shell is taken
 -- in the main chunk, so drained work bills RaidFrames. Keys are per purpose.
-mod.CombatQueue = CludesUI.NewCombatQueue(mod.TakeShell())
+mod.CombatQueue = CUI.NewCombatQueue(mod.TakeShell())
 
 -------------------------------------------------------------------------------
 --  Locals & upvalues
@@ -165,7 +166,7 @@ local GetNumGroupMembers = GetNumGroupMembers
 local C_Timer = C_Timer
 local issecretvalue = issecretvalue
 -- WoW Forever: no number under 10,000 abbreviates (CludesUI_NumberFormat.lua).
-local AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
+local AbbreviateNumbers = (CUI.IS_FOREVER and CUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
 local CreateFrame = CreateFrame
 
 -- Absorb shield textures (must match UnitFrames exactly)
@@ -273,14 +274,14 @@ function mod.ApplyRoleText(iconTex, role, cfg)
         or "roleTextDPSColor"
     local color = cfg[colorKey] or mod._internals.defaults.profile[colorKey]
     textValue:SetTextColor(color.r, color.g, color.b)
-    CludesUI.ApplyModuleFont(textValue, nil, cfg.roleIconSize or 14, "raidFrames")
+    CUI.ApplyModuleFont(textValue, nil, cfg.roleIconSize or 14, "raidFrames")
     local place = iconTex:GetPoint() or "CENTER"
     textValue:ClearAllPoints()
     textValue:SetPoint(place, iconTex, place, 0, 0)
     textValue:SetText(
-        role == "TANK" and CludesUI.L("Tank")
-            or role == "HEALER" and CludesUI.L("Healer")
-            or CludesUI.L("DPS")
+        role == "TANK" and CUI.L("Tank")
+            or role == "HEALER" and CUI.L("Healer")
+            or CUI.L("DPS")
     )
     iconTex:Hide()
     textValue:Show()
@@ -329,7 +330,7 @@ local REZ_SPELL_BY_CLASS = {
     EVOKER = 361227, -- Return
 }
 -- WoW Forever has no Intercession; Redemption rank 1 is the Paladin's rez there.
-if CludesUI.IS_FOREVER then REZ_SPELL_BY_CLASS.PALADIN = 7328 end
+if CUI.IS_FOREVER then REZ_SPELL_BY_CLASS.PALADIN = 7328 end
 local _, playerClassToken = UnitClass("player")
 local playerRezSpell = REZ_SPELL_BY_CLASS[playerClassToken]
 
@@ -347,14 +348,14 @@ local THREAT_ACTIVE = { [2] = true, [3] = true }
 -- Combat indicator media + class sprite coords (shared with the Unit Frames
 -- combat icon assets).
 mod._COMBAT_MEDIA = "Interface\\AddOns\\CludesUI\\media\\combat\\"
-mod._COMBAT_CLASS_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
+mod._COMBAT_CLASS_COORDS = CUI.CLASS_ICON_SPRITE_COORDS
 
 -------------------------------------------------------------------------------
 --  Default settings
 -------------------------------------------------------------------------------
 -- Level Text's default position: attached to the name on WoW Forever, None on
 -- retail (the per-client default rule; every fallback below reads it).
-mod.RF_LEVEL_DEFAULT = (CludesUI.IS_FOREVER == true) and "name" or "none"
+mod.RF_LEVEL_DEFAULT = (CUI.IS_FOREVER == true) and "name" or "none"
 local defaultSet = {
     profile = {
         -- Size & layout
@@ -633,14 +634,14 @@ local defaultSet = {
         pingMarkerOffsetY = 0,
         -- WoW Forever: Missing Buffs (CUI_RaidFrames_ForeverMissingBuffs.lua).
         -- Forever-only defaults, absent on every other client.
-        showMissingBuffs = (CludesUI.IS_FOREVER == true) and true or nil,
-        missingBuffsSize = (CludesUI.IS_FOREVER == true) and 22 or nil,
-        missingBuffsPosition = (CludesUI.IS_FOREVER == true) and "top" or nil,
-        missingBuffsOffsetX = (CludesUI.IS_FOREVER == true) and 0 or nil,
-        missingBuffsOffsetY = (CludesUI.IS_FOREVER == true) and 0 or nil,
+        showMissingBuffs = (CUI.IS_FOREVER == true) and true or nil,
+        missingBuffsSize = (CUI.IS_FOREVER == true) and 22 or nil,
+        missingBuffsPosition = (CUI.IS_FOREVER == true) and "top" or nil,
+        missingBuffsOffsetX = (CUI.IS_FOREVER == true) and 0 or nil,
+        missingBuffsOffsetY = (CUI.IS_FOREVER == true) and 0 or nil,
         -- Its icons' glow (shared prefix schema; 2 = Action Button Glow).
-        missingBuffsGlowType = (CludesUI.IS_FOREVER == true) and 2 or nil,
-        missingBuffsGlowColorMode = (CludesUI.IS_FOREVER == true) and "default" or nil,
+        missingBuffsGlowType = (CUI.IS_FOREVER == true) and 2 or nil,
+        missingBuffsGlowColorMode = (CUI.IS_FOREVER == true) and "default" or nil,
         showReadyCheck = true,
         showSummonPending = true,
         showIncomingRez = true,
@@ -912,7 +913,7 @@ function mod.RaidFrameTooltipAllowed(btnFrame)
         )
     ) or mod._scaledProfile
     -- The Blizz UI Enhanced peek modifier lifts the mode so a hidden tip can still be read on hover, matching the global tooltips.
-    if CludesUI._tooltipPeekHeld and CludesUI._tooltipPeekHeld() then return true end
+    if CUI._tooltipPeekHeld and CUI._tooltipPeekHeld() then return true end
     local ttMode = mod._ResolveTooltipMode(s)
     if ttMode == "never" then return false end
     if ttMode == "outOfCombat" and inCombat then return false end
@@ -954,7 +955,7 @@ do
     local function handleFrame(widget, doNotReparent)
         if not widget then return end
         widget:UnregisterAllEvents()
-        CludesUI.HideFrame(widget)
+        CUI.HideFrame(widget)
         if not doNotReparent then
             widget:SetParent(mod._blizzHiddenParent)
             if not hookedFrames[widget] then
@@ -992,7 +993,7 @@ do
         if not widget then return end
         pcall(function()
             widget:SetAlpha(0)
-            if not InCombatLockdown() then CludesUI.SetFrameScale(widget, 0.001, true) end
+            if not InCombatLockdown() then CUI.SetFrameScale(widget, 0.001, true) end
             -- Per-frame Blizzard selection textures. No-op if absent.
             if widget.selectionHighlight and widget.selectionHighlight.SetShown then
                 widget.selectionHighlight:SetShown(false)
@@ -1014,7 +1015,7 @@ do
             -- A protected frame hides only out of combat; in combat
             -- resetParent above takes it back under the hidden parent (a
             -- protected one when combat ends).
-            if not InCombatLockdown() then CludesUI.HideFrame(self) end
+            if not InCombatLockdown() then CUI.HideFrame(self) end
             hideEditModeOverlay(self)
         end)
     end
@@ -1076,7 +1077,7 @@ do
 
     local function hookEditModeManager()
         if not EditModeManagerFrame then return end
-        local fd = CludesUI._GetFFD(EditModeManagerFrame)
+        local fd = CUI._GetFFD(EditModeManagerFrame)
         if fd.rfOverlayHooked then return end
         fd.rfOverlayHooked = true
         -- OnShow = Edit Mode entered (overlay appears); Hide = Edit Mode closed.
@@ -1092,7 +1093,7 @@ end
 
 -- FFD: external weak-keyed lookup for state on header-managed buttons
 -- (SecureGroupHeader buttons are Blizzard-owned, never write custom keys)
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -------------------------------------------------------------------------------
 --  Physical pixel snapping. PP.Scale uses PanelPP.mult, which can be 1 even
@@ -1101,7 +1102,7 @@ local FFD, GetFFD = CludesUI.NewFrameData()
 -------------------------------------------------------------------------------
 local function PixelSnap(value)
     if value == 0 then return 0 end
-    local realPP = CludesUI and CludesUI.PP
+    local realPP = CUI and CUI.PP
     local perfect = realPP and realPP.perfect
     if not perfect then return value end
     local es = containerFrame and containerFrame:GetEffectiveScale()
@@ -1120,7 +1121,7 @@ end
 --  pin a string's face for good, so every font write to these strings goes
 --  through here.
 -------------------------------------------------------------------------------
-local function ApplyFont(fontStr, size) CludesUI.ApplyModuleFontFamily(fontStr, nil, size, "raidFrames") end
+local function ApplyFont(fontStr, size) CUI.ApplyModuleFontFamily(fontStr, nil, size, "raidFrames") end
 
 -------------------------------------------------------------------------------
 --  Health bar texture helpers
@@ -1132,7 +1133,7 @@ local healthBarTextureOrder = {}
 local function InitHealthBarTextures()
     -- Seed from the shared catalogue INTO the existing file-scope tables
     -- (their identity is load-bearing: resolver closures capture them).
-    local t, num, o = CludesUI.BuildBarTextureTables(true)
+    local t, num, o = CUI.BuildBarTextureTables(true)
     for key, val in pairs(t) do
         healthBarTextures[key] = val
     end
@@ -1157,13 +1158,13 @@ local function InitHealthBarTextures()
     table.insert(healthBarTextureOrder, 2, "blizzardRaidModern")
 
     -- Append SharedMedia textures after built-ins
-    CludesUI.AppendSharedMediaTextures(healthBarTextureNames, healthBarTextureOrder, nil, healthBarTextures)
+    CUI.AppendSharedMediaTextures(healthBarTextureNames, healthBarTextureOrder, nil, healthBarTextures)
 end
 
 -- s: the settings to read (the profile when nil).
 local function ResolveHealthTexture(s)
     local key = (s or saved.profile).healthBarTexture or "atrocity"
-    return CludesUI.ResolveTexturePath(
+    return CUI.ResolveTexturePath(
         healthBarTextures,
         key,
         healthBarTextures["atrocity"] or "Interface\\Buttons\\WHITE8X8"
@@ -1473,7 +1474,7 @@ end
 -- Caller-handled keys (blizzardModern / maxHealthStripes) never reach this.
 function mod.ResolveAbsorbStyleTex(style, fallback)
     return ABSORB_STYLE_TEX[style]
-        or (CludesUI.ResolveTexturePath(healthBarTextures, style, fallback))
+        or (CUI.ResolveTexturePath(healthBarTextures, style, fallback))
         or fallback
 end
 
@@ -1517,7 +1518,7 @@ end
 -- "NONE" case (a solo healer's mana bar must not fall through to the DPS
 -- toggle) and a stale premade-listing role (listed as tank, playing dps).
 -- Other units keep the assigned role.
-mod._ResolvePowerRole = function(unitToken) return CludesUI.UnitEffectiveRole(unitToken) end
+mod._ResolvePowerRole = function(unitToken) return CUI.UnitEffectiveRole(unitToken) end
 
 -------------------------------------------------------------------------------
 --  Raid size tier resolution: width/height for a group size from the defined
@@ -1598,7 +1599,7 @@ mod._currentSizeTier = 20
 -- it writes through the Set<Name> function built below, which runs them all.
 -- broken: true while an CUI_RaidFrames_*.lua file loads; a file that fails
 -- leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(mod, "_internals", {
+CUI.NewInternals(mod, "_internals", {
     AbbreviateNumbers = AbbreviateNumbers,
     ABSORB_STYLE_ALPHA = ABSORB_STYLE_ALPHA,
     ABSORB_STYLE_TEX = ABSORB_STYLE_TEX,

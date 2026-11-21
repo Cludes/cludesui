@@ -1,8 +1,9 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 local _, mod = ...
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
-local AKWorker = CludesUI.AuraKit.NewBuildWorker()
+local AKWorker = CUI.AuraKit.NewBuildWorker()
 
 -- ===========================================================================
 --  CludesUI CDM -- Custom Active State engine (isolated)
@@ -640,7 +641,7 @@ function FA121.Detach(o)
 end
 
 local function Build(activeRule, state)
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if state.built or not AK then return end
     AK.styles["cdm:fa121"] = AK.styles["cdm:fa121"] or { noRegions = true, width = 1, height = 1 }
     if not state.proxy then
@@ -780,7 +781,7 @@ local function Build(activeRule, state)
                     tc:SetAllPoints(btnFrame)
                     tc:SetFrameLevel(cooldown:GetFrameLevel() + 5)
                     local fontStr = tc:CreateFontString(nil, "OVERLAY")
-                    local cdFont = (CludesUI.GetFontPath("cdm"))
+                    local cdFont = (CUI.GetFontPath("cdm"))
                         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
                     local fsScale = (scale and scale > 0.01) and scale or 1
                     local cdSize = (
@@ -788,8 +789,8 @@ local function Build(activeRule, state)
                         or (edge and edge.cooldownFontSize)
                         or 12
                     ) / fsScale
-                    if CludesUI.ApplyIconTextFont then
-                        CludesUI.ApplyIconTextFont(fontStr, cdFont, cdSize, "cdm")
+                    if CUI.ApplyIconTextFont then
+                        CUI.ApplyIconTextFont(fontStr, cdFont, cdSize, "cdm")
                     else
                         fontStr:SetFont(cdFont, cdSize, "OUTLINE")
                     end
@@ -807,7 +808,7 @@ local function Build(activeRule, state)
                         (spellSettings and spellSettings.cooldownTextX) or (edge and edge.cooldownTextX) or 0,
                         (spellSettings and spellSettings.cooldownTextY) or (edge and edge.cooldownTextY) or 0
                     )
-                    local AK2 = CludesUI.AuraKit
+                    local AK2 = CUI.AuraKit
                     local fmt = AK2 and AK2.GetDurationFormatter and AK2.GetDurationFormatter()
                     -- 68914 schema key (textFormatter); BuildDurationTextOpts
                     -- when available, bare table fallback otherwise.
@@ -838,7 +839,7 @@ end
 local function EnsureBuilt(activeRule)
     local state = St(activeRule)
     if state.built or state.queued then return end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if not (AK and AK.QueueBuildJob) then return end
     state.queued = true
     AKWorker:Queue(function()
@@ -1179,7 +1180,7 @@ end
 local _knownItemCasts
 local function KnownItemCasts(itemId)
     if not _knownItemCasts then
-        local families = CludesUI.CONSUMABLES
+        local families = CUI.CONSUMABLES
         _knownItemCasts = {}
         -- A family's own item wins over another family's alternate: 224464 is
         -- the Demonic Healthstone, also listed as a Healthstone alternate.
@@ -2087,8 +2088,8 @@ do
 end
 
 -- Debug toggle: /run CludesUI.FakeActiveDebug()
-if CludesUI then
-    function CludesUI.FakeActiveDebug()
+if CUI then
+    function CUI.FakeActiveDebug()
         mod._fakeActiveDebug = not mod._fakeActiveDebug
         print(
             ("|cff4cc9f0CUI FakeActive|r debug %s | armed=%s rules=%d"):format(

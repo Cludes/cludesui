@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_AuraIcons.lua
 --
@@ -36,9 +37,9 @@ local Inner = mod._hookInternals
 if not Inner or Inner.broken or not Inner._AC then return end
 local _AC, _presetFrames = Inner._AC, Inner._presetFrames
 local barDataByKey = mod.barDataByKey
-local IsSecret = CludesUI.IsSecret
+local IsSecret = CUI.IsSecret
 
-local AKWorker = CludesUI.AuraKit.NewBuildWorker()
+local AKWorker = CUI.AuraKit.NewBuildWorker()
 
 -- The slot sits over the host's art, border and swipe (border +13/+14, swipe
 -- +14), under its glows (+16) and text (+23), as DecorateFrame levels them.
@@ -115,7 +116,7 @@ local function Listen(enabled)
     listening = enabled
     if enabled then
         events:RegisterEvent("TRAIT_CONFIG_UPDATED")
-        if CludesUI.IS_FOREVER == true then events:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE") end
+        if CUI.IS_FOREVER == true then events:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE") end
     else
         events:UnregisterAllEvents()
     end
@@ -190,7 +191,7 @@ local function Restyle(Rec, barId)
     if not edge then return end
     local sig = StyleSig(Rec, edge)
     if Rec.styleBar == barId and Rec.styleSig == sig then return end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     AK.styles[Rec.styleKey] = HostStyle(Rec, edge)
     Rec.styleBar, Rec.styleSig = barId, sig
     if AK.RestyleSoon then AK.RestyleSoon(Rec.styleKey) end
@@ -211,7 +212,7 @@ end
 local function Build(Rec, include, sig)
     local edge = Rec.hostBar and barDataByKey[Rec.hostBar]
     if not edge then return end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     AK.styles[Rec.styleKey] = HostStyle(Rec, edge)
     Rec.styleBar, Rec.styleSig = Rec.hostBar, StyleSig(Rec, edge)
     if Rec.container then AK.ReleaseContainer(Rec.container) end
@@ -268,10 +269,10 @@ local function OnEnter(self)
     local spellRef = self._auraIconTip
     if not (edge and edge.showTooltip and spellRef) then return end
     -- Honor the global "Show Tooltips" mode (Blizzard Skin).
-    if CludesUI._tooltipSuppressedByMode and CludesUI._tooltipSuppressedByMode(GameTooltip) then return end
+    if CUI._tooltipSuppressedByMode and CUI._tooltipSuppressedByMode(GameTooltip) then return end
     GameTooltip_SetDefaultAnchor(GameTooltip, self)
     GameTooltip:SetSpellByID(spellRef)
-    if CludesUI._repointTooltipAtCursor then CludesUI._repointTooltipAtCursor(GameTooltip) end
+    if CUI._repointTooltipAtCursor then CUI._repointTooltipAtCursor(GameTooltip) end
     GameTooltip:Show()
 end
 

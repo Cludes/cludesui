@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MailAlts.lua  (WoW Forever only)
 --  Your characters on this realm and faction, remembered as you log in on
@@ -26,7 +27,7 @@ local EXPIRY_WARN = 3 * DAY
 local TRADE_GOODS = Enum.ItemClass.Tradegoods
 local GEAR = { [Enum.ItemClass.Weapon] = true, [Enum.ItemClass.Armor] = true }
 
-local function Say(textValue) CludesUI.Print("|cff4cc9f0Mail:|r " .. textValue) end
+local function Say(textValue) CUI.Print("|cff4cc9f0Mail:|r " .. textValue) end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 local function ClassName(name, class)
     local color = class and C_ClassColor and C_ClassColor.GetClassColor(class)
@@ -236,7 +237,7 @@ local pendingSlot, pendingItem, pendingBag, pendingBagSlot
 local clicking = false
 local mEv = CreateFrame("Frame")
 
-local function Menu(ownerFrame, fillTex) CludesUI.Kit.ContextMenu(ownerFrame, fillTex) end
+local function Menu(ownerFrame, fillTex) CUI.Kit.ContextMenu(ownerFrame, fillTex) end
 
 local function OpenAltsMenu(ownerFrame)
     local entries = AltList()
@@ -420,7 +421,7 @@ end
 
 local function MailButton(textValue, tipText, func)
     local b =
-        CludesUI.Kit.Button(SendMailFrame, textValue, 64, 22, func, { key = "essentials", tip = tipText })
+        CUI.Kit.Button(SendMailFrame, textValue, 64, 22, func, { key = "essentials", tip = tipText })
     return b
 end
 
@@ -520,7 +521,7 @@ local function ForgetMenu(ownerFrame)
     end)
 end
 
-CludesUI._MailAlts = { Get = Get, Cfg = F.Cfg, Apply = Apply, Forget = ForgetMenu }
+CUI._MailAlts = { Get = Get, Cfg = F.Cfg, Apply = Apply, Forget = ForgetMenu }
 
 F.Start(function()
     Apply()

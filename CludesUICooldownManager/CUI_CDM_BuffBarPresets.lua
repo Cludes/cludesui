@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarPresets.lua
 --
@@ -155,7 +156,7 @@ local function UpdatePandemic(barFrame, conf)
         end
         local c
         if conf.pandemicGlowMode == "class" then
-            c = CludesUI.GetClassColor(CludesUI._playerClass)
+            c = CUI.GetClassColor(CUI._playerClass)
         elseif conf.pandemicGlowMode == "custom" then
             c = conf.pandemicGlowColor
         end
@@ -387,7 +388,7 @@ function mod.UpdateLustListener()
     if not any and mod.AnyCustomAuraLust then any = mod.AnyCustomAuraLust() end
     -- WoW Forever has no raid lust and no Sated debuff: a lust bar or icon saved
     -- on another client stays dormant there and never arms the listener.
-    if CludesUI.IS_FOREVER then any = false end
+    if CUI.IS_FOREVER then any = false end
     _ensureLustListener(any)
     -- Sibling preset listeners refresh from the same change sites: every add/remove/rebuild path already calls UpdateLustListener.
     if mod.UpdateTimeSpiralListener then mod.UpdateTimeSpiralListener() end
@@ -579,7 +580,7 @@ function mod.UpdateTimeSpiralListener()
     if not any and mod.AnyCustomAuraTimeSpiral then any = mod.AnyCustomAuraTimeSpiral() end
     -- WoW Forever has no Time Spiral: a bar or icon saved on another client stays
     -- dormant there and never arms the glow listener.
-    if CludesUI.IS_FOREVER then any = false end
+    if CUI.IS_FOREVER then any = false end
     _ensureTimeSpiralListener(any)
 end
 
@@ -661,7 +662,7 @@ function mod.TBB_BarCanCue(conf)
     if pk then
         -- The lust and Time Spiral windows never open on WoW Forever (their
         -- listeners stay off there), so only a cast-timed preset can cue.
-        if CludesUI.IS_FOREVER then return _potionDur[pk] ~= nil end
+        if CUI.IS_FOREVER then return _potionDur[pk] ~= nil end
         return pk == "bloodlust" or pk == "timespiral" or _potionDur[pk] ~= nil
     end
     -- A dirty map still holds the previous pass's pairings: trust it only once rebuilt,

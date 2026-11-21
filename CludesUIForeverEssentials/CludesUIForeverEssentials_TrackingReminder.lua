@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_TrackingReminder.lua  (WoW Forever only)
 --  Tracking Reminder: a row of icons for the tracking you know but have not
@@ -123,7 +124,7 @@ local function Button(index)
         if not self.spellID then return end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetSpellByID(self.spellID)
-        GameTooltip:AddLine(CludesUI.L("Click to turn this tracking on."), 0.6, 0.8, 1)
+        GameTooltip:AddLine(CUI.L("Click to turn this tracking on."), 0.6, 0.8, 1)
         GameTooltip:Show()
     end)
     widget:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -185,7 +186,7 @@ local function Apply()
             eventFrame:RegisterEvent(event)
         end
         eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
-        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
+        if not CUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
     end
@@ -193,7 +194,7 @@ local function Apply()
 end
 
 -- Entry points for the options page.
-CludesUI._TrackingReminder = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
+CUI._TrackingReminder = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
 
 F.Start(Apply, {
     key = "CUI_TrackingReminder",

@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_TownMap.lua  (WoW Forever only)
 --  Town Map: service NPCs on the world map for your faction (your class's
@@ -155,7 +156,7 @@ local function ShowTip(pin)
     GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
     GameTooltip:SetText(npc[4], 1, 1, 1)
     local title = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
-    if title ~= npc[4] then GameTooltip:AddLine(title, CludesUI.Kit.Accent()) end
+    if title ~= npc[4] then GameTooltip:AddLine(title, CUI.Kit.Accent()) end
     GameTooltip:Show()
 end
 
@@ -183,7 +184,7 @@ local pins, used = {}, 0
 
 -- Flight masters are left to Map Markers when it shows flight points.
 local function FlightsElsewhere()
-    local mt = CludesUI._MapTravel
+    local mt = CUI._MapTravel
     return mt and mt.On and mt.On("flights")
 end
 
@@ -372,6 +373,6 @@ local function Apply()
     MiniApply()
 end
 
-CludesUI._TownMap = { Get = Get, Cfg = F.Cfg, Apply = Apply }
+CUI._TownMap = { Get = Get, Cfg = F.Cfg, Apply = Apply }
 
 F.Start(Apply)

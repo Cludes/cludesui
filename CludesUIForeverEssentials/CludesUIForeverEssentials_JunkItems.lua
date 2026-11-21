@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_JunkItems.lua  (WoW Forever only)
 --  Small window listing the cheapest junk stacks in your bags: every stack up
@@ -13,7 +14,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 --  Copper only appears while the value is under 1g.
 -------------------------------------------------------------------------------
 local _, module = ...
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local GetContainerNumFreeSlots = C_Container.GetContainerNumFreeSlots
 local GetContainerNumSlots = C_Container.GetContainerNumSlots
@@ -90,7 +91,7 @@ local function Limit() return Clamp(Get("itemCount"), 1, MAX_CELLS) end
 -------------------------------------------------------------------------------
 --  Fonts (the Forever Essentials module font)
 -------------------------------------------------------------------------------
-local function SetJunkFont(fontStr, size) CludesUI.ApplyModuleFont(fontStr, nil, size, "essentials") end
+local function SetJunkFont(fontStr, size) CUI.ApplyModuleFont(fontStr, nil, size, "essentials") end
 
 local function NewText(hostFrame, size, alpha)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
@@ -395,7 +396,7 @@ local ShowCellTooltip -- forward (Cells)
 
 local function CloseConfirm()
     if not confirmHandle then return end
-    CludesUI:CloseConfirmPopup(confirmHandle)
+    CUI:CloseConfirmPopup(confirmHandle)
     confirmHandle = nil
     if not armedCell then watcher:UnregisterEvent("PLAYER_REGEN_DISABLED") end
 end
@@ -438,9 +439,9 @@ local function AskDelete(junkCell)
         junkCell.bag, junkCell.slot, junkCell.id, junkCell.count, junkCell.quality
     local labelText = count > 1 and (junkCell.link .. " x" .. count) or junkCell.link
     local handle
-    handle = CludesUI:ShowConfirmPopup({
-        title = CludesUI.L("Delete Junk Item"),
-        message = DELETE_ITEM:format(labelText) .. "\n\n" .. CludesUI.L(
+    handle = CUI:ShowConfirmPopup({
+        title = CUI.L("Delete Junk Item"),
+        message = DELETE_ITEM:format(labelText) .. "\n\n" .. CUI.L(
             "Then Ctrl + Left Click the item again to delete it."
         ),
         confirmText = DELETE,
@@ -486,13 +487,13 @@ ShowCellTooltip = function(junkCell)
     GameTooltip:AddLine(" ")
     -- No deletes in combat: the hint greys out there.
     if InCombatLockdown() then
-        GameTooltip:AddLine(CludesUI.L("Ctrl + Left Click: delete"), 0.5, 0.5, 0.5)
+        GameTooltip:AddLine(CUI.L("Ctrl + Left Click: delete"), 0.5, 0.5, 0.5)
     elseif armedCell == junkCell then
-        GameTooltip:AddLine(CludesUI.L("Ctrl + Left Click again to delete"), 1, 0.15, 0.15)
+        GameTooltip:AddLine(CUI.L("Ctrl + Left Click again to delete"), 1, 0.15, 0.15)
     else
-        GameTooltip:AddLine(CludesUI.L("Ctrl + Left Click: delete"), 1, 0.3, 0.3)
+        GameTooltip:AddLine(CUI.L("Ctrl + Left Click: delete"), 1, 0.3, 0.3)
     end
-    GameTooltip:AddLine(CludesUI.L("Middle Click: never show this item"), 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(CUI.L("Middle Click: never show this item"), 0.7, 0.7, 0.7)
     GameTooltip:Show()
 end
 
@@ -550,7 +551,7 @@ local function AcquireCell(index)
     Pix.CreateBorder(b, 0, 0, 0, 1, 1, "OVERLAY", 7)
 
     b._count = b:CreateFontString(nil, "OVERLAY")
-    CludesUI.ApplyIconTextFont(b._count, CludesUI.GetFontPath("essentials"), 11, "essentials")
+    CUI.ApplyIconTextFont(b._count, CUI.GetFontPath("essentials"), 11, "essentials")
     b._count:SetTextColor(1, 1, 1, 1)
     b._count:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -1, 2)
 
@@ -608,7 +609,7 @@ local function ApplyPosition() F.Place(widget, true) end
 local titleW = 0
 local function TitleWidth()
     if titleW == 0 then
-        probeFS:SetFormattedText(CludesUI.L("Bag Slots - %d/%d"), 888, 888)
+        probeFS:SetFormattedText(CUI.L("Bag Slots - %d/%d"), 888, 888)
         local wid = probeFS:GetStringWidth() or 0
         if wid >= 1 then titleW = math.ceil(wid) end
     end
@@ -667,7 +668,7 @@ local function Layout(cap)
     emptyFS:ClearAllPoints()
     emptyFS:SetPoint("CENTER", widget, "CENTER", 0, -titleH / 2)
     -- The centre snap follows the size; Unlock Mode owns the spot while it is open.
-    if not CludesUI._unlockActive then ApplyPosition() end
+    if not CUI._unlockActive then ApplyPosition() end
 end
 
 local function CountBagSlots()
@@ -691,7 +692,7 @@ local function UpdateTitle()
     local free, sum = CountBagSlots()
     if free ~= lastFree or sum ~= lastTotal then
         lastFree, lastTotal = free, sum
-        titleFS:SetFormattedText(CludesUI.L("Bag Slots - %d/%d"), free, sum)
+        titleFS:SetFormattedText(CUI.L("Bag Slots - %d/%d"), free, sum)
     end
     titleFS:Show()
 end
@@ -751,7 +752,7 @@ local function BuildFrame()
     hdrCover:SetPoint("BOTTOMRIGHT", hdrBg, "BOTTOMRIGHT")
 
     emptyFS = NewText(widget, 11, 0.5)
-    emptyFS:SetText(CludesUI.L("No junk items"))
+    emptyFS:SetText(CUI.L("No junk items"))
 
     -- measures the widest title (TitleWidth)
     probeFS = NewText(widget, 11)
@@ -841,7 +842,7 @@ end
 -- The shared visibility setting: re-checked by the visibility dispatcher on its
 -- own edges (combat, group, zone...) and after every settings change.
 local function UpdateVisibility()
-    local show = (widget and Enabled() and CludesUI.EvalVisibility(Read()) == true) and true or false
+    local show = (widget and Enabled() and CUI.EvalVisibility(Read()) == true) and true or false
     local watching = show and Get("onlyLowBagSpace") == true
     if watching ~= bagWatching then
         bagWatching = watching
@@ -862,7 +863,7 @@ local function Apply()
         BuildFrame()
         if not visRegistered then
             visRegistered = true
-            CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
+            CUI.RegisterVisibilityUpdater(UpdateVisibility)
         end
         -- Sized and placed even while the visibility setting hides it, so Unlock
         -- Mode always has a mover to show. The fonts may have changed: the title
@@ -873,17 +874,17 @@ local function Apply()
             cells[index].fitW = nil
         end
         Layout(Limit())
-        if not CludesUI._unlockActive then ApplyPosition() end
+        if not CUI._unlockActive then ApplyPosition() end
     elseif visRegistered then
         visRegistered = false
-        CludesUI.UnregisterVisibilityUpdater(UpdateVisibility)
+        CUI.UnregisterVisibilityUpdater(UpdateVisibility)
     end
     UpdateVisibility()
     RequestRefresh() -- settings may change what lists and how it looks
 end
 
 -- Entry points for the options page and Bags.
-CludesUI._JunkItems = {
+CUI._JunkItems = {
     Get = Get,
     Read = Read,
     Cfg = F.Cfg,

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Sort.lua
 --
@@ -146,7 +147,7 @@ function mod._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLas
             if name ~= UNKNOWNOBJECT then
                 local unitToken = "raid" .. index
                 local rp = 99
-                if pri then rp = pri[CludesUI.UnitEffectiveRole(unitToken)] or 99 end
+                if pri then rp = pri[CUI.UnitEffectiveRole(unitToken)] or 99 end
                 members[#members + 1] = {
                     name = name,
                     isPlayer = UnitIsUnit(unitToken, "player"),
@@ -227,7 +228,7 @@ function mod._BuildPartyClassNameList(includePlayer, sortByRole, roleOrder, clas
                 local _, classToken = UnitClass(unitToken)
                 members[#members + 1] = {
                     name = name,
-                    rolePri = (rolePri and rolePri[CludesUI.UnitEffectiveRole(unitToken)]) or 99,
+                    rolePri = (rolePri and rolePri[CUI.UnitEffectiveRole(unitToken)]) or 99,
                     classPri = classPri[classToken] or 99,
                 }
             end
@@ -270,7 +271,7 @@ function mod._BuildArenaNameList(hideSelf, selfFirst, selfLast, sortByRole, role
             if not (hideSelf and isPlayer) then
                 if name ~= UNKNOWNOBJECT then
                     local rp = 99
-                    if pri then rp = pri[CludesUI.UnitEffectiveRole(unitToken)] or 99 end
+                    if pri then rp = pri[CUI.UnitEffectiveRole(unitToken)] or 99 end
                     members[#members + 1] = {
                         name = name,
                         isPlayer = isPlayer,
@@ -321,7 +322,7 @@ function mod._BuildMergedSelfNameList(sortByRole, roleOrder, selfLast, visibleGr
             if name ~= UNKNOWNOBJECT then
                 local unitToken = "raid" .. index
                 local rp = 99
-                if pri then rp = pri[CludesUI.UnitEffectiveRole(unitToken)] or 99 end
+                if pri then rp = pri[CUI.UnitEffectiveRole(unitToken)] or 99 end
                 members[#members + 1] = {
                     name = name,
                     isPlayer = UnitIsUnit(unitToken, "player"),
@@ -426,7 +427,7 @@ function mod._BuildRaidClassLists(
             local unitToken = tok[index]
             m.name = name
             m.isPlayer = pin and UnitIsUnit(unitToken, "player") == true
-            m.rolePri = (sortByRole and rolePri[CludesUI.UnitEffectiveRole(unitToken)]) or 99
+            m.rolePri = (sortByRole and rolePri[CUI.UnitEffectiveRole(unitToken)]) or 99
             m.classPri = classPri[classToken] or 99
             local g = groups[merged and 1 or subgroup]
             g[#g + 1] = m

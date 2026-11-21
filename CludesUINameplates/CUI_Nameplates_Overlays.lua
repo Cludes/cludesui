@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Overlays.lua
 --
@@ -13,7 +14,7 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs, type = pairs, type
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local UnitIsUnit = UnitIsUnit
 local UnitClass = UnitClass
 local _, PLAYER_CLASS = UnitClass("player")
@@ -161,10 +162,10 @@ do
     end
 
     local function Resolve()
-        local specID = CludesUI._specID
-        if (not specID or specID == 0) and CludesUI._RefreshSpecID then
-            CludesUI._RefreshSpecID()
-            specID = CludesUI._specID
+        local specID = CUI._specID
+        if (not specID or specID == 0) and CUI._RefreshSpecID then
+            CUI._RefreshSpecID()
+            specID = CUI._specID
         end
         local def = specID and EXEC[specID]
         if not def then return nil end
@@ -510,8 +511,8 @@ function mod.ResolveOverlayTexPath(key)
     if mod.OVERLAY_STRIPE_KEYS[key] then
         return "Interface\\AddOns\\CludesUINameplates\\Media\\" .. key .. ".png"
     end
-    if CludesUI.ResolveTexturePath then
-        return CludesUI.ResolveTexturePath(mod.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
+    if CUI.ResolveTexturePath then
+        return CUI.ResolveTexturePath(mod.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
     end
     return nil
 end
@@ -665,7 +666,7 @@ mod._npTptOn = false
 mod._npTgapOn = false
 
 function mod.NP_RefreshThreatPctFlag()
-    mod._npTptOn = CludesUI.IS_FOREVER == true and p ~= nil and p.threatPctEnabled == true
+    mod._npTptOn = CUI.IS_FOREVER == true and p ~= nil and p.threatPctEnabled == true
     mod._npTgapOn = mod._npTptOn and p.threatPctMode == "gap"
 end
 
@@ -726,7 +727,7 @@ function mod.NP_UpdateThreatPct(backing, unitToken, gapNow)
         if type(pct) == "number" then
             mod.ApplyThreatPctPos(backing)
             if not (mod._npTgapOn and backing._isTarget and mod.NP_PaintThreatGap(backing.threatPctText)) then
-                CludesUI.PaintThreatPct(
+                CUI.PaintThreatPct(
                     backing.threatPctText,
                     pct,
                     status,
@@ -844,7 +845,7 @@ do
         local ahead = gap >= 0
         if not ahead then gap = -gap end
         local saved = p or defaultSet
-        CludesUI.PaintThreatGap(
+        CUI.PaintThreatGap(
             fontStr,
             mod.AbbreviateNumbers(math.floor(gap + 0.5)),
             ahead,
@@ -979,7 +980,7 @@ end
 function mod.NP_LayoutCastTints(backing)
     local fillTex = backing.health:GetStatusBarTexture()
     local key = (p and p.healthBarTexture) or defaultSet.healthBarTexture
-    local filePath = CludesUI.ResolveTexturePath(mod.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
+    local filePath = CUI.ResolveTexturePath(mod.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
     LayoutCastTint(backing.castTintUnint, fillTex, filePath)
     LayoutCastTint(backing.castTintInt, fillTex, filePath)
 end

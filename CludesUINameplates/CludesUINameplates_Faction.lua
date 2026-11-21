@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUINameplates_Faction.lua
 --  Faction badge (Horde/Alliance) on friendly nameplates. Enemy plates carry it
@@ -70,9 +71,9 @@ local function Refresh(fp)
     -- Repaint only when the art or the dim changes (inputs: faction, Icon Style, honor
     -- badge, dim).
     local style = mod.NP_GetFactionStyle()
-    local badge = CludesUI.FactionBadgeFor(style, unitToken)
+    local badge = CUI.FactionBadgeFor(style, unitToken)
     if widget.facArt ~= atlas or widget.facStyle ~= style or widget.facBadge ~= badge then
-        CludesUI.SetFactionArt(widget.tex, style, atlas, badge)
+        CUI.SetFactionArt(widget.tex, style, atlas, badge)
         widget.facArt, widget.facStyle, widget.facBadge = atlas, style, badge
     end
     if widget.facDim ~= size then

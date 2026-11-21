@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Defaults.lua
 --
@@ -23,9 +24,9 @@ Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 -------------------------------------------------------------------------------
 -- Saved glowType numbering (Action Button Glow first) as a view over the
 -- shared style table; no Shape Glow (reminder icons have no shape mask).
-local GLOW_VIEW = CludesUI.Glows.MakeView({ 2, 1, 3, 5, 6, 7 })
+local GLOW_VIEW = CUI.Glows.MakeView({ 2, 1, 3, 5, 6, 7 })
 
-local StopAllGlows = CludesUI.Glows.StopAllGlows
+local StopAllGlows = CUI.Glows.StopAllGlows
 
 -------------------------------------------------------------------------------
 --  Defaults
@@ -41,7 +42,7 @@ do
         end
         return tbl
     end
-    CludesUI.RegisterBorderDefaults("aurabuffreminders", {
+    CUI.RegisterBorderDefaults("aurabuffreminders", {
         glow = { defaultSize = 1, sizes = AllBorderSizes(0, 0, 0, 0) },
         blizz = {
             defaultSize = 4,
@@ -314,7 +315,7 @@ function REMIND.HandleAppearSounds(missing)
             if primed and not previous[dk] then
                 local skey = REMIND.ResolveReminderSound(dk)
                 if skey and skey ~= "none" then
-                    local paths = CludesUI._groupDeathSoundPaths
+                    local paths = CUI._groupDeathSoundPaths
                     local filePath = paths and paths[skey]
                     if filePath then PlaySoundFile(filePath, "Master") end
                 end

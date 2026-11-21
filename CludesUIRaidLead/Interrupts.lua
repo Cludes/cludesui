@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Interrupts.lua -- Raid Lead: kick rotation.
 --
@@ -58,7 +59,7 @@ end
 
 local function IsMe(name)
     local me = UnitName("player")
-    local nick = CludesUI.GetNickname and CludesUI.GetNickname(me)
+    local nick = CUI.GetNickname and CUI.GetNickname(me)
     local n = Lower(name):gsub("%-.*$", "")
     return n == Lower(me) or (nick and n == Lower(nick))
 end
@@ -89,18 +90,18 @@ end
 local box, num, labelText
 local rot -- { names, mine, count, casting }
 
-local function Font() return CludesUI.GetFontPath(nil) end
+local function Font() return CUI.GetFontPath(nil) end
 
 local function Build()
     if box then return end
     box = CreateFrame("Frame", "CludesUIRaidLeadKicks", UIParent)
     box:SetSize(W, H)
-    CludesUI.Kit.Panel(box)
+    CUI.Kit.Panel(box)
     num = box:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(num, 20, nil)
+    CUI.Kit.Font(num, 20, nil)
     num:SetPoint("LEFT", 8, 0)
     labelText = box:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(labelText, 15, nil)
+    CUI.Kit.Font(labelText, 15, nil)
     labelText:SetPoint("LEFT", num, "RIGHT", 10, 0)
     box:Hide()
     mod.ApplyKickPosition()
@@ -122,7 +123,7 @@ local function Paint()
     local n = #rot.names
     local who = rot.names[rot.count]
     local nextUp = rot.count % n + 1
-    local display = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
+    local display = (CUI.GetNickname and CUI.GetNickname(who)) or who
     num:SetText(rot.count)
     if rot.count == rot.mine and rot.casting then
         box._kitBg:SetColorTexture(0.80, 0.15, 0.12, 0.95)
@@ -198,11 +199,11 @@ boss:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered, inEncounter
 boss:SetScript("OnEvent", function(_, evt, _, encounterName)
     if evt == "PLAYER_ENTERING_WORLD" then
-        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
+        if registered or InCombatLockdown() or not CUI.RegisterUnlockElements then return end
         Build()
         registered = true
-        CludesUI:RegisterUnlockElements({
-            CludesUI.MakeUnlockElement({
+        CUI:RegisterUnlockElements({
+            CUI.MakeUnlockElement({
                 key = "RLEAD_Kicks",
                 label = "Kick Rotation",
                 group = "Raid Lead",

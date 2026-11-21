@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_BossFrames.lua
 --
@@ -92,7 +93,7 @@ do
     -- WoW Forever: the class's best heal the spellbook holds (CludesUI.FOREVER_HEAL_SPELLS, best
     -- first); nil when the class has none or has not learned one yet.
     BossKit.ForeverKnownHeal = function(pClass)
-        local entries = CludesUI.FOREVER_HEAL_SPELLS[pClass]
+        local entries = CUI.FOREVER_HEAL_SPELLS[pClass]
         if not entries then return nil end
         local bank = C_SpellBook and C_SpellBook.IsSpellInSpellBook and Enum.SpellBookSpellBank
         for index = 1, #entries do
@@ -154,9 +155,9 @@ do
         if fallback.display == "always" then return true end
         if fallback.display == "healers" then
             -- WoW Forever: a class that can heal counts as its healing spec.
-            if CludesUI.IS_FOREVER then
+            if CUI.IS_FOREVER then
                 local _, pClass = UnitClass("player")
-                return CludesUI.FOREVER_HEAL_SPELLS[pClass] ~= nil
+                return CUI.FOREVER_HEAL_SPELLS[pClass] ~= nil
             end
             local specInfo = GetSpecialization and GetSpecialization()
             local role = specInfo and GetSpecializationRole and GetSpecializationRole(specInfo)
@@ -193,12 +194,12 @@ do
             local color = cfg.hoverBorderColor or { r = 1, g = 1, b = 1 }
             region, g, bcol, a = color.r, color.g, color.b, cfg.hoverBorderAlpha or 1
             raised, hlSize = true, cfg.hoverBorderSize or 1
-            hlPx = CludesUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
+            hlPx = CUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
         elseif targeted then
             local color = cfg.targetBorderColor or { r = 1, g = 1, b = 1 }
             region, g, bcol, a = color.r, color.g, color.b, cfg.targetBorderAlpha or 1
             raised, hlSize = true, cfg.targetBorderSize or 1
-            hlPx = CludesUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
+            hlPx = CUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
         else
             local color = cfg.borderColor or { r = 0, g = 0, b = 0 }
             region, g, bcol, a = color.r, color.g, color.b, cfg.borderAlpha or 1
@@ -215,7 +216,7 @@ do
             widget._borderFrame:SetFrameLevel(lvl)
             if boxHolder then boxHolder:SetFrameLevel(lvl + 1) end
             -- Textured styles: the backdrop child too (see ApplyBorderLevel).
-            local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[widget._borderFrame]
+            local edge = CUI._bdBorderData and CUI._bdBorderData[widget._borderFrame]
             if edge then edge:SetFrameLevel(lvl) end
         end
         if (cfg.borderSize or 1) <= 0 then
@@ -226,7 +227,7 @@ do
             region, g, bcol = mod.RF_VisibleHighlight(cfg, region, g, bcol)
         end
         widget._borderFrame._hlBorderSize = nil
-        CludesUI.SetBorderStyleColor(widget._borderFrame, region, g, bcol, a)
+        CUI.SetBorderStyleColor(widget._borderFrame, region, g, bcol, a)
     end
 
     -- Apply the border style (size/color/texture/offsets) to one button, from its FB.Source.
@@ -240,22 +241,22 @@ do
         local compact = mod.RF_PetCompactOn(widget, cfg)
         if compact or (skinData and skinData._petCompactBorder) then skinData._petCompactBorder = compact end
         if compact then
-            CludesUI.ApplyBorderStyle(widget._borderFrame, 0, 0, 0, 0, 0, "solid")
+            CUI.ApplyBorderStyle(widget._borderFrame, 0, 0, 0, 0, 0, "solid")
             BossKit.ApplyBorderColor(widget)
-            CludesUI.RoundCorners(widget, 0)
+            CUI.RoundCorners(widget, 0)
             return
         end
         if widget.stockEdge then
             widget._borderFrame:SetFrameLevel(pl + 8)
-            CludesUI.ApplyBorderStyle(widget._borderFrame, 0, 0, 0, 0, 0, "solid")
+            CUI.ApplyBorderStyle(widget._borderFrame, 0, 0, 0, 0, 0, "solid")
             widget._borderFrame._hlBorderSize = nil
             mod.RF_StockSeat(widget)
             BossKit.ApplyBorderColor(widget)
-            CludesUI.RoundCorners(widget, 0)
+            CUI.RoundCorners(widget, 0)
             return
         end
         widget._borderFrame:SetFrameLevel(cfg.borderBehind and math.max(0, pl - 1) or (pl + 8))
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             widget._borderFrame,
             bs,
             bc.r,
@@ -270,14 +271,14 @@ do
             "unitframes",
             bs,
             nil,
-            CludesUI.BorderPx(cfg.borderSizePx, bs, cfg.borderTexture or "solid")
+            CUI.BorderPx(cfg.borderSizePx, bs, cfg.borderTexture or "solid")
         )
         BossKit.ApplyBorderColor(widget)
         -- Rounded corners with the owner's Corner Radius, as on the raid cells
         -- (CludesUI_RoundedCorners.lua; nothing at radius 0).
         local radius = cfg.cornerRadius or 0
         if radius > 0 then
-            CludesUI.RoundCorners(widget, radius, {
+            CUI.RoundCorners(widget, radius, {
                 roots = { widget._health },
                 textures = { widget._bg },
                 border = widget._borderFrame,
@@ -285,7 +286,7 @@ do
                 corners = cfg.cornerMask,
             })
         else
-            CludesUI.RoundCorners(widget, 0)
+            CUI.RoundCorners(widget, 0)
         end
     end
 
@@ -436,8 +437,8 @@ do
             widget:SetAttribute("*type1", "target")
             widget:RegisterForClicks("AnyUp")
             -- The engine gates SecureUnitButton's togglemenu; route right-click through a SecureActionButton proxy so the menu works without taint.
-            if CludesUI.AttachSecureUnitMenu then
-                CludesUI.AttachSecureUnitMenu(widget)
+            if CUI.AttachSecureUnitMenu then
+                CUI.AttachSecureUnitMenu(widget)
             else
                 widget:SetAttribute("*type2", "togglemenu")
             end
@@ -572,7 +573,7 @@ do
         end
         -- Same grid as FB.FreePin: the boss container's own scale.
         local c = BossKit.container
-        return CludesUI.PP.SnapForES(cfg.cellSpacing or -1, (c or UIParent):GetEffectiveScale())
+        return CUI.PP.SnapForES(cfg.cellSpacing or -1, (c or UIParent):GetEffectiveScale())
     end
 
     -- Re-apply all setting-derived properties (size, slots, texture, fonts, text anchors). OOC only;
@@ -692,7 +693,7 @@ do
     -- position at the container's own scale, or every border inside it blurs. A CENTER pin snaps
     -- with the container's size so odd-pixel dimensions still put both edges on whole pixels.
     BossKit.FreePin = function(c, anchorPoint, posX, posY)
-        local P = CludesUI.PP
+        local P = CUI.PP
         local unitX, unitY = UIParent:GetCenter()
         if unitX then
             local es = c:GetEffectiveScale()
@@ -1024,7 +1025,7 @@ do
         local _, pClass = UnitClass("player")
         BossKit.rangeSpell = (role == "HEALER") and BossKit.RANGE_HEAL[pClass] or nil
         -- WoW Forever: a healing class range-checks with its best known heal.
-        if CludesUI.IS_FOREVER then BossKit.rangeSpell = BossKit.ForeverKnownHeal(pClass) end
+        if CUI.IS_FOREVER then BossKit.rangeSpell = BossKit.ForeverKnownHeal(pClass) end
         if not BossKit.rangeSpell then
             for _, btn in ipairs(BossKit.buttons) do
                 btn:SetAlpha(1)
@@ -1109,15 +1110,15 @@ do
             local mbg = m:CreateTexture(nil, "BACKGROUND")
             mbg:SetAllPoints()
             mbg:SetColorTexture(0.088, 0.098, 0.111, 0.95)
-            local ar, ag, ab = CludesUI.ResolveActiveAccent()
-            CludesUI.MakeBorder(m, ar or 1, ag or 1, ab or 1, 0.6)
+            local ar, ag, ab = CUI.ResolveActiveAccent()
+            CUI.MakeBorder(m, ar or 1, ag or 1, ab or 1, 0.6)
             local labelFS = m:CreateFontString(nil, "OVERLAY")
-            CludesUI.PrimeFontShadow(labelFS, true)
-            labelFS:SetFont(CludesUI.GetFontPath("raidFrames"), 11, "")
+            CUI.PrimeFontShadow(labelFS, true)
+            labelFS:SetFont(CUI.GetFontPath("raidFrames"), 11, "")
             labelFS:SetTextColor(1, 1, 1, 0.75)
             labelFS:SetPoint("CENTER", m, "CENTER")
             labelFS:SetWordWrap(false)
-            labelFS:SetText(CludesUI.L(labelText))
+            labelFS:SetText(CUI.L(labelText))
             m:SetScript("OnDragStart", function(self) self:StartMoving() end)
             m:SetScript("OnDragStop", function(self)
                 self:StopMovingOrSizing()
@@ -1138,7 +1139,7 @@ do
             end)
             ownerFrame.mover = m
             -- Close the mover with the options panel so it can't be stranded.
-            if CludesUI._mainFrame then CludesUI._mainFrame:HookScript("OnHide", function() m:Hide() end) end
+            if CUI._mainFrame then CUI._mainFrame:HookScript("OnHide", function() m:Hide() end) end
         end
 
         ownerFrame.mover:ClearAllPoints()

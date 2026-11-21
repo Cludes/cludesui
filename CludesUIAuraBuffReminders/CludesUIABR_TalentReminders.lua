@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then return end -- WoW Forever: talent reminders are retail-only (its options page is not built there)
+local CUI = CludesUI
+if CUI and CUI.IS_FOREVER then return end -- WoW Forever: talent reminders are retail-only (its options page is not built there)
 -------------------------------------------------------------------------------
 --  CludesUIABR_TalentReminders.lua
 --  Standalone talent reminder system. Zero dependency on ABR aura/buff logic.
@@ -137,11 +138,11 @@ local function GetOrCreateIcon(index)
     iconTex:SetAllPoints()
     iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     button._icon = iconTex
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix then Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", 7) end
     local textValue = button:CreateFontString(nil, "OVERLAY")
     textValue:SetPoint("TOP", button, "BOTTOM", 0, -2)
-    CludesUI.ApplyModuleFont(textValue, nil, 11, "auraBuff")
+    CUI.ApplyModuleFont(textValue, nil, 11, "auraBuff")
     textValue:SetTextColor(1, 1, 1, 1)
     button._text = textValue
     talentIconPool[index] = button
@@ -163,7 +164,7 @@ end
 local function ShowIcon(iconIdx, record)
     local button = GetOrCreateIcon(iconIdx)
     SetupIcon(button, record)
-    CludesUI.ApplyModuleFont(button._text, nil, 11, "auraBuff")
+    CUI.ApplyModuleFont(button._text, nil, 11, "auraBuff")
     button._text:SetTextColor(1, 1, 1, 1)
     button._text:Show()
     button:Show()
@@ -195,7 +196,7 @@ local function HideIcons()
         end
     end
     wipe(talentActiveIcons)
-    if talentIconAnchor then CludesUI.SetElementVisibility(talentIconAnchor, false) end
+    if talentIconAnchor then CUI.SetElementVisibility(talentIconAnchor, false) end
 end
 
 -------------------------------------------------------------------------------
@@ -367,7 +368,7 @@ local function Refresh()
             ShowIcon(index, m)
         end
         LayoutIcons()
-        CludesUI.SetElementVisibility(talentIconAnchor, true)
+        CUI.SetElementVisibility(talentIconAnchor, true)
     end
 end
 
@@ -418,7 +419,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
         talentIconAnchor:EnableMouse(false)
         talentIconAnchor:SetPoint("CENTER", UIParent, "CENTER", 0, 100)
         talentIconAnchor:Show()
-        CludesUI.SetElementVisibility(talentIconAnchor, false)
+        CUI.SetElementVisibility(talentIconAnchor, false)
 
         -- Register ongoing events
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

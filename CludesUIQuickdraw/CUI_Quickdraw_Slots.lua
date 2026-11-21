@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Slots.lua
 --
@@ -151,7 +152,7 @@ end
 -- On ns with no local alias, and called back through ns below: written when
 -- the module was one file whose main chunk was at Lua's ceiling of 200 locals
 -- (see UsableSlots), where a local here spent the last one.
-mod.SpecPositionName = function(index) return CludesUI.Lf("Specialization %1$d", index or 0) end
+mod.SpecPositionName = function(index) return CUI.Lf("Specialization %1$d", index or 0) end
 
 -------------------------------------------------------------------------------
 --  Dynamic Profession: a dynamicprofession slot names a POSITION (1/2 = the
@@ -262,19 +263,19 @@ mod.ProfessionPositionName = function(index, extra, specialization)
         -- WoW Forever's professions book reads GetProfessions as prof1, prof2,
         -- First Aid, fishing, cooking: there the position is First Aid, named
         -- by its skill line (129) as the client spells it.
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             base = C_TradeSkillUI.GetTradeSkillDisplayName(129)
-            if type(base) ~= "string" or base == "" then base = CludesUI.L("First Aid") end
+            if type(base) ~= "string" or base == "" then base = CUI.L("First Aid") end
         else
             base = ARCHAEOLOGY or "Archaeology"
         end
     else
-        base = CludesUI.Lf("Profession %1$d", index or 0)
+        base = CUI.Lf("Profession %1$d", index or 0)
     end
     if specialization then
-        return CludesUI.Lf("%1$s Specialization Ability", base)
+        return CUI.Lf("%1$s Specialization Ability", base)
     elseif extra then
-        return CludesUI.Lf("%1$s Extra Ability", base)
+        return CUI.Lf("%1$s Extra Ability", base)
     end
     return base
 end
@@ -540,7 +541,7 @@ do
     -- button and a Talents entry follows it. Forever Essentials' routes come
     -- first: they open its Classic Spellbook and Classic Talents while those
     -- are on and click the micro buttons otherwise.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         for _, def in ipairs(PANELS) do
             if def.key == "greatvault" then def.fire = nil end
         end
@@ -590,7 +591,7 @@ do
             local s = _G[g]
             if type(s) == "string" and s ~= "" then return s end
         end
-        return CludesUI.L(def.default)
+        return CUI.L(def.default)
     end
 
     -- The macro a panel entry fires, or nil for the ones FireInsecure takes.

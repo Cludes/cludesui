@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Themed Inspect Sheet
 --  Mirrors the Character Sheet skinning for inspected characters.
@@ -11,7 +12,7 @@ local GetItemInfo = C_Item.GetItemInfo
 local GetItemInfoInstant = C_Item.GetItemInfoInstant
 
 -- External weak-keyed lookup table for frame state (prevents tainting Blizzard frames)
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -- Equipment slot lists
 local CUI_ALL_SLOTS = {
@@ -113,7 +114,7 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
     local inspectUnit = InspectFrame and InspectFrame.unit
     if not inspectUnit then return end
 
-    local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
     local linkText = GetInventoryItemLink(inspectUnit, slotID)
     GetFFD(slotFrame).itemLink = linkText
 
@@ -125,8 +126,8 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
         end
     end
 
-    if CludesUI and CludesUI.PanelPP then
-        CludesUI.PanelPP.SetBorderColor(slotFrame, borderR, borderG, borderB, 1)
+    if CUI and CUI.PanelPP then
+        CUI.PanelPP.SetBorderColor(slotFrame, borderR, borderG, borderB, 1)
     end
     GetFFD(slotFrame).border = true
 
@@ -158,7 +159,7 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
 
             levelText:SetText(itemLevel)
 
-            local displayColor = CludesUI.GetItemLevelColor(linkText, quality)
+            local displayColor = CUI.GetItemLevelColor(linkText, quality)
             levelText:SetTextColor(displayColor.r, displayColor.g, displayColor.b, 0.9)
             levelText:Show()
 
@@ -176,7 +177,7 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
     local enchantText = linkText
         and not GetFFD(slotFrame).enchantText
         and not skipLabels
-        and CludesUI.GetEnchantText(slotID, inspectUnit)
+        and CUI.GetEnchantText(slotID, inspectUnit)
     -- An enchanted item whose tooltip has not arrived reads as no enchant:
     -- no label until it does, never the red missing-enchant icon.
     if enchantText == "" then
@@ -193,7 +194,7 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
 
         local enchantsShown = (not CludesUIDB) or (CludesUIDB.inspectShowEnchants ~= false)
         local styled = CludesUIDB and CludesUIDB.inspectEnchantNames
-        local useName = (styled or CludesUI.IS_FOREVER) and hasEnchant and tipText and tipText ~= ""
+        local useName = (styled or CUI.IS_FOREVER) and hasEnchant and tipText and tipText ~= ""
         local captionText = useName and tipText or iconOnly
 
         if enchantsShown and captionText and captionText ~= "" then
@@ -204,9 +205,9 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
             local enchantText = GetFFD(slotFrame).cachedEnchantText
                 or textLayer:CreateFontString(nil, "OVERLAY")
             if useName and styled then
-                enchantText:SetFont(fontFile, enchantSize, CludesUI.SlugFlag("OUTLINE, SLUG"))
+                enchantText:SetFont(fontFile, enchantSize, CUI.SlugFlag("OUTLINE, SLUG"))
                 local _, _, quality = GetItemInfo(linkText)
-                local color = CludesUI.GetItemLevelColor(linkText, quality)
+                local color = CUI.GetItemLevelColor(linkText, quality)
                 enchantText:SetTextColor(
                     color.r + (1 - color.r) * 0.5,
                     color.g + (1 - color.g) * 0.5,
@@ -278,11 +279,11 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
             hoverArea:EnableMouse(true)
 
             hoverArea:SetScript("OnEnter", function()
-                if tipText and tipText ~= "" and CludesUI.ShowWidgetTooltip then
-                    CludesUI.ShowWidgetTooltip(hoverArea, tipText)
+                if tipText and tipText ~= "" and CUI.ShowWidgetTooltip then
+                    CUI.ShowWidgetTooltip(hoverArea, tipText)
                 end
             end)
-            hoverArea:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            hoverArea:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             hoverArea:Show()
 
             GetFFD(slotFrame).enchantHoverFrame = hoverArea
@@ -292,7 +293,7 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
     -- Upgrade track label (font size matches CharacterSheet)
     if linkText and not GetFFD(slotFrame).upgradeText and GetFFD(slotFrame).iLvlText and not skipLabels then
         local upgradeTrackSize = CludesUIDB and CludesUIDB.charSheetUpgradeTrackSize or 11
-        local upgradeText, upgradeColor = CludesUI.GetUpgradeTrack(linkText)
+        local upgradeText, upgradeColor = CUI.GetUpgradeTrack(linkText)
         if upgradeText and upgradeText ~= "" then
             local upgradeLabel = GetFFD(slotFrame).cachedUpgradeText
                 or textLayer:CreateFontString(nil, "OVERLAY")
@@ -637,8 +638,8 @@ local function SkinInspectSheet()
     end
 
     -- Add pixel-perfect border to the frame
-    if CludesUI and CludesUI.PanelPP then
-        CludesUI.PanelPP.CreateBorder(widget, 0.2, 0.2, 0.2, 1, 1, "OVERLAY", 7)
+    if CUI and CUI.PanelPP then
+        CUI.PanelPP.CreateBorder(widget, 0.2, 0.2, 0.2, 1, 1, "OVERLAY", 7)
     end
 
     -- Style close button
@@ -649,7 +650,7 @@ local function SkinInspectSheet()
     -- User clicks the actual Blizzard button so the secure handler fires
     -- natively with no addon taint in the call stack.
     do
-        local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+        local fontFile = CUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
         -- Narrower beside Forever's three-slot weapon row.
         local BTN_W, BTN_H = InspectRangedSlot and 76 or 90, 21
         local BTN_Y = 8
@@ -767,8 +768,8 @@ local function SkinInspectSheet()
             end
 
             -- Add rarity-colored border
-            if CludesUI and CludesUI.PanelPP then
-                CludesUI.PanelPP.CreateBorder(slotFrame, borderR, borderG, borderB, 1, 2, "OVERLAY", 7)
+            if CUI and CUI.PanelPP then
+                CUI.PanelPP.CreateBorder(slotFrame, borderR, borderG, borderB, 1, 2, "OVERLAY", 7)
             end
 
             local hostFrame = slotFrame:GetParent()
@@ -801,8 +802,8 @@ local function SkinInspectSheet()
     -- matches the CharacterSheet eyeball. State lives in FFD so it survives the
     -- frequent inspect re-skins (the SetAlpha above re-applies it each pass).
     if not GetFFD(widget).textEyeBtn then
-        local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-        local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
+        local EYE_VISIBLE = CUI.EYE_VISIBLE_ICON
+        local EYE_INVISIBLE = CUI.EYE_INVISIBLE_ICON
         local eyeBtn = CreateFrame("Button", "CUI_InspectSheet_TextEyeBtn", widget)
         eyeBtn:SetSize(20, 20)
         eyeBtn:SetPoint("TOPLEFT", widget, "TOPLEFT", 14, -6)
@@ -821,7 +822,7 @@ local function SkinInspectSheet()
         end)
         eyeBtn:SetScript("OnEnter", function(self)
             self:SetAlpha(0.8)
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
                 GetFFD(widget).textHidden and "Show Item Text" or "Hide Item Text",
                 { width = 135 }
@@ -829,7 +830,7 @@ local function SkinInspectSheet()
         end)
         eyeBtn:SetScript("OnLeave", function(self)
             self:SetAlpha(0.4)
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
         GetFFD(widget).textEyeBtn = eyeBtn
     end
@@ -875,7 +876,7 @@ local function SkinInspectSheet()
     -- Average item level + M+ score, centered below the title/level text.
     -- Anchored to frame TOP so they sit below the character info header.
     do
-        local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+        local fontFile = CUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
 
         -- Text overlay frame above model bg and fade
         if not GetFFD(widget).textOverlay then
@@ -939,8 +940,8 @@ local function SkinInspectSheet()
     end
 
     -- Style Tabs (InspectFrameTab1, 2, 3)
-    local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
-    local ACC = CludesUI.CLUDES_GREEN or { r = 0.51, g = 0.784, b = 1 }
+    local fontFile = CUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+    local ACC = CUI.CLUDES_GREEN or { r = 0.51, g = 0.784, b = 1 }
     local FRAME_BG_R, FRAME_BG_G, FRAME_BG_B = 0.03, 0.045, 0.05
 
     local inspTabs = {}
@@ -1018,16 +1019,16 @@ local function SkinInspectSheet()
             -- Add underline for active tab
             if not GetFFD(tabBtn).underline then
                 local underline = tabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
-                if CludesUI and CludesUI.PanelPP and CludesUI.PanelPP.DisablePixelSnap then
-                    CludesUI.PanelPP.DisablePixelSnap(underline)
-                    underline:SetHeight(CludesUI.PanelPP.mult or 1)
+                if CUI and CUI.PanelPP and CUI.PanelPP.DisablePixelSnap then
+                    CUI.PanelPP.DisablePixelSnap(underline)
+                    underline:SetHeight(CUI.PanelPP.mult or 1)
                 else
                     underline:SetHeight(1)
                 end
                 underline:SetPoint("BOTTOMLEFT", tabBtn, "BOTTOMLEFT", 0, 0)
                 underline:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
                 underline:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
-                CludesUI.RegAccent({ type = "solid", obj = underline, a = 1 })
+                CUI.RegAccent({ type = "solid", obj = underline, a = 1 })
                 underline:Hide()
                 GetFFD(tabBtn).underline = underline
             else
@@ -1224,7 +1225,7 @@ end
 local function SyncDock()
     local insp, castFrame = InspectFrame, _G.CharacterFrame
     if not insp or not castFrame then return end
-    if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
+    if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CUI.BlizzWindowSkinsKilled()) then
         return
     end
 
@@ -1262,7 +1263,7 @@ end
 
 -- Main function to apply themed inspect sheet
 local function ApplyThemedInspectSheet()
-    if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
+    if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CUI.BlizzWindowSkinsKilled()) then
         return
     end
 
@@ -1275,7 +1276,7 @@ end
 
 -- Persistently hide NineSlice borders
 local function EnsureInspectNineSliceHidden()
-    if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
+    if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CUI.BlizzWindowSkinsKilled()) then
         return
     end
     if not InspectFrame then return end
@@ -1299,8 +1300,8 @@ local function EnsureInspectNineSliceHidden()
 end
 
 -- Register with parent addon
-if CludesUI then
-    CludesUI.ApplyThemedInspectSheet = ApplyThemedInspectSheet
+if CUI then
+    CUI.ApplyThemedInspectSheet = ApplyThemedInspectSheet
 
     -- Register hooks when Blizzard_InspectUI loads (it's load-on-demand,
     -- so InspectFrame doesn't exist at PLAYER_LOGIN)
@@ -1317,14 +1318,14 @@ if CludesUI then
             SyncDock()
             C_Timer.After(0.1, function()
                 if not InspectFrame or not InspectFrame:IsShown() then return end
-                if CludesUI._refreshInspectItemLevelVisibility then
-                    CludesUI._refreshInspectItemLevelVisibility()
+                if CUI._refreshInspectItemLevelVisibility then
+                    CUI._refreshInspectItemLevelVisibility()
                 end
-                if CludesUI._refreshInspectUpgradeTrackVisibility then
-                    CludesUI._refreshInspectUpgradeTrackVisibility()
+                if CUI._refreshInspectUpgradeTrackVisibility then
+                    CUI._refreshInspectUpgradeTrackVisibility()
                 end
-                if CludesUI._refreshInspectEnchantsVisibility then
-                    CludesUI._refreshInspectEnchantsVisibility()
+                if CUI._refreshInspectEnchantsVisibility then
+                    CUI._refreshInspectEnchantsVisibility()
                 end
             end)
         end)
@@ -1441,9 +1442,9 @@ if CludesUI then
 
     -- Options refresher for the enchant display: restyles every slot of a
     -- shown sheet; a hidden one restyles on its next show.
-    function CludesUI._refreshInspectSlotLabels()
+    function CUI._refreshInspectSlotLabels()
         if not (InspectFrame and InspectFrame:IsShown()) then return end
-        if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
+        if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CUI.BlizzWindowSkinsKilled()) then
             return
         end
         RefreshSlotStyles()
@@ -1463,17 +1464,17 @@ if CludesUI then
         if widget then
             ApplyTabVisibility(InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown())
             -- Apply visibility settings after styling
-            if CludesUI._refreshInspectItemLevelVisibility then
-                CludesUI._refreshInspectItemLevelVisibility()
+            if CUI._refreshInspectItemLevelVisibility then
+                CUI._refreshInspectItemLevelVisibility()
             end
-            if CludesUI._refreshInspectUpgradeTrackVisibility then
-                CludesUI._refreshInspectUpgradeTrackVisibility()
+            if CUI._refreshInspectUpgradeTrackVisibility then
+                CUI._refreshInspectUpgradeTrackVisibility()
             end
-            if CludesUI._refreshInspectEnchantsVisibility then
-                CludesUI._refreshInspectEnchantsVisibility()
+            if CUI._refreshInspectEnchantsVisibility then
+                CUI._refreshInspectEnchantsVisibility()
             end
-            if CludesUI._refreshInspectAverageItemLevelVisibility then
-                CludesUI._refreshInspectAverageItemLevelVisibility()
+            if CUI._refreshInspectAverageItemLevelVisibility then
+                CUI._refreshInspectAverageItemLevelVisibility()
             end
         end
     end)
@@ -1505,7 +1506,7 @@ do
 end
 
 -- Function to refresh item level visibility when toggle changes
-function CludesUI._refreshInspectItemLevelVisibility()
+function CUI._refreshInspectItemLevelVisibility()
     if not InspectFrame or not InspectPaperDollItemsFrame then return end
 
     local showItemLevel = (not CludesUIDB) or (CludesUIDB.inspectShowItemLevel ~= false)
@@ -1521,7 +1522,7 @@ function CludesUI._refreshInspectItemLevelVisibility()
 end
 
 -- Function to refresh upgrade track visibility when toggle changes
-function CludesUI._refreshInspectUpgradeTrackVisibility()
+function CUI._refreshInspectUpgradeTrackVisibility()
     if not InspectFrame or not InspectPaperDollItemsFrame then return end
 
     local showUpgradeTrack = (not CludesUIDB) or (CludesUIDB.inspectShowUpgradeTrack ~= false)
@@ -1537,7 +1538,7 @@ function CludesUI._refreshInspectUpgradeTrackVisibility()
 end
 
 -- Function to refresh enchants visibility when toggle changes
-function CludesUI._refreshInspectEnchantsVisibility()
+function CUI._refreshInspectEnchantsVisibility()
     if not InspectFrame or not InspectPaperDollItemsFrame then return end
 
     local enchantsShown = (not CludesUIDB) or (CludesUIDB.inspectShowEnchants ~= false)

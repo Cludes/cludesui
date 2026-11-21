@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  BossTimeline.lua -- Raid Lead: boss timelines and encounter alerts.
 --
@@ -83,9 +84,9 @@ local function Data()
     return payload
 end
 
-local function Font() return CludesUI.GetFontPath(nil) end
+local function Font() return CUI.GetFontPath(nil) end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
-local function Say(textValue) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
+local function Say(textValue) CUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
 
 local function Keywords(category)
     local entries = {}
@@ -212,13 +213,13 @@ local function Bar(idx)
     widget.icon:SetPoint("RIGHT", widget, "LEFT", -2, 0)
     widget.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     widget.name = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.name, 11, nil)
+    CUI.Kit.Font(widget.name, 11, nil)
     widget.name:SetPoint("LEFT", 4, 0)
     widget.name:SetPoint("RIGHT", -40, 0)
     widget.name:SetJustifyH("LEFT")
     widget.name:SetWordWrap(false)
     widget.time = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.time, 11, nil)
+    CUI.Kit.Font(widget.time, 11, nil)
     widget.time:SetPoint("RIGHT", -4, 0)
     barList[idx] = widget
     return widget
@@ -535,7 +536,7 @@ local function Row(idx)
     r.icon:SetPoint("LEFT", 8, 0)
     r.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     r.text = r:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(r.text, 12, nil)
+    CUI.Kit.Font(r.text, 12, nil)
     r.text:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 6, 0)
     r.text:SetWidth(530)
     r.text:SetJustifyH("LEFT")
@@ -629,7 +630,7 @@ local function BuildWindow()
     window = CreateFrame("Frame", "CludesUIBossTimeline", UIParent)
     window:SetSize(620, 520)
     window:SetPoint("CENTER", 0, 30)
-    CludesUI.Kit.Panel(window, 0.96)
+    CUI.Kit.Panel(window, 0.96)
     window:SetMovable(true)
     window:EnableMouse(true)
     window:RegisterForDrag("LeftButton")
@@ -638,18 +639,18 @@ local function BuildWindow()
     window:SetFrameStrata("HIGH")
     window:SetClampedToScreen(true)
     local title = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(title, 15, nil)
+    CUI.Kit.Font(title, 15, nil)
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Boss Timeline")
-    CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, nil)
+    CUI.Kit.AccentText(title)
+    local close = CUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, nil)
     close:SetPoint("TOPRIGHT", -5, -5)
-    local pick = CludesUI.Kit.Button(window, "", 90, 22, nil, { key = nil })
+    local pick = CUI.Kit.Button(window, "", 90, 22, nil, { key = nil })
     pick:SetSize(220, 22)
     pick:SetPoint("TOPLEFT", 10, -32)
     pick:SetText("Pick a boss")
     pick:SetScript("OnClick", function(self)
-        CludesUI.Kit.ContextMenu(self, function(_, root)
+        CUI.Kit.ContextMenu(self, function(_, root)
             local seen = {}
             local ids = {}
             for _, ident in ipairs(Data().order or {}) do
@@ -679,7 +680,7 @@ local function BuildWindow()
             end
         end)
     end)
-    local diff = CludesUI.Kit.Button(window, "", 90, 22, nil, { key = nil })
+    local diff = CUI.Kit.Button(window, "", 90, 22, nil, { key = nil })
     diff:SetSize(90, 22)
     diff:SetPoint("LEFT", pick, "RIGHT", 6, 0)
     diff:SetText("Mythic")
@@ -688,7 +689,7 @@ local function BuildWindow()
         self:SetText(shownDiff)
         Draw()
     end)
-    local test = CludesUI.Kit.Button(window, "", 90, 22, nil, { key = nil })
+    local test = CUI.Kit.Button(window, "", 90, 22, nil, { key = nil })
     test:SetSize(90, 22)
     test:SetPoint("LEFT", diff, "RIGHT", 6, 0)
     test:SetText("Test")
@@ -699,9 +700,9 @@ local function BuildWindow()
         end
     end)
     window.boss = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(window.boss, 13, nil)
+    CUI.Kit.Font(window.boss, 13, nil)
     window.boss:SetPoint("TOPLEFT", 10, -62)
-    local scroll = (CludesUI.Kit.Scroll(window))
+    local scroll = (CUI.Kit.Scroll(window))
     scroll:SetPoint("TOPLEFT", 10, -84)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     contentFrame = CreateFrame("Frame", nil, scroll)
@@ -745,11 +746,11 @@ local registered = false
 local reg = CreateFrame("Frame")
 reg:RegisterEvent("PLAYER_ENTERING_WORLD")
 reg:SetScript("OnEvent", function()
-    if registered or not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
+    if registered or not (CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then return end
     registered = true
     BuildBars()
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = "RLEAD_Timeline",
             label = "Boss Timeline Bars",
             group = "Raid Lead",

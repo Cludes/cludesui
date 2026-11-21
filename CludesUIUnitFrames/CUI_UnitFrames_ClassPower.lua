@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ClassPower.lua
 --
@@ -11,8 +12,8 @@ local _, mod = ...
 
 local math_floor = math.floor
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
-local MakeBorder = CludesUI.MakeBorder
+local Pix = CUI.PP
+local MakeBorder = CUI.MakeBorder
 
 local Inner = mod._internals
 local frameList = Inner.frames
@@ -39,12 +40,12 @@ mod._cpCastWatcher:Hide()
 -- AnimationGroup is the engine's entry object and bills its creation context. Bodies
 -- read a swappable ns function so per-build closures stay per-build; a ticker runs only
 -- between Start()/Stop() and pauses while its host is hidden.
-mod._cpDriverTick = CludesUI.Tick.NewAnimTicker(mod._cpDriver, function()
+mod._cpDriverTick = CUI.Tick.NewAnimTicker(mod._cpDriver, function()
     local func = mod._cpTickFn
     if func then func() end
     return true
 end, 0.1)
-mod._cpWatchTick = CludesUI.Tick.NewAnimTicker(mod._cpCastWatcher, function()
+mod._cpWatchTick = CUI.Tick.NewAnimTicker(mod._cpCastWatcher, function()
     local func = mod._cpWatchFn
     if func then func() end
     return true
@@ -122,8 +123,8 @@ local function CreateCustomClassPower(playerFrame, style)
         -- For custom resources, get live max from CludesUI helpers
         if powerType == "SOUL_FRAGMENTS_VENGEANCE" then
             maxPower = 6
-        elseif powerType == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
-            local _, mMax = CludesUI.GetMaelstromWeapon()
+        elseif powerType == "MAELSTROM_WEAPON" and CUI and CUI.GetMaelstromWeapon then
+            local _, mMax = CUI.GetMaelstromWeapon()
             maxPower = (mMax and mMax > 0) and mMax or customMax
         elseif powerType == "TIP_OF_THE_SPEAR" then
             maxPower = customMax
@@ -134,8 +135,8 @@ local function CreateCustomClassPower(playerFrame, style)
             maxPower = customMax or 5
         elseif powerType == "SOUL_FRAGMENTS_DEVOURER" then
             local maxC = customMax or 50
-            if CludesUI and CludesUI.GetSoulFragments then
-                local _, m = CludesUI.GetSoulFragments()
+            if CUI and CUI.GetSoulFragments then
+                local _, m = CUI.GetSoulFragments()
                 if m and m > 0 then maxC = m end
             end
             maxPower = maxC
@@ -239,11 +240,11 @@ local function CreateCustomClassPower(playerFrame, style)
         cr, cg, callback = cc.r, cc.g, cc.b
     else
         -- Pull from CUI global color system: resource color > class color
-        local rc = CludesUI.GetResourceColor(playerClass)
+        local rc = CUI.GetResourceColor(playerClass)
         if rc then
             cr, cg, callback = rc.r, rc.g, rc.b
         else
-            local classColor = CludesUI.GetClassColor(playerClass)
+            local classColor = CUI.GetClassColor(playerClass)
             if classColor then
                 cr, cg, callback = classColor.r, classColor.g, classColor.b
             else
@@ -379,8 +380,8 @@ local function CreateCustomClassPower(playerFrame, style)
                 end
             elseif powerType == "SOUL_FRAGMENTS_DEVOURER" then
                 local current, maxC = 0, customMax or 50
-                if CludesUI and CludesUI.GetSoulFragments then
-                    current, maxC = CludesUI.GetSoulFragments()
+                if CUI and CUI.GetSoulFragments then
+                    current, maxC = CUI.GetSoulFragments()
                     if not maxC or maxC <= 0 then maxC = customMax or 50 end
                 end
                 if staggerBar._lastMax ~= maxC then
@@ -391,8 +392,8 @@ local function CreateCustomClassPower(playerFrame, style)
                 -- Use class color (DH)
                 if not staggerBar._colorSet then
                     staggerBar._colorSet = true
-                    local rc = CludesUI.GetResourceColor("DEMONHUNTER")
-                    local cc = rc or (CludesUI.GetClassColor("DEMONHUNTER"))
+                    local rc = CUI.GetResourceColor("DEMONHUNTER")
+                    local cc = rc or (CUI.GetClassColor("DEMONHUNTER"))
                     if cc then staggerBar:GetStatusBarTexture():SetVertexColor(cc.r, cc.g, cc.b, 1) end
                 end
             end
@@ -405,10 +406,10 @@ local function CreateCustomClassPower(playerFrame, style)
             if powerType == "SOUL_FRAGMENTS_VENGEANCE" then
                 current = C_Spell and C_Spell.GetSpellCastCount and C_Spell.GetSpellCastCount(228477) or 0
                 max = 6
-            elseif powerType == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
-                current, max = CludesUI.GetMaelstromWeapon()
-            elseif powerType == "TIP_OF_THE_SPEAR" and CludesUI and CludesUI.GetTipOfTheSpear then
-                current, max = CludesUI.GetTipOfTheSpear()
+            elseif powerType == "MAELSTROM_WEAPON" and CUI and CUI.GetMaelstromWeapon then
+                current, max = CUI.GetMaelstromWeapon()
+            elseif powerType == "TIP_OF_THE_SPEAR" and CUI and CUI.GetTipOfTheSpear then
+                current, max = CUI.GetTipOfTheSpear()
             elseif powerType == "WHIRLWIND_STACKS" or powerType == "SWEEPING_STRIKES" then
                 -- Engine slot owns the display (CludesUI_WarriorCharges):
                 -- the true count fills the overlay bar C-side; legacy pips
@@ -438,7 +439,7 @@ local function CreateCustomClassPower(playerFrame, style)
             -- PLAYER_TARGET_CHANGED fires (measured on 1.60.1: up=3 while
             -- gcp=0 on the swap), with no later power event to correct it.
             -- Blizzard's own ComboFrame reads GetComboPoints for the same reason.
-            if CludesUI.IS_FOREVER == true and powerType == Enum.PowerType.ComboPoints and GetComboPoints then
+            if CUI.IS_FOREVER == true and powerType == Enum.PowerType.ComboPoints and GetComboPoints then
                 current = GetComboPoints("player", "target") or 0
             else
                 current = UnitPower("player", powerType) or 0
@@ -580,7 +581,7 @@ local function CreateCustomClassPower(playerFrame, style)
         -- changes the count with no power event behind it, and so does points
         -- moving to a new target (COMBO_TARGET_CHANGED, no payload). Blizzard's
         -- own combo displays refresh on these events for the same reason.
-        if CludesUI.IS_FOREVER == true and powerType == Enum.PowerType.ComboPoints then
+        if CUI.IS_FOREVER == true and powerType == Enum.PowerType.ComboPoints then
             eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
             eventFrame:RegisterEvent("COMBO_TARGET_CHANGED")
         end

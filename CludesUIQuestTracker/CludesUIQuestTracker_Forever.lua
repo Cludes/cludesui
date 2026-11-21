@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then return end
+local CUI = CludesUI
+if not CUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_Forever.lua - WoW Forever's quest tools.
 --
@@ -602,13 +603,13 @@ local function MakeFilterButton()
     button:SetNormalAtlas("ui-questtrackerbutton-filter")
     button:SetPushedAtlas("ui-questtrackerbutton-filter-pressed")
     button:SetHighlightAtlas("ui-questtrackerbutton-red-highlight", "ADD")
-    button:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, FilterTip()) end)
-    button:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+    button:SetScript("OnEnter", function(self) CUI.ShowWidgetTooltip(self, FilterTip()) end)
+    button:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
     button:SetScript("OnClick", function(self)
         TrackerNS.Set("filterEnabled", not Cfg("filterEnabled"))
         TrackerNS.ApplyQuestWatches()
-        CludesUI:RefreshPage()
-        CludesUI.ShowWidgetTooltip(self, FilterTip())
+        CUI:RefreshPage()
+        CUI.ShowWidgetTooltip(self, FilterTip())
     end)
     TrackerNS.FilterToggle = button
     TrackerNS.SkinHeader(headerFrame)
@@ -713,14 +714,14 @@ local soundFiles
 function TrackerNS.Sounds()
     if not soundFiles then
         local names, order
-        soundFiles, names, order = CludesUI.BuildAlertSoundTables()
+        soundFiles, names, order = CUI.BuildAlertSoundTables()
         -- After the bundled sounds, before the media library's "---" block.
         for i, peon in ipairs(PEON_SOUNDS) do
             local key, name, file = peon[1], peon[2], peon[3]
             soundFiles[key], names[key], isFile[key] = file, name, file
-            table.insert(order, #CludesUI.ALERT_SOUND_ORDER + i, key)
+            table.insert(order, #CUI.ALERT_SOUND_ORDER + i, key)
         end
-        CludesUI.AppendSharedMediaSounds(soundFiles, names, order)
+        CUI.AppendSharedMediaSounds(soundFiles, names, order)
         TrackerNS.SoundNames, TrackerNS.SoundOrder = names, order
     end
     return soundFiles, TrackerNS.SoundNames, TrackerNS.SoundOrder
@@ -728,7 +729,7 @@ end
 
 -- Also the options dropdown's preview.
 local function PlaySoundKey(key)
-    if key and key ~= "none" then CludesUI.PlaySoundPath(TrackerNS.Sounds()[key], isFile[key] ~= nil) end
+    if key and key ~= "none" then CUI.PlaySoundPath(TrackerNS.Sounds()[key], isFile[key] ~= nil) end
 end
 TrackerNS.PlaySoundKey = PlaySoundKey
 

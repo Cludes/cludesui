@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Secure.lua
 --
@@ -338,7 +339,7 @@ local function HideBlizzardBars()
     -- replacement of ours would run that paging insecure (blocked bar moves
     -- and errors in the gamepad buttons, in combat). A global once written
     -- stays tainted, so this is decided here, once, as the bars are taken.
-    if not CludesUI.PadGamepadUI() then
+    if not CUI.PadGamepadUI() then
         ActionBar_PageUp = function() ChangeManualPage(1) end
         ActionBar_PageDown = function() ChangeManualPage(-1) end
     end
@@ -356,10 +357,10 @@ local function HideBlizzardBars()
     -- owned by Blizzard's ValidateActionBarTransition(). No RegisterAttributeDriver on
     -- Blizzard-owned frames -- risks tainting protected state OverrideActionBar buttons
     -- inherit. Force all Blizzard action bars "enabled" via CVars so buttons work.
-    CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_1", "1", "CludesUIActionBars")
-    CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_2", "1", "CludesUIActionBars")
-    CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_3", "1", "CludesUIActionBars")
-    CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_4", "1", "CludesUIActionBars")
+    CUI.SetCVar("SHOW_MULTI_ACTIONBAR_1", "1", "CludesUIActionBars")
+    CUI.SetCVar("SHOW_MULTI_ACTIONBAR_2", "1", "CludesUIActionBars")
+    CUI.SetCVar("SHOW_MULTI_ACTIONBAR_3", "1", "CludesUIActionBars")
+    CUI.SetCVar("SHOW_MULTI_ACTIONBAR_4", "1", "CludesUIActionBars")
 end
 
 -------------------------------------------------------------------------------

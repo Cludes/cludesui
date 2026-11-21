@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- Blocks\MicroMenu.lua
 -- Micro menu block factory and Blizzard micro menu hider.
 
@@ -138,7 +139,7 @@ local MM_BLIZZARD_ATLAS = {
 -- WoW Forever's group finder emblem is a round eye, held small by the art's
 -- narrow width: it gets a square crop (this fraction of the art's width)
 -- instead of the shared trim, so it fills the slot's full height.
-local MM_SQUARE_CROP = CludesUI.IS_FOREVER and { lfg = 0.66 } or {}
+local MM_SQUARE_CROP = CUI.IS_FOREVER and { lfg = 0.66 } or {}
 
 local function FitBlizzardMicroIcon(iconTex, key)
     -- Native micro art has padding around its emblem. Trim that padding to
@@ -308,7 +309,7 @@ end
 -- Forever Essentials' routes come first: they open its Classic Spellbook and
 -- Classic Talents while those are on and click these buttons otherwise. The
 -- glyphs still come from the buttons themselves.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     MM_MICRO_BUTTON_NAMES.spell = { "CUI_SpellbookRoute", "SpellbookMicroButton" }
     MM_MICRO_BUTTON_NAMES.talent = { "CUI_TalentsRoute", "TalentMicroButton" }
     MM_ART_BUTTON.spell = "SpellbookMicroButton"
@@ -432,7 +433,7 @@ mmClickFunctions.menu = function(_, btnFrame)
         if not InCombatLockdown() then ToggleFrame(GameMenuFrame) end
     elseif btnFrame == "RightButton" then
         if IsShiftKeyDown() then
-            CludesUI.RequestReload(CludesUI.L("Reload UI"), CludesUI.L("Reload the UI now?"))
+            CUI.RequestReload(CUI.L("Reload UI"), CUI.L("Reload the UI now?"))
         elseif not InCombatLockdown() then
             ToggleFrame(AddonList)
         end
@@ -555,7 +556,7 @@ function mod.RefreshMicroMenuHider(force)
         end
         -- Action Bars' micro menu end caps follow the container's shown state
         -- (a no-op while that bar shows none).
-        local ab = CludesUI._ModuleNS.CludesUIActionBars
+        local ab = CUI._ModuleNS.CludesUIActionBars
         if ab and ab.AB_ExtraCapsShown then ab.AB_ExtraCapsShown("MicroBar") end
     end)
 end
@@ -616,15 +617,15 @@ local function MMAddCharStats()
     end
 
     -- WoW Forever has no Mastery or Versatility.
-    if CludesUI.IS_FOREVER then
-        local crit, critCR = CludesUI.ForeverCritChance()
-        local haste, hasteCR = CludesUI.ForeverHaste()
+    if CUI.IS_FOREVER then
+        local crit, critCR = CUI.ForeverCritChance()
+        local haste, hasteCR = CUI.ForeverHaste()
         pctRating(STAT_CRITICAL_STRIKE or "Critical Strike", crit, GetCombatRating(critCR))
         pctRating(STAT_HASTE or "Haste", haste, GetCombatRating(hasteCR))
         return
     end
 
-    local crit, critCR = CludesUI.PlayerCritChance()
+    local crit, critCR = CUI.PlayerCritChance()
     pctRating(STAT_CRITICAL_STRIKE or "Critical Strike", crit, GetCombatRating(critCR))
     pctRating(STAT_HASTE or "Haste", GetHaste(), GetCombatRating(CR_HASTE_MELEE))
     pctRating(STAT_MASTERY or "Mastery", GetMasteryEffect(), GetCombatRating(CR_MASTERY))
@@ -653,9 +654,9 @@ local function MMOpenWhisper(charName, bnetName)
     -- as a real Mythic+. InProtectedInstance() itself reports true in dev mode; the
     -- separate branch exists only for the clearer message.
     local blocked
-    if CludesUI.IsDevModeActive() then
+    if CUI.IsDevModeActive() then
         blocked = "This action is protected while dev mode (/cuidev) is on."
-    elseif CludesUI.InProtectedInstance() then
+    elseif CUI.InProtectedInstance() then
         blocked = "This action is protected in Mythic+ and raid combat."
     end
     if blocked then
@@ -672,7 +673,7 @@ local function MMOpenWhisper(charName, bnetName)
     if charName and charName ~= "" then
         local sendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
         -- Fix "Name-Realm-Realm" to "Name-Realm"
-        local target = CludesUI.BuildFullName(charName) or charName
+        local target = CUI.BuildFullName(charName) or charName
         if sendTell then sendTell(target, DEFAULT_CHAT_FRAME) end
     end
 end
@@ -728,8 +729,8 @@ local function MMBuildSocialTip()
                 and not issecretvalue(classID)
                 and C_CreatureInfo.GetClassInfo(classID)
             if ci and ci.classFile then
-                local classColor = CludesUI.GetClassColor(ci.classFile)
-                nameText = CludesUI.ColorText(displayCharName, classColor.r, classColor.g, classColor.b)
+                local classColor = CUI.GetClassColor(ci.classFile)
+                nameText = CUI.ColorText(displayCharName, classColor.r, classColor.g, classColor.b)
             else
                 nameText = format("|cffecd672%s|r", displayCharName or "?")
             end
@@ -737,7 +738,7 @@ local function MMBuildSocialTip()
             local bnetName = acc.accountName
             local sameFaction = (not secretFaction) and ((not faction) or (faction == playerFaction))
             -- Fix "Name-Realm-Realm" to "Name-Realm"
-            local inviteName = CludesUI.BuildFullName(charName, realmName)
+            local inviteName = CUI.BuildFullName(charName, realmName)
             mod.Tip_AddClickable(leftX, right, function(mouseButton)
                 if mouseButton == "LeftButton" then
                     if IsShiftKeyDown() and sameFaction and inviteName then
@@ -768,9 +769,9 @@ local function MMBuildSocialTip()
                 -- colour rides the left-color args (white when the class is unknown).
                 local leftX = format("|T%s:16|t %s  %s", iconTex, fi.name or "?", fi.level or "")
                 local cr, cg, callback = 1, 1, 1
-                local token = CludesUI.ClassTokenFromLocalized(fi.className)
+                local token = CUI.ClassTokenFromLocalized(fi.className)
                 if token then
-                    local classColor = CludesUI.GetClassColor(token)
+                    local classColor = CUI.GetClassColor(token)
                     cr, cg, callback = classColor.r, classColor.g, classColor.b
                 end
                 local fname = fi.name
@@ -843,7 +844,7 @@ local function MMBuildGuildTip(cfg)
             isShown = isShown + 1
             local clr, clg, clb = 1, 1, 1
             if class then
-                local classColor = CludesUI.GetClassColor(class)
+                local classColor = CUI.GetClassColor(class)
                 clr, clg, clb = classColor.r, classColor.g, classColor.b
             end
             local st = (status == 1 and DEFAULT_AFK_MESSAGE) or (status == 2 and DEFAULT_DND_MESSAGE) or ""
@@ -857,7 +858,7 @@ local function MMBuildGuildTip(cfg)
                 if not fname then return end
                 if mouseButton == "LeftButton" then
                     if IsShiftKeyDown() then
-                        C_PartyInfo.InviteUnit(CludesUI.BuildFullName(fname) or fname)
+                        C_PartyInfo.InviteUnit(CUI.BuildFullName(fname) or fname)
                     else
                         MMOpenWhisper(fname, nil)
                     end
@@ -1057,7 +1058,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         end
 
         -- Delve Journey and Companion Level rows: WoW Forever has no Delves.
-        if name == "journal" and not CludesUI.IS_FOREVER then
+        if name == "journal" and not CUI.IS_FOREVER then
             local hexAccent = format("%02x%02x%02x", floor(red * 255), floor(green * 255), floor(blue * 255))
             mod.Tip_AddLine(" ")
             local delveRank, delveMax = 0, "?"

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Frames.lua
 --
@@ -13,7 +14,7 @@ local Inner = mod._internals
 if not Inner or Inner.broken then return end
 Inner.broken = true
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local CLASS_COLORS, DARK_BG_A, ERB = Inner.CLASS_COLORS, Inner.DARK_BG_A, Inner.ERB
 local GetPrimaryPowerType, GetRBFont = Inner.GetPrimaryPowerType, Inner.GetRBFont
@@ -58,7 +59,7 @@ do
         return CreateFrame("Frame")
     end
 end
-mod.CombatQueue = CludesUI.NewCombatQueue(mod.TakeShell())
+mod.CombatQueue = CUI.NewCombatQueue(mod.TakeShell())
 local isInCombat = false
 Inner.isInCombatSetters[#Inner.isInCombatSetters + 1] = function(val) isInCombat = val end
 local currentAlpha = 1
@@ -85,7 +86,7 @@ end
 --  Helpers
 -------------------------------------------------------------------------------
 local function GetAccent()
-    local eg = CludesUI and CludesUI.CLUDES_GREEN
+    local eg = CUI and CUI.CLUDES_GREEN
     if eg then return eg.r, eg.g, eg.b end
     return 76 / 255, 201 / 255, 240 / 255
 end
@@ -102,8 +103,8 @@ mod.IsVerticalOrientation = IsVerticalOrientation
 -- when the widget asks (not at page build), so flipping orientation with the panel open
 -- is honoured. getOri returns the bar's effective orientation.
 mod.OrientedMatchGuard = function(barId, propKey, getOri, existingDisabled, existingTooltip)
-    local hD, hT, hR = CludesUI.MatchGuard(barId, "Height", existingDisabled, existingTooltip)
-    local wD, wT, wR = CludesUI.MatchGuard(barId, "Width", existingDisabled, existingTooltip)
+    local hD, hT, hR = CUI.MatchGuard(barId, "Height", existingDisabled, existingTooltip)
+    local wD, wT, wR = CUI.MatchGuard(barId, "Width", existingDisabled, existingTooltip)
     local function byAxis(sameAxis, swappedAxis)
         return function(...)
             if IsVerticalOrientation(getOri and getOri()) then return swappedAxis(...) end
@@ -335,7 +336,7 @@ end
 -- Bar texture helper
 local function ApplyBarTexture(barFrame, texKey)
     if not barFrame then return end
-    local filePath = CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
+    local filePath = CUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
     barFrame:SetStatusBarTexture(filePath)
     -- Blizzard Style: a path swap can mint a new fill object; re-seat the
     -- bar-shape mask on it (memoized per object, so a no-op otherwise).
@@ -468,7 +469,7 @@ local function MakePixelBorder(
     bf:SetAllPoints(hostFrame)
     bf:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
 
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         bf,
         sz,
         red,
@@ -486,7 +487,7 @@ local function MakePixelBorder(
         _frame = bf,
         edges = Pix.GetBorders(bf),
         SetColor = function(self, cr, cg, callback, ca)
-            CludesUI.SetBorderStyleColor(bf, cr, cg, callback, ca or 1)
+            CUI.SetBorderStyleColor(bf, cr, cg, callback, ca or 1)
         end,
         SetSize = function(self, newSz) Pix.SetBorderSize(bf, newSz) end,
         SetShown = function(self, isShown)
@@ -525,7 +526,7 @@ local function MakePixelBorder(
             -- dimension it takes from anchors and the border disappears until the border
             -- SIZE changes. Re-seating the host restores it (with the extents, if any).
             mod.ERB_AnchorBorderHost(bf, hostFrame, extTop, extBottom, extLeft, extRight)
-            CludesUI.ApplyBorderStyle(
+            CUI.ApplyBorderStyle(
                 bf,
                 newSz,
                 cr,
@@ -709,7 +710,7 @@ function PipTextureHelpers.Configure(pip, x0, x1, span, orientation)
         return
     end
     pip._continuousPath =
-        CludesUI.ResolveTexturePath(_G._CURB_BarTextures, pip._texKey, "Interface\\Buttons\\WHITE8x8")
+        CUI.ResolveTexturePath(_G._CURB_BarTextures, pip._texKey, "Interface\\Buttons\\WHITE8x8")
     PipTextureHelpers.SetRange(pip, x0, x1, span, orientation)
 end
 
@@ -843,7 +844,7 @@ local function CreatePip(hostFrame, wid, hgt, position, borderSize, borderR, bor
     function pip:ApplyTexture(texKey)
         self._texKey = texKey
         local filePath =
-            CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
+            CUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
         self._fill:SetTexture(filePath)
         if self._rechargeBar then self._rechargeBar:SetStatusBarTexture(filePath) end
         -- Blizzard Style: a path swap mints a new recharge fill; re-seat the mask.
@@ -893,7 +894,7 @@ end
 function ERB.PipBgColor(sp, force)
     local ovR, ovG, ovB, ovA = sp.bgR, sp.bgG, sp.bgB, sp.bgA
     if sp.darkTheme then
-        local dr, dg, saved = CludesUI.GetDarkModeBg()
+        local dr, dg, saved = CUI.GetDarkModeBg()
         ovR, ovG, ovB, ovA = dr, dg, saved, DARK_BG_A
     end
     ovR, ovG, ovB, ovA = ovR or 0, ovG or 0, ovB or 0, ovA or 0

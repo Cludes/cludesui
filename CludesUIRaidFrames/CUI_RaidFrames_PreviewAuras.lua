@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewAuras.lua
 --
@@ -74,7 +75,7 @@ do
             if shade ~= nil then
                 local val = shade[key]
                 if val ~= nil then
-                    if val == CludesUI.SPECOV_NIL then return nil end
+                    if val == CUI.SPECOV_NIL then return nil end
                     return val
                 end
             end
@@ -92,11 +93,11 @@ do
 
     function mod._RebuildPvOverlay()
         local isActive = (saved.profile.previewMode == "real")
-            and CludesUI.SpecOverrides_ViewActive()
-            and CludesUI.SpecOverrides_PeekEffectiveValues
+            and CUI.SpecOverrides_ViewActive()
+            and CUI.SpecOverrides_PeekEffectiveValues
         local flat, specSrc, condSrc
         if isActive then
-            flat, specSrc, condSrc = CludesUI.SpecOverrides_PeekEffectiveValues("CludesUIRaidFrames")
+            flat, specSrc, condSrc = CUI.SpecOverrides_PeekEffectiveValues("CludesUIRaidFrames")
         end
         if not flat then
             mod._pvOverlay = nil
@@ -106,7 +107,7 @@ do
             if mod._UpdatePvModeChrome then mod._UpdatePvModeChrome() end
             return
         end
-        local NIL_SENT = CludesUI.SPECOV_NIL
+        local NIL_SENT = CUI.SPECOV_NIL
         local overlayFrame = {}
         for fkey, val in pairs(flat) do
             local filePath = fkey:match("^[^\31]+\31(.*)$")
@@ -174,7 +175,7 @@ do
     function mod._PvSessionElem(key)
         if saved.profile.previewMode ~= "real" then return nil end
         local layer, base
-        local sfn = CludesUI.SpecOverrides_EditSessionUnlockLayer
+        local sfn = CUI.SpecOverrides_EditSessionUnlockLayer
         if sfn then
             layer, base = sfn()
         end
@@ -184,9 +185,9 @@ do
             -- while the panel is open, and the preview must show the layer that WOULD
             -- apply on exit. Baseline-effective specs return nil here -> live
             -- positioning, byte-identical to before the feature.
-            local vfn = CludesUI.SpecOverrides_ViewActive
-            if vfn and vfn() and CludesUI.SpecOverrides_EffectiveUnlockLayer then
-                layer, base = CludesUI.SpecOverrides_EffectiveUnlockLayer()
+            local vfn = CUI.SpecOverrides_ViewActive
+            if vfn and vfn() and CUI.SpecOverrides_EffectiveUnlockLayer then
+                layer, base = CUI.SpecOverrides_EffectiveUnlockLayer()
             end
         end
         if not layer then return nil end
@@ -350,8 +351,8 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
             local cdText = iconTex._cooldown.GetCountdownFontString
                 and iconTex._cooldown:GetCountdownFontString()
             if cdText then
-                local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-                CludesUI.ApplyIconTextFont(cdText, fontFile, dtSize, "raidFrames")
+                local fontFile = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+                CUI.ApplyIconTextFont(cdText, fontFile, dtSize, "raidFrames")
                 cdText:SetTextColor(dtColor.r, dtColor.g, dtColor.b)
                 cdText:ClearAllPoints()
                 cdText:SetPoint("CENTER", iconTex, "CENTER", dtOX, dtOY)
@@ -537,8 +538,8 @@ local function PvAuraTick()
                                 and iconTex._cooldown:GetCountdownFontString()
                             if cdText then
                                 local dtc = s2.debuffDurTextColor or { r = 1, g = 1, b = 1 }
-                                local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-                                CludesUI.ApplyIconTextFont(
+                                local fp = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+                                CUI.ApplyIconTextFont(
                                     cdText,
                                     fp,
                                     s2.debuffDurTextSize or 8,
@@ -652,8 +653,8 @@ local function PvAuraTick()
                     local ic = frame and frame._pvDebuffs and frame._pvDebuffs[details.slot]
                     if ic and ic._count then
                         local stc = s2.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
-                        local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-                        CludesUI.ApplyIconTextFont(ic._count, fp, s2.debuffStacksTextSize or 8, "raidFrames")
+                        local fp = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+                        CUI.ApplyIconTextFont(ic._count, fp, s2.debuffStacksTextSize or 8, "raidFrames")
                         ic._count:SetTextColor(stc.r, stc.g, stc.b)
                         ic._count:ClearAllPoints()
                         ic._count:SetPoint(

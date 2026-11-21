@@ -1,11 +1,12 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CooldownManager_Options\BarsPage_Options.lua
 --  Cooldown Manager options: the CDM Bars page (BuildCDMBarsPage). Definitions
 --  only; the shared helpers come from ns._CDMO_OptEnv (filled by
 --  CUI_CooldownManager_Options.lua), the preview from LivePreview_Options.lua.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
+local mod = CUI._ModuleNS["CludesUICooldownManager"]
 if not mod then return end -- module disabled: no options page
 
 -- The options page pool (CludesUI_FramePool.lua): a frame made under a pool
@@ -13,8 +14,8 @@ if not mod then return end -- module disabled: no options page
 -- fresh; anywhere else this is the plain CreateFrame. The bar menu is one kept
 -- frame for the session (PoolKept), dressed again on each open; PoolBegin
 -- hands its rows out again in place when the open menu draws itself again.
-local CreateFrame = CludesUI._Pool.CreateFrame
-local PoolKept, PoolBegin = CludesUI._Pool.Kept, CludesUI._Pool.Begin
+local CreateFrame = CUI._Pool.CreateFrame
+local PoolKept, PoolBegin = CUI._Pool.Kept, CUI._Pool.Begin
 
 -- Live preview on mount and dismount (skyriding swaps the icons the preview
 -- copies). One event frame for the session, registered only while the CDM
@@ -24,7 +25,7 @@ local PoolKept, PoolBegin = CludesUI._Pool.Kept, CludesUI._Pool.Begin
 local mountActive = {}
 function mountActive.OnEvent()
     local environ = mod._CDMO_OptEnv
-    local preview = environ and (environ.optState._cdmPreview or CludesUI._cdmHeaderPreview)
+    local preview = environ and (environ.optState._cdmPreview or CUI._cdmHeaderPreview)
     if preview and preview:IsVisible() then environ.UpdateCDMPreviewAndResize() end
 end
 function mountActive.Arm() mountActive.frame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED") end
@@ -43,7 +44,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         environ.PP, environ.Refresh, environ.SelectedCDMBar, environ.UpdateCDMPreview
     local UpdateCDMPreviewAndResize = environ.UpdateCDMPreviewAndResize
     local BuildCDMLivePreview = mod.CDMO_BuildCDMLivePreview
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height, heading
 
@@ -63,7 +64,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- Tag every option registered by this build with the selected bar, so a global-search
     -- jump to a bar-specific setting (e.g. HoverCast/FocusKick-only rows) restores this exact
     -- bar first via CludesUI._setCDMBar -- otherwise the matched row wouldn't exist under whatever bar is selected when the player jumps there.
-    CludesUI._buildingSelector = { setter = CludesUI._setCDMBar, key = barInfo.key }
+    CUI._buildingSelector = { setter = CUI._setCDMBar, key = barInfo.key }
 
     -- Capture the key so closures always look up the CURRENT bar data from the profile (no
     -- stale references across reorders/rebuilds). Searchable single-select "Sync From"
@@ -81,7 +82,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         if not SrcPopup then
             SrcPopup = { rows = {} }
             mod._rptSrcPopup = SrcPopup
-            local scale = (CludesUI.GetPopupScale()) or 1
+            local scale = (CUI.GetPopupScale()) or 1
             local shade = CreateFrame("Frame", nil, UIParent)
             shade:SetFrameStrata("FULLSCREEN_DIALOG")
             shade:SetAllPoints(UIParent)
@@ -100,11 +101,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(0.062, 0.070, 0.082, 1)
-            SrcPopup.brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
-            local titleFs = CludesUI.MakeFont(dialog, 15, nil, 1, 1, 1, 1)
+            SrcPopup.brd = CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
+            local titleFs = CUI.MakeFont(dialog, 15, nil, 1, 1, 1, 1)
             titleFs:SetPoint("TOP", dialog, "TOP", 0, -14)
             titleFs:SetText("Sync From")
-            local subFs = CludesUI.MakeFont(dialog, 11, nil, 1, 1, 1, 0.45)
+            local subFs = CUI.MakeFont(dialog, 11, nil, 1, 1, 1, 0.45)
             subFs:SetPoint("TOP", titleFs, "BOTTOM", 0, -4)
             subFs:SetWidth(DDW)
             subFs:SetJustifyH("CENTER")
@@ -121,7 +122,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local sbg = search:CreateTexture(nil, "BACKGROUND")
             sbg:SetAllPoints()
             sbg:SetColorTexture(0, 0, 0, 0.4)
-            CludesUI.MakeRoundedBorder(search, 1, 1, 1, 0.10, sbg)
+            CUI.MakeRoundedBorder(search, 1, 1, 1, 0.10, sbg)
             local ph = search:CreateFontString(nil, "OVERLAY")
             ph:SetFont(FONT_PATH, 11, "")
             ph:SetTextColor(0.5, 0.5, 0.5, 0.6)
@@ -203,7 +204,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         iconTex:SetSize(20, 20)
                         iconTex:SetPoint("LEFT", r, "LEFT", 8, 0)
                         r._ic = iconTex
-                        local tx = CludesUI.MakeFont(r, 13, nil, 1, 1, 1, 0.85)
+                        local tx = CUI.MakeFont(r, 13, nil, 1, 1, 1, 0.85)
                         tx:SetPoint("LEFT", iconTex, "RIGHT", 8, 0)
                         r._tx = tx
                         r:SetScript("OnEnter", function(self) self._hl:Show() end)
@@ -275,21 +276,21 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 if num and num ~= "" then srcName = num end
             end
             -- WoW Forever: a key names a whole class there.
-            if CludesUI.IS_FOREVER then
-                local t = CludesUI.SpecClassOf(tonumber(sourceKey))
-                if t then srcName = CludesUI.ForeverClassName(t) end
+            if CUI.IS_FOREVER then
+                local t = CUI.SpecClassOf(tonumber(sourceKey))
+                if t then srcName = CUI.ForeverClassName(t) end
             end
             local specs = mod.GetCDMSpecInfo and mod.GetCDMSpecInfo() or {}
             for _, spec in ipairs(specs) do
                 spec.checked = (spec.key == sourceKey)
             end
-            CludesUI:ShowCDMSpecPickerPopup({
+            CUI:ShowCDMSpecPickerPopup({
                 title = "Sync Generic CDs/Buffs",
                 -- The grid lists every class (a profile is shared across
                 -- characters), so an alt's specs are ticked from here; say
                 -- so, or it reads as "this character's specs" only. Keep the
                 -- subtitle to one line so it clears Check All / Uncheck All.
-                subtitle = CludesUI.Lf(
+                subtitle = CUI.Lf(
                     "Choose which specs sync with %1$s, including your alts' specs (the source is always included)",
                     srcName
                 ),
@@ -310,13 +311,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- existing sync and SAY so (one ticked spec is the
                         -- natural first guess at "sync FROM this spec").
                         if mod.ClearRPTSync then mod.ClearRPTSync() end
-                        CludesUI.Print(
+                        CUI.Print(
                             "|cff4cc9f0CludesUI CDM:|r "
-                                .. CludesUI.L(
+                                .. CUI.L(
                                     "Sync cleared -- only one spec was selected. Tick at least two specs (including other characters' specs) to sync between them."
                                 )
                         )
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                         return
                     end
                     if mod.SetupRPTSync then mod.SetupRPTSync(selectedSpecs, sourceKey) end
@@ -324,14 +325,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- Which bar each entry sits on is synced; its SLOT is not
                     -- (every spec keeps its own ordering) -- easily read as a
                     -- bug, so the print states it explicitly.
-                    CludesUI.Print(
+                    CUI.Print(
                         "|cff4cc9f0CludesUI CDM:|r "
-                            .. CludesUI.Lf(
+                            .. CUI.Lf(
                                 "Syncing generic CDs/buffs across %d specs. Icon order is not synced -- each spec keeps its own arrangement.",
                                 cnt
                             )
                     )
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             })
         end)
@@ -353,12 +354,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 specs[#specs + 1] = { key = barKey, checked = true }
             end
         end
-        CludesUI:ShowCDMSpecPickerPopup({
+        CUI:ShowCDMSpecPickerPopup({
             title = "Sync Generic CDs/Buffs",
             subtitle = "Uncheck a spec to remove it from the sync. Removed specs keep their current trinkets, pots, racials & buff presets.",
             confirmText = "Save",
             specs = specs,
-            foreverActiveKey = CludesUI.IS_FOREVER and mod.GetActiveSpecKey and mod.GetActiveSpecKey() or nil,
+            foreverActiveKey = CUI.IS_FOREVER and mod.GetActiveSpecKey and mod.GetActiveSpecKey() or nil,
             onConfirm = function(selectedSpecs)
                 local cnt = 0
                 for _, value in pairs(selectedSpecs) do
@@ -369,16 +370,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- Announced for the same reason as the setup path: the
                     -- sync is discarded here, not merely left unchanged.
                     if mod.ClearRPTSync then mod.ClearRPTSync() end
-                    CludesUI.Print(
+                    CUI.Print(
                         "|cff4cc9f0CludesUI CDM:|r "
-                            .. CludesUI.L("Sync cleared -- fewer than two specs remained selected.")
+                            .. CUI.L("Sync cleared -- fewer than two specs remained selected.")
                     )
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                     return
                 end
                 if mod.UpdateRPTSyncSpecs then mod.UpdateRPTSyncSpecs(selectedSpecs) end
                 if mod.FullCDMRebuild then mod.FullCDMRebuild("profile_import") end
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         })
     end
@@ -403,7 +404,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         "Sync Generic CDs/Buffs",
         cursorY,
         function()
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = "Repopulate Bars",
                 message = "This will reset all default bar spell assignments for the current spec to match Blizzard's CDM layout. Spells you added yourself (presets, custom IDs and racials) are kept. Continue?",
                 confirmText = "Repopulate",
@@ -496,11 +497,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     --  CONTENT HEADER  (dropdown + live preview)
     -------------------------------------------------------------------
-    CludesUI:ClearContentHeader()
+    CUI:ClearContentHeader()
     optionState._cdmPreview = nil
 
     optionState._cdmHeaderBuilder = function(heading, hdrW)
-        local PAD = CludesUI.CONTENT_PAD or 10
+        local PAD = CUI.CONTENT_PAD or 10
         local PV_PAD = 10
         local fy = -20
 
@@ -508,7 +509,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local DD_H = 34
         local ddW = 350
 
-        local DDS = CludesUI.DD_STYLE
+        local DDS = CUI.DD_STYLE
         local mBgR = DDS.BG_R
         local mBgG = DDS.BG_G
         local mBgB = DDS.BG_B
@@ -520,10 +521,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local mTxtHA = DDS.TXT_HA or 1
         local hlA = DDS.ITEM_HL_A
         local selA = DDS.ITEM_SEL_A
-        local tDimR = CludesUI.TEXT_DIM_R or 0.7
-        local tDimG = CludesUI.TEXT_DIM_G or 0.7
-        local tDimB = CludesUI.TEXT_DIM_B or 0.7
-        local tDimA = CludesUI.TEXT_DIM_A or 0.85
+        local tDimR = CUI.TEXT_DIM_R or 0.7
+        local tDimG = CUI.TEXT_DIM_G or 0.7
+        local tDimB = CUI.TEXT_DIM_B or 0.7
+        local tDimA = CUI.TEXT_DIM_A or 0.85
         local ITEM_H = 26
         local MEDIA = "Interface\\AddOns\\CludesUI\\media\\"
         local ICON_SZ = 14
@@ -537,7 +538,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local ddBg = dropdownBtn:CreateTexture(nil, "BACKGROUND")
         ddBg:SetAllPoints()
         ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-        local ddBrd = CludesUI.MakeRoundedBorder(dropdownBtn, 1, 1, 1, mBrdA, ddBg)
+        local ddBrd = CUI.MakeRoundedBorder(dropdownBtn, 1, 1, 1, mBrdA, ddBg)
         local dropCaption = dropdownBtn:CreateFontString(nil, "OVERLAY")
         dropCaption:SetFont(FONT_PATH, 13, GetCDMOptOutline())
         dropCaption:SetAlpha(mTxtA)
@@ -546,12 +547,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         dropCaption:SetMaxLines(1)
         dropCaption:SetPoint("LEFT", dropdownBtn, "LEFT", 12, 0)
         -- Arrow (standard CludesUI dropdown arrow)
-        local arrow = CludesUI.MakeDropdownArrow(dropdownBtn, 12, CludesUI.PanelPP)
+        local arrow = CUI.MakeDropdownArrow(dropdownBtn, 12, CUI.PanelPP)
         dropCaption:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
 
         local function UpdateDDLabel()
             local edge = barList[optionState.selectedCDMBarIndex]
-            local labelText = edge and CludesUI.L(edge.name or edge.key) or ""
+            local labelText = edge and CUI.L(edge.name or edge.key) or ""
             dropCaption:SetText(labelText)
         end
         UpdateDDLabel()
@@ -616,7 +617,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
-            CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, mBrdA, backdrop, nil, true)
+            CUI.MakeRoundedBorder(dropMenu, 1, 1, 1, mBrdA, backdrop, nil, true)
 
             local menuH = 4
             local customCount = 0
@@ -666,7 +667,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             if reorderable then
                 insLine = dropMenu:CreateTexture(nil, "OVERLAY", nil, 7)
                 insLine:SetHeight(2)
-                local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+                local ACC = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                 insLine:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.9)
                 insLine:Hide()
             end
@@ -710,7 +711,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         ht:SetFont(FONT_PATH, 10, GetCDMOptOutline())
                         ht:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 10, -menuH - 4)
                         ht:SetTextColor(1, 1, 1, 0.25)
-                        ht:SetText(CludesUI.L("Drag to Reorder Bars"))
+                        ht:SetText(CUI.L("Drag to Reorder Bars"))
                         menuH = menuH + 18
                     end
 
@@ -730,7 +731,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     itemCaption:SetWordWrap(false)
                     itemCaption:SetMaxLines(1)
                     itemCaption:SetPoint("LEFT", entry, "LEFT", 10, 0)
-                    local displayName = CludesUI.L(bar.name or bar.key)
+                    local displayName = CUI.L(bar.name or bar.key)
                     itemCaption:SetText(displayName)
 
                     local iHl = entry:CreateTexture(nil, "ARTWORK")
@@ -773,7 +774,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 Lit()
                                 delBtn:SetAlpha(0.85)
                                 editBtn:SetAlpha(0.85)
-                                CludesUI.ShowWidgetTooltip(self, tip)
+                                CUI.ShowWidgetTooltip(self, tip)
                             end)
                             button:SetScript("OnLeave", function(self)
                                 if entry:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
@@ -781,7 +782,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 else
                                     Rest()
                                 end
-                                CludesUI.HideWidgetTooltip()
+                                CUI.HideWidgetTooltip()
                             end)
                             return button
                         end
@@ -880,9 +881,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             dropMenu:Hide()
                             local delName = bar.name or bar.key
                             local delKey = bar.key
-                            CludesUI:ShowConfirmPopup({
+                            CUI:ShowConfirmPopup({
                                 title = "Delete Bar",
-                                message = CludesUI.Lf('Are you sure you want to delete "%1$s"?', delName),
+                                message = CUI.Lf('Are you sure you want to delete "%1$s"?', delName),
                                 confirmText = "Delete",
                                 cancelText = "Cancel",
                                 onConfirm = function()
@@ -899,17 +900,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     -- Other pages' saved headers name the bars (Bar Glows'
                                     -- target): built again on their next visit. This
                                     -- page's header is built by its own rebuild below.
-                                    CludesUI:InvalidateContentHeaderCache()
-                                    CludesUI:RefreshPage(true)
+                                    CUI:InvalidateContentHeaderCache()
+                                    CUI:RefreshPage(true)
                                 end,
                             })
                         end)
                         editBtn:SetScript("OnClick", function()
                             dropMenu:Hide()
                             local oldName = bar.name or bar.key
-                            CludesUI:ShowInputPopup({
+                            CUI:ShowInputPopup({
                                 title = "Rename Bar",
-                                message = CludesUI.Lf('Enter a new name for "%1$s":', oldName),
+                                message = CUI.Lf('Enter a new name for "%1$s":', oldName),
                                 placeholder = oldName,
                                 confirmText = "Rename",
                                 cancelText = "Cancel",
@@ -919,8 +920,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     bar.name = newName
                                     -- Other pages' saved headers name the bars; this
                                     -- page's header is built by its own rebuild below.
-                                    CludesUI:InvalidateContentHeaderCache()
-                                    CludesUI:RefreshPage(true)
+                                    CUI:InvalidateContentHeaderCache()
+                                    CUI:RefreshPage(true)
                                     if mod.RegisterCDMUnlockElements then mod.RegisterCDMUnlockElements() end
                                 end,
                             })
@@ -943,7 +944,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         optionState.selectedCDMBarIndex = position
                         -- The rebuild builds this page's header with the page,
                         -- once (no other page's header shows the selection).
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end)
 
                     menuH = menuH + ITEM_H
@@ -964,9 +965,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- Buff bar now hosts Blizzard-tracked buffs AND injected preset/
             -- custom buffs, so there's no separate Aura bar type to create.
             local addBarTypes = {
-                { type = "cooldowns", label = CludesUI.L("+ Add New Cooldowns Bar") },
-                { type = "utility", label = CludesUI.L("+ Add New Utility Bar") },
-                { type = "buffs", label = CludesUI.L("+ Add New Buff Bar") },
+                { type = "cooldowns", label = CUI.L("+ Add New Cooldowns Bar") },
+                { type = "utility", label = CUI.L("+ Add New Utility Bar") },
+                { type = "buffs", label = CUI.L("+ Add New Buff Bar") },
             }
             for _, record in ipairs(addBarTypes) do
                 local addEntry = CreateFrame("Button", nil, dropMenu)
@@ -979,7 +980,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 addCaption:SetPoint("LEFT", addEntry, "LEFT", 10, 0)
                 addCaption:SetJustifyH("LEFT")
                 if atCap then
-                    addCaption:SetText(CludesUI.Lf("%1$s (max %2$s)", record.label, mod.MAX_CUSTOM_BARS or 6))
+                    addCaption:SetText(CUI.Lf("%1$s (max %2$s)", record.label, mod.MAX_CUSTOM_BARS or 6))
                     addCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
                 else
                     addCaption:SetText(record.label)
@@ -1004,8 +1005,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         Refresh()
                         -- Other pages' saved headers name the bars; this
                         -- page's header is built by its own rebuild below.
-                        CludesUI:InvalidateContentHeaderCache()
-                        CludesUI:RefreshPage(true)
+                        CUI:InvalidateContentHeaderCache()
+                        CUI:RefreshPage(true)
                     end)
                 end
                 menuH = menuH + ITEM_H
@@ -1067,12 +1068,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
         return math.abs(fy)
     end
-    CludesUI:SetContentHeader(optionState._cdmHeaderBuilder)
+    CUI:SetContentHeader(optionState._cdmHeaderBuilder)
 
     -- Refresh preview icons on mount/dismount (mountLive above): listening while this page
     -- shows, from now on and whenever it shows again. Skipped during a hidden search
     -- pre-build: nothing to preview while indexing.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         if not mountActive.frame then
             mountActive.frame = CreateFrame("Frame")
             mountActive.frame:SetScript("OnEvent", mountActive.OnEvent)
@@ -1112,13 +1113,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         heading, height = W:SectionHeader(hostFrame, "BAR LAYOUT", cursorY)
         cursorY = cursorY - height
         -- The selected bar's mover (the key is read at the click).
-        CludesUI.BuildSectionUnlockJump(heading, {
+        CUI.BuildSectionUnlockJump(heading, {
             key = function() return "CDM_" .. BarList().key end,
         })
 
         -- Row 1: (Sync) Visibility. Mouseover stays structurally absent for CDM bars
         -- (noMouseover), matching the old VIS_VALUES_CDM list.
-        local visRow, visibleH = CludesUI.BuildVisibilityRow(
+        local visRow, visibleH = CUI.BuildVisibilityRow(
             W,
             hostFrame,
             cursorY,
@@ -1168,7 +1169,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- of the inputs to the matched-axis dim calculation).
                     ClearMatchDims(edge)
                     RebuildBars(true)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             }
         )
@@ -1176,16 +1177,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
         -- ONE sync icon now that both halves share a control: VisFullCopy / VisFullEquals
         -- carry the mode selection and every option boolean together.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = visRow._leftRegion
-            CludesUI.BuildSyncIcon({
+            CUI.BuildSyncIcon({
                 region = region,
                 tooltip = "Apply Visibility to all Bars",
                 isSynced = function()
                     local source = BarList()
                     local inSync = true
                     ForEachSyncBar(function(bar)
-                        if not CludesUI.VisFullEquals(source, "barVisibility", bar, "barVisibility") then
+                        if not CUI.VisFullEquals(source, "barVisibility", bar, "barVisibility") then
                             inSync = false
                         end
                     end)
@@ -1194,17 +1195,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 onClick = function()
                     local source = BarList()
                     ForEachSyncBar(function(bar)
-                        if bar ~= source then CludesUI.VisFullCopy(bar, source, "barVisibility") end
+                        if bar ~= source then CUI.VisFullCopy(bar, source, "barVisibility") end
                     end)
                     mod.CDMApplyVisibility()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
         end
 
         -- Row 2: Anchor to Cursor | Cursor Position (cog: X + Y)
         do
-            local _, cursorH = CludesUI.BuildCursorAnchorRow({
+            local _, cursorH = CUI.BuildCursorAnchorRow({
                 W = W,
                 parent = hostFrame,
                 y = cursorY,
@@ -1251,17 +1252,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             setValue = function(value)
                 BarList().barBgEnabled = value
                 RebuildBars()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, row3Right)
         cursorY = cursorY - height
 
         -- Inline color swatch on Bar Background (left)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = opacityRow._leftRegion
             local control = region and region._control
-            if control and CludesUI.BuildColorSwatch then
-                local bgSwatch, updateBgSwatch = CludesUI.BuildColorSwatch(
+            if control and CUI.BuildColorSwatch then
+                local bgSwatch, updateBgSwatch = CUI.BuildColorSwatch(
                     region,
                     opacityRow:GetFrameLevel() + 3,
                     function()
@@ -1281,15 +1282,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     20
                 )
                 Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
-                local block = CludesUI.NewSwatchBlocker(bgSwatch)
+                local block = CUI.NewSwatchBlocker(bgSwatch)
                 block:SetScript(
                     "OnEnter",
                     function()
-                        CludesUI.ShowWidgetTooltip(bgSwatch, CludesUI.DisabledTooltip("Bar Background"))
+                        CUI.ShowWidgetTooltip(bgSwatch, CUI.DisabledTooltip("Bar Background"))
                     end
                 )
-                block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                CludesUI.RegisterWidgetRefresh(function()
+                block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+                CUI.RegisterWidgetRefresh(function()
                     if updateBgSwatch then updateBgSwatch() end
                     local enabled = BarList().barBgEnabled == true
                     bgSwatch:SetAlpha(enabled and 1 or 0.3)
@@ -1311,7 +1312,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
         -- Inline cog on Number of Rows (now in the Visibility row's right slot):
         -- Row Icons settings (only relevant when numRows == 2)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = visRow._rightRegion
             local control = leftRegion._control
             local function customTopOff()
@@ -1322,8 +1323,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- Row-size options are locked while the bar is width/height matched,
             -- exactly like Icon Scale (a per-row size offset can't honor a match).
             local rsMatchKey = "CDM_" .. BarList().key
-            local rsWDis, rsWTip = CludesUI.MatchGuard(rsMatchKey, "Width")
-            local rsHDis, rsHTip = CludesUI.MatchGuard(rsMatchKey, "Height")
+            local rsWDis, rsWTip = CUI.MatchGuard(rsMatchKey, "Width")
+            local rsHDis, rsHTip = CUI.MatchGuard(rsMatchKey, "Height")
             local function rowSizeMatched() return rsWDis() or rsHDis() end
             local function rowSizeMatchTip()
                 if rsWDis() then return rsWTip() end
@@ -1345,7 +1346,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 rowGrowTip =
                     "How extra rows grow when the second row appears or disappears. Grow Down keeps the top row in place, Grow Up keeps the bottom row in place, Grow Centered keeps the bar centered."
             end
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 anchorTo = control,
                 title = "Row Icons",
                 rows = {
@@ -1364,7 +1365,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             local barData = BarList()
                             if barData.anchorTo and barData.anchorTo ~= "none" then return true end
                             if
-                                CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. barData.key)
+                                CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("CDM_" .. barData.key)
                             then
                                 return true
                             end
@@ -1540,7 +1541,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         if isCDOrUtilityRow3 then
             local region = opacityRow._rightRegion
             local control = region and region._control
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 anchorTo = control,
                 title = "Out of Combat Alpha",
                 rows = {
@@ -1622,7 +1623,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             and bt ~= "custom_buff"
                             and not hasOwnOverflow
                         then
-                            ofVals[bar.key] = CludesUI.L(bar.name or bar.key)
+                            ofVals[bar.key] = CUI.L(bar.name or bar.key)
                             ofOrder[#ofOrder + 1] = bar.key
                         end
                     end
@@ -1637,7 +1638,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 break
                             end
                         end
-                        ofVals[current] = CludesUI.L(curName)
+                        ofVals[current] = CUI.L(curName)
                         ofOrder[#ofOrder + 1] = current
                     end
                 end
@@ -1666,7 +1667,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     if value == 0 then value = nil end
                     BarList().maxIcons = value
                     RebuildBars(true)
-                    C_Timer.After(0, function() CludesUI:RefreshPage() end)
+                    C_Timer.After(0, function() CUI:RefreshPage() end)
                 end,
             }, {
                 type = "dropdown",
@@ -1753,7 +1754,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 setValue = function(value)
                     BarList().hidePlaceholderIcon = value
                     RebuildBars(true)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             }, vertOrientCfg)
             cursorY = cursorY - height
@@ -1807,7 +1808,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             setValue = function(value)
                 BarList().nameplateAnchorSide = value
                 ApplyAnchor()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "toggle",
@@ -1820,15 +1821,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             setValue = function(value)
                 BarList().focusReminderEnabled = value
                 RefreshReminders()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
         cursorY = cursorY - height
 
         -- Inline cog for Nameplate Offset (left)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = npRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 anchorTo = region._control,
                 title = "Nameplate Offset",
                 rows = {
@@ -1841,11 +1842,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- Inline cog + dual swatch for Focus Reminders (right region). Layout right-to-left
         -- along the row's right region: [control] [cog] [accent swatch] [custom swatch].
         -- Accent swatch (next to the cog) is the active mode by default; custom swatch dims and blocks while accent is on.
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = npRow._rightRegion
             local control = region and region._control
 
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Focus Reminder Settings",
                 rows = {
                     BarSlider("Text Size", "focusReminderSize", 26, 8, 50, RefreshReminders),
@@ -1855,11 +1856,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             })
 
             -- Right (accent) swatch: one-click activation, displays live CLUDES_GREEN
-            local accentSwatch, updateAccentSwatch = CludesUI.BuildColorSwatch(
+            local accentSwatch, updateAccentSwatch = CUI.BuildColorSwatch(
                 region,
                 npRow:GetFrameLevel() + 3,
                 function()
-                    local brandGreen = CludesUI.CLUDES_GREEN
+                    local brandGreen = CUI.CLUDES_GREEN
                     if brandGreen then return brandGreen.r, brandGreen.g, brandGreen.b end
                     return 0.298, 0.788, 0.941
                 end,
@@ -1871,12 +1872,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             accentSwatch:SetScript("OnClick", function()
                 BarList().focusReminderUseAccent = true
                 RefreshReminders()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end)
-            CludesUI.HoverTip(accentSwatch, "Accent Color")
+            CUI.HoverTip(accentSwatch, "Accent Color")
 
             -- Left (custom) swatch: color picker when accent mode is off
-            local customColorSwatch, updateCustomSwatch = CludesUI.BuildColorSwatch(
+            local customColorSwatch, updateCustomSwatch = CUI.BuildColorSwatch(
                 region,
                 npRow:GetFrameLevel() + 3,
                 function()
@@ -1893,7 +1894,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 20
             )
             Pix.Point(customColorSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
-            CludesUI.HoverTip(customColorSwatch, "Custom Color")
+            CUI.HoverTip(customColorSwatch, "Custom Color")
 
             -- Block overlay: while accent mode is active, clicking the custom swatch flips accent mode off instead of opening the color picker.
             local customBlock = CreateFrame("Button", nil, customColorSwatch)
@@ -1904,14 +1905,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 if BarList().focusReminderUseAccent then
                     BarList().focusReminderUseAccent = false
                     RefreshReminders()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end
             end)
             customBlock:SetScript(
                 "OnEnter",
-                function() CludesUI.ShowWidgetTooltip(customColorSwatch, "Custom Color") end
+                function() CUI.ShowWidgetTooltip(customColorSwatch, "Custom Color") end
             )
-            customBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            customBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             region._lastInline = customColorSwatch
 
             -- Disable both swatches + cog when Focus Text Reminders toggle is off
@@ -1922,13 +1923,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             enableBlock:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         customColorSwatch,
-                        CludesUI.DisabledTooltip("Focus Text Reminders")
+                        CUI.DisabledTooltip("Focus Text Reminders")
                     )
                 end
             )
-            enableBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            enableBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
             local function UpdateFRSwatchState()
                 local edge = BarList()
@@ -1952,7 +1953,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end
                 end
             end
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 updateAccentSwatch()
                 updateCustomSwatch()
                 UpdateFRSwatchState()
@@ -1980,11 +1981,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 if barKey == "none" then return nil end
                 local paths = mod.FOCUSKICK_SOUND_PATHS
                 if not paths or not paths[barKey] then return nil end
-                return CludesUI.SOUND_ICON_ATLAS
+                return CUI.SOUND_ICON_ATLAS
             end,
             iconPressedAtlas = function(barKey)
                 if barKey == "none" then return nil end
-                return CludesUI.SOUND_ICON_PRESSED_ATLAS
+                return CUI.SOUND_ICON_PRESSED_ATLAS
             end,
             iconOnClick = function(barKey)
                 local paths = mod.FOCUSKICK_SOUND_PATHS
@@ -2028,7 +2029,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             orderList[#orderList + 1] = "__none"
 
             local kicks, seenName = {}, {}
-            local KD = CludesUI.KickData
+            local KD = CUI.KickData
             local resolve = mod.ResolveCastableInterrupt
             if KD and KD.INTERRUPTS and resolve then
                 for ident, keyName in pairs(KD.INTERRUPTS) do
@@ -2144,7 +2145,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 BarList().focusKickUseTarget = value
                 if mod.ApplyFocusKickAnchor then mod.ApplyFocusKickAnchor() end
                 if mod.RefreshFocusCastProxyUnit then mod.RefreshFocusCastProxyUnit() end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
@@ -2163,7 +2164,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- the reorder hint in BuildCDMLivePreview's pf.Update.)
     _, height = W:SectionHeader(hostFrame, "ICON DISPLAY", cursorY)
     cursorY = cursorY - height
-    cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "cdmicons")
+    cursorY = CUI.BlizzStyle.Note(hostFrame, cursorY, "cdmicons")
 
     -- Active State Animation dropdown values
     local ACTIVE_ANIM_VALUES = {
@@ -2187,7 +2188,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- crop. Disabled unless the shape is Cropped. Under a stock style both shape rows are
     -- fully gated, so the row (and this cog with it) is hidden by the widget factory.
     local function AttachCropCog(region)
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function() return (BarList().iconShape or "none") ~= "cropped" end,
             disabledTooltip = "This option requires Custom Icon Shape to be set to Cropped",
             title = "Custom Icon Shape",
@@ -2246,8 +2247,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- The Icon Shape, Icon Zoom and Border Style sync icons, the same in
     -- the buff-bar layout and the regular one.
     local function IconShapeSync(region)
-        if CludesUI._prebuilding then return end
-        CludesUI.BuildSyncIcon({
+        if CUI._prebuilding then return end
+        CUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Icon Shape to all Bars",
             isSynced = function()
@@ -2287,13 +2288,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     ClearMatchDims(bar)
                 end)
                 RebuildBars(true)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
     end
     local function IconZoomSync(region)
-        if CludesUI._prebuilding then return end
-        CludesUI.BuildSyncIcon({
+        if CUI._prebuilding then return end
+        CUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Icon Zoom to all Bars",
             isSynced = function()
@@ -2308,13 +2309,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local value = BarList().iconZoom or 0.08
                 ForEachSyncBar(function(bar) bar.iconZoom = value end)
                 RebuildBars()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
     end
     local function BorderStyleSync(region)
-        if CludesUI._prebuilding then return end
-        CludesUI.BuildSyncIcon({
+        if CUI._prebuilding then return end
+        CUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Border Style to all Bars",
             onClick = function()
@@ -2349,7 +2350,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     bar.borderClassColor = classColor
                 end)
                 RebuildBars()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             isSynced = function()
                 local edge = BarList()
@@ -2397,14 +2398,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 setValue = function(value)
                     BarList().showInactiveBuffIcons = value
                     RebuildBars(true)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             }
         else
             row1Left = { type = "label", text = "" }
         end
-        local icsWDis, icsWTip, icsWRaw = CludesUI.MatchGuard("CDM_" .. barId, "Width")
-        local icsHDis, icsHTip = CludesUI.MatchGuard("CDM_" .. barId, "Height")
+        local icsWDis, icsWTip, icsWRaw = CUI.MatchGuard("CDM_" .. barId, "Width")
+        local icsHDis, icsHTip = CUI.MatchGuard("CDM_" .. barId, "Height")
         local icsDis = function() return icsWDis() or icsHDis() end
         local icsTip = function()
             if icsWDis() then return icsWTip() end
@@ -2435,7 +2436,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- Inline cog on Always Show Buffs toggle (per-bar; native buff bars)
         if isBuffBar then
             local leftRegion = scaleAnimRow._leftRegion
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 anchorTo = leftRegion._control,
                 disabled = function() return not BarList().showInactiveBuffIcons end,
                 disabledTooltip = "Always Show Buffs",
@@ -2455,7 +2456,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- descriptor over this bar: a custom icon shape locks it (shown as None),
         -- and its Pixel Glow parameters keep their own row below (per-icon Buff
         -- Glows read them too), so this row takes the swatches only.
-        local GO = CludesUI.GlowOptions
+        local GO = CUI.GlowOptions
         local buffGlowDesc = mod._CDM_BuffGlowDesc(BarList, function()
             mod.BuildAllCDMBars()
             Refresh()
@@ -2491,7 +2492,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         buffShapeZoomRow, height = W:DualRow(
             hostFrame,
             cursorY,
-            CludesUI.BlizzStyle.Gate("cdmicons", {
+            CUI.BlizzStyle.Gate("cdmicons", {
                 type = "dropdown",
                 text = "Custom Icon Shape",
                 values = SHAPE_VALUES,
@@ -2532,10 +2533,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     ClearMatchDims(edge)
                     RebuildBars(true)
                     -- The Border Size slot is a different control under a custom shape: rebuild the page.
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             }),
-            CludesUI.BlizzStyle.Gate("cdmicons", {
+            CUI.BlizzStyle.Gate("cdmicons", {
                 type = "slider",
                 text = "Icon Zoom",
                 min = 0,
@@ -2561,7 +2562,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
         -- Row 4: Border Size + swatches | Border Style dropdown + offset cog
         do
-            local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+            local texValues, texOrder = CUI.GetBorderTextureDropdown()
             local buffBsRow
             -- Border Size: the exact-size slider, except under a custom shape, whose
             -- ring is on (Strong) or off (None): that keeps the None..Strong dropdown.
@@ -2591,12 +2592,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end,
                 }
             else
-                buffSizeCfg = CludesUI.BorderPxSliderCfg({
+                buffSizeCfg = CUI.BorderPxSliderCfg({
                     text = "Border Size",
                     getStep = function() return BarList().borderSize or 1 end,
                     setStep = function(step)
                         local edge = BarList()
-                        edge.borderThickness = CludesUI.BORDER_LABEL_OF_STEP[step] or "thin"
+                        edge.borderThickness = CUI.BORDER_LABEL_OF_STEP[step] or "thin"
                         edge.borderSize = step
                     end,
                     getTex = function() return BarList().borderTexture or "solid" end,
@@ -2608,8 +2609,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             buffBsRow, height = W:DualRow(
                 hostFrame,
                 cursorY,
-                CludesUI.BlizzStyle.Gate("cdmicons", buffSizeCfg),
-                CludesUI.BlizzStyle.Gate("cdmicons", {
+                CUI.BlizzStyle.Gate("cdmicons", buffSizeCfg),
+                CUI.BlizzStyle.Gate("cdmicons", {
                     type = "dropdown",
                     text = "Border Style",
                     disabled = function() return CustomShapeOn() end,
@@ -2624,17 +2625,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.borderTextureOffsetY = nil
                         edge.borderTextureShiftX = nil
                         edge.borderTextureShiftY = nil
-                        local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(value)
+                        local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(value)
                         edge.borderR = _bcol.r
                         edge.borderG = _bcol.g
                         edge.borderB = _bcol.b
                         edge.borderA = 1
                         edge.borderClassColor = false
                         edge.borderBehind = _bbehind
-                        local defTh = CludesUI.GetBorderDefaultSize("cdm", value)
+                        local defTh = CUI.GetBorderDefaultSize("cdm", value)
                         -- An unregistered SharedMedia border defaults to the NUMBER 1: store its label.
                         if type(defTh) == "number" then
-                            defTh = CludesUI.BORDER_LABEL_OF_STEP[defTh] or "thin"
+                            defTh = CUI.BORDER_LABEL_OF_STEP[defTh] or "thin"
                         end
                         if defTh then
                             edge.borderThickness = defTh
@@ -2642,7 +2643,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         end
                         if edge.borderSizePx then edge.borderSizePx = false end
                         RebuildBars()
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end,
                 })
             )
@@ -2654,7 +2655,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             do
                 local tex0 = BarList().borderTexture or "solid"
                 if tex0 ~= "" and tex0 ~= "solid" then
-                    local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                    local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                         addonKey = "cdm",
                         disabled = function() return CustomShapeOn() end,
                         disabledTooltip = "This option requires a non-custom button shape",
@@ -2671,16 +2672,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     _, height = W:DualRow(
                         hostFrame,
                         cursorY,
-                        CludesUI.BlizzStyle.Gate("cdmicons", ocfgL),
-                        CludesUI.BlizzStyle.Gate("cdmicons", ocfgR)
+                        CUI.BlizzStyle.Gate("cdmicons", ocfgL),
+                        CUI.BlizzStyle.Gate("cdmicons", ocfgR)
                     )
                     cursorY = cursorY - height
                 end
             end
             -- Inline cog for border offset
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = buffBsRow._rightRegion
-                local cogBtn = CludesUI.BuildInlineCog(region, {
+                local cogBtn = CUI.BuildInlineCog(region, {
                     title = "Border Options",
                     rows = {
                         {
@@ -2695,7 +2696,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 local edge = BarList()
                                 local texture = edge.borderTexture or "solid"
                                 local th = edge.borderThickness or "thin"
-                                local _, _, dsx = CludesUI.GetBorderDefaults("cdm", texture, th)
+                                local _, _, dsx = CUI.GetBorderDefaults("cdm", texture, th)
                                 return dsx
                             end,
                             set = function(value)
@@ -2715,7 +2716,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 local edge = BarList()
                                 local texture = edge.borderTexture or "solid"
                                 local th = edge.borderThickness or "thin"
-                                local _, _, _, dsy = CludesUI.GetBorderDefaults("cdm", texture, th)
+                                local _, _, _, dsy = CUI.GetBorderDefaults("cdm", texture, th)
                                 return dsy
                             end,
                             set = function(value)
@@ -2730,28 +2731,28 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             set = function(value)
                                 BarList().borderBehind = value == false and nil or value
                                 RebuildBars()
-                                CludesUI:RefreshPage()
+                                CUI:RefreshPage()
                             end,
                         },
                     },
                 })
                 local function SyncBorderCog()
                     local texture = BarList().borderTexture or "solid"
-                    if texture == "solid" or CludesUI.BlizzStyle.Get("cdmicons") then
+                    if texture == "solid" or CUI.BlizzStyle.Get("cdmicons") then
                         cogBtn:Hide()
                     else
                         cogBtn:Show()
                     end
                 end
-                CludesUI.RegisterWidgetRefresh(SyncBorderCog)
+                CUI.RegisterWidgetRefresh(SyncBorderCog)
                 SyncBorderCog()
             end
             -- Inline border color swatches on Border Size (left region of row 4)
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local leftRegion = buffBsRow._leftRegion
                 local control = leftRegion._control
 
-                local classBorderSwatch, updateClassBorderSwatch = CludesUI.BuildColorSwatch(
+                local classBorderSwatch, updateClassBorderSwatch = CUI.BuildColorSwatch(
                     leftRegion,
                     buffBsRow:GetFrameLevel() + 3,
                     function()
@@ -2766,17 +2767,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 )
                 Pix.Point(classBorderSwatch, "RIGHT", control, "LEFT", -8, 0)
                 classBorderSwatch:SetScript("OnClick", function()
-                    if CludesUI.BlizzStyle.Get("cdmicons") then return end
+                    if CUI.BlizzStyle.Get("cdmicons") then return end
                     BarList().borderClassColor = true
                     mod.RefreshCDMIconAppearance(BarList().key)
                     Refresh()
                     UpdateCDMPreview()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end)
-                CludesUI.HoverTip(classBorderSwatch, "Class Colored")
+                CUI.HoverTip(classBorderSwatch, "Class Colored")
 
                 local UpdateBorderState
-                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
                     leftRegion,
                     buffBsRow:GetFrameLevel() + 3,
                     function() return BarList().borderR or 0, BarList().borderG or 0, BarList().borderB or 0 end,
@@ -2792,7 +2793,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", classBorderSwatch, "LEFT", -8, 0)
-                CludesUI.HoverTip(colorSwatch, "Custom Colored")
+                CUI.HoverTip(colorSwatch, "Custom Colored")
 
                 -- Clicking the custom swatch switches class color off AND opens
                 -- the color picker in the same click (a toggle-only first click
@@ -2801,7 +2802,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 colorSwatch:SetScript("OnClick", function(self, ...)
                     -- No border selected (or Blizzard Style): don't open the color picker
                     if
-                        (BarList().borderThickness or "thin") == "none" or CludesUI.BlizzStyle.Get("cdmicons")
+                        (BarList().borderThickness or "thin") == "none" or CUI.BlizzStyle.Get("cdmicons")
                     then
                         return
                     end
@@ -2819,11 +2820,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 function UpdateBorderState()
                     local isClassColored = BarList().borderClassColor
                     local isNone = (BarList().borderThickness or "thin") == "none"
-                        or CludesUI.BlizzStyle.Get("cdmicons")
+                        or CUI.BlizzStyle.Get("cdmicons")
                     colorSwatch:SetAlpha((isClassColored or isNone) and 0.3 or 1)
                     classBorderSwatch:SetAlpha((isClassColored and not isNone) and 1 or 0.3)
                 end
-                CludesUI.RegisterWidgetRefresh(function()
+                CUI.RegisterWidgetRefresh(function()
                     updateSwatch()
                     updateClassBorderSwatch()
                     UpdateBorderState()
@@ -2831,8 +2832,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 UpdateBorderState()
             end
             -- Sync icon: Border Size (left region)
-            if not CludesUI._prebuilding then
-                CludesUI.BuildSyncIcon({
+            if not CUI._prebuilding then
+                CUI.BuildSyncIcon({
                     region = buffBsRow._leftRegion,
                     tooltip = "Apply Border Size to all Bars",
                     isSynced = function()
@@ -2867,7 +2868,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             bar.borderClassColor = classColor
                         end)
                         RebuildBars()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
             end
@@ -2875,8 +2876,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             BorderStyleSync(buffBsRow._rightRegion)
         end
     else
-        local icsWDis2, icsWTip2 = CludesUI.MatchGuard("CDM_" .. barId, "Width")
-        local icsHDis2, icsHTip2 = CludesUI.MatchGuard("CDM_" .. barId, "Height")
+        local icsWDis2, icsWTip2 = CUI.MatchGuard("CDM_" .. barId, "Width")
+        local icsHDis2, icsHTip2 = CUI.MatchGuard("CDM_" .. barId, "Height")
         local icsDis2 = function() return icsWDis2() or icsHDis2() end
         local icsTip2 = function()
             if icsWDis2() then return icsWTip2() end
@@ -2924,8 +2925,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         cursorY = cursorY - height
 
         -- Sync icon on Icon Spacing (right of row 1)
-        if not CludesUI._prebuilding then
-            CludesUI.BuildSyncIcon({
+        if not CUI._prebuilding then
+            CUI.BuildSyncIcon({
                 region = scaleAnimRow._rightRegion,
                 tooltip = "Apply Icon Spacing to all Bars",
                 isSynced = function()
@@ -2944,7 +2945,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         ClearMatchDims(bar)
                     end)
                     RebuildBars(true)
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
         end
@@ -2961,7 +2962,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     if not focusKickBar then
         local minVert = BarList().verticalOrientation == true
         local region = buffGlowBar and scaleAnimRow._rightRegion or scaleAnimRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = minVert and "Minimum Height" or "Minimum Width",
             rows = {
                 {
@@ -2987,7 +2988,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- Border Style dropdown (CD/utility and non-buff bars only)
     if not buffGlowBar then
         do
-            local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+            local texValues, texOrder = CUI.GetBorderTextureDropdown()
             local bsRow
             -- Border Size: the exact-size slider, except under a custom shape, whose
             -- ring is on (Strong) or off (None): that keeps the None..Strong dropdown.
@@ -3017,12 +3018,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end,
                 }
             else
-                sizeCfg = CludesUI.BorderPxSliderCfg({
+                sizeCfg = CUI.BorderPxSliderCfg({
                     text = "Border Size",
                     getStep = function() return BarList().borderSize or 1 end,
                     setStep = function(step)
                         local edge = BarList()
-                        edge.borderThickness = CludesUI.BORDER_LABEL_OF_STEP[step] or "thin"
+                        edge.borderThickness = CUI.BORDER_LABEL_OF_STEP[step] or "thin"
                         edge.borderSize = step
                     end,
                     getTex = function() return BarList().borderTexture or "solid" end,
@@ -3034,7 +3035,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             bsRow, height = W:DualRow(
                 hostFrame,
                 cursorY,
-                CludesUI.BlizzStyle.Gate("cdmicons", {
+                CUI.BlizzStyle.Gate("cdmicons", {
                     type = "dropdown",
                     text = "Border Style",
                     disabled = function() return CustomShapeOn() end,
@@ -3049,17 +3050,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.borderTextureOffsetY = nil
                         edge.borderTextureShiftX = nil
                         edge.borderTextureShiftY = nil
-                        local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(value)
+                        local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(value)
                         edge.borderR = _bcol.r
                         edge.borderG = _bcol.g
                         edge.borderB = _bcol.b
                         edge.borderA = 1
                         edge.borderClassColor = false
                         edge.borderBehind = _bbehind
-                        local defTh = CludesUI.GetBorderDefaultSize("cdm", value)
+                        local defTh = CUI.GetBorderDefaultSize("cdm", value)
                         -- An unregistered SharedMedia border defaults to the NUMBER 1: store its label.
                         if type(defTh) == "number" then
-                            defTh = CludesUI.BORDER_LABEL_OF_STEP[defTh] or "thin"
+                            defTh = CUI.BORDER_LABEL_OF_STEP[defTh] or "thin"
                         end
                         if defTh then
                             edge.borderThickness = defTh
@@ -3067,10 +3068,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         end
                         if edge.borderSizePx then edge.borderSizePx = false end
                         RebuildBars()
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end,
                 }),
-                CludesUI.BlizzStyle.Gate("cdmicons", sizeCfg)
+                CUI.BlizzStyle.Gate("cdmicons", sizeCfg)
             )
             cursorY = cursorY - height
             -- Width Offset | Height Offset: the textured border's outward offsets,
@@ -3080,7 +3081,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             do
                 local tex0 = BarList().borderTexture or "solid"
                 if tex0 ~= "" and tex0 ~= "solid" then
-                    local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                    local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                         addonKey = "cdm",
                         disabled = function() return CustomShapeOn() end,
                         disabledTooltip = "This option requires a non-custom button shape",
@@ -3097,16 +3098,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     _, height = W:DualRow(
                         hostFrame,
                         cursorY,
-                        CludesUI.BlizzStyle.Gate("cdmicons", ocfgL),
-                        CludesUI.BlizzStyle.Gate("cdmicons", ocfgR)
+                        CUI.BlizzStyle.Gate("cdmicons", ocfgL),
+                        CUI.BlizzStyle.Gate("cdmicons", ocfgR)
                     )
                     cursorY = cursorY - height
                 end
             end
             -- Inline cog for border offset
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local region = bsRow._leftRegion
-                local cogBtn = CludesUI.BuildInlineCog(region, {
+                local cogBtn = CUI.BuildInlineCog(region, {
                     title = "Border Options",
                     rows = {
                         {
@@ -3121,7 +3122,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 local edge = BarList()
                                 local texture = edge.borderTexture or "solid"
                                 local th = edge.borderThickness or "thin"
-                                local _, _, dsx = CludesUI.GetBorderDefaults("cdm", texture, th)
+                                local _, _, dsx = CUI.GetBorderDefaults("cdm", texture, th)
                                 return dsx
                             end,
                             set = function(value)
@@ -3141,7 +3142,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 local edge = BarList()
                                 local texture = edge.borderTexture or "solid"
                                 local th = edge.borderThickness or "thin"
-                                local _, _, _, dsy = CludesUI.GetBorderDefaults("cdm", texture, th)
+                                local _, _, _, dsy = CUI.GetBorderDefaults("cdm", texture, th)
                                 return dsy
                             end,
                             set = function(value)
@@ -3156,31 +3157,31 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             set = function(value)
                                 BarList().borderBehind = value == false and nil or value
                                 RebuildBars()
-                                CludesUI:RefreshPage()
+                                CUI:RefreshPage()
                             end,
                         },
                     },
                 })
                 local function SyncBorderCog()
                     local texture = BarList().borderTexture or "solid"
-                    if texture == "solid" or CludesUI.BlizzStyle.Get("cdmicons") then
+                    if texture == "solid" or CUI.BlizzStyle.Get("cdmicons") then
                         cogBtn:Hide()
                     else
                         cogBtn:Show()
                     end
                 end
-                CludesUI.RegisterWidgetRefresh(SyncBorderCog)
+                CUI.RegisterWidgetRefresh(SyncBorderCog)
                 SyncBorderCog()
             end
             -- Sync icon: Border Style (left region of bsRow)
             BorderStyleSync(bsRow._leftRegion)
             -- Inline color swatches on Border Size (right region)
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local rightRegion = bsRow._rightRegion
                 local control = rightRegion._control
 
                 -- Class color swatch (rightmost)
-                local classBorderSwatch, updateClassBorderSwatch = CludesUI.BuildColorSwatch(
+                local classBorderSwatch, updateClassBorderSwatch = CUI.BuildColorSwatch(
                     rightRegion,
                     bsRow:GetFrameLevel() + 3,
                     function()
@@ -3195,17 +3196,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 )
                 Pix.Point(classBorderSwatch, "RIGHT", control, "LEFT", -8, 0)
                 classBorderSwatch:SetScript("OnClick", function()
-                    if CludesUI.BlizzStyle.Get("cdmicons") then return end
+                    if CUI.BlizzStyle.Get("cdmicons") then return end
                     BarList().borderClassColor = true
                     mod.RefreshCDMIconAppearance(BarList().key)
                     Refresh()
                     UpdateCDMPreview()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end)
-                CludesUI.HoverTip(classBorderSwatch, "Class Colored")
+                CUI.HoverTip(classBorderSwatch, "Class Colored")
 
                 -- Custom color swatch (left of class swatch)
-                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
                     rightRegion,
                     bsRow:GetFrameLevel() + 3,
                     function() return BarList().borderR or 0, BarList().borderG or 0, BarList().borderB or 0 end,
@@ -3219,18 +3220,18 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", classBorderSwatch, "LEFT", -8, 0)
-                CludesUI.HoverTip(colorSwatch, "Custom Color")
+                CUI.HoverTip(colorSwatch, "Custom Color")
 
                 -- Click the dimmed custom swatch to switch back from class color (no block overlay)
                 local origClick = colorSwatch:GetScript("OnClick")
                 colorSwatch:SetScript("OnClick", function(self, ...)
-                    if CludesUI.BlizzStyle.Get("cdmicons") then return end
+                    if CUI.BlizzStyle.Get("cdmicons") then return end
                     if BarList().borderClassColor then
                         BarList().borderClassColor = false
                         mod.RefreshCDMIconAppearance(BarList().key)
                         Refresh()
                         UpdateCDMPreview()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                         return
                     end
                     -- No border selected: allow swapping boxes but do not open the color picker
@@ -3241,11 +3242,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local function UpdateBorderSwatchState()
                     local isClassColored = BarList().borderClassColor
                     local isNone = (BarList().borderThickness or "thin") == "none"
-                        or CludesUI.BlizzStyle.Get("cdmicons")
+                        or CUI.BlizzStyle.Get("cdmicons")
                     colorSwatch:SetAlpha((isClassColored or isNone) and 0.3 or 1)
                     classBorderSwatch:SetAlpha((isClassColored and not isNone) and 1 or 0.3)
                 end
-                CludesUI.RegisterWidgetRefresh(function()
+                CUI.RegisterWidgetRefresh(function()
                     updateSwatch()
                     updateClassBorderSwatch()
                     UpdateBorderSwatchState()
@@ -3253,8 +3254,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 UpdateBorderSwatchState()
             end
             -- Sync icon on Border Size (right region)
-            if not CludesUI._prebuilding then
-                CludesUI.BuildSyncIcon({
+            if not CUI._prebuilding then
+                CUI.BuildSyncIcon({
                     region = bsRow._rightRegion,
                     tooltip = "Apply Border Size to all Bars",
                     isSynced = function()
@@ -3317,7 +3318,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             bar.borderA = ba
                         end)
                         RebuildBars()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
             end
@@ -3333,7 +3334,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         shapeRow, height = W:DualRow(
             hostFrame,
             cursorY,
-            CludesUI.BlizzStyle.Gate("cdmicons", {
+            CUI.BlizzStyle.Gate("cdmicons", {
                 type = "dropdown",
                 text = "Custom Icon Shape",
                 values = SHAPE_VALUES,
@@ -3374,10 +3375,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     ClearMatchDims(edge)
                     RebuildBars(true)
                     -- The Border Size slot is a different control under a custom shape: rebuild the page.
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             }),
-            CludesUI.BlizzStyle.Gate("cdmicons", {
+            CUI.BlizzStyle.Gate("cdmicons", {
                 type = "slider",
                 text = "Icon Zoom",
                 min = 0,
@@ -3433,10 +3434,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     -- Duration Size: inline cog + color swatch
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local leftRegion = durationRow._leftRegion
         local control = leftRegion._control
-        CludesUI.BuildInlineCog(leftRegion, {
+        CUI.BuildInlineCog(leftRegion, {
             title = "Duration Text",
             rows = {
                 {
@@ -3447,7 +3448,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         BarList().showCooldownText = value
                         mod.RefreshCDMIconAppearance(BarList().key)
                         Refresh()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
                 {
@@ -3492,7 +3493,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             },
         })
 
-        local durSwatch, updateDurSwatch = CludesUI.BuildColorSwatch(
+        local durSwatch, updateDurSwatch = CUI.BuildColorSwatch(
             leftRegion,
             durationRow:GetFrameLevel() + 3,
             function()
@@ -3514,13 +3515,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         Pix.Point(durSwatch, "RIGHT", leftRegion._lastInline or control, "LEFT", -8, 0)
         leftRegion._lastInline = durSwatch
 
-        local durBlock = CludesUI.NewSwatchBlocker(durSwatch)
+        local durBlock = CUI.NewSwatchBlocker(durSwatch)
         durBlock:SetScript(
             "OnEnter",
-            function() CludesUI.ShowWidgetTooltip(durSwatch, CludesUI.DisabledTooltip("Duration Text")) end
+            function() CUI.ShowWidgetTooltip(durSwatch, CUI.DisabledTooltip("Duration Text")) end
         )
-        durBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        CludesUI.RegisterWidgetRefresh(function()
+        durBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+        CUI.RegisterWidgetRefresh(function()
             if updateDurSwatch then updateDurSwatch() end
             local enabled = BarList().showCooldownText ~= false
             durSwatch:SetAlpha(enabled and 1 or 0.3)
@@ -3540,7 +3541,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     end
 
     -- Stack Size: inline cog + color swatch
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local rightRegion = durationRow._rightRegion
         local control = rightRegion._control
         local scPopupSpec = {
@@ -3566,7 +3567,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.showItemCount = (value ~= "never")
                         mod.RefreshCDMIconAppearance(edge.key)
                         RebuildBars()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
                 -- Crafted-rank pip on tracked items (ranks share icon art, so
@@ -3664,9 +3665,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         }
         -- Show Charge/Stack Text (row 3) is buff-family only -- see its comment.
         if not buffGlowBar then table.remove(scPopupSpec.rows, 3) end
-        CludesUI.BuildInlineCog(rightRegion, scPopupSpec)
+        CUI.BuildInlineCog(rightRegion, scPopupSpec)
 
-        local scSwatch, updateScSwatch = CludesUI.BuildColorSwatch(
+        local scSwatch, updateScSwatch = CUI.BuildColorSwatch(
             rightRegion,
             durationRow:GetFrameLevel() + 3,
             function()
@@ -3685,13 +3686,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         Pix.Point(scSwatch, "RIGHT", rightRegion._lastInline or control, "LEFT", -8, 0)
         rightRegion._lastInline = scSwatch
 
-        local scBlock = CludesUI.NewSwatchBlocker(scSwatch)
+        local scBlock = CUI.NewSwatchBlocker(scSwatch)
         scBlock:SetScript(
             "OnEnter",
-            function() CludesUI.ShowWidgetTooltip(scSwatch, CludesUI.DisabledTooltip("Item Count")) end
+            function() CUI.ShowWidgetTooltip(scSwatch, CUI.DisabledTooltip("Item Count")) end
         )
-        scBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        CludesUI.RegisterWidgetRefresh(function()
+        scBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+        CUI.RegisterWidgetRefresh(function()
             if updateScSwatch then updateScSwatch() end
             local enabled = BarList().showItemCount ~= false
             scSwatch:SetAlpha(enabled and 1 or 0.3)
@@ -3741,9 +3742,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             })
             cursorY = cursorY - height
             -- Inline cog on Pixel Glow Thickness: Lines + Speed
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local rightRegion = sgcdRow._rightRegion
-                CludesUI.BuildInlineCog(rightRegion, {
+                CUI.BuildInlineCog(rightRegion, {
                     title = "Pixel Glow",
                     rows = {
                         {
@@ -3839,9 +3840,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         })
         cursorY = cursorY - height
         -- Inline cog on Pixel Glow Thickness: Lines + Speed (buffGlow* vars)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local leftRegion = pgRow._leftRegion
-            CludesUI.BuildInlineCog(leftRegion, {
+            CUI.BuildInlineCog(leftRegion, {
                 title = "Pixel Glow",
                 rows = {
                     {
@@ -3991,7 +3992,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     mod.RefreshCDMIconAppearance(barData.key)
                     mod.ApplyCachedKeybinds()
                     UpdateCDMPreview()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
             cursorY = cursorY - height
@@ -4000,7 +4001,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 mod.RefreshCDMIconAppearance(BarList().key)
                 mod.ApplyCachedKeybinds()
                 UpdateCDMPreview()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end)
         end -- if isAnyBuffBar (tooltip only) / else (tooltip + keybind)
 
@@ -4008,7 +4009,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- preview and the Pixel Glow cog inline and the swatches in the right half.
         -- WoW Forever: the same row is the Anti-Clip Glow (CUI_CDM_ForeverAntiClip.lua).
         do
-            local GO = CludesUI.GlowOptions
+            local GO = CUI.GlowOptions
             local antiClip = mod.CDM_ANTI_CLIP
             local panDesc = mod._CDM_PandemicGlowDesc(BarList, function()
                 mod.BuildAllCDMBars()
@@ -4029,27 +4030,27 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             )
             cursorY = cursorY - height
 
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local leftRegion = panGlowRow._leftRegion
                 leftRegion._lastInline =
                     GO.BuildPreview(leftRegion, panDesc, { anchor = leftRegion._control, x = -8 })
                 GO.AttachInline(leftRegion, panDesc, panGlowRow._rightRegion)
 
-                if CludesUI.BuildSyncIcon and CludesUI.ApplyPandemicGlowToAll then
-                    CludesUI.BuildSyncIcon({
+                if CUI.BuildSyncIcon and CUI.ApplyPandemicGlowToAll then
+                    CUI.BuildSyncIcon({
                         region = panGlowRow._leftRegion,
                         tooltip = antiClip
                                 and "Apply this glow's look to the Nameplates Pandemic Glow, all CDM bars, and tracking bars. A surface that can't show a style uses its closest match."
                             or "Apply this pandemic glow to Nameplates, all CDM bars, and tracking bars. A surface that can't show a style uses its closest match.",
                         isSynced = function()
-                            return CludesUI.IsPandemicGlowSyncedToAll(
-                                CludesUI.PandemicPayloadFromCdmBar(BarList()),
+                            return CUI.IsPandemicGlowSyncedToAll(
+                                CUI.PandemicPayloadFromCdmBar(BarList()),
                                 { skipCdmKey = barId }
                             )
                         end,
                         onClick = function()
-                            CludesUI.ApplyPandemicGlowToAll(
-                                CludesUI.PandemicPayloadFromCdmBar(BarList()),
+                            CUI.ApplyPandemicGlowToAll(
+                                CUI.PandemicPayloadFromCdmBar(BarList()),
                                 { skipCdmKey = barId }
                             )
                             Refresh()
@@ -4072,7 +4073,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 if mod.FullCDMRebuild then mod.FullCDMRebuild("trinket_toggle") end
             end,
         }
-        if not CludesUI.IS_FOREVER then
+        if not CUI.IS_FOREVER then
             _, height = W:DualRow(hostFrame, cursorY, trinketCfg, {
                 type = "toggle",
                 text = "Show Rotation Helper",
@@ -4094,7 +4095,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         if mod.UpdateRotationHighlights then mod.UpdateRotationHighlights() end
                         -- The Style and Thickness rows below exist only while this
                         -- is on (the Glows page rebuilds its listing on every return).
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end
                 end,
             })
@@ -4186,7 +4187,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         RotRedraw()
                         -- Full rebuild only when the Thickness / Outset row set changes;
                         -- the in-place refresh otherwise.
-                        CludesUI:RefreshPage(RotRowsKey() ~= before)
+                        CUI:RefreshPage(RotRowsKey() ~= before)
                     end
                 end,
             }, { type = "label", text = "Rotation Assist Color" })
@@ -4194,7 +4195,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
             do
                 local colorRgn = rotStyleRow._rightRegion
-                if colorRgn and CludesUI.BuildTrioColorSwatch then
+                if colorRgn and CUI.BuildTrioColorSwatch then
                     -- Same trio as the Pandemic Glow row above. The helper opens the
                     -- picker only while custom mode is already active, so a picker
                     -- cancel can never flip the mode. Dimmed while Blizzard Default
@@ -4204,22 +4205,22 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         return not rotBars or rotBars.rotationAssistStyle == "blizzard"
                     end
                     local colorSwatch, defaultSwatch, classSwatch =
-                        CludesUI.BuildTrioColorSwatch(colorRgn, rotStyleRow:GetFrameLevel() + 3, {
+                        CUI.BuildTrioColorSwatch(colorRgn, rotStyleRow:GetFrameLevel() + 3, {
                             getMode = function() return RotGet("rotationAssistColorMode", "default") end,
                             setMode = function(mode)
                                 local rotBars = RotationBars()
                                 if not rotBars or rotBars.rotationAssistStyle == "blizzard" then return end
                                 -- Spec Overrides: the slot this write belongs to, read
                                 -- before the write (as the widget factory does).
-                                local snap = CludesUI._SOAttribution(colorRgn)
+                                local snap = CUI._SOAttribution(colorRgn)
                                 rotBars.rotationAssistColorMode = mode
                                 RotRedraw()
-                                CludesUI._NotifySettingWrite(colorRgn, snap)
+                                CUI._NotifySettingWrite(colorRgn, snap)
                             end,
                             getCustomRGB = RotCustomRGB,
                             setCustomRGB = RotSetCustomRGB,
                             hasClassColor = true,
-                            onChange = function() CludesUI:RefreshPage() end,
+                            onChange = function() CUI:RefreshPage() end,
                             disabled = rotColorOff,
                             disabledAlpha = 0.15,
                         })
@@ -4233,7 +4234,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         defaultSwatch:EnableMouse(not off)
                         classSwatch:EnableMouse(not off)
                     end
-                    CludesUI.RegisterWidgetRefresh(UpdateRotSwatchMouse)
+                    CUI.RegisterWidgetRefresh(UpdateRotSwatchMouse)
                     UpdateRotSwatchMouse()
                     colorRgn._captureCfg = {
                         type = "multi",
@@ -4292,7 +4293,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     rotThRow, height = W:DualRow(hostFrame, cursorY, thicknessCfg, outsetCfg)
                     cursorY = cursorY - height
                     -- Pixel Glow's remaining parameters (Solid Border reads thickness only).
-                    if not CludesUI._prebuilding then
+                    if not CUI._prebuilding then
                         local function notPixel()
                             local rotBars = RotationBars()
                             return not rotBars or rotBars.rotationAssistStyle ~= "pixel"
@@ -4300,10 +4301,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- The shared Pixel Glow rows over the rotationAssist* keys, minus
                         -- Thickness (it sits on this row itself).
                         local rotCogRows = {}
-                        for _, r in ipairs(CludesUI.GlowOptions.CogRows(mod._CDM_RotationGlowDesc())) do
+                        for _, r in ipairs(CUI.GlowOptions.CogRows(mod._CDM_RotationGlowDesc())) do
                             if r.label ~= "Thickness" then rotCogRows[#rotCogRows + 1] = r end
                         end
-                        CludesUI.BuildInlineCog(rotThRow._leftRegion, {
+                        CUI.BuildInlineCog(rotThRow._leftRegion, {
                             title = "Pixel Glow Settings",
                             captureRegion = rotThRow._leftRegion,
                             disabled = notPixel,
@@ -4312,7 +4313,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         })
                     end
                 else
-                    _, height = W:DualRow(hostFrame, cursorY, outsetCfg, CludesUI.BlankRowCfg())
+                    _, height = W:DualRow(hostFrame, cursorY, outsetCfg, CUI.BlankRowCfg())
                     cursorY = cursorY - height
                 end
             end
@@ -4347,8 +4348,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             type = "dropdown",
             text = "Bar Strata",
             tooltip = "Screen layer this bar and its icons render on.",
-            values = CludesUI.FRAME_STRATA_LABELS,
-            order = CludesUI.FRAME_STRATA_ORDER_FULL,
+            values = CUI.FRAME_STRATA_LABELS,
+            order = CUI.FRAME_STRATA_ORDER_FULL,
             getValue = BDFieldOr("barStrata", "MEDIUM"),
             setValue = function(value)
                 BarList().barStrata = value
@@ -4391,7 +4392,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
                     if mod.RefreshBuffGlows then mod.RefreshBuffGlows() end
                 end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }
 
@@ -4413,18 +4414,18 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             }
             _, height = W:DualRow(hostFrame, cursorY, strataCfg, edgeCfg)
             cursorY = cursorY - height
-            if CludesUI.IS_FOREVER then
+            if CUI.IS_FOREVER then
                 _, height = W:DualRow(hostFrame, cursorY, glowCombatCfg, trinketCfg)
                 cursorY = cursorY - height
             else
-                _, height = W:DualRow(hostFrame, cursorY, glowCombatCfg, CludesUI.BlankRowCfg())
+                _, height = W:DualRow(hostFrame, cursorY, glowCombatCfg, CUI.BlankRowCfg())
                 cursorY = cursorY - height
             end
         else
             _, height = W:DualRow(hostFrame, cursorY, strataCfg, glowCombatCfg)
             cursorY = cursorY - height
-            if CludesUI.IS_FOREVER then
-                _, height = W:DualRow(hostFrame, cursorY, trinketCfg, CludesUI.BlankRowCfg())
+            if CUI.IS_FOREVER then
+                _, height = W:DualRow(hostFrame, cursorY, trinketCfg, CUI.BlankRowCfg())
                 cursorY = cursorY - height
             end
         end
@@ -4456,11 +4457,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 if mod.RegisterCDMUnlockElements then mod.RegisterCDMUnlockElements() end
                 mod.BuildAllCDMBars()
                 if
-                    CludesUI.IsUnlockAnchored
-                    and CludesUI.IsUnlockAnchored("CDM_" .. barData.key)
-                    and CludesUI.PropagateAnchorChain
+                    CUI.IsUnlockAnchored
+                    and CUI.IsUnlockAnchored("CDM_" .. barData.key)
+                    and CUI.PropagateAnchorChain
                 then
-                    CludesUI.PropagateAnchorChain("CDM_" .. barData.key)
+                    CUI.PropagateAnchorChain("CDM_" .. barData.key)
                 end
                 Refresh()
             end

@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_MacroModel_Options.lua
 --  The Macro Manager's model, loaded with the options panel for the Macros
@@ -25,7 +26,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials 
 --  first (MM.Resolve): indexes move whenever a macro is made, renamed or
 --  deleted, and two macros may share a name.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIForeverEssentials"]
+local mod = CUI._ModuleNS["CludesUIForeverEssentials"]
 if not mod then return end -- module disabled: no options page
 
 local B, S, MM = {}, {}, {}
@@ -566,11 +567,11 @@ B.PARAMS = {
         default = "2",
         options = function()
             return Numbers(5, {
-                CludesUI.L("left"),
-                CludesUI.L("right"),
-                CludesUI.L("middle"),
-                CludesUI.L("button 4"),
-                CludesUI.L("button 5"),
+                CUI.L("left"),
+                CUI.L("right"),
+                CUI.L("middle"),
+                CUI.L("button 4"),
+                CUI.L("button 5"),
             })
         end,
         tip = "Which mouse button clicked the action button (or which key binding: 1 = normal).",
@@ -637,13 +638,13 @@ function B.Stances()
     local nameList = {}
     for idx = 1, GetNumShapeshiftForms() do
         local _, _, _, spellId = GetShapeshiftFormInfo(idx)
-        nameList[idx] = (spellId and C_Spell.GetSpellName(spellId)) or CludesUI.Lf("Stance %d", idx)
+        nameList[idx] = (spellId and C_Spell.GetSpellName(spellId)) or CUI.Lf("Stance %d", idx)
         itemList[#itemList + 1] = { value = tostring(idx), label = idx .. " - " .. nameList[idx] }
     end
     for idx = 1, #nameList - 1 do
         itemList[#itemList + 1] = {
             value = idx .. "/" .. (idx + 1),
-            label = idx .. "/" .. (idx + 1) .. " - " .. CludesUI.Lf(
+            label = idx .. "/" .. (idx + 1) .. " - " .. CUI.Lf(
                 "%1$s or %2$s",
                 nameList[idx],
                 nameList[idx + 1]
@@ -1023,20 +1024,20 @@ end
 
 -- Combat, or a macro that cannot be found again, stops a write.
 local function Target(ref)
-    if InCombatLockdown() then return nil, CludesUI.L("Macros can't be changed in combat.") end
+    if InCombatLockdown() then return nil, CUI.L("Macros can't be changed in combat.") end
     local idx = MM.Resolve(ref)
-    if not idx then return nil, CludesUI.L("This macro changed outside the editor. Select it again.") end
+    if not idx then return nil, CUI.L("This macro changed outside the editor. Select it again.") end
     return idx
 end
 
 -- Why the editor's name and text cannot be saved, or nil. The length counts
 -- letters, as Blizzard's own macro text box does.
 function MM.Check(name, body)
-    if name == "" then return CludesUI.L("Please enter a name.") end
-    if strtrim(body) == "" then return CludesUI.L("The macro is empty.") end
+    if name == "" then return CUI.L("Please enter a name.") end
+    if strtrim(body) == "" then return CUI.L("The macro is empty.") end
     local num = strlenutf8(body)
     if num > MM.MAX_LETTERS then
-        return CludesUI.Lf("Too long: %1$d / %2$d characters.", num, MM.MAX_LETTERS)
+        return CUI.Lf("Too long: %1$d / %2$d characters.", num, MM.MAX_LETTERS)
     end
 end
 
@@ -1053,14 +1054,14 @@ function MM.Save(ref, name, icon, body, perChar)
         if not idx then return nil, err end
         icon = icon or MM.StoredIcon(idx)
     elseif InCombatLockdown() then
-        return nil, CludesUI.L("Macros can't be changed in combat.")
+        return nil, CUI.L("Macros can't be changed in combat.")
     end
     icon = icon or MM.QUESTION
     local success, new
     if idx and ref.perChar == perChar then
         success, new = pcall(EditMacro, idx, name, icon, body)
     elseif MM.Free(perChar) <= 0 then
-        return nil, CludesUI.L("No free macro slot")
+        return nil, CUI.L("No free macro slot")
     else
         success, new = pcall(CreateMacro, name, icon, body, perChar)
         -- A move: the copy exists, so the original goes, found again first:
@@ -1070,7 +1071,7 @@ function MM.Save(ref, name, icon, body, perChar)
         if success and idx then idx = MM.Resolve(ref) end
         if success and idx then DeleteMacro(idx) end
     end
-    if not success then return nil, CludesUI.L("Error:") .. " " .. tostring(new) end
+    if not success then return nil, CUI.L("Error:") .. " " .. tostring(new) end
     return MM.Entry(new)
 end
 

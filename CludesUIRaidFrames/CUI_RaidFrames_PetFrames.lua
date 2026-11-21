@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PetFrames.lua
 --
@@ -412,7 +413,7 @@ do
         petBtn:RegisterForClicks("AnyUp")
         petBtn:SetAttribute("*type1", "target")
         -- The engine gates SecureUnitButton's togglemenu; route right-click through a SecureActionButton proxy so the menu works without taint.
-        CludesUI.AttachSecureUnitMenu(petBtn)
+        CUI.AttachSecureUnitMenu(petBtn)
         FB.BuildVisuals(petBtn, true)
 
         petBtn:HookScript("OnShow", function(self)
@@ -505,7 +506,7 @@ do
         inputs[1], inputs[2], inputs[3], inputs[4], inputs[5] =
             bgRGB.r, bgRGB.g, bgRGB.b, src.bgDarkness, texPath
         inputs[6], inputs[7] = src.healthVerticalFill, src.healthBarOpacity
-        inputs[8], inputs[9] = CludesUI.GetFontPath("raidFrames"), CludesUI.GetFontOutlineFlag("raidFrames")
+        inputs[8], inputs[9] = CUI.GetFontPath("raidFrames"), CUI.GetFontOutlineFlag("raidFrames")
         inputs[10], inputs[11], inputs[12], inputs[13], inputs[14] =
             src.borderSize,
             borderRGB and borderRGB.r,
@@ -823,7 +824,7 @@ do
         wid = PixelSnap(math.max(10, wid + (v.extraWidth or 0)))
         hgt = PixelSnap(math.max(10, hgt + (v.extraHeight or 0)))
         -- Same grid as FB.FreePin: the pet header's own scale.
-        petSettings = CludesUI.PP.SnapForES(petSettings, (PetKit.container or UIParent):GetEffectiveScale())
+        petSettings = CUI.PP.SnapForES(petSettings, (PetKit.container or UIParent):GetEffectiveScale())
         return wid, hgt, petSettings, unitGrowth, groupGrowth
     end
 

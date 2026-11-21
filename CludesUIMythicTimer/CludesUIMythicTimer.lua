@@ -1,24 +1,25 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIMythicTimer.lua  --  M+ Timer overlay for CludesUI
 -------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewCombatQueue
-        and CludesUI.RegisterNumberFormatCallback
-        and CludesUI.ApplyModuleFontFamily
-        and CludesUI.SetFontFamily
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewCombatQueue
+        and CUI.RegisterNumberFormatCallback
+        and CUI.ApplyModuleFontFamily
+        and CUI.SetFontFamily
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the run summary redraws through the parent's RegisterNumberFormatCallback, and the texts naming players take font families through its ApplyModuleFontFamily / SetFontFamily)
-CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
-mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
-local EMT = CludesUI.Lite.NewAddon(ADDON_NAME)
+CUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+mod.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
+local EMT = CUI.Lite.NewAddon(ADDON_NAME)
 
 -- Upvalues
 local floor, min, max, abs = math.floor, math.min, math.max, math.abs
@@ -38,19 +39,19 @@ local COMPARE_DUNGEON = "DUNGEON"
 local COMPARE_LEVEL = "LEVEL"
 local COMPARE_LEVEL_AFFIX = "LEVEL_AFFIX"
 
-local barTextures, barTextureNames, barTextureOrder = CludesUI.BuildBarTextureTables()
+local barTextures, barTextureNames, barTextureOrder = CUI.BuildBarTextureTables()
 mod.barTextures = barTextures
 mod.barTextureOrder = barTextureOrder
 mod.barTextureNames = barTextureNames
 
 local function AppendSharedMediaBarTextures()
-    CludesUI.AppendSharedMediaTextures(barTextureNames, barTextureOrder, nil, barTextures)
+    CUI.AppendSharedMediaTextures(barTextureNames, barTextureOrder, nil, barTextures)
 end
 mod.AppendSharedMediaBarTextures = AppendSharedMediaBarTextures
 
 local function ApplyBarTexture(texture, texKey, red, green, blue, a)
     if not texture then return end
-    local filePath = CludesUI.ResolveTexturePath(barTextures, texKey or "none", nil)
+    local filePath = CUI.ResolveTexturePath(barTextures, texKey or "none", nil)
     if filePath then
         texture:SetTexture(filePath)
         texture:SetVertexColor(red, green, blue, a)
@@ -70,7 +71,7 @@ local function GetBarBleedInset(profile, forForces)
     if not profile or profile.customBorderStyle ~= true then return 0 end
     if (profile.borderSize or 0) <= 0 then return 0 end
     if forForces and profile.borderApplyToForces == false then return 0 end
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     return (Pix and Pix.mult or 1) * 1
 end
 
@@ -118,7 +119,7 @@ local function EnsureShellTextures(clip, ownerFrame, bgKey, fillKey)
     return ownerFrame[bgKey], ownerFrame[fillKey]
 end
 
-local CopyTable = CludesUI.Lite.DeepCopy
+local CopyTable = CUI.Lite.DeepCopy
 
 local function CalculateBonusTimers(timeLimit, affixes)
     local plusTwoT = (timeLimit or 0) * PLUS_TWO_RATIO
@@ -443,7 +444,7 @@ local DB_DEFAULTS = {
 }
 
 -- Per-addon border texture defaults (same as resourcebars/cdm)
-CludesUI.RegisterBorderDefaults("MythicPlus", CludesUI.BORDER_DEFAULTS_BARS)
+CUI.RegisterBorderDefaults("MythicPlus", CUI.BORDER_DEFAULTS_BARS)
 
 -- State
 local store
@@ -713,7 +714,7 @@ local function BuildSplitCompareText(referenceTime, currentTime, deltaOnly, fast
     local cR, cG, cB = ColorOr(color, 0.4, 1, 0.4)
     local diffPrefix = diff < 0 and "-" or "+"
     local diffText = diff == 0 and "0:00" or TimeText(abs(diff))
-    local colorHex = CludesUI.HexColor(cR, cG, cB)
+    local colorHex = CUI.HexColor(cR, cG, cB)
 
     if deltaOnly then return format("  %s(%s%s)|r", colorHex, diffPrefix, diffText) end
 
@@ -725,7 +726,7 @@ local function FormatEnemyForcesText(enemyLine, formatId, compact)
     local rawTotal = enemyLine.rawTotalQuantity or enemyLine.totalQuantity or 100
     local percent = enemyLine.percent or enemyLine.quantity or 0
     local remaining = max(0, rawTotal - rawCurrent)
-    local suffix = compact and "" or CludesUI.L(" Enemy Forces")
+    local suffix = compact and "" or CUI.L(" Enemy Forces")
 
     if formatId == "COUNT" then
         return format("%d/%d%s", RoundInt(rawCurrent), RoundInt(rawTotal), suffix)
@@ -1291,12 +1292,12 @@ local PREVIEW_RUN = {
 local function LocalizePreview()
     local runRec = PREVIEW_RUN
     if C_ChallengeMode and C_ChallengeMode.GetMapUIInfo then
-        runRec.mapName = C_ChallengeMode.GetMapUIInfo(runRec.mapID) or CludesUI.L(runRec.mapName)
+        runRec.mapName = C_ChallengeMode.GetMapUIInfo(runRec.mapID) or CUI.L(runRec.mapName)
     end
     if runRec._previewAffixIDs and C_ChallengeMode and C_ChallengeMode.GetAffixInfo then
         for i, ident in ipairs(runRec._previewAffixIDs) do
             local label = C_ChallengeMode.GetAffixInfo(ident)
-            runRec._previewAffixNames[i] = label or CludesUI.L(runRec._previewAffixNames[i])
+            runRec._previewAffixNames[i] = label or CUI.L(runRec._previewAffixNames[i])
         end
     end
 end
@@ -1403,12 +1404,12 @@ local function ApplyBorderTo(hostFrame, anchor, key, profile, size, texKey, red,
 
     if size <= 0 or not anchor:IsShown() then
         bf:Hide()
-        CludesUI.ApplyBorderStyle(bf, 0, red, green, blue, a, texKey)
+        CUI.ApplyBorderStyle(bf, 0, red, green, blue, a, texKey)
         return
     end
 
     bf:Show()
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         bf,
         size,
         red,
@@ -1428,7 +1429,7 @@ local function ApplyBorderTo(hostFrame, anchor, key, profile, size, texKey, red,
     -- PP strip container keeps an absolute level from create time; bump it with
     -- the carrier or the strips can sit under the TICKS tick layer while the
     -- empty carrier frame alone is "above".
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local edges = Pix and Pix.GetBorders and Pix.GetBorders(bf)
     if edges then edges:SetFrameLevel(bf:GetFrameLevel() + 1) end
 end
@@ -1449,7 +1450,7 @@ mod.ApplyBorder = function()
     local red, green, blue, a = p.borderR or 0, p.borderG or 0, p.borderB or 0, p.borderA or 1
     -- Exact pixel size (nil = the legacy path), resolved once against the bar's
     -- own step: every carrier below draws either this size or a forced 0.
-    local px = CludesUI.BorderPx(p.borderSizePx, size, texKey)
+    local px = CUI.BorderPx(p.borderSizePx, size, texKey)
 
     -- Main timer bar. In SEGMENTS mode "_barHost" is only a layout spacer that
     -- spans the ENTIRE bar width (including the gaps between segments). Bordering
@@ -1538,15 +1539,15 @@ local FONT_OPTIONS = {
     { key = "Fonts/ARHei.TTF", label = "AR Hei (CJK)" },
 }
 local function SFont()
-    if CludesUI and CludesUI.GetFontPath then
-        local p = CludesUI.GetFontPath("mythicTimer")
+    if CUI and CUI.GetFontPath then
+        local p = CUI.GetFontPath("mythicTimer")
         if p and p ~= "" then return p end
     end
     return FALLBACK_FONT
 end
 -- _CUMT_GetFontOptions removed: font dropdown deleted from options page.
 local function SOutline()
-    if CludesUI.GetFontOutlineFlag then return CludesUI.GetFontOutlineFlag("mythicTimer") end
+    if CUI.GetFontOutlineFlag then return CUI.GetFontOutlineFlag("mythicTimer") end
     return ""
 end
 local function SetFS(fontStr, size, flags)
@@ -1562,8 +1563,8 @@ end
 -- picker; anything else falls back to the module font (SFont).
 local function TimerFont()
     local key = store and store.profile and store.profile.timerFont
-    if key and key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
-        local filePath = CludesUI.ResolveFontName(key)
+    if key and key ~= "__global" and CUI and CUI.ResolveFontName then
+        local filePath = CUI.ResolveFontName(key)
         if filePath and filePath ~= "" then return filePath end
     end
     return SFont()
@@ -1577,11 +1578,11 @@ local function SetTimerFS(fontStr, size, flags)
 end
 local function ApplyShadow(fontStr)
     if not fontStr then return end
-    local useShadow = CludesUI.GetFontUseShadow("mythicTimer")
+    local useShadow = CUI.GetFontUseShadow("mythicTimer")
     -- Font is set elsewhere (SetFS) and ApplyShadow runs after it, so capture
     -- and restore the current font around PrimeFontShadow's SetFontObject.
     local _pf, _ps, _pfl = fontStr:GetFont()
-    CludesUI.PrimeFontShadow(fontStr, useShadow)
+    CUI.PrimeFontShadow(fontStr, useShadow)
     if _pf then fontStr:SetFont(_pf, _ps, _pfl) end
 end
 
@@ -1655,7 +1656,7 @@ local function SetThreshText(fontStr, textValue)
 end
 
 local function GetAccentColor()
-    if CludesUI.ResolveActiveAccent then return CludesUI.ResolveActiveAccent() end
+    if CUI.ResolveActiveAccent then return CUI.ResolveActiveAccent() end
     return 0.05, 0.83, 0.62
 end
 
@@ -1771,7 +1772,7 @@ do
             red, green, blue = ColorOr(profile.pullBarColor, 1, 0.55, 0.1)
         end
         local a = profile.pullBarAlpha or 0.35
-        local texPath = CludesUI.ResolveTexturePath(barTextures, profile.enemyBarTexture or "none", nil)
+        local texPath = CUI.ResolveTexturePath(barTextures, profile.enemyBarTexture or "none", nil)
             or "Interface\\Buttons\\WHITE8X8"
 
         if
@@ -1969,20 +1970,20 @@ local function CreateStandaloneFrame()
     local ttBg = deathTip:CreateTexture(nil, "BACKGROUND")
     ttBg:SetAllPoints()
     ttBg:SetColorTexture(0.067, 0.067, 0.067, 0.90)
-    CludesUI.MakeBorder(deathTip, 1, 1, 1, 0.15, CludesUI.PanelPP)
+    CUI.MakeBorder(deathTip, 1, 1, 1, 0.15, CUI.PanelPP)
     deathTip._rows = {}
 
     local TT_PAD = 8
     local TT_ROW_H = 14
     local TT_GAP = 3
-    local TT_FONT = CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+    local TT_FONT = CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
 
     local function EnsureRows(num)
         for i = #deathTip._rows + 1, num do
             local nameText = deathTip:CreateFontString(nil, "OVERLAY")
             -- A group member's name: a font family (Cyrillic, Korean and Chinese
             -- names draw), no shadow, its only font write.
-            CludesUI.SetFontFamily(nameText, TT_FONT, 10, "", false)
+            CUI.SetFontFamily(nameText, TT_FONT, 10, "", false)
             nameText:SetJustifyH("LEFT")
             local countFS = deathTip:CreateFontString(nil, "OVERLAY")
             countFS:SetFont(TT_FONT, 10, "")
@@ -2197,11 +2198,11 @@ local function RenderStandalone()
             local title
             if p.showDungeonName == false then
                 -- Show only the key level number, not the dungeon name.
-                title = format("%s+%d|r", CludesUI.HexColor(tR, tG, tB), runRec.level)
+                title = format("%s+%d|r", CUI.HexColor(tR, tG, tB), runRec.level)
             else
                 title = format(
                     "%s+%d  %s|r",
-                    CludesUI.HexColor(tR, tG, tB),
+                    CUI.HexColor(tR, tG, tB),
                     runRec.level,
                     runRec.mapName or "Mythic+"
                 )
@@ -2280,8 +2281,8 @@ local function RenderStandalone()
         frame._deathFS:SetTextColor(dR, dG, dB)
         frame._deathFS:SetText(
             runRec.deaths == 1
-                    and CludesUI.Lf("%1$d Death  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
-                or CludesUI.Lf("%1$d Deaths  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
+                    and CUI.Lf("%1$d Death  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
+                or CUI.Lf("%1$d Deaths  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
         )
         frame._deathFS:ClearAllPoints()
         frame._deathFS:SetPoint("TOPLEFT", frame, "TOPLEFT", dPad, posY - 5)
@@ -2395,7 +2396,7 @@ local function RenderStandalone()
                 local diff = threshTime - timePassed
                 if diff >= 0 then
                     local cR, cG, cB = ColorOr(color, 0.3, 0.8, 1)
-                    return format("%s%s|r", CludesUI.HexColor(cR, cG, cB), TimeText(diff))
+                    return format("%s%s|r", CUI.HexColor(cR, cG, cB), TimeText(diff))
                 end
                 return format("|cff999999%s|r", TimeText(threshTime))
             end
@@ -2672,7 +2673,7 @@ local function RenderStandalone()
         elseif hideLabel then
             labelText = ""
         else
-            labelText = CludesUI.L("Enemy Forces")
+            labelText = CUI.L("Enemy Forces")
         end
 
         local enemyTextSize = p.enemyForcesTextSize or p.objectivesSize or 12
@@ -3032,7 +3033,7 @@ local function RenderStandalone()
         frame._barFill:Show()
 
         -- Pixel-perfect 2-physical-pixel tick markers and segment boundaries.
-        local _PP = CludesUI and CludesUI.PP
+        local _PP = CUI and CUI.PP
         local _es = frame:GetEffectiveScale()
         local _tickW = _PP and _PP.SnapForES(2, _es) or 2
         local function _snap(val) return _PP and _PP.SnapForES(val, _es) or val end
@@ -3265,7 +3266,7 @@ local function RenderStandalone()
 
                 local displayName = StripDefeated(object.name) or ("Objective " .. i)
                 -- Preview only: a real run gets its objective names from the game.
-                if isPreview then displayName = CludesUI.L(displayName) end
+                if isPreview then displayName = CUI.L(displayName) end
                 if object.totalQuantity and object.totalQuantity > 1 then
                     displayName = format("%d/%d %s", object.quantity or 0, object.totalQuantity, displayName)
                 end
@@ -3282,7 +3283,7 @@ local function RenderStandalone()
                     and object.elapsed > 0
                 then
                     local cR, cG, cB = ColorOr(p.objectiveCompletedColor, 0.3, 0.8, 0.3)
-                    timeStr = format("%s%s|r", CludesUI.HexColor(cR, cG, cB), TimeText(object.elapsed))
+                    timeStr = format("%s%s|r", CUI.HexColor(cR, cG, cB), TimeText(object.elapsed))
                 end
                 local compareMode = p.objectiveCompareMode or COMPARE_NONE
                 local compareSuffix = ""
@@ -3404,7 +3405,7 @@ local function RenderStandalone()
     if isPreview and p.showPreview then
         SetFS(frame._previewFS, 8)
         frame._previewFS:SetTextColor(0.5, 0.5, 0.5, 0.6)
-        frame._previewFS:SetText(CludesUI.L("PREVIEW"))
+        frame._previewFS:SetText(CUI.L("PREVIEW"))
         frame._previewFS:ClearAllPoints()
         frame._previewFS:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -PAD, 4)
         frame._previewFS:Show()
@@ -3602,7 +3603,7 @@ runtimeFrame:SetScript("OnEvent", function(_, evt)
 end)
 
 function EMT:OnInitialize()
-    store = CludesUI.Lite.NewDB("CludesUIMythicTimerDB", DB_DEFAULTS)
+    store = CUI.Lite.NewDB("CludesUIMythicTimerDB", DB_DEFAULTS)
     _G._CUMT_AceDB = store
     AppendSharedMediaBarTextures()
 
@@ -3660,14 +3661,14 @@ function EMT:OnEnable()
     if mod.KT_OnEnable then mod.KT_OnEnable(store) end
     if not store or not store.profile.enabled then return end
 
-    if CludesUI and CludesUI.RegisterUnlockModeListener then
-        CludesUI:RegisterUnlockModeListener("EMT_MythicTimer", function(isActive)
+    if CUI and CUI.RegisterUnlockModeListener then
+        CUI:RegisterUnlockModeListener("EMT_MythicTimer", function(isActive)
             unlockLayoutActive = isActive == true
             -- When the element is anchor-linked to another unlock element,
             -- the anchor system owns the frame's position; re-applying our
             -- stored absolute standalonePos would snap it away from the
             -- anchor-derived spot on every unlock open/close.
-            local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("EMT_MythicTimer")
+            local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("EMT_MythicTimer")
             if unlockLayoutActive then
                 RenderStandalone()
                 if not anchored then PlaceStandalone() end
@@ -3682,9 +3683,9 @@ function EMT:OnEnable()
         end)
     end
 
-    if CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement then
-        local MK = CludesUI.MakeUnlockElement
-        CludesUI:RegisterUnlockElements({
+    if CUI and CUI.RegisterUnlockElements and CUI.MakeUnlockElement then
+        local MK = CUI.MakeUnlockElement
+        CUI:RegisterUnlockElements({
             MK({
                 key = "EMT_MythicTimer",
                 label = "Mythic+ Timer",
@@ -3732,7 +3733,7 @@ function EMT:OnEnable()
                             centerY = cy * ratio - upY,
                         }
                     end
-                    if frame and not CludesUI._unlockActive then
+                    if frame and not CUI._unlockActive then
                         local sx, sy = _centerPosFromSaved(store.profile.standalonePos)
                         if sx ~= nil then
                             frame:ClearAllPoints()

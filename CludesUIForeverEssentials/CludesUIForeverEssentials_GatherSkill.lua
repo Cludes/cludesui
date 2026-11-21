@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GatherSkill.lua  (WoW Forever only)
 --  Gathering Skill in Tooltips: on a herb or ore node's tooltip, the game's
@@ -107,7 +108,7 @@ end
 local function Build()
     nodes = {}
     for name, lvl in pairs(ORES) do
-        nodes[CludesUI.L(name)] = { MINING, lvl }
+        nodes[CUI.L(name)] = { MINING, lvl }
         nodes[name] = { MINING, lvl }
     end
     for itemId in pairs(HERBS) do
@@ -247,7 +248,7 @@ local function Apply()
 end
 
 -- Options-page entry points.
-CludesUI._GatherSkill = {
+CUI._GatherSkill = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Apply,

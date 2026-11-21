@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Data.lua
 --
@@ -49,7 +50,7 @@ REMIND.WeaponEnchants = function()
 end
 
 -- The buff IDs come from the shared list (CludesUI.RAID_PREP_IDS).
-local PREP = CludesUI.RAID_PREP_IDS
+local PREP = CUI.RAID_PREP_IDS
 local RAID_BUFF_IDS = {}
 for _, b in ipairs(PREP.raidBuffs) do
     RAID_BUFF_IDS[b.key] = b.buffIDs
@@ -124,7 +125,7 @@ if REMIND.FOREVER then
             name = "Mark of the Wild",
             castSpell = 1126,
             dismissKey = "raidbuff:motw",
-            fam = CludesUI.FOREVER_BUFF_FAMILIES.mark,
+            fam = CUI.FOREVER_BUFF_FAMILIES.mark,
         },
         {
             key = "bshout",
@@ -132,7 +133,7 @@ if REMIND.FOREVER then
             name = "Battle Shout",
             castSpell = 6673,
             dismissKey = "raidbuff:bshout",
-            fam = CludesUI.FOREVER_BUFF_FAMILIES.bshout,
+            fam = CUI.FOREVER_BUFF_FAMILIES.bshout,
             benefit = "attackPower",
             selfCast = true,
         },
@@ -142,7 +143,7 @@ if REMIND.FOREVER then
             name = "Power Word: Fortitude",
             castSpell = 1243,
             dismissKey = "raidbuff:fort",
-            fam = CludesUI.FOREVER_BUFF_FAMILIES.fort,
+            fam = CUI.FOREVER_BUFF_FAMILIES.fort,
         },
         {
             key = "ai",
@@ -150,7 +151,7 @@ if REMIND.FOREVER then
             name = "Arcane Intellect",
             castSpell = 1459,
             dismissKey = "raidbuff:ai",
-            fam = CludesUI.FOREVER_BUFF_FAMILIES.ai,
+            fam = CUI.FOREVER_BUFF_FAMILIES.ai,
             benefit = "intellect",
         },
         {
@@ -159,7 +160,7 @@ if REMIND.FOREVER then
             name = "Divine Spirit",
             castSpell = 14752,
             dismissKey = "raidbuff:spirit",
-            fam = CludesUI.FOREVER_BUFF_FAMILIES.spirit,
+            fam = CUI.FOREVER_BUFF_FAMILIES.spirit,
             talent = true,
         },
     }
@@ -515,7 +516,7 @@ REMIND.SetWarlockPetSpell = function(e, pets, fallbackTexture, labelOverride)
     e.mode = "spell"
     e.spellID = pet.castSpell
     e.texture = Tex(pet.castSpell) or fallbackTexture
-    e.label = labelOverride or CludesUI.L(pet.name)
+    e.label = labelOverride or CUI.L(pet.name)
     e.petCycleTotal = num > 1 and num or nil
 end
 
@@ -721,7 +722,7 @@ local INKY_BLACK_BUFF = 185394 -- "Inky Blackness" buff (icon 136122); detected 
 -- Weapon enchants and raid buffs use other APIs and are not gated here.
 function REMIND.ConsumablePresenceUnverifiable()
     if InCombat() or InMythicPlusKey() then return true end
-    return CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() or false
+    return CUI.AuraKit and CUI.AuraKit.AurasRestricted() or false
 end
 
 -------------------------------------------------------------------------------
@@ -736,7 +737,7 @@ function REMIND.IsPlayerEating() return REMIND._eatingIID ~= nil end
 function REMIND.ScanEatingState()
     REMIND._eatingIID = nil
     if REMIND.FOREVER then return end -- no food reminder on WoW Forever, so no eating channel to track
-    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then return end
+    if CUI.AuraKit and CUI.AuraKit.AurasRestricted() then return end
     for i = 1, AURA_SCAN_LIMIT do
         local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
         if not success or not aura then break end

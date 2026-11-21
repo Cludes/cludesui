@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarGroups.lua
 --
@@ -212,8 +213,8 @@ end
 -- flipped: a bar hidden while mounted stays hidden past the dismount until some unrelated
 -- aura or cast happens to wake it, and the dragonriding modes never fire at all because
 -- takeoff/landing is not in the sleeper's wake set.
-if CludesUI.RegisterVisibilityUpdater then
-    CludesUI.RegisterVisibilityUpdater(function()
+if CUI.RegisterVisibilityUpdater then
+    CUI.RegisterVisibilityUpdater(function()
         -- Only a parked tick needs the nudge; an awake one re-evaluates every frame anyway.
         if _anyVisCond then mod.WakeTBBTickIfParked() end
     end)
@@ -506,7 +507,7 @@ do
             frame = CreateFrame("Frame", nil, UIParent)
             tbbStandins[matchGroupKey] = frame
         end
-        local PPl = CludesUI and CludesUI.PP
+        local PPl = CUI and CUI.PP
         local sn = PPl and PPl.Snap or function(val) return val end
         frame:SetSize(sn(record.width or 270), sn(record.height or 24))
         -- SetPoint ONLY on an actual position change (signature-stamped): this
@@ -514,7 +515,7 @@ do
         -- on resolved frames -- an unconditional re-point per resolve fed the
         -- move-check timer a fresh SetPoint every frame, forever (audit-caught).
         -- getFrame must never mutate what it merely resolves.
-        local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("TBBG_" .. matchGroupKey)
+        local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("TBBG_" .. matchGroupKey)
         if anchored and frame:GetLeft() then return frame end
         local place = record.pos
         local sig
@@ -594,10 +595,10 @@ do
     -- shifting TBBG_ key move into the empty slot by the stand-in's height +
     -- Extra Y -- visual-only, never written to saved positions; 0 while unlock
     -- mode is active so movers capture true positions.
-    CludesUI._anchorShiftProviders = CludesUI._anchorShiftProviders or {}
-    table.insert(CludesUI._anchorShiftProviders, {
+    CUI._anchorShiftProviders = CUI._anchorShiftProviders or {}
+    table.insert(CUI._anchorShiftProviders, {
         dir = function(targetKey)
-            if CludesUI._unlockActive then return 0 end
+            if CUI._unlockActive then return 0 end
             if type(targetKey) ~= "string" or targetKey:sub(1, 5) ~= "TBBG_" then return 0 end
             local matchGroupKey = targetKey:sub(6)
             local record = mod.TBBGlobalGroup(matchGroupKey)
@@ -614,12 +615,12 @@ do
             return false
         end,
         restore = function()
-            if not CludesUI.PropagateAnchorChain then return end
+            if not CUI.PropagateAnchorChain then return end
             local registry = TBBGlobalDB(false)
             if not registry then return end
             for matchGroupKey, record in pairs(registry) do
                 if TBBShiftDirFor(record, matchGroupKey) ~= 0 then
-                    CludesUI.PropagateAnchorChain("TBBG_" .. matchGroupKey)
+                    CUI.PropagateAnchorChain("TBBG_" .. matchGroupKey)
                 end
             end
         end,
@@ -638,7 +639,7 @@ do
             local ident = (p.tbbGlobalGroupNextId or 0) + 1
             p.tbbGlobalGroupNextId = ident
             local groupId = "g" .. ident
-            local L = CludesUI and CludesUI.L
+            local L = CUI and CUI.L
             local record = {
                 name = mod.TBBGroupName(groupKey) or ((L and L("Group") or "Group") .. " " .. groupKey),
                 grow = GroupGrowOf(tbl, groupKey),
@@ -712,8 +713,8 @@ do
 
     -- Anchor-system hook: outermost visible member edge in UIParent space, or nil to use
     -- the target frame's own bounds. Inert while unlock mode or the placeholder preview owns positions.
-    function CludesUI._GetAnchorTargetExtent(targetKey, edgeSide)
-        if CludesUI._unlockActive or mod._tbbPlaceholderMode then return nil end
+    function CUI._GetAnchorTargetExtent(targetKey, edgeSide)
+        if CUI._unlockActive or mod._tbbPlaceholderMode then return nil end
         local groupKey = mod.TBBExtentGidForTarget(targetKey, edgeSide)
         if not groupKey then return nil end
         local tbl = mod.GetTrackedBuffBars()
@@ -774,7 +775,7 @@ do
 
     local function TBBExtentWatchKey(groupKey)
         if not groupKey or groupKey == 0 then return nil end
-        local stamp = CludesUI._anchorLinksStamp or 0
+        local stamp = CUI._anchorLinksStamp or 0
         local wid = mod._tbbExtentWatch
         if not wid or mod._tbbExtentWatchStamp ~= stamp then
             wid = RebuildExtentWatch()
@@ -789,7 +790,7 @@ do
     function mod._NotifyTBBExtentChanged(groupKey)
         local key = TBBExtentWatchKey(groupKey)
         if not key then return end
-        if CludesUI.PropagateAnchorChain then CludesUI.PropagateAnchorChain(key, "all") end
+        if CUI.PropagateAnchorChain then CUI.PropagateAnchorChain(key, "all") end
     end
 
     -- Remove a global group everywhere: every spec's linked group detaches with the shared
@@ -1032,9 +1033,9 @@ local TBB_STYLE_KEYS = {
 }
 -- Appended rather than spelled out: a lane added to the shared list is copied with the
 -- rest of the style instead of silently staying behind on the source bar.
-if CludesUI.VIS_OPT_KEYS then
-    for i = 1, #CludesUI.VIS_OPT_KEYS do
-        TBB_STYLE_KEYS[#TBB_STYLE_KEYS + 1] = CludesUI.VIS_OPT_KEYS[i]
+if CUI.VIS_OPT_KEYS then
+    for i = 1, #CUI.VIS_OPT_KEYS do
+        TBB_STYLE_KEYS[#TBB_STYLE_KEYS + 1] = CUI.VIS_OPT_KEYS[i]
     end
 end
 mod.TBB_STYLE_KEYS = TBB_STYLE_KEYS
@@ -1324,7 +1325,7 @@ end
 local function ReflowVisibleGroupedTBBars(trackBars, barList)
     if not (trackBars and barList and tbbFrames) then return end
     -- Never fight edit-preview (placeholder) or unlock-mode dragging: there BuildTrackedBuffBars and the unlock system own bar positions.
-    if mod._tbbPlaceholderMode or CludesUI._unlockActive then return end
+    if mod._tbbPlaceholderMode or CUI._unlockActive then return end
     -- Reflow each present group once; the done-set is reused across ticks so this pass allocates nothing.
     SetReflowDirty(false)
     wipe(_tbbReflowDone)

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Layout.lua
 --
@@ -98,7 +99,7 @@ local function BuildCustomIndicators(mapFrame)
         -- theme resolution mutates CLUDES_GREEN) must override the create-once read below, since creation can race theme resolution (same pattern as CreateFlyoutToggle).
         local fi = _customIndicators.friends and _customIndicators.friends._icon
         if fi then
-            local EG2 = CludesUI.CLUDES_GREEN
+            local EG2 = CUI.CLUDES_GREEN
             fi:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)
         end
         return
@@ -150,7 +151,7 @@ local function BuildCustomIndicators(mapFrame)
         local stockButton = MinimapCluster and MinimapCluster.Tracking and MinimapCluster.Tracking.Button
         if stockButton then SKIN._TrackingMenuForget(stockButton) end
         if not GetFFD(self).freeMoveJustDragged then
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
                 "Tracking",
                 { anchor = SKIN._Grow.TT(), scale = GetCustomTooltipScale() }
@@ -159,7 +160,7 @@ local function BuildCustomIndicators(mapFrame)
     end)
     _customIndicators.tracking:SetScript("OnLeave", function(self)
         if trackBaseLeave then trackBaseLeave(self) end
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
 
     -- Calendar (day-of-month atlas)
@@ -184,7 +185,7 @@ local function BuildCustomIndicators(mapFrame)
         if GetFFD(self).freeMoveJustDragged then return end
         -- While the invite alert shows, the tooltip says why (as Blizzard's does).
         if self._invite and self._invite:IsShown() then
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
                 GAMETIME_TOOLTIP_CALENDAR_INVITES,
                 { anchor = SKIN._Grow.TT(), scale = GetCustomTooltipScale() }
@@ -192,11 +193,11 @@ local function BuildCustomIndicators(mapFrame)
             return
         end
         local lockoutEntries
-        if not (CludesUI.InProtectedInstance()) then lockoutEntries = GetCalendarLockoutEntries() end
+        if not (CUI.InProtectedInstance()) then lockoutEntries = GetCalendarLockoutEntries() end
         if lockoutEntries then
             ShowCalendarTooltip(self, lockoutEntries)
         else
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
                 "Calendar",
                 { anchor = SKIN._Grow.TT(), scale = GetCustomTooltipScale() }
@@ -206,7 +207,7 @@ local function BuildCustomIndicators(mapFrame)
     _customIndicators.calendar:SetScript("OnLeave", function(self)
         if calBaseLeave then calBaseLeave(self) end
         HideCalendarTooltip()
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
 
     -- Mail (informational: tooltip + hover atlas only)
@@ -231,7 +232,7 @@ local function BuildCustomIndicators(mapFrame)
             if senders and #senders > 0 then
                 labelText = HAVE_MAIL_FROM .. "\n" .. table.concat(senders, "\n")
             end
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
                 labelText,
                 { anchor = SKIN._Grow.TT(), scale = GetCustomTooltipScale() }
@@ -240,7 +241,7 @@ local function BuildCustomIndicators(mapFrame)
     end)
     _customIndicators.mail:SetScript("OnLeave", function(self)
         if mailBaseLeave then mailBaseLeave(self) end
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
 
     -- Crafting Order (informational: tooltip + hover atlas only)
@@ -272,7 +273,7 @@ local function BuildCustomIndicators(mapFrame)
                     if #lines > 0 then labelText = labelText .. "\n" .. table.concat(lines, "\n") end
                 end
             end
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
                 labelText,
                 { anchor = SKIN._Grow.TT(), scale = GetCustomTooltipScale() }
@@ -281,7 +282,7 @@ local function BuildCustomIndicators(mapFrame)
     end)
     _customIndicators.crafting:SetScript("OnLeave", function(self)
         if craftBaseLeave then craftBaseLeave(self) end
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end)
 
     -- Friends Online button
@@ -302,9 +303,9 @@ local function BuildCustomIndicators(mapFrame)
     -- Not in INDICATOR_ATLAS_RATIO, so the icon uses inset anchoring; desaturated idle.
     if _customIndicators.friends._icon then
         _customIndicators.friends._icon:SetDesaturated(true)
-        CludesUI.RegAccent({ type = "vertex", obj = _customIndicators.friends._icon })
+        CUI.RegAccent({ type = "vertex", obj = _customIndicators.friends._icon })
         -- Apply current accent immediately (initial accent pass already ran)
-        local g = CludesUI.CLUDES_GREEN
+        local g = CUI.CLUDES_GREEN
         if g then _customIndicators.friends._icon:SetVertexColor(g.r, g.g, g.b, 1) end
         _customIndicators.friends._icon:SetAlpha(0.85)
     end
@@ -325,7 +326,7 @@ local function BuildCustomIndicators(mapFrame)
     -- Great Vault + M+ Portal buttons: built once, anchored in LayoutIndicatorFrames.
     -- Neither exists on WoW Forever (no vault, no keystone portals): the buttons are
     -- never built there, every reader guards on nil, and the options drop their rows.
-    if not CludesUI.IS_FOREVER then
+    if not CUI.IS_FOREVER then
         _greatVaultBtn = CreateGreatVaultBtn(mapFrame)
         _portalBtn = CreatePortalBtn(mapFrame)
     end
@@ -354,7 +355,7 @@ do
     -- The style is read live (no event): our button's enter and click re-check it.
     function SKIN._TrackingHotspotActive()
         local mapCfg = SKIN.db and SKIN.db.profile.minimap
-        if mapCfg and isActive ~= (CludesUI.PadGamepadUI() and true or false) then
+        if mapCfg and isActive ~= (CUI.PadGamepadUI() and true or false) then
             SyncTrackingHotspot(mapCfg)
         end
         return isActive
@@ -362,7 +363,7 @@ do
     SyncTrackingHotspot = function(profile)
         local stockButton, ours = Btns()
         if not (stockButton and ours) then return end
-        local enabled = CludesUI.PadGamepadUI() and not profile.hideTrackingButton and ours:IsShown() or false
+        local enabled = CUI.PadGamepadUI() and not profile.hideTrackingButton and ours:IsShown() or false
         if enabled then
             if not home then
                 local wid, hgt = stockButton:GetSize()
@@ -1257,8 +1258,8 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
         -- WoW Forever: a row starting at the bottom-left corner starts past
         -- the queue eye Action Bars parks there (half the 45px eye, the gap
         -- and half a ring button, as arc length).
-        if arcRadius and CludesUI.IS_FOREVER and inRows.arc == 225 then
-            local ab = CludesUI._ModuleNS.CludesUIActionBars
+        if arcRadius and CUI.IS_FOREVER and inRows.arc == 225 then
+            local ab = CUI._ModuleNS.CludesUIActionBars
             if ab and ab.AB_ForeverEyeParked() then
                 arcT = arcT + arcDir * (22.5 + rowGap + arcGap + flyoutBtn:GetWidth() / 2) / arcRadius
             end
@@ -1334,7 +1335,7 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
                     iconTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -3, 3)
                     pcall(iconTex.SetTexCoord, iconTex, 0.05, 0.95, 0.05, 0.95)
                     -- Foreign icon: no global SetTexCoord snap hook, so disable once.
-                    if CludesUI.PP then CludesUI.PP.DisablePixelSnap(iconTex) end
+                    if CUI.PP then CUI.PP.DisablePixelSnap(iconTex) end
                 end
                 SKIN._ShowAddonBtnBox(button)
                 if button._ungroupRing then button._ungroupRing:Hide() end
@@ -1497,7 +1498,7 @@ local function CaptureBlizzardMinimap()
     -- addon's (its LibDBIcon name; an absent button costs nothing), on the
     -- button row out of the group. A first-capture seed, not a default: a
     -- player's regroup clears the entry for good.
-    if CludesUI.IS_FOREVER == true then
+    if CUI.IS_FOREVER == true then
         local ug = p.ungroupedButtons
         if type(ug) ~= "table" then
             ug = {}
@@ -1534,7 +1535,7 @@ end
 -- Folio mode with legacy fallback: pre-dropdown data carries showOmniumFolio (default ON; only false is ever stored).
 local function GetOmniumFolioMode(mapCfg)
     -- No expansion landing page on WoW Forever: every folio path reads "never".
-    if CludesUI.IS_FOREVER then return "never" end
+    if CUI.IS_FOREVER then return "never" end
     if not mapCfg then return "always" end
     if mapCfg.omniumFolioMode then return mapCfg.omniumFolioMode end
     if mapCfg.showOmniumFolio == false then return "never" end
@@ -1720,7 +1721,7 @@ end
 local function ApplyOmniumFolio()
     -- No expansion landing page on WoW Forever: the button is left to
     -- Blizzard entirely (its own refresh path errors there), no hooks either.
-    if CludesUI.IS_FOREVER then return end
+    if CUI.IS_FOREVER then return end
     local button = _G.ExpansionLandingPageMinimapButton
     if not button or not Minimap then return end
     local mapCfg = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap

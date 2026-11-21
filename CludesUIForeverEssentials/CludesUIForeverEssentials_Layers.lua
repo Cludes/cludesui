@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Layers.lua  (WoW Forever only)
 --  Layer Tracker: which layer of the zone you are on, read from the GUID of
@@ -22,7 +23,7 @@ local Get, Enabled = F.Get, F.Enabled
 local SEEN_MAX = 12
 local NPC_KINDS = { Creature = true, Vehicle = true }
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local function LayerOf(unitGuid)
@@ -94,11 +95,11 @@ end
 
 local function Update()
     if not widget then return end
-    if not Enabled() or (inside and not CludesUI._unlockActive) then
+    if not Enabled() or (inside and not CUI._unlockActive) then
         widget:Hide()
         return
     end
-    CludesUI.Kit.Font(widget.text, Get("size"), "essentials")
+    CUI.Kit.Font(widget.text, Get("size"), "essentials")
     widget.text:SetText(Text())
     widget:SetSize(widget.text:GetStringWidth() + 16, Get("size") + 8)
     widget:Show()
@@ -128,7 +129,7 @@ local function Seen(key, zone, unitGuid)
     layer, isShown = key, zone
     Note(map, key, zone)
     if wasKey and wasKey ~= key and Get("chat") then
-        CludesUI.Print(
+        CUI.Print(
             ("|cff4cc9f0Layers:|r you moved to layer %s (it was %s)."):format(
                 Label(key, zone),
                 Label(wasKey, wasZone)
@@ -206,7 +207,7 @@ local function Build()
                     1,
                     1,
                     1,
-                    CludesUI.Kit.Accent()
+                    CUI.Kit.Accent()
                 )
             else
                 local ago = time() - entry.at
@@ -239,7 +240,7 @@ local function Apply()
         return
     end
     Build()
-    if not CludesUI._unlockActive then F.Place(widget) end
+    if not CUI._unlockActive then F.Place(widget) end
     for _, event in ipairs({
         "PLAYER_ENTERING_WORLD",
         "ZONE_CHANGED_NEW_AREA",
@@ -311,5 +312,5 @@ S.Start(function()
     end
 end)
 
-CludesUI._Layers =
+CUI._Layers =
     { tracker = { Get = Get, Cfg = F.Cfg, Apply = Apply }, swap = { Get = S.Get, Cfg = S.Cfg } }

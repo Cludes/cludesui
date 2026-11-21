@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Reminders.lua -- Raid Lead: encounter reminders.
 --
@@ -62,7 +63,7 @@ end
 local anchor, lines = nil, {}
 local isActive = {} -- { text, at (GetTime when due) }
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return (CUI.GetFontPath and CUI.GetFontPath()) or STANDARD_TEXT_FONT end
 
 local function BuildDisplay()
     if anchor then return end
@@ -91,7 +92,7 @@ function mod.ApplyReminderLook()
         end
     end
     for idx = 1, MAX_LINES do
-        CludesUI.Kit.Font(lines[idx], r.fontSize, nil)
+        CUI.Kit.Font(lines[idx], r.fontSize, nil)
         lines[idx]:SetPoint("TOP", anchor, "TOP", 0, -(idx - 1) * (r.fontSize + 12))
     end
 end
@@ -105,7 +106,7 @@ local function Repaint()
         local a = isActive[idx]
         if a then
             local leftX = a.at - nowTime
-            local tail = leftX > 0.05 and ("  " .. CludesUI.Kit.AccentHex() .. math.ceil(leftX) .. "|r")
+            local tail = leftX > 0.05 and ("  " .. CUI.Kit.AccentHex() .. math.ceil(leftX) .. "|r")
                 or "  |cffff6040NOW|r"
             lines[idx]:SetText(a.text .. tail)
             lines[idx]:Show()
@@ -236,7 +237,7 @@ function mod.ReceiveSharedNote(from, boss, textValue)
     if not Settings().acceptShared then return end
     shared[Clean(boss)] = { from = from, text = textValue }
     local entries, skipped = Parser.Parse(textValue, SpellName)
-    CludesUI.Print(
+    CUI.Print(
         ("|cff4cc9f0Raid Lead:|r %s sent reminders for %s (%d line%s%s)."):format(
             from,
             boss,
@@ -256,11 +257,11 @@ local registered = false
 local reg = CreateFrame("Frame")
 reg:RegisterEvent("PLAYER_ENTERING_WORLD")
 reg:SetScript("OnEvent", function()
-    if registered or not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
+    if registered or not (CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then return end
     registered = true
     BuildDisplay()
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = "RLEAD_Reminders",
             label = "Encounter Reminders",
             group = "Raid Lead",

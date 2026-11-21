@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_XP.lua  (WoW Forever only)
 --  XP per Hour: this session's XP per hour, the time to your next level at
@@ -13,7 +14,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 local HOUR, MINUTE = 3600, 60
 
@@ -100,7 +101,7 @@ local function Btn(hostFrame, textValue, tipText, func)
     local widget = CreateFrame("Button", nil, hostFrame)
     widget:SetSize(16, 16)
     widget.t = widget:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(widget.t, 12, "essentials")
+    CUI.Kit.Font(widget.t, 12, "essentials")
     widget.t:SetPoint("CENTER")
     widget.t:SetText(textValue)
     widget:SetScript("OnClick", func)
@@ -140,7 +141,7 @@ local function Build()
     if cardFrame then return cardFrame end
     cardFrame = CreateFrame("Frame", "CludesUIXPTicker", UIParent)
     cardFrame:SetSize(190, 60)
-    CludesUI.Kit.Panel(cardFrame, 0.75)
+    CUI.Kit.Panel(cardFrame, 0.75)
     cardFrame.rate = cardFrame:CreateFontString(nil, "OVERLAY")
     cardFrame.rate:SetPoint("TOPLEFT", 8, -6)
     cardFrame.info = cardFrame:CreateFontString(nil, "OVERLAY")
@@ -174,14 +175,14 @@ Update = function()
     if not cardFrame then return end
     if
         not X.Enabled()
-        or (not CludesUI._unlockActive and (AtMax() or (X.Get("hideResting") and IsResting())))
+        or (not CUI._unlockActive and (AtMax() or (X.Get("hideResting") and IsResting())))
     then
         cardFrame:Hide()
         return
     end
     local size = X.Get("size")
-    CludesUI.Kit.Font(cardFrame.rate, size + 4, "essentials")
-    CludesUI.Kit.Font(cardFrame.info, size - 3, "essentials")
+    CUI.Kit.Font(cardFrame.rate, size + 4, "essentials")
+    CUI.Kit.Font(cardFrame.info, size - 3, "essentials")
     local nowTime = GetTime()
     local elapsed = nowTime - sessionStart - pausedTotal - (paused and nowTime - pausedAt or 0)
     local rate = sessionXP / (math.max(elapsed, MINUTE) / HOUR)
@@ -194,7 +195,7 @@ Update = function()
     local arrow = trendDir > 0 and " |cff60d080+|r" or (trendDir < 0 and " |cffff6060-|r" or "")
     if sessionXP > 0 then
         cardFrame.rate:SetText(
-            ("%s%s|r |cff9aa6b2xp/hr|r%s"):format(CludesUI.Kit.AccentHex(), Short(rate), arrow)
+            ("%s%s|r |cff9aa6b2xp/hr|r%s"):format(CUI.Kit.AccentHex(), Short(rate), arrow)
         )
     else
         cardFrame.rate:SetText("|cff9aa6b2no XP yet|r")
@@ -279,7 +280,7 @@ local function XApply()
         sessionStart, sessionXP = GetTime(), 0
         trendAt = sessionStart
     end
-    if not CludesUI._unlockActive then X.Place(cardFrame) end
+    if not CUI._unlockActive then X.Place(cardFrame) end
     lastXP, lastXPMax = UnitXP("player"), UnitXPMax("player")
     for _, event in ipairs({
         "PLAYER_XP_UPDATE",
@@ -319,7 +320,7 @@ SlashCmdList.CUIXP = function(message)
     if run then
         run()
     else
-        CludesUI.Print("|cff4cc9f0XP:|r /cxp start, pause or reset")
+        CUI.Print("|cff4cc9f0XP:|r /cxp start, pause or reset")
     end
 end
 
@@ -422,8 +423,8 @@ local function Row(index)
     row.bar:SetPoint("BOTTOMRIGHT")
     row.bar:SetMinMaxValues(0, 1)
     row.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    row.bar:SetStatusBarColor(CludesUI.Kit.Accent())
-    CludesUI.Kit.Panel(row.bar, 0.85)
+    row.bar:SetStatusBarColor(CUI.Kit.Accent())
+    CUI.Kit.Panel(row.bar, 0.85)
     row.text = row.bar:CreateFontString(nil, "OVERLAY")
     row.text:SetPoint("CENTER")
     rowList[index] = row
@@ -439,7 +440,7 @@ local SAMPLE = {
 local function GRefresh()
     if not gFrame then return end
     local entries = {}
-    if CludesUI._unlockActive and G.Enabled() then
+    if CUI._unlockActive and G.Enabled() then
         entries = SAMPLE
     elseif G.Enabled() and IsInGroup() and (G.Get("raid") or not IsInRaid()) then
         for _, m in ipairs(Roster()) do
@@ -470,9 +471,9 @@ local function GRefresh()
         region:SetPoint("TOPLEFT", 0, -(index - 1) * (rowH + 2))
         region:SetPoint("TOPRIGHT", 0, -(index - 1) * (rowH + 2))
         region:SetHeight(rowH)
-        CludesUI.Kit.Font(region.name, size, "essentials")
+        CUI.Kit.Font(region.name, size, "essentials")
         region.name:SetWidth(nameW - 4)
-        CludesUI.Kit.Font(region.text, size - 1, "essentials")
+        CUI.Kit.Font(region.text, size - 1, "essentials")
         region.bar:SetPoint("TOPLEFT", nameW, 0)
         local color = m.class and RAID_CLASS_COLORS[m.class]
         region.name:SetText(m.name)
@@ -558,7 +559,7 @@ local function GApply()
     }) do
         gEv:RegisterEvent(event)
     end
-    if not CludesUI._unlockActive then G.Place(gFrame) end
+    if not CUI._unlockActive then G.Place(gFrame) end
     SendSoon(true)
     GRefresh()
 end
@@ -577,7 +578,7 @@ G.Start(GApply, {
     noSizeMatchTarget = true,
 })
 
-CludesUI._XP = {
+CUI._XP = {
     ticker = { Get = X.Get, Cfg = X.Cfg, Apply = XApply },
     group = { Get = G.Get, Cfg = G.Cfg, Apply = GApply },
 }

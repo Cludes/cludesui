@@ -1,24 +1,25 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Bags_Options.lua
 --  Enhanced Bags Module Options for CludesUI
 --  Registers the Bags module and builds the options UI
 -------------------------------------------------------------------------------
 
-if not CludesUI._ModuleNS["CludesUIBags"] then return end -- module disabled: no options page
+if not CUI._ModuleNS["CludesUIBags"] then return end -- module disabled: no options page
 
 -- DB creation + login seeding live in CludesUIBags_DB.lua (resident; this
 -- file is LoadOnDemand and only builds the options page).
-local saved = CludesUI._bagsDB
+local saved = CUI._bagsDB
 
 -- Page reuse: the frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua, the options addon's first file), which hands a
 -- kept page its previous build's frames back reset to new; on any other
 -- parent it is the plain CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
-CludesUI.AtOptionsLogin(function()
-    CludesUI:RegisterModule("CludesUIBags", {
+CUI.AtOptionsLogin(function()
+    CUI:RegisterModule("CludesUIBags", {
         title = "Bags",
         description = "Enhanced inventory system with sidebar categories, item levels, and quality borders.",
         searchTerms = "bags inventory items slots reagent categories columns sidebar",
@@ -26,11 +27,11 @@ CludesUI.AtOptionsLogin(function()
         buildPage = function(page, hostFrame, yOffset)
             if page == "Bank" then
                 local okB, resB = pcall(function()
-                    local W = CludesUI.Widgets
+                    local W = CUI.Widgets
                     local cursorY = yOffset
                     local height, _
                     -- The Bags module namespace: its bank display resolver
-                    local BagsNS = CludesUI._ModuleNS["CludesUIBags"]
+                    local BagsNS = CUI._ModuleNS["CludesUIBags"]
 
                     local function RedrawBank()
                         local bank = _G.CUI_BankFrame
@@ -39,7 +40,7 @@ CludesUI.AtOptionsLogin(function()
 
                     -- Info label
                     do
-                        local fontFile = (CludesUI.GetFontPath("bags")) or "Fonts\\FRIZQT__.TTF"
+                        local fontFile = (CUI.GetFontPath("bags")) or "Fonts\\FRIZQT__.TTF"
                         local infoFrame = CreateFrame("Frame", nil, hostFrame)
                         infoFrame:SetSize(hostFrame:GetWidth(), 34)
                         infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 10)
@@ -50,7 +51,7 @@ CludesUI.AtOptionsLogin(function()
                         line1:SetPoint("TOP", infoFrame, "TOP", 0, 0)
                         line1:SetJustifyH("CENTER")
                         line1:SetText(
-                            CludesUI.L(
+                            CUI.L(
                                 "Right-click a tab in the bank sidebar to rename it or set its deposit filters."
                             )
                         )
@@ -60,7 +61,7 @@ CludesUI.AtOptionsLogin(function()
                         line2:SetPoint("TOP", line1, "BOTTOM", 0, -2)
                         line2:SetJustifyH("CENTER")
                         line2:SetText(
-                            CludesUI.L(
+                            CUI.L(
                                 "Window scale, icon zoom and item level settings are shared with the Bags page."
                             )
                         )
@@ -83,10 +84,10 @@ CludesUI.AtOptionsLogin(function()
                             saved.profile.bankListView = (val == "list")
                             saved.profile.bankCompactView = (val == "compact")
                             -- Bags page rows depend on this; rebuild it on next visit
-                            CludesUI:InvalidateModulePageCache("CludesUIBags")
+                            CUI:InvalidateModulePageCache("CludesUIBags")
                             -- Hide Empty Slots When Grouped greys in List View
-                            CludesUI:RefreshPage()
-                            CludesUI:ShowConfirmPopup({
+                            CUI:RefreshPage()
+                            CUI:ShowConfirmPopup({
                                 title = "Reload Required",
                                 message = "Bank display changed. A UI reload is needed to apply.",
                                 confirmText = "Reload Now",
@@ -94,7 +95,7 @@ CludesUI.AtOptionsLogin(function()
                                 reload = true,
                             })
                         end,
-                    }, CludesUI.BlankRowCfg())
+                    }, CUI.BlankRowCfg())
                     cursorY = cursorY - height
 
                     _, height = W:SectionHeader(hostFrame, "GROUPING", cursorY)
@@ -109,7 +110,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = function(val)
                             saved.profile.bankNestByExpansion = val and true or false
                             RedrawBank()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     }, {
                         type = "toggle",
@@ -119,7 +120,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = function(val)
                             saved.profile.bankGroupByCategory = val and true or false
                             RedrawBank()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     })
                     cursorY = cursorY - height
@@ -135,7 +136,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = function(val)
                             saved.profile.bankCategorySidebar = val and true or false
                             RedrawBank()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     }, {
                         type = "toggle",
@@ -173,7 +174,7 @@ CludesUI.AtOptionsLogin(function()
                             saved.profile.bankHideEmptyWhenNested = val and true or false
                             RedrawBank()
                         end,
-                    }, CludesUI.BlankRowCfg())
+                    }, CUI.BlankRowCfg())
                     cursorY = cursorY - height
 
                     -- auto deposit/withdraw (not on wow forever: no warband bank there).
@@ -190,7 +191,7 @@ CludesUI.AtOptionsLogin(function()
                             getValue = function() return AutoGold.Enabled() end,
                             setValue = function(val)
                                 AutoGold.Set("bagAutoGold", val and true or nil)
-                                CludesUI:RefreshPage()
+                                CUI:RefreshPage()
                             end,
                         }, {
                             type = "input",
@@ -213,8 +214,8 @@ CludesUI.AtOptionsLogin(function()
                             end,
                         })
                         cursorY = cursorY - height
-                        if not CludesUI._prebuilding then
-                            CludesUI.BuildInlineCog(goldRow._leftRegion, {
+                        if not CUI._prebuilding then
+                            CUI.BuildInlineCog(goldRow._leftRegion, {
                                 title = "Auto Deposit/Withdraw",
                                 disabled = function() return not AutoGold.Enabled() end,
                                 disabledTooltip = "Auto Deposit/Withdraw",
@@ -241,7 +242,7 @@ CludesUI.AtOptionsLogin(function()
                         _, height = W:DualRow(hostFrame, cursorY, {
                             type = "toggle",
                             text = "Offline Bank",
-                            tooltip = CludesUI.IS_FOREVER
+                            tooltip = CUI.IS_FOREVER
                                     and "Saves each character's bags and bank when you see them. Use the person button by the bags or bank title to see another character's bags or bank, and Bank in the bags sidebar for their bank, from anywhere. Applies to all characters."
                                 or "Saves each character's bags and bank, and the warband bank, when you see them. Use the person button by the bags or bank title to see another character's bags or bank, and Bank in the bags sidebar for their bank or the warband bank, from anywhere. Applies to all characters.",
                             getValue = function() return Offline.Enabled() end,
@@ -249,7 +250,7 @@ CludesUI.AtOptionsLogin(function()
                         }, {
                             type = "toggle",
                             text = "Tooltip Item Counts",
-                            tooltip = CludesUI.IS_FOREVER
+                            tooltip = CUI.IS_FOREVER
                                     and "Item tooltips list how many of that item each of your characters has in their bags and bank. Applies to all characters."
                                 or "Item tooltips list how many of that item each of your characters has in their bags and bank, plus the warband bank. Applies to all characters.",
                             getValue = function() return Offline.CountsEnabled() end,
@@ -269,8 +270,8 @@ CludesUI.AtOptionsLogin(function()
             if page ~= "Bags" then return end
 
             local success, result = pcall(function()
-                local W = CludesUI.Widgets
-                local Pix = CludesUI.PanelPP
+                local W = CUI.Widgets
+                local Pix = CUI.PanelPP
                 local cursorY = yOffset
                 local height, _
 
@@ -298,7 +299,7 @@ CludesUI.AtOptionsLogin(function()
                     C_Timer.After(0, Relayout)
                 end
 
-                local BagsNS = CludesUI._ModuleNS["CludesUIBags"]
+                local BagsNS = CUI._ModuleNS["CludesUIBags"]
                 -- Bag Style value: "grid" | "list" | "compact" | "modern" (any other saved value reads as Grid)
                 local function BagDisplayValue()
                     local m = saved.profile.bagDisplayMode
@@ -337,8 +338,8 @@ CludesUI.AtOptionsLogin(function()
                         setValue = function(val)
                             if val == BagDisplayValue() then return end
                             saved.profile.bagDisplayMode = val
-                            CludesUI:RefreshPage(true)
-                            CludesUI:ShowConfirmPopup({
+                            CUI:RefreshPage(true)
+                            CUI:ShowConfirmPopup({
                                 title = "Reload Required",
                                 message = "Bag display changed. A UI reload is needed to apply.",
                                 confirmText = "Reload Now",
@@ -363,7 +364,7 @@ CludesUI.AtOptionsLogin(function()
                             if _G.CUI_Bags and _G.CUI_Bags:IsVisible() and _G.CUI_Bags.RefreshInventory then
                                 _G.CUI_Bags:RefreshInventory()
                             end
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -388,8 +389,8 @@ CludesUI.AtOptionsLogin(function()
                         type = "dropdown",
                         text = "Frame Strata",
                         tooltip = "Controls the order that overlapping elements display in. Set higher to show above other elements.",
-                        values = CludesUI.FRAME_STRATA_LABELS,
-                        order = CludesUI.FRAME_STRATA_ORDER_BASE,
+                        values = CUI.FRAME_STRATA_LABELS,
+                        order = CUI.FRAME_STRATA_ORDER_BASE,
                         getValue = function() return BagsNS.BagFrameStrata() end,
                         setValue = function(val)
                             saved.profile.bagFrameStrata = val
@@ -435,7 +436,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Auto-Size to Fit",
                         -- WoW Forever and the Compact display fit the content, with no normal-size floor
-                        tooltip = (CludesUI.IS_FOREVER or saved.profile.bagDisplayMode == "compact")
+                        tooltip = (CUI.IS_FOREVER or saved.profile.bagDisplayMode == "compact")
                                 and "Grow the bag window (more columns + taller, keeping its shape) so all of the active tab's slots are visible without scrolling. It only grows while open -- switching to a bigger tab enlarges it, smaller tabs keep the size -- and resets when you close the bags."
                             or "Grow the bag window (more columns + taller, keeping its shape) so all of the active tab's slots are visible without scrolling. It only grows while open -- switching to a bigger tab enlarges it, smaller tabs keep the size -- and resets when you close the bags. Never smaller than your normal size.",
                         getValue = function() return saved.profile.bagAutoSize == true end,
@@ -502,7 +503,7 @@ CludesUI.AtOptionsLogin(function()
                         hostFrame,
                         cursorY,
                         layoutSlots[i],
-                        layoutSlots[i + 1] or CludesUI.BlankRowCfg()
+                        layoutSlots[i + 1] or CUI.BlankRowCfg()
                     )
                     cursorY = cursorY - height
                 end
@@ -525,7 +526,7 @@ CludesUI.AtOptionsLogin(function()
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 }, {
                     type = "toggle",
@@ -537,14 +538,14 @@ CludesUI.AtOptionsLogin(function()
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
                 cursorY = cursorY - height
 
                 -- Inline cog for Show Pinned Items
-                if not CludesUI._prebuilding then
-                    CludesUI.BuildInlineCog(pinRecRow._leftRegion, {
+                if not CUI._prebuilding then
+                    CUI.BuildInlineCog(pinRecRow._leftRegion, {
                         chain = false,
                         disabled = function() return saved.profile.bagShowPinnedItems == false end,
                         disabledTooltip = "Show Pinned Items",
@@ -612,8 +613,8 @@ CludesUI.AtOptionsLogin(function()
                 end
 
                 -- Inline cog for Show Recent Items: "Show in OneBag"
-                if not CludesUI._prebuilding then
-                    CludesUI.BuildInlineCog(pinRecRow._rightRegion, {
+                if not CUI._prebuilding then
+                    CUI.BuildInlineCog(pinRecRow._rightRegion, {
                         chain = false,
                         disabled = function() return saved.profile.bagShowRecentItems == false end,
                         disabledTooltip = "Show Recent Items",
@@ -667,7 +668,7 @@ CludesUI.AtOptionsLogin(function()
                 cursorY = cursorY - height
 
                 -- Enabled Categories dropdown (left side)
-                if not CludesUI._prebuilding then
+                if not CUI._prebuilding then
                     -- Function, not a static table: re-evaluated on every menu open, so the
                     -- list follows split-mode toggles and set changes without a page rebuild.
                     local function BuildCatItems()
@@ -696,7 +697,7 @@ CludesUI.AtOptionsLogin(function()
 
                     if #BuildCatItems() > 0 then
                         local leftRegion = catRow._leftRegion
-                        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                             leftRegion,
                             210,
                             leftRegion:GetFrameLevel() + 2,
@@ -719,7 +720,7 @@ CludesUI.AtOptionsLogin(function()
                                         if _G.CUI_Bags:IsVisible() then _G.CUI_Bags:RefreshInventory() end
                                     end)
                                 end
-                                CludesUI:RefreshPage()
+                                CUI:RefreshPage()
                             end,
                             nil,
                             10,
@@ -728,7 +729,7 @@ CludesUI.AtOptionsLogin(function()
                         Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
                         leftRegion._control = checkDrop
                         leftRegion._lastInline = nil
-                        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+                        CUI.RegisterWidgetRefresh(cbDDRefresh)
                     end
                 end
 
@@ -831,7 +832,7 @@ CludesUI.AtOptionsLogin(function()
                             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                 _G.CUI_Bags:RefreshInventory()
                             end
-                            CludesUI:RefreshPage() -- the swatch's and the cog's disabled states
+                            CUI:RefreshPage() -- the swatch's and the cog's disabled states
                         end,
                     }, {
                         type = "slider",
@@ -855,9 +856,9 @@ CludesUI.AtOptionsLogin(function()
                     -- Show Item Level's inlines: the cog nearest the control (Show Gear
                     -- Track Rank, live while item levels show: the rank only renders
                     -- beside them), then the Custom Colored swatch left of it.
-                    if not CludesUI._prebuilding then
+                    if not CUI._prebuilding then
                         local region = ilvlRow._leftRegion
-                        CludesUI.BuildInlineCog(region, {
+                        CUI.BuildInlineCog(region, {
                             disabled = function() return saved.profile.showItemlevelInBags == false end,
                             disabledTooltip = "Show Item Level",
                             title = "Item Level Options",
@@ -876,7 +877,7 @@ CludesUI.AtOptionsLogin(function()
                             },
                         })
 
-                        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                        local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
                             region,
                             region:GetFrameLevel() + 5,
                             function()
@@ -895,27 +896,27 @@ CludesUI.AtOptionsLogin(function()
                         )
                         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                         region._lastInline = colorSwatch
-                        local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
+                        local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
                         swatchBlock:SetScript(
                             "OnEnter",
                             function()
-                                CludesUI.ShowWidgetTooltip(
+                                CUI.ShowWidgetTooltip(
                                     colorSwatch,
-                                    CludesUI.DisabledTooltip(
+                                    CUI.DisabledTooltip(
                                         "This option requires Show Item Level to be set to Custom Colored"
                                     )
                                 )
                             end
                         )
-                        swatchBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                        swatchBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                         local function UpdateIlvlSwatch()
                             local off = IlvlMode() ~= "custom"
                             colorSwatch:SetAlpha(off and 0.3 or 1)
                             swatchBlock:SetShown(off)
                         end
                         UpdateIlvlSwatch()
-                        CludesUI.RegisterWidgetRefresh(UpdateIlvlSwatch)
-                        CludesUI.RegisterWidgetRefresh(updateSwatch)
+                        CUI.RegisterWidgetRefresh(UpdateIlvlSwatch)
+                        CUI.RegisterWidgetRefresh(updateSwatch)
                     end
 
                     -- Show BoE / Warbound Text (+ inline cog: Text Size) | Item Count Text Size
@@ -932,7 +933,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             local bank = _G.CUI_BankFrame
                             if bank and bank.RefreshBank then bank:RefreshBank() end
-                            CludesUI:RefreshPage() -- refresh the cog's disabled state
+                            CUI:RefreshPage() -- refresh the cog's disabled state
                         end,
                     }, {
                         type = "slider",
@@ -960,8 +961,8 @@ CludesUI.AtOptionsLogin(function()
                     -- Nothing is lost from the index -- cog popup rows are not search
                     -- entries, and the host rows were already registered by DualRow.
                     -- Same for every region-chrome block below.
-                    if not CludesUI._prebuilding then
-                        CludesUI.BuildInlineCog(bindRow._leftRegion, {
+                    if not CUI._prebuilding then
+                        CUI.BuildInlineCog(bindRow._leftRegion, {
                             chain = false,
                             disabled = function() return not saved.profile.bagDisplayBindType end,
                             disabledTooltip = "Show BoE / Warbound Text",
@@ -1004,7 +1005,7 @@ CludesUI.AtOptionsLogin(function()
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
-                                CludesUI:RefreshPage() -- refresh the cog's disabled state
+                                CUI:RefreshPage() -- refresh the cog's disabled state
                             end,
                         }, {
                             type = "toggle",
@@ -1021,8 +1022,8 @@ CludesUI.AtOptionsLogin(function()
                         cursorY = cursorY - height
 
                         -- Inline cog (RESIZE) on Show Set Name on Gear: text size
-                        if not CludesUI._prebuilding then
-                            CludesUI.BuildInlineCog(setNameRow._leftRegion, {
+                        if not CUI._prebuilding then
+                            CUI.BuildInlineCog(setNameRow._leftRegion, {
                                 chain = false,
                                 disabled = function() return saved.profile.bagShowSetGearName ~= true end,
                                 disabledTooltip = "Show Set Name on Gear",
@@ -1186,7 +1187,7 @@ CludesUI.AtOptionsLogin(function()
                             hostFrame,
                             cursorY,
                             listSlots[i],
-                            listSlots[i + 1] or CludesUI.BlankRowCfg()
+                            listSlots[i + 1] or CUI.BlankRowCfg()
                         )
                         cursorY = cursorY - height
                         if splitSlot == i or splitSlot == i + 1 then
@@ -1195,14 +1196,14 @@ CludesUI.AtOptionsLogin(function()
                     end
 
                     -- Split by Type checkbox dropdown: a view over the three split toggles
-                    if splitRow and not CludesUI._prebuilding then
+                    if splitRow and not CUI._prebuilding then
                         local splitRgn = splitLeft and splitRow._leftRegion or splitRow._rightRegion
                         local SPLIT_TYPES = {
                             { key = "bagListSplitArmor", label = "Armor" },
                             { key = "bagListSplitWeapons", label = "Weapons" },
                             { key = "bagListSplitProfessions", label = "Professions" },
                         }
-                        local splitDD, splitDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                        local splitDD, splitDDRefresh = CUI.BuildVisOptsCBDropdown(
                             splitRgn,
                             210,
                             splitRgn:GetFrameLevel() + 2,
@@ -1220,7 +1221,7 @@ CludesUI.AtOptionsLogin(function()
                         Pix.Point(splitDD, "RIGHT", splitRgn, "RIGHT", -20, 0)
                         splitRgn._control = splitDD
                         splitRgn._lastInline = nil
-                        CludesUI.RegisterWidgetRefresh(splitDDRefresh)
+                        CUI.RegisterWidgetRefresh(splitDDRefresh)
                     end
                 end
 
@@ -1256,14 +1257,14 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function(val)
                         saved.profile.bagArmoryGroupBySlot = val and true or false
                         ResetBagLayout()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
                 cursorY = cursorY - height
 
                 -- Inline cog for Group Gear by Slot: Compact Slot Groups. Grid display
                 -- only, so not built for any other Bag Style.
-                if not CludesUI._prebuilding and BagDisplayValue() == "grid" then
+                if not CUI._prebuilding and BagDisplayValue() == "grid" then
                     local function SlotCogState()
                         local dc = saved.profile.bagDisabledCategories
                         if dc and dc["Armor"] == true then return true, "Armor" end
@@ -1273,7 +1274,7 @@ CludesUI.AtOptionsLogin(function()
                         return false
                     end
                     local gearRgn = gearRow._rightRegion
-                    CludesUI.BuildInlineCog(gearRgn, {
+                    CUI.BuildInlineCog(gearRgn, {
                         anchorTo = gearRgn._control,
                         disabled = function() return (SlotCogState()) end,
                         disabledTooltip = function()
@@ -1327,7 +1328,7 @@ CludesUI.AtOptionsLogin(function()
                 -- Junk Item Visuals dropdown (left side). The coin badge is drawn
                 -- only by the bag window's Grid and Compact displays, so the List
                 -- display lists Desaturate alone.
-                if not CludesUI._prebuilding then
+                if not CUI._prebuilding then
                     local JUNK_VISUALS = {
                         {
                             key = "bagDesaturateJunkItems",
@@ -1343,7 +1344,7 @@ CludesUI.AtOptionsLogin(function()
                         }
                     end
                     local junkRgn = junkRow._leftRegion
-                    local junkDD, junkDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                    local junkDD, junkDDRefresh = CUI.BuildVisOptsCBDropdown(
                         junkRgn,
                         210,
                         junkRgn:GetFrameLevel() + 2,
@@ -1363,7 +1364,7 @@ CludesUI.AtOptionsLogin(function()
                     Pix.Point(junkDD, "RIGHT", junkRgn, "RIGHT", -20, 0)
                     junkRgn._control = junkDD
                     junkRgn._lastInline = nil
-                    CludesUI.RegisterWidgetRefresh(junkDDRefresh)
+                    CUI.RegisterWidgetRefresh(junkDDRefresh)
                 end
 
                 -- Bag Top Bar Icons (+ inline cog: Sort to Bottom) | Gold Tracking and History
@@ -1376,13 +1377,13 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Gold Tracking and History",
                     tooltip = "Track and display gold amounts from all your characters on hover.",
-                    getValue = function() return CludesUI.GetGoldLedger().IsTracking() end,
-                    setValue = function(val) CludesUI.GetGoldLedger().SetTracking(val) end,
+                    getValue = function() return CUI.GetGoldLedger().IsTracking() end,
+                    setValue = function(val) CUI.GetGoldLedger().SetTracking(val) end,
                 })
                 cursorY = cursorY - height
 
                 -- Bag Top Bar Icons dropdown (left side), its Sort Options cog to the left
-                if not CludesUI._prebuilding then
+                if not CUI._prebuilding then
                     local TOP_BAR_ICONS = {
                         { key = "bagShowBagsIcon", label = "Bags Icon" },
                         { key = "bagShowJunkIcon", label = "Junk Icon" },
@@ -1390,7 +1391,7 @@ CludesUI.AtOptionsLogin(function()
                         { key = "bagShowSortIcon", label = "Sort Icon" },
                     }
                     local leftRegion = iconsRow._leftRegion
-                    local iconsDD, iconsDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                    local iconsDD, iconsDDRefresh = CUI.BuildVisOptsCBDropdown(
                         leftRegion,
                         210,
                         leftRegion:GetFrameLevel() + 2,
@@ -1416,7 +1417,7 @@ CludesUI.AtOptionsLogin(function()
                                     bags:SyncHeaderIcons()
                                 end
                             end
-                            CludesUI:RefreshPage() -- the Sort Options cog follows Sort Icon
+                            CUI:RefreshPage() -- the Sort Options cog follows Sort Icon
                         end,
                         nil,
                         10
@@ -1424,9 +1425,9 @@ CludesUI.AtOptionsLogin(function()
                     Pix.Point(iconsDD, "RIGHT", leftRegion, "RIGHT", -20, 0)
                     leftRegion._control = iconsDD
                     leftRegion._lastInline = nil
-                    CludesUI.RegisterWidgetRefresh(iconsDDRefresh)
+                    CUI.RegisterWidgetRefresh(iconsDDRefresh)
 
-                    CludesUI.BuildInlineCog(leftRegion, {
+                    CUI.BuildInlineCog(leftRegion, {
                         disabled = function() return saved.profile.bagShowSortIcon == false end,
                         disabledTooltip = "Sort Icon",
                         title = "Sort Options",
@@ -1493,7 +1494,7 @@ CludesUI.AtOptionsLogin(function()
                 cursorY = cursorY - height
 
                 -- Enabled Currencies dropdown (left side)
-                if not CludesUI._prebuilding then
+                if not CUI._prebuilding then
                     local currencyItems = {}
                     if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize then
                         -- Expand all collapsed headers so we can see every currency,
@@ -1548,7 +1549,7 @@ CludesUI.AtOptionsLogin(function()
                     -- via GetCurrencyInfo, which still answers for delisted ids.
                     -- Never auto-pruned: what renders stays the user's choice.
                     do
-                        local co = CludesUI._BagsCurrencyOrder and CludesUI._BagsCurrencyOrder()
+                        local co = CUI._BagsCurrencyOrder and CUI._BagsCurrencyOrder()
                         if co then
                             local listed = {}
                             for _, entry in ipairs(currencyItems) do
@@ -1566,7 +1567,7 @@ CludesUI.AtOptionsLogin(function()
                                 -- exactly what this dropdown gets opened to remove,
                                 -- so it never hides under the live headers.
                                 local block = {
-                                    { isHeader = true, label = CludesUI.L("Retired") },
+                                    { isHeader = true, label = CUI.L("Retired") },
                                 }
                                 for _, cID in ipairs(retired) do
                                     local cInfo = C_CurrencyInfo.GetCurrencyInfo
@@ -1586,7 +1587,7 @@ CludesUI.AtOptionsLogin(function()
 
                     if #currencyItems > 0 then
                         local leftRegion = currRow._leftRegion
-                        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                             leftRegion,
                             210,
                             leftRegion:GetFrameLevel() + 2,
@@ -1597,11 +1598,11 @@ CludesUI.AtOptionsLogin(function()
                             -- db.profile.currencyOrder here would edit the legacy
                             -- shared table that nothing renders any more.
                             function(cID)
-                                local co = CludesUI._BagsCurrencyOrder and CludesUI._BagsCurrencyOrder()
+                                local co = CUI._BagsCurrencyOrder and CUI._BagsCurrencyOrder()
                                 return co and co[cID] and true or false
                             end,
                             function(cID, val)
-                                local co = CludesUI._BagsCurrencyOrder and CludesUI._BagsCurrencyOrder()
+                                local co = CUI._BagsCurrencyOrder and CUI._BagsCurrencyOrder()
                                 if not co then return end
                                 if val then
                                     local maxOrder = 0
@@ -1625,7 +1626,7 @@ CludesUI.AtOptionsLogin(function()
                         Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
                         leftRegion._control = checkDrop
                         leftRegion._lastInline = nil
-                        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+                        CUI.RegisterWidgetRefresh(cbDDRefresh)
                     end
                 end
 
@@ -1658,7 +1659,7 @@ CludesUI.AtOptionsLogin(function()
                 )
                 cursorY = cursorY - height
                 local function AutoWindowsDropdown(region, setting)
-                    local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                    local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                         region,
                         210,
                         region:GetFrameLevel() + 2,
@@ -1680,7 +1681,7 @@ CludesUI.AtOptionsLogin(function()
                     Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
                     region._control = checkDrop
                     region._lastInline = nil
-                    CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+                    CUI.RegisterWidgetRefresh(cbDDRefresh)
                 end
                 AutoWindowsDropdown(autoRow._leftRegion, "bagAutoOpenWindows")
                 AutoWindowsDropdown(autoRow._rightRegion, "bagAutoCloseWindows")
@@ -1702,7 +1703,7 @@ CludesUI.AtOptionsLogin(function()
                             _G.CUI_Bags:RefreshInventory()
                         end
                     end,
-                }, CludesUI.IS_FOREVER and CludesUI.BlankRowCfg() or {
+                }, CUI.IS_FOREVER and CUI.BlankRowCfg() or {
                     type = "toggle",
                     text = "Separate Reagent Slots",
                     tooltip = "Show reagent bag slots on a separate line.",
@@ -1725,13 +1726,13 @@ CludesUI.AtOptionsLogin(function()
         end,
         onReset = function()
             -- Wipe per-profile data and re-apply defaults
-            local bdb = CludesUI._bagsDB
+            local bdb = CUI._bagsDB
             local p = bdb and bdb.profile
             if p then
                 for keyName in pairs(p) do
                     p[keyName] = nil
                 end
-                if bdb._profileDefaults then CludesUI.Lite.DeepMergeDefaults(p, bdb._profileDefaults) end
+                if bdb._profileDefaults then CUI.Lite.DeepMergeDefaults(p, bdb._profileDefaults) end
             end
             if _G.CUI_Bags and _G.CUI_Bags.ApplyWindowLayering then _G.CUI_Bags:ApplyWindowLayering() end
             -- Wipe per-character data from root DB
@@ -1754,7 +1755,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUIDB.bagAutoGoldAmount = nil
                 CludesUIDB.bagAutoGoldChat = nil
             end
-            local bagsNS = CludesUI._ModuleNS and CludesUI._ModuleNS["CludesUIBags"]
+            local bagsNS = CUI._ModuleNS and CUI._ModuleNS["CludesUIBags"]
             local Offline = bagsNS and bagsNS.Offline
             if Offline then
                 Offline.Wipe()
@@ -1762,7 +1763,7 @@ CludesUI.AtOptionsLogin(function()
                 Offline.SyncButton()
             end
             if bagsNS and bagsNS.AutoGold then bagsNS.AutoGold.Sync() end
-            CludesUI:InvalidatePageCache()
+            CUI:InvalidatePageCache()
         end,
     })
 end)

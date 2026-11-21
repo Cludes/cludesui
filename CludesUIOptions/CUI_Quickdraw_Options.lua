@@ -1,15 +1,16 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Options.lua  --  Settings page for the Quickdraw
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIQuickdraw"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
-local Pool = CludesUI._Pool
+local Pool = CUI._Pool
 local CreateFrame = Pool.CreateFrame
 
 local PAGE_DISPLAY = "Action Wheel"
@@ -20,7 +21,7 @@ local BINDING_PREFIX = "CUI_RADIAL"
 local MAX_PALETTES = mod.MAX_PALETTES or 16
 local MAX_SLOTS = mod.MAX_SLOTS or 12
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     local db
 
     -- Through ns.Profile, not db.profile: the module converts a profile's
@@ -62,16 +63,16 @@ CludesUI.AtOptionsLogin(function()
     local function Reapply()
         PushToModule()
         local nestFlipped = HasAnyNest and HasAnyNest() ~= builtWithNest
-        if nestFlipped and CludesUI.RefreshPage then
-            CludesUI:RefreshPage(true)
+        if nestFlipped and CUI.RefreshPage then
+            CUI:RefreshPage(true)
         else
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
     end
 
     local function RedrawPage()
         PushToModule()
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
     end
 
     -- Which palette the ACTION MENU SETUP section is editing. Transient: the editor
@@ -197,11 +198,11 @@ CludesUI.AtOptionsLogin(function()
     -- active M+ (CludesUI.lua:1519), which is precisely when a user would
     -- hit them and see nothing happen.
     local function Complain(msg)
-        msg = CludesUI.L(msg)
+        msg = CUI.L(msg)
         if _G.UIErrorsFrame then
             UIErrorsFrame:AddMessage(msg, 1.0, 0.3, 0.3, 1.0)
         else
-            CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Action Wheel:|r " .. msg)
+            CUI.Print(CUI.COLOR_CODES.BRAND .. "Action Wheel:|r " .. msg)
         end
     end
 
@@ -286,10 +287,10 @@ CludesUI.AtOptionsLogin(function()
         MenuTable(ownerFrame).keyShare = nil
         MenuTable(position).keyShare = ownerFrame
         if k1 or k2 then SaveBindings(GetCurrentBindingSet()) end
-        CludesUI.Print(
-            CludesUI.COLOR_CODES.BRAND
+        CUI.Print(
+            CUI.COLOR_CODES.BRAND
                 .. "Action Wheel:|r "
-                .. CludesUI.Lf(
+                .. CUI.Lf(
                     "%1$s now shares %2$s with %3$s.",
                     MenuName(position),
                     GetBindingText(keyChord) or keyChord,
@@ -316,10 +317,10 @@ CludesUI.AtOptionsLogin(function()
                 else
                     MenuTable(sv).keyShare = nil
                     broke = true
-                    CludesUI.Print(
-                        CludesUI.COLOR_CODES.BRAND
+                    CUI.Print(
+                        CUI.COLOR_CODES.BRAND
                             .. "Action Wheel:|r "
-                            .. CludesUI.Lf(
+                            .. CUI.Lf(
                                 "%1$s no longer shares the key of %2$s: they can now load in the same spec.",
                                 MenuName(sv),
                                 MenuName(ownerFrame)
@@ -347,7 +348,7 @@ CludesUI.AtOptionsLogin(function()
             -- action, and clearing both silently destroyed the second one with
             -- no message (and no way to see it, since the label shows key1).
             -- Uninstall CUI hands the key back to what it did before.
-            CludesUI.NoteBinding(keyChord, GetBindingAction(keyChord))
+            CUI.NoteBinding(keyChord, GetBindingAction(keyChord))
             if not SetBinding(keyChord, bindAction) then
                 Complain("Action Wheel: " .. (GetBindingText(keyChord) or keyChord) .. " could not be bound.")
             else
@@ -361,14 +362,14 @@ CludesUI.AtOptionsLogin(function()
                     -- The menus that shared the key lose it with its holder
                     local holderFrame = PaletteOfAction(stolenFrom)
                     local nameList = holderFrame and SharerNames(holderFrame)
-                    CludesUI.Print(
-                        CludesUI.COLOR_CODES.BRAND
+                    CUI.Print(
+                        CUI.COLOR_CODES.BRAND
                             .. "Action Wheel:|r took "
                             .. (GetBindingText(keyChord) or keyChord)
                             .. " from |cffffd100"
                             .. BindingLabel(stolenFrom)
                             .. "|r"
-                            .. (nameList and (" (" .. CludesUI.Lf("and %1$s, which shared it", nameList) .. ")") or "")
+                            .. (nameList and (" (" .. CUI.Lf("and %1$s, which shared it", nameList) .. ")") or "")
                             .. "."
                     )
                 end
@@ -420,9 +421,9 @@ CludesUI.AtOptionsLogin(function()
         -- not miss until they reach for it mid-fight. Asking first is the only
         -- point at which they can still say no -- a message after the fact
         -- tells them what to go and put back, which is not the same thing.
-        if stolenFrom and CludesUI.ShowConfirmPopup then
+        if stolenFrom and CUI.ShowConfirmPopup then
             local keyText = GetBindingText(keyChord) or keyChord
-            local message = CludesUI.Lf(
+            local message = CUI.Lf(
                 '%1$s is bound to "%2$s". Binding it to "%3$s" will leave that unbound.',
                 keyText,
                 BindingLabel(stolenFrom),
@@ -436,17 +437,17 @@ CludesUI.AtOptionsLogin(function()
                     message = message
                         .. "\n\n"
                         .. (
-                            total == 1 and CludesUI.Lf("%1$s shares it and will lose it too.", nameList)
-                            or CludesUI.Lf("%1$s share it and will lose it too.", nameList)
+                            total == 1 and CUI.Lf("%1$s shares it and will lose it too.", nameList)
+                            or CUI.Lf("%1$s share it and will lose it too.", nameList)
                         )
                 end
                 message = message
                     .. "\n\n"
-                    .. CludesUI.L(
+                    .. CUI.L(
                         "Two action menus can share a keybind when Assign to Spec keeps them from ever loading in the same spec."
                     )
             end
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = "Key Already Bound",
                 message = message,
                 confirmText = "Rebind",
@@ -502,8 +503,8 @@ CludesUI.AtOptionsLogin(function()
             local now = PaletteKeySignature()
             if now ~= keysSeen then
                 keysSeen = now
-                CludesUI:InvalidatePageCache()
-                if CludesUI:IsShown() and CludesUI.RefreshPage then CludesUI:RefreshPage(true) end
+                CUI:InvalidatePageCache()
+                if CUI:IsShown() and CUI.RefreshPage then CUI:RefreshPage(true) end
             end
         end)
     end
@@ -662,8 +663,8 @@ CludesUI.AtOptionsLogin(function()
                 local cap = mod.NestChildCap and mod.NestChildCap(editingMenu)
                 local childFrame = mod.ChildIndex(ent)
                 local kids = mod.ChildSlots and mod.ChildSlots(childFrame, cap)
-                caption = (kids and #kids == 1) and CludesUI.Lf("nested action menu, %1$d entry", 1)
-                    or CludesUI.Lf("nested action menu, %1$d entries", kids and #kids or 0)
+                caption = (kids and #kids == 1) and CUI.Lf("nested action menu, %1$d entry", 1)
+                    or CUI.Lf("nested action menu, %1$d entries", kids and #kids or 0)
                 -- Said where the user meets it, rather than left to be
                 -- discovered by counting the entries that turned up: a menu
                 -- holding more than the halo can show looks broken otherwise.
@@ -672,7 +673,7 @@ CludesUI.AtOptionsLogin(function()
                     -- The literal stays on the Lf line: the locale extractor
                     -- reads one line at a time, and a string wrapped onto the
                     -- next one is a key it never learns about.
-                    caption = caption .. CludesUI.Lf(", %1$d not shown in this layout", #all - #kids)
+                    caption = caption .. CUI.Lf(", %1$d not shown in this layout", #all - #kids)
                 end
             else
                 -- The stored kind strings are one word each; only the marker
@@ -704,27 +705,27 @@ CludesUI.AtOptionsLogin(function()
                     or (ent.kind == "dynamicrez" and "resurrection, chosen for this character")
                     or ent.kind
             end
-            textValue = CludesUI.L(nm or ent.kind)
+            textValue = CUI.L(nm or ent.kind)
                 .. "\n|cff999999"
-                .. CludesUI.L(caption)
+                .. CUI.L(caption)
                 .. "|r"
-                .. CludesUI.L(
+                .. CUI.L(
                     "\n|cff66ccffDrag to reorder."
                         .. "\nRight-click to change action."
                         .. "\nMiddle-click to remove."
                         .. "\nDrop an action here to replace it.|r"
                 )
         else
-            textValue = CludesUI.L(
+            textValue = CUI.L(
                 "Add an action"
                     .. "\n|cff66ccffLeft-click to pick an action from a list."
                     .. "\nYou can also drop an action from the cursor here.|r"
             )
         end
-        CludesUI.ShowWidgetTooltip(wdg, textValue)
+        CUI.ShowWidgetTooltip(wdg, textValue)
     end
 
-    local function HidePreviewTooltip() CludesUI.HideWidgetTooltip() end
+    local function HidePreviewTooltip() CUI.HideWidgetTooltip() end
 
     -- Place whatever is on the cursor. An empty cursor is not an error: a bare
     -- left-click on a slot should do nothing at all, cursor untouched.
@@ -840,7 +841,7 @@ CludesUI.AtOptionsLogin(function()
                     if details and not details.isPassive and not details.isOffSpec then
                         if details.itemType == Enum.SpellBookItemType.Spell then
                             local rankText
-                            if CludesUI.IS_FOREVER then
+                            if CUI.IS_FOREVER then
                                 rankText = details.subName
                                 if not rankText or rankText == "" then
                                     rankText = C_Spell.GetSpellSubtext(details.actionID)
@@ -853,7 +854,7 @@ CludesUI.AtOptionsLogin(function()
                             -- overrides from when the button fires. A lower rank
                             -- whose text has not loaded would only repeat its
                             -- spell's row.
-                            if CludesUI.IS_FOREVER and C_SpellBook.IsSpellBookItemLowRank(i, bank) then
+                            if CUI.IS_FOREVER and C_SpellBook.IsSpellBookItemLowRank(i, bank) then
                                 if rankText then
                                     AddSpell(details.actionID, details.name, details.iconID, rankText)
                                     ranked[details.name] = true
@@ -899,7 +900,7 @@ CludesUI.AtOptionsLogin(function()
     -- invented here: only what the collection API actually hands back is
     -- indexed.
     local function SourceKeywords(sourceType, isFavorite)
-        local result = isFavorite and (CludesUI.L("favorite"):lower() .. " ") or ""
+        local result = isFavorite and (CUI.L("favorite"):lower() .. " ") or ""
         local labelText = sourceType and _G["BATTLE_PET_SOURCE_" .. sourceType]
         if labelText then result = result .. labelText:lower() end
         return result ~= "" and result or nil
@@ -1199,7 +1200,7 @@ CludesUI.AtOptionsLogin(function()
             local glyph = mod.SlotDisplay(ent)
             result[#result + 1] = { icon = glyph, name = mod.ProfessionPositionName(i, true), slot = ent }
         end
-        for i = 1, CludesUI.IS_FOREVER and 0 or 2 do
+        for i = 1, CUI.IS_FOREVER and 0 or 2 do
             local ent = { kind = "dynamicprofession", index = i, specialization = true }
             local glyph = mod.SlotDisplay(ent)
             result[#result + 1] = {
@@ -1447,18 +1448,18 @@ CludesUI.AtOptionsLogin(function()
     local function EnsurePickerMenu()
         if pickerMenu then return pickerMenu end
 
-        local FONT = (CludesUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-        local bgR = CludesUI.DD_BG_R or 0.075
-        local bgG = CludesUI.DD_BG_G or 0.113
-        local bgB = CludesUI.DD_BG_B or 0.141
-        local bgA = CludesUI.DD_BG_HA or 0.98
-        local brdA = CludesUI.DD_BRD_A or 0.20
-        local hlA = CludesUI.DD_ITEM_HL_A or 0.08
-        local tR = CludesUI.TEXT_DIM_R or 0.7
-        local tG = CludesUI.TEXT_DIM_G or 0.7
-        local tB = CludesUI.TEXT_DIM_B or 0.7
-        local tA = CludesUI.TEXT_DIM_A or 0.85
-        local ACCENT = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+        local FONT = (CUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        local bgR = CUI.DD_BG_R or 0.075
+        local bgG = CUI.DD_BG_G or 0.113
+        local bgB = CUI.DD_BG_B or 0.141
+        local bgA = CUI.DD_BG_HA or 0.98
+        local brdA = CUI.DD_BRD_A or 0.20
+        local hlA = CUI.DD_ITEM_HL_A or 0.08
+        local tR = CUI.TEXT_DIM_R or 0.7
+        local tG = CUI.TEXT_DIM_G or 0.7
+        local tB = CUI.TEXT_DIM_B or 0.7
+        local tA = CUI.TEXT_DIM_A or 0.85
+        local ACCENT = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
 
         local dropMenu = CreateFrame("Frame", nil, UIParent)
         -- The options window is on DIALOG (CludesUI.lua:7126), so the menu
@@ -1473,9 +1474,9 @@ CludesUI.AtOptionsLogin(function()
         local mbg = dropMenu:CreateTexture(nil, "BACKGROUND")
         mbg:SetAllPoints()
         mbg:SetColorTexture(bgR, bgG, bgB, bgA)
-        CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, brdA, mbg, nil, true)
+        CUI.MakeRoundedBorder(dropMenu, 1, 1, 1, brdA, mbg, nil, true)
 
-        dropMenu.title = CludesUI.MakeFont(dropMenu, 12, nil, 1, 1, 1, 0.9)
+        dropMenu.title = CUI.MakeFont(dropMenu, 12, nil, 1, 1, 1, 0.9)
         dropMenu.title:SetPoint("TOP", dropMenu, "TOP", 0, -7)
         dropMenu.title:SetJustifyH("CENTER")
 
@@ -1496,9 +1497,9 @@ CludesUI.AtOptionsLogin(function()
             bAr:SetSnapToPixelGrid(false)
             bAr:SetTexelSnappingBias(0)
         end
-        local bTx = CludesUI.MakeFont(dropMenu.back, 11, nil, tR, tG, tB, tA)
+        local bTx = CUI.MakeFont(dropMenu.back, 11, nil, tR, tG, tB, tA)
         bTx:SetPoint("LEFT", bAr, "RIGHT", 6, 0)
-        bTx:SetText(CludesUI.L("Categories"))
+        bTx:SetText(CUI.L("Categories"))
         -- Named, because a sub-category's entries go back to the sub-list
         -- rather than to the root and the row has to say which.
         dropMenu.backText = bTx
@@ -1534,12 +1535,12 @@ CludesUI.AtOptionsLogin(function()
         local sBg = dropMenu.search:CreateTexture(nil, "BACKGROUND")
         sBg:SetAllPoints()
         sBg:SetColorTexture(0, 0, 0, 0.4)
-        CludesUI.MakeRoundedBorder(dropMenu.search, 1, 1, 1, 0.10, sBg)
+        CUI.MakeRoundedBorder(dropMenu.search, 1, 1, 1, 0.10, sBg)
         dropMenu.searchPH = dropMenu.search:CreateFontString(nil, "OVERLAY")
         dropMenu.searchPH:SetFont(FONT, 11, "")
         dropMenu.searchPH:SetTextColor(0.5, 0.5, 0.5, 0.6)
         dropMenu.searchPH:SetPoint("LEFT", dropMenu.search, "LEFT", 6, 0)
-        dropMenu.searchPH:SetText(CludesUI.L("Search..."))
+        dropMenu.searchPH:SetText(CUI.L("Search..."))
         dropMenu.search:SetScript("OnEscapePressed", function(sv) sv:ClearFocus() end)
         dropMenu.search:SetScript("OnEnterPressed", function(sv) sv:ClearFocus() end)
         dropMenu.search:SetScript("OnTextChanged", function(sv)
@@ -1623,7 +1624,7 @@ CludesUI.AtOptionsLogin(function()
             rw.icon:SetSize(PICK_ROW_H - 6, PICK_ROW_H - 6)
             rw.icon:SetPoint("LEFT", rw, "LEFT", 6, 0)
             rw.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            rw.label = CludesUI.MakeFont(rw, 11, nil, tR, tG, tB, tA)
+            rw.label = CUI.MakeFont(rw, 11, nil, tR, tG, tB, tA)
             rw.label:SetJustifyH("LEFT")
             rw.label:SetWordWrap(false)
             rw.label:SetMaxLines(1)
@@ -1667,21 +1668,21 @@ CludesUI.AtOptionsLogin(function()
             local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(0, 0, 0, 0.4)
-            CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.10, backdrop)
+            CUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.10, backdrop)
             return boxFrame
         end
 
-        local nameLbl = CludesUI.MakeFont(custom, 10, nil, tR, tG, tB, tA)
+        local nameLbl = CUI.MakeFont(custom, 10, nil, tR, tG, tB, tA)
         nameLbl:SetPoint("TOPLEFT", custom, "TOPLEFT", 1, 0)
-        nameLbl:SetText(CludesUI.L("Label"))
+        nameLbl:SetText(CUI.L("Label"))
         local nameField = MakeInput(custom, 22, false)
         nameField:SetPoint("TOPLEFT", nameLbl, "BOTTOMLEFT", 0, -3)
         nameField:SetPoint("RIGHT", custom, "RIGHT", -1, 0)
         nameField:SetMaxLetters(24)
 
-        local textLbl = CludesUI.MakeFont(custom, 10, nil, tR, tG, tB, tA)
+        local textLbl = CUI.MakeFont(custom, 10, nil, tR, tG, tB, tA)
         textLbl:SetPoint("TOPLEFT", nameField, "BOTTOMLEFT", 0, -8)
-        textLbl:SetText(CludesUI.L("Macro Text"))
+        textLbl:SetText(CUI.L("Macro Text"))
         local editField = MakeInput(custom, 62, true)
         editField:SetPoint("TOPLEFT", textLbl, "BOTTOMLEFT", 0, -3)
         editField:SetPoint("RIGHT", custom, "RIGHT", -1, 0)
@@ -1694,10 +1695,10 @@ CludesUI.AtOptionsLogin(function()
         local aBg = plusBtn:CreateTexture(nil, "BACKGROUND")
         aBg:SetAllPoints()
         aBg:SetColorTexture(ACCENT.r, ACCENT.g, ACCENT.b, 0.20)
-        CludesUI.MakeRoundedBorder(plusBtn, ACCENT.r, ACCENT.g, ACCENT.b, 0.7, aBg)
-        local aTx = CludesUI.MakeFont(plusBtn, 11, nil, 1, 1, 1, 0.9)
+        CUI.MakeRoundedBorder(plusBtn, ACCENT.r, ACCENT.g, ACCENT.b, 0.7, aBg)
+        local aTx = CUI.MakeFont(plusBtn, 11, nil, 1, 1, 1, 0.9)
         aTx:SetPoint("CENTER")
-        aTx:SetText(CludesUI.L("Add"))
+        aTx:SetText(CUI.L("Add"))
         plusBtn:SetScript("OnEnter", function() aBg:SetColorTexture(ACCENT.r, ACCENT.g, ACCENT.b, 0.35) end)
         plusBtn:SetScript("OnLeave", function() aBg:SetColorTexture(ACCENT.r, ACCENT.g, ACCENT.b, 0.20) end)
         plusBtn:SetScript("OnClick", function()
@@ -1772,12 +1773,12 @@ CludesUI.AtOptionsLogin(function()
         -- levels -- the root has nowhere above it.
         dropMenu.cat = nil
         dropMenu.title:SetText(
-            CludesUI.L(
+            CUI.L(
                 hostFrame and hostFrame.label or (pickerReplaceIndex and "Change Action" or "Add Action")
             )
         )
         dropMenu.back:SetShown(hostFrame ~= nil)
-        dropMenu.backText:SetText(CludesUI.L("Categories"))
+        dropMenu.backText:SetText(CUI.L("Categories"))
         -- Focus first: hiding a focused edit box leaves the keyboard captured by
         -- a box that is no longer on screen.
         dropMenu.search:ClearFocus()
@@ -1796,7 +1797,7 @@ CludesUI.AtOptionsLogin(function()
             rw.label:ClearAllPoints()
             rw.label:SetPoint("LEFT", rw, "LEFT", 8, 0)
             rw.label:SetPoint("RIGHT", rw, "RIGHT", -6, 0)
-            rw.label:SetText(CludesUI.L(category.label))
+            rw.label:SetText(CUI.L(category.label))
             rw:SetScript("OnClick", function()
                 if category.custom then
                     ShowPickerCustom()
@@ -1822,7 +1823,7 @@ CludesUI.AtOptionsLogin(function()
             rw.label:ClearAllPoints()
             rw.label:SetPoint("LEFT", rw, "LEFT", 8, 0)
             rw.label:SetPoint("RIGHT", rw, "RIGHT", -6, 0)
-            rw.label:SetText(CludesUI.L("Remove Action"))
+            rw.label:SetText(CUI.L("Remove Action"))
             rw:SetScript("OnClick", function()
                 -- Before HidePicker, which clears the index on OnHide. The
                 -- guard mirrors AssignEntry's: a slot already gone leaves
@@ -1846,9 +1847,9 @@ CludesUI.AtOptionsLogin(function()
     ShowPickerCategory = function(category)
         local dropMenu = EnsurePickerMenu()
         dropMenu.cat = category
-        dropMenu.title:SetText(CludesUI.L(category.label))
+        dropMenu.title:SetText(CUI.L(category.label))
         dropMenu.back:Show()
-        dropMenu.backText:SetText(CludesUI.L(category.parent and category.parent.label or "Categories"))
+        dropMenu.backText:SetText(CUI.L(category.parent and category.parent.label or "Categories"))
         -- Focus first when hiding: a hidden edit box keeps the keyboard.
         if category.noSearch then
             dropMenu.search:ClearFocus()
@@ -1859,7 +1860,7 @@ CludesUI.AtOptionsLogin(function()
             -- matches source and favorite is worth nothing if the only way to
             -- find that out is to guess it.
             dropMenu.searchPH:SetText(
-                CludesUI.L(category.keywordHint and "Search name, source, favorite..." or "Search...")
+                CUI.L(category.keywordHint and "Search name, source, favorite..." or "Search...")
             )
             dropMenu.searchPH:SetShown((dropMenu.search:GetText() or "") == "")
         end
@@ -1915,7 +1916,7 @@ CludesUI.AtOptionsLogin(function()
                 rw.label:ClearAllPoints()
                 rw.label:SetPoint("LEFT", rw.icon, "RIGHT", 6, 0)
                 rw.label:SetPoint("RIGHT", rw, "RIGHT", -6, 0)
-                rw.label:SetText(CludesUI.L(record.name))
+                rw.label:SetText(CUI.L(record.name))
                 rw:SetScript("OnClick", function() AssignEntry(record) end)
                 rw:Show()
             end
@@ -1929,7 +1930,7 @@ CludesUI.AtOptionsLogin(function()
             rw.label:ClearAllPoints()
             rw.label:SetPoint("LEFT", rw, "LEFT", 8, 0)
             rw.label:SetPoint("RIGHT", rw, "RIGHT", -6, 0)
-            rw.label:SetText(filter == "" and CludesUI.L("Nothing to add") or CludesUI.L("No matches"))
+            rw.label:SetText(filter == "" and CUI.L("Nothing to add") or CUI.L("No matches"))
             rw:SetScript("OnClick", nil)
             rw:Show()
             isShown = 1
@@ -1947,11 +1948,11 @@ CludesUI.AtOptionsLogin(function()
         -- No cat recorded: menu.cat means "a list view is up, re-filter it on a
         -- keystroke", and there is no list here.
         dropMenu.cat = nil
-        dropMenu.title:SetText(CludesUI.L("Custom Macro"))
+        dropMenu.title:SetText(CUI.L("Custom Macro"))
         dropMenu.back:Show()
         -- Restated rather than left as it was: the row is shared, and the view
         -- before this one may have been a sub-category's.
-        dropMenu.backText:SetText(CludesUI.L("Categories"))
+        dropMenu.backText:SetText(CUI.L("Categories"))
         dropMenu.search:ClearFocus()
         dropMenu.search:Hide()
         -- Hiding the scroll frame takes the pooled rows with it: they are its
@@ -2384,7 +2385,7 @@ CludesUI.AtOptionsLogin(function()
             pmenu.appearance = nil
             -- Seed the name in the player's language: it is user data from the
             -- moment it exists (renameable), so store the translated label.
-            pmenu.name = (preset and CludesUI.L(preset.label)) or AutoName(total + 1)
+            pmenu.name = (preset and CUI.L(preset.label)) or AutoName(total + 1)
             for _, sv in ipairs(entryList or {}) do
                 if not mod.AddSlot(pmenu, sv) then break end
             end
@@ -2433,7 +2434,7 @@ CludesUI.AtOptionsLogin(function()
         dropMenu:ClearAllPoints()
         dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
         dropMenu.cat = nil
-        dropMenu.title:SetText(CludesUI.L(title))
+        dropMenu.title:SetText(CUI.L(title))
         dropMenu.back:Hide()
         dropMenu.search:ClearFocus()
         dropMenu.search:Hide()
@@ -2450,7 +2451,7 @@ CludesUI.AtOptionsLogin(function()
         local dropMenu = OpenListMenu(anchor, "Add Action Menu")
         if not dropMenu then return end
 
-        MenuRow(dropMenu, 1, nil, CludesUI.L("Empty Action Menu"), function() AddPalette(nil) end)
+        MenuRow(dropMenu, 1, nil, CUI.L("Empty Action Menu"), function() AddPalette(nil) end)
         local num = 1
         for _, preset in ipairs(PALETTE_PRESETS) do
             local entryList, spill = preset.build()
@@ -2462,13 +2463,13 @@ CludesUI.AtOptionsLogin(function()
                 -- had found everything there was.
                 local total = "  |cff808080(" .. #entryList .. ")|r"
                 if spill and spill > 0 then
-                    total = total .. " |cffd08050" .. CludesUI.Lf("%1$d did not fit", spill) .. "|r"
+                    total = total .. " |cffd08050" .. CUI.Lf("%1$d did not fit", spill) .. "|r"
                 end
                 MenuRow(
                     dropMenu,
                     num,
                     glyph or QUESTION_MARK,
-                    CludesUI.L(preset.label) .. total,
+                    CUI.L(preset.label) .. total,
                     function() AddPalette(preset, entryList) end
                 )
             end
@@ -2588,7 +2589,7 @@ CludesUI.AtOptionsLogin(function()
 
     local function EnsureMenuMenu()
         if mmMenu then return mmMenu end
-        local PPQ = CludesUI.PanelPP
+        local PPQ = CUI.PanelPP
         local menuFrame = CreateFrame("Frame", nil, UIParent)
         menuFrame:SetFrameStrata("FULLSCREEN_DIALOG")
         menuFrame:SetFrameLevel(200)
@@ -2597,8 +2598,8 @@ CludesUI.AtOptionsLogin(function()
         menuFrame:Hide()
         local backdrop = menuFrame:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
-        backdrop:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
-        CludesUI.MakeBorder(menuFrame, 1, 1, 1, CludesUI.DD_BRD_A, PPQ)
+        backdrop:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, 0.98)
+        CUI.MakeBorder(menuFrame, 1, 1, 1, CUI.DD_BRD_A, PPQ)
         -- Click-outside dismissal + anchor scale matching, the profile
         -- menu's own. The anchor is re-pointed per page build (m._anchor).
         menuFrame:SetScript("OnShow", function(self)
@@ -2649,12 +2650,12 @@ CludesUI.AtOptionsLogin(function()
         ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         rowBtn._ico = ico
         local labelFS = rowBtn:CreateFontString(nil, "OVERLAY")
-        labelFS:SetFont(font, 13, CludesUI.GetFontOutlineFlag())
+        labelFS:SetFont(font, 13, CUI.GetFontOutlineFlag())
         labelFS:SetPoint("LEFT", ico, "RIGHT", 6, 0)
         labelFS:SetPoint("RIGHT", rowBtn, "RIGHT", -(MM_X * 2 + 22), 0)
         labelFS:SetJustifyH("LEFT")
         labelFS:SetWordWrap(false)
-        labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+        labelFS:SetTextColor(1, 1, 1, CUI.TEXT_DIM_A)
         rowBtn._lbl = labelFS
         local highlight = rowBtn:CreateTexture(nil, "ARTWORK")
         highlight:SetAllPoints()
@@ -2672,10 +2673,10 @@ CludesUI.AtOptionsLogin(function()
         local function Lit(on)
             if on then
                 labelFS:SetTextColor(1, 1, 1, 1)
-                highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
+                highlight:SetAlpha(CUI.DD_ITEM_HL_A)
             else
-                labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                highlight:SetAlpha(rowBtn._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+                labelFS:SetTextColor(1, 1, 1, CUI.TEXT_DIM_A)
+                highlight:SetAlpha(rowBtn._isSel and CUI.DD_ITEM_SEL_A or 0)
             end
             local a2 = on and 0.8 or 0.4
             xBtn:SetAlpha(a2)
@@ -2690,7 +2691,7 @@ CludesUI.AtOptionsLogin(function()
             b:SetScript("OnEnter", function(self2)
                 Lit(true)
                 self2:SetAlpha(1)
-                CludesUI.ShowWidgetTooltip(self2, tip)
+                CUI.ShowWidgetTooltip(self2, tip)
             end)
             b:SetScript("OnLeave", function(self2)
                 if rowBtn:IsMouseOver() or OverButtons() then
@@ -2698,7 +2699,7 @@ CludesUI.AtOptionsLogin(function()
                 else
                     Lit(false)
                 end
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
         end
         return rowBtn
@@ -2708,9 +2709,9 @@ CludesUI.AtOptionsLogin(function()
     local function AskDeleteMenu(position)
         mmMenu:Hide()
         local menuT = MenuTable(position)
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = "Delete Action Menu",
-            message = CludesUI.Lf(
+            message = CUI.Lf(
                 "Delete %1$s and its contents? Entries "
                     .. "in other action menus that open it are removed "
                     .. "too, and the menus after it move up one place.",
@@ -2725,9 +2726,9 @@ CludesUI.AtOptionsLogin(function()
         mmMenu:Hide()
         local menuT = MenuTable(position)
         local current = (menuT and menuT.name) or AutoName(position)
-        CludesUI:ShowInputPopup({
+        CUI:ShowInputPopup({
             title = "Rename Action Menu",
-            message = CludesUI.Lf('Enter a new name for "%1$s":', current),
+            message = CUI.Lf('Enter a new name for "%1$s":', current),
             placeholder = current,
             confirmText = "Rename",
             cancelText = "Cancel",
@@ -2750,7 +2751,7 @@ CludesUI.AtOptionsLogin(function()
 
     local function RebuildMenuRows()
         local menuFrame = EnsureMenuMenu()
-        local font = (CludesUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        local font = (CUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local count = MenuCount()
         local top = 4
         for i = 1, count do
@@ -2764,7 +2765,7 @@ CludesUI.AtOptionsLogin(function()
             local selected = (i == editingMenu)
             rowBtn._isSel = selected
             rowBtn._hl:SetAlpha(selected and 0.04 or 0)
-            rowBtn._lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+            rowBtn._lbl:SetTextColor(1, 1, 1, CUI.TEXT_DIM_A)
 
             -- Like the active profile, the menu being edited has no X (so
             -- the last menu left can never be deleted); its pencil slides
@@ -2801,8 +2802,8 @@ CludesUI.AtOptionsLogin(function()
     -- Nothing during the search index prebuild: its row is a stand-in with no
     -- frame to build on, and the row's own label is what the index lists.
     local function BuildMenuSelector(region)
-        if CludesUI._prebuilding then return end
-        local PPQ = CludesUI.PanelPP
+        if CUI._prebuilding then return end
+        local PPQ = CUI.PanelPP
         local button = CreateFrame("Button", nil, region)
         -- 170x30, the exact face BuildDropdownControl gives every standard
         -- row dropdown, so this selector reads as one of them.
@@ -2811,20 +2812,20 @@ CludesUI.AtOptionsLogin(function()
         PPQ.Point(button, "RIGHT", region, "RIGHT", -20, 0)
         local backdrop = button:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
-        backdrop:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
-        local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, CludesUI.DD_BRD_A, backdrop)
+        backdrop:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_A)
+        local brd = CUI.MakeRoundedBorder(button, 1, 1, 1, CUI.DD_BRD_A, backdrop)
         -- The resting alpha is the text colour's, the channel the hover
         -- colours below write, so a hover and leave land back on it.
-        local labelFS = CludesUI.MakeFont(button, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
+        local labelFS = CUI.MakeFont(button, 13, nil, 1, 1, 1, CUI.DD_TXT_A)
         labelFS:SetJustifyH("LEFT")
         labelFS:SetWordWrap(false)
         labelFS:SetMaxLines(1)
         labelFS:SetPoint("LEFT", button, "LEFT", 12, 0)
-        local arrow = CludesUI.MakeDropdownArrow(button, 12, PPQ)
+        local arrow = CUI.MakeDropdownArrow(button, 12, PPQ)
         labelFS:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
         local menuT = MenuTable(editingMenu)
         labelFS:SetText((menuT and menuT.name) or AutoName(editingMenu))
-        local sv = CludesUI.RD_DD_COLOURS
+        local sv = CUI.RD_DD_COLOURS
         button:SetScript("OnEnter", function()
             labelFS:SetTextColor(sv[21], sv[22], sv[23], sv[24])
             brd:SetColor(sv[13], sv[14], sv[15], sv[16])
@@ -2890,7 +2891,7 @@ CludesUI.AtOptionsLogin(function()
     -- is the palette's whole input model -- key down opens, key up fires.
     local function BuildKeybindButton(region, specInfo)
         -- Nothing during the search index prebuild, as BuildMenuSelector.
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         local pmenu = editingMenu
         local bindAction = BINDING_PREFIX .. pmenu
         local plainMouse = specInfo and specInfo.plainMouse
@@ -2904,15 +2905,15 @@ CludesUI.AtOptionsLogin(function()
         -- Right-click means two different things on a plainMouse picker
         -- depending on whether it is armed, so it has to say which.
         local tipText = plainMouse
-                and CludesUI.L(
+                and CUI.L(
                     "Left-click to set a keybind, then press any key or\n"
                         .. "click any mouse button to use it.\n"
                         .. "Escape cancels. Right-click here to unbind."
                 )
-            or CludesUI.L("Left-click to set a keybind.\nRight-click to unbind.")
+            or CUI.L("Left-click to set a keybind.\nRight-click to unbind.")
         -- The palette's own keybind row sits under a heading that already says
         -- what the key is, but a spec-driven picker has only its label.
-        if specInfo and specInfo.intro then tipText = CludesUI.L(specInfo.intro) .. "\n\n" .. tipText end
+        if specInfo and specInfo.intro then tipText = CUI.L(specInfo.intro) .. "\n\n" .. tipText end
         -- A shared key (Assign to Spec) names the menus it is shared with.
         if not specInfo then
             local ownerFrame, nameList = mod.ShareOwner(pmenu), {}
@@ -2924,11 +2925,11 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             if #nameList > 0 then
-                tipText = CludesUI.Lf("Shared with %1$s.", table.concat(nameList, ", ")) .. "\n\n" .. tipText
+                tipText = CUI.Lf("Shared with %1$s.", table.concat(nameList, ", ")) .. "\n\n" .. tipText
             end
         end
 
-        local kbBtn = CludesUI.BuildKeybindButton(region, {
+        local kbBtn = CUI.BuildKeybindButton(region, {
             w = 126,
             h = 29,
             level = 4,
@@ -2952,7 +2953,7 @@ CludesUI.AtOptionsLogin(function()
                 return false
             end,
         })
-        CludesUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
+        CUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
         region._lastInline = kbBtn
         return kbBtn
     end
@@ -3103,11 +3104,11 @@ CludesUI.AtOptionsLogin(function()
     -- yPos is the running page offset; returns the height consumed. The
     -- search index prebuild only takes the height: the preview lists nothing.
     local function BuildPreview(hostFrame, yPos)
-        if CludesUI._prebuilding then return PREVIEW_H end
+        if CUI._prebuilding then return PREVIEW_H end
         -- PanelPP, not PP: panel-context geometry snaps to the options window's
         -- own pixel grid, which is what every other options page uses.
-        local Pix = CludesUI.PanelPP
-        local CONTENT_PAD = CludesUI.CONTENT_PAD or 45
+        local Pix = CUI.PanelPP
+        local CONTENT_PAD = CUI.CONTENT_PAD or 45
 
         -- A rebuild re-fans the palette, so the entry the picker is anchored to may
         -- not be the "+" any more -- and an already-open menu would then be
@@ -3159,7 +3160,7 @@ CludesUI.AtOptionsLogin(function()
                 -- own scroll frame and the page keeps scrolling over the
                 -- preview. Only Shift+Scroll walks the strip.
                 if not IsShiftKeyDown() then
-                    local scrollFrame = CludesUI._scrollFrame
+                    local scrollFrame = CUI._scrollFrame
                     local handler = scrollFrame and scrollFrame:GetScript("OnMouseWheel")
                     if handler then handler(scrollFrame, delta) end
                     return
@@ -3177,9 +3178,9 @@ CludesUI.AtOptionsLogin(function()
                 previewWheel:SetFanCenter((((previewWheel.fanTarget or 1) - 1 + step) % isShown) + 1)
             end)
 
-            local hint = CludesUI.MakeFont(previewHost, 12, nil, 0.5, 0.5, 0.5)
+            local hint = CUI.MakeFont(previewHost, 12, nil, 0.5, 0.5, 0.5)
             hint:SetPoint("BOTTOM", previewHost, "BOTTOM", 0, 7)
-            hint:SetText(CludesUI.L("Shift+Scroll to see more"))
+            hint:SetText(CUI.L("Shift+Scroll to see more"))
             previewHost._scrollHint = hint
 
             -- A press held while the panel closes under it (Esc, or the combat
@@ -3202,9 +3203,9 @@ CludesUI.AtOptionsLogin(function()
             dimTex:SetColorTexture(0.062, 0.070, 0.082, 0.70)
             size:SetScript(
                 "OnEnter",
-                function(self) CludesUI.ShowWidgetTooltip(self, "Enable the module to edit action menus.") end
+                function(self) CUI.ShowWidgetTooltip(self, "Enable the module to edit action menus.") end
             )
-            size:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            size:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             previewHost._dim = size
         end
 
@@ -3214,13 +3215,13 @@ CludesUI.AtOptionsLogin(function()
         -- this position lands on. A fixed shade only matches until the row
         -- count above changes -- which is not hypothetical, it is how the
         -- icon row's removal left this block the same color as its neighbor.
-        local rc = CludesUI._rowCounters
+        local rc = CUI._rowCounters
         rc[hostFrame] = (rc[hostFrame] or 0) + 1
         previewHost._bg:SetColorTexture(
             0,
             0,
             0,
-            (rc[hostFrame] % 2 == 0) and CludesUI.ROW_BG_EVEN or CludesUI.ROW_BG_ODD
+            (rc[hostFrame] % 2 == 0) and CUI.ROW_BG_EVEN or CUI.ROW_BG_ODD
         )
         previewHost:ClearAllPoints()
         -- Anchored on both sides rather than sized from parent:GetWidth(): the
@@ -3274,16 +3275,16 @@ CludesUI.AtOptionsLogin(function()
         into.appearance = over
         for key in pairs(wanted) do
             local value = from[key]
-            over[key] = (type(value) == "table") and CludesUI.Lite.DeepCopy(value) or value
+            over[key] = (type(value) == "table") and CUI.Lite.DeepCopy(value) or value
         end
         Reapply()
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
     end
 
     -- The dim caption in front of each dropdown on the row below the preview.
     local function PairCaption(parent, text)
-        local fs = CludesUI.MakeFont(parent, 14, nil, 1, 1, 1)
-        fs:SetText(CludesUI.L(text))
+        local fs = CUI.MakeFont(parent, 14, nil, 1, 1, 1)
+        fs:SetText(CUI.L(text))
         fs:SetTextColor(1, 1, 1, 0.6)
         return fs
     end
@@ -3297,15 +3298,15 @@ CludesUI.AtOptionsLogin(function()
     -- so the page rebuilds -- once the menu has closed (a rebuild closes it).
     local function BuildSpecPair(row, ddW)
         local menuIdx = editingMenu
-        local ALL = CludesUI.SPEC_PICK_ALL
-        local itemList, roles = CludesUI.SpecPickItems({ roles = true })
+        local ALL = CUI.SPEC_PICK_ALL
+        local itemList, roles = CUI.SpecPickItems({ roles = true })
         local specDD, refreshSpecDD
         -- A pick that broke a share while the list was open rebuilds the
         -- page once the list closes, not under the pointer.
         local rebuildOnClose = false
 
         -- On WoW Forever a list row stands for a whole class: its spec IDs.
-        local function ClassSpecs(key) return CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key) end
+        local function ClassSpecs(key) return CUI.IS_FOREVER and CUI.ForeverClassSpecIDs(key) end
 
         local function IsTicked(key)
             local specs = mod.PaletteSpecs(menuIdx)
@@ -3353,7 +3354,7 @@ CludesUI.AtOptionsLogin(function()
             Reapply()
             if refreshSpecDD then refreshSpecDD() end
             if broke then
-                local openList = CludesUI._openDropdownMenu
+                local openList = CUI._openDropdownMenu
                 if openList and openList:IsShown() then
                     rebuildOnClose = true
                 else
@@ -3369,7 +3370,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        specDD, refreshSpecDD = CludesUI.BuildVisOptsCBDropdown(
+        specDD, refreshSpecDD = CUI.BuildVisOptsCBDropdown(
             row,
             ddW,
             row:GetFrameLevel() + 2,
@@ -3386,13 +3387,13 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "the module",
             }
         )
-        local hint = CludesUI.L("Choose the specs this action menu works in.")
+        local hint = CUI.L("Choose the specs this action menu works in.")
         specDD:HookScript("OnEnter", function()
-            local openList = CludesUI._openDropdownMenu
-            if not (openList and openList:IsShown()) then CludesUI.ShowWidgetTooltip(specDD, hint) end
+            local openList = CUI._openDropdownMenu
+            if not (openList and openList:IsShown()) then CUI.ShowWidgetTooltip(specDD, hint) end
         end)
-        specDD:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        CludesUI.RegisterWidgetRefresh(refreshSpecDD)
+        specDD:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
+        CUI.RegisterWidgetRefresh(refreshSpecDD)
 
         return PairCaption(row, "Assign to Spec"), specDD
     end
@@ -3408,10 +3409,10 @@ CludesUI.AtOptionsLogin(function()
         local ROW_HEIGHT = 50
         -- Bespoke controls the search index does not list: its prebuild only
         -- takes the height.
-        if CludesUI._prebuilding then return ROW_HEIGHT end
-        local Pix = CludesUI.PanelPP
+        if CUI._prebuilding then return ROW_HEIGHT end
+        local Pix = CUI.PanelPP
         local target = editingMenu
-        local pad = CludesUI.CONTENT_PAD or 45
+        local pad = CUI.CONTENT_PAD or 45
         local strip = CreateFrame("Frame", nil, hostFrame)
         Pix.Size(strip, hostFrame:GetWidth() - pad * 2, ROW_HEIGHT)
         Pix.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", pad, cursorY)
@@ -3429,7 +3430,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             local caption = PairCaption(strip, "Apply All Settings From")
-            local fromDD = CludesUI.BuildDropdownControl(
+            local fromDD = CUI.BuildDropdownControl(
                 strip,
                 DROP_W,
                 strip:GetFrameLevel() + 2,
@@ -3439,9 +3440,9 @@ CludesUI.AtOptionsLogin(function()
                 function() return "" end,
                 function(srcIdx)
                     if srcIdx ~= "" then
-                        CludesUI:ShowConfirmPopup({
+                        CUI:ShowConfirmPopup({
                             title = "Apply All Settings",
-                            message = CludesUI.Lf(
+                            message = CUI.Lf(
                                 "Copy all settings from %1$s to %2$s?",
                                 MenuName(srcIdx),
                                 MenuName(target)
@@ -3456,7 +3457,7 @@ CludesUI.AtOptionsLogin(function()
             )
             fromDD._ttText = "Copy every setting from another action menu to this one."
             -- Snaps the label back to the placeholder after each pick.
-            CludesUI.RegisterWidgetRefresh(function() fromDD._refreshLabel() end)
+            CUI.RegisterWidgetRefresh(function() fromDD._refreshLabel() end)
             pairList[2] = { caption, fromDD }
         end
 
@@ -3485,13 +3486,13 @@ CludesUI.AtOptionsLogin(function()
     local function BuildPage(page, hostFrame, yOffset)
         -- The search index prebuild leaves no page behind for the watcher to
         -- keep current, so the watcher waits for the first live build.
-        if not CludesUI._prebuilding then EnsureBindWatcher() end
+        if not CUI._prebuilding then EnsureBindWatcher() end
 
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, row, height
 
-        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
+        if CUI.ClearContentHeader then CUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
 
         -- Not `== false`: the master switch is opt-in, so an absent key counts
@@ -3638,7 +3639,7 @@ CludesUI.AtOptionsLogin(function()
             commit = function(keyChord)
                 ProfilePut("confirmKey", keyChord or "")
                 Reapply()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             -- A bare mouse button is the point of this one. See BuildKeybindButton.
             plainMouse = true,
@@ -3797,7 +3798,7 @@ CludesUI.AtOptionsLogin(function()
             )
         )
         if layoutMode == "GRID" then
-            CludesUI.BuildInlineCog(row._leftRegion, {
+            CUI.BuildInlineCog(row._leftRegion, {
                 title = "Grid Settings",
                 rows = {
                     Gated(
@@ -3808,7 +3809,7 @@ CludesUI.AtOptionsLogin(function()
                 },
             })
         end
-        CludesUI.BuildInlineCog(row._rightRegion, {
+        CUI.BuildInlineCog(row._rightRegion, {
             title = "Fixed Position",
             disabled = fixedOnly,
             disabledTooltip = function() return Disabled() and "the module" or "Fixed Position mode" end,
@@ -3837,7 +3838,7 @@ CludesUI.AtOptionsLogin(function()
                     disabled = function() return Disabled() or MenuGet("gridAutoColumns") ~= false end,
                     requireState = "disabled",
                     disabledTooltip = "Auto Columns",
-                    tooltip = CludesUI.Lf(
+                    tooltip = CUI.Lf(
                         "How many entries a row of the grid holds. 1 stacks "
                             .. "them into a single column; %1$s -- the most slots an "
                             .. "action menu can hold -- lays them out in a single row.",
@@ -3861,7 +3862,7 @@ CludesUI.AtOptionsLogin(function()
             -- A full circle has nowhere to point, so rotation only comes live
             -- once the span is narrowed. A span edit is a click outside this
             -- popup and closes it, so the check is fresh on every open.
-            CludesUI.BuildInlineCog(arcRow._rightRegion, {
+            CUI.BuildInlineCog(arcRow._rightRegion, {
                 title = "Arc Rotation",
                 rows = {
                     Gated({
@@ -3905,7 +3906,7 @@ CludesUI.AtOptionsLogin(function()
             -- Select Action with Mouse is the strip's hover channel: the entry
             -- under the pointer is what a release fires, and pointing at none
             -- picks nothing. The wheel scrolls the strip either way.
-            CludesUI.BuildInlineCog(fanRow._leftRegion, {
+            CUI.BuildInlineCog(fanRow._leftRegion, {
                 title = "Fan Settings",
                 rows = {
                     Gated(
@@ -3944,7 +3945,7 @@ CludesUI.AtOptionsLogin(function()
                 )
             )
             if layoutMode == "ARC" then
-                CludesUI.BuildInlineCog(nestRow._leftRegion, {
+                CUI.BuildInlineCog(nestRow._leftRegion, {
                     title = "Arc Nest Shape",
                     rows = {
                         Gated({
@@ -3977,7 +3978,7 @@ CludesUI.AtOptionsLogin(function()
                 -- Halo uses the eight places around the entry itself with
                 -- the block faded behind. A value saved from the retired
                 -- Popout style reads as Lane, here and in the module.
-                CludesUI.BuildInlineCog(nestRow._leftRegion, {
+                CUI.BuildInlineCog(nestRow._leftRegion, {
                     title = "Grid Nest Style",
                     rows = {
                         Gated(
@@ -4030,15 +4031,15 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Show the selected action's name next to the selected icon.",
             }, "showActionText", OffUnlessOn)
         )
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = row._leftRegion
-            local PPQ = CludesUI.PanelPP
+            local PPQ = CUI.PanelPP
             local level = row:GetFrameLevel() + 3
 
             local function Swatch(read, pick, tip)
-                local sw, update = CludesUI.BuildColorSwatch(region, level, read, pick, false, 20)
-                sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, tip) end)
-                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                local sw, update = CUI.BuildColorSwatch(region, level, read, pick, false, 20)
+                sw:SetScript("OnEnter", function() CUI.ShowWidgetTooltip(sw, tip) end)
+                sw:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 return sw, update
             end
             local function pickAccent()
@@ -4081,7 +4082,7 @@ CludesUI.AtOptionsLogin(function()
             end)
 
             local accentSwatch, updateAccent = Swatch(
-                function() return CludesUI.ResolveActiveAccent() end,
+                function() return CUI.ResolveActiveAccent() end,
                 pickAccent,
                 "Accent Color"
             )
@@ -4118,7 +4119,7 @@ CludesUI.AtOptionsLogin(function()
                     sw:SetAlpha(sw == lit and 1 or 0.3)
                 end
             end
-            CludesUI.RegisterWidgetRefresh(refreshSwatches)
+            CUI.RegisterWidgetRefresh(refreshSwatches)
             refreshSwatches()
         end
         -- There is no Selection Effects cog: the zoom and both falloffs are
@@ -4145,7 +4146,7 @@ CludesUI.AtOptionsLogin(function()
             }, "worldMarkerToggle", OnUnlessOff)
         )
         -- Its cog holds the one opt-out: the pip on a placed marker.
-        CludesUI.BuildInlineCog(wmRow._rightRegion, {
+        CUI.BuildInlineCog(wmRow._rightRegion, {
             title = "World Marker Entries",
             rows = {
                 PerMenu({
@@ -4172,13 +4173,13 @@ CludesUI.AtOptionsLogin(function()
             print("Cannot open options in combat")
             return
         end
-        CludesUI:ShowModule("CludesUIQuickdraw")
+        CUI:ShowModule("CludesUIQuickdraw")
     end
 
     ---------------------------------------------------------------------------
     --  Register the module
     ---------------------------------------------------------------------------
-    CludesUI:RegisterModule("CludesUIQuickdraw", {
+    CUI:RegisterModule("CludesUIQuickdraw", {
         title = "Action Wheel",
         description = "Hold a keybind to open a menu of actions; point or scroll to choose, release to fire.",
         pages = { PAGE_DISPLAY },
@@ -4193,7 +4194,7 @@ CludesUI.AtOptionsLogin(function()
             end
             local target = _G._CUQD_AceDB
             if target and target.profile and mod.DB_DEFAULTS then
-                CludesUI.Lite.DeepMergeDefaults(target.profile, mod.DB_DEFAULTS.profile)
+                CUI.Lite.DeepMergeDefaults(target.profile, mod.DB_DEFAULTS.profile)
             end
             if _G._CUQD_Apply then _G._CUQD_Apply() end
             -- The reset leaves one palette, so the editor cannot stay pointed

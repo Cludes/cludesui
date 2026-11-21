@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  Blocks\LDB.lua - Info Bar block: any LibDataBroker plugin.
 --
@@ -111,7 +112,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         if not cfg.source then
             -- Bar text is set directly, not through the tooltip helpers that
             -- translate, so it is translated here.
-            return CludesUI.L(L["SELECT_PLUGIN"]), true
+            return CUI.L(L["SELECT_PLUGIN"]), true
         end
         local body = cfg.showText ~= false and PluginText(object) or nil
         local name = object.label
@@ -371,11 +372,11 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         if not Settings().source then
             -- Nothing to pass the click to: open the block's settings to pick one.
             if InCombatLockdown() then
-                CludesUI.PrintError("Cannot open options during combat.")
+                CUI.PrintError("Cannot open options during combat.")
                 return
             end
             if not mod.OpenBlockSettings then
-                CludesUI:EnsureLoaded() -- the settings load on demand
+                CUI:EnsureLoaded() -- the settings load on demand
             end
             if mod.OpenBlockSettings then mod.OpenBlockSettings(barCtx.id, blockCfg.id, "ldb") end
             return

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookViewers.lua
 --
@@ -336,9 +337,9 @@ function mod.SetupViewerHooks()
                 end
                 local boxHolder = cdmBarFrames[barId]
                 if not boxHolder then return end
-                CludesUI.ClearFramePoints(viewerFrame)
-                CludesUI.SetFramePoint(viewerFrame, "TOPLEFT", boxHolder, "TOPLEFT", 0, 0)
-                CludesUI.SetFramePoint(viewerFrame, "BOTTOMRIGHT", boxHolder, "BOTTOMRIGHT", 0, 0)
+                CUI.ClearFramePoints(viewerFrame)
+                CUI.SetFramePoint(viewerFrame, "TOPLEFT", boxHolder, "TOPLEFT", 0, 0)
+                CUI.SetFramePoint(viewerFrame, "BOTTOMRIGHT", boxHolder, "BOTTOMRIGHT", 0, 0)
             end
             -- After a Blizzard SetPoint, a viewer in the bottom managed column
             -- is pinned at once, so the column's next pass measures our bar. A
@@ -637,7 +638,7 @@ function mod.SetupViewerHooks()
                                                 frameData._bgB or callback
                                         end
                                         if classColor then
-                                            local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                                            local classColor = CUI.GetClassColor(CUI._playerClass)
                                             cr, cg, callback = classColor.r, classColor.g, classColor.b
                                         end
                                         frameData.buffGlowOverlay:SetAlpha(1)
@@ -768,7 +769,7 @@ function mod.SetupViewerHooks()
                                     if not frameData.pandemicGlowActive then
                                         local c
                                         if edge.pandemicGlowMode == "class" then
-                                            c = CludesUI.GetClassColor(CludesUI._playerClass)
+                                            c = CUI.GetClassColor(CUI._playerClass)
                                         elseif edge.pandemicGlowMode == "custom" then
                                             c = edge.pandemicGlowColor
                                         end
@@ -1106,7 +1107,7 @@ function mod.SetupViewerHooks()
                     end
                 end
             end
-            if not _btTicker then _btTicker = CludesUI.Tick.NewAnimTicker(buffTicker, _btBody, 0.1) end
+            if not _btTicker then _btTicker = CUI.Tick.NewAnimTicker(buffTicker, _btBody, 0.1) end
             _btTicker.Start()
         end)
         -- Re-arm for every dirty writer. The body self-stops when settled; Start() on a
@@ -1125,13 +1126,13 @@ function mod.SetupViewerHooks()
     end
 
     -- CUI options panel: reanchor on show/hide
-    CludesUI:RegisterOnShow(function()
+    CUI:RegisterOnShow(function()
         C_Timer.After(0.1, function()
             QueueAnchorPass()
             UpdateCustomBuffBars()
         end)
     end)
-    CludesUI:RegisterOnHide(function()
+    CUI:RegisterOnHide(function()
         C_Timer.After(0.1, function()
             QueueAnchorPass()
             UpdateCustomBuffBars()
@@ -1198,8 +1199,8 @@ end
 
 local function ShowEditModeLockNotice()
     if not _editModeLockNoticeShown then
-        CludesUI.Print(
-            CludesUI.L(
+        CUI.Print(
+            CUI.L(
                 "|cff4cc9f0CludesUI CDM:|r Cooldown Viewer settings are managed by CludesUI. Edit Mode changes are disabled."
             )
         )

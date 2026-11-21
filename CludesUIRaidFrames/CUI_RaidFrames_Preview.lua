@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Preview.lua
 --
@@ -19,7 +20,7 @@ if not Inner or Inner.broken then return end
 --  Shows 20 buttons with randomized class colors and names so the user
 --  can see their settings applied without needing a real group.
 -------------------------------------------------------------------------------
-mod._PV_CLASS_TOKENS = CludesUI.CLASS_TOKEN_ORDER
+mod._PV_CLASS_TOKENS = CUI.CLASS_TOKEN_ORDER
 mod._PV_TANK_CLASSES = { "WARRIOR", "PALADIN", "DEATHKNIGHT", "MONK", "DRUID", "DEMONHUNTER" }
 mod._PV_HEALER_CLASSES = { "PRIEST", "PALADIN", "SHAMAN", "MONK", "DRUID", "EVOKER" }
 mod._PV_DPS_CLASSES = mod._PV_CLASS_TOKENS
@@ -73,7 +74,7 @@ mod._PV_NAMES = {
 -- Group Finder's settings preview). Preview slot 1 is always the player; entries
 -- 1-19 fill slots 2-20. Name, class and role travel together through the role
 -- sort (ns._pvNames).
-mod._PV_ROSTER = CludesUI.PREVIEW_ROSTER
+mod._PV_ROSTER = CUI.PREVIEW_ROSTER
 mod._PV_DISPEL_DB_ICONS = {
     Magic = 135735,
     Curse = 132291,
@@ -91,7 +92,7 @@ mod._pvActiveAuras = {}
 -- which runs them all.
 -- broken: true while an CUI_RaidFrames_Preview*.lua file loads; a file that
 -- fails leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(mod, "_previewInternals", {
+CUI.NewInternals(mod, "_previewInternals", {
     -- Created here: files that load ahead of CreatePreviewFrame and
     -- BuildPreviewRoles read them too.
     previewFrames = {},

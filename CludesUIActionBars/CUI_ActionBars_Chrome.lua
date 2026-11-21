@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Chrome.lua
 --
@@ -10,7 +11,7 @@ local _, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local _G = _G
 local pairs = pairs
@@ -120,7 +121,7 @@ end
 -- "blizzard", "classic", or "forever" -- the Forever client's own art, which
 -- retail does not ship.
 function mod.AB_CapsArtOK(art)
-    return art == "blizzard" or art == "classic" or (art == "forever" and CludesUI.IS_FOREVER == true)
+    return art == "blizzard" or art == "classic" or (art == "forever" and CUI.IS_FOREVER == true)
 end
 
 -- One of a bar's end cap settings (endCapArt, endCapScale, endCapOffsetX,
@@ -275,7 +276,7 @@ function mod.AB_SetCapArt(texture, cfg, name, right)
         -- The art can switch live on the same textures (the CludesUI style's
         -- End Caps choice): clear a previous look's mirror or sheet coords first.
         texture:SetTexCoord(0, 1, 0, 1)
-        CludesUI.StockAtlas(texture, name)
+        CUI.StockAtlas(texture, name)
     else
         texture:SetTexCoord(0, 1, 0, 1)
         texture:SetAtlas(name)
@@ -670,7 +671,7 @@ function mod.AB_ExtraCapsPadFlush()
     mod.AB_ExtraCapsShown("BagBar")
 end
 function mod.AB_ExtraCapsPad()
-    if not CludesUI.IS_FOREVER then return end
+    if not CUI.IS_FOREVER then return end
     local all = mod._abChrome
     local enabled = all and ((all.MicroBar and all.MicroBar.capsOn) or (all.BagBar and all.BagBar.capsOn))
     local ev = mod._abCapStyleEv

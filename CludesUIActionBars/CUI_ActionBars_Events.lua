@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Events.lua
 --
@@ -223,7 +224,7 @@ end
 function mod._ArmAssistTicker()
     local tbl = mod._assistTicker
     if not tbl then
-        local Tick = CludesUI and CludesUI.Tick
+        local Tick = CUI and CUI.Tick
         if not (Tick and Tick.NewAnimTicker) then return end
         tbl = Tick.NewAnimTicker(CreateFrame("Frame"), function()
             -- ONE sample per tick, shared by the swipe and the icon: reading
@@ -2874,7 +2875,7 @@ do
             end
             -- WoW Forever never adds the tick set back, so a shown vehicle or
             -- override bar takes its cooldowns from here too.
-            if evt == "ACTIONBAR_UPDATE_COOLDOWN" and CludesUI.IS_FOREVER then
+            if evt == "ACTIONBAR_UPDATE_COOLDOWN" and CUI.IS_FOREVER then
                 local ob = OverrideActionBar
                 if ob and ob:IsShown() then
                     local entries = mod._abOverrideBtns

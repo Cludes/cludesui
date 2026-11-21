@@ -1,11 +1,12 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CooldownManager_Options\SpellPicker_Options.lua
 --  Cooldown Manager options: the per-bar spell picker (ShowSpellPicker).
 --  Definitions only; the shared helpers come from ns._CDMO_OptEnv (filled by
 --  CUI_CooldownManager_Options.lua), the other pickers from Pickers_Options.lua.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
+local mod = CUI._ModuleNS["CludesUICooldownManager"]
 if not mod then return end -- module disabled: no options page
 
 -- The options page pool (CludesUI_FramePool.lua): a frame made under a pool
@@ -15,8 +16,8 @@ if not mod then return end -- module disabled: no options page
 -- rows, flyouts, apply strip and scroll parts are pooled under them. A menu
 -- remembers its anchor with the anchor's dress generation (PoolGen): an anchor
 -- a rebuild dressed again for a new build is another anchor, as a new frame was.
-local CreateFrame = CludesUI._Pool.CreateFrame
-local PoolKept, PoolGen = CludesUI._Pool.Kept, CludesUI._Pool.Gen
+local CreateFrame = CUI._Pool.CreateFrame
+local PoolKept, PoolGen = CUI._Pool.Kept, CUI._Pool.Gen
 
 -- A glow-style picker's items: the leading "inherit" entry (val nil, its
 -- caption given), then None (val 0) when noneVal is passed, then the seven
@@ -45,14 +46,14 @@ local function AddSoundPreviewButton(subItem, entry)
     play:SetSize(16, 16)
     play:SetPoint("RIGHT", subItem, "RIGHT", -8, 0)
     play:SetFrameLevel(subItem:GetFrameLevel() + 2)
-    play:SetNormalAtlas(CludesUI.SOUND_ICON_ATLAS)
-    play:SetPushedAtlas(CludesUI.SOUND_ICON_PRESSED_ATLAS)
+    play:SetNormalAtlas(CUI.SOUND_ICON_ATLAS)
+    play:SetPushedAtlas(CUI.SOUND_ICON_PRESSED_ATLAS)
     play:SetScript("OnClick", function()
         local paths = mod.FOCUSKICK_SOUND_PATHS
         local filePath = paths and paths[entry.val]
         if filePath then PlaySoundFile(filePath, "Master") end
     end)
-    CludesUI.HoverTip(play, "Preview Sound")
+    CUI.HoverTip(play, "Preview Sound")
 end
 
 local function GlowStyleItems(inheritLabel, noneVal)
@@ -73,9 +74,9 @@ local function GlowStyleItems(inheritLabel, noneVal)
 end
 
 local function ShowWrongBarTypePopup(spellName, isSpellBuff)
-    if not CludesUI or not CludesUI.ShowConfirmPopup then return end
+    if not CUI or not CUI.ShowConfirmPopup then return end
     local correctBar = isSpellBuff and "a Buff bar" or "a Cooldown or Utility bar"
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Wrong Bar Type",
         message = (spellName or "This spell")
             .. " is tracked by Blizzard as "
@@ -87,7 +88,7 @@ local function ShowWrongBarTypePopup(spellName, isSpellBuff)
         cancelText = "Close",
         onConfirm = function()
             if CooldownViewerSettings and CooldownViewerSettings.Show then CooldownViewerSettings:Show() end
-            if CludesUI._mainFrame then CludesUI._mainFrame:Hide() end
+            if CUI._mainFrame then CUI._mainFrame:Hide() end
         end,
     })
 end
@@ -97,13 +98,13 @@ end
 -- run it on every open and after every pick, so the lock and its reason
 -- follow the settings they depend on: each call stores the current reason.
 local function FlyoutItemNoOp() end
-local function FlyoutItemLockedEnter(self) CludesUI.ShowWidgetTooltip(self, self._lockTip) end
+local function FlyoutItemLockedEnter(self) CUI.ShowWidgetTooltip(self, self._lockTip) end
 -- The item's own OnLeave also runs: an item locked under the cursor (by a pick
 -- made on it) drops the hover look it had.
 local function FlyoutItemLockedLeave(self)
     local saved = self._lockSaved
     if saved and saved[3] then saved[3](self) end
-    CludesUI.HideWidgetTooltip()
+    CUI.HideWidgetTooltip()
 end
 local function SetFlyoutItemLocked(subItem, locked, tipText)
     local saved = subItem._lockSaved
@@ -190,12 +191,12 @@ local function PlainMenuRow(menu, inner, y, height, text, font, dim, hlA, onClic
         if not (opts and opts.keepSub) and menu._openSub and menu._openSub:IsShown() then
             menu._openSub:Hide()
         end
-        if tip then CludesUI.ShowWidgetTooltip(menuRow, tip) end
+        if tip then CUI.ShowWidgetTooltip(menuRow, tip) end
     end)
     menuRow:SetScript("OnLeave", function()
         caption:SetTextColor(dim[1], dim[2], dim[3], dim[4])
         highlight:SetAlpha(0)
-        if tip then CludesUI.HideWidgetTooltip() end
+        if tip then CUI.HideWidgetTooltip() end
     end)
     menuRow:SetScript("OnClick", onClick)
     return menuRow
@@ -235,9 +236,9 @@ local function PresetMenuRow(menu, inner, y, height, text, texture, onBar, font,
         caption:SetTextColor(dim[1], dim[2], dim[3], dim[4] * 0.4)
         menuRow:SetScript(
             "OnEnter",
-            function() CludesUI.ShowWidgetTooltip(menuRow, CludesUI.Lf("Already on %s", CludesUI.L(onBar))) end
+            function() CUI.ShowWidgetTooltip(menuRow, CUI.Lf("Already on %s", CUI.L(onBar))) end
         )
-        menuRow:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        menuRow:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         return menuRow
     end
     caption:SetTextColor(dim[1], dim[2], dim[3], dim[4])
@@ -304,10 +305,10 @@ local function IconMenuRow(
             menuRow:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(menuRow, CludesUI.Lf("Already on %s", CludesUI.L(tipBar)))
+                    CUI.ShowWidgetTooltip(menuRow, CUI.Lf("Already on %s", CUI.L(tipBar)))
                 end
             )
-            menuRow:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            menuRow:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         end
         return menuRow, caption, icon, highlight
     end
@@ -392,23 +393,23 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     if not removeOnly and not isCustomBuff then allSpells = mod.GetCDMSpellsForBar(barId) or {} end
 
     -- Standard CludesUI dropdown colors
-    local mBgR = CludesUI.DD_BG_R or 0.075
-    local mBgG = CludesUI.DD_BG_G or 0.113
-    local mBgB = CludesUI.DD_BG_B or 0.141
-    local mBgA = CludesUI.DD_BG_HA or 0.98
-    local mBrdA = CludesUI.DD_BRD_A or 0.20
-    local hlA = CludesUI.DD_ITEM_HL_A or 0.08
-    local tDimR = CludesUI.TEXT_DIM_R or 0.7
-    local tDimG = CludesUI.TEXT_DIM_G or 0.7
-    local tDimB = CludesUI.TEXT_DIM_B or 0.7
-    local tDimA = CludesUI.TEXT_DIM_A or 0.85
+    local mBgR = CUI.DD_BG_R or 0.075
+    local mBgG = CUI.DD_BG_G or 0.113
+    local mBgB = CUI.DD_BG_B or 0.141
+    local mBgA = CUI.DD_BG_HA or 0.98
+    local mBrdA = CUI.DD_BRD_A or 0.20
+    local hlA = CUI.DD_ITEM_HL_A or 0.08
+    local tDimR = CUI.TEXT_DIM_R or 0.7
+    local tDimG = CUI.TEXT_DIM_G or 0.7
+    local tDimB = CUI.TEXT_DIM_B or 0.7
+    local tDimA = CUI.TEXT_DIM_A or 0.85
 
     -- A flyout's fill (the menu colour) and rounded border.
     local function PaintFlyoutBackdrop(flyout)
         local fill = flyout:CreateTexture(nil, "BACKGROUND")
         fill:SetAllPoints()
         fill:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-        CludesUI.MakeRoundedBorder(flyout, 1, 1, 1, mBrdA, fill, nil, true)
+        CUI.MakeRoundedBorder(flyout, 1, 1, 1, mBrdA, fill, nil, true)
     end
 
     local menuW = 210
@@ -428,7 +429,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-    CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, mBrdA, backdrop, nil, true)
+    CUI.MakeRoundedBorder(dropMenu, 1, 1, 1, mBrdA, backdrop, nil, true)
 
     -- Build item list: tracked first (minus current), divider, rest, disabled at bottom
     local tracked = {}
@@ -535,7 +536,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             inner,
             menuH,
             ITEM_H,
-            CludesUI.L("Remove Spell"),
+            CUI.L("Remove Spell"),
             { FONT_PATH, 11, GetCDMOptOutline() },
             { tDimR, tDimG, tDimB, tDimA },
             hlA,
@@ -585,7 +586,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             inner,
             menuH,
             ITEM_H,
-            CludesUI.L("Delete Spell"),
+            CUI.L("Delete Spell"),
             { FONT_PATH, 11, GetCDMOptOutline() },
             { tDimR, tDimG, tDimB, tDimA },
             hlA,
@@ -606,12 +607,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             inner,
             menuH,
             ITEM_H,
-            CludesUI.Lf("Talent Conditions: %1$s", tcCount > 0 and tostring(tcCount) or CludesUI.L("None")),
+            CUI.Lf("Talent Conditions: %1$s", tcCount > 0 and tostring(tcCount) or CUI.L("None")),
             { FONT_PATH, 11, GetCDMOptOutline() },
             { tDimR, tDimG, tDimB, tDimA },
             hlA,
             function()
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
                 dropMenu:Hide()
                 mod.ShowCDMTalentConditionsPopup(spellId, tcConds, function(newConds)
                     ensureSettings()
@@ -622,7 +623,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             end,
             {
                 fit = true,
-                tip = CludesUI.L("Show this icon only while the talents you pick are taken, or not taken."),
+                tip = CUI.L("Show this icon only while the talents you pick are taken, or not taken."),
             }
         )
         menuH = menuH + ITEM_H
@@ -632,7 +633,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         -- Per-icon settings: CD/utility bars get the full menu; buff-family bars get a
         -- buff-specific subset. custom_buff (Auras) bars excluded here (separate system).
         -- Override editing sessions: settings would leak outside the override, so Remove only.
-        if slotIndex and not isCustomBuff and not CludesUI.SpecOverrides_EditSessionActive() then
+        if slotIndex and not isCustomBuff and not CUI.SpecOverrides_EditSessionActive() then
             local spellData = mod.GetBarSpellData(barId)
             -- Buff bars: the preview slot's own _previewSpellID is authoritative. The
             -- default buffs bar's preview maps to a MIXED list (Blizzard buffs +
@@ -781,7 +782,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- onFirstClick, when given, runs on each click before the picker opens.
                 ApplyBar.ItemSwatch = function(subItem, getColor, setColor, withAlpha, onFirstClick)
                     subItem._noCapture = true
-                    local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
+                    local swatchBtn, refreshSwatch = CUI.BuildColorSwatch(
                         subItem,
                         subItem:GetFrameLevel() + 3,
                         getColor,
@@ -803,7 +804,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                     labelFS:SetPoint("LEFT", 10, 0)
                     labelFS:SetJustifyH("LEFT")
-                    labelFS:SetText(CludesUI.L(caption))
+                    labelFS:SetText(CUI.L(caption))
                     return menuRow, labelFS
                 end
                 -- A colour row's Custom item ("<key>" set to "custom", the colour in
@@ -1642,7 +1643,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local backdrop = s:CreateTexture(nil, "BACKGROUND")
                     backdrop:SetAllPoints()
                     backdrop:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-                    CludesUI.MakeRoundedBorder(s, 1, 1, 1, mBrdA, backdrop, nil, true)
+                    CUI.MakeRoundedBorder(s, 1, 1, 1, mBrdA, backdrop, nil, true)
                     local sInner = CreateFrame("Frame", nil, s)
                     sInner:SetWidth(SUBW)
                     sInner:SetPoint("TOPLEFT")
@@ -1667,7 +1668,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         widget._active = false
                         widget._rest = function()
                             if widget._active then
-                                local aR, aG, aB = CludesUI.GetAccentColor()
+                                local aR, aG, aB = CUI.GetAccentColor()
                                 l:SetTextColor(aR, aG, aB, 1)
                                 highlight:SetAlpha(1)
                             else
@@ -1683,10 +1684,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         widget._setText = function(t) l:SetText(t) end
                         return widget
                     end
-                    local thisBtn = MakeScopeItem(CludesUI.L("Apply to This Spell"))
-                    local b1 = MakeScopeItem(CludesUI.L("Apply to Bar"))
-                    local b2 = MakeScopeItem(CludesUI.L("Apply to Bar (All Specs)"))
-                    local excludeBtn = MakeScopeItem(CludesUI.L("Exclude This Spell"))
+                    local thisBtn = MakeScopeItem(CUI.L("Apply to This Spell"))
+                    local b1 = MakeScopeItem(CUI.L("Apply to Bar"))
+                    local b2 = MakeScopeItem(CUI.L("Apply to Bar (All Specs)"))
+                    local excludeBtn = MakeScopeItem(CUI.L("Exclude This Spell"))
                     excludeBtn._shown = false
                     -- Exclude/Include This Spell reads apart from the scope rows: soft red
                     -- when it will Exclude, soft green when it will Include, and NO persistent
@@ -1787,8 +1788,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         if ApplyBar.KeysBarApplied(keyList) then
                             excludeBtn._excluded = excluded
                             excludeBtn._setText(
-                                excluded and ("+ " .. CludesUI.L("Include This Spell"))
-                                    or ("+ " .. CludesUI.L("Exclude This Spell"))
+                                excluded and ("+ " .. CUI.L("Include This Spell"))
+                                    or ("+ " .. CUI.L("Exclude This Spell"))
                             )
                             excludeBtn._shown = true
                         else
@@ -1816,7 +1817,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                         end
                         local target = allActive and b2 or b1
-                        if CludesUI.PlayWhiteFlash then CludesUI.PlayWhiteFlash(target) end
+                        if CUI.PlayWhiteFlash then CUI.PlayWhiteFlash(target) end
                     end
                     local function DoApply(everySpec)
                         local context = s._ctx
@@ -1911,20 +1912,20 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                         local title, note
                         if needRA then
-                            title = CludesUI.L("CD Ready Glow (Resource Aware)")
-                            note = CludesUI.L(
+                            title = CUI.L("CD Ready Glow (Resource Aware)")
+                            note = CUI.L(
                                 "Resource Aware CD Ready Glow may cause a slight loss in performance efficiency."
                             )
                         else
-                            title = CludesUI.L("Overwrite Existing Settings")
+                            title = CUI.L("Overwrite Existing Settings")
                             note = ""
                         end
                         if replacing then
                             local line = everySpec
-                                    and CludesUI.L(
+                                    and CUI.L(
                                         "This setting's active Apply to Bar (All Specs) value will be replaced."
                                     )
-                                or CludesUI.L("This setting's active Apply to Bar value will be replaced.")
+                                or CUI.L("This setting's active Apply to Bar value will be replaced.")
                             if note ~= "" then
                                 note = note .. "\n\n" .. line
                             else
@@ -1937,7 +1938,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             local key = everySpec
                                     and "This replaces %d existing value(s) for this setting across your specs."
                                 or "This replaces %d existing value(s) for this setting on this bar."
-                            local success, line = pcall(string.format, CludesUI.L(key), overwrites)
+                            local success, line = pcall(string.format, CUI.L(key), overwrites)
                             if not success then line = string.format(key, overwrites) end
                             if note ~= "" then
                                 note = note .. "\n\n" .. line
@@ -1945,9 +1946,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 note = line
                             end
                         end
-                        note = note .. " " .. CludesUI.L("Do you want to continue?")
+                        note = note .. " " .. CUI.L("Do you want to continue?")
                         dropMenu:Hide()
-                        CludesUI:ShowConfirmPopup({
+                        CUI:ShowConfirmPopup({
                             title = title,
                             message = note,
                             confirmText = "Apply",
@@ -2098,9 +2099,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 else
                                     local hide = mod.CdStateHideOf(source)
                                     if mod.CdStateGlowConflicts(hide, entry.val) then
-                                        tipText = CludesUI.Lf(
+                                        tipText = CUI.Lf(
                                             "Disabled while %1$s is enabled.",
-                                            CludesUI.L(ApplyBar.CD_STATE_LABELS[hide] or hide)
+                                            CUI.L(ApplyBar.CD_STATE_LABELS[hide] or hide)
                                         )
                                     end
                                 end
@@ -2111,9 +2112,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 mod.CdStateHideOf(source) ~= entry.val
                                 and mod.CdStateGlowConflicts(entry.val, glow)
                             then
-                                tipText = CludesUI.Lf(
+                                tipText = CUI.Lf(
                                     "Disabled while %1$s is enabled.",
-                                    CludesUI.L(ApplyBar.CD_STATE_LABELS[glow] or glow)
+                                    CUI.L(ApplyBar.CD_STATE_LABELS[glow] or glow)
                                 )
                             end
                         else
@@ -2172,7 +2173,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         val = value,
                         label = labelText,
                         tooltip = tooltip,
-                        dynamicLabel = function() return "+ " .. CludesUI.L(labelText) end,
+                        dynamicLabel = function() return "+ " .. CUI.L(labelText) end,
                         choiceGet = m.get,
                         choiceSet = m.set,
                         applyKeys = ApplyBar.CD_GLOW_KEYS,
@@ -2191,7 +2192,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     end
                     if value == "pixelGlowReadyUsable" and not ApplyBar.AnyResourceAwareGlowSaved() then
                         dropMenu:Hide()
-                        CludesUI:ShowConfirmPopup({
+                        CUI:ShowConfirmPopup({
                             title = "CD Ready Glow (Resource Aware)",
                             message = "Resource Aware CD Ready Glow may cause a slight loss in performance efficiency. Do you want to enable it?",
                             confirmText = "Enable",
@@ -2283,7 +2284,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         val = "lowerAlphaOnCD",
                         label = "Lower Alpha (On CD)",
                         dynamicLabel = function()
-                            local baseCaption = CludesUI.L("Lower Alpha (On CD)")
+                            local baseCaption = CUI.L("Lower Alpha (On CD)")
                             if spellSettings and spellSettings.cdStateEffect == "lowerAlphaOnCD" then
                                 local percent =
                                     math.floor(((spellSettings.cdStateLowerAlpha or 0.5) * 100) + 0.5)
@@ -2365,24 +2366,24 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- preset/custom (cas) menus: hidden in / outside each of the class's
                 -- stance bar pages (CludesUI.CLASS_PAGING_STATES), stored as
                 -- "<mode>:<state id>". nil for a class with no stance bar.
-                local stanceStates = CludesUI.CLASS_PAGING_STATES[select(2, UnitClass("player"))]
+                local stanceStates = CUI.CLASS_PAGING_STATES[select(2, UnitClass("player"))]
                 if stanceStates then
                     local STANCE_LABELS = {
                         inShift = {
                             "Hidden in %s (Shift Icons)",
-                            function(s) return CludesUI.Lf("Hidden in %1$s (Shift Icons)", s) end,
+                            function(s) return CUI.Lf("Hidden in %1$s (Shift Icons)", s) end,
                         },
                         outShift = {
                             "Hidden outside %s (Shift Icons)",
-                            function(s) return CludesUI.Lf("Hidden outside %1$s (Shift Icons)", s) end,
+                            function(s) return CUI.Lf("Hidden outside %1$s (Shift Icons)", s) end,
                         },
                         ["in"] = {
                             "Hidden in %s",
-                            function(s) return CludesUI.Lf("Hidden in %1$s", s) end,
+                            function(s) return CUI.Lf("Hidden in %1$s", s) end,
                         },
                         out = {
                             "Hidden outside %s",
-                            function(s) return CludesUI.Lf("Hidden outside %1$s", s) end,
+                            function(s) return CUI.Lf("Hidden outside %1$s", s) end,
                         },
                     }
                     local itemList = { { val = nil, label = "None" } }
@@ -2391,7 +2392,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         itemList[#itemList + 1] = {
                             val = mode .. ":" .. familyStore.id,
                             label = fmt[1]:format(familyStore.label),
-                            dynamicLabel = function() return fmt[2](CludesUI.L(familyStore.label)) end,
+                            dynamicLabel = function() return fmt[2](CUI.L(familyStore.label)) end,
                         }
                     end
                     -- Shift Icons variants first, like the Cooldown State Effect list.
@@ -2435,7 +2436,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     options
                 )
                     local menuRow, labelFS = ApplyBar.NewMenuRow(labelText)
-                    local acR, acG, acB = CludesUI.GetAccentColor()
+                    local acR, acG, acB = CUI.GetAccentColor()
 
                     -- Optional disabled state (opts.disabled = function -> bool): greys the row, blocks the flyout, and shows a tooltip.
                     local function RowDisabled()
@@ -2574,7 +2575,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 if entry.dynamicLabel then
                                     Recaption()
                                 else
-                                    sLbl:SetText(CludesUI.L(entry.label))
+                                    sLbl:SetText(CUI.L(entry.label))
                                 end
 
                                 -- What the item is. A toggle flips one boolean of its own:
@@ -2619,7 +2620,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 local function ShowState(sel)
                                     isSelected = sel
                                     if sel then
-                                        local red, green, blue = CludesUI.GetAccentColor()
+                                        local red, green, blue = CUI.GetAccentColor()
                                         sLbl:SetTextColor(red, green, blue, 1)
                                     else
                                         sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
@@ -2682,7 +2683,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     sHl:SetAlpha(1)
                                     -- item.tooltip: the full text of a caption the flyout clips.
                                     if entry.tooltip then
-                                        CludesUI.ShowWidgetTooltip(subItem, entry.tooltip)
+                                        CUI.ShowWidgetTooltip(subItem, entry.tooltip)
                                     end
                                     if not canApply then return end
                                     -- While a bar apply drives a value setting, only the item
@@ -2742,7 +2743,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 subItem:SetScript("OnLeave", function()
                                     if not isSelected then sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA) end
                                     sHl:SetAlpha((not plusLook and isSelected) and 1 or 0)
-                                    if entry.tooltip then CludesUI.HideWidgetTooltip() end
+                                    if entry.tooltip then CUI.HideWidgetTooltip() end
                                 end)
                                 -- A pick writes into the spell's OWN entry and keeps both the
                                 -- menu and the flyout open.
@@ -2864,7 +2865,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             scrollFrame:SetScrollChild(flyoutBody)
                             flyoutBody:SetWidth(flyoutW)
                             local _, jump =
-                                CludesUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
+                                CUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
                             return jump
                         end
                         -- Kept for reshowSub: the search box and its filter, or the scroll's jump.
@@ -2890,12 +2891,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             local seBg = searchBox:CreateTexture(nil, "BACKGROUND")
                             seBg:SetAllPoints()
                             seBg:SetColorTexture(0, 0, 0, 0.4)
-                            CludesUI.RoundBody(searchBox, seBg)
+                            CUI.RoundBody(searchBox, seBg)
                             local sePh = searchBox:CreateFontString(nil, "OVERLAY")
                             sePh:SetFont(FONT_PATH, 11, "")
                             sePh:SetTextColor(0.5, 0.5, 0.5, 0.6)
                             sePh:SetPoint("LEFT", searchBox, "LEFT", 4, 0)
-                            sePh:SetText(CludesUI.L("Search..."))
+                            sePh:SetText(CUI.L("Search..."))
                             local function Unfocus(self) self:ClearFocus() end
                             searchBox:SetScript("OnEscapePressed", Unfocus)
                             searchBox:SetScript("OnHide", Unfocus)
@@ -2987,7 +2988,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     menuRow:SetScript("OnEnter", function()
                         if RowDisabled() then
                             if options.disabledTooltip then
-                                CludesUI.ShowWidgetTooltip(menuRow, options.disabledTooltip)
+                                CUI.ShowWidgetTooltip(menuRow, options.disabledTooltip)
                             end
                             return
                         end
@@ -2997,7 +2998,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         ShowSub()
                     end)
                     menuRow:SetScript("OnLeave", function()
-                        if options and options.disabledTooltip then CludesUI.HideWidgetTooltip() end
+                        if options and options.disabledTooltip then CUI.HideWidgetTooltip() end
                         PaintLabel()
                         highlight:SetAlpha(0)
                         -- Don't auto-close sub here. It closes when:
@@ -3030,7 +3031,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             -- push my value", never a discrete value item -- otherwise the rejoin shortcut discards the entered number and the suppress-strip rule hides the strip whenever the bar's number differs (see scalarApply guards below).
                             scalarApply = true,
                             dynamicLabel = function()
-                                local baseCaption = CludesUI.L("Threshold Seconds")
+                                local baseCaption = CUI.L("Threshold Seconds")
                                 local text = armedSeconds()
                                 if text > 0 then return baseCaption .. " (" .. text .. "s)" end
                                 return baseCaption
@@ -3219,7 +3220,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 label = "Also Show Below",
                                 scalarApply = true,
                                 dynamicLabel = function()
-                                    local baseCaption = CludesUI.L("Also Show Below")
+                                    local baseCaption = CUI.L("Also Show Below")
                                     local text = tonumber(spellSettings.missingShowBelow) or 0
                                     if text > 0 then return baseCaption .. " (" .. text .. "s)" end
                                     return baseCaption
@@ -3253,7 +3254,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 EnsureStored()
                                 SetOwnSetting("alwaysShow", value)
                                 -- Refresh the page so "Keep Buffs in Same Place" grays/ungrays as this per-icon override flips.
-                                CludesUI:RefreshPage()
+                                CUI:RefreshPage()
                             end,
                             function() return spellSettings.alwaysShow == nil end,
                             function(subItem, entry)
@@ -3272,8 +3273,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             )
                                             mod.QueueReanchor()
                                         end,
-                                        CludesUI.L("Also Show Below"),
-                                        CludesUI.L("Seconds left when the buff shows again (0 = off)")
+                                        CUI.L("Also Show Below"),
+                                        CUI.L("Seconds left when the buff shows again (0 = off)")
                                     )
                                 end)
                             end,
@@ -3410,7 +3411,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Resting label color: accent when this cog's values differ from the bar, dim when they all match/inherit it.
                         local function UpdateLabel()
                             if isChanged() then
-                                local aR, aG, aB = CludesUI.GetAccentColor()
+                                local aR, aG, aB = CUI.GetAccentColor()
                                 labelFS:SetTextColor(aR, aG, aB, 1)
                             else
                                 labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
@@ -3481,7 +3482,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or differs(spellSettings.cooldownTextX, (b and b.cooldownTextX) or 0)
                             or differs(spellSettings.cooldownTextY, (b and b.cooldownTextY) or 0)
                     end, function(menuRow)
-                        return CludesUI.BuildCogPopup({
+                        return CUI.BuildCogPopup({
                             -- Level 350: above the spell-picker menu (300) but below the shared
                             -- color picker (FULLSCREEN_DIALOG 400) so the picker renders on top. The dropdown menu is bumped above the popup in BuildCogPopup's dropdown OnClick hook.
                             title = "Duration Text",
@@ -3642,7 +3643,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             (b and b.stackCountY) or 0
                         )
                     end, function(menuRow)
-                        return CludesUI.BuildCogPopup({
+                        return CUI.BuildCogPopup({
                             title = "Stack Text and Glows",
                             noOwnerDim = true,
                             frameStrata = "FULLSCREEN_DIALOG",
@@ -3857,7 +3858,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 (b and b.borderB) or 0
                             )
                     end, function(menuRow)
-                        return CludesUI.BuildCogPopup({
+                        return CUI.BuildCogPopup({
                             title = "Border",
                             noOwnerDim = true,
                             frameStrata = "FULLSCREEN_DIALOG",
@@ -4169,7 +4170,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 val = "lowerAlphaOnCD",
                                 label = "Lower Alpha (On CD)",
                                 dynamicLabel = function()
-                                    local baseCaption = CludesUI.L("Lower Alpha (On CD)")
+                                    local baseCaption = CUI.L("Lower Alpha (On CD)")
                                     if customState and customState.cdStateEffect == "lowerAlphaOnCD" then
                                         local percent =
                                             math.floor(((customState.cdStateLowerAlpha or 0.5) * 100) + 0.5)
@@ -4255,7 +4256,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
 
                             local menuRow, labelFS = ApplyBar.NewMenuRow("Combat Potion Icon")
-                            local acR, acG, acB = CludesUI.GetAccentColor()
+                            local acR, acG, acB = CUI.GetAccentColor()
                             local function PaintPotRow()
                                 if PotIsDefault() then
                                     labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
@@ -4301,7 +4302,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 tgLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                                 tgLbl:SetPoint("LEFT", 10, 0)
                                 tgLbl:SetJustifyH("LEFT")
-                                tgLbl:SetText(CludesUI.L("Swap Combat Pots When Missing"))
+                                tgLbl:SetText(CUI.L("Swap Combat Pots When Missing"))
                                 labels[#labels + 1] = tgLbl
                                 local tgHl = tg:CreateTexture(nil, "ARTWORK")
                                 tgHl:SetAllPoints()
@@ -4318,9 +4319,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 tg:SetScript("OnEnter", function()
                                     tgLbl:SetTextColor(1, 1, 1, 1)
                                     tgHl:SetAlpha(1)
-                                    CludesUI.ShowWidgetTooltip(
+                                    CUI.ShowWidgetTooltip(
                                         tg,
-                                        CludesUI.L(
+                                        CUI.L(
                                             "When your bags hold none of the potion the icon tracks, it tracks the next potion in the priority order that you own."
                                         )
                                     )
@@ -4328,7 +4329,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 tg:SetScript("OnLeave", function()
                                     PaintToggle()
                                     tgHl:SetAlpha(0)
-                                    CludesUI.HideWidgetTooltip()
+                                    CUI.HideWidgetTooltip()
                                 end)
                                 tg:SetScript("OnClick", function()
                                     ActiveStatesStore().potSwap = not PotSwapOn()
@@ -4345,13 +4346,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 head:SetFont(FONT_PATH, 10, GetCDMOptOutline())
                                 head:SetTextColor(1, 1, 1, 0.35)
                                 head:SetPoint("TOPLEFT", subMenu, "TOPLEFT", 10, -flyoutH - 6)
-                                head:SetText(CludesUI.L("Priority Order"))
+                                head:SetText(CUI.L("Priority Order"))
                                 labels[#labels + 1] = head
                                 local hint = subMenu:CreateFontString(nil, "OVERLAY")
                                 hint:SetFont(FONT_PATH, 9, GetCDMOptOutline())
                                 hint:SetTextColor(1, 1, 1, 0.25)
                                 hint:SetPoint("RIGHT", subMenu, "TOPRIGHT", -10, -flyoutH - 11)
-                                hint:SetText(CludesUI.L("Drag to Reorder"))
+                                hint:SetText(CUI.L("Drag to Reorder"))
                                 flyoutH = flyoutH + 20
                                 local rowsTop = flyoutH
                                 local famByKey = {}
@@ -4408,9 +4409,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     rHl:SetColorTexture(1, 1, 1, hlA)
                                     rHl:SetAlpha(0)
                                     local function Paint()
-                                        rowLabel:SetText(CludesUI.L(r._item.label))
+                                        rowLabel:SetText(CUI.L(r._item.label))
                                         rowLabel:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                                        rIco:SetTexture(CludesUI.ClientIcon(r._item.icon))
+                                        rIco:SetTexture(CUI.ClientIcon(r._item.icon))
                                     end
                                     Paint()
                                     r._paint = Paint
@@ -4428,10 +4429,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                                 local insLine = subMenu:CreateTexture(nil, "OVERLAY", nil, 7)
                                 insLine:SetHeight(2)
-                                local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+                                local ACC = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                                 insLine:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.9)
                                 insLine:Hide()
-                                CludesUI.AttachRowReorder(subMenu, {
+                                CUI.AttachRowReorder(subMenu, {
                                     rows = rowList,
                                     items = movable,
                                     itemH = ITEM_H,
@@ -4543,7 +4544,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- selects this style (mirrors Lower Alpha's onClick above).
                                     if entry.val == 8 then
                                         entry.dynamicLabel = function()
-                                            local baseCaption = CludesUI.L(mod.GLOW_STYLES[8].name)
+                                            local baseCaption = CUI.L(mod.GLOW_STYLES[8].name)
                                             if
                                                 mod.CdReadyGlowStyle(
                                                     mod.CdStateGlowOf(customState),
@@ -4571,8 +4572,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                                     c.cdStateGlowStyle = 8
                                                     if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
                                                 end,
-                                                CludesUI.L("Glow Opacity"),
-                                                CludesUI.L("Blackout glow opacity (1-100%)")
+                                                CUI.L("Glow Opacity"),
+                                                CUI.L("Blackout glow opacity (1-100%)")
                                             )
                                         end)
                                     end
@@ -4994,7 +4995,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Remove Active State (clears only the cast-triggered overlay; any Cooldown State Effect stays).
                         if hasActive then
                             MakeActionRow(
-                                CludesUI.L("Remove Active State")
+                                CUI.L("Remove Active State")
                                     .. " ("
                                     .. (customState.duration or 0)
                                     .. "s)",
@@ -5038,9 +5039,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             menuRow:SetAlpha(0.35)
                             menuRow:SetScript(
                                 "OnEnter",
-                                function() CludesUI.ShowWidgetTooltip(menuRow, customDisabledTip) end
+                                function() CUI.ShowWidgetTooltip(menuRow, customDisabledTip) end
                             )
-                            menuRow:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                            menuRow:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                         end
 
                         -- Custom-shaped bars always render Shape Glow, so the per-spell proc
@@ -5086,9 +5087,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             procRow:SetAlpha(0.35)
                             procRow:SetScript(
                                 "OnEnter",
-                                function() CludesUI.ShowWidgetTooltip(procRow, procDisabledTip) end
+                                function() CUI.ShowWidgetTooltip(procRow, procDisabledTip) end
                             )
-                            procRow:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                            procRow:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                         end
 
                         -- 2. Active State (default = "custom" / CD Swipe Color #FFC660)
@@ -5495,7 +5496,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- selects this style (mirrors Lower Alpha's onClick above).
                                     if entry.val == 8 then
                                         entry.dynamicLabel = function()
-                                            local baseCaption = CludesUI.L(mod.GLOW_STYLES[8].name)
+                                            local baseCaption = CUI.L(mod.GLOW_STYLES[8].name)
                                             if
                                                 mod.CdReadyGlowStyle(
                                                     mod.CdStateGlowOf(spellSettings),
@@ -5524,8 +5525,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                                         mod.RefreshCDMIconAppearance(barId)
                                                     end
                                                 end,
-                                                CludesUI.L("Glow Opacity"),
-                                                CludesUI.L("Blackout glow opacity (1-100%)")
+                                                CUI.L("Glow Opacity"),
+                                                CUI.L("Blackout glow opacity (1-100%)")
                                             )
                                         end)
                                     end
@@ -5727,12 +5728,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         inner,
                         menuH,
                         ITEM_H,
-                        CludesUI.L("Replace with Buff") .. ": " .. (repName or CludesUI.L("None")),
+                        CUI.L("Replace with Buff") .. ": " .. (repName or CUI.L("None")),
                         { FONT_PATH, 11, GetCDMOptOutline() },
                         { tDimR, tDimG, tDimB, tDimA },
                         hlA,
                         function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                             dropMenu:Hide()
                             ShowBuffToCDPicker(rbRow, barId, nil, function(buffSID, buffCdID)
                                 if mod.SetCooldownBuffReplacement then
@@ -5744,7 +5745,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         {
                             keepSub = true,
                             fit = true,
-                            tip = CludesUI.L("Show a tracked buff in this slot while it is active."),
+                            tip = CUI.L("Show a tracked buff in this slot while it is active."),
                         }
                     )
                     menuH = menuH + ITEM_H
@@ -5782,7 +5783,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         inner,
                         menuH,
                         ITEM_H,
-                        CludesUI.L(hasCI and "Edit Custom Icon" or "Add Custom Icon"),
+                        CUI.L(hasCI and "Edit Custom Icon" or "Add Custom Icon"),
                         { FONT_PATH, 11, GetCDMOptOutline() },
                         { tDimR, tDimG, tDimB, tDimA },
                         hlA,
@@ -5824,7 +5825,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         inner,
                         menuH,
                         ITEM_H,
-                        CludesUI.L(isRemove and "Remove from Other Specs" or "Copy to Other Specs"),
+                        CUI.L(isRemove and "Remove from Other Specs" or "Copy to Other Specs"),
                         { FONT_PATH, 11, GetCDMOptOutline() },
                         { tDimR, tDimG, tDimB, tDimA },
                         hlA,
@@ -5844,7 +5845,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         disabled[spec.key] = "This spec doesn't have this spell."
                                     end
                                 end
-                                CludesUI:ShowCDMSpecPickerPopup({
+                                CUI:ShowCDMSpecPickerPopup({
                                     title = "Remove from Other Specs",
                                     subtitle = "Uncheck a spec to keep it. Confirm removes this custom spell and its settings from the checked specs.",
                                     confirmText = "Remove",
@@ -5861,7 +5862,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             else
                                 local disabled
                                 if curKey then disabled = { [curKey] = "You're on this spec." } end
-                                CludesUI:ShowCDMSpecPickerPopup({
+                                CUI:ShowCDMSpecPickerPopup({
                                     title = "Copy to Other Specs",
                                     subtitle = "Copies this custom spell and its settings to the same bar on the specs you pick. Specs that already have it are skipped.",
                                     confirmText = "Copy",
@@ -5919,7 +5920,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 if not (ownerFrame and ownerFrame:IsVisible()) then strip:Hide() end
             end
             -- Keep the menu open while the shared color picker is up: it's a separate popup, so interacting with it must not dismiss the menu (and its cog/subnav flyout).
-            local cp = CludesUI._colorPickerPopup
+            local cp = CUI._colorPickerPopup
             local cpOpen = cp and cp:IsShown()
             if
                 not overMenu
@@ -5950,7 +5951,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             inner,
             menuH,
             ITEM_H,
-            CludesUI.L(text),
+            CUI.L(text),
             { FONT_PATH, 11, GetCDMOptOutline() },
             { tDimR, tDimG, tDimB, tDimA },
             hlA,
@@ -6064,7 +6065,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         for _, slot in ipairs({ 13, 14 }) do
             local itemId = GetInventoryItemID("player", slot)
             Preset(
-                CludesUI.L((slot == 13) and "Trinket Slot 1" or "Trinket Slot 2"),
+                CUI.L((slot == 13) and "Trinket Slot 1" or "Trinket Slot 2"),
                 itemId and C_Item.GetItemIconByID(itemId),
                 -slot
             )
@@ -6073,7 +6074,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         -- character's active racial; ns.NormalizeRacialAssignments rewrites it on
         -- every other race, so a shared profile needs the racial added only once.
         local racial = mod._activeRacialSpellID
-        if racial then Preset(CludesUI.L("Racial"), C_Spell.GetSpellTexture(racial), racial) end
+        if racial then Preset(CUI.L("Racial"), C_Spell.GetSpellTexture(racial), racial) end
         -- WoW Forever Paladins: Seals, the stand-in for Blizzard's Seals entry
         -- (CUI_CDM_ForeverSeals.lua), named by the client's own spell name.
         local seals = mod.CDM_SEALS_SPELL
@@ -6100,7 +6101,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             potLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
             potLbl:SetPoint("LEFT", 10, 0)
             potLbl:SetJustifyH("LEFT")
-            potLbl:SetText(CludesUI.L("Potions & Healthstone"))
+            potLbl:SetText(CUI.L("Potions & Healthstone"))
             potLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
 
             local potArrow = potItem:CreateTexture(nil, "ARTWORK")
@@ -6179,8 +6180,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             _potionsSub,
                             flyoutH,
                             SUB_ITEM_H,
-                            CludesUI.L(preset.name),
-                            CludesUI.ClientIcon(
+                            CUI.L(preset.name),
+                            CUI.ClientIcon(
                                 preset.icon or (preset.itemID and C_Item.GetItemIconByID(preset.itemID))
                             ),
                             isAdded,
@@ -6273,8 +6274,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     dropMenu,
                     menuH,
                     ITEM_H,
-                    CludesUI.L(preset.name),
-                    CludesUI.ClientIcon(preset.icon),
+                    CUI.L(preset.name),
+                    CUI.ClientIcon(preset.icon),
                     mod.IsPresetOnBar(barId, preset),
                     nil,
                     { FONT_PATH, 11, GetCDMOptOutline() },
@@ -6311,7 +6312,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             dropMenu,
             menuH,
             ITEM_H,
-            CludesUI.L(sp.name),
+            CUI.L(sp.name),
             sp.icon,
             isDisabled,
             nil,
@@ -6328,18 +6329,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             ico:SetAlpha(0.4)
             entry:SetScript("OnClick", nil)
             entry:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(
+                CUI.ShowWidgetTooltip(
                     entry,
-                    CludesUI.Lf(
+                    CUI.Lf(
                         "This spell is already being used on %s",
-                        CludesUI.L(edge and (edge.name or edge.key) or barId)
+                        CUI.L(edge and (edge.name or edge.key) or barId)
                     )
                 )
                 highlight:SetColorTexture(1, 1, 1, hlA * 0.3)
                 highlight:SetAlpha(1)
             end)
             entry:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
                 highlight:SetAlpha(0)
             end)
         end
@@ -6353,12 +6354,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             caption:SetTextColor(1, 1, 1, 1)
             highlight:SetColorTexture(1, 1, 1, hlA)
             highlight:SetAlpha(1)
-            if notLearned then CludesUI.ShowWidgetTooltip(entry, CludesUI.L("Not currently talented")) end
+            if notLearned then CUI.ShowWidgetTooltip(entry, CUI.L("Not currently talented")) end
         end)
         entry:SetScript("OnLeave", function()
             caption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
             highlight:SetAlpha(0)
-            if notLearned then CludesUI.HideWidgetTooltip() end
+            if notLearned then CUI.HideWidgetTooltip() end
         end)
         entry:SetScript("OnClick", function()
             if wrongGroup then
@@ -6368,7 +6369,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             end
             -- assignedSpells stores spell ids.
             if onSelect then onSelect(sp.spellID, sp.isExtra) end
-            if notLearned then CludesUI.HideWidgetTooltip() end
+            if notLearned then CUI.HideWidgetTooltip() end
             MarkOnThisBar()
         end)
     end
@@ -6432,11 +6433,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         text:SetJustifyH("CENTER")
         text:SetJustifyV("MIDDLE")
         local function Accented()
-            local red, green, blue = CludesUI.GetAccentColor()
+            local red, green, blue = CUI.GetAccentColor()
             text:SetTextColor(red, green, blue, 1)
         end
         Accented()
-        text:SetText(CludesUI.L("Missing Spells?") .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
+        text:SetText(CUI.L("Missing Spells?") .. "\n" .. CUI.L("Add in Blizzard CDM"))
         footer:SetScript("OnEnter", function() text:SetTextColor(1, 1, 1, 1) end)
         footer:SetScript("OnLeave", Accented)
         footer:SetScript("OnClick", function()
@@ -6459,7 +6460,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         scroll:EnableMouseWheel(true)
         scroll:SetScrollChild(inner)
         inner:SetWidth(menuW)
-        CludesUI.AttachSmoothScrollbar(scroll, { step = 40, thumb = false })
+        CUI.AttachSmoothScrollbar(scroll, { step = 40, thumb = false })
     else
         dropMenu:SetHeight(totalH)
         inner:SetParent(dropMenu)

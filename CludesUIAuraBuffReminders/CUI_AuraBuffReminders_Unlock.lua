@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Unlock.lua
 --
@@ -36,12 +37,12 @@ end
 local function ApplyUnlockPos()
     if not iconAnchor or not saved then return end
     -- Skip for unlock-anchored elements (anchor system is authority)
-    local anchored = CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("EABR_Reminders")
+    local anchored = CUI and CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("EABR_Reminders")
     if anchored and iconAnchor:GetLeft() then return end
     local place = saved.profile.unlockPos
     if place and place.point then
         local px, py = place.x or 0, place.y or 0
-        local PPa = CludesUI and CludesUI.PP
+        local PPa = CUI and CUI.PP
         if PPa then
             local es = iconAnchor:GetEffectiveScale()
             -- For CENTER anchor, uses SnapCenterForDim with the frame's actual size so odd-pixel-dim frames get the +0.5 offset that places edges on whole pixels.
@@ -116,12 +117,12 @@ function REMIND.UpdateUnlockPosForGrowDir(newGrowDir)
     place.relPoint = "CENTER"
 end
 
-function CludesUI.GetAuraBuffGrowDir()
+function CUI.GetAuraBuffGrowDir()
     local skinData = saved and saved.profile and saved.profile.display
     return skinData and skinData.growDirection or "CENTER"
 end
 
-function CludesUI.SetAuraBuffGrowDir(val)
+function CUI.SetAuraBuffGrowDir(val)
     if not saved or not saved.profile or not saved.profile.display then return end
     saved.profile.display.growDirection = val
     REMIND.UpdateUnlockPosForGrowDir(val)
@@ -130,9 +131,9 @@ function CludesUI.SetAuraBuffGrowDir(val)
 end
 
 local function RegisterUnlockElements()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
-    local MK = CludesUI.MakeUnlockElement
-    CludesUI:RegisterUnlockElements({
+    if not CUI or not CUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
+    CUI:RegisterUnlockElements({
         MK({
             key = "EABR_Reminders",
             label = "Buff Reminders",
@@ -184,7 +185,7 @@ local function RegisterUnlockElements()
                     end
                 end
                 saved.profile.unlockPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                if not CludesUI._unlockActive then ApplyUnlockPos() end
+                if not CUI._unlockActive then ApplyUnlockPos() end
             end,
             loadPos = function()
                 local place = saved.profile.unlockPos

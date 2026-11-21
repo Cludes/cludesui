@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_Position.lua - moving Blizzard's tracker in Unlock Mode.
 --
@@ -36,7 +37,7 @@ end
 -- unlock session moves a stand-in of the tracker's size instead.
 local function UnlockFrame()
     local frame = Tracker()
-    if not (CludesUI._unlockActive and Held()) then return frame end
+    if not (CUI._unlockActive and Held()) then return frame end
     if not standInPlaced then
         standInPlaced = true
         local conf = EQT.DB()
@@ -58,8 +59,8 @@ end
 -- open or before its layouts have applied.
 local function ActiveEntry()
     local frame = Tracker()
-    if not (frame and frame:IsInitialized()) or CludesUI.EditModeOpen() then return nil end
-    local layouts, presetCount = CludesUI.EditModeLayoutsForSave()
+    if not (frame and frame:IsInitialized()) or CUI.EditModeOpen() then return nil end
+    local layouts, presetCount = CUI.EditModeLayoutsForSave()
     if not layouts or type(layouts.activeLayout) ~= "number" then return nil end
     local layout = layouts.layouts[layouts.activeLayout]
     if type(layout) ~= "table" or type(layout.systems) ~= "table" then return nil end
@@ -105,7 +106,7 @@ local function WriteLayout(conf)
     if anchorRight and heightRight then return end
     if isPreset then return "preset" end
     if not anchorRight then
-        CludesUI.NoteEditModeAnchor(layout, entry, wanted)
+        CUI.NoteEditModeAnchor(layout, entry, wanted)
         entry.anchorInfo = {
             point = wanted.point,
             relativeTo = wanted.relativeTo,
@@ -118,7 +119,7 @@ local function WriteLayout(conf)
     end
     if not heightRight then
         if row then
-            CludesUI.NoteEditModeSetting(layout, entry, row.setting, row.value, value)
+            CUI.NoteEditModeSetting(layout, entry, row.setting, row.value, value)
             row.value = value
         else
             entry.settings[#entry.settings + 1] =
@@ -135,7 +136,7 @@ local function ResetLayout()
     if not entry or isPreset or entry.isInDefaultPosition then return false end
     local default =
         EditModePresetLayoutManager:GetDefaultSystemAnchorInfo(Enum.EditModeSystem.ObjectiveTracker)
-    CludesUI.NoteEditModeAnchor(layout, entry, default)
+    CUI.NoteEditModeAnchor(layout, entry, default)
     entry.anchorInfo = default
     entry.anchorInfo2 = nil
     entry.isInDefaultPosition = true
@@ -149,13 +150,13 @@ end
 local function EditModeCanSelect(on)
     if on and not selectionTakenAway then return end
     selectionTakenAway = not on
-    CludesUI.SetEditModeChildInert(Tracker().Selection, not on)
+    CUI.SetEditModeChildInert(Tracker().Selection, not on)
 end
 
 local function AskReload()
     if reloadAsked then return end
     reloadAsked = true
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Reload to Move the Quest Tracker",
         message = "The quest tracker's new position and height are saved to your Edit Mode layout. Blizzard applies them after a reload.",
         confirmText = "Reload",
@@ -165,7 +166,7 @@ local function AskReload()
 end
 
 local function WarnPreset()
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Copy Your Edit Mode Layout",
         message = "Your active Edit Mode layout is one of Blizzard's presets, which cannot be changed. Copy it in Edit Mode, then move the quest tracker again.",
         confirmText = "Okay",
@@ -176,7 +177,7 @@ end
 function EQT.SyncPosition()
     syncQueued = nil
     local conf = EQT.DB()
-    if CludesUI._unlockActive then return end
+    if CUI._unlockActive then return end
     -- No spot of ours in this profile: Edit Mode may move it again.
     if not conf.position then
         EditModeCanSelect(true)
@@ -197,7 +198,7 @@ function EQT.SyncPosition()
         end)
     end
     -- Leaving Edit Mode applies the layout, which syncs again.
-    if CludesUI.EditModeOpen() then return end
+    if CUI.EditModeOpen() then return end
     local byPlayer = changedInSession
     changedInSession = nil
     if WriteLayout(conf) == "preset" then
@@ -213,10 +214,10 @@ function EQT.SyncPosition()
         return
     end
     local spot = conf.position
-    CludesUI.ClearFramePoints(frame)
-    CludesUI.SetFramePoint(frame, spot.point, UIParent, spot.relPoint or spot.point, spot.x, spot.y)
+    CUI.ClearFramePoints(frame)
+    CUI.SetFramePoint(frame, spot.point, UIParent, spot.relPoint or spot.point, spot.x, spot.y)
     -- The login anchor pass may have run while the tracker was still held.
-    CludesUI.ReapplyUnlockAnchor("EQT_Tracker")
+    CUI.ReapplyUnlockAnchor("EQT_Tracker")
 end
 
 local function ApplyReset()
@@ -233,7 +234,7 @@ end
 -- In an unlock session a change waits for the session to close; otherwise
 -- it applies now.
 local function Changed()
-    if CludesUI._unlockActive then
+    if CUI._unlockActive then
         changedInSession = true
     else
         EQT.SyncPosition()
@@ -241,8 +242,8 @@ local function Changed()
 end
 
 function EQT.InitPosition()
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = "EQT_Tracker",
             label = "Quest Tracker",
             group = "Quest Tracker",
@@ -277,7 +278,7 @@ function EQT.InitPosition()
             clearPos = function()
                 EQT.Set("position", nil)
                 EQT.Set("height", nil)
-                if CludesUI._unlockActive then
+                if CUI._unlockActive then
                     resetWaiting = true
                 else
                     ApplyReset()
@@ -288,7 +289,7 @@ function EQT.InitPosition()
     }, "CludesUIQuestTracker")
 
     -- Layout writes and reload prompts wait for the session to close.
-    CludesUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(isActive, closeAction)
+    CUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(isActive, closeAction)
         if isActive then
             heightAtOpen = EQT.DB().height
             return

@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then return end
+local CUI = CludesUI
+if not CUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_QuestAudio.lua - the quest voice-over addon's Play
 --  button on our tracker (WoW Forever; the owner's pick, 7 Nov 2026).
@@ -101,14 +102,14 @@ local function Install()
     end
     -- Registered under the addon's own name: should it add a row hook of its
     -- own, the first one stands and the other is refused, so no row gets two.
-    if not CludesUI.RegisterQuestTrackerRow("Spoken", Row, ROOM) then return end
+    if not CUI.RegisterQuestTrackerRow("Spoken", Row, ROOM) then return end
 
     -- What Voiced reads can change: the voice packs load after login, the
     -- addon's quest part can be switched, and its tracker button setting
     -- (like every settings change) runs its tracker sweep.
     local function AskAgain()
         wipe(voiced)
-        CludesUI.RefreshQuestTrackerRows()
+        CUI.RefreshQuestTrackerRows()
     end
     spoken:RegisterCallback("VOICE_PACKS_LOADED", AskAgain)
     spoken:RegisterCallback("PART_SWITCHED", function(part)

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Visibility.lua
 --
@@ -56,7 +57,7 @@ function mod.ResolveVisResting(cfg, widget, ext, hiddenByOpts, inCombat)
         -- Legacy single mouseover: a configured "Hide if" override that is NOT currently
         -- triggering counts as a positive show, so the frame does not require hover
         -- (fixes "dismount in combat keeps frame hidden" / "hide if no target inverted").
-        local hasAnyHideOpt = CludesUI.VisHasAnyOption(cfg)
+        local hasAnyHideOpt = CUI.VisHasAnyOption(cfg)
         if hasAnyHideOpt then return shownAlpha, false end
         return 0, true
     end
@@ -67,8 +68,8 @@ end
 -- two inputs the pass would have handed over. State is left nil so the shared engine fills
 -- it from its own combat/group tracking.
 function mod.ResolveVisRestingLive(s, widget)
-    local hiddenByOpts = CludesUI.CheckVisibilityOptions(s)
-    local ext = CludesUI.EvalVisibilityExtended(s, "barVisibility", nil, CludesUI.VIS_CAPS_DEFAULT)
+    local hiddenByOpts = CUI.CheckVisibilityOptions(s)
+    local ext = CUI.EvalVisibilityExtended(s, "barVisibility", nil, CUI.VIS_CAPS_DEFAULT)
     local alpha, hoverGated = mod.ResolveVisResting(s, widget, ext, hiddenByOpts, InCombatLockdown())
     return alpha, hoverGated, hiddenByOpts
 end
@@ -81,7 +82,7 @@ end
 function mod.VisMouseoverWired(cfg)
     if not cfg then return false end
     if (cfg.barVisibility or "always") == "mouseover" then return true end
-    return (CludesUI.VisOverrideValue(cfg)) == "mouseover"
+    return (CUI.VisOverrideValue(cfg)) == "mouseover"
 end
 
 -- Health visibility is a display-only reveal. The curve result is always secret
@@ -92,7 +93,7 @@ function mod.HealthVisibilityEnabled(cfg, widget)
     local unitToken = widget._cuiUnit
     if unitToken ~= "player" and unitToken ~= "target" and unitToken ~= "focus" then return false end
     if mod.VisUnitDisabled(saved.profile, unitToken) then return false end
-    local override = CludesUI.VisOverrideValue(cfg)
+    local override = CUI.VisOverrideValue(cfg)
     return (override or cfg.barVisibility or "always") ~= "never"
 end
 

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_Dialogs.lua
 --
@@ -25,8 +26,8 @@ do
         if not qkb then return end
         _qkbSkinned = true
 
-        local RS = CludesUI.RESKIN
-        local _PP = CludesUI and CludesUI.PP
+        local RS = CUI.RESKIN
+        local _PP = CUI and CUI.PP
 
         if qkb.NineSlice then qkb.NineSlice:SetAlpha(0) end
         if qkb.BG then qkb.BG:SetAlpha(0) end
@@ -63,9 +64,9 @@ do
 
         local btnNames = { "OkayButton", "CancelButton", "DefaultsButton" }
         -- Native mode leaves button text un-recolored.
-        local er, eg, editField = CludesUI._getPopupMenuButtonTextColor()
+        local er, eg, editField = CUI._getPopupMenuButtonTextColor()
         local ACC = { r = er, g = eg, b = editField }
-        local useAccent = (CludesUI._getPopupMenuElementMode() ~= "native") and ACC
+        local useAccent = (CUI._getPopupMenuElementMode() ~= "native") and ACC
         for _, name in ipairs(btnNames) do
             local button = qkb[name]
             if button and not GetFFD(button).skinned then
@@ -156,8 +157,8 @@ do
         if GetFFD(dialog).skinned then return end
         GetFFD(dialog).skinned = true
 
-        local RS = CludesUI.RESKIN
-        local _PP = CludesUI and CludesUI.PP
+        local RS = CUI.RESKIN
+        local _PP = CUI and CUI.PP
 
         -- Border/decoration only; role icon and content are preserved.
         if dialog.Bg then dialog.Bg:SetAlpha(0) end
@@ -173,7 +174,7 @@ do
 
         local function _accentOn()
             -- Native mode leaves text/border un-accented.
-            return CludesUI._getPopupMenuElementMode() ~= "native"
+            return CUI._getPopupMenuElementMode() ~= "native"
         end
         for _, btnName in ipairs({ "AcceptButton", "DeclineButton", "AcknowledgeButton" }) do
             local button = dialog[btnName]
@@ -204,7 +205,7 @@ do
                             end)
                         end
                     end
-                    local er, eg, editField = CludesUI._getPopupMenuButtonTextColor()
+                    local er, eg, editField = CUI._getPopupMenuButtonTextColor()
                     local ACC = { r = er, g = eg, b = editField }
                     local useAccent = _accentOn() and ACC
                     local btnBg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
@@ -220,7 +221,7 @@ do
                     end
                 end
                 -- Text accent re-applied every show.
-                local er, eg, editField = CludesUI._getPopupMenuButtonTextColor()
+                local er, eg, editField = CUI._getPopupMenuButtonTextColor()
                 local ACC = { r = er, g = eg, b = editField }
                 local useAccent = _accentOn() and ACC
                 local fontStr = button:GetFontString()
@@ -250,8 +251,8 @@ do
         if GetFFD(dialog).skinned then return end
         GetFFD(dialog).skinned = true
 
-        local RS = CludesUI.RESKIN
-        local _PP = CludesUI and CludesUI.PP
+        local RS = CUI.RESKIN
+        local _PP = CUI and CUI.PP
 
         -- Border/decoration only; content is preserved.
         if dialog.Bg then dialog.Bg:SetAlpha(0) end
@@ -284,7 +285,7 @@ do
 
         local function _accentOn()
             -- Native mode leaves text/border un-accented.
-            return CludesUI._getPopupMenuElementMode() ~= "native"
+            return CUI._getPopupMenuElementMode() ~= "native"
         end
         for _, btnName in ipairs({ "SignUpButton", "CancelButton" }) do
             local button = dialog[btnName]
@@ -313,7 +314,7 @@ do
                         end)
                     end
                 end
-                local er, eg, editField = CludesUI._getPopupMenuButtonTextColor()
+                local er, eg, editField = CUI._getPopupMenuButtonTextColor()
                 local ACC = { r = er, g = eg, b = editField }
                 local useAccent = _accentOn() and ACC
                 local btnBg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
@@ -357,7 +358,7 @@ do
         -- Independent toggle, default on: this is a popup menu, not a window, so no master reskin setting (window-skins style included) governs it.
         if CludesUIDB and CludesUIDB.reskinGameMenu == false then return end
 
-        local RS = CludesUI.RESKIN
+        local RS = CUI.RESKIN
 
         local regionList = { GameMenuFrame:GetRegions() }
         for idx = 1, #regionList do
@@ -376,9 +377,9 @@ do
             end
             local headerText = header.Text or (header.GetRegions and select(1, header:GetRegions()))
             if headerText and headerText.SetTextColor then
-                local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                local red, green, blue = CUI._getPopupMenuButtonTextColor()
                 headerText:SetTextColor(red, green, blue, 1)
-                local cuiFont = CludesUI.GetFontPath("blizzardSkin") or "Fonts\\FRIZQT__.TTF"
+                local cuiFont = CUI.GetFontPath("blizzardSkin") or "Fonts\\FRIZQT__.TTF"
                 local _, hSize = headerText:GetFont()
                 headerText:SetFont(cuiFont, hSize or 16, "")
             end
@@ -392,7 +393,7 @@ do
             local skinData = GetFFD(button)
             -- Blizzard's pooled buttons keep skin data in this addon's FFD; CUI's two custom
             -- Game Menu buttons are created by the parent addon and keep theirs in ITS FFD. Fall back to that store so live option changes also reach the CludesUI button.
-            if not skinData.gameMenuInset and CludesUI._GetFFD then skinData = CludesUI._GetFFD(button) end
+            if not skinData.gameMenuInset and CUI._GetFFD then skinData = CUI._GetFFD(button) end
             if not skinData.gameMenuInset then return end
             local color = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                 or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
@@ -402,23 +403,23 @@ do
                 color.b,
                 color.a == nil and 0.8 or color.a
             )
-            CludesUI._applyBlizzardConfiguredBorder(skinData.gameMenuInset, "popupMenuButton", 1)
+            CUI._applyBlizzardConfiguredBorder(skinData.gameMenuInset, "popupMenuButton", 1)
             local fontStr = button:GetFontString()
             -- Native mode keeps Blizzard's own gold on our dark inset.
-            if fontStr and CludesUI._getPopupMenuElementMode() ~= "native" then
-                local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+            if fontStr and CUI._getPopupMenuElementMode() ~= "native" then
+                local red, green, blue = CUI._getPopupMenuButtonTextColor()
                 fontStr:SetTextColor(red, green, blue, 1)
             end
         end
         local function ApplyMenuStyle()
-            CludesUI._applyBlizzardConfiguredBorder(GameMenuFrame, "popupMenu", 1)
+            CUI._applyBlizzardConfiguredBorder(GameMenuFrame, "popupMenu", 1)
             if GameMenuFrame.buttonPool then
                 for button in GameMenuFrame.buttonPool:EnumerateActive() do
                     ApplyButtonStyle(button)
                 end
             end
             -- The CUI/Unlock custom buttons are created by the PARENT addon and stored in ITS namespace FFD (CludesUI._GetFFD), not this addon's own FFD; wrong table = dead code.
-            local pd = CludesUI._GetFFD(GameMenuFrame)
+            local pd = CUI._GetFFD(GameMenuFrame)
             if pd and pd.cuiBtn then ApplyButtonStyle(pd.cuiBtn) end
             if pd and pd.unlockBtn then ApplyButtonStyle(pd.unlockBtn) end
         end
@@ -465,7 +466,7 @@ do
                     highlight:SetColorTexture(1, 1, 1, 0.1)
                     local fontStr = menuBtn:GetFontString()
                     if fontStr then
-                        local cuiFont = CludesUI.GetFontPath("blizzardSkin") or nil
+                        local cuiFont = CUI.GetFontPath("blizzardSkin") or nil
                         local _, size, flags = fontStr:GetFont()
                         fontStr:SetFont(cuiFont or "Fonts\\FRIZQT__.TTF", (size or 14) - 2, flags or "")
                     end

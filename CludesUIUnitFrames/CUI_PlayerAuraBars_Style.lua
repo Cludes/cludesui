@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Style.lua
 --
@@ -159,7 +160,7 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
             skinData.pabDurFont = fKey
             -- Prime the shadow FontObject before SetFont; Drop Shadow mode (empty
             -- flag) keeps the text legible instead of flat.
-            CludesUI.PrimeFontShadow(skinData.duration, flag == "")
+            CUI.PrimeFontShadow(skinData.duration, flag == "")
             skinData.duration:SetFont(filePath, style.durationFontSize or 11, flag)
         end
         local dp = style.durationPoint or "CENTER"
@@ -182,7 +183,7 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
         local wantFmt = (style.durationShowSeconds and "s" or "b")
             .. tostring(style.durationPrecisionThreshold or 0)
         if skinData.durationFmtS ~= nil and skinData.durationFmtS ~= wantFmt then
-            local AK = CludesUI.AuraKit
+            local AK = CUI.AuraKit
             local durationOpts = AK.BuildDurationTextOpts(
                 AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold),
                 style.durationColorCurve,
@@ -196,7 +197,7 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
         local fKey = filePath .. "|" .. (style.stackFontSize or 11) .. "|" .. flag
         if skinData.pabStackFont ~= fKey then
             skinData.pabStackFont = fKey
-            CludesUI.PrimeFontShadow(skinData.stack, flag == "")
+            CUI.PrimeFontShadow(skinData.stack, flag == "")
             skinData.stack:SetFont(filePath, style.stackFontSize or 11, flag)
         end
         local sp = style.stackPoint or "BOTTOMRIGHT"
@@ -263,7 +264,7 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
         end)
     end
     SetTexturePixelSnap(skinData.icon, skinData.pabCenteredSnap)
-    local border = skinData.borderHost and CludesUI.PP.GetBorders(skinData.borderHost)
+    local border = skinData.borderHost and CUI.PP.GetBorders(skinData.borderHost)
     if border then
         SetTexturePixelSnap(border._top, skinData.pabCenteredSnap)
         SetTexturePixelSnap(border._bottom, skinData.pabCenteredSnap)
@@ -285,9 +286,9 @@ end
 -- overrides that; every branch stays slug-gated centrally via "Never Show Slug".
 local function ResolveFontFlag(mode)
     if mode == "none" then return "" end
-    if mode == "outline" then return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE" end
-    if mode == "thick" then return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE" end
-    return (CludesUI.GetIconTextOutlineFlag("unitFrames")) or "OUTLINE"
+    if mode == "outline" then return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE" end
+    if mode == "thick" then return (CUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE" end
+    return (CUI.GetIconTextOutlineFlag("unitFrames")) or "OUTLINE"
 end
 
 local function BuildStyle(isBuff, conf)
@@ -330,9 +331,9 @@ local function BuildStyle(isBuff, conf)
             -- against the raw step itself (borderPxOverride) since its borderSize
             -- is scale-compensated and could never pair.
             border.edgePx = conf.borderPxOverride
-                or CludesUI.BorderPx(conf.borderSizePx, textureSize, texture)
+                or CUI.BorderPx(conf.borderSizePx, textureSize, texture)
         else
-            solidPx = conf.borderPxOverride or CludesUI.BorderPx(conf.borderSizePx, borderSize, texture)
+            solidPx = conf.borderPxOverride or CUI.BorderPx(conf.borderSizePx, borderSize, texture)
             border.edgePx = solidPx
         end
     end
@@ -442,7 +443,7 @@ local function BuildStyle(isBuff, conf)
         -- does it via the house icon-text rules. Font path and outline flag resolve once
         -- per style rebuild (settings-apply frequency), never per applyExtra call.
         noDefaultFonts = true,
-        fontPath = (CludesUI.GetFontPath("unitFrames")) or STANDARD_TEXT_FONT,
+        fontPath = (CUI.GetFontPath("unitFrames")) or STANDARD_TEXT_FONT,
         fontFlag = ResolveFontFlag(conf.fontOutline),
 
         applyExtra = PAB_ApplyExtraText,

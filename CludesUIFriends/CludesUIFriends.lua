@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIFriends.lua -- Friends List skin. Direct skin of Blizzard's
 --  native ScrollBox and buttons: no custom DataProvider, no friend groups.
@@ -6,29 +7,29 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewCombatQueue
-        and CludesUI.FriendsKit
-        and CludesUI.NewFrameData
-        and CludesUI.SetFontFamily
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewCombatQueue
+        and CUI.FriendsKit
+        and CUI.NewFrameData
+        and CUI.SetFontFamily
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (friends' names and notes take the parent's font families)
 local mod = select(2, ...)
-CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
-mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+CUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+mod.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
 
-local SKIN = CludesUI.Lite.NewAddon("CludesUIFriends")
+local SKIN = CUI.Lite.NewAddon("CludesUIFriends")
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
-local ACC = CludesUI.CLUDES_GREEN
+local ACC = CUI.CLUDES_GREEN
 
 -- External weak-keyed lookup table for frame state (prevents tainting Blizzard frames)
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -- Master kill-switch for modules held back from public release (Coming Soon), keyed by
 -- module name; overrides that module's "enabled" flag to off regardless of the user's SavedVariables.
@@ -97,7 +98,7 @@ end
 local function LegacyFriendsRetired()
     -- The Style page's stock styles keep Blizzard's own friends window on
     -- either path, so the legacy skin stands down for them too.
-    local mns = CludesUI._ModuleNS[ADDON_NAME]
+    local mns = CUI._ModuleNS[ADDON_NAME]
     if mns and mns.FR_Style and mns.FR_Style() ~= "cui" then return true end
     if not (C_SocialUI and C_SocialUI.IsSystemEnabled) then return false end
     local success, enabled = pcall(C_SocialUI.IsSystemEnabled)
@@ -135,7 +136,7 @@ end
 local function SkinRaidTabButton(button)
     if not button or GetFFD(button).btnSkinned then return end
     GetFFD(button).btnSkinned = true
-    local fontFile = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
     local regions = { button:GetRegions() }
     for i = 1, #regions do
         local regionFrame = regions[i]
@@ -217,7 +218,7 @@ local RAID_TAB_BUTTONS = {
 local function SkinCheckbox(checkbox)
     if not checkbox or GetFFD(checkbox).skinned then return end
     GetFFD(checkbox).skinned = true
-    local fontFile = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
     if checkbox.SetNormalTexture then checkbox:SetNormalTexture("") end
     if checkbox.SetPushedTexture then checkbox:SetPushedTexture("") end
     if checkbox.SetHighlightTexture then checkbox:SetHighlightTexture("") end
@@ -239,7 +240,7 @@ end
 local function SkinRaidGroup(set)
     if not set or GetFFD(set).skinned then return end
     GetFFD(set).skinned = true
-    local fontFile = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
     local ar, ag, ab = ACC.r, ACC.g, ACC.b
     local groupName = set:GetName()
     local regions = { set:GetRegions() }
@@ -263,14 +264,14 @@ local function SkinRaidGroup(set)
         for i = 1, #regions2 do
             local regionFrame = regions2[i]
             if regionFrame and regionFrame:IsObjectType("FontString") then
-                CludesUI.PrimeFontShadow(regionFrame, true)
+                CUI.PrimeFontShadow(regionFrame, true)
                 regionFrame:SetFont(fontFile, 10, "")
                 regionFrame:SetTextColor(ar, ag, ab, 1)
             end
         end
         local fontString = labelFrame.GetFontString and labelFrame:GetFontString()
         if fontString and fontString.SetFont then
-            CludesUI.PrimeFontShadow(fontString, true)
+            CUI.PrimeFontShadow(fontString, true)
             fontString:SetFont(fontFile, 10, "")
             fontString:SetTextColor(ar, ag, ab, 1)
         end
@@ -280,7 +281,7 @@ end
 local function SkinRaidSlot(slot)
     if not slot or GetFFD(slot).skinned then return end
     GetFFD(slot).skinned = true
-    local fontFile = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
     local regions = { slot:GetRegions() }
     for i = 1, #regions do
         local regionFrame = regions[i]
@@ -314,7 +315,7 @@ end
 local function SkinRaidGroupButton(button)
     if not button or GetFFD(button).skinned then return end
     GetFFD(button).skinned = true
-    local fontFile = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
     local regions = { button:GetRegions() }
     for i = 1, #regions do
         local regionFrame = regions[i]
@@ -339,7 +340,7 @@ local function SkinRaidGroupButton(button)
         local regionFrame = regions2[i]
         if regionFrame and regionFrame:IsObjectType("FontString") then
             if regionFrame == nameFS then
-                CludesUI.SetFontFamily(regionFrame, fontFile, 9, "", true)
+                CUI.SetFontFamily(regionFrame, fontFile, 9, "", true)
             else
                 regionFrame:SetFont(fontFile, 9, "")
             end
@@ -541,8 +542,8 @@ local friendsSkinned = false
 
 -- The class icon sprites, the status orb art and the region icon button come
 -- from the friends kit (CludesUI_FriendsKit.lua), shared with the tiles.
-local FriendsKit = CludesUI.FriendsKit
-local CLASS_SPRITE_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
+local FriendsKit = CUI.FriendsKit
+local CLASS_SPRITE_COORDS = CUI.CLASS_ICON_SPRITE_COORDS
 
 -- Filled on demand for displayed rows; only search needs the complete list.
 -- BNet keyed [id], WoW [id+10000].
@@ -616,9 +617,9 @@ local function GetFriendClassFile(bnetAccount, wowInfo)
             local _, class = GetClassInfo(gameInfo.classID)
             return class
         end
-        if gameInfo.className then return CludesUI.ClassTokenFromLocalized(gameInfo.className) end
+        if gameInfo.className then return CUI.ClassTokenFromLocalized(gameInfo.className) end
     elseif wowInfo and wowInfo.className then
-        return CludesUI.ClassTokenFromLocalized(wowInfo.className)
+        return CUI.ClassTokenFromLocalized(wowInfo.className)
     end
     return nil
 end
@@ -723,7 +724,7 @@ local function UpdateClassIcon(btnFrame, bnetAccount, wowInfo)
 end
 
 -- Class color escape per class file (lazy-built cache, CludesUI_FriendsKit.lua)
-local _getClassColorCode = CludesUI.FriendsKit.ClassColorCode
+local _getClassColorCode = CUI.FriendsKit.ClassColorCode
 
 local function UpdateNameColor(btnFrame, bnetAccount, wowInfo)
     local p = SKIN.db.profile.friends
@@ -799,17 +800,17 @@ local function SkinFriendButton(btnFrame)
     if GetFFD(btnFrame).skinned then return end
     GetFFD(btnFrame).skinned = true
 
-    local fontFile = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
 
     -- family: the friend's name and info line (place, note) show other players'
     -- writing and take the font as a font family, which draws the scripts it lacks
     local function ApplyFont(fontStr, size, family)
         if not fontStr or not fontStr.SetFont then return end
         if family then
-            CludesUI.SetFontFamily(fontStr, fontFile, size, "", true)
+            CUI.SetFontFamily(fontStr, fontFile, size, "", true)
             return
         end
-        CludesUI.PrimeFontShadow(fontStr, true)
+        CUI.PrimeFontShadow(fontStr, true)
         fontStr:SetFont(fontFile, size, "")
     end
 
@@ -921,16 +922,16 @@ local function PostUpdateFriendButton(btnFrame)
         local userNote
         if btnFrame.buttonType == FRIENDS_BUTTON_TYPE_BNET then
             local cachedList = _friendCache[btnFrame.id]
-            if cachedList then userNote = CludesUI.StripFriendNoteTag(cachedList.note) end
+            if cachedList then userNote = CUI.StripFriendNoteTag(cachedList.note) end
         elseif btnFrame.buttonType == FRIENDS_BUTTON_TYPE_WOW then
             local cachedList = _friendCache[btnFrame.id + _FC_WOW_OFFSET]
-            if cachedList then userNote = CludesUI.StripFriendNoteTag(cachedList.notes) end
+            if cachedList then userNote = CUI.StripFriendNoteTag(cachedList.notes) end
         end
         if userNote then
             if originalInfo ~= "" then
                 infoText:SetText(originalInfo .. "  |cff888888|  " .. userNote .. "|r")
             else
-                infoText:SetText(CludesUI.COLOR_CODES.DIM .. userNote .. "|r")
+                infoText:SetText(CUI.COLOR_CODES.DIM .. userNote .. "|r")
             end
         end
     end
@@ -1161,7 +1162,7 @@ local function SkinBottomButton(button)
     if not button or GetFFD(button).btnSkinned then return end
     GetFFD(button).btnSkinned = true
 
-    local fontFile = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
 
     StripTextures(button)
 
@@ -1284,7 +1285,7 @@ local CHROME = {
 -- The window-skin engine, when Blizz UI Enhanced is loaded (not a dependency).
 -- Probed for this build's exports: a mismatched install paints the flat look.
 local function SkinEngine()
-    local bs = CludesUI._ModuleNS.CludesUIBlizzardSkin
+    local bs = CUI._ModuleNS.CludesUIBlizzardSkin
     local ws = bs and bs.WSkin
     return ws and ws.CoverFit and ws or nil
 end
@@ -1459,7 +1460,7 @@ local function OnChromeStylesChanged()
 end
 
 -- Options: the Border rows stand down while a window skin draws the frame.
-CludesUI._ModuleNS[ADDON_NAME].FR_ChromeShell = function() return ChromeStyle(SkinEngine()) ~= "flat" end
+CUI._ModuleNS[ADDON_NAME].FR_ChromeShell = function() return ChromeStyle(SkinEngine()) ~= "flat" end
 
 -------------------------------------------------------------------------------
 --  SkinFriendsFrame (one-time structural setup)
@@ -1470,7 +1471,7 @@ local function SkinFriendsFrame()
     if not widget or friendsSkinned then return end
     friendsSkinned = true
     local p = SKIN.db.profile.friends
-    local fontFile = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+    local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
 
     if widget.NineSlice then widget.NineSlice:Hide() end
     if widget.Bg then widget.Bg:Hide() end
@@ -1702,7 +1703,7 @@ local function SkinFriendsFrame()
                 underline:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
                 local ar, ag, ab = ACC.r, ACC.g, ACC.b
                 underline:SetColorTexture(ar, ag, ab, 1)
-                CludesUI.RegAccent({ type = "solid", obj = underline, a = 1 })
+                CUI.RegAccent({ type = "solid", obj = underline, a = 1 })
                 underline:Hide()
                 tfd.underline = underline
             end
@@ -1852,7 +1853,7 @@ local function SkinFriendsFrame()
 
     -- The player's BattleTag: a font family, which draws the scripts the font lacks
     local titleText = titleButton:CreateFontString(nil, "OVERLAY")
-    CludesUI.SetFontFamily(titleText, fontFile, 12, "", false)
+    CUI.SetFontFamily(titleText, fontFile, 12, "", false)
     titleText:SetTextColor(1, 1, 1, 0.75)
     titleText:SetPoint("CENTER", titleButton, "CENTER", 0, 0)
     titleText:SetJustifyH("CENTER")
@@ -1915,7 +1916,7 @@ local function SkinFriendsFrame()
             hint:SetFont(fontFile, 8, "")
             hint:SetTextColor(1, 1, 1, 0.5)
             hint:SetPoint("TOP", copyDialog, "TOP", 0, -6)
-            hint:SetText(CludesUI.L("Ctrl+C to copy, Escape to close"))
+            hint:SetText(CUI.L("Ctrl+C to copy, Escape to close"))
 
             local editField = CreateFrame("EditBox", nil, copyDialog)
             editField:SetSize(160, 16)
@@ -2227,13 +2228,13 @@ local function SkinFriendsFrame()
             orbButton:SetScript(
                 "OnEnter",
                 function(self)
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         self,
                         "Status: " .. GetPlayerStatusName() .. "\nClick to change"
                     )
                 end
             )
-            orbButton:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            orbButton:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
             -- Listener runs only while the panel is shown; the Show hook repaints once on open to catch flags changed while closed.
             local statusEvt = CreateFrame("Frame")
@@ -2256,9 +2257,9 @@ local function SkinFriendsFrame()
             broadcastBtn:SetAlpha(0.6)
             broadcastBtn:SetScript(
                 "OnEnter",
-                function(self) CludesUI.ShowWidgetTooltip(self, "Set Status Message") end
+                function(self) CUI.ShowWidgetTooltip(self, "Set Status Message") end
             )
-            broadcastBtn:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            broadcastBtn:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             broadcastBtn:SetScript("OnClick", function()
                 if InCombatLockdown() then return end
                 local buttonFrame = FriendsFrameBattlenetFrame and FriendsFrameBattlenetFrame.BroadcastFrame
@@ -2408,7 +2409,7 @@ local function SkinFriendsFrame()
 
             -- A friend's name: a font family, which draws the scripts the font lacks
             local nameFS = line:CreateFontString(nil, "OVERLAY")
-            CludesUI.SetFontFamily(nameFS, fontFile, 11, "", false)
+            CUI.SetFontFamily(nameFS, fontFile, 11, "", false)
             nameFS:SetPoint("LEFT", line, "LEFT", 8, 0)
             nameFS:SetWidth((FriendsListFrame:GetWidth() - 30) * 0.75)
             nameFS:SetJustifyH("LEFT")
@@ -2435,13 +2436,13 @@ local function SkinFriendsFrame()
                         if charName then
                             -- Canonical "Name-Realm" (the helper returns nil for an
                             -- empty name; fall back rather than invite nil).
-                            local fullName = CludesUI.BuildFullName(charName, realmName) or charName
+                            local fullName = CUI.BuildFullName(charName, realmName) or charName
                             C_PartyInfo.InviteUnit(fullName)
                         end
                     end
                 elseif cachedList and targetType == FRIENDS_BUTTON_TYPE_WOW then
                     if cachedList.name and cachedList.connected then
-                        C_PartyInfo.InviteUnit(CludesUI.BuildFullName(cachedList.name) or cachedList.name)
+                        C_PartyInfo.InviteUnit(CUI.BuildFullName(cachedList.name) or cachedList.name)
                     end
                 end
                 searchBox:SetText("")
@@ -2999,7 +3000,7 @@ local function SkinFriendsFrame()
     SkinRaidTab()
     do
         local BTN_H = 22
-        local btnFont = CludesUI.GetFontPath("friends") or STANDARD_TEXT_FONT
+        local btnFont = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
         local addBtn = _G.FriendsFrameAddFriendButton
         local messageBtn = _G.FriendsFrameSendMessageButton
         local fp8 = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
@@ -3199,7 +3200,7 @@ local function UpdateFriendsVisibility()
     local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
     if not profile or not profile.enabled then return end
     if not FriendsFrame or not FriendsFrame:IsShown() then return end
-    local vis = CludesUI.EvalVisibility(profile)
+    local vis = CUI.EvalVisibility(profile)
     if vis == "mouseover" then
         FriendsFrame:SetAlpha(0)
     else
@@ -3210,7 +3211,7 @@ end
 -- Apply All
 ApplyAll = function()
     StyleFriends()
-    if CludesUI.RequestVisibilityUpdate then C_Timer.After(0, CludesUI.RequestVisibilityUpdate) end
+    if CUI.RequestVisibilityUpdate then C_Timer.After(0, CUI.RequestVisibilityUpdate) end
 end
 
 -------------------------------------------------------------------------------
@@ -3224,7 +3225,7 @@ local function FriendsSettings()
 end
 
 function SKIN:OnInitialize()
-    SKIN.db = CludesUI.Lite.NewDB("CludesUIFriendsDB", defaultSet)
+    SKIN.db = CUI.Lite.NewDB("CludesUIFriendsDB", defaultSet)
 
     -- Global bridge for options <-> main communication
     _G._CUFR_DB = SKIN.db
@@ -3233,14 +3234,14 @@ function SKIN:OnInitialize()
 
     -- Auto-accept group invites from friends (and guildmates, from its cog):
     -- CludesUI_FriendsKit.lua, reading this profile's friends table.
-    _G._CUFR_SyncAutoAccept = function() CludesUI.FriendsKit.SyncAutoAccept(FriendsSettings) end
+    _G._CUFR_SyncAutoAccept = function() CUI.FriendsKit.SyncAutoAccept(FriendsSettings) end
     _G._CUFR_SyncAutoAccept()
 
     -- Visibility updater + mouseover target register only while the panel is shown;
     -- both bill this addon (dispatcher fan-out per event, mouseover scan every 0.15s)
     -- but are true no-ops closed: updater early-outs on IsShown, proxy has no rect.
     local visProxy
-    if CludesUI.RegisterMouseoverTarget then
+    if CUI.RegisterMouseoverTarget then
         visProxy = CreateFrame("Frame")
         visProxy.IsShown = function() return FriendsFrame and FriendsFrame:IsShown() end
         visProxy.IsMouseOver = function() return FriendsFrame and FriendsFrame:IsMouseOver() end
@@ -3252,21 +3253,21 @@ function SKIN:OnInitialize()
         local p2 = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
         if not (p2 and p2.enabled) then return false end
         -- Hover-gated sets only reveal while their conditions pass
-        return CludesUI.VisWantsMouseover(p2, "visibility")
+        return CUI.VisWantsMouseover(p2, "visibility")
     end
     local visRegistered = false
     local function RegisterVis()
         if visRegistered then return end
         visRegistered = true
-        CludesUI.RegisterVisibilityUpdater(UpdateFriendsVisibility)
-        if visProxy then CludesUI.RegisterMouseoverTarget(visProxy, VisWantsHover) end
+        CUI.RegisterVisibilityUpdater(UpdateFriendsVisibility)
+        if visProxy then CUI.RegisterMouseoverTarget(visProxy, VisWantsHover) end
     end
     local function UnregisterVis()
         if not visRegistered then return end
         visRegistered = false
-        CludesUI.UnregisterVisibilityUpdater(UpdateFriendsVisibility)
-        if visProxy and CludesUI.UnregisterMouseoverTarget then
-            CludesUI.UnregisterMouseoverTarget(visProxy)
+        CUI.UnregisterVisibilityUpdater(UpdateFriendsVisibility)
+        if visProxy and CUI.UnregisterMouseoverTarget then
+            CUI.UnregisterMouseoverTarget(visProxy)
         end
     end
     if FriendsFrame then
@@ -3283,8 +3284,8 @@ function SKIN:OnEnable()
     ApplyAll()
 
     -- Re-apply the skin when the accent color changes.
-    if CludesUI._accentElements then
-        CludesUI._accentElements[#CludesUI._accentElements + 1] = {
+    if CUI._accentElements then
+        CUI._accentElements[#CUI._accentElements + 1] = {
             type = "callback",
             fn = function()
                 if FriendsFrame and SKIN.db.profile.friends.enabled then StyleFriends() end
@@ -3349,7 +3350,7 @@ function mod.FR_Style()
 end
 
 -- Options-driven repaints of the decorated cards and rows
-_G._CUFR_RedecorateTiles = CludesUI.FriendsKit.RedecorateTiles
+_G._CUFR_RedecorateTiles = CUI.FriendsKit.RedecorateTiles
 
 -- The kit hooks the card mixin at PLAYER_LOGIN, before any card exists.
 do
@@ -3357,7 +3358,7 @@ do
     boot:RegisterEvent("PLAYER_LOGIN")
     boot:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_LOGIN")
-        CludesUI.FriendsKit.StartTiles({
+        CUI.FriendsKit.StartTiles({
             Settings = FriendsSettings,
             style = mod.FR_Style(),
             fontKey = "friends",

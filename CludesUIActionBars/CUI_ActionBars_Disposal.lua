@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Disposal.lua
 --
@@ -117,7 +118,7 @@ do
     local function KeepBlizzBroadcasters()
         if _keepBlizz == nil then
             local _, classTok = UnitClass("player")
-            _keepBlizz = CludesUI.IS_FOREVER == true and (classTok == "SHAMAN" or CludesUI.PadGamepadUI())
+            _keepBlizz = CUI.IS_FOREVER == true and (classTok == "SHAMAN" or CUI.PadGamepadUI())
         end
         return _keepBlizz
     end
@@ -143,23 +144,23 @@ do
     -- for login, where the interface style it decides on is settled, and from
     -- then on asks for a reload when the player switches to the Gamepad style
     -- with the broadcasters already quiet (its bars would stay unpainted).
-    if CludesUI.IS_FOREVER and not IsLoggedIn() then
+    if CUI.IS_FOREVER and not IsLoggedIn() then
         local loginFrame = mod.TakeShell()
         local styleAsked = false
         local function StyleCheck()
-            if styleAsked or not CludesUI.PadGamepadUI() then return end
+            if styleAsked or not CUI.PadGamepadUI() then return end
             styleAsked = true
             loginFrame:UnregisterAllEvents()
             -- The Gamepad style's D-pad cannot reach the popup, so chat says it too.
             -- A confirm, not RequestReload: an event cannot reload, its click can.
-            CludesUI.PrintError(
-                CludesUI.L("The interface style changed. Type /reload so the action bars match it.")
+            CUI.PrintError(
+                CUI.L("The interface style changed. Type /reload so the action bars match it.")
             )
-            CludesUI:ShowConfirmPopup({
-                title = CludesUI.L("Reload Required"),
-                message = CludesUI.L("The interface style changed. Reload so the action bars match it."),
-                confirmText = CludesUI.L("Reload Now"),
-                cancelText = CludesUI.L("Later"),
+            CUI:ShowConfirmPopup({
+                title = CUI.L("Reload Required"),
+                message = CUI.L("The interface style changed. Reload so the action bars match it."),
+                confirmText = CUI.L("Reload Now"),
+                cancelText = CUI.L("Later"),
                 reload = true,
             })
         end
@@ -219,7 +220,7 @@ do
         local wanted = (_vehNeed or _extraNeed) and "full" or "off"
         -- Folded into `want` so the mode comparison below sees the change and
         -- re-applies; PLAYER_ENTERING_WORLD and the REGEN edges re-run this.
-        if wanted == "full" and (CludesUI.IS_FOREVER or CooldownsSecret()) then wanted = "off" end
+        if wanted == "full" and (CUI.IS_FOREVER or CooldownsSecret()) then wanted = "off" end
         if wanted == _broadcasterMode then return end
         _broadcasterMode = wanted
         -- Drop to the quiet state first (the two seeding registrations survive
@@ -269,7 +270,7 @@ do
     barFrame:RegisterEvent("UPDATE_EXTRA_ACTIONBAR")
     barFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     -- The combat edges only re-check secrecy, and WoW Forever never re-registers.
-    if not CludesUI.IS_FOREVER then
+    if not CUI.IS_FOREVER then
         barFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
         barFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
     end
@@ -374,7 +375,7 @@ do
             -- MainActionBar stays in Blizzard's parent chain so pet battle
             -- restoration of MicroMenu works; all others safely reparent.
             if frameName == "MainActionBar" then
-                CludesUI.HideFrame(widget)
+                CUI.HideFrame(widget)
                 -- Keep MainActionBar invisible when Blizzard re-shows it on
                 -- spec/zone/vehicle/bonus-bar transitions WITHOUT touching its
                 -- protected shown state: Hide() from this insecure hook taints the

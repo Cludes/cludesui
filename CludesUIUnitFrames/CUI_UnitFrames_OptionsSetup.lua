@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_OptionsSetup.lua
 --
@@ -10,7 +11,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, mod = ...
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local frameList, ApplyFramePosition, GetFrameDimensions =
@@ -167,7 +168,7 @@ local function SetupOptionsPanel()
             if mod.UF_BossAuraBorderAboveEffects(prefs) then
                 border:SetFrameLevel(border:GetParent():GetFrameLevel() + 20)
             end
-            CludesUI.ApplySecretSafeBorderStyle(
+            CUI.ApplySecretSafeBorderStyle(
                 border,
                 border,
                 size,
@@ -183,7 +184,7 @@ local function SetupOptionsPanel()
                 "unitframes",
                 size,
                 nil,
-                CludesUI.BorderPx(prefs.auraBorderSizePx, size, texture)
+                CUI.BorderPx(prefs.auraBorderSizePx, size, texture)
             )
         end
         -- The border frame is reused across refreshes and its level is set on
@@ -294,7 +295,7 @@ local function SetupOptionsPanel()
         local stackPos = prefs.debuffStackTextPosition
         local cdTextColor = prefs.debuffCooldownTextColor or { r = 1, g = 1, b = 1 }
         local stackTextColor = prefs.debuffStackTextColor or { r = 1, g = 1, b = 1 }
-        local fontFile = (CludesUI.GetFontPath("unitFrames")) or "Fonts\\FRIZQT__.TTF"
+        local fontFile = (CUI.GetFontPath("unitFrames")) or "Fonts\\FRIZQT__.TTF"
         local nowTime = GetTime()
         local icons = holderFrame._icons
         for position, spellId in ipairs(FAKE_DEBUFF_SPELLS) do
@@ -363,7 +364,7 @@ local function SetupOptionsPanel()
                 iconFrame:GetFrameLevel() + (mod.UF_BossAuraBorderAboveEffects(prefs) and 25 or 4)
             )
             local durText = iconFrame._durText
-            CludesUI.ApplyIconTextFont(durText, fontFile, cdSize, "unitFrames")
+            CUI.ApplyIconTextFont(durText, fontFile, cdSize, "unitFrames")
             durText:ClearAllPoints()
             durText:SetPoint("CENTER", iconFrame, "CENTER", cdOffX, cdOffY)
             durText:SetTextColor(cdTextColor.r, cdTextColor.g, cdTextColor.b)
@@ -375,7 +376,7 @@ local function SetupOptionsPanel()
             end
             local stack = iconFrame._stack
             if stack then
-                CludesUI.ApplyIconTextFont(stack, fontFile, stackSize, "unitFrames")
+                CUI.ApplyIconTextFont(stack, fontFile, stackSize, "unitFrames")
                 mod.ApplyStackAnchor(stack, iconFrame, stackPos, stackOffX, stackOffY)
                 stack:SetTextColor(stackTextColor.r, stackTextColor.g, stackTextColor.b)
                 stack:SetText(FAKE_DEBUFF_STACKS[position])

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_TargetFocusBars.lua - Target and Focus cast bars.
 --
@@ -29,11 +30,11 @@ end
 -- Font family, outline and shadow are the module's ("mythicTimer"); only
 -- sizes are settings. The target text names a player, so the texts take a
 -- font family (Cyrillic, Korean and Chinese names draw).
-local function Font(text, size) CludesUI.ApplyModuleFontFamily(text, nil, size, "mythicTimer") end
+local function Font(text, size) CUI.ApplyModuleFontFamily(text, nil, size, "mythicTimer") end
 
 local WHITE = "Interface\\Buttons\\WHITE8x8"
-local KickSpell = CludesUI.GetActiveKickSpell
-local KickTint = CludesUI.ComputeCastBarTint
+local KickSpell = CUI.GetActiveKickSpell
+local KickTint = CUI.ComputeCastBarTint
 
 --------------------------------------------------------------------------------
 --  State: the two bars, made when first needed (barOf.target / barOf.focus)
@@ -225,8 +226,8 @@ local function NewBar(which)
         end
         return true
     end
-    if CludesUI.Tick and CludesUI.Tick.NewAnimTicker then
-        barFrame._timerTicker = CludesUI.Tick.NewAnimTicker(barFrame.frame, barFrame._timerTick, 0.1)
+    if CUI.Tick and CUI.Tick.NewAnimTicker then
+        barFrame._timerTicker = CUI.Tick.NewAnimTicker(barFrame.frame, barFrame._timerTick, 0.1)
     end
 
     barOf[which] = barFrame
@@ -249,9 +250,9 @@ local function Style(barFrame)
 
     local sb = barFrame.sb
     sb:SetStatusBarTexture(
-        CludesUI.ResolveTexturePath(mod.barTextures, conf.texture or "none", WHITE) or WHITE
+        CUI.ResolveTexturePath(mod.barTextures, conf.texture or "none", WHITE) or WHITE
     )
-    local PP = CludesUI.PP
+    local PP = CUI.PP
     if PP and PP.DisablePixelSnap then PP.DisablePixelSnap(sb:GetStatusBarTexture()) end
     -- A new fill texture: the parts riding its edge are pinned again.
     barFrame.overlay:ClearAllPoints()
@@ -763,7 +764,7 @@ local function Interrupted(barFrame, interrupter)
     if not ((issecretvalue and issecretvalue(protected)) or not protected) then return end
     barFrame._interrupted = true
     barFrame.flash:Show()
-    barFrame.name:SetText(CludesUI.L("Interrupted") or "Interrupted")
+    barFrame.name:SetText(CUI.L("Interrupted") or "Interrupted")
     barFrame.target:SetText("")
     barFrame.target:Hide()
     barFrame.timer:SetText("")
@@ -1007,7 +1008,7 @@ end
 --  Unlock mode: one element per bar; hidden while that bar is off.
 --------------------------------------------------------------------------------
 local function UnlockElement(which, label, order)
-    return CludesUI.MakeUnlockElement({
+    return CUI.MakeUnlockElement({
         key = which == "target" and "EMT_TargetCastBar" or "EMT_FocusCastBar",
         label = label,
         group = "Mythic+",
@@ -1047,7 +1048,7 @@ local function UnlockElement(which, label, order)
             local conf = BarSettings(which)
             if conf and x and y then
                 conf.pos = { centerX = x, centerY = y }
-                if not CludesUI._unlockActive then Place(barOf[which]) end
+                if not CUI._unlockActive then Place(barOf[which]) end
             end
         end,
         loadPos = function()
@@ -1067,22 +1068,22 @@ local function UnlockElement(which, label, order)
 end
 
 local function RegisterUnlock()
-    if not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
-    CludesUI:RegisterUnlockElements({
+    if not (CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then return end
+    CUI:RegisterUnlockElements({
         UnlockElement("target", "Target Cast Bar", 522),
         UnlockElement("focus", "Focus Cast Bar", 523),
     }, "CludesUIMythicTimer")
-    if not CludesUI.RegisterUnlockModeListener then return end
+    if not CUI.RegisterUnlockModeListener then return end
     local function Listener(which, key)
         return function(active)
             local conf = BarSettings(which)
             if not (conf and conf.enabled == true) then return end
             mod.TFB_SetPreview(which, active == true)
-            if not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)) then Place(barOf[which]) end
+            if not (CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(key)) then Place(barOf[which]) end
         end
     end
-    CludesUI:RegisterUnlockModeListener("EMT_TargetCastBar", Listener("target", "EMT_TargetCastBar"))
-    CludesUI:RegisterUnlockModeListener("EMT_FocusCastBar", Listener("focus", "EMT_FocusCastBar"))
+    CUI:RegisterUnlockModeListener("EMT_TargetCastBar", Listener("target", "EMT_TargetCastBar"))
+    CUI:RegisterUnlockModeListener("EMT_FocusCastBar", Listener("focus", "EMT_FocusCastBar"))
 end
 
 -- Called from the module's OnEnable (before the timer's own enable check).

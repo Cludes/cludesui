@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MacroManager.lua  (WoW Forever only)
 --  The Macro Manager's switch and /cuimacros. The editor is the "Macros" page
@@ -20,12 +21,12 @@ local function Apply()
     SLASH_CUIMACROS1 = "/cuimacros"
     SlashCmdList.CUIMACROS = function()
         if F.Enabled() and not InCombatLockdown() then
-            CludesUI:NavigateToElementSettings("CludesUIForeverEssentials", "Macros")
+            CUI:NavigateToElementSettings("CludesUIForeverEssentials", "Macros")
         end
     end
 end
 
 -- Options-page entry points.
-CludesUI._MacroManager = { Enabled = F.Enabled, Cfg = F.Cfg, Apply = Apply }
+CUI._MacroManager = { Enabled = F.Enabled, Cfg = F.Cfg, Apply = Apply }
 
 F.Start(Apply)

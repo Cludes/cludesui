@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Layout.lua
 --
@@ -35,7 +36,7 @@ Inner.pagingFrameSetters[#Inner.pagingFrameSetters + 1] = function(val) _pagingF
 -- round-trip as the border system), eliminating sub-pixel drift between siblings.
 local function SnapForScale(posX, barScale)
     if posX == 0 then return 0 end
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix then return Pix.Scale(posX) end
     return math.floor(posX + 0.5)
 end
@@ -127,7 +128,7 @@ local function ComputeBarLayout(key)
         btnH = btnH + SHAPE_BTN_EXPAND
     end
     if shape == "cropped" then btnH = btnH * 0.80 end
-    local PPc = CludesUI and CludesUI.PP
+    local PPc = CUI and CUI.PP
     local onePxC = PPc and PPc.mult or 1
     -- Lock btnW/btnH/padding to exact physical pixel multiples so stepW/stepH
     -- and the frame-size math below share the pixel grid of the width-match
@@ -215,8 +216,8 @@ end
 
 local function HideSlotArt(button)
     if not button.SlotArt then return end
-    if CludesUI and CludesUI._hiddenParent then
-        button.SlotArt:SetParent(CludesUI._hiddenParent)
+    if CUI and CUI._hiddenParent then
+        button.SlotArt:SetParent(CUI._hiddenParent)
     else
         button.SlotArt:Hide()
         button.SlotArt:SetAlpha(0)
@@ -237,7 +238,7 @@ end
 -------------------------------------------------------------------------------
 do
     local groups, groupOf = {}, {}
-    mod.PartySpin_Refresh = CludesUI.PartySpin_Create({
+    mod.PartySpin_Refresh = CUI.PartySpin_Create({
         target = "actionBars",
         collect = function()
             wipe(groups)
@@ -296,7 +297,7 @@ local function LayoutBar(key)
         local profile = ABAR.db.profile
         local place = profile.barPositions and profile.barPositions[key]
         local base0 = barBaseSize[key]
-        local PPm = CludesUI and CludesUI.PP
+        local PPm = CUI and CUI.PP
         local growDirS = ABAR:ResolveGrowDirectionForLayout(key, cfg)
         local isVertS = (cfg.orientation == "vertical")
         local rowsUpS = not isVertS and (growDirS == "UP" or growDirS == "CENTER")
@@ -357,7 +358,7 @@ local function LayoutBar(key)
             tostring(cnS),
             tostring(_gridState.shown),
             ShouldQuickKeybindSurfaceBar(cfg) and "1" or "0",
-            (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)) and "1" or "0",
+            (CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(key)) and "1" or "0",
             tostring(fbS),
             fillS,
         }, "|")
@@ -405,7 +406,7 @@ local function LayoutBar(key)
     if shape == "cropped" then btnH = btnH * 0.80 end
 
     -- Width/height match: distribute extra physical pixels across buttons
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local onePx = Pix and Pix.mult or 1
     -- Lock btnW/btnH/padding to exact physical pixel multiples so stepW and the
     -- width-match +1px extras share one pixel grid; prevents sub-pixel drift
@@ -515,7 +516,7 @@ local function LayoutBar(key)
                         cfd.classicW, cfd.classicH = nativeW, nativeH
                         mod.AB_PaintClassicButton(button, nativeW, nativeH)
                     end
-                elseif CludesUI.IS_FOREVER and not (details.isStance or details.isPetBar) then
+                elseif CUI.IS_FOREVER and not (details.isStance or details.isPetBar) then
                     mod.AB_StockNormal(button)
                 end
             else
@@ -603,12 +604,12 @@ local function LayoutBar(key)
     -- Sync frame anchor with barPositions before SetSize so the frame grows
     -- from the correct edge (or center). Skip anchored bars: their position
     -- is owned by the anchor chain, not barPositions.
-    local isAnchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)
+    local isAnchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(key)
     if not isAnchored then
         local curPt = ({ widget:GetPoint(1) })[1]
         local place = ABAR.db.profile.barPositions and ABAR.db.profile.barPositions[key]
         if place and place.point and place.relPoint == "CENTER" and curPt ~= place.point then
-            local PPa = CludesUI and CludesUI.PP
+            local PPa = CUI and CUI.PP
             local px, py = place.x or 0, place.y or 0
             if place.point == "CENTER" and curPt and curPt ~= "CENTER" then
                 -- Edge -> CENTER: read the live center (stored CENTER coords may
@@ -647,9 +648,9 @@ local function LayoutBar(key)
             preCX, preCY = c1 * ratio, c2 * ratio
         end
     end
-    CludesUI._layoutBarResizing = key
+    CUI._layoutBarResizing = key
     widget:SetSize(max(frameW, 1), max(frameH, 1))
-    CludesUI._layoutBarResizing = nil
+    CUI._layoutBarResizing = nil
     -- Anchor offset upkeep: a growth-direction resize shifts the center by
     -- delta/2 while the fixed edge stays put, so the center-based anchor
     -- offset must follow. _eabPrevLayout* separates real resizes from init/reload sizing.
@@ -669,8 +670,8 @@ local function LayoutBar(key)
         -- a timer), so only the position check is ordering-proof.
         if
             (prevW or prevH)
-            and not CludesUI._unlockActive
-            and not CludesUI._abAnchorSuppressed
+            and not CUI._unlockActive
+            and not CUI._abAnchorSuppressed
             and not _isApplyingAll
         then
             local cfg = ABAR.db.profile.bars[key]
@@ -682,11 +683,11 @@ local function LayoutBar(key)
                     local ai = adb and adb[key]
                     if ai and ai.mode ~= "POINT" then
                         local side = ai.side
-                        local PPo = CludesUI and CludesUI.PP
+                        local PPo = CUI and CUI.PP
                         local uiES = PPo and UIParent:GetEffectiveScale()
                         local tCX, tCY
-                        if CludesUI.GetAnchorTargetCenterUI then
-                            tCX, tCY = CludesUI.GetAnchorTargetCenterUI(key)
+                        if CUI.GetAnchorTargetCenterUI then
+                            tCX, tCY = CUI.GetAnchorTargetCenterUI(key)
                         end
                         local TOL = 2 -- UI px; pixel-snap noise stays well under 1
                         -- Width/height-matched bars: the match owns that axis, so
@@ -741,7 +742,7 @@ local function LayoutBar(key)
         end
     end
 
-    if CludesUI.IsPointAnchored(key) then CludesUI.ReapplyOwnAnchor(key) end
+    if CUI.IsPointAnchored(key) then CUI.ReapplyOwnAnchor(key) end
 
     -- flyoutDirection per button from orientation + live screen position: split
     -- each axis into thirds and open away from the nearest screen edge.
@@ -788,13 +789,13 @@ local function LayoutBar(key)
     -- anchor chains. Anchored bars with a growth direction skip it: the
     -- deferred ApplyAnchorPosition it queues would override edge
     -- positioning, and OnSizeChanged already propagates to dependents.
-    local skipNotify = CludesUI.IsUnlockAnchored
-        and CludesUI.IsUnlockAnchored(key)
+    local skipNotify = CUI.IsUnlockAnchored
+        and CUI.IsUnlockAnchored(key)
         and growDir ~= "CENTER"
         and growDir ~= "UP"
     if not skipNotify then
-        if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized(key) end
-        if CludesUI.PropagateAnchorChain then CludesUI.PropagateAnchorChain(key) end
+        if CUI.NotifyElementResized then CUI.NotifyElementResized(key) end
+        if CUI.PropagateAnchorChain then CUI.PropagateAnchorChain(key) end
     end
 
     -- Position paging arrows after MainBar layout

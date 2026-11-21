@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookReanchor.lua
 --
@@ -1741,17 +1742,17 @@ local function CollectAndReanchor()
                                             if not bd2 or not bd2.showTooltip then return end
                                             -- Honor the global "Show Tooltips" mode (Blizzard Skin).
                                             if
-                                                CludesUI
-                                                and CludesUI._tooltipSuppressedByMode
-                                                and CludesUI._tooltipSuppressedByMode(GameTooltip)
+                                                CUI
+                                                and CUI._tooltipSuppressedByMode
+                                                and CUI._tooltipSuppressedByMode(GameTooltip)
                                             then
                                                 return
                                             end
                                             if spid and spid > 0 then
                                                 GameTooltip_SetDefaultAnchor(GameTooltip, self)
                                                 GameTooltip:SetSpellByID(spid)
-                                                if CludesUI and CludesUI._repointTooltipAtCursor then
-                                                    CludesUI._repointTooltipAtCursor(GameTooltip)
+                                                if CUI and CUI._repointTooltipAtCursor then
+                                                    CUI._repointTooltipAtCursor(GameTooltip)
                                                 end
                                                 -- Explicit Show(): needed when "Anchor to Cursor"
                                                 -- re-owns the tooltip to ANCHOR_NONE (see trinket).
@@ -2658,19 +2659,19 @@ local function CollectAndReanchor()
         -- CDM is done populating icons; lift the rebuild gate so width
         -- matching can propagate against settled bar widths. Must happen
         -- BEFORE ApplyAllWidthHeightMatches so it isn't gated off.
-        if CludesUI then CludesUI._cdmRebuilding = nil end
+        if CUI then CUI._cdmRebuilding = nil end
         -- Defer position/width corrections to next frame. These are purely visual
         -- positioning operations (width match, saved positions, anchor reapply) that
         -- cost ~25ms synchronously but are imperceptible if they settle 1 frame late.
         C_Timer.After(0, function()
-            if CludesUI.ApplyAllWidthHeightMatches then CludesUI.ApplyAllWidthHeightMatches() end
-            if CludesUI._applySavedPositions then CludesUI._applySavedPositions() end
-            if CludesUI.ReapplyAllUnlockAnchorsForced then CludesUI.ReapplyAllUnlockAnchorsForced() end
+            if CUI.ApplyAllWidthHeightMatches then CUI.ApplyAllWidthHeightMatches() end
+            if CUI._applySavedPositions then CUI._applySavedPositions() end
+            if CUI.ReapplyAllUnlockAnchorsForced then CUI.ReapplyAllUnlockAnchorsForced() end
             -- Arm the settle debounce so any further late resizes (the refresh
             -- ladder / trinket retries) get one more forced re-apply once they
             -- quiesce -- guarantees a first debounce window even if the initial
             -- build's resizes fired before the OnSizeChanged hook was installed.
-            if CludesUI.ScheduleSettleReapply then CludesUI.ScheduleSettleReapply() end
+            if CUI.ScheduleSettleReapply then CUI.ScheduleSettleReapply() end
             -- A repopulate queued through CludesUI.RequestCDMRepopulate: this
             -- is the settled point for the live spec, and outside the reanchor,
             -- which the repopulate's own rebuild runs again.
@@ -2679,7 +2680,7 @@ local function CollectAndReanchor()
     else
         -- Routine reanchor (icon churn, mob death, etc.) -- still clear
         -- the gate so subsequent layout calls don't get stuck.
-        if CludesUI then CludesUI._cdmRebuilding = nil end
+        if CUI then CUI._cdmRebuilding = nil end
     end
 
     -- Refresh the options-panel preview (if open) so the content header reflects the
@@ -2687,8 +2688,8 @@ local function CollectAndReanchor()
     -- because it builds before the first queued CollectAndReanchor fires. The CDM Bars
     -- preview (its own slot) only while it shows: a page left behind keeps its preview,
     -- hidden, and brings it up to date as it shows again (onPageCacheRestore).
-    if CludesUI and CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
-        local pv = CludesUI._cdmHeaderPreview
+    if CUI and CUI._mainFrame and CUI._mainFrame:IsShown() then
+        local pv = CUI._cdmHeaderPreview
         if pv and pv.Update and pv:IsVisible() then pv:Update() end
     end
     -- Frames we could not identify this pass were skipped by the Phase 4 sweep

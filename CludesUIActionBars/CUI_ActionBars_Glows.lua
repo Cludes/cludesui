@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Glows.lua
 --
@@ -16,7 +17,7 @@ local wipe = wipe
 local InCombatLockdown = InCombatLockdown
 local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local EFD = mod.EFD
 
 local ABAR, EAB_VTABLE, barButtons = mod.EAB, mod.EAB_VTABLE, mod.barButtons
@@ -34,7 +35,7 @@ local GetButtonActionSlot, MaskFrameTextures = Inner.GetButtonActionSlot, Inner.
 
 -- Loop glow types: the shared glow styles in their shared order (saved procGlowType
 -- values are shared indices).
-local LOOP_GLOW_TYPES = CludesUI.Glows.MakeView({ 1, 2, 3, 4, 5, 6, 7 }).list
+local LOOP_GLOW_TYPES = CUI.Glows.MakeView({ 1, 2, 3, 4, 5, 6, 7 }).list
 mod.LOOP_GLOW_TYPES = LOOP_GLOW_TYPES
 
 -- Proc start types: the initial burst animation
@@ -48,7 +49,7 @@ mod.PROC_START_TYPES = PROC_START_TYPES
 -------------------------------------------------------------------------------
 --  Glow Engines provided by shared CludesUI_Glows.lua
 -------------------------------------------------------------------------------
-local _G_Glows = CludesUI.Glows
+local _G_Glows = CUI.Glows
 mod.Glows = _G_Glows
 
 local function StopAllProceduralGlows(glowHolder) _G_Glows.StopAllGlows(glowHolder) end

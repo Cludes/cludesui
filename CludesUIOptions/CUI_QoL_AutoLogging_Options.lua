@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_QoL_AutoLogging_Options.lua - the lower part of Utilities > QoL.
 --
@@ -13,7 +14,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  only matter while a feature is on are left out while it is off (a
 --  DependentSetValue on the switch rebuilds the page when it flips).
 -------------------------------------------------------------------------------
-if not CludesUI._ModuleNS["CludesUIQoL"] then
+if not CUI._ModuleNS["CludesUIQoL"] then
     return -- the module is disabled: no page
 end
 
@@ -46,7 +47,7 @@ local TRIGGERS = {
 -- its default) and every dungeon on Dungeons (a key only that client has,
 -- off until turned on); retail's difficulties, Mythic+, arena, scenarios and
 -- rated battlegrounds have nothing to match there.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     TRIGGERS = {
         { key = "logNormal", label = "Raids" },
         { key = "logDungeon", label = "Dungeons" },
@@ -79,7 +80,7 @@ local function Call(name)
 end
 
 local function AskReload(what)
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Reload Required",
         message = "Changing the " .. what .. " requires a reload to update slash command registration.",
         confirmText = "Reload",
@@ -128,9 +129,9 @@ local function KeysSection(W, host, y)
         tooltip = "Shows a popup with party and guild keystones when typing /keys.",
         getValue = On,
         -- Window Scale below shows only while the popup is on.
-        setValue = CludesUI.DependentSetValue(On, function(val)
+        setValue = CUI.DependentSetValue(On, function(val)
             Keys().enabled = val
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
             AskReload("/keys popup")
         end),
     }, {
@@ -177,9 +178,9 @@ local function ReminderSection(W, host, y)
             tooltip = "When you join a Group Finder group for a dungeon that has a teleport, shows a small movable popup with the dungeon name and a one-click teleport button. It hides when you enter the dungeon, leave the group, or enter combat.",
             getValue = On,
             -- The 'Disable Feature' row below shows only while it is on.
-            setValue = CludesUI.DependentSetValue(On, function(val)
+            setValue = CUI.DependentSetValue(On, function(val)
                 Teleport().enabled = val
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
                 -- Live both ways: on builds the popup, off hides it and stops listening.
                 Call("_CUI_ApplyTeleportPrompt")
             end),
@@ -221,14 +222,14 @@ local function WaySection(W, host, y)
         getValue = function() return Way().enabled == true end,
         setValue = function(val)
             SetWay("enabled", val or nil)
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
             AskReload("/way command")
         end,
-    }, CludesUI.BlankRowCfg())
+    }, CUI.BlankRowCfg())
     y = y - h
     -- Arrival at hand-placed pins (off by default). The runtime listens for
     -- arrivals only while this or a /way list needs them, so it re-syncs.
-    CludesUI.BuildInlineCog(row._leftRegion, {
+    CUI.BuildInlineCog(row._leftRegion, {
         title = "/way Command",
         disabled = function() return Way().enabled ~= true end,
         disabledTooltip = "Enable /way Command",
@@ -240,7 +241,7 @@ local function WaySection(W, host, y)
                 get = function() return Way().manualArrival == true end,
                 set = function(val)
                     SetWay("manualArrival", val or nil)
-                    local sync = CludesUI._ModuleNS["CludesUIQoL"].WaypointArrivalSync
+                    local sync = CUI._ModuleNS["CludesUIQoL"].WaypointArrivalSync
                     if sync then sync() end
                 end,
             },
@@ -259,7 +260,7 @@ local function TriggersChecklist(region, Pix)
         if value == nil then return LOG_DEFAULTS[key] end
         return value
     end
-    local list, refresh = CludesUI.BuildVisOptsCBDropdown(
+    local list, refresh = CUI.BuildVisOptsCBDropdown(
         region,
         210,
         region:GetFrameLevel() + 2,
@@ -273,7 +274,7 @@ local function TriggersChecklist(region, Pix)
     Pix.Point(list, "RIGHT", region, "RIGHT", -20, 0)
     region._control = list
     region._lastInline = nil
-    CludesUI.RegisterWidgetRefresh(refresh)
+    CUI.RegisterWidgetRefresh(refresh)
     local function Grey()
         local off = Logging().enabled ~= true
         list:SetAlpha(off and 0.3 or 1)
@@ -281,7 +282,7 @@ local function TriggersChecklist(region, Pix)
         if region._label then region._label:SetAlpha(off and 0.3 or 1) end
     end
     Grey()
-    CludesUI.RegisterWidgetRefresh(Grey)
+    CUI.RegisterWidgetRefresh(Grey)
 end
 
 -- AUTO COMBAT LOGGING
@@ -294,10 +295,10 @@ local function LoggingSection(W, host, y)
         tooltip = "Automatically starts and stops combat logging when entering or leaving a loggable instance.",
         getValue = On,
         -- The Warcraft Recorder row below shows only while logging is on.
-        setValue = CludesUI.DependentSetValue(On, function(val)
+        setValue = CUI.DependentSetValue(On, function(val)
             Logging().enabled = val or nil
             Call("_CUI_AutoLogging_Check")
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end),
     }, {
         type = "dropdown",
@@ -308,7 +309,7 @@ local function LoggingSection(W, host, y)
         setValue = function() end,
     })
     y = y - h
-    TriggersChecklist(row._rightRegion, CludesUI.PanelPP)
+    TriggersChecklist(row._rightRegion, CUI.PanelPP)
     if On() then
         local _
         _, h = W:DualRow(host, y, {
@@ -337,15 +338,15 @@ end
 local function External(name, host, y, W)
     local build = _G[name]
     if not build then return y end
-    return y - build(host, y, W, CludesUI.PP)
+    return y - build(host, y, W, CUI.PP)
 end
 
 local function Build(_, host, yOffset)
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     host._showRowDivider = true
     local y = yOffset
     -- No keystones or dungeon teleports on WoW Forever.
-    if not CludesUI.IS_FOREVER then
+    if not CUI.IS_FOREVER then
         y = KeysSection(W, host, y)
         y = ReminderSection(W, host, y)
     end
@@ -353,7 +354,7 @@ local function Build(_, host, yOffset)
     y = LoggingSection(W, host, y)
     y = External("_CUI_BuildAlertsSection", host, y, W)
     -- No shared battle res charges or raid-wide lust on WoW Forever.
-    if not CludesUI.IS_FOREVER then
+    if not CUI.IS_FOREVER then
         y = External("_CUI_BuildBattleResSection", host, y, W)
         y = External("_CUI_BuildBloodlustSection", host, y, W)
     end

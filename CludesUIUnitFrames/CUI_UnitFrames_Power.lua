@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Power.lua
 --
@@ -11,10 +12,10 @@ local _, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local GetSettingsForUnit, UnitToSettingsKey, SetFSFont =
@@ -68,13 +69,13 @@ function mod.UpdatePowerSeam(power, cfg, stock, preview)
             and (sizeOverride or b.borderSize or 1) > 0
             and power:IsShown()
         then
-            filePath = CludesUI.GetBorderCompanion(b.borderTexture or "solid", "sepH")
+            filePath = CUI.GetBorderCompanion(b.borderTexture or "solid", "sepH")
         end
     end
     if not filePath then
         if seam and seam:IsShown() then
             seam:Hide()
-            CludesUI.RegisterPxReapply(seam, nil)
+            CUI.RegisterPxReapply(seam, nil)
         end
         return false
     end
@@ -110,7 +111,7 @@ function mod.UpdatePowerSeam(power, cfg, stock, preview)
     )
     local key, size = b.borderTexture, sizeOverride or b.borderSize or 1
     local px
-    if not sizeOverride then px = CludesUI.BorderPx(b.borderSizePx, size, key) end
+    if not sizeOverride then px = CUI.BorderPx(b.borderSizePx, size, key) end
     seam._key, seam._step, seam._px, seam._path = key, size, px, filePath
     seam._above = (cfg.powerPosition == "above")
     local color = b.borderColor
@@ -122,7 +123,7 @@ function mod.UpdatePowerSeam(power, cfg, stock, preview)
     )
     seam:Show()
     mod.UF_LayoutPowerSeam(seam)
-    CludesUI.RegisterPxReapply(seam, (px and not preview) and mod.UF_LayoutPowerSeam or nil)
+    CUI.RegisterPxReapply(seam, (px and not preview) and mod.UF_LayoutPowerSeam or nil)
     return true
 end
 
@@ -134,7 +135,7 @@ function mod.UF_LayoutPowerSeam(seam)
     local power, t = seam._power, seam._tex
     local es = power:GetEffectiveScale()
     if not (es and es > 0.01) then es = UIParent:GetEffectiveScale() end
-    local thick = CludesUI.BorderCompanionThickness(seam._key, seam._step, seam._px, es)
+    local thick = CUI.BorderCompanionThickness(seam._key, seam._step, seam._px, es)
     if not thick or thick <= 0 then
         t:Hide()
         return
@@ -181,12 +182,12 @@ function mod.UpdatePortraitSeparator(widget, portrait, cfg, side, attached, stoc
     local size = sizeOverride or b.borderSize or 1
     local filePath
     if cfg.portraitSeparator and attached and portrait and portrait:IsShown() and not stock and size > 0 then
-        filePath = CludesUI.GetBorderCompanion(b.borderTexture or "solid", "sepV")
+        filePath = CUI.GetBorderCompanion(b.borderTexture or "solid", "sepV")
     end
     if not filePath then
         if seam then
             seam:Hide()
-            CludesUI.RegisterPxReapply(seam, nil)
+            CUI.RegisterPxReapply(seam, nil)
             if powerSeam and powerSeam:IsShown() then mod.UF_LayoutPowerSeam(powerSeam) end
         end
         return
@@ -205,7 +206,7 @@ function mod.UpdatePortraitSeparator(widget, portrait, cfg, side, attached, stoc
     )
     seam._key, seam._step = b.borderTexture, size
     seam._px = nil
-    if not sizeOverride then seam._px = CludesUI.BorderPx(b.borderSizePx, size, seam._key) end
+    if not sizeOverride then seam._px = CUI.BorderPx(b.borderSizePx, size, seam._key) end
     seam._right = side == "right"
     local color = b.borderColor
     seam._tex:SetVertexColor(
@@ -217,14 +218,14 @@ function mod.UpdatePortraitSeparator(widget, portrait, cfg, side, attached, stoc
     mod.UF_LayoutPortraitSeparator(seam)
     seam:Show()
     if powerSeam and powerSeam:IsShown() then mod.UF_LayoutPowerSeam(powerSeam) end
-    CludesUI.RegisterPxReapply(seam, (seam._px and not preview) and mod.UF_LayoutPortraitSeparator or nil)
+    CUI.RegisterPxReapply(seam, (seam._px and not preview) and mod.UF_LayoutPortraitSeparator or nil)
 end
 
 -- Lays the divider from the values UpdatePortraitSeparator stamped (also the
 -- UI-scale re-layout): the shared placement on the portrait's inner edge,
 -- the art's lead over the portrait, as on cast icons.
 function mod.UF_LayoutPortraitSeparator(seam)
-    CludesUI.PlaceBorderDividerV(
+    CUI.PlaceBorderDividerV(
         seam._tex,
         seam,
         seam._right,
@@ -266,8 +267,8 @@ function mod.UpdatePowerBorder(power, prefs)
     -- Exact size (nil = the legacy path), resolved against the style actually
     -- painted: an attached bar is forced Solid, so a value paired with a textured
     -- style stands down there.
-    local px = CludesUI.BorderPx(prefs.powerBorderSizePx, size, style)
-    CludesUI.ApplyBorderStyle(
+    local px = CUI.BorderPx(prefs.powerBorderSizePx, size, style)
+    CUI.ApplyBorderStyle(
         border,
         size,
         color.r,
@@ -329,7 +330,7 @@ end
 -------------------------------------------------------------------------------
 -- Custom color, else Blizzard's mana prediction color: the engine's rule, read
 -- here by the options row and its preview (both built only with the engine).
-function mod.UF_PowerCostColor(s) return CludesUI.SpellCostPrediction.Color(s) end
+function mod.UF_PowerCostColor(s) return CUI.SpellCostPrediction.Color(s) end
 
 -- True while the player power bar draws: a position other than None (under a
 -- stock style: Hide Power Bar off), and a height above 0 in the CUI look (a
@@ -345,7 +346,7 @@ end
 -- Power Type override first), the color at Power Bar Opacity, and the
 -- Blizzard Style mask while the stock art masks the bar. The segment sits one
 -- level above the bar (no inBar); the power border draws at power + 5.
-if CludesUI.SpellCostPrediction then
+if CUI.SpellCostPrediction then
     mod.UF_POWER_COST_HOST = {
         PowerType = function(power) return power.displayType or UnitPowerType("player") end,
         -- Power Bar Opacity, normalized as ApplyPowerBarAlpha does: the fill's
@@ -362,7 +363,7 @@ if CludesUI.SpellCostPrediction then
 end
 
 function mod.UF_SetupPowerCost(power, prefs)
-    local SCP = CludesUI.SpellCostPrediction
+    local SCP = CUI.SpellCostPrediction
     if not SCP then return end
     if power and prefs and prefs.powerCostPrediction == true and mod.UF_PowerBarDraws(prefs) then
         SCP.Attach("uf", power, mod.UF_POWER_COST_HOST)
@@ -494,7 +495,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
 
     -- Same bar texture as health; WHITE8X8 when none is configured.
     local texKey = (prefs and prefs.healthBarTexture) or saved.profile.healthBarTexture or "none"
-    local texPath = CludesUI.ResolveTexturePath(healthBarTextures, texKey, "Interface\\Buttons\\WHITE8X8")
+    local texPath = CUI.ResolveTexturePath(healthBarTextures, texKey, "Interface\\Buttons\\WHITE8X8")
     power:SetStatusBarTexture(texPath)
     power:GetStatusBarTexture():SetHorizTile(false)
     do
@@ -550,7 +551,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
                 -- Secret-safe: player via the clean token, non-player via the clean integer
                 -- power type, so the custom color applies on EVERY unit without depending
                 -- on oUF's colors.power sync. Unmapped power types return nil (keep oUF's).
-                bR, bG, bB = CludesUI.ResolveUnitPowerColor(unitToken)
+                bR, bG, bB = CUI.ResolveUnitPowerColor(unitToken)
                 haveBase = bR ~= nil
             end
         end
@@ -590,9 +591,9 @@ local function CreatePowerBar(widget, unitToken, prefs)
         -- target/power-type changes (mirrors the fill). Opacity stays on
         -- customPowerBgAlpha; gated off = zero cost (custom/dark bg stands unchanged).
         if s2.powerBgPowerColored and self.bg then
-            local pr, pg, pb = CludesUI.ResolveUnitPowerColor(unitToken)
+            local pr, pg, pb = CUI.ResolveUnitPowerColor(unitToken)
             if pr then
-                local frame = CludesUI.GetPowerBgDarkenFactor()
+                local frame = CUI.GetPowerBgDarkenFactor()
                 self.bg:SetColorTexture(pr * frame, pg * frame, pb * frame, 1)
             end
         end
@@ -636,7 +637,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
         if cfg.powerPercentTextPowerColor then
             -- Secret-safe per-unit color: player keeps the exact token color,
             -- non-player recovers it from the clean integer power type.
-            local red, green, blue = CludesUI.ResolveUnitPowerColor(unitToken)
+            local red, green, blue = CUI.ResolveUnitPowerColor(unitToken)
             if red then
                 ppFS:SetTextColor(red, green, blue)
             else
@@ -773,9 +774,9 @@ local function CreatePowerBar(widget, unitToken, prefs)
             if cfg.powerBgPowerColored and self.bg then
                 -- Restore this unit's power color (mirrors the fill); the next
                 -- PostUpdateColor keeps it tracking thereafter.
-                local pr, pg, pb = CludesUI.ResolveUnitPowerColor(unit)
+                local pr, pg, pb = CUI.ResolveUnitPowerColor(unit)
                 if pr then
-                    local frame = CludesUI.GetPowerBgDarkenFactor()
+                    local frame = CUI.GetPowerBgDarkenFactor()
                     self.bg:SetColorTexture(pr * frame, pg * frame, pb * frame, 1)
                 else
                     self.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
@@ -802,7 +803,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
         if PLAYER_POWER_DEFAULT[class] or PLAYER_POWER_ALT[class] then
             power.displayAltPower = true
             power.GetDisplayPower = function(self, unit)
-                local resolved = CludesUI.GetPlayerPowerOverride()
+                local resolved = CUI.GetPlayerPowerOverride()
                 -- Publish for tags so the text matches the bar.
                 _G._CUI_ResolvedPowerType[unit or "player"] = resolved
                 return resolved

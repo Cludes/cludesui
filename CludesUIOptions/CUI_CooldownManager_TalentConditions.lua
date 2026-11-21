@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CooldownManager_TalentConditions.lua
 --  Talent Conditions for the CDM per-icon menu (cooldown/utility bars): the
@@ -11,31 +12,31 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  what the picker shows (the active config's committed build) is exactly
 --  what decides the icon.
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
+local mod = CUI._ModuleNS["CludesUICooldownManager"]
 if not mod then return end
 
 -- The options page pool (CludesUI_FramePool.lua): the corner mark on a
 -- preview slot (a reused header's slot is a pool host) is handed out again
 -- reset to fresh.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
-local Pix = CludesUI.PP
-local NOT_TAKEN = CludesUI.TALENT_COND_NOT_TAKEN
+local Pix = CUI.PP
+local NOT_TAKEN = CUI.TALENT_COND_NOT_TAKEN
 
 -- The picker's texts, in the icon's words (made on the first open).
 local iconTexts
 local function IconTexts()
     if not iconTexts then
         iconTexts = {
-            hint = CludesUI.L(
+            hint = CUI.L(
                 "Click a talent to require it: Taken, then Not Taken, then cleared. Every condition must hold for the icon to show."
             ),
-            none = CludesUI.L("No conditions: the icon always shows."),
+            none = CUI.L("No conditions: the icon always shows."),
             met = function(num)
-                return CludesUI.Lf("%1$d condition(s), met by your current talents: the icon shows.", num)
+                return CUI.Lf("%1$d condition(s), met by your current talents: the icon shows.", num)
             end,
             notMet = function(num)
-                return CludesUI.Lf(
+                return CUI.Lf(
                     "%1$d condition(s), not met by your current talents: the icon is hidden.",
                     num
                 )
@@ -95,7 +96,7 @@ function mod.PaintTalentCondMark(slot, status)
     if status == "off" then
         mark._tex:SetColorTexture(NOT_TAKEN[1], NOT_TAKEN[2], NOT_TAKEN[3], 1)
     else
-        local accR, accG, accB = CludesUI.GetAccentColor()
+        local accR, accG, accB = CUI.GetAccentColor()
         mark._tex:SetColorTexture(accR, accG, accB, 1)
     end
     mark:Show()
@@ -106,11 +107,11 @@ end
 --  conds: the spell's saved list (read only here); confirm(newList or nil).
 -------------------------------------------------------------------------------
 function mod.ShowCDMTalentConditionsPopup(spellId, conds, confirm)
-    local spellName = mod.IsEmptySlotMarker(spellId) and CludesUI.L("Empty Slot")
+    local spellName = mod.IsEmptySlotMarker(spellId) and CUI.L("Empty Slot")
         or C_Spell.GetSpellName(spellId)
         or tostring(spellId)
-    CludesUI.ShowTalentConditionsPopup({
-        title = CludesUI.Lf("Talent Conditions: %1$s", spellName),
+    CUI.ShowTalentConditionsPopup({
+        title = CUI.Lf("Talent Conditions: %1$s", spellName),
         conds = conds,
         onConfirm = confirm,
         texts = IconTexts(),

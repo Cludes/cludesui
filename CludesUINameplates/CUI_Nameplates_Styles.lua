@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Styles.lua
 --
@@ -18,7 +19,7 @@ local UnitIsUnit, UnitCanAttack = UnitIsUnit, UnitCanAttack
 -- makes it, the options addon fills it): the builders the options preview shares
 -- with the plates create through it, so a preview frame is handed back to the
 -- preview's next build. A plate's parent is no pool host: a plain CreateFrame.
-local Pool = CludesUI._Pool
+local Pool = CUI._Pool
 
 local defaultSet = Inner.defaults
 
@@ -424,7 +425,7 @@ function mod.NP_Style()
         -- The WoW Forever variant of Blizzard Style, latched with it: the
         -- Forever client, Blizzard Style, and the sibling useForeverStyle
         -- flag set together with the Blizzard one.
-        mod._npForever = val == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyle == true
+        mod._npForever = val == "blizzard" and CUI.IS_FOREVER == true and p.useForeverStyle == true
     end
     return val
 end
@@ -444,7 +445,7 @@ end
 -- per session.
 function mod.NP_StockAtlas(texture, name)
     if mod.NP_Forever() then return texture:SetAtlas(name) end
-    return CludesUI.StockAtlas(texture, name)
+    return CUI.StockAtlas(texture, name)
 end
 function mod.NP_AtlasOK(name)
     local memo = mod._npAtlasMemo
@@ -835,7 +836,7 @@ function mod.NP_UpdateForeverLevel(backing)
         sk:Hide()
         local red, green, blue
         if not secret then
-            red, green, blue = CludesUI.GetLevelColor(unitToken, lvl)
+            red, green, blue = CUI.GetLevelColor(unitToken, lvl)
         end
         if not red then
             red, green, blue = 1, 0.82, 0
@@ -876,7 +877,7 @@ end
 -- so the events bill to this module, and is armed only while the variant's
 -- box shows: enable arms it, and every full settings refresh re-checks it
 -- (Show Level Box is per profile). Returns true when the state flipped.
-if CludesUI.IS_FOREVER == true then mod._npFvLevelEv = CreateFrame("Frame") end
+if CUI.IS_FOREVER == true then mod._npFvLevelEv = CreateFrame("Frame") end
 function mod.NP_ForeverWatchLevels()
     local frame = mod._npFvLevelEv
     if not frame then return false end
@@ -932,7 +933,7 @@ function mod.NP_ApplyBlizzCastArt(backing)
             if mod.NP_AtlasOK(B.castShieldFill) then
                 -- Bar textures (this fill and the background below) take
                 -- the retail art under Blizzard Style, WoW Forever included.
-                CludesUI.StockAtlas(backing.castBarOverlay, B.castShieldFill)
+                CUI.StockAtlas(backing.castBarOverlay, B.castShieldFill)
                 -- The overlay is the grey fill art: the cast path paints it white.
                 backing._blizzShieldFill = true
             end
@@ -942,7 +943,7 @@ function mod.NP_ApplyBlizzCastArt(backing)
     if backing._blizzCastChrome then return end
     backing._blizzCastChrome = true
     if backing.castBG and mod.NP_AtlasOK(B.castBg) then
-        CludesUI.StockAtlas(backing.castBG, B.castBg)
+        CUI.StockAtlas(backing.castBG, B.castBg)
         backing.castBG:SetVertexColor(1, 1, 1, 1)
         backing.castBG:ClearAllPoints()
         backing.castBG:SetPoint("TOPLEFT", cast, "TOPLEFT", 1, 0)
@@ -959,7 +960,7 @@ end
 
 -- Health bar texture overlay tables (stored on ns to avoid local count pressure)
 mod.healthBarTextures, mod.healthBarTextureNames, mod.healthBarTextureOrder =
-    CludesUI.BuildBarTextureTables(true)
+    CUI.BuildBarTextureTables(true)
 -- Extra entry, second in the list: the game's own bar fill, pointed at
 -- directly so it needs no SharedMedia registration. Same file the meters'
 -- "Blizzard" uses, which also means the shared appender drops the library's
@@ -1033,7 +1034,7 @@ local function ApplyHealthBarTexture(backing)
     if not health then return end
     local texKey = (p and p.healthBarTexture) or defaultSet.healthBarTexture or "none"
     local filePath =
-        CludesUI.ResolveTexturePath(mod.healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
+        CUI.ResolveTexturePath(mod.healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
     health:SetStatusBarTexture(filePath)
     -- A path swap mints a new fill object: the shield anchors follow it.
     if backing.absorb and backing._absFill ~= health:GetStatusBarTexture() then
@@ -1068,7 +1069,7 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
     if radius > 0 and mod.GetWrapBorderCastbar() then radius = 0 end
     local customOn = radius > 0 and mod.IsCustomBorderEnabled()
     local style = customOn and ((p and p.customBorderTexture) or defaultSet.customBorderTexture) or "solid"
-    if not CludesUI.RoundedStyleOK(style) then radius = 0 end
+    if not CUI.RoundedStyleOK(style) then radius = 0 end
     -- Join Cast Bar: while a cast shows, the health bar and the cast bar under
     -- it share one outline (the cast bar's show / hide re-rounds the health
     -- bar, see the cast visibility hook).
@@ -1078,8 +1079,8 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
     if radius <= 0 then
         if backing._npRounded then
             backing._npRounded = nil
-            CludesUI.RoundCorners(backing, 0)
-            if backing.cast then CludesUI.RoundCorners(backing.cast, 0) end
+            CUI.RoundCorners(backing, 0)
+            if backing.cast then CUI.RoundCorners(backing.cast, 0) end
         end
         return
     end
@@ -1092,7 +1093,7 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
         HP_OPTS.rect, HP_OPTS.border, HP_OPTS.style = shape, shape, style
         HP_OPTS.corners = p and p.cornerMask
         if join and backing.cast and backing.cast:IsShown() then
-            HP_OPTS.corners = CludesUI.RoundedJoinCorners(HP_OPTS.corners)
+            HP_OPTS.corners = CUI.RoundedJoinCorners(HP_OPTS.corners)
         end
         local ab, fw = backing.absorb, backing.absorbForward
         HP_TEX[1], HP_TEX[2], HP_TEX[3] = health:GetStatusBarTexture(), backing.healthBG, backing.hashLine
@@ -1134,8 +1135,8 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
                 end
             end
         end
-        if not (same and CludesUI.RoundedSetCorners(backing, HP_OPTS.corners)) then
-            CludesUI.RoundCorners(backing, radius, HP_OPTS)
+        if not (same and CUI.RoundedSetCorners(backing, HP_OPTS.corners)) then
+            CUI.RoundCorners(backing, radius, HP_OPTS)
             if not last then
                 last = { tex = {}, roots = {} }
                 backing._npHpRound = last
@@ -1154,12 +1155,12 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
     if cast and part ~= "health" then
         CAST_OPTS.border, CAST_OPTS.corners = cast, p and p.cornerMask
         if join then
-            local _, lower = CludesUI.RoundedJoinCorners(CAST_OPTS.corners)
+            local _, lower = CUI.RoundedJoinCorners(CAST_OPTS.corners)
             CAST_OPTS.corners = lower
         end
         CAST_TEX[1], CAST_TEX[2], CAST_TEX[3] =
             cast:GetStatusBarTexture(), backing.castBG, backing.castBarOverlay
-        CludesUI.RoundCorners(cast, radius, CAST_OPTS)
+        CUI.RoundCorners(cast, radius, CAST_OPTS)
     end
 end
 
@@ -1167,8 +1168,8 @@ end
 -- in for them while Corner Radius is on (the strips are masked out then). A
 -- hidden border still takes the colour, for its next show.
 function mod.NP_BasicBorderColor(backing, red, green, blue, a)
-    CludesUI.PP.SetBorderColor(backing.health, red, green, blue, a)
-    if backing._npRounded then CludesUI.RoundedBorderColor(backing.health, red, green, blue, a) end
+    CUI.PP.SetBorderColor(backing.health, red, green, blue, a)
+    if backing._npRounded then CUI.RoundedBorderColor(backing.health, red, green, blue, a) end
 end
 
 -- Cast bar texture: mirrors ApplyHealthBarTexture with the same texture set (CUI built-ins +
@@ -1184,7 +1185,7 @@ function mod.ApplyCastBarTexture(backing)
     end
     local texKey = (p and p.castBarTexture) or defaultSet.castBarTexture or "none"
     local filePath =
-        CludesUI.ResolveTexturePath(mod.healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
+        CUI.ResolveTexturePath(mod.healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
     cast:SetStatusBarTexture(filePath)
     -- The uninterruptible overlay is a flat WHITE8x8 (grey tint via SetAlphaFromBoolean) that
     -- would hide the fill texture; give it the same texture so the pattern shows through. The
@@ -1206,7 +1207,7 @@ do
     -- preview shares it.
     function mod.NP_TexBgPath(cfg, cast)
         if not (cfg and cfg[cast and "castTextureBg" or "healthTextureBg"]) then return nil end
-        return CludesUI.ResolveTexturePath(
+        return CUI.ResolveTexturePath(
             mod.healthBarTextures,
             cfg[cast and "castBarTexture" or "healthBarTexture"] or "none",
             nil

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Absorb.lua
 --
@@ -10,7 +11,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, mod = ...
 
 local issecretvalue = issecretvalue
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local Inner = mod._internals
 local GetSettingsForUnit, UnsnapTex = Inner.GetSettingsForUnit, Inner.UnsnapTex
@@ -23,7 +24,7 @@ local ABSORB_SHIELD_TEX = "Interface\\AddOns\\CludesUIUnitFrames\\Media\\shield.
 
 -- Absorb bar style textures (the shared catalogue in CludesUI.lua, also
 -- read by the Resource Bars health bar) and alpha values.
-local ABSORB_STYLE_TEX = CludesUI.ABSORB_STYLE_TEX
+local ABSORB_STYLE_TEX = CUI.ABSORB_STYLE_TEX
 local ABSORB_STYLE_ALPHA = {
     striped = 0.8,
     stripedReversed = 0.8,
@@ -35,10 +36,10 @@ local ABSORB_STYLE_ALPHA = {
 -- read by the Main Frames rows and the Textures page tile, all from the
 -- shared catalogue. Readers copy the names and orders first: the
 -- SharedMedia tail is appended into the copies.
-mod.ABSORB_TILED_STYLES = CludesUI.ABSORB_TILED_STYLES
-mod.ABSORB_STYLE_NAMES = CludesUI.ABSORB_STYLE_NAMES
-mod.ABSORB_STYLE_ORDER = CludesUI.ABSORB_STYLE_ORDER
-mod.HEAL_ABSORB_STYLE_ORDER = CludesUI.HEAL_ABSORB_STYLE_ORDER
+mod.ABSORB_TILED_STYLES = CUI.ABSORB_TILED_STYLES
+mod.ABSORB_STYLE_NAMES = CUI.ABSORB_STYLE_NAMES
+mod.ABSORB_STYLE_ORDER = CUI.ABSORB_STYLE_ORDER
+mod.HEAL_ABSORB_STYLE_ORDER = CUI.HEAL_ABSORB_STYLE_ORDER
 
 -- Absorb-style key -> texture path. Built-ins come from ABSORB_STYLE_TEX; "sm:"
 -- SharedMedia keys (shared with the Bar Texture dropdown, appended into
@@ -46,7 +47,7 @@ mod.HEAL_ABSORB_STYLE_ORDER = CludesUI.HEAL_ABSORB_STYLE_ORDER
 -- lookup. Shared by the live render and the options preview so an SM key paints identically.
 function mod.ResolveAbsorbStyleTex(style, fallback)
     return ABSORB_STYLE_TEX[style]
-        or (CludesUI.ResolveTexturePath(healthBarTextures, style, fallback))
+        or (CUI.ResolveTexturePath(healthBarTextures, style, fallback))
         or fallback
 end
 
@@ -685,7 +686,7 @@ function mod.UF_HealPredApply(widget, unitKey, cfg)
         local hFill = health:GetStatusBarTexture()
         filePath = hFill and hFill:GetTexture()
     elseif texKey ~= "flat" then
-        filePath = CludesUI.ResolveTexturePath(healthBarTextures, texKey, nil)
+        filePath = CUI.ResolveTexturePath(healthBarTextures, texKey, nil)
     end
     filePath = filePath or "Interface\\Buttons\\WHITE8X8"
     local retex = absorbBar._predTexPath ~= filePath
@@ -753,7 +754,7 @@ mod.UF_MAXHP_UNITS = { player = true, target = true, focus = true }
 
 -- Texture, tint, opacity and the black backing; shared with the options preview.
 function mod.UF_ApplyMaxHealthStyle(barFrame, style, cfg, mask)
-    local fillTex = CludesUI.ApplyMaxHealthStyle(barFrame, style, cfg, mod.ResolveAbsorbStyleTex)
+    local fillTex = CUI.ApplyMaxHealthStyle(barFrame, style, cfg, mod.ResolveAbsorbStyleTex)
     if fillTex then
         if mask then
             pcall(fillTex.RemoveMaskTexture, fillTex, mask)
@@ -857,8 +858,8 @@ end
 --  the settings pass and after a retexture, never per paint.
 --  On ns: this chunk sits at the Lua 5.1 local ceiling.
 -------------------------------------------------------------------------------
-mod.UF_GLOW_LINE_ART = CludesUI.AbsorbGlow.art
-mod.UF_GlowLineWidth = CludesUI.AbsorbGlow.Width
+mod.UF_GLOW_LINE_ART = CUI.AbsorbGlow.art
+mod.UF_GlowLineWidth = CUI.AbsorbGlow.Width
 
 -- Leader Indicator Icon Style art (leaderIndicatorStyle), shared with the
 -- options preview.
@@ -885,10 +886,10 @@ mod.UF_ELITE_DRAGON_ART = {
 }
 mod.UF_ELITE_DRAGON_SCALE = 512 / 120
 
-mod.UF_BuildAbsorbGlow = CludesUI.AbsorbGlow.Build
-mod.UF_AbsorbGlowAnchor = CludesUI.AbsorbGlow.Anchor
-mod.UF_AbsorbGlowFlip = CludesUI.AbsorbGlow.Flip
-mod.UF_PaintAbsorbGlow = CludesUI.AbsorbGlow.Paint
+mod.UF_BuildAbsorbGlow = CUI.AbsorbGlow.Build
+mod.UF_AbsorbGlowAnchor = CUI.AbsorbGlow.Anchor
+mod.UF_AbsorbGlowFlip = CUI.AbsorbGlow.Flip
+mod.UF_PaintAbsorbGlow = CUI.AbsorbGlow.Paint
 
 -- The absglow channel's painter: the flip alone, and only while a shield is
 -- up (without one there is nothing to flip; the absorb paint that cleared

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUICdmRPTSync.lua
 --  Generic CDs/Buffs sync, across chosen specs of the ACTIVE PROFILE.
@@ -19,7 +20,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, mod = ...
 
-local DeepCopy = CludesUI.Lite.DeepCopy
+local DeepCopy = CUI.Lite.DeepCopy
 
 local function GetSA()
     if not CludesUIDB then return nil end
@@ -46,7 +47,7 @@ function mod.GetCDMSpecInfo()
     local result = {}
     -- WoW Forever: one row for the player's class, keyed by the store key the
     -- Cooldown Manager runs on.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         local key = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
         if not key then return result end
         local token = select(2, UnitClass("player"))
@@ -61,8 +62,8 @@ function mod.GetCDMSpecInfo()
         end
         result[1] = {
             key = key,
-            name = CludesUI.ForeverClassName(token),
-            icon = CludesUI.ForeverClassIcon(token),
+            name = CUI.ForeverClassName(token),
+            icon = CUI.ForeverClassIcon(token),
             hasData = hasData,
         }
         return result
@@ -119,23 +120,23 @@ function mod.GetAllCDMSpecInfo()
 
     -- WoW Forever: one row per class (the current class always, other classes
     -- only with data), keyed by the store key that class uses.
-    if CludesUI.IS_FOREVER then
-        local classes = CludesUI.ForeverClasses()
+    if CUI.IS_FOREVER then
+        local classes = CUI.ForeverClasses()
         for c = 1, #classes do
             local token = classes[c]
             local isCurrentClass = (token == curClassFile)
             local key = isCurrentClass and mod.GetActiveSpecKey and mod.GetActiveSpecKey() or nil
             if not key then
                 key = tostring(
-                    CludesUI.ForeverClassSpec(token, CludesUI.SpecHasStringEntry, specProfiles, true)
+                    CUI.ForeverClassSpec(token, CUI.SpecHasStringEntry, specProfiles, true)
                 )
             end
             local hasData = HasData(specProfiles and specProfiles[key])
             if isCurrentClass or hasData then
                 result[#result + 1] = {
                     key = key,
-                    name = CludesUI.ForeverClassName(token),
-                    icon = CludesUI.ForeverClassIcon(token),
+                    name = CUI.ForeverClassName(token),
+                    icon = CUI.ForeverClassIcon(token),
                     hasData = hasData,
                 }
             end
@@ -314,13 +315,13 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
         -- than the one the class resolves to now would either take the class
         -- over next session (an earlier key) or never be read (a later one),
         -- so such targets are skipped; existing buckets still sync.
-        if CludesUI.IS_FOREVER then
-            local cls = CludesUI.SpecClassOf(tonumber(targetSpecKey))
+        if CUI.IS_FOREVER then
+            local cls = CUI.SpecClassOf(tonumber(targetSpecKey))
             if
                 cls
-                and CludesUI.ForeverClassSpecIDs(cls)
+                and CUI.ForeverClassSpecIDs(cls)
                 and tostring(
-                        CludesUI.ForeverClassSpec(cls, CludesUI.SpecHasStringEntry, specProfiles, true)
+                        CUI.ForeverClassSpec(cls, CUI.SpecHasStringEntry, specProfiles, true)
                     )
                     ~= targetSpecKey
             then

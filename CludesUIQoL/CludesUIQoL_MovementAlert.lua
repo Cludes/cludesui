@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQoL_MovementAlert.lua
 --  Three independent on-screen trackers for class mobility abilities:
@@ -25,7 +26,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 
 local ns = select(2, ...)
 
-local IsSecret = CludesUI.IsSecret
+local IsSecret = CUI.IsSecret
 
 local inCombat = false
 local playerClassToken = select(2, UnitClass("player")) -- class never changes: resolved once
@@ -118,7 +119,7 @@ for _, mod in ipairs(TALENT_CD_REDUCTIONS) do
     TALENT_CD_TRIGGER_SPELLS[mod.trigger] = true
 end
 
-CludesUI.MOVEMENT_ABILITIES = MOVEMENT_ABILITIES
+CUI.MOVEMENT_ABILITIES = MOVEMENT_ABILITIES
 
 -- Preset spells that default to DISABLED: with no saved override, these are
 -- not tracked (checking their box writes an explicit enabled=true override;
@@ -138,7 +139,7 @@ local MOVEMENT_DEFAULT_OFF = {
     [90328] = true, -- Spirit Walk
     [111400] = true, -- Burning Rush (off by default since 8.5.3)
 }
-CludesUI._MovementDefaultOff = MOVEMENT_DEFAULT_OFF
+CUI._MovementDefaultOff = MOVEMENT_DEFAULT_OFF
 
 -- Effective enabled state for a preset/tracked spell id: an explicit saved
 -- enabled wins; otherwise absence means enabled unless default-off.
@@ -312,7 +313,7 @@ local defaultSet = {
     },
 }
 
-local saved = CludesUI.Lite.NewDB("CludesUIQoLDB", defaultSet)
+local saved = CUI.Lite.NewDB("CludesUIQoLDB", defaultSet)
 local function AlertCfg() return saved.profile.movementAlert end
 
 -- Movement Cooldown Alert enable state: enabledClasses is a per-class
@@ -326,20 +327,20 @@ local function MovementEnabled()
     return ec[playerClassToken] == true
 end
 _G._CUI_MovementAlert_DB = function() return saved end
-CludesUI._ResetMovementAlert = function()
+CUI._ResetMovementAlert = function()
     saved:ResetProfile()
-    if CludesUI._RebuildMovementSpellLookup then CludesUI._RebuildMovementSpellLookup() end
-    if CludesUI._CacheMovementSpells then CludesUI._CacheMovementSpells(true) end
-    if CludesUI._UpdateMovementAlertEvents then CludesUI._UpdateMovementAlertEvents() end
-    if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
-    if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
-    if CludesUI._applyGateway then CludesUI._applyGateway() end
+    if CUI._RebuildMovementSpellLookup then CUI._RebuildMovementSpellLookup() end
+    if CUI._CacheMovementSpells then CUI._CacheMovementSpells(true) end
+    if CUI._UpdateMovementAlertEvents then CUI._UpdateMovementAlertEvents() end
+    if CUI._applyMovementAlert then CUI._applyMovementAlert() end
+    if CUI._applyTimeSpiral then CUI._applyTimeSpiral() end
+    if CUI._applyGateway then CUI._applyGateway() end
     -- Explicit self-correct: ApplyMovementFrame/CheckGatewayUsable only hide
     -- an actively-displayed frame when their own tracker is enabled, which
     -- ResetProfile() just turned off -- without these, a frame that was
     -- showing at reset-time stays frozen on screen.
-    if CludesUI._CheckMovementCooldown then CludesUI._CheckMovementCooldown() end
-    if CludesUI._CheckGatewayUsable then CludesUI._CheckGatewayUsable() end
+    if CUI._CheckMovementCooldown then CUI._CheckMovementCooldown() end
+    if CUI._CheckGatewayUsable then CUI._CheckGatewayUsable() end
 end
 
 -------------------------------------------------------------------------------
@@ -349,9 +350,9 @@ end
 --  sound/TTS system.
 -------------------------------------------------------------------------------
 local FALLBACK_FONT = "Fonts\\FRIZQT__.TTF"
-local function AlertFontPath() return (CludesUI.GetFontPath("extras")) or FALLBACK_FONT end
+local function AlertFontPath() return (CUI.GetFontPath("extras")) or FALLBACK_FONT end
 local function AlertFontOutline()
-    local o = (CludesUI.GetFontOutlineFlag("extras")) or ""
+    local o = (CUI.GetFontOutlineFlag("extras")) or ""
     if not o:find("OUTLINE") then o = (o == "") and "OUTLINE" or (o .. ", OUTLINE") end
     return o
 end
@@ -359,7 +360,7 @@ local function ResolveAlertColor(prefixText, useClassKey)
     local alertCfg = AlertCfg()
     if alertCfg[useClassKey] then
         local _, classToken = UnitClass("player")
-        local color = classToken and CludesUI.GetClassColor(classToken)
+        local color = classToken and CUI.GetClassColor(classToken)
         if color then return color.r, color.g, color.b end
     end
     return alertCfg[prefixText .. "R"] or 1,
@@ -379,7 +380,7 @@ local function PlayLSMSound(value)
         PlaySoundFile(value, "Master")
     end
 end
-CludesUI._PlayLSMSound = PlayLSMSound
+CUI._PlayLSMSound = PlayLSMSound
 
 -- Resolves through CludesUI._groupDeathSoundPaths -- the addon's existing
 -- sound-list table (curated built-ins + every LibSharedMedia "sound" entry,
@@ -388,7 +389,7 @@ CludesUI._PlayLSMSound = PlayLSMSound
 -- list/preview implementation in the addon, not two.
 local function PlayAlertSound(key)
     if not key or key == "none" then return end
-    local value = CludesUI._groupDeathSoundPaths and CludesUI._groupDeathSoundPaths[key]
+    local value = CUI._groupDeathSoundPaths and CUI._groupDeathSoundPaths[key]
     if value then PlayLSMSound(value) end
 end
 
@@ -435,8 +436,8 @@ moveFrame:Hide()
 -- Texture" dropdown uses (CludesUICooldownManager\CludesUICdmBuffBars.lua);
 -- the options page appends SharedMedia statusbar textures into these tables.
 -- Rendering resolves through ResolveTexturePath ("none" = flat WHITE8x8).
-local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
-CludesUI._MovementBarTextures = {
+local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CUI.BuildBarTextureTables()
+CUI._MovementBarTextures = {
     lookup = BAR_TEXTURES,
     order = BAR_TEXTURE_ORDER,
     names = BAR_TEXTURE_NAMES,
@@ -593,7 +594,7 @@ local function StyleSlot(slotRec)
     local tR, tG, tB = ResolveAlertColor("textColor", "textColorUseClass")
     local showIcon = alertCfg.barShowIcon ~= false
     local texPath = (
-        CludesUI.ResolveTexturePath(
+        CUI.ResolveTexturePath(
             BAR_TEXTURES,
             alertCfg.barTexture or "none",
             "Interface\\Buttons\\WHITE8x8"
@@ -916,7 +917,7 @@ do
             merged = {}
             local skip = { [781] = true }
             local classAbilities = MOVEMENT_ABILITIES[playerClassToken]
-            local ids = classAbilities and CludesUI.ForeverClassSpecIDs(playerClassToken)
+            local ids = classAbilities and CUI.ForeverClassSpecIDs(playerClassToken)
             for index = 1, (ids and #ids or 0) do
                 local specList = classAbilities[ids[index]]
                 for jdx = 1, (specList and #specList or 0) do
@@ -944,7 +945,7 @@ local function GetPlayerMovementSpells()
     local classAbilities = MOVEMENT_ABILITIES[classFile]
     if not classAbilities then return {} end
     local specAbilities = classAbilities[specId]
-    if CludesUI.IS_FOREVER then specAbilities = ForeverMovementList() end
+    if CUI.IS_FOREVER then specAbilities = ForeverMovementList() end
     if not specAbilities then return {} end
 
     local result, seen = {}, {}
@@ -1202,7 +1203,7 @@ local function LoadMovementSpells(fullReset)
     local overrides = AlertCfg().spellOverrides or {}
     local classAbilities = MOVEMENT_ABILITIES[classFile]
     local specAbilities = classAbilities and specId and classAbilities[specId]
-    if CludesUI.IS_FOREVER and specId then specAbilities = ForeverMovementList() end
+    if CUI.IS_FOREVER and specId then specAbilities = ForeverMovementList() end
     if specAbilities then
         for _, alertSpell in ipairs(specAbilities) do
             local spellOverride = overrides[alertSpell]
@@ -1221,7 +1222,7 @@ local function LoadMovementSpells(fullReset)
 
     UpdateCachedCharges()
 end
-CludesUI._CacheMovementSpells = LoadMovementSpells
+CUI._CacheMovementSpells = LoadMovementSpells
 
 CancelAllRechargeTimers = function()
     for _, timer in pairs(rechargeTimers) do
@@ -1660,7 +1661,7 @@ end
 
 local function BuildBuffAlertStyle(record)
     local alertCfg = AlertCfg()
-    local px = (CludesUI.PP and CludesUI.PP.Scale and CludesUI.PP.Scale(alertCfg.iconSize or 32))
+    local px = (CUI.PP and CUI.PP.Scale and CUI.PP.Scale(alertCfg.iconSize or 32))
         or alertCfg.iconSize
         or 32
     return {
@@ -1715,7 +1716,7 @@ end
 -- permanent, so disable parks via host:Hide() (the container is a CHILD of the
 -- host -- creation-time parenting is legal) and re-enable reuses everything.
 local function EnsureBuffAlertLane()
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if not (AK and AK.RequestContainer and AK.AddGroupToContainer and AK.RestyleSoon) then return end
     local record
     for _, entry in ipairs(cachedMovementSpells) do
@@ -2093,7 +2094,7 @@ CheckMovementCooldown = function()
         HideAlertDisplay(true)
     end
 end
-CludesUI._CheckMovementCooldown = function()
+CUI._CheckMovementCooldown = function()
     if CheckMovementCooldown then CheckMovementCooldown() end
 end
 
@@ -2112,9 +2113,9 @@ local function ApplyMovementFrame()
     for _, slotRec in ipairs(displayPool) do
         StyleSlot(slotRec)
     end
-    if MovementEnabled() and not CludesUI._unlockActive then CheckMovementCooldown() end
+    if MovementEnabled() and not CUI._unlockActive then CheckMovementCooldown() end
 end
-CludesUI._applyMovementAlert = ApplyMovementFrame
+CUI._applyMovementAlert = ApplyMovementFrame
 
 -------------------------------------------------------------------------------
 --  Options-panel preview: loops a fake cooldown through the real display
@@ -2170,10 +2171,10 @@ local function PreviewTick()
     local alertCfg = AlertCfg()
     -- Auto-shutoff: options window closed, or the user navigated to another
     -- page/module. (Page name must match PAGE_MOVEMENT in CUI_QoL_Options.lua.)
-    local isShown = CludesUI._mainFrame and CludesUI._mainFrame:IsShown()
+    local isShown = CUI._mainFrame and CUI._mainFrame:IsShown()
     local onPage = isShown
-        and CludesUI:GetActiveModule() == "CludesUIQoL"
-        and CludesUI:GetActivePage() == "MoveAlert"
+        and CUI:GetActiveModule() == "CludesUIQoL"
+        and CUI:GetActivePage() == "MoveAlert"
     if not alertCfg or not onPage then
         StopMovementPreview()
         return
@@ -2213,8 +2214,8 @@ local function StartMovementPreview()
     PreviewTick()
 end
 
-CludesUI._MovementAlertPreviewActive = function() return movementPreviewTicker ~= nil end
-CludesUI._MovementAlertPreview = function(on)
+CUI._MovementAlertPreviewActive = function() return movementPreviewTicker ~= nil end
+CUI._MovementAlertPreview = function(on)
     if on then
         StartMovementPreview()
     else
@@ -2286,7 +2287,7 @@ local function RebuildMobilitySpellLookup()
         end
     end
 end
-CludesUI._RebuildMovementSpellLookup = RebuildMobilitySpellLookup
+CUI._RebuildMovementSpellLookup = RebuildMobilitySpellLookup
 
 local function IsValidTimeSpiralProc(alertSpell)
     local nowTime = GetTime()
@@ -2295,7 +2296,7 @@ local function IsValidTimeSpiralProc(alertSpell)
     local specId = PlayerSpecId()
     local classData = MOVEMENT_ABILITIES[classFile]
     local specSpells = classData and specId and classData[specId]
-    if CludesUI.IS_FOREVER and specId then specSpells = ForeverMovementList() end
+    if CUI.IS_FOREVER and specId then specSpells = ForeverMovementList() end
     local matched = false
     if specSpells then
         for _, ident in ipairs(specSpells) do
@@ -2376,7 +2377,7 @@ local function ApplyTimeSpiralFrame()
     local red, green, blue = ResolveAlertColor("tsColor", "tsColorUseClass")
     timeSpiralText:SetTextColor(red, green, blue)
 end
-CludesUI._applyTimeSpiral = ApplyTimeSpiralFrame
+CUI._applyTimeSpiral = ApplyTimeSpiralFrame
 
 -------------------------------------------------------------------------------
 --  Gateway Shard -- Warlock's Demonic Gateway control item
@@ -2444,7 +2445,7 @@ local function PollGateway()
         gateFrame:Hide()
     end
 end
-CludesUI._CheckGatewayUsable = PollGateway
+CUI._CheckGatewayUsable = PollGateway
 
 local function StartGatewayTicker()
     StopGatewayTicker()
@@ -2481,7 +2482,7 @@ local function ApplyGatewayFrame()
     if not alertCfg.gwEnabled then
         StopGatewayTicker()
         gateFrame:Hide()
-    elseif CludesUI._unlockActive then
+    elseif CUI._unlockActive then
         -- Pause the poll ticker while Unlock Mode is active: CheckGatewayUsable
         -- can Hide() this frame the instant the item isn't currently usable
         -- (the common case), fighting the user mid-drag. Force it visible
@@ -2492,7 +2493,7 @@ local function ApplyGatewayFrame()
         StartGatewayTicker()
     end
 end
-CludesUI._applyGateway = ApplyGatewayFrame
+CUI._applyGateway = ApplyGatewayFrame
 
 -------------------------------------------------------------------------------
 --  Event registration
@@ -2540,7 +2541,7 @@ local function UpdateEventRegistration()
         -- installs the session-long late-registration callback), matching the
         -- CDM Tracking Bars setup: a saved SM texture renders correctly
         -- without the options panel ever opening.
-        CludesUI.AppendSharedMediaTextures(BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER, nil, BAR_TEXTURES)
+        CUI.AppendSharedMediaTextures(BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER, nil, BAR_TEXTURES)
     elseif not anyEnabled and baselineEventsRegistered then
         for _, ev in ipairs(BASELINE_EVENTS) do
             loadFrame:UnregisterEvent(ev)
@@ -2606,7 +2607,7 @@ local function UpdateEventRegistration()
         if not alertCfg.gwEnabled then gateFrame:Hide() end
     end
 end
-CludesUI._UpdateMovementAlertEvents = UpdateEventRegistration
+CUI._UpdateMovementAlertEvents = UpdateEventRegistration
 
 loadFrame:SetScript("OnEvent", function(self, evt, ...)
     local alertCfg = AlertCfg()
@@ -2635,8 +2636,8 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         -- safe to call immediately at login (no need for the extra delay
         -- some older modules used) -- registration itself just stores the
         -- config, it doesn't require Unlock Mode's own body to be loaded yet.
-        if CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement then
-            local MK = CludesUI.MakeUnlockElement
+        if CUI.RegisterUnlockElements and CUI.MakeUnlockElement then
+            local MK = CUI.MakeUnlockElement
 
             local function MakeMoverEntry(key, labelText, sequence, isHiddenKey, getFrameFn, applyFn, posKey)
                 return MK({
@@ -2687,7 +2688,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                 })
             end
 
-            CludesUI:RegisterUnlockElements({
+            CUI:RegisterUnlockElements({
                 MakeMoverEntry(
                     "CUI_MovementAlert",
                     "Movement Alerts",

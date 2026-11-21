@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Lifecycle.lua
 --
@@ -43,7 +44,7 @@ function ERF:OnInitialize()
     local rawDB = CludesUIRaidFramesDB
     local isFirstInstall = not rawDB or not rawDB.profiles or (rawDB.profiles and not next(rawDB.profiles))
 
-    self.db = CludesUI.Lite.NewDB("CludesUIRaidFramesDB", defaultSet, true)
+    self.db = CUI.Lite.NewDB("CludesUIRaidFramesDB", defaultSet, true)
     SetDB(self.db)
     mod.db = saved
 
@@ -78,7 +79,7 @@ end
 --  Lifecycle: OnEnable (PLAYER_LOGIN - game data available)
 -------------------------------------------------------------------------------
 function ERF:OnEnable()
-    SetPP(CludesUI.PanelPP or CludesUI.PP)
+    SetPP(CUI.PanelPP or CUI.PP)
 
     -- First-install default position: left edge of frame at 200px from screen
     -- left, vertically centered.
@@ -152,8 +153,8 @@ function ERF:OnEnable()
         local place = cfg.partyUnlockPos
         -- Skip the saved-pos SetPoint when element-anchored with resolved
         -- geometry: the unlock anchor system owns the position.
-        local anchored = CludesUI.IsUnlockAnchored
-            and CludesUI.IsUnlockAnchored("RF_PartyFrames")
+        local anchored = CUI.IsUnlockAnchored
+            and CUI.IsUnlockAnchored("RF_PartyFrames")
             and mod._partyContainerFrame:GetLeft()
         if place and not anchored then
             mod._partyContainerFrame:ClearAllPoints()
@@ -256,8 +257,8 @@ function ERF:OnEnable()
         local place = cfg.partyUnlockPos
         -- Skip the saved-pos SetPoint when element-anchored with resolved
         -- geometry: the unlock anchor system owns the position.
-        local anchored = CludesUI.IsUnlockAnchored
-            and CludesUI.IsUnlockAnchored("RF_PartyFrames")
+        local anchored = CUI.IsUnlockAnchored
+            and CUI.IsUnlockAnchored("RF_PartyFrames")
             and c:GetLeft()
         if place and not anchored then
             c:ClearAllPoints()
@@ -339,8 +340,8 @@ function ERF:OnEnable()
         if mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
         -- Open BM options page: force a rebuild so its widgets re-bind to
         -- the (identity-preserved, content-swapped) profile tables.
-        if not noPage and mod._bmRoot and CludesUI and CludesUI.RefreshPage then
-            CludesUI:RefreshPage(true)
+        if not noPage and mod._bmRoot and CUI and CUI.RefreshPage then
+            CUI:RefreshPage(true)
         end
     end
 
@@ -741,7 +742,7 @@ do
     local partyList = {}
     local partyGroup = { frames = partyList }
     local partyGroups = {}
-    CludesUI.PartySpin_Create({
+    CUI.PartySpin_Create({
         target = "partyFrames",
         homeInCombat = true,
         collect = function()
@@ -762,7 +763,7 @@ do
     local raidList = {}
     local raidGroup = { frames = raidList }
     local raidGroups = {}
-    CludesUI.PartySpin_Create({
+    CUI.PartySpin_Create({
         target = "raidFrames",
         homeInCombat = true,
         collect = function()

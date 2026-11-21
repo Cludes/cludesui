@@ -1,15 +1,16 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ResourceBars_Options\SwingTimerPage_Options.lua
 --  Resource Bars options: Swing Timer page. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
+local mod = CUI._ModuleNS["CludesUIResourceBars"]
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- The Talent Conditions picker's texts, in the swing timer's words (made on
 -- the first open).
@@ -17,18 +18,18 @@ local swingTalentTexts
 local function SwingTalentTexts()
     if not swingTalentTexts then
         swingTalentTexts = {
-            hint = CludesUI.L(
+            hint = CUI.L(
                 "Click a talent to require it: Taken, then Not Taken, then cleared. Every condition must hold for the swing timer to show."
             ),
-            none = CludesUI.L("No conditions: the swing timer always shows."),
+            none = CUI.L("No conditions: the swing timer always shows."),
             met = function(num)
-                return CludesUI.Lf(
+                return CUI.Lf(
                     "%1$d condition(s), met by your current talents: the swing timer shows.",
                     num
                 )
             end,
             notMet = function(num)
-                return CludesUI.Lf(
+                return CUI.Lf(
                     "%1$d condition(s), not met by your current talents: the swing timer is hidden.",
                     num
                 )
@@ -44,13 +45,13 @@ end
 function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     local environ = mod._CURB_OptEnv
     local DB, Pix = environ.DB, environ.PP
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height
 
     hostFrame._showRowDivider = true
 
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         _G._CURB_BarTextureNames or {},
         _G._CURB_BarTextureOrder or {},
         nil,
@@ -79,7 +80,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
 
     local function ApplySwingTimer()
         if _G._CURB_Apply then _G._CURB_Apply() end
-        if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_SwingTimer") end
+        if CUI.NotifyElementResized then CUI.NotifyElementResized("ERB_SwingTimer") end
     end
     -- A setting row's getter for one swing timer key: its value, or default when
     -- it is unset (no default: the value as stored, nil without a profile).
@@ -98,20 +99,20 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             if not profile then return end
             profile.swingTimer[key] = val
             ApplySwingTimer()
-            if alsoPage then CludesUI:RefreshPage() end
+            if alsoPage then CUI:RefreshPage() end
         end
     end
 
     local _sec
     _sec, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
     cursorY = cursorY - height
-    CludesUI.BuildSectionUnlockJump(
+    CUI.BuildSectionUnlockJump(
         _sec,
         { key = "ERB_SwingTimer", disabled = stOff, disabledTooltip = SWING_TIP }
     )
 
-    local sStrataValues = CludesUI.FRAME_STRATA_LABELS
-    local sStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
+    local sStrataValues = CUI.FRAME_STRATA_LABELS
+    local sStrataOrder = CUI.FRAME_STRATA_ORDER_BASE
 
     -- Row: Enable Swing Timer (+ position cog) | Frame Strata
     local enableRow
@@ -134,9 +135,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
     -- Inline position cog (X/Y + unlock) on Enable, as on the GCD Bar page
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = enableRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function()
                 local profile = DB()
                 return profile and not profile.swingTimer.enabled
@@ -204,8 +205,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     end
 
     -- Row: Row Height | Width. Height is per row; the mover reports the whole stack.
-    local shDis, shTip, shRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Height", stOff, SWING_TIP)
-    local swDis, swTip, swRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Width", stOff, SWING_TIP)
+    local shDis, shTip, shRaw = CUI.MatchGuard("ERB_SwingTimer", "Height", stOff, SWING_TIP)
+    local swDis, swTip, swRaw = CUI.MatchGuard("ERB_SwingTimer", "Width", stOff, SWING_TIP)
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Row Height",
@@ -258,7 +259,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         setValue = Setter("textSize"),
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local function OffsetRow(labelText, key)
             return {
                 type = "slider",
@@ -278,7 +279,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end,
             }
         end
-        CludesUI.BuildInlineCog(stTextRow._rightRegion, {
+        CUI.BuildInlineCog(stTextRow._rightRegion, {
             disabled = stOff,
             disabledTooltip = SWING_TIP,
             title = "Text Position",
@@ -293,7 +294,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
 
     -- Row: Visibility (shared checklist) | Hide When Idle (+ idle fill cog)
     local stShowRow
-    stShowRow, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
+    stShowRow, height = CUI.BuildVisibilityRow(W, hostFrame, cursorY, {
         getStore = function()
             local profile = DB()
             return profile and profile.swingTimer
@@ -319,7 +320,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     -- require talents, saved per class so one profile serves every class. While
     -- they rule it out, the timer stands down like switched off. A class with no
     -- forms gets the talent picker straight from the cog.
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local function STCfg()
             local profile = DB()
             return profile and profile.swingTimer
@@ -332,8 +333,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             if not g then return end
             local _, class = UnitClass("player")
             local byClass = g.classTalentConditions
-            CludesUI.ShowTalentConditionsPopup({
-                title = CludesUI.Lf("Talent Conditions: %1$s", CludesUI.L("Swing Timer")),
+            CUI.ShowTalentConditionsPopup({
+                title = CUI.Lf("Talent Conditions: %1$s", CUI.L("Swing Timer")),
                 conds = byClass and byClass[class],
                 texts = SwingTalentTexts(),
                 fontKey = "resourceBars",
@@ -358,14 +359,14 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         local formRows = environ.FormToggleRows(STCfg, ApplySwingTimer, "barDisabledForms")
         if formRows then
             formRows[#formRows + 1] = { type = "button", label = "Talent Conditions", action = OpenTalents }
-            _, condShow = CludesUI.BuildInlineCog(stShowRow._leftRegion, {
+            _, condShow = CUI.BuildInlineCog(stShowRow._leftRegion, {
                 disabled = stOff,
                 disabledTooltip = SWING_TIP,
                 title = "Forms and Talents",
                 rows = formRows,
             })
         else
-            CludesUI.BuildInlineCog(stShowRow._leftRegion, {
+            CUI.BuildInlineCog(stShowRow._leftRegion, {
                 disabled = stOff,
                 disabledTooltip = SWING_TIP,
                 tip = "Talent Conditions",
@@ -374,8 +375,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         end
     end
 
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(stShowRow._rightRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(stShowRow._rightRegion, {
             title = "Idle Rows",
             rows = {
                 {
@@ -413,15 +414,15 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     local stStock = mod.ST_Style() ~= "cui"
     local stClassic = stStock and mod.ERB_BarsClassic()
     local function Gate(rowConf)
-        if stStock then return CludesUI.BlizzStyle.Gate("resourcebars", rowConf) end
+        if stStock then return CUI.BlizzStyle.Gate("resourcebars", rowConf) end
         return rowConf
     end
-    if stStock then cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "resourcebars") end
+    if stStock then cursorY = CUI.BlizzStyle.Note(hostFrame, cursorY, "resourcebars") end
 
     -- Row: Border Style | Border Size (+ inline color swatch + offset cog).
     -- Classic WoW UI: the Border Size slot sizes the vanilla frame instead.
     do
-        local btValues, btOrder = CludesUI.GetBorderTextureDropdown()
+        local btValues, btOrder = CUI.GetBorderTextureDropdown()
         local bsRow
         bsRow, height = W:DualRow(
             hostFrame,
@@ -443,21 +444,21 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     swingCfg.borderTextureOffsetY = nil
                     swingCfg.borderTextureShiftX = nil
                     swingCfg.borderTextureShiftY = nil
-                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
+                    local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(val)
                     swingCfg.borderR = _bcol.r
                     swingCfg.borderG = _bcol.g
                     swingCfg.borderB = _bcol.b
                     swingCfg.borderA = 1
                     swingCfg.borderBehind = _bbehind
-                    local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
+                    local defSz = CUI.GetBorderDefaultSize("resourcebars", val)
                     if defSz then swingCfg.borderSize = defSz end
                     if swingCfg.borderSizePx then swingCfg.borderSizePx = false end
                     ApplySwingTimer()
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             }),
             stClassic
-                    and CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
+                    and CUI.BlizzStyle.ClassicBorderSizeCfg(function()
                         local profile = DB()
                         return profile and profile.swingTimer.stockBorderScale
                     end, function(val)
@@ -465,10 +466,10 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         if not profile then return end
                         profile.swingTimer.stockBorderScale = val
                         ApplySwingTimer()
-                        CludesUI.ReapplyMatchPads("ERB_SwingTimer")
-                        CludesUI:RefreshPage()
+                        CUI.ReapplyMatchPads("ERB_SwingTimer")
+                        CUI:RefreshPage()
                     end, { disabled = stOff, disabledTooltip = SWING_TIP })
-                or Gate(CludesUI.BorderPxSliderCfg({
+                or Gate(CUI.BorderPxSliderCfg({
                     text = "Border Size",
                     disabled = stOff,
                     disabledTooltip = SWING_TIP,
@@ -494,7 +495,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     apply = function()
                         ApplySwingTimer()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 }))
         )
@@ -508,7 +509,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     local profile = DB()
                     return profile and (profile.swingTimer.borderSize or 0) or 0
                 end
-                local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                     addonKey = "resourcebars",
                     disabled = stOff,
                     disabledTooltip = SWING_TIP,
@@ -540,7 +541,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     apply = function()
                         ApplySwingTimer()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
                 _, height = W:DualRow(hostFrame, cursorY, Gate(ocfgL), Gate(ocfgR))
@@ -551,29 +552,29 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         -- swatch left of it; neither in the search pre-build (they index
         -- nothing, and the row is a stand-in there) nor on Classic WoW UI's
         -- frame size slider
-        if not CludesUI._prebuilding and not stClassic then
+        if not CUI._prebuilding and not stClassic then
             -- Corner Radius (CludesUI_RoundedCorners.lua): an inline cog on the
             -- border size control. The stock styles keep the rows square.
-            CludesUI.BuildInlineCog(bsRow._rightRegion, {
+            CUI.BuildInlineCog(bsRow._rightRegion, {
                 title = "Corner Radius",
                 tip = "Corner Radius",
                 disabled = function()
                     if stOff() or stStock then return true end
                     local profile = DB()
-                    return not CludesUI.RoundedStyleOK(profile and profile.swingTimer.borderTexture)
+                    return not CUI.RoundedStyleOK(profile and profile.swingTimer.borderTexture)
                 end,
                 disabledTooltip = function()
-                    if stStock then return CludesUI.BlizzStyle.Label("resourcebars") end
+                    if stStock then return CUI.BlizzStyle.Label("resourcebars") end
                     if stOff() then return SWING_TIP end
                     return "This option requires the Solid, Glow or Shadow border style."
                 end,
                 requireState = function() return stStock and "disabled" or "enabled" end,
-                rows = CludesUI.RoundedCornerRows({
+                rows = CUI.RoundedCornerRows({
                     {
                         type = "slider",
                         label = "Corner Radius",
                         min = 0,
-                        max = CludesUI.ROUNDED_MAX_RADIUS,
+                        max = CUI.ROUNDED_MAX_RADIUS,
                         step = 1,
                         get = Getter("cornerRadius", 0),
                         set = Setter("cornerRadius"),
@@ -588,7 +589,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     ApplySwingTimer()
                 end),
             })
-            CludesUI.BuildInlineSwatches(bsRow._rightRegion, {
+            CUI.BuildInlineSwatches(bsRow._rightRegion, {
                 {
                     tooltip = "Border Color",
                     hasAlpha = true,
@@ -617,14 +618,14 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         profile.swingTimer.borderR, profile.swingTimer.borderG, profile.swingTimer.borderB, profile.swingTimer.borderA =
                             red, green, blue, a
                         ApplySwingTimer()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 },
             }, { size = 20 })
         end
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = bsRow._leftRegion
-            local cogBtn = CludesUI.BuildInlineCog(region, {
+            local cogBtn = CUI.BuildInlineCog(region, {
                 title = "Border Options",
                 rows = {
                     {
@@ -638,7 +639,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             if not profile then return 0 end
                             local val = profile.swingTimer.borderTextureShiftX
                             if val then return val end
-                            local _, _, dsx = CludesUI.GetBorderDefaults(
+                            local _, _, dsx = CUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.swingTimer.borderTexture or "solid",
                                 profile.swingTimer.borderSize or 0
@@ -650,7 +651,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.swingTimer.borderTextureShiftX = val == 0 and nil or val
                             ApplySwingTimer()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -664,7 +665,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             if not profile then return 0 end
                             local val = profile.swingTimer.borderTextureShiftY
                             if val then return val end
-                            local _, _, _, dsy = CludesUI.GetBorderDefaults(
+                            local _, _, _, dsy = CUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.swingTimer.borderTexture or "solid",
                                 profile.swingTimer.borderSize or 0
@@ -676,7 +677,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.swingTimer.borderTextureShiftY = val == 0 and nil or val
                             ApplySwingTimer()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -688,7 +689,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.swingTimer.borderBehind = val == false and nil or val
                             ApplySwingTimer()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                 },
@@ -702,7 +703,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     cogBtn:Show()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(UpdateCogVis)
+            CUI.RegisterWidgetRefresh(UpdateCogVis)
             UpdateCogVis()
         end
     end
@@ -729,7 +730,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     r, gg, b, a
                 if swingCfg.classColored then swingCfg.classColored = false end
                 ApplySwingTimer()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             onClick = function(self)
                 local profile = DB()
@@ -737,7 +738,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 if profile.swingTimer.classColored then
                     profile.swingTimer.classColored = false
                     ApplySwingTimer()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if self._eabOrigClick then self._eabOrigClick(self) end
@@ -799,7 +800,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     if not profile then return end
                     profile.swingTimer.classColored = true
                     ApplySwingTimer()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
                     local profile = DB()
@@ -827,9 +828,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = colorRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function()
                 local profile = DB()
                 return profile and not profile.swingTimer.enabled
@@ -854,8 +855,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             },
         })
     end
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineSwatches(colorRow._rightRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineSwatches(colorRow._rightRegion, {
             {
                 tooltip = "Background Color",
                 getValue = function()
@@ -917,7 +918,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         setValue = function() end,
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         -- Not tied to Show Spark: a combined off hand's spark shows either way.
         -- Colours: store keys <key>SparkR/G/B/A, unset by default; each swatch
         -- shows the colour the bar paints (ST_SparkColor). A pick of the unset
@@ -950,7 +951,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end,
             }
         end
-        CludesUI.BuildInlineCog(sparkRow._leftRegion, {
+        CUI.BuildInlineCog(sparkRow._leftRegion, {
             disabled = stOff,
             disabledTooltip = SWING_TIP,
             title = "Spark",
@@ -987,7 +988,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             },
         })
     end
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = sparkRow._rightRegion
         if region._control then region._control:Hide() end
         -- Checked = the row shows. The keys are the per-row toggles this
@@ -997,7 +998,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             { key = "showOH", label = "Off Hand" },
             { key = "showR", label = "Ranged" },
         }
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             210,
             region:GetFrameLevel() + 2,
@@ -1012,7 +1013,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 profile.swingTimer[keyName] = val
                 -- The cog's Combine Hands greys out while a hand is off.
                 ApplySwingTimer()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end
         )
         Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
@@ -1025,9 +1026,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             cbDDRefresh()
         end
         UpdateWeaponsDD()
-        CludesUI.RegisterWidgetRefresh(UpdateWeaponsDD)
+        CUI.RegisterWidgetRefresh(UpdateWeaponsDD)
         -- Combine Hands needs both hands tracked, so it rides this row's cog.
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = stOff,
             disabledTooltip = SWING_TIP,
             title = "Tracked Weapons",
@@ -1186,8 +1187,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         setValue = Setter("attackState", true),
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(stateRow._rightRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(stateRow._rightRegion, {
             disabled = stOff,
             disabledTooltip = SWING_TIP,
             title = "Attack State Colors",
@@ -1258,8 +1259,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             },
         })
     end
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(stateRow._leftRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(stateRow._leftRegion, {
             title = "Range Check",
             rows = {
                 {
@@ -1298,10 +1299,10 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         order = { "off", "segments", "windup" },
         getValue = Getter("moveGuide", "off"),
         setValue = Setter("moveGuide", true),
-    }, CludesUI.BlankRowCfg())
+    }, CUI.BlankRowCfg())
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(guideRow._leftRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(guideRow._leftRegion, {
             disabled = function() return stOff() or guideOff() end,
             disabledTooltip = function()
                 if stOff() then return SWING_TIP end

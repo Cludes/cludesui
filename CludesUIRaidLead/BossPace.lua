@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  BossPace.lua -- Raid Lead: Boss Pace.
 --
@@ -60,12 +61,12 @@ local function Build()
     bar:SetSize(260, 22)
     bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     bar:SetMinMaxValues(0, 100)
-    CludesUI.Kit.Panel(bar, 0.85)
+    CUI.Kit.Panel(bar, 0.85)
     marker = bar:CreateTexture(nil, "OVERLAY")
     marker:SetColorTexture(1, 1, 1, 0.95)
     marker:SetSize(2, 26)
     labelText = bar:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(labelText, 13, nil)
+    CUI.Kit.Font(labelText, 13, nil)
     labelText:SetPoint("BOTTOM", bar, "TOP", 0, 3)
     curve = C_CurveUtil.CreateColorCurve()
     bar:Hide()
@@ -143,11 +144,11 @@ local registered
 eventFrame:SetScript("OnEvent", function(_, evt, _, encounterName)
     if evt == "ENCOUNTER_END" then return Stop() end
     if evt == "PLAYER_ENTERING_WORLD" then
-        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
+        if registered or InCombatLockdown() or not CUI.RegisterUnlockElements then return end
         Build()
         registered = true
-        CludesUI:RegisterUnlockElements({
-            CludesUI.MakeUnlockElement({
+        CUI:RegisterUnlockElements({
+            CUI.MakeUnlockElement({
                 key = "RLEAD_Pace",
                 label = "Boss Pace",
                 group = "Raid Lead",

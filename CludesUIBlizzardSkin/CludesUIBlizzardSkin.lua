@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin.lua
 --  Umbrella addon for themed Blizzard UI frames. Hosts the Character Sheet
@@ -8,27 +9,27 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME, mod = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewInternals
-        and CludesUI.NewCombatQueue
-        and CludesUI.FriendsKit
-        and CludesUI.FriendsList
-        and CludesUI.CreateQuantityDialog
-        and CludesUI.NewFrameData
-        and CludesUI.GetFontFamily
-        and CludesUI.SetFontFamily
-        and CludesUI.BorderPlacement
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewInternals
+        and CUI.NewCombatQueue
+        and CUI.FriendsKit
+        and CUI.FriendsList
+        and CUI.CreateQuantityDialog
+        and CUI.NewFrameData
+        and CUI.GetFontFamily
+        and CUI.SetFontFamily
+        and CUI.BorderPlacement
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (FriendsForever reads the parent's friends kit and starts its custom friends list, Merchant Bulk Buy its quantity window; the tooltip lines, chat bubbles, mail alt list, the window packs' names and mail lines and the WoW Forever friends and Looking For Group texts that show other players' writing take the parent's font families, and the engine aura tooltip's border takes the parent's border placement)
-CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
-mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+CUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+mod.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
 
 -- External weak-keyed lookup table for frame state (prevents tainting Blizzard frames)
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -------------------------------------------------------------------------------
 --  Per-window skin style ("cui"|"modern"|"blizzard"|"off"). Enable keys are
@@ -88,7 +89,7 @@ local WINDOW_ENABLE_KEYS = {
     flagcarrier = "reskinFlagCarriers",
 }
 -- WoW Forever's own windows: the bag bar and Progress Legacy skins exist only there.
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     WINDOW_ENABLE_KEYS.bagbar = "reskinBagBar"
     WINDOW_ENABLE_KEYS.legacysystem = "reskinLegacySystem"
 end
@@ -115,8 +116,8 @@ end
 --- rides exports); nil/false = enabled. Per-window enable keys and style picks are
 --- PRESERVED while killed. Skins install at load, so crossings need a reload
 --- (callers show the popup). Queue Popup, Pause Menu, and Dragon Riding are not windows and stay untouched.
-function CludesUI.BlizzWindowSkinsKilled()
-    local profileTbl = CludesUI.GetActiveProfileData()
+function CUI.BlizzWindowSkinsKilled()
+    local profileTbl = CUI.GetActiveProfileData()
     return (profileTbl and profileTbl.disableWindowSkins) and true or false
 end
 
@@ -144,7 +145,7 @@ do
     -- Retail only: this shipment is when the Friends List card started
     -- skinning retail's friends window. WoW Forever's card has driven its own
     -- friends skin since that file shipped, so those accounts stay as set.
-    if not CludesUI.IS_FOREVER then
+    if not CUI.IS_FOREVER then
         BATCHES[#BATCHES + 1] = { marker = "socialLegacySkinSeeded", keys = { "socialui" } }
     else
         -- WoW Forever: the shipment where the LFG Menu card began skinning
@@ -244,7 +245,7 @@ do
         if
             not stock
             and p
-            and CludesUI.IS_FOREVER
+            and CUI.IS_FOREVER
             and not store.foreverCharSheetStyleAdopted
             and p.charSheetUseBlizzardStyle == nil
             and p.charSheetUseClassicStyle == nil
@@ -280,7 +281,7 @@ do
     seedFrame:SetScript("OnEvent", function(self, evt, name)
         if evt == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
-            CludesUI.ReconcileWindowSkinLook()
+            CUI.ReconcileWindowSkinLook()
             return
         end
         if name ~= ADDON_NAME then return end
@@ -291,17 +292,17 @@ do
         end
         AdoptLegacyWindowLook(CludesUIDB)
         AdoptCharSheetCardStyle(CludesUIDB)
-        CludesUI.ReconcileWindowSkinLook()
+        CUI.ReconcileWindowSkinLook()
     end)
 end
 
-function CludesUI.GetBlizzWindowStyle(windowKey)
+function CUI.GetBlizzWindowStyle(windowKey)
     -- Third-party virtual keys ("tp:<AddonName>", RegisterSkin API) resolve by majority
     -- vote and bypass the kill switch: third-party skinning is its own opt-in, so window-skin settings only pick WHICH theme, never whether it runs.
     if type(windowKey) == "string" and windowKey:sub(1, 3) == "tp:" then
-        return CludesUI.GetThirdPartySkinStyle()
+        return CUI.GetThirdPartySkinStyle()
     end
-    if CludesUI.BlizzWindowSkinsKilled() then return "off" end
+    if CUI.BlizzWindowSkinsKilled() then return "off" end
     local engineKey = WINDOW_ENABLE_KEYS[windowKey]
     if engineKey and not EnabledValue(windowKey, CludesUIDB and CludesUIDB[engineKey]) then return "off" end
     local styleMap = CludesUIDB and CludesUIDB.blizzWindowSkinStyles
@@ -315,7 +316,7 @@ end
 --- incl. under the kill switch where every window reports "off") -> "cui". Never
 --- returns "off": whether third-party skinning runs is decided by its own toggles in
 --- the SkinAPI dispatcher (reload-bound there), so live refreshes only ever swap between the two themes.
-function CludesUI.GetThirdPartySkinStyle()
+function CUI.GetThirdPartySkinStyle()
     local ownStyle, modernStyle = 0, 0
     local styleMap = CludesUIDB and CludesUIDB.blizzWindowSkinStyles
     -- Under a stock look (windowSkinStyleSlots.active) a window still votes
@@ -328,11 +329,11 @@ function CludesUI.GetThirdPartySkinStyle()
             and type(slotMap.cui) == "table"
             and slotMap.cui
         or nil
-    local killed = CludesUI.BlizzWindowSkinsKilled()
+    local killed = CUI.BlizzWindowSkinsKilled()
     for windowKey, engineKey in pairs(WINDOW_ENABLE_KEYS) do
         -- The inspect sheet renders in the character sheet's style: one vote.
         if windowKey ~= "inspect" then
-            local s = CludesUI.GetBlizzWindowStyle(windowKey)
+            local s = CUI.GetBlizzWindowStyle(windowKey)
             -- A Blizz Default character sheet wears no skin: it votes like
             -- a window that is off.
             if s == "blizzard" then s = "off" end
@@ -351,7 +352,7 @@ end
 
 -- Turn off every window reskin at once (feature-intro popup's "Disable"). Writes explicit
 -- false to each enable key (GetBlizzWindowStyle -> "off"); blizzWindowSkinStyles is left intact so re-enable restores styles. Reskins install at load, so the caller must reload.
-function CludesUI.DisableAllBlizzWindowSkins()
+function CUI.DisableAllBlizzWindowSkins()
     if not CludesUIDB then CludesUIDB = {} end
     for _, engineKey in pairs(WINDOW_ENABLE_KEYS) do
         CludesUIDB[engineKey] = false
@@ -392,7 +393,7 @@ local function LookSkinsWindows(style, windowKey)
     if style == "forever" then return not (windowKey and FOREVER_STOCK[windowKey]) end
     return style == "cui"
 end
-function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
+function CUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
     if not CludesUIDB then CludesUIDB = {} end
     local slotMap = CludesUIDB.windowSkinStyleSlots
     if type(slotMap) ~= "table" then slotMap = nil end
@@ -475,12 +476,12 @@ end
 -- once the account's windows have been switched at all; before that there
 -- is nothing to follow (nil). liveFonts: the live font store, for the
 -- active profile (its own snapshot is stale until the next switch).
-function CludesUI.ProfileWindowSkinLook(profileTbl, liveFonts)
+function CUI.ProfileWindowSkinLook(profileTbl, liveFonts)
     if type(profileTbl) ~= "table" then return nil end
     local style = profileTbl.windowSkinLook
     -- WoW Forever's own window look; a Forever profile imported on retail
     -- renders Blizzard Style there, so it takes that look's windows.
-    if style == "forever" then return CludesUI.IS_FOREVER and "forever" or "blizzard" end
+    if style == "forever" then return CUI.IS_FOREVER and "forever" or "blizzard" end
     if style == "cui" or style == "blizzard" or style == "classic" then return style end
     local fonts = liveFonts or profileTbl.fonts
     local fontStr = type(fonts) == "table" and fonts._styleSlots
@@ -496,12 +497,12 @@ end
 -- profile keeps its own window look and a per-window pick always banks into
 -- the look it was made under. Skins install at load: a switch that changes
 -- the look offers the reload (ProfileChangesWindowSkins).
-function CludesUI.ReconcileWindowSkinLook()
+function CUI.ReconcileWindowSkinLook()
     local store = CludesUIDB
     if type(store) ~= "table" then return end
-    local profileTbl = CludesUI.GetActiveProfileData()
-    local style = CludesUI.ProfileWindowSkinLook(profileTbl, store.fonts)
-    if style then CludesUI.SwapWindowSkinStyle(style, false, style ~= "cui" and style or nil) end
+    local profileTbl = CUI.GetActiveProfileData()
+    local style = CUI.ProfileWindowSkinLook(profileTbl, store.fonts)
+    if style then CUI.SwapWindowSkinStyle(style, false, style ~= "cui" and style or nil) end
 end
 
 -- Main-chunk locals the CUI_BlizzardSkin_*.lua files re-import by name.
@@ -509,7 +510,7 @@ end
 -- CUI_BlizzardSkin_*.lua file returns at its first lines unless the file
 -- before it got there, so one that errors, does not compile or is missing
 -- stops the files behind it.
-CludesUI.NewInternals(mod, "_internals", {
+CUI.NewInternals(mod, "_internals", {
     FFD = FFD,
     GetFFD = GetFFD,
     last = "main",

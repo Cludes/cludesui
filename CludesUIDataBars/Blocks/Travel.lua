@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- Blocks\Travel.lua
 -- Travel block factory (hearthstones and M+ teleports).
 
@@ -127,7 +128,7 @@ local primaryHearthId
 local function TravelIsUsable(ident)
     if not ident then return false end
     -- A race-restricted hearthstone toy counts only on the races that can use it.
-    if not CludesUI.CanUseHearthToy(ident) then return false end
+    if not CUI.CanUseHearthToy(ident) then return false end
     if PlayerHasToy(ident) then return true end
     if IsPlayerSpell(ident) then return true end
     return (C_Item and C_Item.GetItemCount and C_Item.GetItemCount(ident) or 0) > 0
@@ -205,7 +206,7 @@ local housePending
 local houseWatch = CreateFrame("Frame")
 
 local function TravelHousingAvailable()
-    return not CludesUI.IS_FOREVER and C_Housing and C_Housing.GetPlayerOwnedHouses ~= nil
+    return not CUI.IS_FOREVER and C_Housing and C_Housing.GetPlayerOwnedHouses ~= nil
 end
 
 -- As the house favor bar: no request in a keystone or raid; world entry retries.
@@ -451,12 +452,12 @@ local function TravelSaveMyHearth()
     local storage = TravelHearthStore()
     if not storage then return end
     if not _myHearthKey then
-        _myHearthKey = CludesUI.CharKey("-", storage)
+        _myHearthKey = CUI.CharKey("-", storage)
         if not _myHearthKey then return end
         -- The full name whatever the show-surname preference: two WoW Forever
         -- characters can share a first name.
         local name, surname = (UnitNameUnmodified or UnitName)("player")
-        _myHearthName = CludesUI.WithSurname(name, surname, true)
+        _myHearthName = CUI.WithSurname(name, surname, true)
     end
     local cooldown, isKnown = TravelGetPrimaryCooldown()
     if not isKnown then return end
@@ -493,7 +494,7 @@ local function TravelAltSort(a, z) return (a.name or "") < (z.name or "") end
 local function TravelAddAltRows(ar, ag, ab, onRemoved)
     local storage = TravelHearthStore()
     if not storage then return 0 end
-    local mine = _myHearthKey or CludesUI.CharKey("-")
+    local mine = _myHearthKey or CUI.CharKey("-")
     local num = 0
     wipe(_altKeyOf)
     for key, entry in pairs(storage) do
@@ -570,20 +571,20 @@ local HOUSE_ZONE_LABELS = { [2352] = "HOME_ALLIANCE", [2351] = "HOME_HORDE" } --
 local function TravelBarDestination(pick, tagHouses)
     local hgt = TravelFindHouse(pick)
     if hgt then
-        if not tagHouses then return CludesUI.L(L["HOME"]) end
+        if not tagHouses then return CUI.L(L["HOME"]) end
         local frame = C_Housing.GetUIMapIDForNeighborhood
         local success, mapID = false, nil
         if frame then
             success, mapID = pcall(frame, hgt.neighborhoodGUID)
         end
         local key = success and HOUSE_ZONE_LABELS[mapID]
-        if key then return CludesUI.L(L[key]) end
-        return CludesUI.L(TravelHouseName(hgt))
+        if key then return CUI.L(L[key]) end
+        return CUI.L(TravelHouseName(hgt))
     end
     if TRAVEL_EXTRA_SET[pick] and TravelExtraKind(pick) then
         local skinData = TRAVEL_DESTINATIONS[pick]
         local name = skinData
-            and ((skinData.global and _G[skinData.global]) or (skinData.key and CludesUI.L(L[skinData.key])))
+            and ((skinData.global and _G[skinData.global]) or (skinData.key and CUI.L(L[skinData.key])))
         if name then return name end
         if pick ~= 556 then return TravelEntryName(pick) end -- Astral Recall: the bind point
     end
@@ -662,7 +663,7 @@ local function TravelBarText(deltaTime, bind, plain)
                 elseif mode == "both" then
                     part = cooldownText and (dest .. " " .. cooldownText) or dest
                 else
-                    part = cooldownText or (isKnown and CludesUI.L(L["READY"]) or "-")
+                    part = cooldownText or (isKnown and CUI.L(L["READY"]) or "-")
                 end
             end
             local dup = false
@@ -708,7 +709,7 @@ end
 
 -- Season M+ teleports from the shared season list (one update per season).
 local SEASON_TELEPORTS = {}
-for _, entry in ipairs(CludesUI.SEASON_PORTALS) do
+for _, entry in ipairs(CUI.SEASON_PORTALS) do
     local ids = entry.spellID
     if entry.altSpellIDs then
         ids = { entry.spellID }
@@ -899,7 +900,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
         -- Show M+ Portals: nil reads as shown (no migration needed). OFF skips the section and its spell-resolution work entirely.
         -- WoW Forever has no Mythic+ teleports: the section never builds there.
         _mythicLineCount = 0
-        if not CludesUI.IS_FOREVER and D().clickableTeleports ~= false then
+        if not CUI.IS_FOREVER and D().clickableTeleports ~= false then
             for _, record in ipairs(SEASON_TELEPORTS) do
                 local spellId = TravelResolveMythicId(record.spellIds)
                 if spellId then

@@ -1,12 +1,13 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_GroupFinder_Regions.lua - where a group's leader plays from
 --  us: na / oce / mex / bra by realm. eu: the realm's language.
 --  the region filter and the region tags read this. other regions: off
 -------------------------------------------------------------------------------
 local FOLDER, mod = ...
-if CludesUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
-local L = CludesUI.L
+if CUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
+local L = CUI.L
 
 local FLAG_DIR = "Interface\\AddOns\\" .. FOLDER .. "\\media\\flags\\"
 

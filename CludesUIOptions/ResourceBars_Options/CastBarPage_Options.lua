@@ -1,15 +1,16 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ResourceBars_Options\CastBarPage_Options.lua
 --  Resource Bars options: Cast Bar page. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
+local mod = CUI._ModuleNS["CludesUIResourceBars"]
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- Cast Bar page
 function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
@@ -19,7 +20,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     local ShuffleCastBarIcons, UpdateCastBarPreview, _castBarPreviewBuilder =
         environ.ShuffleCastBarIcons, environ.UpdateCastBarPreview, environ._castBarPreviewBuilder
     local TexBgRowCfg = environ.TexBgRowCfg
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height
 
@@ -27,18 +28,18 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     environ.SetCastBarPreviewFill(math.random(30, 85) / 100)
     ShuffleCastBarIcons()
-    CludesUI:SetContentHeader(_castBarPreviewBuilder)
+    CUI:SetContentHeader(_castBarPreviewBuilder)
 
     -- Clear this page's own click mappings (the table is shared with the display page, whose
     -- cached preview keeps its own; never from a hidden pre-build -- see the matching guard in
     -- BuildBarDisplayPage)
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         _clickMappings.castBar, _clickMappings.castIcon, _clickMappings.castSpellText, _clickMappings.castTimer =
             nil, nil, nil, nil
     end
 
     -- Re-append SharedMedia textures for cast bar (catches lazy-registered SM packs)
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         _G._CURB_CastBarTextureNames or {},
         _G._CURB_CastBarTextureOrder or {},
         nil,
@@ -68,7 +69,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     local function ApplyCastBar()
         if _G._CURB_Apply then _G._CURB_Apply() end
-        if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_CastBar") end
+        if CUI.NotifyElementResized then CUI.NotifyElementResized("ERB_CastBar") end
         UpdateCastBarPreview()
     end
     -- A setting row's getter for one cast bar key: its value, or default when
@@ -88,21 +89,21 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             if not profile then return end
             profile.castBar[key] = val
             ApplyCastBar()
-            if alsoPage then CludesUI:RefreshPage() end
+            if alsoPage then CUI:RefreshPage() end
         end
     end
 
     local castSection
     castSection, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
     cursorY = cursorY - height
-    CludesUI.BuildSectionUnlockJump(
+    CUI.BuildSectionUnlockJump(
         castSection,
         { key = "ERB_CastBar", disabled = castBarOff, disabledTooltip = "Player Cast Bar" }
     )
 
     -- Strata dropdown values for the Cast Bar Frame Strata control.
-    local cbStrataValues = CludesUI.FRAME_STRATA_LABELS
-    local cbStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
+    local cbStrataValues = CUI.FRAME_STRATA_LABELS
+    local cbStrataOrder = CUI.FRAME_STRATA_ORDER_BASE
 
     -- Row 1: Enable Player Cast Bar | Frame Strata
     local castEnableRow
@@ -127,8 +128,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     -- Row 2: Height | Width (sync icons push to power + health bars)
     local classSizeRow
-    local cbhDis, cbhTip, cbhRaw = CludesUI.MatchGuard("ERB_CastBar", "Height", castBarOff, "Player Cast Bar")
-    local cbwDis, cbwTip, cbwRaw = CludesUI.MatchGuard("ERB_CastBar", "Width", castBarOff, "Player Cast Bar")
+    local cbhDis, cbhTip, cbhRaw = CUI.MatchGuard("ERB_CastBar", "Height", castBarOff, "Player Cast Bar")
+    local cbwDis, cbwTip, cbwRaw = CUI.MatchGuard("ERB_CastBar", "Width", castBarOff, "Player Cast Bar")
     classSizeRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Height",
@@ -176,7 +177,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
     -- Inline cog on Show Spell Icon
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = iconRow._leftRegion
         local FREE_TIP = "This option requires the icon at bar size with no offset."
         local function IconFree()
@@ -190,7 +191,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         -- Embed in Player Portrait: nil while a player portrait can take the icon, else why
         -- not ("uf": the Unit Frames player cast bar already shows its icon there).
         local function PortraitBlock()
-            local uf = CludesUI._ModuleNS["CludesUIUnitFrames"]
+            local uf = CUI._ModuleNS["CludesUIUnitFrames"]
             if not (uf and uf.UF_GetPlayerCastPortrait) then return "portrait" end
             local edge, _, why = uf.UF_GetPlayerCastPortrait()
             if edge then return nil end
@@ -205,10 +206,10 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 max = hi,
                 step = 1,
                 tooltip = tooltip,
-                disabled = function() return IconOnPortrait() or CludesUI.BlizzStyle.Get("castbar") end,
+                disabled = function() return IconOnPortrait() or CUI.BlizzStyle.Get("castbar") end,
                 disabledTooltip = function()
                     if IconOnPortrait() then return "Embed in Player Portrait" end
-                    return CludesUI.BlizzStyle.Label("castbar")
+                    return CUI.BlizzStyle.Label("castbar")
                 end,
                 requireState = "disabled",
                 get = function()
@@ -223,7 +224,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 end,
             }
         end
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function()
                 local profile = DB()
                 return profile and (not profile.castBar.enabled or profile.castBar.showIcon == false)
@@ -274,7 +275,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     disabled = function() return IconOnPortrait() or IconFree() end,
                     disabledTooltip = function()
                         if IconOnPortrait() then
-                            return CludesUI.DisabledTooltip("Embed in Player Portrait", "disabled")
+                            return CUI.DisabledTooltip("Embed in Player Portrait", "disabled")
                         end
                         return FREE_TIP
                     end,
@@ -294,13 +295,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local checkBtn = profile.castBar
                         return IconOnPortrait()
                             or not checkBtn.showIconDivider
-                            or CludesUI.BlizzStyle.Get("castbar")
-                            or not CludesUI.GetBorderCompanion(checkBtn.borderTexture, "sepV")
+                            or CUI.BlizzStyle.Get("castbar")
+                            or not CUI.GetBorderCompanion(checkBtn.borderTexture, "sepV")
                     end,
                     disabledTooltip = function()
                         if IconOnPortrait() then return "Embed in Player Portrait" end
-                        if CludesUI.BlizzStyle.Get("castbar") then
-                            return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("castbar"), "disabled")
+                        if CUI.BlizzStyle.Get("castbar") then
+                            return CUI.DisabledTooltip(CUI.BlizzStyle.Label("castbar"), "disabled")
                         end
                         local profile = DB()
                         if not (profile and profile.castBar.showIconDivider) then
@@ -309,7 +310,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         return "This option requires a border style with matching art, such as Pixels."
                     end,
                     rawTooltip = function()
-                        if CludesUI.BlizzStyle.Get("castbar") then return true end
+                        if CUI.BlizzStyle.Get("castbar") then return true end
                         local profile = DB()
                         return (profile and profile.castBar.showIconDivider) and true or false
                     end,
@@ -372,16 +373,16 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     local displaySection
     displaySection, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
     cursorY = cursorY - height
-    cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "castbar")
+    cursorY = CUI.BlizzStyle.Note(hostFrame, cursorY, "castbar")
 
     -- Row: Cast Bar Border Style dropdown (+ inline offset cog)
     do
-        local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+        local texValues, texOrder = CUI.GetBorderTextureDropdown()
         local cbBsRow
         cbBsRow, height = W:DualRow(
             hostFrame,
             cursorY,
-            CludesUI.BlizzStyle.Gate("castbar", {
+            CUI.BlizzStyle.Gate("castbar", {
                 type = "dropdown",
                 text = "Border Style",
                 disabled = castBarOff,
@@ -397,22 +398,22 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     profile.castBar.borderTextureOffsetY = nil
                     profile.castBar.borderTextureShiftX = nil
                     profile.castBar.borderTextureShiftY = nil
-                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
+                    local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(val)
                     profile.castBar.borderR = _bcol.r
                     profile.castBar.borderG = _bcol.g
                     profile.castBar.borderB = _bcol.b
                     profile.castBar.borderA = 1
                     profile.castBar.borderBehind = _bbehind
-                    local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
+                    local defSz = CUI.GetBorderDefaultSize("resourcebars", val)
                     if defSz then profile.castBar.borderSize = defSz end
                     if profile.castBar.borderSizePx then profile.castBar.borderSizePx = false end
                     ApplyCastBar()
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             }),
             -- Classic WoW UI: the slot sizes the vanilla frame instead.
-            (CludesUI.BlizzStyle.Active("castbar") == "classic")
-                    and CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
+            (CUI.BlizzStyle.Active("castbar") == "classic")
+                    and CUI.BlizzStyle.ClassicBorderSizeCfg(function()
                         local profile = DB()
                         return profile and profile.castBar.stockBorderScale
                     end, function(val)
@@ -420,11 +421,11 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         if not profile then return end
                         profile.castBar.stockBorderScale = val
                         ApplyCastBar()
-                        CludesUI.ReapplyMatchPads("ERB_CastBar")
+                        CUI.ReapplyMatchPads("ERB_CastBar")
                     end, { disabled = castBarOff, disabledTooltip = "Player Cast Bar" })
-                or CludesUI.BlizzStyle.Gate(
+                or CUI.BlizzStyle.Gate(
                     "castbar",
-                    CludesUI.BorderPxSliderCfg({
+                    CUI.BorderPxSliderCfg({
                         text = "Border Size",
                         disabled = castBarOff,
                         disabledTooltip = "Player Cast Bar",
@@ -450,7 +451,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         end,
                         apply = function()
                             ApplyCastBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     })
                 )
@@ -465,7 +466,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     local profile = DB()
                     return profile and (profile.castBar.borderSize or 0) or 0
                 end
-                local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                     addonKey = "resourcebars",
                     disabled = castBarOff,
                     disabledTooltip = "Player Cast Bar",
@@ -497,24 +498,24 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     end,
                     apply = function()
                         ApplyCastBar()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
                 _, height = W:DualRow(
                     hostFrame,
                     cursorY,
-                    CludesUI.BlizzStyle.Gate("castbar", ocfgL),
-                    CludesUI.BlizzStyle.Gate("castbar", ocfgR)
+                    CUI.BlizzStyle.Gate("castbar", ocfgL),
+                    CUI.BlizzStyle.Gate("castbar", ocfgR)
                 )
                 cursorY = cursorY - height
             end
         end
         -- Inline border color swatch on Border slider (right region); none
         -- under Classic WoW UI, whose slider sizes the vanilla frame.
-        if not CludesUI._prebuilding and CludesUI.BlizzStyle.Active("castbar") ~= "classic" then
+        if not CUI._prebuilding and CUI.BlizzStyle.Active("castbar") ~= "classic" then
             local region = cbBsRow._rightRegion
             local control = region._control
-            local borderSwatch, updateBorderSwatch = CludesUI.BuildColorSwatch(
+            local borderSwatch, updateBorderSwatch = CUI.BuildColorSwatch(
                 region,
                 cbBsRow:GetFrameLevel() + 3,
                 function()
@@ -530,33 +531,33 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     profile.castBar.borderR, profile.castBar.borderG, profile.castBar.borderB, profile.castBar.borderA =
                         red, green, blue, a
                     ApplyCastBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 true,
                 20
             )
             Pix.Point(borderSwatch, "RIGHT", control, "LEFT", -8, 0)
             -- Disable swatch when border size is 0
-            local borderSwatchBlock = CludesUI.NewSwatchBlocker(borderSwatch)
+            local borderSwatchBlock = CUI.NewSwatchBlocker(borderSwatch)
             borderSwatchBlock:SetScript("OnEnter", function()
-                if CludesUI.BlizzStyle.Get("castbar") then
-                    CludesUI.ShowWidgetTooltip(
+                if CUI.BlizzStyle.Get("castbar") then
+                    CUI.ShowWidgetTooltip(
                         borderSwatch,
-                        CludesUI.DisabledTooltip("Blizzard Style", "disabled")
+                        CUI.DisabledTooltip("Blizzard Style", "disabled")
                     )
                 else
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         borderSwatch,
-                        CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
+                        CUI.DisabledTooltip("This option requires a Border Size above 0.")
                     )
                 end
             end)
-            borderSwatchBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            borderSwatchBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function UpdateBorderSwatchState()
                 local profile = DB()
                 local noBorder = not profile
                     or (profile.castBar.borderSize or 0) == 0
-                    or CludesUI.BlizzStyle.Get("castbar")
+                    or CUI.BlizzStyle.Get("castbar")
                 if noBorder then
                     borderSwatch:SetAlpha(0.3)
                     borderSwatchBlock:Show()
@@ -565,16 +566,16 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     borderSwatchBlock:Hide()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 updateBorderSwatch()
                 UpdateBorderSwatchState()
             end)
             UpdateBorderSwatchState()
         end
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = cbBsRow._leftRegion
             local sepValues, sepOrder = mod.ERB_SeparatorArtValues(true)
-            local cogBtn = CludesUI.BuildInlineCog(region, {
+            local cogBtn = CUI.BuildInlineCog(region, {
                 title = "Border Options",
                 rows = {
                     {
@@ -588,7 +589,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             if not profile then return 0 end
                             local val = profile.castBar.borderTextureShiftX
                             if val then return val end
-                            local _, _, dsx = CludesUI.GetBorderDefaults(
+                            local _, _, dsx = CUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.castBar.borderTexture or "solid",
                                 profile.castBar.borderSize or 0
@@ -600,7 +601,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.castBar.borderTextureShiftX = val == 0 and nil or val
                             ApplyCastBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -614,7 +615,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             if not profile then return 0 end
                             local val = profile.castBar.borderTextureShiftY
                             if val then return val end
-                            local _, _, _, dsy = CludesUI.GetBorderDefaults(
+                            local _, _, _, dsy = CUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.castBar.borderTexture or "solid",
                                 profile.castBar.borderSize or 0
@@ -626,7 +627,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.castBar.borderTextureShiftY = val == 0 and nil or val
                             ApplyCastBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -638,7 +639,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             if not profile then return end
                             profile.castBar.borderBehind = val == false and nil or val
                             ApplyCastBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     -- Border extensions: the whole border host (bar + icon). This cog
@@ -716,7 +717,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                                 profile.castBar.edgeSepArt = val
                             end
                             ApplyCastBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -740,13 +741,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local function UpdateCogVis()
                 local profile = DB()
                 local texture = profile and profile.castBar.borderTexture or "solid"
-                if texture == "solid" or CludesUI.BlizzStyle.Get("castbar") then
+                if texture == "solid" or CUI.BlizzStyle.Get("castbar") then
                     cogBtn:Hide()
                 else
                     cogBtn:Show()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(UpdateCogVis)
+            CUI.RegisterWidgetRefresh(UpdateCogVis)
             UpdateCogVis()
         end
     end
@@ -793,14 +794,14 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         })
     )
     cursorY = cursorY - height
-    local castFillBlizz = CludesUI.BlizzStyle.Active("castbar") == "blizzard"
+    local castFillBlizz = CUI.BlizzStyle.Active("castbar") == "blizzard"
     -- Inline cog on Fill Color: the gradient and the channel / uninterruptible
     -- color overrides (not under Blizzard Style, whose fill art is stock) and Out
     -- of Range Gray (every style).
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = castColorRow._leftRegion
         local function gradientOff() return castFillBlizz end
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function()
                 local profile = DB()
                 return profile and not profile.castBar.enabled
@@ -919,7 +920,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     -- Fill Color inline swatches: gradient end / custom / class. Blizzard Style
     -- keeps the stock fill art, so the colour swatches are inert there; the
     -- Classic WoW UI fill is the user's, so they stay live under it.
-    CludesUI.BuildInlineSwatches(castColorRow._leftRegion, {
+    CUI.BuildInlineSwatches(castColorRow._leftRegion, {
         {
             tooltip = "Gradient End Color",
             hasAlpha = true,
@@ -971,7 +972,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 profile.castBar.fillR, profile.castBar.fillG, profile.castBar.fillB = red, green, blue
                 if profile.castBar.classColored then profile.castBar.classColored = false end
                 ApplyCastBar()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             onClick = function(self)
                 local profile = DB()
@@ -979,7 +980,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 if profile.castBar.classColored then
                     profile.castBar.classColored = false
                     ApplyCastBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if self._eabOrigClick then self._eabOrigClick(self) end
@@ -1003,7 +1004,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 if not profile then return end
                 profile.castBar.classColored = true
                 ApplyCastBar()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             refreshAlpha = function()
                 local profile = DB()
@@ -1020,10 +1021,10 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     })
 
     -- Inline color swatch on Background (right region)
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = castColorRow._rightRegion
         local control = region._control
-        local bgSwatch, bgUpdateSwatch = CludesUI.BuildColorSwatch(
+        local bgSwatch, bgUpdateSwatch = CUI.BuildColorSwatch(
             region,
             castColorRow:GetFrameLevel() + 3,
             function()
@@ -1046,10 +1047,10 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local profile = DB()
             -- Gated with the Background slider beside it: Blizzard Style
             -- paints the stock background art; the classic bar keeps this colour.
-            if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
+            if CUI.BlizzStyle.Active("castbar") == "blizzard" then
                 bgSwatch:SetAlpha(0.15)
                 bgSwatch:Disable()
-                bgSwatch._disabledTooltip = CludesUI.BlizzStyle.Label("castbar")
+                bgSwatch._disabledTooltip = CUI.BlizzStyle.Label("castbar")
             elseif not profile or not profile.castBar.enabled then
                 bgSwatch:SetAlpha(0.15)
                 bgSwatch:Disable()
@@ -1062,7 +1063,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             bgUpdateSwatch()
         end
         UpdateBgSwatch()
-        CludesUI.RegisterWidgetRefresh(UpdateBgSwatch)
+        CUI.RegisterWidgetRefresh(UpdateBgSwatch)
     end
 
     -- Row 3: Bar Texture | Spell Text (cog RESIZE: text size + x/y)
@@ -1078,8 +1079,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         getValue = Getter("texture", "none"),
         setValue = Setter("texture"),
     }
-    if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
-        CludesUI.BlizzStyle.Gate("castbar", castTexCfg)
+    if CUI.BlizzStyle.Active("castbar") == "blizzard" then
+        CUI.BlizzStyle.Gate("castbar", castTexCfg)
     end
     local textRow
     textRow, height = W:DualRow(hostFrame, cursorY, castTexCfg, {
@@ -1104,18 +1105,18 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 profile.castBar.spellTextSide = val
             end
             ApplyCastBar()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     })
     cursorY = cursorY - height
     -- Inline cog on Bar Texture: Textured Background (greyed while the cast bar
     -- is off, and under Blizzard Style, whose own background art stays).
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(textRow._leftRegion, {
-            disabled = function() return castBarOff() or CludesUI.BlizzStyle.Active("castbar") == "blizzard" end,
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(textRow._leftRegion, {
+            disabled = function() return castBarOff() or CUI.BlizzStyle.Active("castbar") == "blizzard" end,
             disabledTooltip = function()
                 if castBarOff() then return "Player Cast Bar" end
-                return CludesUI.BlizzStyle.Label("castbar")
+                return CUI.BlizzStyle.Label("castbar")
             end,
             requireState = function()
                 if not castBarOff() then return "disabled" end
@@ -1125,9 +1126,9 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         })
     end
     -- Inline cog (RESIZE) on Spell Text for text size + x/y
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = textRow._rightRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function()
                 local profile = DB()
                 return profile and (not profile.castBar.enabled or not profile.castBar.showSpellText)
@@ -1175,8 +1176,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     -- Spell Text colour (RGBA; white = the untinted text), left of the
     -- Spell Text Settings cog above. Dimmed and blocked while the cast bar
     -- is off or Spell Text is None.
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineSwatches(textRow._rightRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineSwatches(textRow._rightRegion, {
             {
                 tooltip = "Spell Text Color",
                 hasAlpha = true,
@@ -1197,7 +1198,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     local c = profile.castBar
                     c.spellTextR, c.spellTextG, c.spellTextB, c.spellTextA = red, green, blue, a
                     ApplyCastBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             },
         }, { size = 20 })
@@ -1226,7 +1227,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 profile.castBar.timerSide = val
             end
             ApplyCastBar()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "toggle",
@@ -1242,9 +1243,9 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
     -- Inline cog (RESIZE) on Duration Text for timer size + x/y
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = timerRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             disabled = function()
                 local profile = DB()
                 return profile and (not profile.castBar.enabled or not profile.castBar.showTimer)
@@ -1285,8 +1286,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     -- Duration Text colour (RGBA; white = the untinted text), left of the
     -- Timer Settings cog above. Dimmed and blocked while the cast bar is off
     -- or Duration Text is None.
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineSwatches(timerRow._leftRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineSwatches(timerRow._leftRegion, {
             {
                 tooltip = "Duration Text Color",
                 hasAlpha = true,
@@ -1307,7 +1308,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     local c = profile.castBar
                     c.timerR, c.timerG, c.timerB, c.timerA = red, green, blue, a
                     ApplyCastBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             },
         }, { size = 20 })
@@ -1336,7 +1337,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             profile.castBar.fullCraftTime = val == "text"
             profile.castBar.mergeCrafts = val == "merge"
         end,
-    }, CludesUI.IS_FOREVER and {
+    }, CUI.IS_FOREVER and {
         type = "toggle",
         text = "Show Spell Rank",
         tooltip = "Appends the spell's rank to the spell name, for spells that have one.",
@@ -1351,7 +1352,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             if not profile then return end
             profile.castBar.showSpellRank = val
         end,
-    } or CludesUI.BlankRowCfg())
+    } or CUI.BlankRowCfg())
     cursorY = cursorY - height
 
     -- MARKS section
@@ -1365,19 +1366,19 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     -- Helper: attach an inline color swatch to a region with disabled overlay
     local function AttachInlineSwatch(region, getFunc, setFunc, disabledFunc, disabledTooltip)
-        if CludesUI._prebuilding then return end
+        if CUI._prebuilding then return end
         local colorSwatch, updateSwatch =
-            CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, getFunc, setFunc, true, 20)
+            CUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, getFunc, setFunc, true, 20)
         Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -12, 0)
 
-        local block = CludesUI.NewSwatchBlocker(colorSwatch)
+        local block = CUI.NewSwatchBlocker(colorSwatch)
         block:SetScript(
             "OnEnter",
-            function() CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip(disabledTooltip)) end
+            function() CUI.ShowWidgetTooltip(colorSwatch, CUI.DisabledTooltip(disabledTooltip)) end
         )
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
-        CludesUI.RegisterWidgetRefresh(function()
+        CUI.RegisterWidgetRefresh(function()
             local off = disabledFunc()
             colorSwatch:SetAlpha(off and 0.3 or 1)
             if off then
@@ -1412,7 +1413,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 profile.castBar.showTickMarks = true
             end
             ApplyCastBar()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "toggle",
@@ -1528,7 +1529,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     end, latOff, "Latency Overlay")
 
     -- Wire up click mappings for cast bar preview hit overlays (never from a hidden pre-build: the shared live table would end up pointing at off-screen rows)
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         _clickMappings.castBar = { section = castSection, target = classSizeRow }
         _clickMappings.castIcon = { section = castSection, target = iconRow, slotSide = "left" }
         _clickMappings.castSpellText = { section = displaySection, target = textRow, slotSide = "right" }

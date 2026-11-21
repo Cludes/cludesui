@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GroupInspect.lua  (WoW Forever only)
 --  Group Inspect: one window with everyone in your party or raid: class,
@@ -29,7 +30,7 @@ local cache = {} -- guid -> { name, class, level, ilvl, bare = {...}, when }
 local queue, asking = {}, nil
 local window, rowList = nil, {}
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local function Members()
@@ -141,7 +142,7 @@ local function Build()
     window = CreateFrame("Frame", "CludesUIGroupInspect", UIParent)
     window:SetSize(460, 60)
     window:SetPoint("CENTER", 0, 120)
-    CludesUI.Kit.Panel(window, 0.94)
+    CUI.Kit.Panel(window, 0.94)
     window:SetMovable(true)
     window:EnableMouse(true)
     window:RegisterForDrag("LeftButton")
@@ -149,11 +150,11 @@ local function Build()
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     window:SetFrameStrata("HIGH")
     local title = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(title, 15, "essentials")
+    CUI.Kit.Font(title, 15, "essentials")
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Group Inspect")
-    CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
+    CUI.Kit.AccentText(title)
+    local close = CUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
     window:Hide()
     tinsert(UISpecialFrames, "CludesUIGroupInspect")
@@ -165,7 +166,7 @@ local function Row(index)
         row = CreateFrame("Button", nil, window)
         row:SetSize(440, ROW_H)
         row.text = row:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(row.text, 12, "essentials")
+        CUI.Kit.Font(row.text, 12, "essentials")
         row.text:SetPoint("LEFT")
         row.text:SetJustifyH("LEFT")
         row.text:SetWidth(440)
@@ -230,7 +231,7 @@ function module.ShowGroupInspect()
     ScanGroup()
 end
 
-CludesUI._GroupInspect = { Show = module.ShowGroupInspect }
+CUI._GroupInspect = { Show = module.ShowGroupInspect }
 
 SLASH_CUIGROUPINSPECT1 = "/cinspect"
 SlashCmdList.CUIGROUPINSPECT = function()

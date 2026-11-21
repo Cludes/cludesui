@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQuickdraw.lua  --  hold-to-open action palette for CludesUI
 --
@@ -44,12 +45,12 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  PushPalette's writes of a palette's contents onto the secure buttons.
 -------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
-local EQD = CludesUI.Lite.NewAddon(ADDON_NAME)
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals) then
+local EQD = CUI.Lite.NewAddon(ADDON_NAME)
+if not (CUI and CUI._ModuleNS and CUI.NewInternals) then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
-CludesUI._ModuleNS[ADDON_NAME] = select(2, ...) -- LOD options files read this module ns via the registry
+CUI._ModuleNS[ADDON_NAME] = select(2, ...) -- LOD options files read this module ns via the registry
 
 -- The live palette's frame. CreateLiveView fills it in, and this is the one
 -- part of it that is not made there.
@@ -506,7 +507,7 @@ local function MigrateLegacyProfile(prof, live)
                     for key, val in pairs(legacy) do
                         live[key] = val
                     end
-                    CludesUI.Lite.DeepMergeDefaults(live, DB_DEFAULTS.profile)
+                    CUI.Lite.DeepMergeDefaults(live, DB_DEFAULTS.profile)
                     -- Converted by the next P(), like any switched-in profile:
                     -- what was just poured in may carry pre-rename field names.
                     migrated[live] = nil
@@ -856,7 +857,7 @@ function mod.PaletteActive(index)
     local specs = mod.PaletteSpecs(index)
     if not specs then return true end
     for ident in pairs(specs) do
-        if CludesUI.IsPlayerSpec(ident) then return true end
+        if CUI.IsPlayerSpec(ident) then return true end
     end
     return false
 end
@@ -867,12 +868,12 @@ end
 function mod.PalettesExclusive(a, b)
     local sa, scrollBar = mod.PaletteSpecs(a), mod.PaletteSpecs(b)
     if not sa or not scrollBar then return false end
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         for ida in pairs(sa) do
-            local cls = CludesUI.SpecClassOf(ida)
+            local cls = CUI.SpecClassOf(ida)
             if cls then
                 for idb in pairs(scrollBar) do
-                    if CludesUI.SpecClassOf(idb) == cls then return false end
+                    if CUI.SpecClassOf(idb) == cls then return false end
                 end
             end
         end
@@ -910,8 +911,8 @@ local function SelectColor(profile)
     -- Accent unless a custom color has been chosen: the suite accent is the
     -- default, resolved live so theme and accent changes carry straight
     -- through.
-    if not (profile and profile.selectColorCustom) and CludesUI.ResolveActiveAccent then
-        return CludesUI.ResolveActiveAccent()
+    if not (profile and profile.selectColorCustom) and CUI.ResolveActiveAccent then
+        return CUI.ResolveActiveAccent()
     end
     local sc = profile and profile.selectColor
     if sc then return sc[1] or 1, sc[2] or 1, sc[3] or 1 end
@@ -931,7 +932,7 @@ mod.MAX_CHILDREN = MAX_CHILDREN
 -- SetUsableSlots: CUI_Quickdraw_Actions.lua assigns the forward declaration.
 -- broken: true while an CUI_Quickdraw_*.lua file loads; a file that fails
 -- leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(mod, "_qdInternals", {
+CUI.NewInternals(mod, "_qdInternals", {
     BINDING_PREFIX = BINDING_PREFIX,
     ChildIndex = ChildIndex,
     ChildSlots = ChildSlots,

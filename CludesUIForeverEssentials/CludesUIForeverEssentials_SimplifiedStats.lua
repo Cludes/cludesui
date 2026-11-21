@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_SimplifiedStats.lua  (WoW Forever only)
 --  Simpler stat lines on item tooltips.
@@ -32,7 +33,7 @@ local statRules, statLabels
 local prefixRules
 -- Settings read once per tooltip by the hook.
 local colorOn, numMode, mergeOn
-local HUE = CludesUI.FOREVER_STAT_HUES
+local HUE = CUI.FOREVER_STAT_HUES
 -- A shown tooltip is rebuilt every 0.2 s: each line's rewrite (false = left
 -- as it is) is kept for the settings it was made with, so repeats are free.
 local memo, memoN, MEMO_MAX = {}, 0, 2000
@@ -397,7 +398,7 @@ if TooltipComparisonManager and TooltipComparisonManager.SetItemTooltip then
 end
 
 -- Options-page entry points.
-CludesUI._SimplifiedStats = {
+CUI._SimplifiedStats = {
     Get = F.Get,
     Cfg = F.Cfg,
 }

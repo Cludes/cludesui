@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_FlightTimer.lua  (WoW Forever only)
 --  Route display with an ETA for flight-master flights: a thin track between
@@ -18,7 +19,7 @@ local _, module = ...
 -- The options page pool's table (made by the core, filled in place when the
 -- options addon loads): the settings preview reads a dress generation from
 -- it at call time.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local DEFAULT_SPEED = 30.4 -- yards per second; fitted to measured Classic flight times
 local PREVIEW_SECONDS = 20
@@ -86,9 +87,9 @@ local DEFAULTS = {
     fade = false,
 }
 
-local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
+local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CUI.BuildBarTextureTables()
 
-local routes = CludesUI._FlightTimerRoutes
+local routes = CUI._FlightTimerRoutes
 local barFrame, events, ticker, hooked
 local pending -- destination picked on the flight map, waiting for takeoff
 local flight -- the flight in progress
@@ -134,12 +135,12 @@ end
 local function FillColor()
     if Get("classColored") then
         local _, class = UnitClass("player")
-        local cc = class and CludesUI.GetClassColor(class)
+        local cc = class and CUI.GetClassColor(class)
         if cc then return cc.r, cc.g, cc.b end
     end
     local c = Read()
     if c.fillR then return c.fillR, c.fillG, c.fillB end
-    local ACC = CludesUI.CLUDES_GREEN
+    local ACC = CUI.CLUDES_GREEN
     return ACC.r, ACC.g, ACC.b
 end
 
@@ -171,7 +172,7 @@ local function RouteInfo(slot)
 end
 
 -- Text in Forever Essentials' font and outline (Fonts page, else the global font).
-local function StyleFont(fontStr, size) CludesUI.ApplyModuleFont(fontStr, nil, size, "essentials") end
+local function StyleFont(fontStr, size) CUI.ApplyModuleFont(fontStr, nil, size, "essentials") end
 
 -- A mark on the route (an end, a stop, "you"): an icon with a label.
 local function NewMark(hostFrame, texture, wid, hgt)
@@ -305,7 +306,7 @@ local function LayoutRoute(b, fl)
 
     -- "You are here": a white post at the centre, where each stop is reached;
     -- a direct flight has no stops to reach, so none.
-    ShowMark(b.you, MarkText(scroll, CludesUI.L("You"), nameList))
+    ShowMark(b.you, MarkText(scroll, CUI.L("You"), nameList))
     local iconTex = b.you.icon
     local height = Get("separatorHeight")
     local texture, size = Get("borderTexture"), Get("borderSize")
@@ -314,21 +315,21 @@ local function LayoutRoute(b, fl)
         and Get("showSeparator")
         and Get("customSeparator")
         and size > 0
-        and CludesUI.GetBorderCompanion(texture, "sepV")
+        and CUI.GetBorderCompanion(texture, "sepV")
     then
         if not b.separatorAnchor then b.separatorAnchor = CreateFrame("Frame", nil, b.over) end
         local anchor = b.separatorAnchor
         anchor:ClearAllPoints()
         anchor:SetPoint("TOPLEFT", b, "CENTER", 0, height / 2)
         anchor:SetSize(1, height)
-        CludesUI.PlaceBorderDividerV(
+        CUI.PlaceBorderDividerV(
             iconTex,
             anchor,
             false,
             false,
             texture,
             size,
-            CludesUI.BorderPx(Get("borderSizePx"), size, texture),
+            CUI.BorderPx(Get("borderSizePx"), size, texture),
             b.over:GetEffectiveScale()
         )
         iconTex:SetVertexColor(Get("borderR"), Get("borderG"), Get("borderB"), 1)
@@ -349,12 +350,12 @@ local RequestLanding -- the early exit button's click; defined with the flight c
 
 -- Separate hosts let size 0 hide the border without hiding the track or button.
 local function StyleBorder(ownerFrame, isExit)
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local owner = ownerFrame.travelBorder
     if isExit and not Get("exitBorder") then
         Pix.HideBorder(ownerFrame)
         if owner then
-            CludesUI.HideBorderStyle(owner)
+            CUI.HideBorderStyle(owner)
             owner:Hide()
         end
         return
@@ -368,7 +369,7 @@ local function StyleBorder(ownerFrame, isExit)
     end
     if not custom then
         if owner then
-            CludesUI.HideBorderStyle(owner)
+            CUI.HideBorderStyle(owner)
             owner:Hide()
         end
         local size, red, green, blue = 1, 0, 0, 0
@@ -400,7 +401,7 @@ local function StyleBorder(ownerFrame, isExit)
     )
     local size, texture = Get("borderSize"), Get("borderTexture")
     local prefixText = isExit and "exitBorder" or "borderTexture"
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         owner,
         size,
         Get("borderR"),
@@ -415,7 +416,7 @@ local function StyleBorder(ownerFrame, isExit)
         nil,
         nil,
         nil,
-        CludesUI.BorderPx(Get("borderSizePx"), size, texture)
+        CUI.BorderPx(Get("borderSizePx"), size, texture)
     )
 end
 
@@ -437,9 +438,9 @@ local function StyleExit(b, fl)
         button:SetScript("OnClick", function() RequestLanding(b) end)
         button:SetScript(
             "OnEnter",
-            function(self) CludesUI.ShowWidgetTooltip(self, CludesUI.L("Land at the next flight point")) end
+            function(self) CUI.ShowWidgetTooltip(self, CUI.L("Land at the next flight point")) end
         )
-        button:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        button:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         b.exit = button
     end
     StyleBorder(button, true)
@@ -453,13 +454,13 @@ local function StyleBar(widget, fl)
     local track = widget.track
     widget:SetSize(Get("width"), BoxHeight())
     track:SetHeight(Get("trackHeight"))
-    track:SetStatusBarTexture(CludesUI.ResolveTexturePath(BAR_TEXTURES, Get("texture"), WHITE))
+    track:SetStatusBarTexture(CUI.ResolveTexturePath(BAR_TEXTURES, Get("texture"), WHITE))
     -- The fill's one alpha owner: a texture's SetAlpha and its colour alpha
     -- are the same channel. A plain SetValue does not reliably take the fill
     -- back from an armed SetTimerDuration, so an elapsed-only flight hides it.
     local cr, cg, callback = FillColor()
     track:SetStatusBarColor(cr, cg, callback, (fl and not fl.eta) and 0 or Get("fillOpacity") / 100)
-    track.bg:SetTexture(CludesUI.ResolveTexturePath(BAR_TEXTURES, Get("bgTexture"), WHITE))
+    track.bg:SetTexture(CUI.ResolveTexturePath(BAR_TEXTURES, Get("bgTexture"), WHITE))
     track.bg:SetVertexColor(Get("bgR"), Get("bgG"), Get("bgB"), Get("bgA"))
     StyleBorder(track)
     -- The time sits left of the track, mirroring the early exit button on the
@@ -848,7 +849,7 @@ local function CreateSettingsPreview(hostFrame, availableWidth, onHeightChanged)
 end
 
 -- Options-page entry points.
-CludesUI._FlightTimer = {
+CUI._FlightTimer = {
     Get = Get,
     Cfg = Cfg,
     Apply = Apply,

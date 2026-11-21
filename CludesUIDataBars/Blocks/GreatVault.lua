@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then return end -- no Great Vault on WoW Forever (the main file drops the block type there too)
+local CUI = CludesUI
+if CUI.IS_FOREVER then return end -- no Great Vault on WoW Forever (the main file drops the block type there too)
 -------------------------------------------------------------------------------
 --  Blocks\GreatVault.lua - Info Bar block: the Great Vault and keystones.
 --
@@ -74,7 +75,7 @@ local function RewardCells(kind, isRaid)
             end
         end
         local c = STATE_COLOR[state]
-        cells[i] = CludesUI.HexColor(c[1], c[2], c[3]) .. text .. "|r"
+        cells[i] = CUI.HexColor(c[1], c[2], c[3]) .. text .. "|r"
     end
     return cells
 end
@@ -305,7 +306,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local iconSize = fontSize + 4
         -- The core translator: these words share entries with the minimap's vault tooltip.
-        local text = CludesUI.L("Great Vault")
+        local text = CUI.L("Great Vault")
         mod.SetFont(label, fontSize, barCtx.cfg)
         iconTex:SetSize(iconSize, iconSize)
         iconTex:ClearAllPoints()
@@ -338,21 +339,21 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
     local function ShowTooltip()
         local red, green, blue = mod.GetAccent()
         mod.Tip_Begin(button)
-        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Great Vault") .. "|cFFFFFFFF]|r", red, green, blue)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CUI.L("Great Vault") .. "|cFFFFFFFF]|r", red, green, blue)
         mod.Tip_AddLine(" ")
-        mod.Tip_AddColumns(CludesUI.L("Raids"), RewardCells(RAID, true), 0.8, 0.8, 0.8)
-        mod.Tip_AddColumns(CludesUI.L("Mythic+"), RewardCells(MPLUS, false), 0.8, 0.8, 0.8)
-        mod.Tip_AddColumns(CludesUI.L("World"), RewardCells(WORLD, false), 0.8, 0.8, 0.8)
+        mod.Tip_AddColumns(CUI.L("Raids"), RewardCells(RAID, true), 0.8, 0.8, 0.8)
+        mod.Tip_AddColumns(CUI.L("Mythic+"), RewardCells(MPLUS, false), 0.8, 0.8, 0.8)
+        mod.Tip_AddColumns(CUI.L("World"), RewardCells(WORLD, false), 0.8, 0.8, 0.8)
         local dungeon, level = MyKeystone()
         if dungeon then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(CludesUI.L("Your Keystone"), red, green, blue)
+            mod.Tip_AddLine(CUI.L("Your Keystone"), red, green, blue)
             mod.Tip_AddDouble(dungeon, "+" .. level, 0.8, 0.8, 0.8, 1, 1, 1)
         end
         local count = PartyRows()
         if count > 0 then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(CludesUI.L("Party Keystones"), red, green, blue)
+            mod.Tip_AddLine(CUI.L("Party Keystones"), red, green, blue)
             for i = 1, count do
                 local row = rows[i]
                 local right = row.dungeon .. " |cffffffff+" .. row.level .. "|r"
@@ -360,7 +361,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Great Vault"), 1, 1, 1, red, green, blue)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], CUI.L("Open Great Vault"), 1, 1, 1, red, green, blue)
         mod.Tip_Show()
         return count
     end
@@ -381,7 +382,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
         Paint()
     end)
     button:SetScript("OnClick", function(_, mouseButton)
-        if mouseButton == "LeftButton" then CludesUI.ToggleGreatVault() end
+        if mouseButton == "LeftButton" then CUI.ToggleGreatVault() end
     end)
 
     inst.eventFrame = K.MakeEventFrame(inst, function()

@@ -1,10 +1,11 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIQoL_Shifter.lua
 --  Shift+drag to permanently reposition Blizzard panels.
 --  Ctrl+drag for a temporary move that resets when the panel closes.
 -------------------------------------------------------------------------------
-local GetFFD = CludesUI._GetFFD
+local GetFFD = CUI._GetFFD
 local mod = select(2, ...)
 
 -- Temporary positions (per-frame, cleared on hide, not persisted)
@@ -182,7 +183,7 @@ local function SavePos(frameName, anchorPoint, relPoint, posX, posY)
         x = posX,
         y = posY,
     }
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
 end
 
 local function GetSavedScale(frameName)
@@ -922,7 +923,7 @@ end
 
 local function TryHook(frameName)
     -- WoW Forever's Gamepad interface style: no panel hooks (see InitShifter).
-    if CludesUI.PadGamepadUI() then return end
+    if CUI.PadGamepadUI() then return end
     local widget = _G[frameName]
     if widget and widget.HookScript then HookFrame(widget, frameName) end
 end
@@ -935,7 +936,7 @@ end
 local adopted = {}
 
 local function HookAdopted(frameName)
-    if CludesUI.PadGamepadUI() then return end
+    if CUI.PadGamepadUI() then return end
     local widget = _G[frameName]
     if not (widget and widget.HookScript) then return end
     HookFrame(widget, frameName)
@@ -945,7 +946,7 @@ local function HookAdopted(frameName)
     end
 end
 
-function CludesUI._ShifterAdopt(frameName)
+function CUI._ShifterAdopt(frameName)
     if adopted[frameName] then return end
     adopted[frameName] = true
     if IsEnabled() then HookAdopted(frameName) end
@@ -1091,7 +1092,7 @@ local function ReleaseLootWindow(frameName)
     if not lootTaken[frameName] then return end
     lootTaken[frameName] = nil
     local widget = LootFrame(frameName)
-    if widget then CludesUI.SetFramePlacer(widget, "shifter", nil) end
+    if widget then CUI.SetFramePlacer(widget, "shifter", nil) end
 end
 
 -- Claims the window while the feature is on and a position is saved, and
@@ -1105,10 +1106,10 @@ local function SyncLootWindow(details)
     local widget = LootFrame(frameName)
     if not widget then return end
     if not lootTaken[frameName] then
-        if not CludesUI.SetFramePlacer(widget, "shifter", LootPlacer(details)) then return end
+        if not CUI.SetFramePlacer(widget, "shifter", LootPlacer(details)) then return end
         lootTaken[frameName] = true
     end
-    CludesUI.RequestFramePlacement(widget)
+    CUI.RequestFramePlacement(widget)
 end
 
 -- The proxy sits at the saved position, or at the window's default spot.
@@ -1146,8 +1147,8 @@ local function SetupLootWindows()
 end
 
 local function RegisterLootUnlockElements()
-    local MK = CludesUI.MakeUnlockElement
-    if not MK or not CludesUI.RegisterUnlockElements then return end
+    local MK = CUI.MakeUnlockElement
+    if not MK or not CUI.RegisterUnlockElements then return end
     local elements = {}
     for index = 1, #LOOT_WINDOWS do
         local details = LOOT_WINDOWS[index]
@@ -1209,7 +1210,7 @@ local function RegisterLootUnlockElements()
             end,
         })
     end
-    CludesUI:RegisterUnlockElements(elements, "CludesUIQoL")
+    CUI:RegisterUnlockElements(elements, "CludesUIQoL")
 end
 
 -------------------------------------------------------------------------------
@@ -1321,9 +1322,9 @@ local function EnsureTopBarProxy()
 end
 
 local function RegisterTopBarUnlockElement()
-    local MK = CludesUI.MakeUnlockElement
-    if not MK or not CludesUI.RegisterUnlockElements then return end
-    CludesUI:RegisterUnlockElements({
+    local MK = CUI.MakeUnlockElement
+    if not MK or not CUI.RegisterUnlockElements then return end
+    CUI:RegisterUnlockElements({
         MK({
             key = TOPBAR_KEY,
             label = TOPBAR_LABEL,
@@ -1385,7 +1386,7 @@ local function RegisterTopBarUnlockElement()
 end
 
 -- Exposed for the options toggle (mid-session enable without /reload)
-function CludesUI._InitShifterTopBar()
+function CUI._InitShifterTopBar()
     HookTopBar()
     PlaceTopBar()
 end
@@ -1393,7 +1394,7 @@ end
 -- Exposed for the options toggle, which turns the setting off first: the
 -- container gets Blizzard's own anchor back (after combat if need be) and the
 -- post-hook goes dormant through the TopBarEnabled gate.
-function CludesUI._DisableShifterTopBar() PlaceTopBar() end
+function CUI._DisableShifterTopBar() PlaceTopBar() end
 
 -------------------------------------------------------------------------------
 --  Battleground flag carriers (ArenaEnemyMatchFramesContainer, the column of
@@ -1474,9 +1475,9 @@ function CARRIER.PlaceProxy()
 end
 
 function CARRIER.Register()
-    local MK = CludesUI.MakeUnlockElement
-    if not MK or not CludesUI.RegisterUnlockElements then return end
-    CludesUI:RegisterUnlockElements({
+    local MK = CUI.MakeUnlockElement
+    if not MK or not CUI.RegisterUnlockElements then return end
+    CUI:RegisterUnlockElements({
         MK({
             key = "CUI_FlagCarriers",
             label = "Flag Carriers",
@@ -1524,7 +1525,7 @@ end
 
 -- Exposed for the options toggle: on, the column takes the saved spot; off,
 -- Blizzard's own anchor comes back (after combat if need be).
-function CludesUI._SyncShifterCarriers() CARRIER.Sync() end
+function CUI._SyncShifterCarriers() CARRIER.Sync() end
 
 -------------------------------------------------------------------------------
 --  Event-driven initialization
@@ -1539,7 +1540,7 @@ local function InitShifter()
     -- and the next gamepad Back gets a protected call blocked (Blizzard's
     -- forbidden popup then freezes the client). Dragging needs a mouse anyway,
     -- so nothing is hooked while that style is on (false on retail).
-    if CludesUI.PadGamepadUI() then return end
+    if CUI.PadGamepadUI() then return end
     for index = 1, #PRELOADED do
         TryHook(PRELOADED[index])
     end
@@ -1571,7 +1572,7 @@ watcher:SetScript("OnEvent", function(self, evt, arg1)
         RegisterLootUnlockElements()
         SetupLootWindows()
         RegisterTopBarUnlockElement()
-        if TopBarEnabled() then CludesUI._InitShifterTopBar() end
+        if TopBarEnabled() then CUI._InitShifterTopBar() end
         CARRIER.Register()
         if CARRIER.On() then CARRIER.Sync() end
     elseif evt == "ADDON_LOADED" then
@@ -1589,19 +1590,19 @@ watcher:SetScript("OnEvent", function(self, evt, arg1)
 end)
 
 -- Exposed for the options toggle (mid-session enable without /reload)
-function CludesUI._InitShifter() InitShifter() end
+function CUI._InitShifter() InitShifter() end
 
 -- Exposed for the options toggle (mid-session disable). Stops the modifier
 -- key listener and parks the wheel overlay; re-enable re-runs InitShifter,
 -- which registers the event again. Frame hooks are irreversible and stay
 -- installed, but every hook body bails first-line while disabled.
-function CludesUI._ShutdownShifter()
+function CUI._ShutdownShifter()
     watcher:UnregisterEvent("MODIFIER_STATE_CHANGED")
     SyncWheelOverlay()
 end
 
 -- Exposed for the options reset button (positions AND zoom)
-function CludesUI._ResetShifterPositions()
+function CUI._ResetShifterPositions()
     if CludesUIDB then
         CludesUIDB.shifterPositions = nil
         CludesUIDB.shifterLootPositions = nil
@@ -1621,9 +1622,9 @@ function CludesUI._ResetShifterPositions()
 end
 
 -- Exposed for the options toggle (mid-session enable without /reload)
-function CludesUI._InitShifterLootWindows() SetupLootWindows() end
+function CUI._InitShifterLootWindows() SetupLootWindows() end
 
 -- Exposed for the options toggle, which turns its setting off first. The
 -- windows it governs go to the next placement owner, or back to Blizzard's
 -- own anchors; the capture bars follow the battleground switch.
-function CludesUI._DisableShifterLootWindows() SetupLootWindows() end
+function CUI._DisableShifterLootWindows() SetupLootWindows() end

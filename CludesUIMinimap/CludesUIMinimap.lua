@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUIMinimap.lua
 --  Custom minimap skin and layout for CludesUI.
@@ -6,33 +7,33 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME = ...
 if
     not (
-        CludesUI
-        and CludesUI._ModuleNS
-        and CludesUI.NewInternals
-        and CludesUI.NewCombatQueue
-        and CludesUI.NewFrameData
-        and CludesUI.PadGamepadUI
-        and CludesUI.SetFontFamily
+        CUI
+        and CUI._ModuleNS
+        and CUI.NewInternals
+        and CUI.NewCombatQueue
+        and CUI.NewFrameData
+        and CUI.PadGamepadUI
+        and CUI.SetFontFamily
     )
 then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the friends tooltip's names and notes take font families through SetFontFamily, and the tracking button reads WoW Forever's Gamepad interface style through PadGamepadUI)
 local mod = select(2, ...)
-CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
-mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+CUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+mod.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
 
-local SKIN = CludesUI.Lite.NewAddon("CludesUIMinimap")
+local SKIN = CUI.Lite.NewAddon("CludesUIMinimap")
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 -- Per-size offset/shift defaults for the textured border styles (same as unit frames).
-CludesUI.RegisterBorderDefaults("minimap", CludesUI.BORDER_DEFAULTS_FRAMES)
+CUI.RegisterBorderDefaults("minimap", CUI.BORDER_DEFAULTS_FRAMES)
 
-local ACC = CludesUI.CLUDES_GREEN
+local ACC = CUI.CLUDES_GREEN
 
 -- External weak-keyed lookup table for frame state (prevents tainting Blizzard frames)
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -- Call-site compat only; the minimap module is never force-disabled here.
 local TEMP_DISABLED = {}
@@ -52,12 +53,12 @@ local defaultSet = {
             -- The WoW Forever look's Border Style (latched in EBS._MinimapStyle):
             -- "square" = Forever Square, the default there, "circle" = Forever
             -- Circle. Nil on every other client, where nothing reads it.
-            foreverBorder = (CludesUI.IS_FOREVER == true) and "square" or nil,
+            foreverBorder = (CUI.IS_FOREVER == true) and "square" or nil,
             -- Blizzard Style's own Border Style on the Forever client (latched
             -- the same way): "square" = the square map in the slim bronze
             -- line, the default there, "circle" = the round map in Blizzard's
             -- ring. Nil on every other client, where nothing reads it.
-            blizzBorder = (CludesUI.IS_FOREVER == true) and "square" or nil,
+            blizzBorder = (CUI.IS_FOREVER == true) and "square" or nil,
             shape = "square",
             rotateMinimap = false,
             borderSize = 1,
@@ -200,8 +201,8 @@ end
 -- Border colour precedence (3 swatches): borderUseClassColor > useClassColor (legacy) >
 -- borderColor > legacy borderR/G/B, so pre-style users keep their colour until they touch the new controls. Clock/zone edge boxes share this precedence.
 local function GetBorderStyleColor(conf)
-    if conf.borderUseClassColor and CludesUI.GetClassColor then
-        local classColor = CludesUI.GetClassColor(select(2, UnitClass("player")))
+    if conf.borderUseClassColor and CUI.GetClassColor then
+        local classColor = CUI.GetClassColor(select(2, UnitClass("player")))
         if classColor then return classColor.r, classColor.g, classColor.b, conf.borderA or 1 end
     end
     if conf.useClassColor then return ACC.r, ACC.g, ACC.b, conf.borderA or 1 end
@@ -262,7 +263,7 @@ local flyoutOwnedFrames = {}
 -- goes through the Set<Name> function built below, which runs them all.
 -- broken: true while an CUI_Minimap_*.lua file loads; a file that fails
 -- leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(mod, "_internals", {
+CUI.NewInternals(mod, "_internals", {
     _addonVisible = _addonVisible,
     ADDON_NAME = ADDON_NAME,
     cachedAddonButtons = cachedAddonButtons,

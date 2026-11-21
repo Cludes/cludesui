@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Bars.lua
 --
@@ -121,7 +122,7 @@ mod.CDMAddOffset = function(edge)
     local ox = edge.addOffsetX or 0
     local oy = edge.addOffsetY or 0
     if ox == 0 and oy == 0 then return 0, 0 end
-    if CludesUI._unlockActive then return 0, 0 end
+    if CUI._unlockActive then return 0, 0 end
     return ox, oy
 end
 
@@ -173,7 +174,7 @@ local function ApplyBarPositionCentered(widget, place, barId)
     -- odd-pixel-dim frames need for whole-pixel edges. Single-edge anchors: the growth-axis
     -- coord is an EDGE (whole-pixel snap) but the perpendicular coord is the frame's CENTER on
     -- that axis -- parity-aware snap keeps whole-pixel edges there too. Corner anchors (row growth pin) are edges on BOTH axes.
-    local PPa = CludesUI and CludesUI.PP
+    local PPa = CUI and CUI.PP
     if PPa then
         local effScale = widget:GetEffectiveScale()
         if anchorFrame == "CENTER" and PPa.SnapCenterForDim then
@@ -263,7 +264,7 @@ function mod.RecaptureBarAnchor(barId)
     -- anchor, not cdmBarPositions -- saving live geometry would overwrite the free-standing position with the anchored spot.
     local edge = barDataByKey[barId]
     if edge and edge.anchorTo and edge.anchorTo ~= "none" then return end
-    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. barId) then return end
+    if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("CDM_" .. barId) then return end
     if not widget:GetLeft() then return end
     SaveCDMBarPosition(barId, widget)
 end
@@ -334,9 +335,9 @@ BuildCDMBar = function(barIndex)
     if not barInfo.enabled then
         if widget._mouseTrack then
             widget:SetScript("OnUpdate", nil)
-            if CludesUI.Mouse then
-                CludesUI.Mouse.UnsubscribeFrame("cdmCursor:" .. tostring(barKey))
-                CludesUI.Mouse.UnsubscribeTick("cdmCursor:" .. tostring(barKey) .. ":watch")
+            if CUI.Mouse then
+                CUI.Mouse.UnsubscribeFrame("cdmCursor:" .. tostring(barKey))
+                CUI.Mouse.UnsubscribeTick("cdmCursor:" .. tostring(barKey) .. ":watch")
             end
             widget._mouseResume = nil
             widget._mouseTrack = nil
@@ -347,7 +348,7 @@ BuildCDMBar = function(barIndex)
             SetFrameClickThrough(widget, false)
             if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
         end
-        CludesUI.SetElementVisibility(widget, false)
+        CUI.SetElementVisibility(widget, false)
         return
     end
 
@@ -363,9 +364,9 @@ BuildCDMBar = function(barIndex)
     -- Clear any previous mouse-tracking subscriptions
     if widget._mouseTrack then
         widget:SetScript("OnUpdate", nil)
-        if CludesUI.Mouse then
-            CludesUI.Mouse.UnsubscribeFrame("cdmCursor:" .. tostring(barKey))
-            CludesUI.Mouse.UnsubscribeTick("cdmCursor:" .. tostring(barKey) .. ":watch")
+        if CUI.Mouse then
+            CUI.Mouse.UnsubscribeFrame("cdmCursor:" .. tostring(barKey))
+            CUI.Mouse.UnsubscribeTick("cdmCursor:" .. tostring(barKey) .. ":watch")
         end
         widget._mouseResume = nil
         widget._mouseTrack = nil
@@ -448,7 +449,7 @@ BuildCDMBar = function(barIndex)
         -- stepping), parked by the service while still or mouselooking, re-armed within one 20 Hz
         -- watch interval of the first moved pixel. The 0.15s CursorWatch below owns panel/unlock/visibility state, so the glue body is position-only.
         local glueKey = "cdmCursor:" .. tostring(barKey)
-        local Mouse = CludesUI.Mouse
+        local Mouse = CUI.Mouse
         local glueActive = false
         local function CursorGlue(cx, cy)
             if cx ~= lastMX or cy ~= lastMY then
@@ -479,8 +480,8 @@ BuildCDMBar = function(barIndex)
         end
         local function CursorWatch()
             -- Hide while the CUI options panel or unlock mode is open
-            local panelOpen = (CludesUI._mainFrame and CludesUI._mainFrame:IsShown())
-                or CludesUI._unlockActive
+            local panelOpen = (CUI._mainFrame and CUI._mainFrame:IsShown())
+                or CUI._unlockActive
             if panelOpen then
                 GlueOff()
                 widget._mouseHiddenByPanel = true
@@ -545,7 +546,7 @@ BuildCDMBar = function(barIndex)
         Mouse.SubscribeTick(glueKey .. ":watch", 0.15, CursorWatch)
         CursorWatch()
     elseif anchorKey == "partyframe" then
-        local partyFrame = CludesUI.FindPlayerPartyFrame()
+        local partyFrame = CUI.FindPlayerPartyFrame()
         if partyFrame then
             widget:ClearAllPoints()
             local edgeSide = barInfo.partyFrameSide or "LEFT"
@@ -555,7 +556,7 @@ BuildCDMBar = function(barIndex)
                 local aox, aoy = mod.CDMAddOffset(barInfo)
                 offX, offY = offX + aox, offY + aoy
             end
-            local PPa = CludesUI and CludesUI.PP
+            local PPa = CUI and CUI.PP
             if PPa and PPa.SnapForES then
                 local effScale = widget:GetEffectiveScale()
                 offX = PPa.SnapForES(offX, effScale)
@@ -585,7 +586,7 @@ BuildCDMBar = function(barIndex)
             end
         end
     elseif anchorKey == "playerframe" then
-        local playerFrame = CludesUI.FindPlayerUnitFrame()
+        local playerFrame = CUI.FindPlayerUnitFrame()
         if playerFrame then
             widget:ClearAllPoints()
             local edgeSide = barInfo.playerFrameSide or "LEFT"
@@ -595,7 +596,7 @@ BuildCDMBar = function(barIndex)
                 local aox, aoy = mod.CDMAddOffset(barInfo)
                 offX, offY = offX + aox, offY + aoy
             end
-            local PPa = CludesUI and CludesUI.PP
+            local PPa = CUI and CUI.PP
             if PPa and PPa.SnapForES then
                 local effScale = widget:GetEffectiveScale()
                 offX = PPa.SnapForES(offX, effScale)
@@ -642,7 +643,7 @@ BuildCDMBar = function(barIndex)
                 local aox, aoy = mod.CDMAddOffset(barInfo)
                 offX, offY = offX + aox, offY + aoy
             end
-            local PPa = CludesUI and CludesUI.PP
+            local PPa = CUI and CUI.PP
             if PPa and PPa.SnapForES then
                 local effScale = widget:GetEffectiveScale()
                 gap = PPa.SnapForES(gap, effScale)
@@ -684,7 +685,7 @@ BuildCDMBar = function(barIndex)
         -- branch below would teleport the bar to a hardcoded default (e.g. CENTER 0,-275), and if
         -- the anchor target is temporarily unavailable (hidden frame, pre-layout race) the later re-anchor bails and the bar stays stuck at that fallback.
         local unlockKey = "CDM_" .. barKey
-        local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
+        local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(unlockKey)
         if anchored and widget:GetLeft() then
             -- Unlock-anchored and already has bounds: leave position alone.
         else
@@ -837,7 +838,7 @@ end
 -- bar's scale, as the unlock-mode match does. nil for every other target (the
 -- raw frame read stands).
 function mod.CdmMatchInsetSize(targetKey, targetFrame, barFrame)
-    local elementList = CludesUI._unlockRegisteredElements
+    local elementList = CUI._unlockRegisteredElements
     local elem = elementList and elementList[targetKey]
     if not (elem and elem.getInsets) then return nil end
     local left, right, top, bottom = elem.getInsets(targetKey)
@@ -868,7 +869,7 @@ mod._cdmUKey = setmetatable({}, {
 function mod.CdmBarMatchPad(barId)
     local edge = barDataByKey[barId]
     local frame = cdmBarFrames[barId]
-    if not edge or not frame or not CludesUI.BorderMatchPad then return nil end
+    if not edge or not frame or not CUI.BorderMatchPad then return nil end
     local texture = edge.borderTexture or "solid"
     if texture == "solid" then return nil end
     if mod.IsBarBuffFamily(edge) or edge.barType == "custom_buff" then return nil end
@@ -879,7 +880,7 @@ function mod.CdmBarMatchPad(barId)
     local ratio = 1
     if effScale and effScale > 0.01 and uiES and uiES > 0 then ratio = uiES / effScale end
     local sz = edge.borderSize or 1
-    return CludesUI.BorderMatchPad(
+    return CUI.BorderMatchPad(
         sz,
         texture,
         edge.borderTextureOffset,
@@ -888,7 +889,7 @@ function mod.CdmBarMatchPad(barId)
         edge.borderTextureShiftY,
         "cdm",
         edge.borderThickness or "thin",
-        CludesUI.BorderPx(edge.borderSizePx, sz, texture),
+        CUI.BorderPx(edge.borderSizePx, sz, texture),
         ratio,
         edge.borderA or 1
     )
@@ -902,7 +903,7 @@ end
 function mod.CdmMatchAdj(barId, targetKey, isWidth, insetUsed)
     local t, o = 0, 0
     if not insetUsed then
-        local elementList = CludesUI._unlockRegisteredElements
+        local elementList = CUI._unlockRegisteredElements
         local elem = elementList and elementList[targetKey]
         if elem and elem.getMatchPad then
             local pw, ph = elem.getMatchPad(targetKey)
@@ -988,11 +989,11 @@ LayoutCDMBar = function(barId)
     -- layout pass. The source bar IS the truth, so reading it live auto-corrects across spec swaps, source resizes, etc. NOTHING is persisted, so cross-spec corruption is impossible.
     local extraPixels = 0
     local extraPixelsH = 0
-    local widthMatchTarget = CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget("CDM_" .. barId)
+    local widthMatchTarget = CUI.GetWidthMatchTarget and CUI.GetWidthMatchTarget("CDM_" .. barId)
         or nil
-    local heightMatchTarget = CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("CDM_" .. barId)
+    local heightMatchTarget = CUI.GetHeightMatchTarget and CUI.GetHeightMatchTarget("CDM_" .. barId)
         or nil
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local pixel = Pix.mult
     local iconWidth
     -- True ONLY when the width-match math below produces an iconW. Gates the cropped-height-from-matched-width path so non-matched and height-matched bars stay byte-identical.
@@ -1013,7 +1014,7 @@ LayoutCDMBar = function(barId)
     -- Resolve a width/height match target unlock key to a live frame. The match DB stores keys like "CDM_cooldowns" or "MainBar"; the registered unlock element provides a getFrame() callback.
     local function GetMatchTargetFrame(targetKey)
         if not targetKey then return nil end
-        local elementList = CludesUI._unlockRegisteredElements
+        local elementList = CUI._unlockRegisteredElements
         local elem = elementList and elementList[targetKey]
         if elem and elem.getFrame then return elem.getFrame(targetKey) end
         return nil
@@ -1037,7 +1038,7 @@ LayoutCDMBar = function(barId)
             local physTarget = math.floor(targetW / pixel + 0.5)
             -- The match's Extra Width: whole physical px on the floored target,
             -- so no second rounding. nil = none stored.
-            local mx = CludesUI.GetMatchExtra and CludesUI.GetMatchExtra("w", mod._cdmUKey[barId])
+            local mx = CUI.GetMatchExtra and CUI.GetMatchExtra("w", mod._cdmUKey[barId])
             if mx then physTarget = physTarget + mx end
             local physSp = math.floor(spacing / pixel + 0.5)
             local rawPhysIcon = (physTarget - (nowDim - 1) * physSp) / nowDim
@@ -1067,7 +1068,7 @@ LayoutCDMBar = function(barId)
             local cropFactor = (shape == "cropped") and mod.CdmCropFactor(barInfo) or 1.0
             local physTarget = math.floor(targetH / pixel + 0.5)
             -- The match's Extra Height, as for width.
-            local mx = CludesUI.GetMatchExtra and CludesUI.GetMatchExtra("h", mod._cdmUKey[barId])
+            local mx = CUI.GetMatchExtra and CUI.GetMatchExtra("h", mod._cdmUKey[barId])
             if mx then physTarget = physTarget + mx end
             local physSp = math.floor(spacing / pixel + 0.5)
             local rawPhysIcon = (physTarget - (nowDim - 1) * physSp) / nowDim / cropFactor
@@ -1164,7 +1165,7 @@ LayoutCDMBar = function(barId)
 
     -- Container size: compute in integer physical pixels, convert to coord at the end. Multiplying
     -- in coord space then snapping loses 1 phys px to float dust (3 * 21.6666... floors to 81 instead of 82), leaving the bottom icon protruding past the bar frame.
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local pixel = Pix.mult
     local iconWPx = math.floor(iconWidth / pixel + 0.5)
     local iconHPx = math.floor(iconH / pixel + 0.5)
@@ -1281,7 +1282,7 @@ LayoutCDMBar = function(barId)
     -- same rendered frame. Positioning first is safe: icons use absolute offsets from TOPLEFT, not the frame's current dimensions.
     local unlockKey = "CDM_" .. barId
     -- Freeze buff-family bar size during unlock mode so the mover overlay stays in sync (it doesn't dynamically resize with buff count).
-    local skipResize = CludesUI._unlockActive and mod.IsBarBuffFamily(barInfo)
+    local skipResize = CUI._unlockActive and mod.IsBarBuffFamily(barInfo)
 
     -- Bar background
     if barInfo.barBgEnabled then
@@ -1510,9 +1511,9 @@ LayoutCDMBar = function(barId)
                 oldCX, oldCY = c1 * ratio, c2 * ratio
             end
         end
-        CludesUI._layoutBarResizing = unlockKey
+        CUI._layoutBarResizing = unlockKey
         pcall(widget.SetSize, widget, totalW, totalH)
-        CludesUI._layoutBarResizing = nil
+        CUI._layoutBarResizing = nil
         -- Group loot rolls already up keep clear of a bar that grew or shrank.
         if not (issecretvalue(oldW) or issecretvalue(oldH)) and (totalW ~= oldW or totalH ~= oldH) then
             mod.RequestLootPlacement()
@@ -1530,19 +1531,19 @@ LayoutCDMBar = function(barId)
         if
             growDir
             and growDir ~= "CENTER"
-            and not CludesUI._unlockActive
-            and not CludesUI._abAnchorSuppressed
+            and not CUI._unlockActive
+            and not CUI._abAnchorSuppressed
             and (oldW >= 1 or oldH >= 1)
         then
             local adb = CludesUIDB and CludesUIDB.unlockAnchors
             local anchorInfo = adb and adb[unlockKey]
             if anchorInfo and anchorInfo.mode ~= "POINT" then
                 local edgeSide = anchorInfo.side
-                local PPo = CludesUI and CludesUI.PP
+                local PPo = CUI and CUI.PP
                 local uiES = PPo and UIParent:GetEffectiveScale()
                 local tCX, tCY
-                if CludesUI.GetAnchorTargetCenterUI then
-                    tCX, tCY = CludesUI.GetAnchorTargetCenterUI(unlockKey)
+                if CUI.GetAnchorTargetCenterUI then
+                    tCX, tCY = CUI.GetAnchorTargetCenterUI(unlockKey)
                 end
                 local TOL = 2 -- UI px; pixel-snap noise stays well under 1
                 -- Width/height-matched bars: the match owns that axis, so the bar never
@@ -1588,7 +1589,7 @@ LayoutCDMBar = function(barId)
         end
     end
 
-    if CludesUI.IsPointAnchored(unlockKey) then CludesUI.ReapplyOwnAnchor(unlockKey) end
+    if CUI.IsPointAnchored(unlockKey) then CUI.ReapplyOwnAnchor(unlockKey) end
 
     -- FocusKick: re-anchor against the focus nameplate after every layout pass so the bar tracks size/icon-count changes from the options panel.
     if barId == mod.FOCUSKICK_BAR_KEY and mod.ReapplyFocusKick then mod.ReapplyFocusKick() end
@@ -1632,10 +1633,10 @@ function mod.QueueShiftLayout(bk)
         if
             widget
             and growDir ~= "CENTER"
-            and not CludesUI.IsPointAnchored("CDM_" .. bk)
+            and not CUI.IsPointAnchored("CDM_" .. bk)
             and not widget._mouseTrack
             and bk ~= mod.FOCUSKICK_BAR_KEY
-            and not CludesUI._unlockActive
+            and not CUI._unlockActive
             and widget:GetNumPoints() == 1
         then
             if growDir == "LEFT" then
@@ -1684,7 +1685,7 @@ end
 -------------------------------------------------------------------------------
 local function OpenBlizzardCDMTab(isBuff)
     if not CooldownViewerSettings then return end
-    if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then CludesUI._mainFrame:Hide() end
+    if CUI._mainFrame and CUI._mainFrame:IsShown() then CUI._mainFrame:Hide() end
     if CooldownViewerSettings:IsShown() then
         CooldownViewerSettings:Hide()
     else

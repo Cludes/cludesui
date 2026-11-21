@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_TalentConditionsPopup.lua
 --  The Talent Conditions picker, CludesUI.ShowTalentConditionsPopup(opts).
@@ -29,9 +30,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 
 -- The options page pool (CludesUI_FramePool.lua): the popup is built once
 -- under its own shell, so every frame it asks for is a plain one.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 local POPUP_W, POPUP_H = 940, 620
 -- Bump over the dimmer's panel scale: the popup draws at panelScale px per unit, the
@@ -41,14 +42,14 @@ local HEADER_H, FOOTER_H = 70, 56
 local SIDE_PAD, PANEL_GAP = 16, 12
 -- One panel per tree: the class tree and the spec tree, or on WoW Forever the
 -- three vanilla trees (sparse grids, so their talents draw larger).
-local PANELS = CludesUI.IS_FOREVER and 3 or 2
+local PANELS = CUI.IS_FOREVER and 3 or 2
 local PANEL_W = (POPUP_W - SIDE_PAD * 2 - PANEL_GAP * (PANELS - 1)) / PANELS
 local PANEL_H = POPUP_H - HEADER_H - FOOTER_H
 local PANEL_LABEL_H = 24
 local AREA_PAD = 12
 local AREA_W = PANEL_W - AREA_PAD * 2
 local AREA_H = PANEL_H - PANEL_LABEL_H - AREA_PAD
-local NODE = CludesUI.IS_FOREVER and 32 or 26
+local NODE = CUI.IS_FOREVER and 32 or 26
 local BORDER_PX, MARK_PX = 1, 3
 local NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B = 0.95, 0.30, 0.30
 -- Footer buttons (MakeActionButton rows are 38 tall, their labels 15).
@@ -63,7 +64,7 @@ local EMPTY = {}
 
 -- The "Not Taken" red, for a caller that marks its own conditions elsewhere
 -- (the Cooldown Manager's preview slots).
-CludesUI.TALENT_COND_NOT_TAKEN = { NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B }
+CUI.TALENT_COND_NOT_TAKEN = { NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B }
 
 -------------------------------------------------------------------------------
 --  Fonts: the opener's module font. Every font string made here is kept with
@@ -77,16 +78,16 @@ local fontKey, fontFile, fontFlags
 
 local function SetPopupFont(fontStr, size)
     fonted[#fonted + 1] = { fs = fontStr, size = size }
-    CludesUI.ApplyModuleFont(fontStr, nil, size, fontKey)
+    CUI.ApplyModuleFont(fontStr, nil, size, fontKey)
 end
 
 local function UseFont(key)
-    local filePath, flags = CludesUI.GetFontPath(key), CludesUI.GetFontOutlineFlag(key)
+    local filePath, flags = CUI.GetFontPath(key), CUI.GetFontOutlineFlag(key)
     if key == fontKey and filePath == fontFile and flags == fontFlags then return end
     fontKey, fontFile, fontFlags = key, filePath, flags
     for idx = 1, #fonted do
         local f = fonted[idx]
-        CludesUI.ApplyModuleFont(f.fs, nil, f.size, key)
+        CUI.ApplyModuleFont(f.fs, nil, f.size, key)
     end
     for idx = 1, #buttonLabels do
         buttonLabels[idx]:SetFont(filePath, BTN_FONT, "")
@@ -209,11 +210,11 @@ end
 -- all of them share ({ x, y }: the last column and row any tree uses), so
 -- their rows and columns line up side by side.
 local function ReadForeverTrees()
-    local configID, _, trees = CludesUI.ForeverTalentTrees()
+    local configID, _, trees = CUI.ForeverTalentTrees()
     if not trees then return nil end
     local result, span = {}, { x = 1, y = 1 }
     for idx, t in ipairs(trees) do
-        local cells = CludesUI.TalentTreeGrid(configID, t.nodes)
+        local cells = CUI.TalentTreeGrid(configID, t.nodes)
         local nodes = {}
         for _, nodeID in ipairs(t.nodes) do
             local cell = cells[nodeID]
@@ -258,7 +259,7 @@ local function PaintButton(button)
     local c = ConditionOn(button)
     if c then
         if c.taken then
-            local accR, accG, accB = CludesUI.GetAccentColor()
+            local accR, accG, accB = CUI.GetAccentColor()
             Pix.SetBorderColor(button, accR, accG, accB, 1)
         else
             Pix.SetBorderColor(button, NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B, 1)
@@ -282,20 +283,20 @@ local function ButtonOnEnter(button)
     GameTooltip:AddLine(" ")
     local c = ConditionOn(button)
     if not c then
-        GameTooltip:AddLine(CludesUI.L("Click: show only while this talent is taken"), 0.7, 0.7, 0.7, true)
+        GameTooltip:AddLine(CUI.L("Click: show only while this talent is taken"), 0.7, 0.7, 0.7, true)
     elseif c.taken then
-        local accR, accG, accB = CludesUI.GetAccentColor()
-        GameTooltip:AddLine(CludesUI.L("Shown only while this talent is taken"), accR, accG, accB, true)
-        GameTooltip:AddLine(CludesUI.L("Click: show only while it is NOT taken"), 0.7, 0.7, 0.7, true)
+        local accR, accG, accB = CUI.GetAccentColor()
+        GameTooltip:AddLine(CUI.L("Shown only while this talent is taken"), accR, accG, accB, true)
+        GameTooltip:AddLine(CUI.L("Click: show only while it is NOT taken"), 0.7, 0.7, 0.7, true)
     else
         GameTooltip:AddLine(
-            CludesUI.L("Shown only while this talent is NOT taken"),
+            CUI.L("Shown only while this talent is NOT taken"),
             NOT_TAKEN_R,
             NOT_TAKEN_G,
             NOT_TAKEN_B,
             true
         )
-        GameTooltip:AddLine(CludesUI.L("Click: clear"), 0.7, 0.7, 0.7, true)
+        GameTooltip:AddLine(CUI.L("Click: clear"), 0.7, 0.7, 0.7, true)
     end
     GameTooltip:Show()
 end
@@ -367,17 +368,17 @@ UpdateStatus = function()
     local total, met = 0, true
     for _, c in pairs(pending) do
         total = total + 1
-        if CludesUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then met = false end
+        if CUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then met = false end
     end
     for _, c in ipairs(offTree) do
         total = total + 1
-        if CludesUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then met = false end
+        if CUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then met = false end
     end
     if total == 0 then
         statusFS:SetText(texts.none)
         statusFS:SetTextColor(0.7, 0.7, 0.7, 0.9)
     elseif met then
-        local accR, accG, accB = CludesUI.GetAccentColor()
+        local accR, accG, accB = CUI.GetAccentColor()
         statusFS:SetText(texts.met(total))
         statusFS:SetTextColor(accR, accG, accB, 1)
     else
@@ -482,20 +483,20 @@ local function ChipOnEnter(chip)
     chip.x:SetAlpha(1)
     local c = offTree[chip.index]
     if not c then return end
-    local status = c.taken and CludesUI.L("Shown only while this talent is taken")
-        or CludesUI.L("Shown only while this talent is NOT taken")
-    CludesUI.ShowWidgetTooltip(chip, status .. "\n" .. CludesUI.L("Click: clear"))
+    local status = c.taken and CUI.L("Shown only while this talent is taken")
+        or CUI.L("Shown only while this talent is NOT taken")
+    CUI.ShowWidgetTooltip(chip, status .. "\n" .. CUI.L("Click: clear"))
 end
 
 local function ChipOnLeave(chip)
     chip.x:SetAlpha(0.6)
-    CludesUI.HideWidgetTooltip()
+    CUI.HideWidgetTooltip()
 end
 
 local function ChipOnClick(chip)
     if not offTree[chip.index] then return end
     table.remove(offTree, chip.index)
-    CludesUI.HideWidgetTooltip(true)
+    CUI.HideWidgetTooltip(true)
     LayoutOffTree()
     UpdateStatus()
     -- The chip under the cursor now shows the next condition: describe that one.
@@ -508,7 +509,7 @@ local function MakeChip(idx)
     local backdrop = chip:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.060, 0.049, 0.037, 1)
-    chip.border = CludesUI.MakeBorder(chip, 1, 1, 1, 0.10, Pix)
+    chip.border = CUI.MakeBorder(chip, 1, 1, 1, 0.10, Pix)
     chip.icon = chip:CreateTexture(nil, "ARTWORK")
     chip.icon:SetSize(CHIP_H - 8, CHIP_H - 8)
     chip.icon:SetPoint("LEFT", chip, "LEFT", 4, 0)
@@ -546,7 +547,7 @@ LayoutOffTree = function()
         local stripH = OFF_LABEL_H + rowList * CHIP_H + (rowList - 1) * CHIP_GAP_Y
         height = POPUP_H + OFF_PAD + stripH
         offFrame:SetHeight(stripH)
-        local accR, accG, accB = CludesUI.GetAccentColor()
+        local accR, accG, accB = CUI.GetAccentColor()
         for idx = 1, num do
             local c = offTree[idx]
             local chip = chips[idx] or MakeChip(idx)
@@ -564,7 +565,7 @@ LayoutOffTree = function()
             chip.x:SetAlpha(0.6)
             local spellRef = type(c.spellID) == "number" and c.spellID or nil
             chip.icon:SetTexture((spellRef and C_Spell.GetSpellTexture(spellRef)) or 134400)
-            chip.label:SetText((spellRef and C_Spell.GetSpellName(spellRef)) or CludesUI.L("Unknown talent"))
+            chip.label:SetText((spellRef and C_Spell.GetSpellName(spellRef)) or CUI.L("Unknown talent"))
             if c.taken then
                 chip.border:SetColor(accR, accG, accB, 1)
             else
@@ -580,8 +581,8 @@ LayoutOffTree = function()
         chips[idx]:Hide()
     end
     dialog:SetHeight(height)
-    dialog:SetScale(CludesUI.PopupBump(POPUP_BUMP))
-    CludesUI.ClampPopupToScreen(dialog, POPUP_W, height)
+    dialog:SetScale(CUI.PopupBump(POPUP_BUMP))
+    CUI.ClampPopupToScreen(dialog, POPUP_W, height)
     -- Also runs while shown (a chip removed, Clear All): refit the outline.
     dialog._brd:Fit()
 end
@@ -596,7 +597,7 @@ local function MakePanel(index)
     local backdrop = widget:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.060, 0.049, 0.037, 1)
-    CludesUI.MakeBorder(widget, 1, 1, 1, 0.10, Pix)
+    CUI.MakeBorder(widget, 1, 1, 1, 0.10, Pix)
 
     local labelText = widget:CreateFontString(nil, "OVERLAY")
     SetPopupFont(labelText, 12)
@@ -611,7 +612,7 @@ local function MakePanel(index)
     SetPopupFont(empty, 11)
     empty:SetPoint("CENTER")
     empty:SetTextColor(0.6, 0.6, 0.6, 0.8)
-    empty:SetText(CludesUI.L("Talent data is not available right now."))
+    empty:SetText(CUI.L("Talent data is not available right now."))
     empty:Hide()
 
     panels[index] = {
@@ -630,7 +631,7 @@ local function Close()
     tipOwner = nil
     -- A chip hidden under the cursor never gets OnLeave; the modal dimmer means
     -- only this popup can own the widget tooltip here.
-    CludesUI.HideWidgetTooltip(true)
+    CUI.HideWidgetTooltip(true)
     shade:Hide()
 end
 
@@ -655,7 +656,7 @@ local function Build()
     -- density), and registered so the Panel Scale slider rescales it. Clamped: the
     -- trees side by side are wide, and the dimmer eats every click behind it, so an
     -- overflowing popup would strand its buttons off-screen.
-    shade, dialog = CludesUI.BuildPopupShell("CUI_TalentConditions", {
+    shade, dialog = CUI.BuildPopupShell("CUI_TalentConditions", {
         w = POPUP_W,
         h = POPUP_H,
         bump = POPUP_BUMP,
@@ -665,7 +666,7 @@ local function Build()
         onDimmerDown = Close,
     })
     shade:Hide()
-    CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = dialog, dimmer = shade }
+    CUI._popupFrames[#CUI._popupFrames + 1] = { popup = dialog, dimmer = shade }
 
     titleFS = dialog:CreateFontString(nil, "OVERLAY")
     SetPopupFont(titleFS, 16)
@@ -689,19 +690,19 @@ local function Build()
     SetPopupFont(offLabel, 11)
     offLabel:SetPoint("TOPLEFT", offFrame, "TOPLEFT", 0, -2)
     offLabel:SetTextColor(0.7, 0.7, 0.7, 0.85)
-    offLabel:SetText(CludesUI.L("Conditions on talents not shown above (they still apply):"))
+    offLabel:SetText(CUI.L("Conditions on talents not shown above (they still apply):"))
 
-    local accR, accG, accB = CludesUI.GetAccentColor()
+    local accR, accG, accB = CUI.GetAccentColor()
     local saveBtn =
-        CludesUI.MakeActionButton(dialog, fontFile, CludesUI.L("Save"), accR, accG, accB, { w = BTN_W })
+        CUI.MakeActionButton(dialog, fontFile, CUI.L("Save"), accR, accG, accB, { w = BTN_W })
     saveBtn:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -SIDE_PAD, BTN_BOTTOM)
     saveBtn:SetScript("OnClick", Commit)
     KeepButtonLabel(saveBtn)
 
-    local cancelBtn = CludesUI.MakeActionButton(
+    local cancelBtn = CUI.MakeActionButton(
         dialog,
         fontFile,
-        CludesUI.L("Cancel"),
+        CUI.L("Cancel"),
         1,
         1,
         1,
@@ -712,10 +713,10 @@ local function Build()
     dialog._cancelBtn = cancelBtn
     KeepButtonLabel(cancelBtn)
 
-    local clearBtn = CludesUI.MakeActionButton(
+    local clearBtn = CUI.MakeActionButton(
         dialog,
         fontFile,
-        CludesUI.L("Clear All"),
+        CUI.L("Clear All"),
         1,
         1,
         1,
@@ -748,7 +749,7 @@ end
 -------------------------------------------------------------------------------
 --  Entry point. opts: see the header.
 -------------------------------------------------------------------------------
-function CludesUI.ShowTalentConditionsPopup(options)
+function CUI.ShowTalentConditionsPopup(options)
     UseFont(options.fontKey)
     Build()
 
@@ -756,7 +757,7 @@ function CludesUI.ShowTalentConditionsPopup(options)
     titleFS:SetText(options.title or "")
     hintFS:SetText(texts.hint)
 
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         local trees, span = ReadForeverTrees()
         for idx, panelFrame in ipairs(panels) do
             local tbl = trees and trees[idx]
@@ -793,6 +794,6 @@ function CludesUI.ShowTalentConditionsPopup(options)
     LayoutOffTree()
     RepaintAll()
     UpdateStatus()
-    CludesUI.PadPopupOpen(shade, dialog, dialog._cancelBtn, Close) -- controller cursor
+    CUI.PadPopupOpen(shade, dialog, dialog._cancelBtn, Close) -- controller cursor
     shade:Show()
 end

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ResourceBars_Options\TotemBarPage_Options.lua
 --  Resource Bars options: Totem Bar page ("Totem Bars" on WoW Forever, where a
@@ -6,17 +7,17 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  come from one builder over their own settings table. Definitions only; the
 --  shared helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
+local mod = CUI._ModuleNS["CludesUIResourceBars"]
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -- WoW Forever shamans get the Call Totem Bar section (and its preview group);
 -- the runtime file loads for no other class.
 function mod.ERB_HasCallTotemSection()
-    return (CludesUI.IS_FOREVER and select(2, UnitClass("player")) == "SHAMAN") and true or false
+    return (CUI.IS_FOREVER and select(2, UnitClass("player")) == "SHAMAN") and true or false
 end
 
 -- One totem bar section. S: title, key (the profile table), unlockKey, off()
@@ -28,7 +29,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
     local environ = mod._CURB_OptEnv
     local DB = environ.DB
     local _clickMappings = environ._clickMappings
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local _, height
 
     local function T()
@@ -38,7 +39,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
 
     local function ApplyTotemBar()
         if _G._CURB_Apply then _G._CURB_Apply() end
-        if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized(S.unlockKey) end
+        if CUI.NotifyElementResized then CUI.NotifyElementResized(S.unlockKey) end
         environ.UpdateTotemPreview()
     end
 
@@ -52,7 +53,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
     local section
     section, height = W:SectionHeader(hostFrame, S.title, cursorY)
     cursorY = cursorY - height
-    CludesUI.BuildSectionUnlockJump(
+    CUI.BuildSectionUnlockJump(
         section,
         { key = S.unlockKey, disabled = totemOff, disabledTooltip = req, rawTooltip = raw }
     )
@@ -82,8 +83,8 @@ local function BuildTotemSection(hostFrame, cursorY, S)
     cursorY = cursorY - height
 
     -- Spacing cog on Icon Size (right region)
-    if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(row1._rightRegion, {
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(row1._rightRegion, {
             title = "Icon Settings",
             rows = {
                 {
@@ -143,14 +144,14 @@ local function BuildTotemSection(hostFrame, cursorY, S)
             if not sectionCfg then return end
             sectionCfg.showTimer = val
             ApplyTotemBar()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     })
     cursorY = cursorY - height
 
     -- Row 3: Border Style | Border Size (+ inline swatch + offset cog)
     do
-        local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
+        local texValues, texOrder = CUI.GetBorderTextureDropdown()
         local bsRow
         bsRow, height = W:DualRow(
             hostFrame,
@@ -175,20 +176,20 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     sectionCfg.borderTextureOffsetY = nil
                     sectionCfg.borderTextureShiftX = nil
                     sectionCfg.borderTextureShiftY = nil
-                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
+                    local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(val)
                     sectionCfg.borderR = _bcol.r
                     sectionCfg.borderG = _bcol.g
                     sectionCfg.borderB = _bcol.b
                     sectionCfg.borderA = 1
                     sectionCfg.borderBehind = _bbehind
-                    local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
+                    local defSz = CUI.GetBorderDefaultSize("resourcebars", val)
                     if defSz then sectionCfg.borderSize = defSz end
                     if sectionCfg.borderSizePx then sectionCfg.borderSizePx = false end
                     ApplyTotemBar()
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             },
-            CludesUI.BorderPxSliderCfg({
+            CUI.BorderPxSliderCfg({
                 text = "Border Size",
                 disabled = totemOff,
                 disabledTooltip = req,
@@ -215,7 +216,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 end,
                 apply = function()
                     ApplyTotemBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
             })
         )
@@ -229,7 +230,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     local t2 = T()
                     return t2 and (t2.borderSize or 0) or 0
                 end
-                local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
+                local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                     addonKey = "resourcebars",
                     disabled = totemOff,
                     disabledTooltip = req,
@@ -262,7 +263,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     end,
                     apply = function()
                         ApplyTotemBar()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
                 _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
@@ -272,11 +273,11 @@ local function BuildTotemSection(hostFrame, cursorY, S)
 
         -- Inline border color swatch on Border Size slider; none in the search
         -- pre-build (it indexes nothing, and the row is a stand-in there)
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = bsRow._rightRegion
             local control = region._control
-            local Pix = CludesUI.PP
-            local borderSwatch, updateBorderSwatch = CludesUI.BuildColorSwatch(
+            local Pix = CUI.PP
+            local borderSwatch, updateBorderSwatch = CUI.BuildColorSwatch(
                 region,
                 bsRow:GetFrameLevel() + 3,
                 function()
@@ -294,24 +295,24 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     sectionCfg.borderB = blue
                     sectionCfg.borderA = a
                     ApplyTotemBar()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                 end,
                 true,
                 20
             )
             Pix.Point(borderSwatch, "RIGHT", control, "LEFT", -8, 0)
             -- Disable swatch when border size is 0
-            local borderSwatchBlock = CludesUI.NewSwatchBlocker(borderSwatch)
+            local borderSwatchBlock = CUI.NewSwatchBlocker(borderSwatch)
             borderSwatchBlock:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         borderSwatch,
-                        CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
+                        CUI.DisabledTooltip("This option requires a Border Size above 0.")
                     )
                 end
             )
-            borderSwatchBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            borderSwatchBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function UpdateBorderSwatchState()
                 local sectionCfg = T()
                 local noBorder = not sectionCfg or (sectionCfg.borderSize or 0) == 0
@@ -323,7 +324,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     borderSwatchBlock:Hide()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 updateBorderSwatch()
                 UpdateBorderSwatchState()
             end)
@@ -332,9 +333,9 @@ local function BuildTotemSection(hostFrame, cursorY, S)
 
         -- Border Options cog on Border Style (left region): hidden for "solid",
         -- disabled with the section's controls while the bar is off
-        if not CludesUI._prebuilding then
+        if not CUI._prebuilding then
             local region = bsRow._leftRegion
-            local cogBtn = CludesUI.BuildInlineCog(region, {
+            local cogBtn = CUI.BuildInlineCog(region, {
                 disabled = totemOff,
                 disabledTooltip = req,
                 rawTooltip = raw,
@@ -351,7 +352,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                             if not sectionCfg then return 0 end
                             local val = sectionCfg.borderTextureShiftX
                             if val then return val end
-                            local _, _, dsx = CludesUI.GetBorderDefaults(
+                            local _, _, dsx = CUI.GetBorderDefaults(
                                 "resourcebars",
                                 sectionCfg.borderTexture or "solid",
                                 sectionCfg.borderSize or 0
@@ -363,7 +364,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                             if not sectionCfg then return end
                             sectionCfg.borderTextureShiftX = val == 0 and nil or val
                             ApplyTotemBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -377,7 +378,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                             if not sectionCfg then return 0 end
                             local val = sectionCfg.borderTextureShiftY
                             if val then return val end
-                            local _, _, _, dsy = CludesUI.GetBorderDefaults(
+                            local _, _, _, dsy = CUI.GetBorderDefaults(
                                 "resourcebars",
                                 sectionCfg.borderTexture or "solid",
                                 sectionCfg.borderSize or 0
@@ -389,7 +390,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                             if not sectionCfg then return end
                             sectionCfg.borderTextureShiftY = val == 0 and nil or val
                             ApplyTotemBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                     {
@@ -404,7 +405,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                             if not sectionCfg then return end
                             sectionCfg.borderBehind = val == false and nil or val
                             ApplyTotemBar()
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                 },
@@ -418,14 +419,14 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     cogBtn:Show()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(UpdateCogVis)
+            CUI.RegisterWidgetRefresh(UpdateCogVis)
             UpdateCogVis()
         end
     end
 
     -- Row 4: Frame Strata | Orientation
-    local tmStrataValues = CludesUI.FRAME_STRATA_LABELS
-    local tmStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
+    local tmStrataValues = CUI.FRAME_STRATA_LABELS
+    local tmStrataOrder = CUI.FRAME_STRATA_ORDER_BASE
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Frame Strata",
@@ -467,7 +468,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
     cursorY = cursorY - height
 
     -- Click mappings for the preview's hit overlays (never from a hidden pre-build)
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         _clickMappings[S.mapIcon] = { section = section, target = row1, slotSide = "right" }
         _clickMappings[S.mapTimer] = { section = section, target = timerRow, slotSide = "left" }
     end
@@ -479,17 +480,17 @@ end
 function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
     local environ = mod._CURB_OptEnv
     local DB, Pix = environ.DB, environ.PP
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local cursorY = yOffset
     local _, height
-    local forever = CludesUI.IS_FOREVER
+    local forever = CUI.IS_FOREVER
 
     hostFrame._showRowDivider = true
 
-    CludesUI:SetContentHeader(environ._totemPreviewBuilder)
+    CUI:SetContentHeader(environ._totemPreviewBuilder)
 
     -- Clear this page's own click mappings (shared table; never from a hidden pre-build)
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local m = environ._clickMappings
         m.totemIcon, m.totemTimer, m.callTotemIcon, m.callTotemTimer = nil, nil, nil, nil
     end
@@ -510,11 +511,11 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
         raw = true,
         -- Enabled Classes dropdown (built over a blank label slot)
         enableRow = function(ry, sizeCfg, ApplyTotemBar)
-            local ALL_CLASSES = CludesUI.CLASS_TOKEN_ORDER
+            local ALL_CLASSES = CUI.CLASS_TOKEN_ORDER
             local classItems = {}
-            classItems[#classItems + 1] = { key = "NONE", label = CludesUI.L("None (Disabled)") }
+            classItems[#classItems + 1] = { key = "NONE", label = CUI.L("None (Disabled)") }
             -- WoW Forever lists only the classes that client has.
-            local foreverOnly = forever and CludesUI.FOREVER_CLASS_SPEC
+            local foreverOnly = forever and CUI.FOREVER_CLASS_SPEC
             for _, castFrame in ipairs(ALL_CLASSES) do
                 if not foreverOnly or foreverOnly[castFrame] then
                     local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[castFrame]
@@ -528,10 +529,10 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
             local row1, rh = W:DualRow(hostFrame, ry, { type = "label", text = "Enabled Classes" }, sizeCfg)
 
             -- Class dropdown on left region
-            if not CludesUI._prebuilding then
+            if not CUI._prebuilding then
                 local leftRegion = row1._leftRegion
                 local checkDrop, cbDDRefresh
-                checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                     leftRegion,
                     210,
                     leftRegion:GetFrameLevel() + 2,
@@ -569,16 +570,16 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                             end
                         end
                         ApplyTotemBar()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     nil,
                     8,
                     false
                 )
-                CludesUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+                CUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
                 leftRegion._control = checkDrop
                 leftRegion._lastInline = nil
-                CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+                CUI.RegisterWidgetRefresh(cbDDRefresh)
             end
             return row1, rh
         end,
@@ -618,7 +619,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                         if not c then return end
                         c.enabled = val
                         ApplyTotemBar()
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 }, sizeCfg)
             end,

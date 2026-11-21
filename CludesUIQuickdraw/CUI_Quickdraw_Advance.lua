@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Advance.lua
 --
@@ -621,7 +622,7 @@ function mod.CreatePaletteView(hostFrame, options)
     -- so the hub's OVERLAY strings still read on top of it.
     hub.logo = hub:CreateTexture(nil, "ARTWORK")
     hub.logo:SetTexture(
-        (CludesUI.MEDIA_PATH or "Interface\\AddOns\\CludesUI\\media\\") .. "logo-full-thin.png"
+        (CUI.MEDIA_PATH or "Interface\\AddOns\\CludesUI\\media\\") .. "logo-full-thin.png"
     )
     hub.logo:SetPoint("CENTER")
     hub.logo:Hide()

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 local addon, mod = ...
 
 if not mod then return end
@@ -147,9 +148,9 @@ local stockPlateFont, stockPlateOutlined
 local fontOverridden = false
 
 local function SaveOriginalFonts()
-    if not stockPlateFont then stockPlateFont = CludesUI.SnapshotFontObject(SystemFont_NamePlate) end
+    if not stockPlateFont then stockPlateFont = CUI.SnapshotFontObject(SystemFont_NamePlate) end
     if not stockPlateOutlined then
-        stockPlateOutlined = CludesUI.SnapshotFontObject(SystemFont_NamePlate_Outlined)
+        stockPlateOutlined = CUI.SnapshotFontObject(SystemFont_NamePlate_Outlined)
     end
 end
 
@@ -203,11 +204,11 @@ local _sfFile, _sfSize, _sfFlags
 local function ApplySubtitleFont()
     local file = GetFont()
     local px = GetSubTextSize()
-    local fontFlags = (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+    local fontFlags = (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     if file == _sfFile and px == _sfSize and fontFlags == _sfFlags then return end
     _sfFile, _sfSize, _sfFlags = file, px, fontFlags
     for i = 1, #subTexts do
-        CludesUI.SetFontFamily(subTexts[i], file, px, fontFlags, false)
+        CUI.SetFontFamily(subTexts[i], file, px, fontFlags, false)
     end
 end
 
@@ -229,8 +230,8 @@ local function ApplyFriendlyFontOverride(force)
     -- Restore to known-good originals first, so a member the new font does not
     -- take (a script it lacks) is back on Blizzard's own face.
     if fontOverridden then
-        CludesUI.RestoreFontObject(SystemFont_NamePlate, stockPlateFont)
-        CludesUI.RestoreFontObject(SystemFont_NamePlate_Outlined, stockPlateOutlined)
+        CUI.RestoreFontObject(SystemFont_NamePlate, stockPlateFont)
+        CUI.RestoreFontObject(SystemFont_NamePlate_Outlined, stockPlateOutlined)
         fontOverridden = false
     end
     -- Blizzard picks the name's font object by Nameplate Style: Modern/Block
@@ -251,8 +252,8 @@ local function ApplyFriendlyFontOverride(force)
     end
     -- Our font, size and outline on every member that takes the font (the
     -- scripts it draws); the other members keep Blizzard's faces at our size.
-    CludesUI.SetFontObjectFace(SystemFont_NamePlate, font, px, WithOutline(SnapFlags(stockPlateFont)), nil)
-    CludesUI.SetFontObjectFace(
+    CUI.SetFontObjectFace(SystemFont_NamePlate, font, px, WithOutline(SnapFlags(stockPlateFont)), nil)
+    CUI.SetFontObjectFace(
         SystemFont_NamePlate_Outlined,
         font,
         px,
@@ -266,8 +267,8 @@ end
 local function RestoreFriendlyFontOverride()
     if not fontOverridden then return end
     fontOverridden = false
-    CludesUI.RestoreFontObject(SystemFont_NamePlate, stockPlateFont)
-    CludesUI.RestoreFontObject(SystemFont_NamePlate_Outlined, stockPlateOutlined)
+    CUI.RestoreFontObject(SystemFont_NamePlate, stockPlateFont)
+    CUI.RestoreFontObject(SystemFont_NamePlate_Outlined, stockPlateOutlined)
 end
 
 -- Name-only fonts are applied globally via the SystemFont_NamePlate override above.
@@ -507,11 +508,11 @@ end
 -- write here goes through SetFontFamily too.
 local function ApplyOverlayStyle(overlayFrame, unitToken)
     local font, outline, shadow = GetFont(), GetNPOutline(), GetNPUseShadow()
-    CludesUI.SetFontFamily(overlayFrame.name, font, GetNPCOverlayNameSize(), outline, shadow)
+    CUI.SetFontFamily(overlayFrame.name, font, GetNPCOverlayNameSize(), outline, shadow)
     overlayFrame.name:SetTextColor(GetNPCNameColor(unitToken))
     if overlayFrame.name.SetSnapToPixelGrid then overlayFrame.name:SetSnapToPixelGrid(false) end
     if overlayFrame.name.SetTexelSnappingBias then overlayFrame.name:SetTexelSnappingBias(0) end
-    CludesUI.SetFontFamily(overlayFrame.title, font, GetNPCTitleSize(), outline, shadow)
+    CUI.SetFontFamily(overlayFrame.title, font, GetNPCTitleSize(), outline, shadow)
     overlayFrame.title:SetTextColor(GetNPCTitleColor(unitToken))
 end
 
@@ -521,7 +522,7 @@ local function FormatNPCName(label)
     local plate = FP()
     local modeName = plate and plate.friendlyNPCNameFormat
     if not modeName then return label end
-    return CludesUI.ShortName(label, modeName)
+    return CUI.ShortName(label, modeName)
 end
 
 local function ShowNPCOverlay(plateFrame, unitToken)
@@ -618,14 +619,14 @@ local function ClassRGB(unitToken, plainOnly)
     local _, tok = UnitClass(unitToken)
     if issecretvalue(tok) then
         if plainOnly then return false end
-        local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, tok)
+        local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(unitToken, tok)
         if success then return true, red, green, blue end
         local color = C_ClassColor.GetClassColor(tok)
         if color then return true, color:GetRGB() end
         return false
     end
     if not tok then return false end
-    local color = CludesUI.GetClassColor(tok)
+    local color = CUI.GetClassColor(tok)
     return true, color.r, color.g, color.b
 end
 
@@ -728,13 +729,13 @@ end
 --   Name Format or the Subtitle Text settings differ from that record.
 local FriendlyNameFormat, FormatFriendlyName, StampFriendlyNames
 do
-    local short, WithSurname = CludesUI.ShortName, CludesUI.WithSurname
+    local short, WithSurname = CUI.ShortName, CUI.WithSurname
     local titledShort = { first = {}, last = {}, abbr = {} } -- [mode][full name][string] = result
     local titledTotal = { first = 0, last = 0, abbr = 0 }
     -- A mode's cache; a Character Count gets its own on first use.
     local function TitledCache(modeName)
         local nameCache = titledShort[modeName]
-        if not nameCache and CludesUI.IsNameFormat(modeName) then
+        if not nameCache and CUI.IsNameFormat(modeName) then
             nameCache = {}
             titledShort[modeName], titledTotal[modeName] = nameCache, 0
         end
@@ -882,7 +883,7 @@ local function UpdateNameOnlyText(nameText)
 
     local wanted
     if ModeHasTitle(modeName) and isPlayer then wanted = GetTitledName(unitToken) end
-    if not wanted then wanted = CludesUI.WithSurname(UnitName(unitToken)) end
+    if not wanted then wanted = CUI.WithSurname(UnitName(unitToken)) end
     if not wanted or (issecretvalue and issecretvalue(wanted)) then return end
     -- The friendly Name Format, while one is saved (players only).
     if isPlayer and FriendlyNameFormat() then
@@ -1233,7 +1234,7 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
     -- borderColor) so friendly plates always match whatever border the user has
     -- configured for enemy plates. Lives on a child container at health level + 1 so it
     -- renders above the mouseover highlight (OVERLAY sublevel 6) and the health fill.
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if Pix and Pix.CreateBorder then
         local cr, cg, callback = mod.GetBorderColor()
         -- The classic plate's fixed 1px edge, else the friendly profile's own size.
@@ -1374,7 +1375,7 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
     backing.subText1 = backing:CreateFontString(nil, "OVERLAY")
     ApplySubtitleFont()
     subTexts[#subTexts + 1] = backing.subText1
-    CludesUI.SetFontFamily(backing.subText1, _sfFile, _sfSize, _sfFlags, false)
+    CUI.SetFontFamily(backing.subText1, _sfFile, _sfSize, _sfFlags, false)
     -- Anchored in UpdateSubText against the HEALTH BAR with the same computed number
     -- that positions the name -- never against the name's own rect, which re-derives
     -- from text metrics every render and jitters on a moving plate.
@@ -1542,7 +1543,7 @@ function FriendlyFrame:UpdateName()
     local isPlayer = (hasTitle or fmt or showLevel) and UnitIsPlayer(unitToken)
     local unitName
     if hasTitle and isPlayer then unitName = GetTitledName(unitToken) end
-    if not unitName then unitName = CludesUI.WithSurname(UnitName(unitToken)) end
+    if not unitName then unitName = CUI.WithSurname(UnitName(unitToken)) end
     if fmt and isPlayer and unitName then unitName = FormatFriendlyName(unitToken, unitName, hasTitle) end
     if showLevel and isPlayer and unitName then
         -- The name may be secret: only ever a display argument.
@@ -1667,7 +1668,7 @@ function FriendlyFrame:ApplyTarget()
     local fx = plate and plate.friendlyTargetBorderFx and isTarget or nil
     self._isTarget = fx
     if fx or self._targetBorderSized or self._fxBorderTinted then
-        local Pix = CludesUI.PP
+        local Pix = CUI.PP
         local tbsz
         if fx and mod.GetTargetGlowBorderSize() then tbsz = mod.GetTargetBorderSizeValue() end
         if tbsz then
@@ -1686,7 +1687,7 @@ function FriendlyFrame:ApplyTarget()
             local bc = mod.GetTargetBorderColor()
             if mod.IsCustomBorderEnabled() then
                 if not self._customBorder then mod.ApplyCustomBorderStyle(self) end
-                CludesUI.SetBorderStyleColor(self._customBorder, bc.r, bc.g, bc.b, 1)
+                CUI.SetBorderStyleColor(self._customBorder, bc.r, bc.g, bc.b, 1)
             else
                 mod.NP_BasicBorderColor(self, bc.r, bc.g, bc.b, 1)
             end
@@ -2061,7 +2062,7 @@ end
 --- restore that was queued before the user changed their mind.
 function mod.ForceFriendlyPlayerCVarsOn()
     for i = 1, #FRIENDLY_VIS_CVARS do
-        pcall(CludesUI.SetCVar, FRIENDLY_VIS_CVARS[i], 1, "CludesUINameplates")
+        pcall(CUI.SetCVar, FRIENDLY_VIS_CVARS[i], 1, "CludesUINameplates")
     end
     if CludesUIDB then CludesUIDB.friendlyPlateVisSaved = nil end
 end
@@ -2088,7 +2089,7 @@ local function RestoreFriendlyVis()
     if saved == nil then return end -- nothing of ours to undo: leave them alone
     CludesUIDB.friendlyPlateVisSaved = nil
     for i = 1, #FRIENDLY_VIS_CVARS do
-        pcall(CludesUI.ReleaseCVar, FRIENDLY_VIS_CVARS[i], saved, "CludesUINameplates")
+        pcall(CUI.ReleaseCVar, FRIENDLY_VIS_CVARS[i], saved, "CludesUINameplates")
     end
 end
 
@@ -2129,11 +2130,11 @@ function mod.UpdateFriendlyNameplateSystem()
             -- Hiding without a capture has no matching restore, so the plates
             -- would never come back.
             if cuiManagesPlayers and CaptureFriendlyVis() then
-                pcall(CludesUI.HoldCVar, "nameplateShowFriendlyPlayers", 0, "CludesUINameplates")
-                pcall(CludesUI.HoldCVar, "nameplateShowFriends", 0, "CludesUINameplates")
+                pcall(CUI.HoldCVar, "nameplateShowFriendlyPlayers", 0, "CludesUINameplates")
+                pcall(CUI.HoldCVar, "nameplateShowFriends", 0, "CludesUINameplates")
             end
-            pcall(CludesUI.SetCVar, "nameplateShowFriendlyNPCs", 0, "CludesUINameplates")
-            pcall(CludesUI.SetCVar, "nameplateShowFriendlyNpcs", 0, "CludesUINameplates")
+            pcall(CUI.SetCVar, "nameplateShowFriendlyNPCs", 0, "CludesUINameplates")
+            pcall(CUI.SetCVar, "nameplateShowFriendlyNpcs", 0, "CludesUINameplates")
         elseif inInstance then
             -- NPC plates only: force off in instances since our frame
             -- suppression doesn't work on protected nameplate frames.
@@ -2148,14 +2149,14 @@ function mod.UpdateFriendlyNameplateSystem()
                 -- return on zone-in and stay for the whole instance, since nothing else
                 -- rewrites this CVar until the player is back outside.
                 pcall(
-                    CludesUI.SetCVar,
+                    CUI.SetCVar,
                     "nameplateShowOnlyNameForFriendlyPlayerUnits",
                     (plate and plate.friendlyNameOnly ~= false) and 1 or 0,
                     "CludesUINameplates"
                 )
             end
-            pcall(CludesUI.SetCVar, "nameplateShowFriendlyNPCs", 0, "CludesUINameplates")
-            pcall(CludesUI.SetCVar, "nameplateShowFriendlyNpcs", 0, "CludesUINameplates")
+            pcall(CUI.SetCVar, "nameplateShowFriendlyNPCs", 0, "CludesUINameplates")
+            pcall(CUI.SetCVar, "nameplateShowFriendlyNpcs", 0, "CludesUINameplates")
         else
             -- Restore user's preferred friendly CVar state
             if plate then
@@ -2166,20 +2167,20 @@ function mod.UpdateFriendlyNameplateSystem()
                     -- case visibility is the user's to own, so nothing is written.
                     RestoreFriendlyVis()
                     pcall(
-                        CludesUI.SetCVar,
+                        CUI.SetCVar,
                         "nameplateShowOnlyNameForFriendlyPlayerUnits",
                         nameOnlyVal,
                         "CludesUINameplates"
                     )
                 end
                 pcall(
-                    CludesUI.SetCVar,
+                    CUI.SetCVar,
                     "nameplateShowFriendlyNPCs",
                     showNPCs and 1 or 0,
                     "CludesUINameplates"
                 )
                 pcall(
-                    CludesUI.SetCVar,
+                    CUI.SetCVar,
                     "nameplateShowFriendlyNpcs",
                     showNPCs and 1 or 0,
                     "CludesUINameplates"
@@ -2253,7 +2254,7 @@ function mod.UpdateFriendlyNameplateSystem()
     -- combat skip is caught by the visibility retry above.
     if (nameOnly or shouldEnable) and not InCombatLockdown() then
         pcall(
-            CludesUI.SetCVar,
+            CUI.SetCVar,
             "nameplateUseClassColorForFriendlyPlayerUnitNames",
             mod.FriendlyNameClassCVar(_fp),
             "CludesUINameplates"

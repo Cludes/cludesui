@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_LootSparkles.lua  (WoW Forever only)
 --  Loot Sparkles: keeps the game's sparkle on lootable quest items, so you
@@ -76,7 +77,7 @@ local function Apply()
             wasOn = false
             F.Cfg().switchedOff = nil
             if not InCombatLockdown() then Write("0") end
-            CludesUI.Print(
+            CUI.Print(
                 "|cff4cc9f0Loot Sparkles:|r off. Sparkles already showing stay until you restart the game; /reload is not enough."
             )
         end
@@ -91,6 +92,6 @@ local function SetEnabled(val)
     Apply()
 end
 
-CludesUI._LootSparkles = { Get = F.Get, Cfg = F.Cfg, Apply = Apply, SetEnabled = SetEnabled }
+CUI._LootSparkles = { Get = F.Get, Cfg = F.Cfg, Apply = Apply, SetEnabled = SetEnabled }
 
 F.Start(Apply)

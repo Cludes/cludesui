@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Init.lua
 --
@@ -13,7 +14,7 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs, ipairs, type = pairs, ipairs, type
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local UnitCanAttack = UnitCanAttack
 
 local defaultSet, ENP, GetNPOutline, SetFSFont =
@@ -50,8 +51,8 @@ do
         local specID = specIndex and specIndex > 0 and GetSpecializationInfo(specIndex) or nil
         -- WoW Forever: the class counts as each of its retail specs; the first
         -- one in class order that a preset is assigned to picks the preset.
-        if CludesUI.IS_FOREVER then
-            specID = CludesUI.ForeverClassSpec(nil, mod.NP_PresetHoldsSpec, p._specAssignments)
+        if CUI.IS_FOREVER then
+            specID = CUI.ForeverClassSpec(nil, mod.NP_PresetHoldsSpec, p._specAssignments)
         end
         if not specID then return end
 
@@ -185,7 +186,7 @@ do
         SetProfile(ENP.db.profile)
         RefreshThreatCache()
         -- If the framework handler is registered, let it handle this
-        if CludesUI and CludesUI._specSwitchRegistry and #CludesUI._specSwitchRegistry > 0 then return end
+        if CUI and CUI._specSwitchRegistry and #CUI._specSwitchRegistry > 0 then return end
         ApplySpecPresetFromDB()
         if mod.RefreshAllSettings then mod.RefreshAllSettings() end
     end)
@@ -199,7 +200,7 @@ end
 
 local npAddon = ENP
 function npAddon:OnInitialize()
-    ENP.db = CludesUI.Lite.NewDB("CludesUINameplatesDB", { profile = defaultSet })
+    ENP.db = CUI.Lite.NewDB("CludesUINameplatesDB", { profile = defaultSet })
     SetProfile(ENP.db.profile)
     mod.db = ENP.db
     -- Non-Target Opacity: derive the cached value at login (no plates exist yet,
@@ -207,7 +208,7 @@ function npAddon:OnInitialize()
     if mod.NT_RefreshSetting then mod.NT_RefreshSetting() end
     if mod.NP_RefreshTypeScaleSetting then mod.NP_RefreshTypeScaleSetting() end
     -- Append SharedMedia textures to runtime tables so SM texture keys resolve at runtime
-    CludesUI.AppendSharedMediaTextures(
+    CUI.AppendSharedMediaTextures(
         mod.healthBarTextureNames,
         mod.healthBarTextureOrder,
         nil,
@@ -222,8 +223,8 @@ function npAddon:OnEnable()
     -- its own textures go to the CludesUI slot first, so a switch back
     -- restores them.
     if mod.NP_Blizz() then
-        if not p.stockBarTextureSeeded and CludesUI.BankEuiStyleSlot then
-            CludesUI.BankEuiStyleSlot(p, mod._npStyleSlotKeys)
+        if not p.stockBarTextureSeeded and CUI.BankEuiStyleSlot then
+            CUI.BankEuiStyleSlot(p, mod._npStyleSlotKeys)
         end
         mod.NP_SeedStock(p)
     end
@@ -239,8 +240,8 @@ function npAddon:OnEnable()
                 local k = keyList[index]
                 if cui[k] == nil then cui[k] = p[k] end
             end
-        elseif CludesUI.BankEuiStyleSlot then
-            CludesUI.BankEuiStyleSlot(p, mod._npStyleSlotKeys)
+        elseif CUI.BankEuiStyleSlot then
+            CUI.BankEuiStyleSlot(p, mod._npStyleSlotKeys)
         end
         mod.NP_SeedClassic(p)
     end
@@ -379,7 +380,7 @@ do
         -- "0+" (basically melee) shows nothing: the indicator only matters at distance. Queried
         -- as "target" rather than plate.unit -- this is the target's plate by definition, and
         -- the token lets the shared engine serve the QoL text from one cached walk.
-        local lower = CludesUI.Range_LowerBound("target")
+        local lower = CUI.Range_LowerBound("target")
         if lower and lower > 0 then
             Range.fs:SetText(lower .. "+")
             Range.fs:Show()
@@ -400,7 +401,7 @@ do
     -- melee specs -- deliberate fail-open, never a blocked action.
     function Range.FadeTick()
         local customCutoff = p and p.outOfRangeMode == "custom" and p.outOfRangeCustomRange
-        local cutoff = CludesUI.Range_GetAttackCutoff(customCutoff)
+        local cutoff = CUI.Range_GetAttackCutoff(customCutoff)
         local q = Range.fadeQ
         if not q then
             q = {}
@@ -429,7 +430,7 @@ do
                 -- through to the probes, whose own gates fail open.
                 local okAtt, att = pcall(UnitCanAttack, "player", unitToken)
                 local skip = okAtt and not (issecretvalue and issecretvalue(att)) and att == false
-                if not skip then beyond = CludesUI.Range_SweepBeyond(unitToken, cutoff) end
+                if not skip then beyond = CUI.Range_SweepBeyond(unitToken, cutoff) end
                 local alpha = beyond == true and mod._oorAlpha or 1
                 if (backing._oorCurAlpha or 1) ~= alpha then
                     backing._oorCurAlpha = alpha
@@ -485,10 +486,10 @@ do
                 end)
             end
             -- Ladder builds and invalidation live in the shared range engine.
-            CludesUI.Range_SetActive("npRange", true)
+            CUI.Range_SetActive("npRange", true)
             Range.drv:Show()
         else
-            CludesUI.Range_SetActive("npRange", false)
+            CUI.Range_SetActive("npRange", false)
             if Range.drv then Range.drv:Hide() end
         end
         if not textEnabled then Range.Detach() end
@@ -517,7 +518,7 @@ mod.ApplyOOCPlates = function()
         -- change, and a redundant SetCVar broadcasts CVAR_UPDATE to the whole UI.
         local wanted = InCombatLockdown() and "1" or "0"
         if GetCVar("nameplateShowEnemies") ~= wanted then
-            CludesUI.SetCVar("nameplateShowEnemies", wanted, "CludesUINameplates")
+            CUI.SetCVar("nameplateShowEnemies", wanted, "CludesUINameplates")
         end
     else
         ctl:UnregisterEvent("PLAYER_REGEN_DISABLED")
@@ -525,7 +526,7 @@ mod.ApplyOOCPlates = function()
         ctl:UnregisterEvent("PLAYER_ENTERING_WORLD")
         if mod._oocPlatesOwned then
             mod._oocPlatesOwned = nil
-            CludesUI.SetCVar("nameplateShowEnemies", "1", "CludesUINameplates")
+            CUI.SetCVar("nameplateShowEnemies", "1", "CludesUINameplates")
         end
     end
 end
@@ -536,10 +537,10 @@ mod._oocPlatesCtl:SetScript("OnEvent", function(self, evt)
         return
     end
     if evt == "PLAYER_REGEN_DISABLED" then
-        CludesUI.SetCVar("nameplateShowEnemies", "1", "CludesUINameplates")
+        CUI.SetCVar("nameplateShowEnemies", "1", "CludesUINameplates")
     elseif not InCombatLockdown() then
         -- REGEN_ENABLED, or a world entry that lands out of combat.
-        CludesUI.SetCVar("nameplateShowEnemies", "0", "CludesUINameplates")
+        CUI.SetCVar("nameplateShowEnemies", "0", "CludesUINameplates")
     end
 end)
 mod._oocPlatesCtl:RegisterEvent("PLAYER_LOGIN")
@@ -564,7 +565,7 @@ end
 
 -- The sliders' write: sets the CVar, then keeps what the client holds.
 mod.KeepNameplateCVar = function(name, value)
-    if not CludesUI.SetCVar(name, value, "CludesUINameplates") then return end
+    if not CUI.SetCVar(name, value, "CludesUINameplates") then return end
     local current = tonumber(GetCVar(name))
     if not (current and CludesUIDB) then return end
     local kept = CludesUIDB.nameplateKeptCVars
@@ -593,7 +594,7 @@ mod.ApplyKeptNameplateCVars = function()
         local name = nameList[index]
         local val = tonumber(kept[name])
         if val and C_CVar.GetCVarInfo(name) and not mod.KeptCVarSame(GetCVar(name), val) then
-            CludesUI.SetCVar(name, val, "CludesUINameplates")
+            CUI.SetCVar(name, val, "CludesUINameplates")
         end
     end
 end

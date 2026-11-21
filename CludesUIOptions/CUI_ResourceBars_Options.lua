@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Options.lua - the Resource Bars module's settings.
 --
@@ -9,7 +10,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  pages themselves are built in ResourceBars_Options\*.lua, which reach the
 --  shared pieces through mod._CURB_OptEnv (set up at the end of the init).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIResourceBars"] -- published by the module when it loads
+local mod = CUI._ModuleNS["CludesUIResourceBars"] -- published by the module when it loads
 if not mod then
     return -- the module is disabled: no pages
 end
@@ -24,15 +25,15 @@ local PAGE_TOTEM = "Totem Bar"
 
 -- WoW Forever labels two tabs differently ("Totem Bars" holds the Call Totem
 -- Bar too); only the shown label changes.
-if CludesUI.IS_FOREVER then
-    CludesUI.TAB_LABEL_OVERRIDES[PAGE_DISPLAY] = "Main Resources"
-    CludesUI.TAB_LABEL_OVERRIDES[PAGE_TOTEM] = "Totem Bars"
+if CUI.IS_FOREVER then
+    CUI.TAB_LABEL_OVERRIDES[PAGE_DISPLAY] = "Main Resources"
+    CUI.TAB_LABEL_OVERRIDES[PAGE_TOTEM] = "Totem Bars"
 end
 
 -------------------------------------------------------------------------------
 --  Border rows under the stock styles
 -------------------------------------------------------------------------------
-local function StockStyle() return CludesUI.BlizzStyle.Active("resourcebars") end
+local function StockStyle() return CUI.BlizzStyle.Active("resourcebars") end
 
 -- Classic WoW UI: a bar's Border Size slot sizes the vanilla frame round it
 -- (stockBorderScale, a percent of the frame's full size; nil = the shared
@@ -60,7 +61,7 @@ local function ClassicScaleToAll(profile, value)
 end
 local function RefitAll()
     for _, barKey in ipairs(CLASSIC_MATCH_KEYS) do
-        CludesUI.ReapplyMatchPads(barKey)
+        CUI.ReapplyMatchPads(barKey)
     end
 end
 
@@ -68,7 +69,7 @@ end
 -- Mode element. While "Border Around All" is on the three bars share one
 -- frame, so one size: any bar's slider writes all three.
 function mod.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
-    return CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
+    return CUI.BlizzStyle.ClassicBorderSizeCfg(function()
         local c = cfgFn()
         return c and c.stockBorderScale
     end, function(value)
@@ -82,15 +83,15 @@ function mod.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
         if together then
             RefitAll()
         else
-            CludesUI.ReapplyMatchPads(matchKey)
+            CUI.ReapplyMatchPads(matchKey)
         end
-        CludesUI:RefreshPage()
+        CUI:RefreshPage()
     end, { disabled = offFn, disabledTooltip = offTip })
 end
 
 -- The sync icon on a Classic border row: copies this bar's size to all three.
 function mod.ERB_ClassicBorderSync(regionFrame, dbFn, barKey, refresh, flashFn)
-    CludesUI.BuildSyncIcon({
+    CUI.BuildSyncIcon({
         region = regionFrame,
         tooltip = "Apply Border Size to all Bars",
         onClick = function()
@@ -99,7 +100,7 @@ function mod.ERB_ClassicBorderSync(regionFrame, dbFn, barKey, refresh, flashFn)
             ClassicScaleToAll(p, p[barKey].stockBorderScale)
             refresh()
             RefitAll()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
         isSynced = function()
             local p = dbFn()
@@ -140,8 +141,8 @@ function mod.ERB_SeparatorArtValues(withNone)
     end
     values.match = "Match Border"
     order[#order + 1] = "match"
-    for _, style in ipairs(CludesUI._builtinBorderTextures) do
-        if CludesUI.GetBorderCompanion(style.key, "sepH") then
+    for _, style in ipairs(CUI._builtinBorderTextures) do
+        if CUI.GetBorderCompanion(style.key, "sepH") then
             values[style.key] = style.name
             order[#order + 1] = style.key
         end
@@ -161,14 +162,14 @@ function mod.ERB_TexturedBars(profile)
     return Flag(profile.health) .. Flag(profile.primary) .. Flag(profile.secondary)
 end
 
-CludesUI.AtOptionsLogin(function()
+CUI.AtOptionsLogin(function()
     -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
     -- host are reset and dressed again by the next build instead of made anew;
     -- elsewhere this is CreateFrame. Captured once, never read through the
     -- public slot later.
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local PoolGen, PoolKeep = CludesUI._Pool.Gen, CludesUI._Pool.Keep
-    local Pix = CludesUI.PanelPP
+    local CreateFrame = CUI._Pool.CreateFrame
+    local PoolGen, PoolKeep = CUI._Pool.Gen, CUI._Pool.Keep
+    local Pix = CUI.PanelPP
     local THR_BORDER_WHITE = { 1, 1, 1 } -- Threshold & Hash Lines buttons: default (unconfigured) border tint
 
     -- The module's saved profile (its database exists by the time a page builds).
@@ -283,9 +284,9 @@ CludesUI.AtOptionsLogin(function()
         if holder:GetParent() == heading then holder:Show() end
     end
 
-    local FONT_PATH = (CludesUI.GetFontPath("resourceBars"))
+    local FONT_PATH = (CUI.GetFontPath("resourceBars"))
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-    local SetPVFont = CludesUI.ApplyModuleFont
+    local SetPVFont = CUI.ApplyModuleFont
     local CONTENT_PAD = 45
     local SIDE_PAD = 20
 
@@ -314,7 +315,7 @@ CludesUI.AtOptionsLogin(function()
     -- Preview textures snap to the preview container's own scale (the
     -- per-build _previewSnap), never to screen pixels, which can disagree
     -- with the preview grid.
-    local UnsnapTex = CludesUI.PP.DisablePixelSnap
+    local UnsnapTex = CUI.PP.DisablePixelSnap
     local _previewSnap -- set by each preview build
 
     local _borderRefreshers = {} -- re-snap sizes when the scale changes
@@ -325,7 +326,7 @@ CludesUI.AtOptionsLogin(function()
         local holder = CreateFrame("Frame", nil, hostFrame)
         holder:SetAllPoints(hostFrame)
         holder:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
-        local PP = CludesUI and CludesUI.PP
+        local PP = CUI and CUI.PP
         if PP then PP.CreateBorder(holder, red, green, blue, a or 1, size or 1, "BORDER", 7) end
         local handle = { _frame = holder, edges = (PP and PP.GetBorders(holder)) or {} }
         function handle.SetColor(_, cr, cg, checkBtn, ca)
@@ -406,9 +407,9 @@ CludesUI.AtOptionsLogin(function()
         _headerBaseH = baseH -- what the hint's dismiss fade sizes to
         local wanted = baseH + ((_previewHintFS and _previewHintFS:IsShown()) and 35 or 0)
         local scale = heading:GetEffectiveScale()
-        local px = scale > 0 and (CludesUI.PP.perfect / scale) or 1
+        local px = scale > 0 and (CUI.PP.perfect / scale) or 1
         if math.abs(heading:GetHeight() - wanted) >= px * 0.5 then
-            CludesUI:SetContentHeaderHeightSilent(wanted)
+            CUI:SetContentHeaderHeightSilent(wanted)
         end
     end
 
@@ -421,24 +422,24 @@ CludesUI.AtOptionsLogin(function()
     function PreviewBar.Avail(profile, barKey)
         local secondaryCfg = profile.secondary
         if barKey == "classResource" then
-            if not secondaryCfg.enabled then return CludesUI.DisabledTooltip("Class Resource") end
-            if not HasClassResource() then return CludesUI.L(NEEDS_SPEC.classResource) end
+            if not secondaryCfg.enabled then return CUI.DisabledTooltip("Class Resource") end
+            if not HasClassResource() then return CUI.L(NEEDS_SPEC.classResource) end
         elseif barKey == "power" then
-            if profile.primary.enabled == false then return CludesUI.DisabledTooltip("Power Bar") end
-            if not HasPrimaryPower() then return CludesUI.L(NEEDS_SPEC.power) end
+            if profile.primary.enabled == false then return CUI.DisabledTooltip("Power Bar") end
+            if not HasPrimaryPower() then return CUI.L(NEEDS_SPEC.power) end
             -- The druid per-form switch, as the live IsPowerBarHidden.
             if _G._CURB_BarHiddenByForm and _G._CURB_BarHiddenByForm(profile.primary) then
-                return CludesUI.L("This option is turned off for the current form")
+                return CUI.L("This option is turned off for the current form")
             end
             -- Power hides while the class resource takes its place, as live.
             if secondaryCfg.hidePowerIfResource and secondaryCfg.enabled ~= false and HasClassResource() then
-                return CludesUI.DisabledTooltip("Hide Power Bar if Resource", "disabled")
+                return CUI.DisabledTooltip("Hide Power Bar if Resource", "disabled")
             end
         elseif barKey == "health" then
-            if not profile.health.enabled then return CludesUI.DisabledTooltip("Health Bar") end
+            if not profile.health.enabled then return CUI.DisabledTooltip("Health Bar") end
         elseif barKey == "arcaneSoul" then
             if not (profile.arcaneSoul and profile.arcaneSoul.enabled) then
-                return CludesUI.DisabledTooltip("Arcane Soul Helper")
+                return CUI.DisabledTooltip("Arcane Soul Helper")
             end
         end
         return nil
@@ -464,7 +465,7 @@ CludesUI.AtOptionsLogin(function()
             mod.ERB_AnchorBorderHost(holder, barRef, mod.ERB_BorderExtents(cfg))
         end
         local size, style = cfg.borderSize or 0, cfg.borderTexture or "solid"
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             holder,
             size,
             cfg.borderR or 0,
@@ -479,7 +480,7 @@ CludesUI.AtOptionsLogin(function()
             "resourcebars",
             size,
             nil,
-            CludesUI.BorderPx(cfg.borderSizePx, size, style)
+            CUI.BorderPx(cfg.borderSizePx, size, style)
         )
         holder:Show()
     end
@@ -548,7 +549,7 @@ CludesUI.AtOptionsLogin(function()
         if g.barTextureBg or backdrop._erbBgTex then
             local texture = g.barTextureBg
                 and (cfg.fillOpacity or 100) >= 100
-                and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, nil)
+                and CUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, nil)
             mod.ERB_BgTexture(backdrop, texture, cfg.bgR, cfg.bgG, cfg.bgB, cfg.bgA)
         end
         return backdrop
@@ -566,13 +567,13 @@ CludesUI.AtOptionsLogin(function()
             or nil
         if not src then return end
         local percent = (src.hashMode or "percent") == "percent"
-        local PP = CludesUI.PP
+        local PP = CUI.PP
         local lineW = (src.hashWidth or 1) * PP.mult
         -- A solid border's exact size is the inset.
         local inset = cfg.borderSize or 0
         local style = cfg.borderTexture
         if not style or style == "" or style == "solid" then
-            inset = CludesUI.BorderPx(cfg.borderSizePx, inset, style) or inset
+            inset = CUI.BorderPx(cfg.borderSizePx, inset, style) or inset
         end
         inset = math.min(inset * PP.mult, math.max(0, (height - 1) / 2))
         local count = 0
@@ -627,7 +628,7 @@ CludesUI.AtOptionsLogin(function()
         local pctText = tostring(pct) .. ((cfg.showPercent == false) and "" or "%")
         local cur = mod.AbbreviateNumbers(amount)
         if fmt == "smart" then
-            local asPercent = CludesUI.IsSmartPowerPercent and CludesUI.IsSmartPowerPercent(ptype)
+            local asPercent = CUI.IsSmartPowerPercent and CUI.IsSmartPowerPercent(ptype)
             return asPercent and pctText or cur
         elseif fmt == "both" then
             return cur .. " | " .. pctText
@@ -651,7 +652,7 @@ CludesUI.AtOptionsLogin(function()
         local texKey = (profile.splitTex == true and cfg.barTexture) or g.barTexture
         local fill = barRef._sb
         fill:SetStatusBarTexture(
-            CludesUI.ResolveTexturePath(
+            CUI.ResolveTexturePath(
                 _G._CURB_BarTextures,
                 texKey or "none",
                 "Interface\\Buttons\\WHITE8x8"
@@ -742,8 +743,8 @@ CludesUI.AtOptionsLogin(function()
         if info.power == "SWEEPING_STRIKES" or info.power == "WHIRLWIND_STACKS" then
             local real = _G._EWC and _G._EWC.MaxApps(info.power)
             if real and real > 0 then most = real end
-        elseif info.power == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
-            local _, real = CludesUI.GetMaelstromWeapon()
+        elseif info.power == "MAELSTROM_WEAPON" and CUI and CUI.GetMaelstromWeapon then
+            local _, real = CUI.GetMaelstromWeapon()
             if real and real > 0 then most = real end
         end
         if type(most) == "number" and most >= 2 and most <= 20 then return most end
@@ -766,7 +767,7 @@ CludesUI.AtOptionsLogin(function()
                 classColour and classColour[3] or 0.60
         end
         if secondaryCfg.darkTheme then
-            return CludesUI.GetDarkModeFill()
+            return CUI.GetDarkModeFill()
         elseif secondaryCfg.resourceColored then
             local get, resolve = _G._CURB_GetSecondaryResource, _G._CURB_ResolveSecondaryResourceColor
             local info = get and resolve and get()
@@ -785,7 +786,7 @@ CludesUI.AtOptionsLogin(function()
     -- 0.3 for the bar type, 0.5 for pips), or the custom background.
     local function ResourceBg(secondaryCfg, red, green, blue, dim)
         if secondaryCfg.darkTheme then
-            local dr, dg, db = CludesUI.GetDarkModeBg()
+            local dr, dg, db = CUI.GetDarkModeBg()
             return dr, dg, db, 1
         elseif secondaryCfg.classColored then
             return red * dim, green * dim, blue * dim, 0.5
@@ -799,7 +800,7 @@ CludesUI.AtOptionsLogin(function()
         local path = profile.general.barTextureBg
             and allowed
             and (secondaryCfg.fillOpacity or 100) >= 100
-            and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, profile.general.barTexture, nil)
+            and CUI.ResolveTexturePath(_G._CURB_BarTextures, profile.general.barTexture, nil)
         mod.ERB_BgTexture(texture, path, red, green, blue, a)
     end
 
@@ -813,7 +814,7 @@ CludesUI.AtOptionsLogin(function()
     local function SeparatorsOn(secondaryCfg)
         return secondaryCfg.edgeSep
             and mod.ERB_Textured(secondaryCfg)
-            and not CludesUI.BlizzStyle.Get("resourcebars")
+            and not CUI.BlizzStyle.Get("resourcebars")
     end
 
     -- A bar-type class resource: one fill over one background, with hash lines.
@@ -869,7 +870,7 @@ CludesUI.AtOptionsLogin(function()
         local info = get and get()
         local most = (info and info.max) or 100
         local percent = entry and entry.hashMode == "percent"
-        local PP = CludesUI and CludesUI.PP
+        local PP = CUI and CUI.PP
         local pixel = PP and PP.Scale(1) or 1
         for i, value in ipairs(values) do
             local limit = percent and 100 or most
@@ -912,7 +913,7 @@ CludesUI.AtOptionsLogin(function()
     local function PipGeometry(barFrame, secondaryCfg, count)
         local scale = barFrame:GetEffectiveScale()
         if scale <= 0 then scale = 1 end
-        local pixel = CludesUI.PP.perfect / scale -- one physical pixel in this frame's units
+        local pixel = CUI.PP.perfect / scale -- one physical pixel in this frame's units
         local function Snap(value) return math.floor(value / pixel + 0.5) * pixel end
         local width, height = Snap(secondaryCfg.pipWidth), Snap(secondaryCfg.pipHeight)
         local calc = _G._CURB_CalcPipGeometry
@@ -1039,7 +1040,7 @@ CludesUI.AtOptionsLogin(function()
                 secondaryCfg.borderBehind and math.max(0, level - 1) or (level + 2)
             )
             local size, style = secondaryCfg.borderSize or 1, secondaryCfg.borderTexture or "solid"
-            CludesUI.ApplyBorderStyle(
+            CUI.ApplyBorderStyle(
                 pipTex._borderFrame,
                 size,
                 secondaryCfg.borderR or 0,
@@ -1054,7 +1055,7 @@ CludesUI.AtOptionsLogin(function()
                 "resourcebars",
                 size,
                 nil,
-                CludesUI.BorderPx(secondaryCfg.borderSizePx, size, style)
+                CUI.BorderPx(secondaryCfg.borderSizePx, size, style)
             )
             pipTex._borderFrame:Show()
         elseif pipTex._borderFrame then
@@ -1265,7 +1266,7 @@ CludesUI.AtOptionsLogin(function()
         local holder = barFrame._barBorderFrame
         local level = barFrame:GetFrameLevel()
         holder:SetFrameLevel(secondaryCfg.borderBehind and math.max(0, level - 1) or (level + 2))
-        if CludesUI.BlizzStyle.Get("resourcebars") then
+        if CUI.BlizzStyle.Get("resourcebars") then
             holder:Hide()
             if mod.ERB_BarsClassic() then
                 -- Classic WoW UI: the vanilla frame round the row; no mask, no bevel.
@@ -1278,7 +1279,7 @@ CludesUI.AtOptionsLogin(function()
         else
             mod.ERB_AnchorBorderHost(holder, barFrame, mod.ERB_BorderExtents(secondaryCfg))
             local size, style = secondaryCfg.borderSize or 1, secondaryCfg.borderTexture or "solid"
-            CludesUI.ApplyBorderStyle(
+            CUI.ApplyBorderStyle(
                 holder,
                 size,
                 secondaryCfg.borderR or 0,
@@ -1293,7 +1294,7 @@ CludesUI.AtOptionsLogin(function()
                 "resourcebars",
                 size,
                 nil,
-                CludesUI.BorderPx(secondaryCfg.borderSizePx, size, style)
+                CUI.BorderPx(secondaryCfg.borderSizePx, size, style)
             )
             holder:Show()
         end
@@ -1306,24 +1307,24 @@ CludesUI.AtOptionsLogin(function()
         local style = secondaryCfg.borderTexture or "solid"
         local onPips = secondaryCfg.borderOnPips and not isBar
         if radius > 0 then
-            CludesUI.RoundCorners(barFrame, radius, {
+            CUI.RoundCorners(barFrame, radius, {
                 style = style,
                 border = not onPips and barFrame._barBorderFrame or nil,
                 corners = secondaryCfg.cornerMask,
             })
         else
-            CludesUI.RoundCorners(barFrame, 0)
+            CUI.RoundCorners(barFrame, 0)
         end
         local pipRadius = onPips and radius or 0
         for _, pipTex in ipairs(_previewFrames.pips) do
             if pipRadius > 0 then
-                CludesUI.RoundCorners(
+                CUI.RoundCorners(
                     pipTex,
                     pipRadius,
                     { style = style, border = pipTex._borderFrame, corners = secondaryCfg.cornerMask }
                 )
             else
-                CludesUI.RoundCorners(pipTex, 0)
+                CUI.RoundCorners(pipTex, 0)
             end
         end
     end
@@ -1510,7 +1511,7 @@ CludesUI.AtOptionsLogin(function()
         end
         if not _previewBuilding then
             local hintH = (height > 0 and _previewHintFS and _previewHintFS:IsShown()) and 35 or 0
-            CludesUI:UpdateContentHeaderHeight(height + hintH)
+            CUI:UpdateContentHeaderHeight(height + hintH)
         end
     end
 
@@ -1603,7 +1604,7 @@ CludesUI.AtOptionsLogin(function()
             local bgTex = pipTex:CreateTexture(nil, "BACKGROUND")
             bgTex:SetAllPoints()
             if secondaryCfg.darkTheme then
-                local red, green, blue = CludesUI.GetDarkModeBg()
+                local red, green, blue = CUI.GetDarkModeBg()
                 bgTex:SetColorTexture(red, green, blue, 1)
             elseif secondaryCfg.classColored then
                 local r = classColour and classColour[1] or 0.95
@@ -1678,17 +1679,17 @@ CludesUI.AtOptionsLogin(function()
         layer:SetAllPoints(heading)
         layer:SetFrameLevel(holder:GetFrameLevel() + 1)
         local function Title(textObj)
-            local fs = CludesUI.MakeFont(layer, 11, nil, 1, 1, 1)
+            local fs = CUI.MakeFont(layer, 11, nil, 1, 1, 1)
             fs:SetAlpha(0.6)
             fs:SetText(textObj)
             fs:Hide()
             return fs
         end
         _previewFrames.labels = {
-            classResource = Title(CludesUI.L("Class Resource")),
-            power = Title(CludesUI.L("Power Bar")),
-            health = Title(CludesUI.L("Health Bar")),
-            arcaneSoul = _previewFrames.arcaneSoul and Title(CludesUI.L("Arcane Soul")) or nil,
+            classResource = Title(CUI.L("Class Resource")),
+            power = Title(CUI.L("Power Bar")),
+            health = Title(CUI.L("Health Bar")),
+            arcaneSoul = _previewFrames.arcaneSoul and Title(CUI.L("Arcane Soul")) or nil,
         }
     end
 
@@ -1718,9 +1719,9 @@ CludesUI.AtOptionsLogin(function()
         if not _previewHintFS then
             local layer = PoolKeep(CreateFrame("Frame", nil, heading))
             layer:SetAllPoints(heading)
-            _previewHintFS = CludesUI.MakeFont(layer, 11, nil, 1, 1, 1)
+            _previewHintFS = CUI.MakeFont(layer, 11, nil, 1, 1, 1)
             _previewHintFS:SetAlpha(0.45)
-            _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
+            _previewHintFS:SetText(CUI.L("Click elements to scroll to and highlight their options"))
         end
         local layer = _previewHintFS:GetParent()
         layer:SetParent(heading)
@@ -1767,7 +1768,7 @@ CludesUI.AtOptionsLogin(function()
         _previewFrames.powerBar = PreviewBar.Build(holder)
         _previewFrames.healthBar = PreviewBar.Build(holder)
         _previewFrames.arcaneSoul, _previewFrames.asDivider = nil, nil
-        if class == "MAGE" and not CludesUI.IS_FOREVER then BuildArcaneSoul(holder) end
+        if class == "MAGE" and not CUI.IS_FOREVER then BuildArcaneSoul(holder) end
         BuildTitles(heading, holder)
 
         UpdatePreviewHeader()
@@ -1803,18 +1804,18 @@ CludesUI.AtOptionsLogin(function()
     local function NavigateToSetting(barKey)
         local m = _clickMappings[barKey]
         if not (m and m.section and m.target) then return end
-        CludesUI.DismissPreviewHint(_previewHintFS, _headerBaseH, 35, 5)
-        if not CludesUI._scrollFrame then return end
+        CUI.DismissPreviewHint(_previewHintFS, _headerBaseH, 35, 5)
+        if not CUI._scrollFrame then return end
         local _, _, _, _, sectionY = m.section:GetPoint(1)
         if not sectionY then return end
-        CludesUI.SmoothScrollTo(math.max(0, math.abs(sectionY) - 40))
+        CUI.SmoothScrollTo(math.max(0, math.abs(sectionY) - 40))
         local target = m.target
         if m.slotSide then
             target = (m.slotSide == "left" and m.target._leftRegion or m.target._rightRegion) or target
         end
         PlaySettingGlow = PlaySettingGlow
-            or CludesUI.MakeSettingGlow({
-                color = CludesUI.CLUDES_GREEN,
+            or CUI.MakeSettingGlow({
+                color = CUI.CLUDES_GREEN,
                 thickness = function() return Pix.Scale(2) end,
                 noSnap = true,
             })
@@ -1826,7 +1827,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     CreateHitOverlay = function(element, mappingKey, frameLevelOverride)
-        local overlay = CludesUI.CreatePreviewHitOverlay(
+        local overlay = CUI.CreatePreviewHitOverlay(
             element,
             NavigateToSetting,
             mappingKey,
@@ -1889,39 +1890,39 @@ CludesUI.AtOptionsLogin(function()
             end
             if barKey ~= "hashEnabled" then
                 line.disabled = Off
-                line.disabledTooltip = CludesUI.L("Enable hash lines first")
+                line.disabledTooltip = CUI.L("Enable hash lines first")
             end
             return line
         end
         local rows = {
             Field({
                 type = "toggle",
-                label = CludesUI.L("Show Hash Lines"),
-                tooltip = CludesUI.L("Draw tick lines across the bar at positions you choose."),
+                label = CUI.L("Show Hash Lines"),
+                tooltip = CUI.L("Draw tick lines across the bar at positions you choose."),
             }, "hashEnabled", false, function(value) return value and true or false end),
             Field(
-                { type = "input", label = CludesUI.L("Positions"), inputWidth = 130, commitOnBlur = true },
+                { type = "input", label = CUI.L("Positions"), inputWidth = 130, commitOnBlur = true },
                 "hashValues",
                 "",
                 SanitizePositions
             ),
             Field({
                 type = "segmented",
-                label = CludesUI.L("Mode"),
+                label = CUI.L("Mode"),
                 keys = { "percent", "value" },
                 labels = { percent = "%", value = "Value" },
             }, "hashMode", "percent"),
             Field(
-                { type = "slider", label = CludesUI.L("Thickness"), min = 1, max = 5, step = 1 },
+                { type = "slider", label = CUI.L("Thickness"), min = 1, max = 5, step = 1 },
                 "hashWidth",
                 1
             ),
             {
                 type = "colorpicker",
-                label = CludesUI.L("Color"),
+                label = CUI.L("Color"),
                 hasAlpha = true,
                 disabled = Off,
-                disabledTooltip = CludesUI.L("Enable hash lines first"),
+                disabledTooltip = CUI.L("Enable hash lines first"),
                 get = function()
                     local c = Bar()
                     if not c then return 1, 1, 1, 0.7 end
@@ -1936,10 +1937,10 @@ CludesUI.AtOptionsLogin(function()
                 end,
             },
         }
-        return CludesUI.BuildInlineCog(rowConf.parentRgn, {
+        return CUI.BuildInlineCog(rowConf.parentRgn, {
             anchorTo = rowConf.anchorTo,
-            tip = CludesUI.L("Hash Lines"),
-            title = rowConf.popupTitle or CludesUI.L("Hash Lines"),
+            tip = CUI.L("Hash Lines"),
+            title = rowConf.popupTitle or CUI.L("Hash Lines"),
             bgAlpha = 1,
             frameStrata = "FULLSCREEN_DIALOG",
             frameLevel = 500,
@@ -1991,9 +1992,9 @@ CludesUI.AtOptionsLogin(function()
         local rows = FormToggleRows(cfgFn, refreshFn, field or "textDisabledForms")
         if not rows then return end
         title = title or "Enable/Disable per Form"
-        return CludesUI.BuildInlineCog(region, {
+        return CUI.BuildInlineCog(region, {
             anchorTo = leftOf,
-            tip = tooltip or CludesUI.L(title),
+            tip = tooltip or CUI.L(title),
             title = title,
             bgAlpha = 1,
             frameStrata = "FULLSCREEN_DIALOG",
@@ -2011,7 +2012,7 @@ CludesUI.AtOptionsLogin(function()
             refreshFn,
             "textDisabledForms",
             "Enable/Disable per Form",
-            CludesUI.L("Enable/Disable per Form")
+            CUI.L("Enable/Disable per Form")
         )
     end
     local function AddFormBarBtn(region, cfgFn, refreshFn)
@@ -2022,7 +2023,7 @@ CludesUI.AtOptionsLogin(function()
             refreshFn,
             "barDisabledForms",
             "Enable/Disable Bar per Form",
-            CludesUI.L("Enable/Disable Bar per Form")
+            CUI.L("Enable/Disable Bar per Form")
         )
     end
 
@@ -2080,23 +2081,23 @@ CludesUI.AtOptionsLogin(function()
     -- runs as it hides.
     local function DismissablePopup(width, level, opts)
         opts = opts or {}
-        local dialog = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+        local dialog = CreateFrame("Frame", nil, CUI.OverlayParent())
         dialog:SetFrameStrata("FULLSCREEN_DIALOG")
         dialog:SetFrameLevel(level)
         dialog:SetClampedToScreen(true)
         dialog:EnableMouse(true)
-        dialog:SetScale(CludesUI.GetPopupScale())
+        dialog:SetScale(CUI.GetPopupScale())
         dialog:Hide()
         Pix.Size(dialog, width, 200)
         local bgTex = dialog:CreateTexture(nil, "BACKGROUND")
         bgTex:SetAllPoints()
         bgTex:SetColorTexture(0.062, 0.070, 0.082, 0.97)
-        dialog._brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.18, bgTex)
+        dialog._brd = CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.18, bgTex)
 
         local catcher = CreateFrame("Button", nil, dialog)
         catcher:SetFrameStrata("FULLSCREEN_DIALOG")
         catcher:SetFrameLevel(dialog:GetFrameLevel() - 1)
-        catcher:SetAllPoints((CludesUI:GetMainFrame()) or UIParent)
+        catcher:SetAllPoints((CUI:GetMainFrame()) or UIParent)
         catcher:SetScript("OnClick", function()
             if not (opts.held and opts.held()) then dialog:Hide() end
         end)
@@ -2109,7 +2110,7 @@ CludesUI.AtOptionsLogin(function()
             self:RegisterEvent("PLAYER_REGEN_DISABLED")
             self:SetScript("OnUpdate", opts.update or function(me)
                 if not IsMouseButtonDown("LeftButton") then return end
-                local panel, menu = CludesUI._mainFrame, CludesUI._openDropdownMenu
+                local panel, menu = CUI._mainFrame, CUI._openDropdownMenu
                 if
                     not me:IsMouseOver()
                     and not (panel and panel:IsMouseOver())
@@ -2125,12 +2126,12 @@ CludesUI.AtOptionsLogin(function()
             self:SetScript("OnUpdate", nil)
             if opts.onHide then opts.onHide(self) end
         end)
-        CludesUI.TrackOverlay(dialog)
-        CludesUI.PadHint(dialog, "nodepass")
-        CludesUI.PadHint(catcher, "nodepass")
-        CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = dialog }
-        CludesUI:RegisterOnHide(function() dialog:Hide() end)
-        CludesUI:RegisterOnCollapse(function(on)
+        CUI.TrackOverlay(dialog)
+        CUI.PadHint(dialog, "nodepass")
+        CUI.PadHint(catcher, "nodepass")
+        CUI._popupFrames[#CUI._popupFrames + 1] = { popup = dialog }
+        CUI:RegisterOnHide(function() dialog:Hide() end)
+        CUI:RegisterOnCollapse(function(on)
             if on then dialog:Hide() end
         end)
         return dialog
@@ -2141,17 +2142,17 @@ CludesUI.AtOptionsLogin(function()
         local line = CreateFrame("Frame", nil, Band.popup)
         line:SetFrameLevel(Band.popup:GetFrameLevel() + 3)
         Pix.Height(line, BAND_ROW_H)
-        local label = CludesUI.MakeFont(line, 12, nil, 1, 1, 1)
+        local label = CUI.MakeFont(line, 12, nil, 1, 1, 1)
         label:SetAlpha(0.6)
         label:SetPoint("LEFT", line, "LEFT", 0, 0)
-        label:SetText(CludesUI.L(textObj))
+        label:SetText(CUI.L(textObj))
         line._lbl = label
         return line
     end
 
     -- A two-way switch on a header row; isOn(key) and set(key) over the entry.
     local function BandSwitch(line, keys, labels, isOn, set, isDisabled)
-        local seg, _, refresh = CludesUI.BuildSegmentedControl({
+        local seg, _, refresh = CUI.BuildSegmentedControl({
             parent = line,
             keys = keys,
             labels = labels,
@@ -2173,10 +2174,10 @@ CludesUI.AtOptionsLogin(function()
         local dialog = DismissablePopup(BAND_POPUP_W, 260)
         Band.popup = dialog
 
-        Band.title = CludesUI.MakeFont(dialog, 13, nil, 1, 1, 1)
+        Band.title = CUI.MakeFont(dialog, 13, nil, 1, 1, 1)
         Band.title:SetAlpha(0.6)
         Band.title:SetPoint("TOP", dialog, "TOP", 0, -BAND_PAD)
-        Band.title:SetText(CludesUI.L("Color Bands"))
+        Band.title:SetText(CUI.L("Color Bands"))
 
         -- Values as: Amount / Percent (bars only; a count-based resource
         -- shows a hint instead). Brewmaster stagger is percent only.
@@ -2203,12 +2204,12 @@ CludesUI.AtOptionsLogin(function()
         why:EnableMouse(true)
         why:SetScript(
             "OnEnter",
-            function(self) CludesUI.ShowWidgetTooltip(self, CludesUI.L(STAGGER_PCT_TIP)) end
+            function(self) CUI.ShowWidgetTooltip(self, CUI.L(STAGGER_PCT_TIP)) end
         )
-        why:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        why:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         why:Hide()
         Band.modeRow._staggerDis = why
-        Band.modeHint = CludesUI.MakeFont(dialog, 10, nil, 1, 1, 1)
+        Band.modeHint = CUI.MakeFont(dialog, 10, nil, 1, 1, 1)
         Band.modeHint:SetAlpha(0.4)
 
         -- Direction: Up to / From (always one of the two).
@@ -2229,13 +2230,13 @@ CludesUI.AtOptionsLogin(function()
         local add = CreateFrame("Button", nil, dialog)
         Pix.Size(add, BAND_POPUP_W - BAND_PAD * 2, 26)
         add:SetFrameLevel(dialog:GetFrameLevel() + 3)
-        local bgTex = CludesUI.SolidTex(add, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
+        local bgTex = CUI.SolidTex(add, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
         bgTex:SetAllPoints()
-        add._border = CludesUI.MakeRoundedBorder(add, 1, 1, 1, 0.4, bgTex)
-        local label = CludesUI.MakeFont(add, 12, nil, 1, 1, 1)
+        add._border = CUI.MakeRoundedBorder(add, 1, 1, 1, 0.4, bgTex)
+        local label = CUI.MakeFont(add, 12, nil, 1, 1, 1)
         label:SetAlpha(0.5)
         label:SetPoint("CENTER")
-        label:SetText(CludesUI.L("+ Add Band"))
+        label:SetText(CUI.L("+ Add Band"))
         local function Hover(textAlpha, borderAlpha)
             label:SetAlpha(textAlpha)
             if add._border and add._border.SetColor then add._border:SetColor(1, 1, 1, borderAlpha) end
@@ -2270,10 +2271,10 @@ CludesUI.AtOptionsLogin(function()
         frame:SetFrameLevel(Band.popup:GetFrameLevel() + 2)
         line.frame = frame
 
-        local label = CludesUI.MakeFont(frame, 12, nil, 1, 1, 1)
+        local label = CUI.MakeFont(frame, 12, nil, 1, 1, 1)
         label:SetAlpha(0.6)
         label:SetPoint("LEFT", frame, "LEFT", 2, 0)
-        label:SetText(CludesUI.L("Up to")) -- the band colours values up to `to`
+        label:SetText(CUI.L("Up to")) -- the band colours values up to `to`
         line.lbl = label
 
         local inputBox = CreateFrame("EditBox", nil, frame)
@@ -2282,14 +2283,14 @@ CludesUI.AtOptionsLogin(function()
         inputBox:SetFrameLevel(frame:GetFrameLevel() + 2)
         inputBox:SetAutoFocus(false)
         inputBox:SetFontObject(GameFontHighlightSmall)
-        inputBox:SetFont(CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF", 12, "")
+        inputBox:SetFont(CUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF", 12, "")
         inputBox:SetTextColor(1, 1, 1, 0.75)
         inputBox:SetJustifyH("CENTER")
         inputBox:SetNumeric(true)
         local inputBg = inputBox:CreateTexture(nil, "BACKGROUND")
         inputBg:SetAllPoints()
         inputBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-        CludesUI.MakeRoundedBorder(inputBox, 1, 1, 1, 0.08, inputBg)
+        CUI.MakeRoundedBorder(inputBox, 1, 1, 1, 0.08, inputBg)
         line.input = inputBox
 
         -- Commits when the field loses focus (Enter clears focus); Escape
@@ -2321,7 +2322,7 @@ CludesUI.AtOptionsLogin(function()
             RefreshBandEditor()
         end)
 
-        local swatch, snap = CludesUI.BuildColorSwatch(frame, frame:GetFrameLevel() + 3, function()
+        local swatch, snap = CUI.BuildColorSwatch(frame, frame:GetFrameLevel() + 3, function()
             local band = RowBand(line)
             local d = Band.default
             if not band then return d[1], d[2], d[3], d[4] end
@@ -2385,7 +2386,7 @@ CludesUI.AtOptionsLogin(function()
             Band.modeRow:Hide()
             Band.modeHint:ClearAllPoints()
             Band.modeHint:SetPoint("TOPLEFT", dialog, "TOPLEFT", BAND_PAD, y - 4)
-            Band.modeHint:SetText(CludesUI.L("Boundaries are resource counts"))
+            Band.modeHint:SetText(CUI.L("Boundaries are resource counts"))
             Band.modeHint:Show()
             y = y - 18 - BAND_GAP
         else
@@ -2402,7 +2403,7 @@ CludesUI.AtOptionsLogin(function()
         if Band.dirRefresh then Band.dirRefresh() end
         Place(Band.dirRow)
         -- The row label follows the direction: "From" (>=) or "Up to".
-        local rowLabel = entry.bandReverse and CludesUI.L("From") or CludesUI.L("Up to")
+        local rowLabel = entry.bandReverse and CUI.L("From") or CUI.L("Up to")
         local count = #entry.bands
         for keyName = 1, count do
             local line = EnsureBandRow(keyName)
@@ -2508,7 +2509,7 @@ CludesUI.AtOptionsLogin(function()
                     if drag.row then
                         DragStep()
                     elseif IsMouseButtonDown("LeftButton") then
-                        local panel = CludesUI._mainFrame
+                        local panel = CUI._mainFrame
                         if not self:IsMouseOver() and not (panel and panel:IsMouseOver()) then self:Hide() end
                     end
                 end,
@@ -2523,25 +2524,25 @@ CludesUI.AtOptionsLogin(function()
             -- The insertion line while dragging (accent, as the raid "Sort By" reorder).
             insertLine = dialog:CreateTexture(nil, "OVERLAY", nil, 7)
             insertLine:SetHeight(2)
-            local accent = CludesUI.CLUDES_GREEN
+            local accent = CUI.CLUDES_GREEN
             insertLine:SetColorTexture(accent.r, accent.g, accent.b, 0.9)
             insertLine:Hide()
 
-            local title = CludesUI.MakeFont(dialog, 13, nil, 1, 1, 1)
+            local title = CUI.MakeFont(dialog, 13, nil, 1, 1, 1)
             title:SetAlpha(0.7)
             title:SetPoint("TOP", dialog, "TOP", 0, -BAND_PAD)
             title:SetText(o.title)
-            local hint = CludesUI.MakeFont(dialog, 10, nil, 1, 1, 1, 0.25)
+            local hint = CUI.MakeFont(dialog, 10, nil, 1, 1, 1, 0.25)
             hint:SetPoint("TOPLEFT", dialog, "TOPLEFT", 16, -BAND_PAD - 4)
-            hint:SetText(CludesUI.L("Drag to Reorder"))
+            hint:SetText(CUI.L("Drag to Reorder"))
 
             addButton = CreateFrame("Button", nil, dialog)
             Pix.Size(addButton, WIDTH - BAND_PAD * 2, 26)
             addButton:SetFrameLevel(dialog:GetFrameLevel() + 3)
-            local bgTex = CludesUI.SolidTex(addButton, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
+            local bgTex = CUI.SolidTex(addButton, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
             bgTex:SetAllPoints()
-            addButton._border = CludesUI.MakeRoundedBorder(addButton, 1, 1, 1, 0.4, bgTex)
-            local label = CludesUI.MakeFont(addButton, 12, nil, 1, 1, 1)
+            addButton._border = CUI.MakeRoundedBorder(addButton, 1, 1, 1, 0.4, bgTex)
+            local label = CUI.MakeFont(addButton, 12, nil, 1, 1, 1)
             label:SetAlpha(0.5)
             label:SetPoint("CENTER")
             label:SetText(o.addLabel)
@@ -2577,7 +2578,7 @@ CludesUI.AtOptionsLogin(function()
             inputBox:SetPoint("LEFT", frame, "LEFT", 16, 0)
             inputBox:SetFrameLevel(frame:GetFrameLevel() + 2)
             inputBox:SetAutoFocus(false)
-            inputBox:SetFont(CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF", 12, "")
+            inputBox:SetFont(CUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF", 12, "")
             inputBox:SetTextColor(1, 1, 1, 0.75)
             inputBox:SetJustifyH("CENTER")
             inputBox:SetNumeric(true)
@@ -2585,7 +2586,7 @@ CludesUI.AtOptionsLogin(function()
             local inputBg = inputBox:CreateTexture(nil, "BACKGROUND")
             inputBg:SetAllPoints()
             inputBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-            CludesUI.MakeRoundedBorder(inputBox, 1, 1, 1, 0.08, inputBg)
+            CUI.MakeRoundedBorder(inputBox, 1, 1, 1, 0.08, inputBg)
             line.input = inputBox
 
             -- The drag grip (order is priority).
@@ -2593,7 +2594,7 @@ CludesUI.AtOptionsLogin(function()
             grip:SetSize(14, ROW_H)
             grip:SetPoint("LEFT", frame, "LEFT", 0, 0)
             grip:SetFrameLevel(frame:GetFrameLevel() + 4)
-            local gripText = CludesUI.MakeFont(grip, 13, nil, 1, 1, 1, 0.25)
+            local gripText = CUI.MakeFont(grip, 13, nil, 1, 1, 1, 0.25)
             gripText:SetPoint("CENTER")
             gripText:SetText("=")
             grip:SetScript("OnEnter", function() gripText:SetTextColor(1, 1, 1, 0.6) end)
@@ -2606,7 +2607,7 @@ CludesUI.AtOptionsLogin(function()
             end)
             line.grip = grip
 
-            local name = CludesUI.MakeFont(frame, 11, nil, 1, 1, 1)
+            local name = CUI.MakeFont(frame, 11, nil, 1, 1, 1)
             name:SetAlpha(0.6)
             name:SetPoint("LEFT", inputBox, "RIGHT", 8, 0)
             name:SetJustifyH("LEFT")
@@ -2619,10 +2620,10 @@ CludesUI.AtOptionsLogin(function()
                 if id then
                     name:SetText(
                         C_Spell.GetSpellName(id)
-                            or (CludesUI.COLOR_CODES.BAD .. CludesUI.L("Unknown ID") .. "|r")
+                            or (CUI.COLOR_CODES.BAD .. CUI.L("Unknown ID") .. "|r")
                     )
                 else
-                    name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("(enter Spell ID)") .. "|r")
+                    name:SetText(CUI.COLOR_CODES.DIM .. CUI.L("(enter Spell ID)") .. "|r")
                 end
             end
 
@@ -2646,7 +2647,7 @@ CludesUI.AtOptionsLogin(function()
                 Redraw()
             end)
 
-            local swatch, snap = CludesUI.BuildColorSwatch(frame, frame:GetFrameLevel() + 3, function()
+            local swatch, snap = CUI.BuildColorSwatch(frame, frame:GetFrameLevel() + 3, function()
                 local entry = Item(line)
                 local d = LIST_DEFAULT
                 if not entry then return d[1], d[2], d[3], d[4] end
@@ -2792,16 +2793,16 @@ CludesUI.AtOptionsLogin(function()
 
     local ShowBuffEditor = MakeColorListEditor({
         field = "buffColors",
-        title = CludesUI.L("Buff Colors"),
-        addLabel = CludesUI.L("+ Add Buff"),
+        title = CUI.L("Buff Colors"),
+        addLabel = CUI.L("+ Add Buff"),
     })
     local BUFF_HELP_TIP = "Recolor the bar while you have a buff. The first active buff in the list wins, so order = priority. Overrides threshold coloring while active.\n"
         .. "You must be tracking the buff in Blizzard CDM, added to CUI CDM, and this only works with CDM trackable buffs."
 
     local ShowSpenderEditor = MakeColorListEditor({
         field = "spenderColors",
-        title = CludesUI.L("Spender Colors"),
-        addLabel = CludesUI.L("+ Add Spender"),
+        title = CUI.L("Spender Colors"),
+        addLabel = CUI.L("+ Add Spender"),
     })
     local SPENDER_HELP_TIP = "Recolor the bar while a spell is castable (usable and off cooldown). The first castable spell in the list wins, so order = priority. Overrides threshold coloring while active; an active tracked buff from Buff Colors takes priority.\n"
         .. "For an ability that turns into another spell while active, enter the original spell's ID: its current form is checked."
@@ -2813,18 +2814,18 @@ CludesUI.AtOptionsLogin(function()
         local bgTex = button:CreateTexture(nil, "BACKGROUND")
         bgTex:SetAllPoints()
         bgTex:SetColorTexture(unpack(CARD_BG))
-        button._border = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.08, bgTex)
-        local textObj = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+        button._border = CUI.MakeRoundedBorder(button, 1, 1, 1, 0.08, bgTex)
+        local textObj = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         textObj:SetAlpha(0.8)
         textObj:SetPoint("CENTER")
         textObj:SetText(label)
         button:SetScript("OnEnter", function(self)
             bgTex:SetColorTexture(unpack(CARD_BG_HOVER))
-            CludesUI.ShowWidgetTooltip(self, tipText)
+            CUI.ShowWidgetTooltip(self, tipText)
         end)
         button:SetScript("OnLeave", function()
             bgTex:SetColorTexture(unpack(CARD_BG))
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
     end
 
@@ -2860,11 +2861,11 @@ CludesUI.AtOptionsLogin(function()
         end
         badgeTex:SetScript("OnEnter", function(self)
             Tint(1)
-            if self._tip and CludesUI.ShowWidgetTooltip then CludesUI.ShowWidgetTooltip(self, self._tip) end
+            if self._tip and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, self._tip) end
         end)
         badgeTex:SetScript("OnLeave", function()
             Tint(0.85)
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
         badgeTex:Hide()
 
@@ -2877,18 +2878,18 @@ CludesUI.AtOptionsLogin(function()
                     rgb[1],
                     rgb[2],
                     rgb[3],
-                    anchorBtn:IsMouseOver() and 0.3 or CludesUI.DD_BRD_A
+                    anchorBtn:IsMouseOver() and 0.3 or CUI.DD_BRD_A
                 )
             end
         end
 
         local function PaintThresholdNote()
-            local red, green, blue = CludesUI.GetAccentColor()
+            local red, green, blue = CUI.GetAccentColor()
             THR_NOTE_IDLE[1], THR_NOTE_IDLE[2], THR_NOTE_IDLE[3] = red, green, blue
-            THR_NOTE_IDLE[4] = CludesUI.HexColor(red, green, blue):sub(5)
+            THR_NOTE_IDLE[4] = CUI.HexColor(red, green, blue):sub(5)
             local list, applies = mod.ThresholdNoticeInfo(getBarData())
             if not list then
-                if CludesUI.HideWidgetTooltip and badgeTex:IsMouseOver() then CludesUI.HideWidgetTooltip() end
+                if CUI.HideWidgetTooltip and badgeTex:IsMouseOver() then CUI.HideWidgetTooltip() end
                 badgeTex:Hide()
                 BorderTint(THR_BORDER_WHITE)
                 return
@@ -2896,11 +2897,11 @@ CludesUI.AtOptionsLogin(function()
             local c = applies and THR_NOTE_ACTIVE or THR_NOTE_IDLE
             badgeTex._color = c
             Tint(badgeTex:IsMouseOver() and 1 or 0.85)
-            local lead = applies and CludesUI.L("Current Spec is affected by Threshold & Hash Lines.")
-                or CludesUI.L("Current Spec is not affected by Threshold & Hash Lines.")
+            local lead = applies and CUI.L("Current Spec is affected by Threshold & Hash Lines.")
+                or CUI.L("Current Spec is not affected by Threshold & Hash Lines.")
             local which = "|cff"
                 .. c[4]
-                .. CludesUI.L("Thresholds or hash lines configured for:")
+                .. CUI.L("Thresholds or hash lines configured for:")
                 .. "|r "
                 .. list
             badgeTex._tip = "|cff" .. c[4] .. lead .. "|r\n\n" .. which
@@ -2908,9 +2909,9 @@ CludesUI.AtOptionsLogin(function()
             BorderTint(c)
         end
         anchorBtn:HookScript("OnShow", PaintThresholdNote)
-        CludesUI.RegisterWidgetRefresh(PaintThresholdNote)
+        CUI.RegisterWidgetRefresh(PaintThresholdNote)
         -- Keyed by the badge: the page pool forgets it when it resets the badge.
-        CludesUI.RegAccent({ type = "callback", obj = badgeTex, fn = PaintThresholdNote })
+        CUI.RegAccent({ type = "callback", obj = badgeTex, fn = PaintThresholdNote })
         PaintThresholdNote()
         return PaintThresholdNote
     end
@@ -2927,11 +2928,11 @@ CludesUI.AtOptionsLogin(function()
     do
         local open = {} -- [editor page] = { refresh, repaint, gen } while shown
         local watcher, stale, redrawQueued, refreshQueued
-        local function OnBarsPage() return CludesUI:IsShown() and CludesUI:GetActivePage() == PAGE_DISPLAY end
+        local function OnBarsPage() return CUI:IsShown() and CUI:GetActivePage() == PAGE_DISPLAY end
         local function RedrawNow()
             if redrawQueued then
                 redrawQueued = nil
-                if OnBarsPage() then CludesUI:RefreshPage(true) end
+                if OnBarsPage() then CUI:RefreshPage(true) end
             end
         end
         -- One redraw per burst (a swap sends both spec events); a page build
@@ -2971,7 +2972,7 @@ CludesUI.AtOptionsLogin(function()
                     QueueRedraw()
                 else
                     -- Away from the page: its next visit builds it for the new spec.
-                    CludesUI:InvalidateModulePageCache("CludesUIResourceBars")
+                    CUI:InvalidateModulePageCache("CludesUIResourceBars")
                 end
             end
         end
@@ -2984,7 +2985,7 @@ CludesUI.AtOptionsLogin(function()
             watcher:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
             watcher:SetScript("OnEvent", OnEvent)
             -- The selection highlight follows the theme accent.
-            CludesUI.RegAccent({
+            CUI.RegAccent({
                 type = "callback",
                 fn = function()
                     EachOpen(function(_, editor) editor.repaint() end)
@@ -3008,13 +3009,13 @@ CludesUI.AtOptionsLogin(function()
             stale = nil
             if OnBarsPage() then
                 QueueRedraw()
-            elseif CludesUI:GetActivePage() == PAGE_DISPLAY then
+            elseif CUI:GetActivePage() == PAGE_DISPLAY then
                 -- Closed with the panel: RefreshPage only marks a hidden
                 -- panel, so its next open rebuilds the page.
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             else
                 -- Left for another page or module: the next visit rebuilds it.
-                CludesUI:InvalidateModulePageCache("CludesUIResourceBars")
+                CUI:InvalidateModulePageCache("CludesUIResourceBars")
             end
         end
     end
@@ -3065,7 +3066,7 @@ CludesUI.AtOptionsLogin(function()
         Pix.Size(settingsBtn, BTN_W, BTN_H)
         Pix.Point(settingsBtn, "RIGHT", parentRgn, "RIGHT", -20, 0)
         settingsBtn:SetFrameLevel(parentRgn:GetFrameLevel() + 2)
-        local U = CludesUI
+        local U = CUI
         local btnBg = U.SolidTex(settingsBtn, "BACKGROUND", U.DD_BG_R, U.DD_BG_G, U.DD_BG_B, U.DD_BG_A)
         btnBg:SetAllPoints()
         settingsBtn._border = U.MakeRoundedBorder(settingsBtn, 1, 1, 1, U.DD_BRD_A, btnBg)
@@ -3143,7 +3144,7 @@ CludesUI.AtOptionsLogin(function()
         -- shortcuts), with what the entries already claim locked.
         local function BuildSpecItems()
             local items
-            items, _roleSpecs = CludesUI.SpecPickItems({
+            items, _roleSpecs = CUI.SpecPickItems({
                 roles = rowConf.roleShortcuts,
                 lockedFn = IsSpecClaimed,
                 allLockedFn = HasAllSpecsEntry,
@@ -3155,9 +3156,9 @@ CludesUI.AtOptionsLogin(function()
         local function CoversPlayer(ids)
             local index = C_SpecializationInfo.GetSpecialization()
             local current = index and C_SpecializationInfo.GetSpecializationInfo(index)
-            if not (current or CludesUI.IS_FOREVER) then return false end
+            if not (current or CUI.IS_FOREVER) then return false end
             for _, id in ipairs(ids) do
-                if id == 0 or id == current or (CludesUI.IS_FOREVER and CludesUI.IsPlayerSpec(id)) then
+                if id == 0 or id == current or (CUI.IS_FOREVER and CUI.IsPlayerSpec(id)) then
                     return true
                 end
             end
@@ -3200,7 +3201,7 @@ CludesUI.AtOptionsLogin(function()
         -- the current theme accent (a colour kept from creation goes stale).
         local function PaintRow(f)
             local selected = f._entryIdx ~= nil and _selectedIdx == f._entryIdx
-            local accent = CludesUI.CLUDES_GREEN
+            local accent = CUI.CLUDES_GREEN
             f._selected = selected
             f._accent:SetShown(selected)
             f._accent:SetColorTexture(accent.r, accent.g, accent.b, 1)
@@ -3262,7 +3263,7 @@ CludesUI.AtOptionsLogin(function()
             obg:SetColorTexture(13 / 255, 17 / 255, 25 / 255, 1)
             -- 1px center divider in the global BORDER style
             local div = thresholdPage:CreateTexture(nil, "ARTWORK")
-            div:SetColorTexture(CludesUI.BORDER_R, CludesUI.BORDER_G, CludesUI.BORDER_B, 0.05)
+            div:SetColorTexture(CUI.BORDER_R, CUI.BORDER_G, CUI.BORDER_B, 0.05)
             div:SetWidth(1)
             div:SetPoint("TOP", thresholdPage, "TOP", 0, 0)
             div:SetPoint("BOTTOM", thresholdPage, "BOTTOM", 0, 0)
@@ -3271,7 +3272,7 @@ CludesUI.AtOptionsLogin(function()
             contentHalfSize = math.floor(thresholdPage:GetWidth() / 2 - (SIDE_PAD * 2))
             local BUTTON_W, BUTTON_H = 80, 29
             local MEDIA = "Interface\\AddOns\\CludesUI\\media\\"
-            local brandGreen = CludesUI.CLUDES_GREEN
+            local brandGreen = CUI.CLUDES_GREEN
 
             -- Colours for CludesUI.MakeStyledButton: background, background
             -- hovered, border, border hovered, text, text hovered (r, g, b, a each).
@@ -3290,7 +3291,7 @@ CludesUI.AtOptionsLogin(function()
             Pix.Size(backBtn, BUTTON_W, BUTTON_H)
             Pix.Point(backBtn, "TOPLEFT", thresholdPage, "TOPLEFT", SIDE_PAD, -INNERPAD)
             backBtn:SetFrameLevel(thresholdPage:GetFrameLevel() + 2)
-            local _, _, backLbl = CludesUI.MakeStyledButton(
+            local _, _, backLbl = CUI.MakeStyledButton(
                 backBtn,
                 "",
                 12,
@@ -3316,7 +3317,7 @@ CludesUI.AtOptionsLogin(function()
             end
             backLbl:ClearAllPoints()
             Pix.Point(backLbl, "LEFT", backIcon, "RIGHT", 6, 0)
-            backLbl:SetText(CludesUI.L("Back"))
+            backLbl:SetText(CUI.L("Back"))
             backBtn:HookScript("OnEnter", function() backIcon:SetAlpha(0.85) end)
             backBtn:HookScript("OnLeave", function() backIcon:SetAlpha(0.6) end)
 
@@ -3336,7 +3337,7 @@ CludesUI.AtOptionsLogin(function()
 
                 -- The specs of a WoW Forever class row, or nil.
                 local function ClassSpecs(barKey)
-                    return CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(barKey)
+                    return CUI.IS_FOREVER and CUI.ForeverClassSpecIDs(barKey)
                 end
                 local picker, pickerRefresh
                 local function Repaint()
@@ -3351,7 +3352,7 @@ CludesUI.AtOptionsLogin(function()
                     picker:Click()
                     Repaint()
                 end
-                picker, pickerRefresh = CludesUI.BuildVisOptsCBDropdown(
+                picker, pickerRefresh = CUI.BuildVisOptsCBDropdown(
                     specDDHost,
                     DD_W,
                     specDDHost:GetFrameLevel() + 2,
@@ -3409,8 +3410,8 @@ CludesUI.AtOptionsLogin(function()
                 local function RefreshPicker()
                     pickerRefresh()
                     for _, region in ipairs({ picker:GetRegions() }) do
-                        if region.GetText and CludesUI.EnKey(region:GetText()) == "None" then
-                            region:SetText(CludesUI.L("Select a Spec..."))
+                        if region.GetText and CUI.EnKey(region:GetText()) == "None" then
+                            region:SetText(CUI.L("Select a Spec..."))
                             break
                         end
                     end
@@ -3423,7 +3424,7 @@ CludesUI.AtOptionsLogin(function()
                 addBtn:SetPoint("LEFT", specDDHost, "RIGHT", GAP_L, 0)
                 addBtn:SetFrameLevel(ddRow:GetFrameLevel() + 2)
                 -- Adds an entry for the picked specs (All Specs alone, or the rest).
-                local _, _, addLbl = CludesUI.MakeStyledButton(
+                local _, _, addLbl = CUI.MakeStyledButton(
                     addBtn,
                     "",
                     11,
@@ -3457,7 +3458,7 @@ CludesUI.AtOptionsLogin(function()
                         rowConf.refreshFn()
                     end
                 )
-                addLbl:SetText(CludesUI.L("Add Specs"))
+                addLbl:SetText(CUI.L("Add Specs"))
             end
 
             -- The entry list: a scrolling container under the header row.
@@ -3471,7 +3472,7 @@ CludesUI.AtOptionsLogin(function()
             listBg:SetAllPoints()
             listBg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
             -- clip: rows scrolled to an edge keep the round corners.
-            CludesUI.MakeRoundedBorder(specHolder, 1, 1, 1, 0.15, listBg, nil, true)
+            CUI.MakeRoundedBorder(specHolder, 1, 1, 1, 0.15, listBg, nil, true)
 
             local scrollFrame = CreateFrame("ScrollFrame", nil, specHolder)
             scrollFrame:SetPoint("TOPLEFT", specHolder, "TOPLEFT", 1, -2)
@@ -3487,7 +3488,7 @@ CludesUI.AtOptionsLogin(function()
             -- wheel scrolls the page (Shift + wheel scales the panel, as everywhere).
             scrollTo = select(
                 2,
-                CludesUI.AttachSmoothScrollbar(scrollFrame, {
+                CUI.AttachSmoothScrollbar(scrollFrame, {
                     child = scrollChild,
                     trackParent = specHolder,
                     panelWheel = true,
@@ -3513,19 +3514,19 @@ CludesUI.AtOptionsLogin(function()
             local paneBg = detailC:CreateTexture(nil, "BACKGROUND")
             paneBg:SetAllPoints()
             paneBg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
-            CludesUI.MakeRoundedBorder(detailC, 1, 1, 1, 0.15, paneBg)
+            CUI.MakeRoundedBorder(detailC, 1, 1, 1, 0.15, paneBg)
             detailC:EnableMouse(true)
 
             local DPAD = 16
             local DLVL = detailC:GetFrameLevel() + 2
             local ROWH = 26
             local ROWGAP = 12
-            local MEDIAF = CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF"
+            local MEDIAF = CUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF"
 
-            local dPlaceholder = CludesUI.MakeFont(detailC, 13, nil, 1, 1, 1)
+            local dPlaceholder = CUI.MakeFont(detailC, 13, nil, 1, 1, 1)
             dPlaceholder:SetAlpha(0.4)
             dPlaceholder:SetPoint("CENTER")
-            dPlaceholder:SetText(CludesUI.L("Select or add an entry"))
+            dPlaceholder:SetText(CUI.L("Select or add an entry"))
 
             -- The selected entry, or nil.
             local function CurEntry()
@@ -3545,10 +3546,10 @@ CludesUI.AtOptionsLogin(function()
                 line._rawH = height or ROWH
                 Pix.Height(line, line._rawH)
                 if labelText then
-                    local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1)
+                    local label = CUI.MakeFont(line, 13, nil, 1, 1, 1)
                     label:SetAlpha(0.6)
                     label:SetPoint("LEFT", line, "LEFT", 0, 0)
-                    label:SetText(CludesUI.L(labelText))
+                    label:SetText(CUI.L(labelText))
                     line._lbl = label
                 end
                 _allRows[#_allRows + 1] = line
@@ -3569,7 +3570,7 @@ CludesUI.AtOptionsLogin(function()
                 local bgTex = boxFrame:CreateTexture(nil, "BACKGROUND")
                 bgTex:SetAllPoints()
                 bgTex:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-                CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.08, bgTex)
+                CUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.08, bgTex)
                 return boxFrame
             end
 
@@ -3584,8 +3585,8 @@ CludesUI.AtOptionsLogin(function()
                 local texture = cover:CreateTexture(nil, "OVERLAY")
                 texture:SetAllPoints()
                 texture:SetColorTexture(0.062, 0.070, 0.082, 0.7)
-                cover:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, self._tip) end)
-                cover:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                cover:SetScript("OnEnter", function(self) CUI.ShowWidgetTooltip(self, self._tip) end)
+                cover:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 cover:Hide()
                 return cover
             end
@@ -3616,7 +3617,7 @@ CludesUI.AtOptionsLogin(function()
             local talentLine = DRow("Talent", ROWH)
             talentLine._talentValues = { _menuOpts = { searchable = true, parent = thresholdPage } }
             talentLine._talentOrder = {}
-            local talentDD = CludesUI.BuildDropdownControl(
+            local talentDD = CUI.BuildDropdownControl(
                 talentLine,
                 170,
                 talentLine:GetFrameLevel() + 2,
@@ -3650,7 +3651,7 @@ CludesUI.AtOptionsLogin(function()
                     for i, other in ipairs(barRef.thresholdSpecs) do
                         if i ~= _selectedIdx and other.talentSpellID == gate then
                             if mod.SpecsConflict(entry.specIDs, other.specIDs) then
-                                return CludesUI.L("Already used by another card for this spec")
+                                return CUI.L("Already used by another card for this spec")
                             end
                         end
                     end
@@ -3677,19 +3678,19 @@ CludesUI.AtOptionsLogin(function()
             talentDis:SetScript(
                 "OnEnter",
                 function()
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         talentDis,
-                        CludesUI.L("Talent gating is only available while playing this spec's class")
+                        CUI.L("Talent gating is only available while playing this spec's class")
                     )
                 end
             )
-            talentDis:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            talentDis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             talentDis:Hide()
             talentLine._dis = talentDis
 
             -- Hash lines: "Hash at X", a hint, the positions, colour and a style cog.
             local hashRow = DRow(nil, ROWH)
-            local hashLbl = CludesUI.MakeFont(hashRow, 13, nil, 1, 1, 1)
+            local hashLbl = CUI.MakeFont(hashRow, 13, nil, 1, 1, 1)
             hashLbl:SetAlpha(0.6)
             hashLbl:SetPoint("LEFT", hashRow, "LEFT", 0, 0)
             hashRow._lbl2 = hashLbl
@@ -3714,7 +3715,7 @@ CludesUI.AtOptionsLogin(function()
                 byPercent.disabled = function() return rules.pips end
                 byPercent.disabledTooltip = "Bar-type resources only (pips use stack counts)"
             end
-            local hashCogBtn = CludesUI.BuildInlineCog(hashRow, {
+            local hashCogBtn = CUI.BuildInlineCog(hashRow, {
                 title = "Hash Line Style",
                 bgAlpha = 1,
                 frameStrata = "FULLSCREEN_DIALOG",
@@ -3745,7 +3746,7 @@ CludesUI.AtOptionsLogin(function()
                 relPoint = "RIGHT",
                 gap = 0,
             })
-            local hashSwatch, hashSwatchSnap = CludesUI.BuildColorSwatch(
+            local hashSwatch, hashSwatchSnap = CUI.BuildColorSwatch(
                 hashRow,
                 hashRow:GetFrameLevel() + 4,
                 function()
@@ -3770,7 +3771,7 @@ CludesUI.AtOptionsLogin(function()
             hashSwatch:SetPoint("RIGHT", hashCogBtn, "LEFT", -8, 0)
             local hashInput = MakeInput(hashRow, 120, false)
             hashInput:SetPoint("RIGHT", hashSwatch, "LEFT", -8, 0)
-            local hashHint = CludesUI.MakeFont(hashRow, 10, nil, 1, 1, 1)
+            local hashHint = CUI.MakeFont(hashRow, 10, nil, 1, 1, 1)
             hashHint:SetAlpha(0.35)
             hashHint:SetPoint("RIGHT", hashInput, "LEFT", -8, 0)
             hashRow._hint = hashHint
@@ -3788,7 +3789,7 @@ CludesUI.AtOptionsLogin(function()
             local threshCogBtn
             local cog = rowConf.thresholdCog
             if cog then
-                threshCogBtn = CludesUI.BuildInlineCog(threshRow, {
+                threshCogBtn = CUI.BuildInlineCog(threshRow, {
                     title = cog.title,
                     bgAlpha = 1,
                     frameStrata = "FULLSCREEN_DIALOG",
@@ -3801,7 +3802,7 @@ CludesUI.AtOptionsLogin(function()
                     gap = 0,
                 })
             end
-            local threshEnable, _, threshEnableSnap = CludesUI.BuildToggleControl(
+            local threshEnable, _, threshEnableSnap = CUI.BuildToggleControl(
                 threshRow,
                 DLVL + 4,
                 function()
@@ -3820,7 +3821,7 @@ CludesUI.AtOptionsLogin(function()
                 { sizeRatio = 0.95 }
             )
             -- The entry's own colour, else the bar's (which the bar falls back to).
-            local threshSwatch, threshSwatchSnap = CludesUI.BuildColorSwatch(
+            local threshSwatch, threshSwatchSnap = CUI.BuildColorSwatch(
                 threshRow,
                 threshRow:GetFrameLevel() + 4,
                 function()
@@ -3865,10 +3866,10 @@ CludesUI.AtOptionsLogin(function()
             end, function(entry) return tostring((entry and entry[THR_FIELD]) or rules.thrDef) end)
             -- The entry's note on its bounds (rules.thrTip), if any.
             threshInput:SetScript("OnEnter", function(self)
-                if self._tip then CludesUI.ShowWidgetTooltip(self, self._tip) end
+                if self._tip then CUI.ShowWidgetTooltip(self, self._tip) end
             end)
             threshInput:SetScript("OnLeave", function(self)
-                if self._tip then CludesUI.HideWidgetTooltip() end
+                if self._tip then CUI.HideWidgetTooltip() end
             end)
             -- Greys the value and colour (the label stays) while the threshold
             -- is off or multi-band replaces it.
@@ -3882,14 +3883,14 @@ CludesUI.AtOptionsLogin(function()
             threshDisTex:SetColorTexture(0.062, 0.070, 0.082, 0.7)
             threshDis:SetScript("OnEnter", function()
                 local tip = threshRow._disTip == "MULTI" and BAND_REPLACES_TIP
-                    or CludesUI.DisabledTooltip("Threshold Color")
-                CludesUI.ShowWidgetTooltip(threshDis, tip)
+                    or CUI.DisabledTooltip("Threshold Color")
+                CUI.ShowWidgetTooltip(threshDis, tip)
             end)
-            threshDis:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            threshDis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
             -- The entry's own toggle for field (off when unset), and after() once written.
             local function EntryToggle(line, field, after)
-                return CludesUI.BuildToggleControl(line, DLVL + 4, function()
+                return CUI.BuildToggleControl(line, DLVL + 4, function()
                     local entry = CurEntry()
                     return entry and entry[field] or false
                 end, function(value)
@@ -3902,8 +3903,8 @@ CludesUI.AtOptionsLogin(function()
                 end, { sizeRatio = 0.95 })
             end
             local function HoverTip(widget, tip)
-                widget:HookScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, tip) end)
-                widget:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                widget:HookScript("OnEnter", function(self) CUI.ShowWidgetTooltip(self, tip) end)
+                widget:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             end
 
             -- A row of a toggle and a small editor button (Bands, Buffs,
@@ -3914,7 +3915,7 @@ CludesUI.AtOptionsLogin(function()
                 Pix.Size(button, 60, 22)
                 button:SetPoint("RIGHT", line, "RIGHT", 0, 0)
                 button:SetFrameLevel(line:GetFrameLevel() + 4)
-                SkinCardButton(button, CludesUI.L(buttonText), buttonTip)
+                SkinCardButton(button, CUI.L(buttonText), buttonTip)
                 button:SetScript("OnClick", function(self)
                     if CurEntry() then open(self) end
                 end)
@@ -4036,7 +4037,7 @@ CludesUI.AtOptionsLogin(function()
                 for keyName in pairs(values) do
                     if keyName ~= "_menuOpts" then values[keyName] = nil end
                 end
-                values[0] = CludesUI.L("No talent")
+                values[0] = CUI.L("No talent")
                 order[1] = 0
                 for _, talent in ipairs((mod.GetLoadoutTalents()) or {}) do
                     if values[talent.spellID] == nil then order[#order + 1] = talent.spellID end
@@ -4053,19 +4054,19 @@ CludesUI.AtOptionsLogin(function()
                 if GetSpecializationInfoByID then
                     local _, _, _, _, _, class = GetSpecializationInfoByID(specID)
                     ownClass = class == _playerClassFile
-                elseif CludesUI.IS_FOREVER then
-                    ownClass = CludesUI.SpecClassOf(specID) == _playerClassFile
+                elseif CUI.IS_FOREVER then
+                    ownClass = CUI.SpecClassOf(specID) == _playerClassFile
                 end
                 talentLine._dis:SetShown(not ownClass)
             end
 
             -- The hash row's words: by stack for pip resources, else percent or value.
             local function HashWords(entry, r)
-                if r.pips then return CludesUI.L("Stack"), CludesUI.L("(Ex: 2,4)") end
+                if r.pips then return CUI.L("Stack"), CUI.L("(Ex: 2,4)") end
                 if (entry.hashMode or HASH_NIL) == "percent" then
-                    return CludesUI.L("Percent"), CludesUI.L("(Ex: 25,50,75)")
+                    return CUI.L("Percent"), CUI.L("(Ex: 25,50,75)")
                 end
-                return CludesUI.L("Value"), rowConf.hashValueHint or CludesUI.L("(Ex: 50000)")
+                return CUI.L("Value"), rowConf.hashValueHint or CUI.L("(Ex: 50000)")
             end
 
             -- Single threshold and multi-band are separate toggles; multi-band
@@ -4147,7 +4148,7 @@ CludesUI.AtOptionsLogin(function()
                 if withTalent then FillTalents(entry, ids[1]) end
 
                 local word, hint = HashWords(entry, r)
-                hashRow._lbl2:SetText(CludesUI.Lf("Hash at %1$s", word))
+                hashRow._lbl2:SetText(CUI.Lf("Hash at %1$s", word))
                 hashRow._hint:SetText(hint)
                 hashInput:SetText(entry.hashValues or "")
                 threshInput:SetText(tostring(entry[THR_FIELD] or r.thrDef))
@@ -4182,8 +4183,8 @@ CludesUI.AtOptionsLogin(function()
             elseif first and GetSpecializationInfoByID then
                 local _, _, _, _, _, class = GetSpecializationInfoByID(first)
                 return class
-            elseif first and CludesUI.IS_FOREVER then
-                return CludesUI.SpecClassOf(first)
+            elseif first and CUI.IS_FOREVER then
+                return CUI.SpecClassOf(first)
             end
         end
 
@@ -4196,20 +4197,20 @@ CludesUI.AtOptionsLogin(function()
             local bgTex = button:CreateTexture(nil, "BACKGROUND")
             bgTex:SetAllPoints()
             bgTex:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-            button._border = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.08, bgTex)
-            local label = CludesUI.MakeFont(button, 11, nil, 1, 1, 1)
+            button._border = CUI.MakeRoundedBorder(button, 1, 1, 1, 0.08, bgTex)
+            local label = CUI.MakeFont(button, 11, nil, 1, 1, 1)
             label:SetText(textObj)
             label:SetAlpha(0.65)
             label:SetPoint("CENTER")
             button:SetScript("OnEnter", function(self)
                 bgTex:SetColorTexture(0.16, 0.16, 0.16, 0.9)
                 label:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, tip)
+                CUI.ShowWidgetTooltip(self, tip)
             end)
             button:SetScript("OnLeave", function()
                 bgTex:SetColorTexture(0.12, 0.12, 0.12, 0.8)
                 label:SetAlpha(0.65)
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
             return button
         end
@@ -4265,8 +4266,8 @@ CludesUI.AtOptionsLogin(function()
                 84,
                 20,
                 line:GetFrameLevel() + 3,
-                CludesUI.L("Add Variant"),
-                CludesUI.L("Add a talent variant of this entry")
+                CUI.L("Add Variant"),
+                CUI.L("Add a talent variant of this entry")
             )
             variant:SetPoint("RIGHT", remove, "LEFT", -10, 0)
             variant:SetScript("OnClick", function()
@@ -4274,7 +4275,7 @@ CludesUI.AtOptionsLogin(function()
                 local specs = barRef and barRef.thresholdSpecs
                 local source = specs and specs[line._entryIdx]
                 if not source then return end
-                local copy = CludesUI.Lite.DeepCopy(source)
+                local copy = CUI.Lite.DeepCopy(source)
                 copy.talentSpellID, copy.talentName = nil, nil
                 table.insert(specs, line._entryIdx + 1, copy)
                 _selectedIdx = line._entryIdx + 1
@@ -4284,7 +4285,7 @@ CludesUI.AtOptionsLogin(function()
             end)
             line._varBtn = variant
 
-            local label = CludesUI.MakeFont(line, 14, nil, 1, 1, 1)
+            local label = CUI.MakeFont(line, 14, nil, 1, 1, 1)
             label:SetAlpha(0.85)
             label:SetPoint("LEFT", line, "LEFT", 12, 0)
             label:SetPoint("RIGHT", variant, "LEFT", -8, 0)
@@ -4446,8 +4447,8 @@ CludesUI.AtOptionsLogin(function()
     -- player (background colour and opacity): gated only under Blizzard
     -- Style, live under Classic WoW UI. Returns conf for inline use.
     function mod.ERB_CastBlizzOnlyGate(rowConf)
-        if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
-            return CludesUI.BlizzStyle.Gate("castbar", rowConf)
+        if CUI.BlizzStyle.Active("castbar") == "blizzard" then
+            return CUI.BlizzStyle.Gate("castbar", rowConf)
         end
         return rowConf
     end
@@ -4548,7 +4549,7 @@ CludesUI.AtOptionsLogin(function()
             -- The retail background on WoW Forever too, as live.
             local atlas = mod.ERB_BlizzAtlas("bg")
             if atlas then
-                CludesUI.StockAtlas(bgTex, atlas)
+                CUI.StockAtlas(bgTex, atlas)
             else
                 bgTex:SetTexture(nil)
                 bgTex:SetColorTexture(0, 0, 0, 0.7)
@@ -4567,7 +4568,7 @@ CludesUI.AtOptionsLogin(function()
             bgTex:SetTexture(nil)
             bgTex:SetColorTexture(checkBtn.bgR, checkBtn.bgG, checkBtn.bgB, checkBtn.bgA)
             if checkBtn.textureBg and (checkBtn.fillOpacity or 100) >= 100 then
-                local path = CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil)
+                local path = CUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil)
                 mod.ERB_BgTexture(bgTex, path, checkBtn.bgR, checkBtn.bgG, checkBtn.bgB, checkBtn.bgA)
             end
             bgTex:SetAllPoints(castFrame.barFrame)
@@ -4584,13 +4585,13 @@ CludesUI.AtOptionsLogin(function()
             holder:SetFrameLevel(checkBtn.borderBehind and math.max(0, level - 1) or (level + 5))
             local size = blizz and 0 or (checkBtn.borderSize or 0)
             local style = checkBtn.borderTexture or "solid"
-            local exact = (not blizz) and CludesUI.BorderPx(checkBtn.borderSizePx, size, style) or nil
+            local exact = (not blizz) and CUI.BorderPx(checkBtn.borderSizePx, size, style) or nil
             mod.ERB_AnchorBorderHost(
                 holder,
                 castFrame.container,
                 mod.ERB_BorderExtents((not blizz) and checkBtn or nil)
             )
-            CludesUI.ApplyBorderStyle(
+            CUI.ApplyBorderStyle(
                 holder,
                 size,
                 checkBtn.borderR or 0,
@@ -4758,13 +4759,13 @@ CludesUI.AtOptionsLogin(function()
             divider:Hide()
             return
         end
-        local PP = CludesUI.PP
+        local PP = CUI.PP
         local scale = castFrame.container:GetEffectiveScale()
         local pixel = (PP and scale > 0) and (PP.perfect / scale) or 1
         local size = checkBtn.borderSize or 1
         local style = checkBtn.borderTexture
         if not look.blizz and (not style or style == "" or style == "solid") then
-            size = CludesUI.BorderPx(checkBtn.borderSizePx, checkBtn.borderSize or 0, style) or size
+            size = CUI.BorderPx(checkBtn.borderSizePx, checkBtn.borderSize or 0, style) or size
         end
         divider:ClearAllPoints()
         divider:SetWidth(math.max(pixel, math.floor(size + 0.5) * pixel))
@@ -4828,7 +4829,7 @@ CludesUI.AtOptionsLogin(function()
                     spell:SetWidth(barW - 8 - (checkBtn.showTimer and timerW or 0))
                 end
             end
-            spell:SetText(CludesUI.L("Spell Name"))
+            spell:SetText(CUI.L("Spell Name"))
             spell:Show()
             mod.ERB_CastTextColor(
                 spell,
@@ -4859,7 +4860,7 @@ CludesUI.AtOptionsLogin(function()
         -- Sizes on the preview container's pixel grid.
         local scale = castFrame.container:GetEffectiveScale()
         if scale <= 0 then scale = 1 end
-        local pixel = CludesUI.PP.perfect / scale
+        local pixel = CUI.PP.perfect / scale
         local function Snap(value) return math.floor(value / pixel + 0.5) * pixel end
         local wid, height = Snap(checkBtn.width), Snap(checkBtn.height)
 
@@ -4871,7 +4872,7 @@ CludesUI.AtOptionsLogin(function()
         castFrame.container:SetSize(wid + iconW, height)
         -- Shrunk to fit when the bar is wider than the panel.
         local heading = castFrame.container:GetParent()
-        local room = (heading:GetWidth() - CludesUI.CONTENT_PAD * 2) / _castBarPreviewScale
+        local room = (heading:GetWidth() - CUI.CONTENT_PAD * 2) / _castBarPreviewScale
         local fit = 1
         if wid + iconW > room and wid + iconW > 0 and room > 0 then fit = room / (wid + iconW) end
         castFrame.container:SetScale(_castBarPreviewScale * fit)
@@ -4923,9 +4924,9 @@ CludesUI.AtOptionsLogin(function()
         if not _previewHintFS then
             local host = PoolKeep(CreateFrame("Frame", nil, heading))
             host:SetAllPoints(heading)
-            _previewHintFS = CludesUI.MakeFont(host, 11, nil, 1, 1, 1)
+            _previewHintFS = CUI.MakeFont(host, 11, nil, 1, 1, 1)
             _previewHintFS:SetAlpha(0.45)
-            _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
+            _previewHintFS:SetText(CUI.L("Click elements to scroll to and highlight their options"))
         end
         -- The kept host sits one level above the header, as a new one would.
         local host = _previewHintFS:GetParent()
@@ -4950,7 +4951,7 @@ CludesUI.AtOptionsLogin(function()
         local function Snapper()
             local scale = UIParent:GetEffectiveScale()
             if scale <= 0 then scale = 1 end
-            local pixel = CludesUI.PP.perfect / scale
+            local pixel = CUI.PP.perfect / scale
             return function(value) return math.floor(value / pixel + 0.5) * pixel end
         end
 
@@ -4965,7 +4966,7 @@ CludesUI.AtOptionsLogin(function()
             local hasIcon = checkBtn.showIcon ~= false and not mod.ERB_CastIconPortrait(checkBtn)
             local iconW = hasIcon and Snap(height) or 0
             local total = wid + iconW
-            local availW = (hdrW - CludesUI.CONTENT_PAD * 2) / previewScale
+            local availW = (hdrW - CUI.CONTENT_PAD * 2) / previewScale
             local fit = 1
             if total > availW and total > 0 and availW > 0 then fit = availW / total end
             boxFrame:SetScale(previewScale * fit)
@@ -4997,7 +4998,7 @@ CludesUI.AtOptionsLogin(function()
             local blizz = mod.ERB_CastBlizz()
             mod.ERB_AnchorBorderHost(host, boxFrame, mod.ERB_BorderExtents((not blizz) and checkBtn or nil))
             local size, texture = checkBtn.borderSize or 0, checkBtn.borderTexture or "solid"
-            CludesUI.ApplyBorderStyle(
+            CUI.ApplyBorderStyle(
                 host,
                 size,
                 checkBtn.borderR or 0,
@@ -5012,7 +5013,7 @@ CludesUI.AtOptionsLogin(function()
                 "resourcebars",
                 size,
                 nil,
-                CludesUI.BorderPx(checkBtn.borderSizePx, size, texture)
+                CUI.BorderPx(checkBtn.borderSizePx, size, texture)
             )
             local edge = (checkBtn.edgeSep and not blizz and mod.ERB_Textured(checkBtn)) and true or false
             mod.ERB_Separators(boxFrame, checkBtn, edge, boxFrame:GetFrameLevel() + 7)
@@ -5031,7 +5032,7 @@ CludesUI.AtOptionsLogin(function()
                 back:SetColorTexture(checkBtn.bgR, checkBtn.bgG, checkBtn.bgB, checkBtn.bgA)
                 local kit = mod.ERB_CastBlizz() and not mod.ERB_CastClassic()
                 if checkBtn.textureBg and (checkBtn.fillOpacity or 100) >= 100 and not kit then
-                    local path = CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil)
+                    local path = CUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil)
                     mod.ERB_BgTexture(back, path, checkBtn.bgR, checkBtn.bgG, checkBtn.bgB, checkBtn.bgA)
                 end
             elseif mod.ERB_CastClassic() then
@@ -5166,7 +5167,7 @@ CludesUI.AtOptionsLogin(function()
                 checkBtn.spellTextY or 0,
                 checkBtn.spellTextSize,
                 checkBtn.showSpellText,
-                CludesUI.L("Spell Name"),
+                CUI.L("Spell Name"),
                 checkBtn.spellTextR,
                 checkBtn.spellTextG,
                 checkBtn.spellTextB,
@@ -5318,14 +5319,14 @@ CludesUI.AtOptionsLogin(function()
             -- Scale down to fit when the bar is wider than the panel; snap on
             -- the grid of that final scale.
             local rawW = gcdCfg.width or 220
-            local PAD = CludesUI.CONTENT_PAD
+            local PAD = CUI.CONTENT_PAD
             local availW = ((popFrame.hdrW or heading:GetWidth()) - PAD * 2) / popFrame.scale
             local fitScale = 1
             if rawW > availW and rawW > 0 and availW > 0 then fitScale = availW / rawW end
             boxHolder:SetScale(popFrame.scale * fitScale)
             local cScale = boxHolder:GetEffectiveScale()
             if cScale <= 0 then cScale = 1 end
-            local pixel = CludesUI.PP.perfect / cScale
+            local pixel = CUI.PP.perfect / cScale
             local function Snap(val) return math.floor(val / pixel + 0.5) * pixel end
             local wid, height = Snap(rawW), Snap(gcdCfg.height or 12)
             boxHolder:SetSize(wid, height)
@@ -5346,7 +5347,7 @@ CludesUI.AtOptionsLogin(function()
                     or (boxHolder:GetFrameLevel() + 5)
             )
             mod.ERB_AnchorBorderHost(bdr, boxHolder, mod.ERB_BorderExtents(gcdCfg))
-            CludesUI.ApplyBorderStyle(
+            CUI.ApplyBorderStyle(
                 bdr,
                 bs,
                 gcdCfg.borderR or 0,
@@ -5361,7 +5362,7 @@ CludesUI.AtOptionsLogin(function()
                 "resourcebars",
                 bs,
                 nil,
-                CludesUI.BorderPx(gcdCfg.borderSizePx, bs, gcdCfg.borderTexture or "solid")
+                CUI.BorderPx(gcdCfg.borderSizePx, bs, gcdCfg.borderTexture or "solid")
             )
             mod.ERB_Separators(
                 boxHolder,
@@ -5378,7 +5379,7 @@ CludesUI.AtOptionsLogin(function()
             barRef:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", inset, -inset)
             barRef:SetPoint("BOTTOMRIGHT", boxHolder, "BOTTOMRIGHT", -inset, inset)
             barRef:SetStatusBarTexture(
-                CludesUI.ResolveTexturePath(
+                CUI.ResolveTexturePath(
                     _G._CURB_BarTextures,
                     gcdCfg.texture,
                     "Interface\\Buttons\\WHITE8x8"
@@ -5390,7 +5391,7 @@ CludesUI.AtOptionsLogin(function()
                 mod.ERB_BgTexture(
                     backdrop,
                     gcdCfg.textureBg
-                        and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, gcdCfg.texture, nil),
+                        and CUI.ResolveTexturePath(_G._CURB_BarTextures, gcdCfg.texture, nil),
                     gcdCfg.bgR,
                     gcdCfg.bgG,
                     gcdCfg.bgB,
@@ -5575,7 +5576,7 @@ CludesUI.AtOptionsLogin(function()
 
             -- The header grows with the stack (a column, two groups) up to
             -- TOTEM_PREVIEW_MAXH; past that, or past the panel width, it scales down.
-            local PAD = CludesUI.CONTENT_PAD
+            local PAD = CUI.CONTENT_PAD
             local availW = ((thresholdPane.hdrW or heading:GetWidth()) - PAD * 2) / thresholdPane.scale
             local availH = (TOTEM_PREVIEW_MAXH - TOTEM_PREVIEW_VPAD) / thresholdPane.scale
             local fit = 1
@@ -5587,7 +5588,7 @@ CludesUI.AtOptionsLogin(function()
 
             local cScale = boxHolder:GetEffectiveScale()
             if cScale <= 0 then cScale = 1 end
-            local pixel = CludesUI.PP.perfect / cScale
+            local pixel = CUI.PP.perfect / cScale
             local function Snap(val) return math.floor(val / pixel + 0.5) * pixel end
 
             local snapW, topY = 0, 0
@@ -5644,7 +5645,7 @@ CludesUI.AtOptionsLogin(function()
                             tbl.borderBehind and math.max(0, iconTex:GetFrameLevel() - 1)
                                 or (iconTex:GetFrameLevel() + 3)
                         )
-                        CludesUI.ApplyBorderStyle(
+                        CUI.ApplyBorderStyle(
                             bdr,
                             bs,
                             tbl.borderR or 0,
@@ -5659,7 +5660,7 @@ CludesUI.AtOptionsLogin(function()
                             "resourcebars",
                             bs,
                             nil,
-                            CludesUI.BorderPx(tbl.borderSizePx, bs, texKey)
+                            CUI.BorderPx(tbl.borderSizePx, bs, texKey)
                         )
                         local fontStr = iconTex._timer
                         if fontStr then
@@ -5768,7 +5769,7 @@ CludesUI.AtOptionsLogin(function()
         -- without page reuse (its spec rows included; the build draws its
         -- own preview values).
         if _classHdrEmpty then
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
             return
         end
         -- Fresh made-up values on every visit: 50 to 75% of five pips, a
@@ -5790,7 +5791,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         if _headerBaseH > 0 then
-            CludesUI:SetContentHeaderHeightSilent(_headerBaseH + (dismissed and 0 or 35))
+            CUI:SetContentHeaderHeightSilent(_headerBaseH + (dismissed and 0 or 35))
         end
     end
 
@@ -5831,7 +5832,7 @@ CludesUI.AtOptionsLogin(function()
         },
     }
 
-    CludesUI:RegisterModule("CludesUIResourceBars", {
+    CUI:RegisterModule("CludesUIResourceBars", {
         title = "Resource Bars",
         description = "Custom class resource, health, and mana bar display.",
         -- Swing Timer only where the client has one (WoW Forever).
@@ -5858,6 +5859,6 @@ CludesUI.AtOptionsLogin(function()
     SLASH_ERBOPT1 = "/crbopt"
     SlashCmdList.ERBOPT = function()
         if InCombatLockdown and InCombatLockdown() then return end
-        CludesUI:ShowModule("CludesUIResourceBars")
+        CUI:ShowModule("CludesUIResourceBars")
     end
 end)

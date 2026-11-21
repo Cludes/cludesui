@@ -1,19 +1,20 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_ActionBar_Options.lua
 --  Registers the Action Bars module. All get/set calls go to EAB.db.profile.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIActionBars"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page or header root and every frame it
 -- hands out) is reset and dressed again by the next build instead of made
 -- anew; on any other parent this is CreateFrame. Captured once here.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 -- Keep: an object this file holds across builds leaves the pool. Gen: the
 -- dress generation of a pooled object (nil when it is not pooled).
-local PoolKeep, PoolGen = CludesUI._Pool.Keep, CludesUI._Pool.Gen
+local PoolKeep, PoolGen = CUI._Pool.Keep, CUI._Pool.Gen
 local ABAR = mod.EAB
 local VisibilityCompat = ABAR and ABAR.VisibilityCompat
 -- Anchor dropdown for the three button texts (keybind / charges / macro name);
@@ -38,10 +39,10 @@ end
 -- (CludesUI.BorderPx) the way ApplyBorderStyle scales it; px nil = the
 -- step's own values, the legacy path.
 local function ShownBorderDefaults(texture, sizeKey, step, px)
-    local dox, doy, dsx, dsy = CludesUI.GetBorderDefaults("actionbars", texture, sizeKey)
+    local dox, doy, dsx, dsy = CUI.GetBorderDefaults("actionbars", texture, sizeKey)
     if px then
-        local gamePP = CludesUI.PP
-        local EDGE_MAP = CludesUI.BORDER_EDGE_MAP
+        local gamePP = CUI.PP
+        local EDGE_MAP = CUI.BORDER_EDGE_MAP
         local f = (px * gamePP.mult) / (EDGE_MAP[step] or EDGE_MAP[1])
         dox, doy, dsx, dsy =
             gamePP.Snap(dox * f), gamePP.Snap(doy * f), gamePP.Snap(dsx * f), gamePP.Snap(dsy * f)
@@ -62,8 +63,8 @@ local SECTION_TEXT = "TEXT"
 local SECTION_VISIBILITY = "VISIBILITY & FADING"
 
 -- CludesUI is created by another addon in the suite; wait for it.
-CludesUI.AtOptionsLogin(function()
-    local Pix = CludesUI.PanelPP
+CUI.AtOptionsLogin(function()
+    local Pix = CUI.PanelPP
     if not ABAR or not ABAR.db then return end
 
     ---------------------------------------------------------------------------
@@ -141,12 +142,12 @@ CludesUI.AtOptionsLogin(function()
     -- builds (mirrors the unit-frame path): direct setter (already built) + pending
     -- value consumed at build time. Both ignore non-dropdown keys (Micro/Bag/XP/Rep)
     -- so the selector never blanks.
-    CludesUI._setActionBarKey = function(key)
+    CUI._setActionBarKey = function(key)
         if barLabels[key] then _selectedBarKey = key end
     end
-    CludesUI._consumePendingActionBarSelect = function()
-        local pending = CludesUI._pendingActionBarSelect
-        CludesUI._pendingActionBarSelect = nil
+    CUI._consumePendingActionBarSelect = function()
+        local pending = CUI._pendingActionBarSelect
+        CUI._pendingActionBarSelect = nil
         if pending and barLabels[pending] then _selectedBarKey = pending end
     end
 
@@ -196,19 +197,19 @@ CludesUI.AtOptionsLogin(function()
             backdrop:SetColorTexture(0.088, 0.098, 0.111, 0.85)
             editOverlayFrame._bg = backdrop
 
-            if CludesUI and CludesUI.MakeBorder then
-                local brandGreen = CludesUI.CLUDES_GREEN
+            if CUI and CUI.MakeBorder then
+                local brandGreen = CUI.CLUDES_GREEN
                 local ar, ag, ab = 1, 1, 1
                 if brandGreen then
                     ar, ag, ab = brandGreen.r, brandGreen.g, brandGreen.b
                 end
                 editOverlayFrame._border =
-                    CludesUI.MakeBorder(editOverlayFrame, ar, ag, ab, 0.6, CludesUI.PanelPP)
+                    CUI.MakeBorder(editOverlayFrame, ar, ag, ab, 0.6, CUI.PanelPP)
             end
 
             local label = editOverlayFrame:CreateFontString(nil, "OVERLAY")
-            local fontFile = CludesUI and CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
-            label:SetFont(fontFile, 10, CludesUI.GetFontOutlineFlag())
+            local fontFile = CUI and CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+            label:SetFont(fontFile, 10, CUI.GetFontOutlineFlag())
             label:SetTextColor(1, 1, 1, 0.75)
             label:SetPoint("CENTER")
             label:SetWordWrap(false)
@@ -239,10 +240,10 @@ CludesUI.AtOptionsLogin(function()
         if editOverlayFrame then editOverlayFrame:Hide() end
     end
 
-    CludesUI:RegisterOnHide(HideEditOverlay)
+    CUI:RegisterOnHide(HideEditOverlay)
 
     -- Sync Edit Mode icon counts on panel close (numIcons may have changed).
-    CludesUI:RegisterOnHide(function() ABAR:SyncEditModeIcons() end)
+    CUI:RegisterOnHide(function() ABAR:SyncEditModeIcons() end)
 
     ---------------------------------------------------------------------------
     --  Live Preview System
@@ -269,8 +270,8 @@ CludesUI.AtOptionsLogin(function()
     local function UpdatePreview()
         -- Recover activePreview from this module's header preview slot if lost
         -- (e.g. page cache restore)
-        if not optionState.activePreview and CludesUI._abHeaderPreview then
-            optionState.activePreview = CludesUI._abHeaderPreview
+        if not optionState.activePreview and CUI._abHeaderPreview then
+            optionState.activePreview = CUI._abHeaderPreview
         end
         if optionState.activePreview and optionState.activePreview.Update then
             optionState.activePreview:Update()
@@ -279,8 +280,8 @@ CludesUI.AtOptionsLogin(function()
 
     -- Full refresh also recalculates content header height (for bar scale changes)
     local function UpdatePreviewAndResize()
-        if not optionState.activePreview and CludesUI._abHeaderPreview then
-            optionState.activePreview = CludesUI._abHeaderPreview
+        if not optionState.activePreview and CUI._abHeaderPreview then
+            optionState.activePreview = CUI._abHeaderPreview
         end
         if optionState.activePreview and optionState.activePreview.Update then
             optionState.activePreview:Update()
@@ -290,12 +291,12 @@ CludesUI.AtOptionsLogin(function()
                         and optionState.activePreview._wrapper:GetHeight()
                     or (optionState.activePreview:GetHeight() * optionState.activePreview:GetScale())
                 local newTotal = headerFixedH + wrapH + hintH
-                CludesUI:UpdateContentHeaderHeight(newTotal)
+                CUI:UpdateContentHeaderHeight(newTotal)
             end
         end
     end
 
-    CludesUI:RegisterOnShow(UpdatePreview)
+    CUI:RegisterOnShow(UpdatePreview)
 
     -- Rebuild the preview on spec change (new talent group).
     do
@@ -304,8 +305,8 @@ CludesUI.AtOptionsLogin(function()
         specChangeFrame:SetScript("OnEvent", function(self, evt)
             if evt == "ACTIVE_TALENT_GROUP_CHANGED" and _barsHeaderBuilder then
                 optionState.activePreview = nil
-                if CludesUI:IsShown() and CludesUI:GetActiveModule() == "CludesUIActionBars" then
-                    CludesUI:SetContentHeader(_barsHeaderBuilder)
+                if CUI:IsShown() and CUI:GetActiveModule() == "CludesUIActionBars" then
+                    CUI:SetContentHeader(_barsHeaderBuilder)
                     UpdatePreviewAndResize()
                 end
             end
@@ -334,7 +335,7 @@ CludesUI.AtOptionsLogin(function()
     }
 
     -- Spec Overrides capture: label captured entries with the selected bar's element (e.g. "Action Bars > Bar 1 > ...").
-    CludesUI.RegisterCaptureContext("CludesUIActionBars", function()
+    CUI.RegisterCaptureContext("CludesUIActionBars", function()
         local key = PickedBarKey()
         return SHORT_LABELS[key] or key
     end)
@@ -371,7 +372,7 @@ CludesUI.AtOptionsLogin(function()
     local function CopyVisibilitySettings(dst, source, dstKey)
         -- The merged Visibility control owns the option booleans too, so every copy
         -- carries them alongside the mode selection.
-        local optKeys = CludesUI.VIS_OPT_KEYS
+        local optKeys = CUI.VIS_OPT_KEYS
         if optKeys then
             for idx = 1, #optKeys do
                 dst[optKeys[idx]] = source[optKeys[idx]] or nil
@@ -410,8 +411,8 @@ CludesUI.AtOptionsLogin(function()
     --   o.syncKeys, o.syncLabels  the Apply to All link's bars (nil = no link)
     local function EndCapsCtl(o)
         local C = {}
-        C.stock = CludesUI.BlizzStyle.Get("actionbars") and true or false
-        C.forever = C.stock and CludesUI.BlizzStyle.Forever("actionbars")
+        C.stock = CUI.BlizzStyle.Get("actionbars") and true or false
+        C.forever = C.stock and CUI.BlizzStyle.Forever("actionbars")
         C.Vertical = o.vertical
         -- True while the bar shows a cap at neither end.
         function C.Off()
@@ -421,7 +422,7 @@ CludesUI.AtOptionsLogin(function()
         -- The row slot C.Build swaps for the checklist; its label carries the
         -- tooltip and dims on a vertical bar.
         function C.Cfg()
-            local classic = CludesUI.BlizzStyle.Active("actionbars") == "classic"
+            local classic = CUI.BlizzStyle.Active("actionbars") == "classic"
             return {
                 type = "dropdown",
                 text = o.label,
@@ -463,9 +464,9 @@ CludesUI.AtOptionsLogin(function()
         -- The checklist in `rgn` (a DualRow half built from C.Cfg), its cog
         -- and its Apply to All link.
         function C.Build(region)
-            if CludesUI._prebuilding then return end
+            if CUI._prebuilding then return end
             if region._control then region._control:Hide() end
-            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 170,
                 region:GetFrameLevel() + 2,
@@ -499,7 +500,7 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
             region._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CUI.RegisterWidgetRefresh(cbDDRefresh)
             -- The checklist has no disabled state of its own: grey it and
             -- block clicks on a vertical bar (the row label explains).
             local function ApplyCapsDisabled()
@@ -508,14 +509,14 @@ CludesUI.AtOptionsLogin(function()
                 checkDrop:EnableMouse(not off)
             end
             ApplyCapsDisabled()
-            CludesUI.RegisterWidgetRefresh(ApplyCapsDisabled)
+            CUI.RegisterWidgetRefresh(ApplyCapsDisabled)
 
             local rowList = {}
             if not C.stock then
                 -- WoW Forever's own art exists only on that client.
                 local values = { blizzard = "Modern", classic = "Classic" }
                 local sequence = { "blizzard", "classic" }
-                if CludesUI.IS_FOREVER then
+                if CUI.IS_FOREVER then
                     values.forever = "WoW Forever"
                     sequence[#sequence + 1] = "forever"
                 end
@@ -524,7 +525,7 @@ CludesUI.AtOptionsLogin(function()
                     label = "Art",
                     values = values,
                     order = sequence,
-                    tooltip = CludesUI.IS_FOREVER
+                    tooltip = CUI.IS_FOREVER
                             and "Modern shows gryphons or wyverns by faction, Classic the vanilla gryphons, WoW Forever this client's own."
                         or "Modern shows gryphons or wyverns by faction, Classic the vanilla gryphons.",
                     get = function() return mod.AB_CapsArt(o.key()) end,
@@ -560,28 +561,28 @@ CludesUI.AtOptionsLogin(function()
                 get = function() return mod.AB_CapsVal(o.key(), "endCapOffsetY") or 5 end,
                 set = function(value) o.write("endCapOffsetY", value) end,
             }
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "End Cap Settings",
                 disabled = function() return C.Vertical() or C.Off() end,
                 disabledTooltip = function()
                     if C.Vertical() then
-                        return CludesUI.DisabledTooltip("Vertical Orientation", "disabled")
+                        return CUI.DisabledTooltip("Vertical Orientation", "disabled")
                     end
-                    return CludesUI.DisabledTooltip("Left Endcap or Right Endcap")
+                    return CUI.DisabledTooltip("Left Endcap or Right Endcap")
                 end,
                 rawTooltip = true,
                 rows = rowList,
             })
 
             if o.syncKeys then
-                CludesUI.BuildSyncIcon({
+                CUI.BuildSyncIcon({
                     region = region,
                     tooltip = "Apply End Caps to all Bars",
                     onClick = function()
                         for _, key in ipairs(o.syncKeys) do
                             C.CopyTo(key)
                         end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                     isSynced = function()
                         for _, key in ipairs(o.syncKeys) do
@@ -598,7 +599,7 @@ CludesUI.AtOptionsLogin(function()
                             for _, key in ipairs(checkedKeys) do
                                 C.CopyTo(key)
                             end
-                            CludesUI:RefreshPage()
+                            CUI:RefreshPage()
                         end,
                     },
                 })
@@ -608,7 +609,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildSharedBarSettings(hostFrame, cursorY)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
 
         ---------------------------------------------------------------
         --  Unified Get / Set / DB abstraction
@@ -617,7 +618,7 @@ CludesUI.AtOptionsLogin(function()
         local function SSet(key, val, applyFn)
             PickedBarCfg()[key] = val
             if applyFn then applyFn(PickedBarKey()) end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
         local function SDB() return PickedBarCfg() end
         local function SVal(key, default)
@@ -627,7 +628,7 @@ CludesUI.AtOptionsLogin(function()
         local function SSetColor(key, red, green, blue, a, applyFn)
             PickedBarCfg()[key] = { r = red, g = green, b = blue, a = a }
             if applyFn then applyFn(PickedBarKey()) end
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
         local function SUpdatePreview() UpdatePreview() end
 
@@ -687,8 +688,8 @@ CludesUI.AtOptionsLogin(function()
             -------------------------------------------------------------------
             --  CLICK NAVIGATION
             -------------------------------------------------------------------
-            local PlaySettingGlow = CludesUI.MakeSettingGlow({
-                color = CludesUI.CLUDES_GREEN,
+            local PlaySettingGlow = CUI.MakeSettingGlow({
+                color = CUI.CLUDES_GREEN,
                 thickness = function() return Pix.Scale(2) end,
                 noSnap = true,
             })
@@ -703,14 +704,14 @@ CludesUI.AtOptionsLogin(function()
                 local m = clickMappings[key]
                 if not m or not m.section or not m.target then return end
 
-                CludesUI.DismissPreviewHint(_abPreviewHintFS, barsHeaderBaseH, 29, 17)
+                CUI.DismissPreviewHint(_abPreviewHintFS, barsHeaderBaseH, 29, 17)
 
-                local scrollFrame = CludesUI._scrollFrame
+                local scrollFrame = CUI._scrollFrame
                 if not scrollFrame then return end
                 local _, _, _, _, headerY = m.section:GetPoint(1)
                 if not headerY then return end
                 local scrollPos = math.max(0, math.abs(headerY) - 40)
-                CludesUI.SmoothScrollTo(scrollPos)
+                CUI.SmoothScrollTo(scrollPos)
                 local glowTarget = m.target
                 if m.slotSide and m.target then
                     local regionFrame = (m.slotSide == "left") and m.target._leftRegion
@@ -729,7 +730,7 @@ CludesUI.AtOptionsLogin(function()
             local hitStyle = { tightText = true }
             local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
                 return (
-                    CludesUI.CreatePreviewHitOverlay(
+                    CUI.CreatePreviewHitOverlay(
                         element,
                         NavigateToSetting,
                         mappingKey,
@@ -772,19 +773,19 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildBarDisplayPage(page, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
 
         optionState.activePreview = nil
 
         -- Consume any pending bar selection from Element Options navigation.
-        if CludesUI._consumePendingActionBarSelect then CludesUI._consumePendingActionBarSelect() end
+        if CUI._consumePendingActionBarSelect then CUI._consumePendingActionBarSelect() end
 
         -- Tag every option registered while building this page with the selected bar, so a global-search
         -- jump to a bar-specific setting restores this exact selection first via _setActionBarKey
         -- (full reasoning: the matching _buildingSelector comment in CUI_CooldownManager_Options.lua).
-        CludesUI._buildingSelector = { setter = CludesUI._setActionBarKey, key = PickedBarKey() }
+        CUI._buildingSelector = { setter = CUI._setActionBarKey, key = PickedBarKey() }
 
         ShowEditOverlay(PickedBarKey())
 
@@ -792,8 +793,8 @@ CludesUI.AtOptionsLogin(function()
         --  CONTENT HEADER  (dropdown + preview)
         -------------------------------------------------------------------
         _barsHeaderBuilder = function(heading, hdrW)
-            if CludesUI:GetActivePage() == PAGE_DISPLAY then _abDisplayHdr = heading end
-            local PAD = CludesUI.CONTENT_PAD
+            if CUI:GetActivePage() == PAGE_DISPLAY then _abDisplayHdr = heading end
+            local PAD = CUI.CONTENT_PAD
             local PV_PAD = 10 -- internal padding inside BuildLivePreview
             local fy = -20
 
@@ -801,7 +802,7 @@ CludesUI.AtOptionsLogin(function()
             local DD_H = 34
             local availW = hdrW - PAD * 2
             local ddW = 350
-            local dropdownBtn, dropCaption = CludesUI.BuildDropdownControl(
+            local dropdownBtn, dropCaption = CUI.BuildDropdownControl(
                 heading,
                 ddW,
                 heading:GetFrameLevel() + 5,
@@ -812,13 +813,13 @@ CludesUI.AtOptionsLogin(function()
                     _selectedBarKey = value
                     -- Always force a full rebuild: visibility-only bars and StanceBar share visOnly/dataBar flags, so a conditional misses transitions.
                     -- The rebuild builds this header as well (BuildBarDisplayPage sets it), so no header is built here first.
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                     ShowEditOverlay(value)
                 end,
                 function(key)
                     -- Bar9/Bar10 default to Hidden visibility but must stay selectable so they can be configured -- never show the disabled effect.
                     if key == "Bar9" or key == "Bar10" then return nil end
-                    if not IsBarEnabled(key) then return CludesUI.DisabledTooltip("this action bar") end
+                    if not IsBarEnabled(key) then return CUI.DisabledTooltip("this action bar") end
                 end
             )
             -- The Quick Keybind Mode key button sits KB_GAP left of the
@@ -833,14 +834,14 @@ CludesUI.AtOptionsLogin(function()
                 Pix.Size(kbBtn, DD_H, DD_H)
                 Pix.Point(kbBtn, "RIGHT", dropdownBtn, "LEFT", -KB_GAP, 0)
                 kbBtn:SetFrameLevel(heading:GetFrameLevel() + 5)
-                CludesUI.MakeStyledButton(kbBtn, "", 13, CludesUI.RD_DD_COLOURS, function()
+                CUI.MakeStyledButton(kbBtn, "", 13, CUI.RD_DD_COLOURS, function()
                     if InCombatLockdown() then return end
                     if not C_AddOns.IsAddOnLoaded("Blizzard_QuickKeybind") then
                         C_AddOns.LoadAddOn("Blizzard_QuickKeybind")
                     end
                     if QuickKeybindFrame then
-                        CludesUI.HideWidgetTooltip()
-                        CludesUI:Toggle()
+                        CUI.HideWidgetTooltip()
+                        CUI:Toggle()
                         QuickKeybindFrame:Show()
                     end
                 end)
@@ -851,15 +852,15 @@ CludesUI.AtOptionsLogin(function()
                     kbIcon:SetSnapToPixelGrid(false)
                     kbIcon:SetTexelSnappingBias(0)
                 end
-                kbIcon:SetTexture(CludesUI.MEDIA_PATH .. "icons\\cui-keyboard.png")
-                kbIcon:SetAlpha(CludesUI.DD_TXT_A)
+                kbIcon:SetTexture(CUI.MEDIA_PATH .. "icons\\cui-keyboard.png")
+                kbIcon:SetAlpha(CUI.DD_TXT_A)
                 kbBtn:HookScript("OnEnter", function(self)
-                    kbIcon:SetAlpha(CludesUI.DD_TXT_HA)
-                    CludesUI.ShowWidgetTooltip(self, "Quick Keybind Mode (/kb)")
+                    kbIcon:SetAlpha(CUI.DD_TXT_HA)
+                    CUI.ShowWidgetTooltip(self, "Quick Keybind Mode (/kb)")
                 end)
                 kbBtn:HookScript("OnLeave", function()
-                    kbIcon:SetAlpha(CludesUI.DD_TXT_A)
-                    CludesUI.HideWidgetTooltip()
+                    kbIcon:SetAlpha(CUI.DD_TXT_A)
+                    CUI.HideWidgetTooltip()
                 end)
             end
             fy = fy - DD_H - PV_PAD
@@ -878,10 +879,10 @@ CludesUI.AtOptionsLogin(function()
                     -- build moves it into its header below): out of the page pool.
                     PoolKeep(hintHost)
                     hintHost:SetAllPoints(heading)
-                    _abPreviewHintFS = CludesUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
+                    _abPreviewHintFS = CUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
                     _abPreviewHintFS:SetAlpha(0.45)
                     _abPreviewHintFS:SetText(
-                        CludesUI.L("Click elements to scroll to and highlight their options")
+                        CUI.L("Click elements to scroll to and highlight their options")
                     )
                 end
                 _abPreviewHintFS:GetParent():SetParent(heading)
@@ -902,7 +903,7 @@ CludesUI.AtOptionsLogin(function()
             barsHeaderBaseH = math.abs(fy)
             return barsHeaderBaseH + hintH
         end
-        CludesUI:SetContentHeader(_barsHeaderBuilder)
+        CUI:SetContentHeader(_barsHeaderBuilder)
 
         -------------------------------------------------------------------
         --  Build shared settings (single mode)
@@ -960,7 +961,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Register the module
     ---------------------------------------------------------------------------
-    CludesUI:RegisterModule("CludesUIActionBars", {
+    CUI:RegisterModule("CludesUIActionBars", {
         title = "Action Bars",
         description = "Configure visuals and behavior for your action bars.",
         pages = { PAGE_DISPLAY, PAGE_XPBAR, PAGE_MENUBAGSREP, PAGE_ANIMATIONS },
@@ -968,7 +969,7 @@ CludesUI.AtOptionsLogin(function()
             -- BuildBarDisplayPage calls ShowEditOverlay() unconditionally at build time, showing a
             -- real UIParent-parented overlay over the live action bars. A hidden search pre-build
             -- would flash it onscreen, so skip PAGE_DISPLAY here; it indexes on first visit.
-            if CludesUI._prebuilding then
+            if CUI._prebuilding then
                 if page == PAGE_XPBAR then
                     return mod.ABO_BuildXPBarPage(page, hostFrame, yOffset)
                 elseif page == PAGE_MENUBAGSREP then
@@ -1025,7 +1026,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end
                 if barsHeaderBaseH > 0 then
-                    CludesUI:SetContentHeaderHeightSilent(barsHeaderBaseH + (dismissed and 0 or 29))
+                    CUI:SetContentHeaderHeightSilent(barsHeaderBaseH + (dismissed and 0 or 29))
                 end
             else
                 HideEditOverlay()

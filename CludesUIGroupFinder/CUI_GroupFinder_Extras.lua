@@ -1,12 +1,13 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_GroupFinder_Extras.lua - the extra filters and looks:
 --  has / missing rows, specific roles, menu icons, group settings columns,
 --  region tags, row art, the scrolling strips, the person / raid icons
 -------------------------------------------------------------------------------
 local FOLDER, mod = ...
-if CludesUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
-mod.CUI = CludesUI
+if CUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
+mod.CUI = CUI
 
 -- runs fn once blizzard's group finder loads
 function mod.WhenGroupFinder(func)
@@ -33,10 +34,10 @@ GFNS.ExtraRolesAny = function()
 end
 
 local CM = mod.CUI
-local Secret = CludesUI.IsSecret
+local Secret = CUI.IsSecret
 local HINT_GREY = 0.35 -- the (and) / (or) bit, never takes the accent
 -- dim label grey
-local DIM_HEX = CludesUI.COLOR_CODES.DIM
+local DIM_HEX = CUI.COLOR_CODES.DIM
 
 -- label + grey hint
 local function TwoPart(ownerFrame, SortKit)
@@ -259,15 +260,15 @@ end
 local MATCH = {
     {
         any = false,
-        label = CludesUI.L("Match All"),
+        label = CUI.L("Match All"),
         hint = "(and)",
-        tip = CludesUI.L("Match all of the selected options below."),
+        tip = CUI.L("Match all of the selected options below."),
     },
     {
         any = true,
-        label = CludesUI.L("Match Any"),
+        label = CUI.L("Match Any"),
         hint = "(or)",
-        tip = CludesUI.L("Match any of the selected options below."),
+        tip = CUI.L("Match any of the selected options below."),
     },
 }
 
@@ -287,7 +288,7 @@ GFNS.ExtraRoleCounts = function(m, posY, SortKit)
     button:SetHeight(SortKit.ITEM_H - 2)
     button:SetPoint("TOPLEFT", sg, "TOPLEFT", 9, -1)
     button:SetPoint("TOPRIGHT", sg, "TOPRIGHT", -9, -1)
-    button.Label:SetText(CludesUI.L("Specific Roles"))
+    button.Label:SetText(CUI.L("Specific Roles"))
 
     local popup = CreateFrame("Frame", nil, SortKit.parent or m)
     popup:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -360,7 +361,7 @@ GFNS.ExtraRoleCounts = function(m, posY, SortKit)
     -- "(2 active)" so ticked rows aren't forgotten
     local function ShowHint()
         local num = CountsOn(SortKit.Cfg())
-        button.Hint:SetText(num > 0 and CludesUI.Lf("(%1$d active)", num) or "")
+        button.Hint:SetText(num > 0 and CUI.Lf("(%1$d active)", num) or "")
     end
     local sgLevel = sg:GetFrameLevel()
     popup:HookScript("OnShow", function()
@@ -564,17 +565,17 @@ local CLASS_ROWS = {
         key = "hasLust",
         pick = "extraLustMissing",
         spell = 2825,
-        has = CludesUI.L("Has Bloodlust"),
-        missing = CludesUI.L("Missing Bloodlust"),
+        has = CUI.L("Has Bloodlust"),
+        missing = CUI.L("Missing Bloodlust"),
         Tip = function(SortKit)
-            return CludesUI.L("Bloodlust"),
+            return CUI.L("Bloodlust"),
                 {
-                    CludesUI.L("A member whose class has one of these spells:"),
-                    SortKit.ClassLine("SHAMAN", CludesUI.L("Bloodlust / Heroism (Shaman)")),
-                    SortKit.ClassLine("MAGE", CludesUI.L("Time Warp (Mage)")),
-                    SortKit.ClassLine("HUNTER", CludesUI.L("Primal Rage (Hunter pet)")),
-                    SortKit.ClassLine("EVOKER", CludesUI.L("Fury of the Aspects (Evoker)")),
-                    CludesUI.L("Drums and other items don't count."),
+                    CUI.L("A member whose class has one of these spells:"),
+                    SortKit.ClassLine("SHAMAN", CUI.L("Bloodlust / Heroism (Shaman)")),
+                    SortKit.ClassLine("MAGE", CUI.L("Time Warp (Mage)")),
+                    SortKit.ClassLine("HUNTER", CUI.L("Primal Rage (Hunter pet)")),
+                    SortKit.ClassLine("EVOKER", CUI.L("Fury of the Aspects (Evoker)")),
+                    CUI.L("Drums and other items don't count."),
                 }
         end,
     },
@@ -582,17 +583,17 @@ local CLASS_ROWS = {
         key = "hasBrez",
         pick = "extraBrezMissing",
         spell = 20484,
-        has = CludesUI.L("Has Battle Res"),
-        missing = CludesUI.L("Missing Battle Res"),
+        has = CUI.L("Has Battle Res"),
+        missing = CUI.L("Missing Battle Res"),
         Tip = function(SortKit)
-            return CludesUI.L("Battle Res"),
+            return CUI.L("Battle Res"),
                 {
-                    CludesUI.L("A member whose class has one of these spells:"),
-                    SortKit.ClassLine("DRUID", CludesUI.L("Rebirth (Druid)")),
-                    SortKit.ClassLine("DEATHKNIGHT", CludesUI.L("Raise Ally (Death Knight)")),
-                    SortKit.ClassLine("WARLOCK", CludesUI.L("Soulstone (Warlock)")),
-                    SortKit.ClassLine("PALADIN", CludesUI.L("Intercession (Paladin)")),
-                    CludesUI.L("Engineering and other items don't count."),
+                    CUI.L("A member whose class has one of these spells:"),
+                    SortKit.ClassLine("DRUID", CUI.L("Rebirth (Druid)")),
+                    SortKit.ClassLine("DEATHKNIGHT", CUI.L("Raise Ally (Death Knight)")),
+                    SortKit.ClassLine("WARLOCK", CUI.L("Soulstone (Warlock)")),
+                    SortKit.ClassLine("PALADIN", CUI.L("Intercession (Paladin)")),
+                    CUI.L("Engineering and other items don't count."),
                 }
         end,
     },
@@ -606,9 +607,9 @@ local CLASS_ROWS = {
         missing = "No Class", -- class name added at build
         Tip = function(SortKit)
             local label, file = MyClass()
-            return CludesUI.L("Your Class"),
+            return CUI.L("Your Class"),
                 {
-                    CludesUI.Lf(
+                    CUI.Lf(
                         "A member who's your class: %1$s",
                         file and SortKit.ClassLine(file, label) or label or ""
                     ),
@@ -656,11 +657,11 @@ GFNS.ExtraClassRows = function(m, posY, SortKit)
         local iconTex = line.spell and C_Spell.GetSpellTexture(line.spell)
         if inRoles then
             local label, file = MyClass()
-            local cls = (label and file) and SortKit.ClassLine(file, label) or label or CludesUI.L("Class")
-            has, missing = CludesUI.L("Has") .. " " .. cls, CludesUI.L("No") .. " " .. cls
+            local cls = (label and file) and SortKit.ClassLine(file, label) or label or CUI.L("Class")
+            has, missing = CUI.L("Has") .. " " .. cls, CUI.L("No") .. " " .. cls
             -- full alpha so the class color shows, has / no greyed by hand
             hasBtn, missingBtn =
-                DIM_HEX .. CludesUI.L("Has") .. "|r " .. cls, DIM_HEX .. CludesUI.L("No") .. "|r " .. cls
+                DIM_HEX .. CUI.L("Has") .. "|r " .. cls, DIM_HEX .. CUI.L("No") .. "|r " .. cls
             iconTex = file and ("classicon-" .. file:lower())
         end
         local entry = SortKit.MenuItem(inRoles and roleG or miscG, inRoles and ry or my, "", function()
@@ -923,11 +924,11 @@ end
 
 -- results list order (saved as extraSortBy)
 mod.SORT_MODES = {
-    { key = "default", label = CludesUI.L("Default") },
-    { key = "high", label = CludesUI.L("Highest Score") },
-    { key = "low", label = CludesUI.L("Lowest Score") },
-    { key = "big", label = CludesUI.L("Largest Size") },
-    { key = "small", label = CludesUI.L("Lowest Size") },
+    { key = "default", label = CUI.L("Default") },
+    { key = "high", label = CUI.L("Highest Score") },
+    { key = "low", label = CUI.L("Lowest Score") },
+    { key = "big", label = CUI.L("Largest Size") },
+    { key = "small", label = CUI.L("Lowest Size") },
 }
 
 -- a menu row: label + dropdown
@@ -1013,7 +1014,7 @@ local function LayoutMisc(dropMenu, side)
         ChoiceItem(
             line,
             0,
-            { key = "extraSortBy", label = CludesUI.L("Sort By"), choice = mod.SORT_MODES },
+            { key = "extraSortBy", label = CUI.L("Sort By"), choice = mod.SORT_MODES },
             SortKit,
             true
         )

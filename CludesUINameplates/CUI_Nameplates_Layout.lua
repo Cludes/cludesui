@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Layout.lua
 --
@@ -13,12 +14,12 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs, type = ipairs, type
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 -- The core's table of the options page frame pool (CludesUI_PixelPerfect.lua
 -- makes it, the options addon fills it): the builders the options preview shares
 -- with the plates create through it, so a preview frame is handed back to the
 -- preview's next build. A plate's parent is no pool host: a plain CreateFrame.
-local Pool = CludesUI._Pool
+local Pool = CUI._Pool
 local UnitIsPlayer = UnitIsPlayer
 local GetTime = GetTime
 
@@ -60,7 +61,7 @@ mod.GetDebuffTextColor = GetDebuffTextColor
 -- order: a view over the shared styles without Shape Glow (1 Pixel, 2 Action
 -- Button, 3 Auto-Cast, 4 GCD, 5 Modern, 6 Classic). scale/previewScale are
 -- nameplate preview-only fields layered over the shared entries.
-mod.NP_GLOW_VIEW = CludesUI.Glows.MakeView({ 1, 2, 3, 5, 6, 7 }, {
+mod.NP_GLOW_VIEW = CUI.Glows.MakeView({ 1, 2, 3, 5, 6, 7 }, {
     [2] = { scale = 1.36, previewScale = 1.28 },
     [4] = { scale = 1.47, previewScale = 1.47 },
     [5] = { scale = 1.34, previewScale = 1.34 },
@@ -70,7 +71,7 @@ local PANDEMIC_GLOW_STYLES = mod.NP_GLOW_VIEW.list
 mod.PANDEMIC_GLOW_STYLES = PANDEMIC_GLOW_STYLES
 -- Exposed cross-addon (e.g. CDM "Apply Pandemic Glow to all" sync) so styles translate by NAME,
 -- never raw index: this list omits "Custom Shape Glow", so the same index differs per side.
-if CludesUI then CludesUI.NameplatePandemicGlowStyles = PANDEMIC_GLOW_STYLES end
+if CUI then CUI.NameplatePandemicGlowStyles = PANDEMIC_GLOW_STYLES end
 
 -- PANDEMIC_GLOW_STYLES index -> shared CludesUI.Glows.STYLES index.
 mod.NP_TO_SHARED_GLOW = mod.NP_GLOW_VIEW.toShared
@@ -85,10 +86,10 @@ local function PandemicStyleOf(np)
     local pick = np and np.pandemicGlowPick
     if type(pick) == "number" then return pick end
     local old = np and np.pandemicGlowStyle
-    if type(old) ~= "number" or old == 1 then return CludesUI.Glows.PANDEMIC_BORDER end
+    if type(old) ~= "number" or old == 1 then return CUI.Glows.PANDEMIC_BORDER end
     return old
 end
-CludesUI.NameplatePandemicStyle = PandemicStyleOf
+CUI.NameplatePandemicStyle = PandemicStyleOf
 local function GetPandemicGlowStyle() return PandemicStyleOf(p) end
 mod.GetPandemicGlowStyle = GetPandemicGlowStyle
 local function GetPandemicGlowLines() return (p and p.pandemicGlowLines) or defaultSet.pandemicGlowLines end
@@ -111,14 +112,14 @@ end
 function mod.GetPandemicGlowSpec(result)
     result = result or {}
     local position = GetPandemicGlowStyle()
-    if position == CludesUI.Glows.PANDEMIC_BORDER then
+    if position == CUI.Glows.PANDEMIC_BORDER then
         result.style = position
         result.r, result.g, result.b = nil, nil, nil
     else
         result.style = mod.NP_TO_SHARED_GLOW[position] or 1
         local color = (p and p.pandemicGlowColor) or defaultSet.pandemicGlowColor
         result.r, result.g, result.b =
-            CludesUI.Glows.ResolveColor((p and p.pandemicGlowMode) or "custom", color.r, color.g, color.b)
+            CUI.Glows.ResolveColor((p and p.pandemicGlowMode) or "custom", color.r, color.g, color.b)
     end
     result.lines = GetPandemicGlowLines()
     result.thickness = GetPandemicGlowThickness()
@@ -133,7 +134,7 @@ end
 -- asks what the PLAYER knows, never what an aura is, so it keeps working in
 -- restricted content.
 do
-    local AKd = CludesUI.AuraKit
+    local AKd = CUI.AuraKit
     -- Capability picks the buff row's candidate filter, so a change has to
     -- rebuild the containers, not merely repaint them.
     AKd.OnOffensiveDispelChange(function()
@@ -153,15 +154,15 @@ do
         local raw = p and p.dispelGlowPick
         if raw == nil then
             raw = p and p.dispelGlowStyle
-            if raw == nil or raw == 2 then return CludesUI.Glows.PANDEMIC_BORDER end
+            if raw == nil or raw == 2 then return CUI.Glows.PANDEMIC_BORDER end
         end
         -- Out-of-range picks read (and render) as Action Button Glow; Blizzard
         -- Border and Blizzard Pandemic Border sit outside the view.
         if
             type(raw) == "number"
             and (
-                raw == CludesUI.Glows.STEALABLE_BORDER
-                or raw == CludesUI.Glows.PANDEMIC_BORDER
+                raw == CUI.Glows.STEALABLE_BORDER
+                or raw == CUI.Glows.PANDEMIC_BORDER
                 or (raw >= 1 and raw <= #mod.NP_GLOW_VIEW.list)
             )
         then
@@ -192,7 +193,7 @@ do
         -- default look (gold). An explicit swatch pick is stored and honored.
         local color = p and p.dispelGlowColor
         local modeName = (p and p.dispelGlowColorMode) or (color and "custom" or "default")
-        return CludesUI.Glows.ResolveColor(modeName, color and color.r, color and color.g, color and color.b)
+        return CUI.Glows.ResolveColor(modeName, color and color.r, color and color.g, color and color.b)
     end
     -- Full render spec for the dispel glow (live purge glow and its preview).
     mod.GetDispelGlowSpec = function(dispelType, result)
@@ -201,10 +202,10 @@ do
         -- Blizzard Border sits outside the view and keeps Blizzard's own art
         -- until a colour is picked (ns.GetDispelBorderColor); Blizzard
         -- Pandemic Border is always drawn untinted.
-        if position == CludesUI.Glows.STEALABLE_BORDER then
+        if position == CUI.Glows.STEALABLE_BORDER then
             result.style = position
             result.r, result.g, result.b = mod.GetDispelBorderColor(dispelType)
-        elseif position == CludesUI.Glows.PANDEMIC_BORDER then
+        elseif position == CUI.Glows.PANDEMIC_BORDER then
             result.style = position
             result.r, result.g, result.b = nil, nil, nil
         else
@@ -659,10 +660,10 @@ do
             local k, frame = SK[s], PARTS[s]
             local nm, lv = "%s", "%s"
             if saved[k.nameOn] == true then
-                nm = CludesUI.HexColor(mod.NP_SlotPartColor(s, "name", saved)) .. "%s|r"
+                nm = CUI.HexColor(mod.NP_SlotPartColor(s, "name", saved)) .. "%s|r"
             end
             if saved[k.lvlOn] == true then
-                lv = CludesUI.HexColor(mod.NP_SlotPartColor(s, "level", saved)) .. "%s|r"
+                lv = CUI.HexColor(mod.NP_SlotPartColor(s, "level", saved)) .. "%s|r"
             end
             frame.ln = lv .. " | " .. nm
             frame.nl = nm .. " | " .. lv
@@ -674,8 +675,8 @@ do
     -- options preview's stand-in mob, ranked as attackable like a hostile mob.
     -- friendly: rank friendly units by difficulty whatever levelDifficultyColorFriendly says.
     local function LevelRGB(unitToken, level, friendly)
-        if level < 0 then return CludesUI.GetLevelDifficultyColor(-1) end
-        return CludesUI.GetLevelColor(
+        if level < 0 then return CUI.GetLevelDifficultyColor(-1) end
+        return CUI.GetLevelColor(
             unitToken,
             level,
             friendly or unitToken == "player" or (p and p.levelDifficultyColorFriendly)
@@ -696,12 +697,12 @@ do
         local level = UnitEffectiveLevel(unitToken)
         if type(level) ~= "number" or (issecretvalue and issecretvalue(level)) then return "??" end
         -- Forever: a hidden player level the PvP feature knows.
-        if level < 0 and CludesUI.KnownHiddenLevel then
-            level = CludesUI.KnownHiddenLevel(unitToken) or level
+        if level < 0 and CUI.KnownHiddenLevel then
+            level = CUI.KnownHiddenLevel(unitToken) or level
         end
         local txt = level < 0 and "??" or tostring(level)
         if color == "diff" or color == "diffAll" then
-            return CludesUI.ColorText(txt, LevelRGB(unitToken, level, color == "diffAll"))
+            return CUI.ColorText(txt, LevelRGB(unitToken, level, color == "diffAll"))
         end
         return txt
     end
@@ -739,11 +740,11 @@ do
             textSlotTopLeft = "textSlotTopLeftNameFormat",
             textSlotTopRight = "textSlotTopRightNameFormat",
         }
-        local short = CludesUI.ShortName
+        local short = CUI.ShortName
         function mod.NP_FormatName(name, slotName, unitToken)
             local layoutKey = slotName and NAME_FORMAT_KEYS[slotName]
             local modeName = layoutKey and p and p[layoutKey]
-            if modeName then modeName = CludesUI.UnitNameFormat(modeName, unitToken) end
+            if modeName then modeName = CUI.UnitNameFormat(modeName, unitToken) end
             if modeName then return short(name, modeName) end
             return name
         end
@@ -774,7 +775,7 @@ mod.EstimateHealthTextWidth = EstimateHealthTextWidth
 -- and hand values only to format setters: health, absorb and names may be secret. A nil unit
 -- is the options preview (the schema samples). do/end + ns funcs: no new locals (cap).
 do
-    local TT, scrollFrame, IsZeroValue = CludesUI.TextTags, string.format, CludesUI.IsZeroValue
+    local TT, scrollFrame, IsZeroValue = CUI.TextTags, string.format, CUI.IsZeroValue
     local FS_KEY, FORMAT_KEY = {}, {}
     for i = 1, #textSlots do
         local text = textSlots[i]
@@ -784,7 +785,7 @@ do
     mod.NP_CustomFSKey = FS_KEY
     -- The unit's name as the name slot writes it (the slot's Name Format).
     local function Name(unit, slotName)
-        local name = CludesUI.WithSurname(UnitName(unit))
+        local name = CUI.WithSurname(UnitName(unit))
         if type(name) == "nil" then return "" end
         return mod.NP_FormatName(name, slotName, unit)
     end
@@ -793,10 +794,10 @@ do
     -- your first name alone (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
     local function Shaped(modeName)
         return function(unit)
-            if modeName == "last" and CludesUI.OwnSurnameHidden(unit) then return "" end
-            local name = CludesUI.WithSurname(UnitName(unit))
+            if modeName == "last" and CUI.OwnSurnameHidden(unit) then return "" end
+            local name = CUI.WithSurname(UnitName(unit))
             if type(name) == "nil" then return "" end
-            return CludesUI.ShortName(name, modeName)
+            return CUI.ShortName(name, modeName)
         end
     end
     local function TargetShaped(modeName)
@@ -813,11 +814,11 @@ do
     end
     local P = {
         ["hp"] = function(unit)
-            if UnitIsDeadOrGhost(unit) then return CludesUI.L("DEAD") end
+            if UnitIsDeadOrGhost(unit) then return CUI.L("DEAD") end
             return scrollFrame("%d", UnitHealth(unit) or 0)
         end,
         ["hp:abr"] = function(unit)
-            if UnitIsDeadOrGhost(unit) then return CludesUI.L("DEAD") end
+            if UnitIsDeadOrGhost(unit) then return CUI.L("DEAD") end
             return mod.AbbreviateValue(UnitHealth(unit) or 0, "health")
         end,
         ["hp:max"] = function(unit) return scrollFrame("%d", UnitHealthMax(unit) or 0) end,
@@ -1343,7 +1344,7 @@ function mod.GetIconBorderEnabled(kind)
     return not val
 end
 function mod.ApplyFrameIconBorder(widget, enabled, adjustIconInset)
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     if not (widget and Pix and Pix.GetBorders and Pix.GetBorders(widget)) then return end
     if enabled then
         if Pix.ShowBorder then Pix.ShowBorder(widget) end
@@ -1373,7 +1374,7 @@ function mod.NP_CanShowCastIconSeparator(saved)
     end
     local texture = saved.customBorderTexture or defaultSet.customBorderTexture
     return (saved.customBorderSize or defaultSet.customBorderSize) > 0
-        and (texture == "solid" or texture == "" or CludesUI.GetBorderCompanion(texture, "sepV") ~= nil)
+        and (texture == "solid" or texture == "" or CUI.GetBorderCompanion(texture, "sepV") ~= nil)
 end
 
 -- Shared by live plates and the preview; the cast bar owns this lazy divider. It
@@ -1391,7 +1392,7 @@ function mod.NP_ApplyCastIconSeparator(cast, iconTex, saved, customOn, strata)
     then
         if seamTex and seamTex:IsShown() then
             seamTex:Hide()
-            CludesUI.RegisterPxReapply(seamTex, nil)
+            CUI.RegisterPxReapply(seamTex, nil)
         end
         return
     end
@@ -1406,7 +1407,7 @@ function mod.NP_ApplyCastIconSeparator(cast, iconTex, saved, customOn, strata)
     local level = iconTex:GetFrameLevel() + 5
     local layoutKey = saved.customBorderTexture or defaultSet.customBorderTexture
     local size = saved.customBorderSize or defaultSet.customBorderSize
-    local px = CludesUI.BorderPx(saved.customBorderSizePx, size, layoutKey)
+    local px = CUI.BorderPx(saved.customBorderSizePx, size, layoutKey)
     local right = saved.castIconOnRight == true
     local color = saved.customBorderColor or defaultSet.customBorderColor
     local a = saved.customBorderAlpha or defaultSet.customBorderAlpha
@@ -1435,14 +1436,14 @@ function mod.NP_ApplyCastIconSeparator(cast, iconTex, saved, customOn, strata)
     seamTex._tex:SetVertexColor(color.r, color.g, color.b, a)
     mod.NP_LayoutCastIconSeparator(seamTex)
     seamTex:Show()
-    CludesUI.RegisterPxReapply(seamTex, strata and mod.NP_LayoutCastIconSeparator or nil)
+    CUI.RegisterPxReapply(seamTex, strata and mod.NP_LayoutCastIconSeparator or nil)
 end
 
 function mod.NP_LayoutCastIconSeparator(seamTex)
     local t, es = seamTex._tex, seamTex:GetEffectiveScale()
     seamTex._es = es
-    if CludesUI.GetBorderCompanion(seamTex._key, "sepV") then
-        CludesUI.PlaceBorderDividerV(
+    if CUI.GetBorderCompanion(seamTex._key, "sepV") then
+        CUI.PlaceBorderDividerV(
             t,
             seamTex,
             seamTex._right,
@@ -1500,7 +1501,7 @@ function mod.ApplyCastIconBorder(backing)
         )
     then
         if barFrame and barFrame:IsShown() then
-            CludesUI.ApplyBorderStyle(barFrame, 0)
+            CUI.ApplyBorderStyle(barFrame, 0)
             barFrame:Hide()
         end
         mod.ApplyFrameIconBorder(iconTex, mod.GetIconBorderEnabled("cast"))
@@ -1515,7 +1516,7 @@ function mod.ApplyCastIconBorder(backing)
     end
     local texture = p.customBorderTexture or defaultSet.customBorderTexture
     local sz = p.customBorderSize or defaultSet.customBorderSize
-    local px = CludesUI.BorderPx(p.customBorderSizePx, sz, texture)
+    local px = CUI.BorderPx(p.customBorderSizePx, sz, texture)
     local red, green, blue, a
     if p.castIconTargetBorder and backing._isTarget and mod.GetTargetGlowBorderColor() then
         local color = mod.GetTargetBorderColor()
@@ -1545,7 +1546,7 @@ function mod.ApplyCastIconBorder(backing)
     then
         barFrame:SetFrameStrata(strata)
         barFrame:SetFrameLevel(level)
-        CludesUI.ApplyBorderStyle(
+        CUI.ApplyBorderStyle(
             barFrame,
             sz,
             red,
@@ -1568,7 +1569,7 @@ function mod.ApplyCastIconBorder(backing)
         barFrame._sTex, barFrame._sSz, barFrame._sPx = texture, sz, px
         barFrame._sOX, barFrame._sOY, barFrame._sSX, barFrame._sSY = offX, offY, shX, shY
     else
-        CludesUI.SetBorderStyleColor(barFrame, red, green, blue, a)
+        CUI.SetBorderStyleColor(barFrame, red, green, blue, a)
     end
 end
 local function GetBorderColor()
@@ -1634,7 +1635,7 @@ do
     -------------------------------------------------------------------------------
     --  Glow engines from shared CludesUI_Glows.lua; aliases for the wrapper below.
     -------------------------------------------------------------------------------
-    local _G_Glows = CludesUI.Glows
+    local _G_Glows = CUI.Glows
     local StartProceduralAnts = _G_Glows.StartProceduralAnts
     local StopProceduralAnts = _G_Glows.StopProceduralAnts
     local StartButtonGlow = _G_Glows.StartButtonGlow

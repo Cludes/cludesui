@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_CDM_Spec.lua
 --
@@ -55,7 +56,7 @@ local function ComputeLiveSpecKey()
 end
 mod.ComputeLiveSpecKey = ComputeLiveSpecKey
 
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     -- WoW Forever reports one spec per class. The store key is the Forever
     -- spec's own key if the ACTIVE profile's store holds it (the layout the
     -- client has been showing), else the first retail spec of the class with
@@ -75,7 +76,7 @@ if CludesUI.IS_FOREVER then
         local specProfiles = mod.GetActiveSpecProfiles()
         local m = mod._fvSpecKeyMemo
         if m and m.root == specProfiles and m.raw == specID then return m.key end
-        local key = tostring(CludesUI.SpecFor(specID, CludesUI.SpecHasStringEntry, specProfiles))
+        local key = tostring(CUI.SpecFor(specID, CUI.SpecHasStringEntry, specProfiles))
         mod._fvSpecKeyMemo = { root = specProfiles, raw = specID, key = key }
         return key
     end
@@ -95,7 +96,7 @@ end
 -- used for spec storage.
 function mod.GetCharKey()
     local saved = CludesUIDB
-    return CludesUI.CharKey(
+    return CUI.CharKey(
         "-",
         saved and saved.cdmCachedBarSizes,
         saved and saved.cdmRepopulatePending,
@@ -220,7 +221,7 @@ local function ResolveChildSpellID(childFrame)
     return nil
 end
 
-local DeepCopy = CludesUI.Lite.DeepCopy
+local DeepCopy = CUI.Lite.DeepCopy
 
 -------------------------------------------------------------------------------
 --  Cached bar sizes -- cosmetic hint for pre-sizing frames on login so anchored
@@ -302,7 +303,7 @@ local function ProcessSpecChange(newSpecKey)
     end
 
     -- Signal the profile system that CDM's spec rebuild is complete: clears _specProfileSwitching and re-applies width/height matches.
-    CludesUI.OnSpecSwitchComplete()
+    CUI.OnSpecSwitchComplete()
 
     -- Refresh the CDM options pages now that _cachedSpecKey is swapped: their own
     -- PLAYER_SPECIALIZATION_CHANGED watcher can fire before SPELLS_CHANGED, so driving it

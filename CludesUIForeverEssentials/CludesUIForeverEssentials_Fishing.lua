@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Fishing.lua  (WoW Forever only)
 --  Fishing helpers, each its own setting (all off by default):
@@ -149,7 +150,7 @@ local function Hold(set, cvars)
         if
             current ~= nil
             and current ~= wanted
-            and CludesUI.HoldCVar(name, wanted, "CludesUIForeverEssentials")
+            and CUI.HoldCVar(name, wanted, "CludesUIForeverEssentials")
         then
             was[name] = current
         end
@@ -162,7 +163,7 @@ local function Release(set)
     local was = held and held[set]
     if not was then return end
     for name, value in pairs(was) do
-        CludesUI.ReleaseCVar(name, value, "CludesUIForeverEssentials")
+        CUI.ReleaseCVar(name, value, "CludesUIForeverEssentials")
     end
     held[set] = nil
 end
@@ -176,13 +177,13 @@ local INDICATOR_SIZE = 40
 local ICON = "Interface\\Icons\\Trade_Fishing" -- the Fishing profession
 
 local function IndicatorTip()
-    if reeling then return CludesUI.Lf("Bobber found: %s reels in", GetBindingText(F.Get("key"))) end
-    return CludesUI.L("Bobber not found: keep it on screen, cast again, or right-click it to reel in.")
+    if reeling then return CUI.Lf("Bobber found: %s reels in", GetBindingText(F.Get("key"))) end
+    return CUI.L("Bobber not found: keep it on screen, cast again, or right-click it to reel in.")
 end
 
 local function BuildIndicator()
     if indicator then return end
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     indicator = CreateFrame("Frame", nil, UIParent)
     indicator:SetSize(INDICATOR_SIZE, INDICATOR_SIZE)
     indicator:SetFrameStrata("HIGH")
@@ -202,8 +203,8 @@ local function BuildIndicator()
     key:SetWidth(INDICATOR_SIZE - 4)
     key:SetWordWrap(false)
     indicator.key = key
-    indicator:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, IndicatorTip()) end)
-    indicator:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+    indicator:SetScript("OnEnter", function(self) CUI.ShowWidgetTooltip(self, IndicatorTip()) end)
+    indicator:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
     F.Place(indicator)
 end
 
@@ -217,11 +218,11 @@ local function UpdateIndicator()
     if reeling then
         red, green, blue = 0.2, 1, 0.3
     end
-    CludesUI.PP.SetBorderColor(indicator, red, green, blue, 1)
+    CUI.PP.SetBorderColor(indicator, red, green, blue, 1)
     indicator.icon:SetDesaturated(not reeling)
     indicator.key:SetText(GetBindingText(F.Get("key"), true))
     indicator:Show()
-    if indicator:IsMouseOver() then CludesUI.ShowWidgetTooltip(indicator, IndicatorTip()) end
+    if indicator:IsMouseOver() then CUI.ShowWidgetTooltip(indicator, IndicatorTip()) end
 end
 
 -------------------------------------------------------------------------------
@@ -232,7 +233,7 @@ end
 local function UpdateCastButton(viaClick)
     if not castButton then return end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("FishingButton", UpdateCastButton)
+        CUI.CombatQueue.Defer("FishingButton", UpdateCastButton)
         return
     end
     if not PoleInHand() then
@@ -258,7 +259,7 @@ end
 local function BindCast()
     if not castButton then return end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("FishingBind", BindCast)
+        CUI.CombatQueue.Defer("FishingBind", BindCast)
         return
     end
     ClearOverrideBindings(castButton)
@@ -338,7 +339,7 @@ end
 -- A second right-click on the world soon after the first: bound to the
 -- button just for this click.
 local function OnWorldMouseDown(_, btnFrame)
-    if btnFrame ~= "RightButton" or not F.Get("doubleClick") or CludesUI.PadGamepadUI() then return end
+    if btnFrame ~= "RightButton" or not F.Get("doubleClick") or CUI.PadGamepadUI() then return end
     local nowTime = GetTime()
     local double = nowTime - lastRightClick < DOUBLE_CLICK_DELAY
     lastRightClick = double and 0 or nowTime
@@ -412,7 +413,7 @@ local FEATURE_EVENTS = { "SPELLS_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_LEAV
 local booted = false
 local function Apply()
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("Fishing", Apply)
+        CUI.CombatQueue.Defer("Fishing", Apply)
         return
     end
     if not booted then
@@ -443,7 +444,7 @@ local function Apply()
     eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
     -- Never under the Gamepad interface style: a hook on a Blizzard frame
     -- there can run inside its secure navigation.
-    if F.Get("doubleClick") and not worldHooked and not CludesUI.PadGamepadUI() then
+    if F.Get("doubleClick") and not worldHooked and not CUI.PadGamepadUI() then
         worldHooked = true
         WorldFrame:HookScript("OnMouseDown", OnWorldMouseDown)
     end
@@ -452,7 +453,7 @@ local function Apply()
 end
 
 -- Options-page entry points.
-CludesUI._Fishing = {
+CUI._Fishing = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Apply,

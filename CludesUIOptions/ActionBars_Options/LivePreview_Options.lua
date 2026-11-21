@@ -1,17 +1,18 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  ActionBars_Options\LivePreview_Options.lua
 --  Action Bars options: the live preview in the Bar Display content header
 --  (BuildLivePreview). Definitions only; the shared helpers come from
 --  ns._ABO_OptEnv (filled by CUI_ActionBars_Options.lua).
 -------------------------------------------------------------------------------
-local mod = CludesUI._ModuleNS["CludesUIActionBars"]
+local mod = CUI._ModuleNS["CludesUIActionBars"]
 if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): the
 -- preview is built on the header's kept root, so its frames are reset and
 -- dressed again by the next build instead of made anew; on any other parent
 -- this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 --- Build (or rebuild for a different bar) the live preview frame. Shows only
 --- Edit-Mode-enabled buttons (numButtonsShowable) at the first real button's
@@ -35,7 +36,7 @@ local function BuildLivePreview(hostFrame, yOff)
         return 0
     end
 
-    local PAD = CludesUI.CONTENT_PAD
+    local PAD = CUI.CONTENT_PAD
     local maxBtns = barInfo.count -- always 12, used for pre-allocation
 
     -- Our custom bar frame (may be nil during first build before bars are created)
@@ -78,7 +79,7 @@ local function BuildLivePreview(hostFrame, yOff)
     scrollFrame:SetScrollChild(popFrame)
     scrollFrame:EnableMouseWheel(true)
 
-    local UpdatePVThumb = CludesUI.AttachSmoothScrollbar(scrollFrame, {
+    local UpdatePVThumb = CUI.AttachSmoothScrollbar(scrollFrame, {
         step = 40,
         thumbMin = 20,
         trackParent = wrapper,
@@ -94,22 +95,22 @@ local function BuildLivePreview(hostFrame, yOff)
     popFrame._PREVIEW_MAX_H = PREVIEW_MAX_H
     popFrame._updatePVThumb = UpdatePVThumb
 
-    local function Snap(val) return CludesUI.PP.SnapForES(val, popFrame:GetEffectiveScale()) end
+    local function Snap(val) return CUI.PP.SnapForES(val, popFrame:GetEffectiveScale()) end
 
     -- Snap to whole physical pixels at the preview's effective scale (same
     -- approach as the border system).
     local function SnapS(val)
         local es = popFrame:GetEffectiveScale()
-        return CludesUI.PP.SnapForES(val, es)
+        return CUI.PP.SnapForES(val, es)
     end
 
     -- Disable WoW's automatic pixel snapping on a texture
-    local UnsnapTex = CludesUI.PP.DisablePixelSnap
+    local UnsnapTex = CUI.PP.DisablePixelSnap
 
     -- Pre-create all 12 per-button sub-frames/textures; show/hide by
     -- numButtonsShowable --------------------------------------------------
     local buttons = {}
-    local DEFAULT_FONT = (CludesUI.GetFontPath("actionBars"))
+    local DEFAULT_FONT = (CUI.GetFontPath("actionBars"))
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
     for i = 1, maxBtns do
@@ -136,7 +137,7 @@ local function BuildLivePreview(hostFrame, yOff)
 
         -- Keybind text (top-right, mirrors real button HotKey position)
         local keybindFS = bf:CreateFontString(nil, "OVERLAY")
-        CludesUI.ApplyIconTextFont(keybindFS, DEFAULT_FONT, 12, "actionBars")
+        CUI.ApplyIconTextFont(keybindFS, DEFAULT_FONT, 12, "actionBars")
         keybindFS:SetTextColor(1, 1, 1)
         keybindFS:SetPoint("TOPRIGHT", bf, "TOPRIGHT", -1, -3)
         keybindFS:SetPoint("TOPLEFT", bf, "TOPLEFT", 4, -3)
@@ -146,15 +147,15 @@ local function BuildLivePreview(hostFrame, yOff)
 
         -- Count / charges text (bottom-right, mirrors real button Count position)
         local countFS = bf:CreateFontString(nil, "OVERLAY")
-        CludesUI.ApplyIconTextFont(countFS, DEFAULT_FONT, 12, "actionBars")
+        CUI.ApplyIconTextFont(countFS, DEFAULT_FONT, 12, "actionBars")
         countFS:SetTextColor(1, 1, 1)
         countFS:SetPoint("BOTTOMRIGHT", bf, "BOTTOMRIGHT", -1, 4)
         countFS:SetText("")
 
         -- Macro name text (bottom-center, mirrors real button Name position)
         local macroFS = bf:CreateFontString(nil, "OVERLAY")
-        CludesUI.PrimeFontShadow(macroFS, false)
-        macroFS:SetFont(DEFAULT_FONT, 12, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+        CUI.PrimeFontShadow(macroFS, false)
+        macroFS:SetFont(DEFAULT_FONT, 12, (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
         macroFS:SetTextColor(1, 1, 1)
         macroFS:SetPoint("BOTTOMLEFT", bf, "BOTTOMLEFT", 1, 4)
         macroFS:SetPoint("BOTTOMRIGHT", bf, "BOTTOMRIGHT", -1, 4)
@@ -309,13 +310,13 @@ local function BuildLivePreview(hostFrame, yOff)
         local square = ABAR.db.profile.squareIcons
         -- Stock styles: stock button art (see ApplyBlizzPreviewButton);
         -- shapes, zoom and CUI borders do not apply, as on the live bars.
-        local abStyle = CludesUI.BlizzStyle.Active("actionbars")
+        local abStyle = CUI.BlizzStyle.Active("actionbars")
         local blizzAB = abStyle ~= "cui"
         local classicAB = abStyle == "classic"
         local hideKB = prefs.hideKeybind
 
         -- Font path (global setting)
-        local fontFile = (CludesUI.GetFontPath("actionBars")) or DEFAULT_FONT
+        local fontFile = (CUI.GetFontPath("actionBars")) or DEFAULT_FONT
 
         local kbSize = prefs.keybindFontSize or 12
         local kbColor = prefs.keybindFontColor or { r = 1, g = 1, b = 1 }
@@ -586,7 +587,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             end
                             -- The pixels the live strips draw (SnapBorderTextures): the exact size
                             -- when set, else the step, as whole pixels at this button's scale.
-                            local onePx = CludesUI.PP.perfect / bf:GetEffectiveScale()
+                            local onePx = CUI.PP.perfect / bf:GetEffectiveScale()
                             local sz = math.max(onePx, math.floor((brdPx or brdSize) + 0.5) * onePx)
 
                             bT:SetColorTexture(cr, cg, checkBtn, ca)
@@ -637,8 +638,8 @@ local function BuildLivePreview(hostFrame, yOff)
                             -- size as whole pixels at UIParent scale, else the step's edge. ratio
                             -- cancels any scale between the preview button and UIParent so the
                             -- edge is the game's size (1 today: the preview runs at UIParent scale).
-                            local gamePP = CludesUI.PP
-                            local EDGE_MAP = CludesUI.BORDER_EDGE_MAP
+                            local gamePP = CUI.PP
+                            local EDGE_MAP = CUI.BORDER_EDGE_MAP
                             local uiES = UIParent:GetEffectiveScale()
                             local pvES = bf:GetEffectiveScale()
                             local ratio = (pvES > 0.01 and uiES > 0) and (uiES / pvES) or 1
@@ -650,7 +651,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             end
                             local thKey = prefs.borderThickness or "thin"
                             local dox, doy, dsx, dsy =
-                                CludesUI.GetBorderDefaults("actionbars", brdTexKey, thKey)
+                                CUI.GetBorderDefaults("actionbars", brdTexKey, thKey)
                             if brdPx then
                                 -- The step's defaults follow the exact edge (the user's own offsets stay).
                                 local f = (brdPx * gamePP.mult) / (EDGE_MAP[brdSize] or EDGE_MAP[1])
@@ -665,8 +666,8 @@ local function BuildLivePreview(hostFrame, yOff)
                             -- Whole pixels at the preview's own scale, as ApplyBorderStyle snaps the live anchors.
                             local snapES = (pvES > 0.01) and pvES or uiES
                             local offX, offY
-                            if CludesUI.BorderTextureUsesScaleOffset(brdTexKey) then
-                                local half = CludesUI.BorderHalfEdge(brdTexKey, edgeSize, snapES)
+                            if CUI.BorderTextureUsesScaleOffset(brdTexKey) then
+                                local half = CUI.BorderHalfEdge(brdTexKey, edgeSize, snapES)
                                 offX = half + adjX
                                 offY = half + adjY
                             else
@@ -685,7 +686,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             else
                                 bdPv:SetFrameLevel(bf:GetFrameLevel() + 2)
                             end
-                            local texPath = CludesUI.ResolveBorderTexture(brdTexKey)
+                            local texPath = CUI.ResolveBorderTexture(brdTexKey)
                             if texPath then
                                 bdPv:SetBackdrop({
                                     edgeFile = texPath,
@@ -767,7 +768,7 @@ local function BuildLivePreview(hostFrame, yOff)
                                 record.shapeMask:SetAllPoints(bf)
                             end
                             -- Expand texcoords to fill mask opening
-                            local SHAPE_INSETS = CludesUI.SHAPE_INSETS
+                            local SHAPE_INSETS = CUI.SHAPE_INSETS
                             local insetPx = SHAPE_INSETS[btnShape] or 17
                             local visRatio = (128 - 2 * insetPx) / 128
                             local expand = ((1 / visRatio) - 1) * 0.5
@@ -835,7 +836,7 @@ local function BuildLivePreview(hostFrame, yOff)
                         end
                         keybindFS:SetText(hkText)
                     end
-                    CludesUI.ApplyIconTextFont(keybindFS, fontFile, scaledKBSize, "actionBars")
+                    CUI.ApplyIconTextFont(keybindFS, fontFile, scaledKBSize, "actionBars")
                     keybindFS:SetTextColor(kbColor.r, kbColor.g, kbColor.b)
                     local kbOX = (prefs.keybindOffsetX or 0) * totalScale
                     local kbOY = (prefs.keybindOffsetY or 0) * totalScale
@@ -870,7 +871,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             countFS:SetAlpha(1)
                         end
                     end
-                    CludesUI.ApplyIconTextFont(countFS, fontFile, scaledCTSize, "actionBars")
+                    CUI.ApplyIconTextFont(countFS, fontFile, scaledCTSize, "actionBars")
                     countFS:SetTextColor(ctColor.r, ctColor.g, ctColor.b)
                     local ctOX = (prefs.countOffsetX or 0) * totalScale
                     local ctOY = (prefs.countOffsetY or 0) * totalScale
@@ -894,11 +895,11 @@ local function BuildLivePreview(hostFrame, yOff)
                             if realBtn and realBtn.Name then mcText = realBtn.Name:GetText() or "" end
                             macroFS:SetText(mcText)
                         end
-                        CludesUI.PrimeFontShadow(macroFS, false)
+                        CUI.PrimeFontShadow(macroFS, false)
                         macroFS:SetFont(
                             fontFile,
                             scaledMCSize,
-                            (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+                            (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
                         )
                         macroFS:SetTextColor(mcColor.r, mcColor.g, mcColor.b)
                         local mcOX = (prefs.macroOffsetX or 0) * totalScale
@@ -969,7 +970,7 @@ local function BuildLivePreview(hostFrame, yOff)
             pg.text:SetFont(
                 STANDARD_TEXT_FONT,
                 pgText,
-                (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+                (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
             pg.text:SetText(tostring(mod.EAB_VTABLE.GetActionBarPage() or 1))
             pg.up:SetSize(pgArrow, pgArrow)
@@ -1045,13 +1046,13 @@ local function BuildLivePreview(hostFrame, yOff)
             )
             previewBGBorder:ClearAllPoints()
             previewBGBorder:SetAllPoints(previewBG)
-            if CludesUI.ApplyBorderStyle then
+            if CUI.ApplyBorderStyle then
                 local bc = prefs.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
                 local thicknessKey = prefs.bgBorderThickness or "none"
                 local thickness = mod.BORDER_THICKNESS and mod.BORDER_THICKNESS[thicknessKey]
                 local borderSize = thickness and thickness.regular or 0
-                local bgPx = CludesUI.BorderPx(prefs.bgBorderThicknessPx, borderSize, prefs.bgBorderTexture)
-                CludesUI.ApplyBorderStyle(
+                local bgPx = CUI.BorderPx(prefs.bgBorderThicknessPx, borderSize, prefs.bgBorderTexture)
+                CUI.ApplyBorderStyle(
                     previewBGBorder,
                     borderSize,
                     bc.r,
@@ -1071,8 +1072,8 @@ local function BuildLivePreview(hostFrame, yOff)
             end
         else
             previewBG:Hide()
-            if CludesUI.ApplyBorderStyle then
-                CludesUI.ApplyBorderStyle(previewBGBorder, 0, 0, 0, 0, prefs.bgBorderTexture or "solid")
+            if CUI.ApplyBorderStyle then
+                CUI.ApplyBorderStyle(previewBGBorder, 0, 0, 0, 0, prefs.bgBorderTexture or "solid")
             else
                 previewBGBorder:Hide()
             end
@@ -1096,7 +1097,7 @@ local function BuildLivePreview(hostFrame, yOff)
     optionState.activePreview = popFrame
     -- This module's own header preview slot: other modules' header previews
     -- stay alive beside it and never answer for it.
-    CludesUI._abHeaderPreview = popFrame
+    CUI._abHeaderPreview = popFrame
     return popFrame._wrapper:GetHeight()
 end
 

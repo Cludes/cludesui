@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIQoL_ForeverStats.lua
 --  WoW Forever has none of retail's ratings, so its Secondary Stats block
@@ -11,7 +12,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 local _, mod = ...
 local floor = math.floor
 -- Label hues, shared with Forever Essentials' Simplified Stats.
-local HUE = CludesUI.FOREVER_STAT_HUES
+local HUE = CUI.FOREVER_STAT_HUES
 
 -- A sum or a scale is arithmetic, which a secret refuses: those getters
 -- hand back nil (drawn as "?") rather than error.
