@@ -375,16 +375,16 @@ local function BuildMainPage(page, hostFrame, yOffset)
         environ.growthValues, environ.KeepGrowthPerpendicular, environ.PP, environ.ReloadAndUpdate
     local groupGrowthValues, groupGrowthOrder, ReadGroupGrowth =
         environ.groupGrowthValues, environ.groupGrowthOrder, environ.ReadGroupGrowth
-    local SGet, SGetPx, SSet, SVal = environ.SGet, environ.SGetPx, environ.SSet, environ.SVal
+    local ReadSetting, SGetPx, WriteSetting, SettingOr = environ.SGet, environ.SGetPx, environ.SSet, environ.SVal
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(key, default)
-        return function() return SVal(key, default) end
+        return function() return SettingOr(key, default) end
     end
     -- Row setters over SSet: the key written with the row's value.
     local function SSetRow(key)
-        return function(value) SSet(key, value) end
+        return function(value) WriteSetting(key, value) end
     end
-    local SWrite, optionState = environ.SWrite, environ.optState
+    local StoreSetting, optionState = environ.SWrite, environ.optState
     local W = CUI.Widgets
     local _, hgt, heading
     local row
@@ -392,7 +392,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     -- Both Group Growth menus grey out the grid flow while groups are merged,
     -- where it would render as Right (ReadGroupGrowth).
     local function GridFlowOff(value)
-        if value == "DOWNRIGHT" and SVal("mergeGroups", false) then
+        if value == "DOWNRIGHT" and SettingOr("mergeGroups", false) then
             return CUI.DisabledTooltip("Merge Groups", "disabled")
         end
     end
@@ -406,7 +406,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     local CENTER_OFF_TIP = "This option is not available with the Down and then Right group growth."
     local function CenterBlocked(gg)
         if InCombatLockdown() then return true end
-        local _, eg = mod._RFEffectiveGrowth("DOWN", gg, SVal("mergeGroups", false))
+        local _, eg = mod._RFEffectiveGrowth("DOWN", gg, SettingOr("mergeGroups", false))
         return eg == "DOWNRIGHT"
     end
     local function CenterBlockedTip() return InCombatLockdown() and "Unavailable in combat" or CENTER_OFF_TIP end
@@ -464,7 +464,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     step = 1,
                     getValue = function()
                         local shade = db.profile.raidSizeOverrides
-                        return shade and shade[tier] and shade[tier].width or SVal("frameWidth", 72)
+                        return shade and shade[tier] and shade[tier].width or SettingOr("frameWidth", 72)
                     end,
                     setValue = function(value)
                         local ovs = mod._EnsureRaidSizeOverrides()
@@ -493,7 +493,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     step = 1,
                     getValue = function()
                         local shade = db.profile.raidSizeOverrides
-                        return shade and shade[tier] and shade[tier].height or SVal("frameHeight", 46)
+                        return shade and shade[tier] and shade[tier].height or SettingOr("frameHeight", 46)
                     end,
                     setValue = function(value)
                         local ovs = mod._EnsureRaidSizeOverrides()
@@ -723,7 +723,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                                     -- tier's effective Unit Growth kept perpendicular.
                                     local shade = EnsureTierOv()
                                     shade.groupGrowth = value
-                                    if SVal("mergeGroups", false) then
+                                    if SettingOr("mergeGroups", false) then
                                         local ovs = db.profile.raidSizeOverrides
                                         KeepGrowthPerpendicular(
                                             value,
@@ -780,7 +780,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                                 set = function(value)
                                     local shade = EnsureTierOv()
                                     shade.unitGrowth = value
-                                    if SVal("mergeGroups", false) then
+                                    if SettingOr("mergeGroups", false) then
                                         local ovs = db.profile.raidSizeOverrides
                                         KeepGrowthPerpendicular(
                                             value,
@@ -909,10 +909,10 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 arItems,
                 function(keyName)
                     -- Tracked Buffs defaults on, Indicators & Auras off.
-                    if keyName == "trackedBuffs" then return SVal(arKeyMap[keyName], true) end
-                    return SVal(arKeyMap[keyName], false)
+                    if keyName == "trackedBuffs" then return SettingOr(arKeyMap[keyName], true) end
+                    return SettingOr(arKeyMap[keyName], false)
                 end,
-                function(keyName, value) SSet(arKeyMap[keyName], value) end
+                function(keyName, value) WriteSetting(arKeyMap[keyName], value) end
             )
             Pix.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
             rightRegion._control = checkDrop
@@ -1027,20 +1027,20 @@ local function BuildMainPage(page, hostFrame, yOffset)
             text = "Border Style",
             values = bdrTexValues,
             order = bdrTexOrder,
-            getValue = function() return SGet("borderTexture") or "solid" end,
+            getValue = function() return ReadSetting("borderTexture") or "solid" end,
             setValue = function(value)
-                SWrite("borderTexture", value)
-                SWrite("borderTextureOffset", nil)
-                SWrite("borderTextureOffsetY", nil)
-                SWrite("borderTextureShiftX", nil)
-                SWrite("borderTextureShiftY", nil)
+                StoreSetting("borderTexture", value)
+                StoreSetting("borderTextureOffset", nil)
+                StoreSetting("borderTextureOffsetY", nil)
+                StoreSetting("borderTextureShiftX", nil)
+                StoreSetting("borderTextureShiftY", nil)
                 local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(value)
-                SWrite("borderColor", _bcol)
-                SWrite("borderBehind", _bbehind)
+                StoreSetting("borderColor", _bcol)
+                StoreSetting("borderBehind", _bbehind)
                 local defSz = CUI.GetBorderDefaultSize("unitframes", value)
-                if defSz then SWrite("borderSize", defSz) end
+                if defSz then StoreSetting("borderSize", defSz) end
                 -- A style pick returns the size to its step: clear a set exact size.
-                if SGetPx("borderSizePx", "borderSize") then SWrite("borderSizePx", false) end
+                if SGetPx("borderSizePx", "borderSize") then StoreSetting("borderSizePx", false) end
                 -- Rebuild: the offset row below exists only for a textured style.
                 RebuildAndReload()
                 CUI:RefreshPage(true)
@@ -1048,11 +1048,11 @@ local function BuildMainPage(page, hostFrame, yOffset)
         }),
         -- Exact pixel size: borderSize keeps its step, borderSizePx the pixels.
         StockGate(CUI.BorderPxSliderCfg({
-            getStep = function() return SVal("borderSize", 1) end,
-            setStep = function(value) SWrite("borderSize", value) end,
-            getTex = function() return SGet("borderTexture") or "solid" end,
+            getStep = function() return SettingOr("borderSize", 1) end,
+            setStep = function(value) StoreSetting("borderSize", value) end,
+            getTex = function() return ReadSetting("borderTexture") or "solid" end,
             getPx = function() return SGetPx("borderSizePx", "borderSize") end,
-            setPx = function(value) SWrite("borderSizePx", value) end,
+            setPx = function(value) StoreSetting("borderSizePx", value) end,
             apply = RebuildAndReload,
         }))
     )
@@ -1069,12 +1069,12 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     max = 10,
                     step = 1,
                     get = function()
-                        local value = SGet("borderTextureShiftX")
+                        local value = ReadSetting("borderTextureShiftX")
                         if value then return value end
                         local _, _, dsx = CUI.GetBorderDefaults(
                             "unitframes",
-                            SGet("borderTexture") or "solid",
-                            SVal("borderSize", 1)
+                            ReadSetting("borderTexture") or "solid",
+                            SettingOr("borderSize", 1)
                         )
                         return dsx
                     end,
@@ -1087,12 +1087,12 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     max = 10,
                     step = 1,
                     get = function()
-                        local value = SGet("borderTextureShiftY")
+                        local value = ReadSetting("borderTextureShiftY")
                         if value then return value end
                         local _, _, _, dsy = CUI.GetBorderDefaults(
                             "unitframes",
-                            SGet("borderTexture") or "solid",
-                            SVal("borderSize", 1)
+                            ReadSetting("borderTexture") or "solid",
+                            SettingOr("borderSize", 1)
                         )
                         return dsy
                     end,
@@ -1107,7 +1107,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             },
         })
         local function UpdateCogVis()
-            local texture = SGet("borderTexture") or "solid"
+            local texture = ReadSetting("borderTexture") or "solid"
             if texture == "solid" then
                 cogBtn:Hide()
             else
@@ -1125,7 +1125,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         CUI.BuildInlineCog(region, {
             title = "Corner Radius",
             tip = "Corner Radius",
-            disabled = function() return not CUI.RoundedStyleOK(SGet("borderTexture")) end,
+            disabled = function() return not CUI.RoundedStyleOK(ReadSetting("borderTexture")) end,
             disabledTooltip = "This option requires the Solid, Glow or Shadow border style.",
             rows = CUI.RoundedCornerRows({
                 {
@@ -1137,14 +1137,14 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     get = SValRow("cornerRadius", 0),
                     set = SSetRow("cornerRadius"),
                 },
-            }, function() return SGet("cornerMask") end, function(value) SSet("cornerMask", value) end),
+            }, function() return ReadSetting("cornerMask") end, function(value) WriteSetting("cornerMask", value) end),
         })
         local borderSwatch, updBorder = CUI.BuildColorSwatch(region, lvl, function()
-            local color = SGet("borderColor") or { r = 0, g = 0, b = 0 }
-            return color.r, color.g, color.b, SVal("borderAlpha", 1)
+            local color = ReadSetting("borderColor") or { r = 0, g = 0, b = 0 }
+            return color.r, color.g, color.b, SettingOr("borderAlpha", 1)
         end, function(red, green, blue, a)
-            SWrite("borderColor", { r = red, g = green, b = blue })
-            SWrite("borderAlpha", a)
+            StoreSetting("borderColor", { r = red, g = green, b = blue })
+            StoreSetting("borderAlpha", a)
             RebuildAndReload()
         end, true, 20)
         borderSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1160,16 +1160,16 @@ local function BuildMainPage(page, hostFrame, yOffset)
     -- size), and clears the override when a click lands on that default, so the
     -- per-texture defaults keep seeding. Reads and writes go through the party
     -- twin helpers exactly as the cog rows did.
-    local bdrTex = SGet("borderTexture")
+    local bdrTex = ReadSetting("borderTexture")
     if bdrTex and bdrTex ~= "" and bdrTex ~= "solid" then
         -- Party tab: a cleared party override inherits the RAID override, not the
         -- texture default, so a click on the default pins it explicitly whenever
         -- the raid holds one (else the party slider could never reach it). The pin
         -- is the default as drawn: scaled to a set exact size, as nil draws it.
         local function SetOffset(key, value, isY)
-            SWrite(key, value)
-            if value == nil and SGet(key) ~= nil then
-                local texture, step = SGet("borderTexture") or "solid", SVal("borderSize", 1)
+            StoreSetting(key, value)
+            if value == nil and ReadSetting(key) ~= nil then
+                local texture, step = ReadSetting("borderTexture") or "solid", SettingOr("borderSize", 1)
                 local dx, dy = CUI.GetBorderDefaults("unitframes", texture, step)
                 local px = CUI.BorderPx(SGetPx("borderSizePx", "borderSize"), step, texture)
                 if px then
@@ -1178,21 +1178,21 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     dx, dy = PPg.Snap(dx * f), PPg.Snap(dy * f)
                 end
                 if isY then
-                    SWrite(key, dy)
+                    StoreSetting(key, dy)
                 else
-                    SWrite(key, dx)
+                    StoreSetting(key, dx)
                 end
             end
         end
         local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
             addonKey = "unitframes",
-            getTex = function() return SGet("borderTexture") or "solid" end,
-            getStep = function() return SVal("borderSize", 1) end,
-            getSizeKey = function() return SVal("borderSize", 1) end,
+            getTex = function() return ReadSetting("borderTexture") or "solid" end,
+            getStep = function() return SettingOr("borderSize", 1) end,
+            getSizeKey = function() return SettingOr("borderSize", 1) end,
             getPx = function() return SGetPx("borderSizePx", "borderSize") end,
-            getX = function() return SGet("borderTextureOffset") end,
+            getX = function() return ReadSetting("borderTextureOffset") end,
             setX = function(value) SetOffset("borderTextureOffset", value, false) end,
-            getY = function() return SGet("borderTextureOffsetY") end,
+            getY = function() return ReadSetting("borderTextureOffsetY") end,
             setY = function(value) SetOffset("borderTextureOffsetY", value, true) end,
             apply = RebuildAndReload,
         })
@@ -1213,7 +1213,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         requireState = "disabled",
         getValue = SValRow("showWhenSolo", false),
         setValue = function(value)
-            SSet("showWhenSolo", value)
+            WriteSetting("showWhenSolo", value)
             if mod.UpdateVisibility then mod.UpdateVisibility() end
             if mod._UpdatePartyVisibility then mod._UpdatePartyVisibility() end
             CUI:RefreshPage()
@@ -1241,9 +1241,9 @@ local function BuildMainPage(page, hostFrame, yOffset)
             170,
             rightRegion:GetFrameLevel() + 2,
             hbItems,
-            function(keyName) return SVal(hbKeyMap[keyName], true) end,
+            function(keyName) return SettingOr(hbKeyMap[keyName], true) end,
             function(keyName, value)
-                SSet(hbKeyMap[keyName], value)
+                WriteSetting(hbKeyMap[keyName], value)
                 if UpdateHBSwatchVis then UpdateHBSwatchVis() end
             end
         )
@@ -1259,22 +1259,22 @@ local function BuildMainPage(page, hostFrame, yOffset)
             if (mod.RF_Stock and mod.RF_Stock()) or mod.RF_CompactOnTab(optionState._partyCtx) then
                 return "solid"
             end
-            return SGet("borderTexture") or "solid"
+            return ReadSetting("borderTexture") or "solid"
         end
         local hoverPx = CUI.BorderPxSliderCfg({
-            getStep = function() return SVal("hoverBorderSize", 1) end,
-            setStep = function(value) SWrite("hoverBorderSize", value) end,
+            getStep = function() return SettingOr("hoverBorderSize", 1) end,
+            setStep = function(value) StoreSetting("hoverBorderSize", value) end,
             getTex = HlTex,
             getPx = function() return SGetPx("hoverBorderSizePx", "hoverBorderSize") end,
-            setPx = function(value) SWrite("hoverBorderSizePx", value) end,
+            setPx = function(value) StoreSetting("hoverBorderSizePx", value) end,
             apply = RebuildAndReload,
         })
         local targetPx = CUI.BorderPxSliderCfg({
-            getStep = function() return SVal("targetBorderSize", 1) end,
-            setStep = function(value) SWrite("targetBorderSize", value) end,
+            getStep = function() return SettingOr("targetBorderSize", 1) end,
+            setStep = function(value) StoreSetting("targetBorderSize", value) end,
             getTex = HlTex,
             getPx = function() return SGetPx("targetBorderSizePx", "targetBorderSize") end,
-            setPx = function(value) SWrite("targetBorderSizePx", value) end,
+            setPx = function(value) StoreSetting("targetBorderSizePx", value) end,
             apply = RebuildAndReload,
         })
         local hlCog = CUI.BuildInlineCog(rightRegion, {
@@ -1310,11 +1310,11 @@ local function BuildMainPage(page, hostFrame, yOffset)
         -- Target to its left.
         local lvl = hoverBordersRow:GetFrameLevel() + 3
         local hoverSwatch, updHover = CUI.BuildColorSwatch(rightRegion, lvl, function()
-            local color = SGet("hoverBorderColor") or { r = 1, g = 1, b = 1 }
-            return color.r, color.g, color.b, SVal("hoverBorderAlpha", 1)
+            local color = ReadSetting("hoverBorderColor") or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b, SettingOr("hoverBorderAlpha", 1)
         end, function(red, green, blue, a)
-            SWrite("hoverBorderColor", { r = red, g = green, b = blue })
-            SWrite("hoverBorderAlpha", a)
+            StoreSetting("hoverBorderColor", { r = red, g = green, b = blue })
+            StoreSetting("hoverBorderAlpha", a)
             RebuildAndReload()
         end, true, 20)
         hoverSwatch:SetPoint("RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
@@ -1323,11 +1323,11 @@ local function BuildMainPage(page, hostFrame, yOffset)
         CUI.HoverTip(hoverSwatch, "Hover")
 
         local targetSwatch, updTarget = CUI.BuildColorSwatch(rightRegion, lvl, function()
-            local color = SGet("targetBorderColor") or { r = 1, g = 1, b = 1 }
-            return color.r, color.g, color.b, SVal("targetBorderAlpha", 1)
+            local color = ReadSetting("targetBorderColor") or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b, SettingOr("targetBorderAlpha", 1)
         end, function(red, green, blue, a)
-            SWrite("targetBorderColor", { r = red, g = green, b = blue })
-            SWrite("targetBorderAlpha", a)
+            StoreSetting("targetBorderColor", { r = red, g = green, b = blue })
+            StoreSetting("targetBorderAlpha", a)
             RebuildAndReload()
         end, true, 20)
         targetSwatch:SetPoint("RIGHT", rightRegion._lastInline, "LEFT", -8, 0)
@@ -1341,7 +1341,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         local function UpdateHLCogVis()
             -- Under a stock style the CludesUI border is stood down, so
             -- the hover border draws on its own at this size.
-            local bs = (mod.RF_Stock and mod.RF_Stock()) and 0 or SVal("borderSize", 1)
+            local bs = (mod.RF_Stock and mod.RF_Stock()) and 0 or SettingOr("borderSize", 1)
             if bs > 0 and not mod.RF_CompactOnTab(optionState._partyCtx) then
                 hlCog:Hide()
             else
@@ -1360,8 +1360,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
 
         -- Gray a swatch when its border state is off but keep it clickable so the color can be pre-set (matches the Heal Prediction swatch).
         UpdateHBSwatchVis = function()
-            hoverSwatch:SetAlpha(SVal("hoverBorderEnabled", true) and 1 or 0.3)
-            targetSwatch:SetAlpha((not targetBlocked and SVal("targetBorderEnabled", true)) and 1 or 0.3)
+            hoverSwatch:SetAlpha(SettingOr("hoverBorderEnabled", true) and 1 or 0.3)
+            targetSwatch:SetAlpha((not targetBlocked and SettingOr("targetBorderEnabled", true)) and 1 or 0.3)
         end
         CUI.RegisterWidgetRefresh(function()
             updHover()
@@ -1393,8 +1393,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
         for _, shade in pairs(overrides) do
             if type(shade) == "table" then
                 KeepGrowthPerpendicular(
-                    shade.groupGrowth or SVal("groupGrowth", "RIGHT"),
-                    function() return shade.unitGrowth or SVal("unitGrowth", "DOWN") end,
+                    shade.groupGrowth or SettingOr("groupGrowth", "RIGHT"),
+                    function() return shade.unitGrowth or SettingOr("unitGrowth", "DOWN") end,
                     function(nv) shade.unitGrowth = nv end
                 )
             end
@@ -1408,13 +1408,13 @@ local function BuildMainPage(page, hostFrame, yOffset)
         values = groupGrowthValues,
         order = groupGrowthOrder,
         disabledValues = GridFlowOff,
-        getValue = function() return ReadGroupGrowth(SVal("groupGrowth", "RIGHT")) end,
+        getValue = function() return ReadGroupGrowth(SettingOr("groupGrowth", "RIGHT")) end,
         setValue = function(value)
             db.profile.groupGrowth = value
-            if SVal("mergeGroups", false) then
+            if SettingOr("mergeGroups", false) then
                 KeepGrowthPerpendicular(
                     value,
-                    function() return SVal("unitGrowth", "DOWN") end,
+                    function() return SettingOr("unitGrowth", "DOWN") end,
                     function(nv) db.profile.unitGrowth = nv end
                 )
                 FixTierOverridesPerpendicular()
@@ -1431,10 +1431,10 @@ local function BuildMainPage(page, hostFrame, yOffset)
         getValue = SValRow("unitGrowth", "DOWN"),
         setValue = function(value)
             db.profile.unitGrowth = value
-            if SVal("mergeGroups", false) then
+            if SettingOr("mergeGroups", false) then
                 KeepGrowthPerpendicular(
                     value,
-                    function() return SVal("groupGrowth", "RIGHT") end,
+                    function() return SettingOr("groupGrowth", "RIGHT") end,
                     function(nv) db.profile.groupGrowth = nv end
                 )
                 FixTierOverridesPerpendicular()
@@ -1459,7 +1459,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     db.profile.groupGrowthCentered = value
                     RebuildAndReload()
                 end,
-                disabled = function() return CenterBlocked(SVal("groupGrowth", "RIGHT")) end,
+                disabled = function() return CenterBlocked(SettingOr("groupGrowth", "RIGHT")) end,
                 disabledTooltip = CenterBlockedTip,
                 rawTooltip = true,
             },
@@ -1482,13 +1482,13 @@ local function BuildMainPage(page, hostFrame, yOffset)
             values = { none = "Default", first = "First", last = "Last" },
             order = { "none", "first", "last" },
             getValue = function()
-                if SVal("showSelfLast", false) then return "last" end
-                if SVal("showSelfFirst", false) then return "first" end
+                if SettingOr("showSelfLast", false) then return "last" end
+                if SettingOr("showSelfFirst", false) then return "first" end
                 return "none"
             end,
             setValue = function(value)
-                SSet("showSelfFirst", value == "first")
-                SSet("showSelfLast", value == "last")
+                WriteSetting("showSelfFirst", value == "first")
+                WriteSetting("showSelfLast", value == "last")
                 CUI:RefreshPage()
             end,
         })
@@ -1497,9 +1497,9 @@ local function BuildMainPage(page, hostFrame, yOffset)
         -- Swap the placeholder dropdown for the shared Sort By control, wired to the raid keys.
         if not CUI._prebuilding then
             BuildSortByControl(sortRow._leftRegion, {
-                readMode = function() return SVal("sortMode", "INDEX") end,
-                writeMode = function(value) SSet("sortMode", value) end,
-                readRoles = function() return SVal("roleOrder", { "TANK", "HEALER", "DAMAGER" }) end,
+                readMode = function() return SettingOr("sortMode", "INDEX") end,
+                writeMode = function(value) WriteSetting("sortMode", value) end,
+                readRoles = function() return SettingOr("roleOrder", { "TANK", "HEALER", "DAMAGER" }) end,
                 writeRoles = function(ro)
                     db.profile.roleOrder = ro
                     RebuildAndReload()
@@ -1600,13 +1600,13 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     -- dropdowns do while merge is already on.
                     if value then
                         KeepGrowthPerpendicular(
-                            SVal("groupGrowth", "RIGHT"),
-                            function() return SVal("unitGrowth", "DOWN") end,
+                            SettingOr("groupGrowth", "RIGHT"),
+                            function() return SettingOr("unitGrowth", "DOWN") end,
                             function(nv) db.profile.unitGrowth = nv end
                         )
                         FixTierOverridesPerpendicular()
                     end
-                    SSet("mergeGroups", value)
+                    WriteSetting("mergeGroups", value)
                     CUI:RefreshPage()
                 end
             ),
@@ -1787,10 +1787,10 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     local environ = mod._RFO_OptEnv
     local BuildPreviewModeRow, BuildVisualSections, db, optionState =
         environ.BuildPreviewModeRow, environ.BuildVisualSections, environ.db, environ.optState
-    local Pix, SVal = environ.PP, environ.SVal
+    local Pix, SettingOr = environ.PP, environ.SVal
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(key, default)
-        return function() return SVal(key, default) end
+        return function() return SettingOr(key, default) end
     end
     local W = CUI.Widgets
     local _, hgt, heading
@@ -2182,7 +2182,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
 
     if not CUI._prebuilding then
         BuildSortByControl(pSortRow._rightRegion, {
-            readMode = function() return SVal("partySortMode", "ROLE") end,
+            readMode = function() return SettingOr("partySortMode", "ROLE") end,
             writeMode = function(value) PSSet("partySortMode", value) end,
             readRoles = function()
                 return db.profile.partyRoleOrder or db.profile.roleOrder or { "TANK", "HEALER", "DAMAGER" }
@@ -2267,8 +2267,8 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         values = { none = "Default", first = "First", last = "Last" },
         order = { "none", "first", "last" },
         getValue = function()
-            if SVal("partySelfLast", false) then return "last" end
-            if SVal("partyShowSelfFirst", true) then return "first" end
+            if SettingOr("partySelfLast", false) then return "last" end
+            if SettingOr("partyShowSelfFirst", true) then return "first" end
             return "none"
         end,
         setValue = function(value)
@@ -2317,7 +2317,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             requireState = "disabled",
             getValue = function()
                 if mod.RF_PartyKit() then return db.profile.partyKitSpacing or mod.RF_KIT_SPACING or 6 end
-                return SVal("partyCellSpacing", db.profile.cellSpacing or 2)
+                return SettingOr("partyCellSpacing", db.profile.cellSpacing or 2)
             end,
             setValue = function(value)
                 PSSet(mod.RF_PartyKit() and "partyKitSpacing" or "partyCellSpacing", value)
@@ -2373,8 +2373,8 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             arItems,
             function(keyName)
                 -- Tracked Buffs defaults on, Indicators & Auras off.
-                if keyName == "trackedBuffs" then return SVal(arKeyMap[keyName], true) end
-                return SVal(arKeyMap[keyName], false)
+                if keyName == "trackedBuffs" then return SettingOr(arKeyMap[keyName], true) end
+                return SettingOr(arKeyMap[keyName], false)
             end,
             function(keyName, value) PSSet(arKeyMap[keyName], value) end
         )

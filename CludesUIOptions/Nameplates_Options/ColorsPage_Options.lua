@@ -1102,7 +1102,7 @@ end
 -- Mini preview bar builder for color swatches. type: "health"/"cast"/"castLocked". colorKey: DB key for the bar color (read live). parentRow: frame to attach to. anchorFrame: optional override anchor (e.g. DualRow half-region).
 local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
     local environ = mod._NPO_OptEnv
-    local DB, DBVal, defaultSet, GetFocusLetterAnchor =
+    local DB, DbValue, defaultSet, GetFocusLetterAnchor =
         environ.DB, environ.DBVal, environ.defaults, environ.GetFocusLetterAnchor
     local GetNPOptOutline, NextCastFill, NextCastIcon, Pix =
         environ.GetNPOptOutline, environ.NextCastFill, environ.NextCastIcon, environ.PP
@@ -1113,7 +1113,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
     local BAR_H = 20
     local SWATCH_SZ = 24
     local SWATCH_GAP = isHalf and 27 or 52
-    local fontFile = (CUI.GetFontPath("nameplates")) or DBVal("font")
+    local fontFile = (CUI.GetFontPath("nameplates")) or DbValue("font")
     local anchor = anchorFrame or parentRow
 
     local boxHolder = CreateFrame("Frame", nil, parentRow)
@@ -1194,13 +1194,13 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
             local hpFS = 10
             -- Use the largest text slot size (capped at 13 for mini bars)
             for _, sk in ipairs({ "textSlotRight", "textSlotLeft", "textSlotCenter" }) do
-                local el = DBVal(sk) or defaultSet[sk]
+                local el = DbValue(sk) or defaultSet[sk]
                 if el and el ~= "none" and not mod.IsNameElement(el) then
-                    hpFS = math.min(DBVal(sk .. "Size") or defaultSet[sk .. "Size"] or 10, 13)
+                    hpFS = math.min(DbValue(sk .. "Size") or defaultSet[sk .. "Size"] or 10, 13)
                     break
                 end
             end
-            local curFont = (CUI.GetFontPath("nameplates")) or DBVal("font")
+            local curFont = (CUI.GetFontPath("nameplates")) or DbValue("font")
             local curOutline = GetNPOptOutline()
 
             -- Hide both FontStrings first
@@ -1218,7 +1218,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
                 { key = "textSlotCenter", anchor = "CENTER", xOff = 0 },
             }
             for _, slotIndex in ipairs(barSlots) do
-                local element = DBVal(slotIndex.key) or defaultSet[slotIndex.key]
+                local element = DbValue(slotIndex.key) or defaultSet[slotIndex.key]
                 local swatchColor = (DB() and DB()[slotIndex.key .. "Color"])
                     or defaultSet[slotIndex.key .. "Color"]
                 -- This bar stands for a hostile NPC at the player's level: Hostility /
@@ -1292,16 +1292,16 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
             or "focusOverlayFullBgAlpha"
         -- Empty-portion (bg) opacity: full when "Full alpha on empty part of bar" is on, else dimmed to 30% (matches live plates).
         local function _overlayBgAlpha(oAlpha)
-            local full = DBVal(_overlayFullBgKey)
+            local full = DbValue(_overlayFullBgKey)
             if full == nil then full = defaultSet[_overlayFullBgKey] end
             if full then return oAlpha end
             return oAlpha * 0.3
         end
         if colorKey == "focus" or colorKey == "target" then
-            local texture = DBVal(_overlayTexKey) or defaultSet[_overlayTexKey]
+            local texture = DbValue(_overlayTexKey) or defaultSet[_overlayTexKey]
             if texture ~= "none" then
                 local fillRef = healthBar:GetStatusBarTexture()
-                local oAlpha = DBVal(_overlayAlphaKey) or defaultSet[_overlayAlphaKey]
+                local oAlpha = DbValue(_overlayAlphaKey) or defaultSet[_overlayAlphaKey]
                 local popout = (DB() and DB()[_overlayColorKey]) or defaultSet[_overlayColorKey]
                 overlayFillClip, overlayFillTex =
                     MakeOverlayClip(fillRef, "TOPLEFT", fillRef, "BOTTOMRIGHT", 2)
@@ -1325,7 +1325,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         local focusLetter
         local function RefreshFocusLetter()
             if colorKey ~= "focus" then return end
-            if DBVal("focusLetterEnabled") ~= true then
+            if DbValue("focusLetterEnabled") ~= true then
                 if focusLetter then focusLetter:Hide() end
                 return
             end
@@ -1334,11 +1334,11 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
                 focusLetter:SetJustifyH("CENTER")
                 focusLetter:SetJustifyV("MIDDLE")
             end
-            local size = DBVal("focusLetterSize") or defaultSet.focusLetterSize
+            local size = DbValue("focusLetterSize") or defaultSet.focusLetterSize
             local anchor = GetFocusLetterAnchor()
-            local posX = DBVal("focusLetterX") or defaultSet.focusLetterX
-            local cursorY = DBVal("focusLetterY") or defaultSet.focusLetterY
-            local curFont = (CUI.GetFontPath("nameplates")) or DBVal("font")
+            local posX = DbValue("focusLetterX") or defaultSet.focusLetterX
+            local cursorY = DbValue("focusLetterY") or defaultSet.focusLetterY
+            local curFont = (CUI.GetFontPath("nameplates")) or DbValue("font")
             SetPVFont(focusLetter, curFont, size, GetNPOptOutline())
             focusLetter:SetText("F")
             focusLetter:ClearAllPoints()
@@ -1356,13 +1356,13 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         -- Live update hook: refresh overlay texture from DB
         boxHolder.UpdateOverlay = function()
             if colorKey ~= "focus" and colorKey ~= "target" then return end
-            local texture = DBVal(_overlayTexKey) or defaultSet[_overlayTexKey]
+            local texture = DbValue(_overlayTexKey) or defaultSet[_overlayTexKey]
             if texture == "none" then
                 if overlayFillClip then overlayFillClip:Hide() end
                 if overlayBgClip then overlayBgClip:Hide() end
             else
                 local fillRef = healthBar:GetStatusBarTexture()
-                local oAlpha = DBVal(_overlayAlphaKey) or defaultSet[_overlayAlphaKey]
+                local oAlpha = DbValue(_overlayAlphaKey) or defaultSet[_overlayAlphaKey]
                 local popout = (DB() and DB()[_overlayColorKey]) or defaultSet[_overlayColorKey]
                 if not overlayFillClip then
                     overlayFillClip, overlayFillTex =
@@ -1423,7 +1423,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         spark:SetPoint("CENTER", castBar:GetStatusBarTexture(), "RIGHT", 0, 0)
         spark:SetBlendMode("ADD")
         -- Show Spark (Cast Color cog): default on; explicit false hides it.
-        spark:SetShown(DBVal("castBarSparkEnabled") ~= false)
+        spark:SetShown(DbValue("castBarSparkEnabled") ~= false)
 
         -- Cast icon frame (to the left) no border for Colors tab previews
         local iconFrame = CreateFrame("Frame", nil, castBar)
@@ -1436,8 +1436,8 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         iconTex:SetTexture(NextCastIcon())
 
         -- Cast text
-        local cns = math.min(DBVal("castNameSize") or defaultSet.castNameSize, 13)
-        local cts = math.min(DBVal("castTargetSize") or defaultSet.castTargetSize, 13)
+        local cns = math.min(DbValue("castNameSize") or defaultSet.castNameSize, 13)
+        local cts = math.min(DbValue("castTargetSize") or defaultSet.castTargetSize, 13)
         local cnc = (DB() and DB().castNameColor) or defaultSet.castNameColor
 
         local dbRef = DB()
@@ -1590,7 +1590,7 @@ end
 
 local function BuildColorsPage(page, hostFrame, yOffset)
     local environ = mod._NPO_OptEnv
-    local _colorPagePreviews, DB, DBColor, DBVal =
+    local _colorPagePreviews, DB, DBColor, DbValue =
         environ._colorPagePreviews, environ.DB, environ.DBColor, environ.DBVal
     local defaultSet, optionState, pairs, Pix = environ.defaults, environ.optState, environ.pairs, environ.PP
     local RedrawPlates, SECTION_ENEMY, SECTION_THREAT, THREAT_PCT_POSITION_ORDER =
@@ -1727,7 +1727,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     if not CUI._prebuilding then
         local leftRegion = enemyTypesRow._leftRegion
         local isOWOff = function()
-            local val = DBVal("owBasicColoring")
+            local val = DbValue("owBasicColoring")
             if val == nil then return not defaultSet.owBasicColoring end
             return not val
         end
@@ -1738,7 +1738,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Simple Coloring When Not In M+",
                     get = function()
-                        local val = DBVal("owBasicColoring")
+                        local val = DbValue("owBasicColoring")
                         if val == nil then return defaultSet.owBasicColoring end
                         return val
                     end,
@@ -1795,7 +1795,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     }, {
         type = "toggle",
         text = "Enable Quest Mob Color",
-        getValue = function() return DBVal("questMobColorEnabled") == true end,
+        getValue = function() return DbValue("questMobColorEnabled") == true end,
         setValue = function(val)
             DB().questMobColorEnabled = val
             for _, backing in pairs(mod.plates) do
@@ -1818,7 +1818,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             DB().questMobColor = { r = red, g = green, b = blue }
             RedrawPlates()
         end
-        local isQuestOff = function() return DBVal("questMobColorEnabled") ~= true end
+        local isQuestOff = function() return DbValue("questMobColorEnabled") ~= true end
         local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
@@ -1849,7 +1849,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Mini Coloring M+ Only",
                     get = function()
-                        local val = DBVal("miniColoringMPlusOnly")
+                        local val = DbValue("miniColoringMPlusOnly")
                         if val == nil then return defaultSet.miniColoringMPlusOnly end
                         return val
                     end,
@@ -1867,7 +1867,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     castingRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Color Casting Enemies",
-        getValue = function() return DBVal("castingEnemyColors") == true end,
+        getValue = function() return DbValue("castingEnemyColors") == true end,
         setValue = function(val)
             DB().castingEnemyColors = val
             RedrawPlates()
@@ -1877,7 +1877,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     }, {
         type = "toggle",
         text = "Enemy Players Use Enemy Color",
-        getValue = function() return DBVal("enemyPlayerEnemyColor") == true end,
+        getValue = function() return DbValue("enemyPlayerEnemyColor") == true end,
         setValue = function(val)
             DB().enemyPlayerEnemyColor = val
             RedrawPlates()
@@ -1889,7 +1889,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     -- Inline cog with the mob types each applies to, then the Interruptible / Uninterruptible swatches.
     if not CUI._prebuilding then
         local region = castingRow._leftRegion
-        local isCastingOff = function() return DBVal("castingEnemyColors") ~= true end
+        local isCastingOff = function() return DbValue("castingEnemyColors") ~= true end
         local typeItems = {
             { key = "Normal", label = "Normal / Trivial", fixed = true },
             { key = "Elite", label = "Elite", fixed = true },
@@ -1904,7 +1904,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 ddWidth = 170,
                 items = typeItems,
                 hint = "Enemy Types",
-                get = function(colorKey) return DBVal(prefixText .. colorKey) end,
+                get = function(colorKey) return DbValue(prefixText .. colorKey) end,
                 set = function(colorKey, val)
                     DB()[prefixText .. colorKey] = val
                     RedrawPlates()
@@ -1957,7 +1957,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     -- drops that rule. On WoW Forever the tank shapes and Righteous Fury count as tanking
     -- while nobody in the group has the tank role.
     local function threatModeGet()
-        local val = DBVal("threatColorMode")
+        local val = DbValue("threatColorMode")
         if val ~= "never" and val ~= "instances" and val ~= "always" and val ~= "alwaysSolo" then
             val = defaultSet.threatColorMode
         end
@@ -2360,7 +2360,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     -- takes the Off-Tank row's right slot instead).
     local threatPctOff, ThreatPctSet, offTankRightCfg
     if CUI.IS_FOREVER then
-        threatPctOff = function() return not DBVal("threatPctEnabled") end
+        threatPctOff = function() return not DbValue("threatPctEnabled") end
         ThreatPctSet = function(colorKey, val)
             DB()[colorKey] = val
             mod.RefreshThreatPct()
@@ -2369,7 +2369,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             type = "toggle",
             text = "Show Threat % on Nameplates",
             tooltip = "Shows your threat percentage on each enemy nameplate while you are in combat with it.",
-            getValue = function() return DBVal("threatPctEnabled") end,
+            getValue = function() return DbValue("threatPctEnabled") end,
             setValue = function(val)
                 ThreatPctSet("threatPctEnabled", val)
                 CUI:RefreshPage()
@@ -2426,7 +2426,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             order = THREAT_PCT_POSITION_ORDER,
             disabled = threatPctOff,
             disabledTooltip = "Show Threat % on Nameplates",
-            getValue = function() return DBVal("threatPctPosition") end,
+            getValue = function() return DbValue("threatPctPosition") end,
             setValue = function(val) ThreatPctSet("threatPctPosition", val) end,
         }, chanCfg)
         cursorY = cursorY - height
@@ -2437,7 +2437,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 title = "Threat %",
                 disabled = threatPctOff,
                 disabledTooltip = "Show Threat % on Nameplates",
-                rows = mod.NPO_ThreatPctRows(DBVal, ThreatPctSet),
+                rows = mod.NPO_ThreatPctRows(DbValue, ThreatPctSet),
             })
         end
     end

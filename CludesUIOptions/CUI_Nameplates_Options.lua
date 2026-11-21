@@ -84,7 +84,7 @@ CUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function PlatesProfile() return mod.db and mod.db.profile end
 
-    local function DBVal(key)
+    local function DbValue(key)
         local saved = PlatesProfile()
         if saved and saved[key] ~= nil then return saved[key] end
         return defaultSet[key]
@@ -119,7 +119,7 @@ CUI.AtOptionsLogin(function()
         "BOTTOMRIGHT",
     }
     local function GetFocusLetterAnchor()
-        local anchor = DBVal("focusLetterAnchor") or defaultSet.focusLetterAnchor
+        local anchor = DbValue("focusLetterAnchor") or defaultSet.focusLetterAnchor
         return FOCUS_LETTER_ANCHORS[anchor] and anchor or defaultSet.focusLetterAnchor
     end
 
@@ -246,9 +246,9 @@ CUI.AtOptionsLogin(function()
             },
             caps = { mode = true, params = true, bg = true },
             defaultColor = CUI.Glows.DEFAULT_COLOR,
-            isOff = function() return DBVal("dispelGlow") ~= true end,
+            isOff = function() return DbValue("dispelGlow") ~= true end,
             -- Color by Type replaces the swatch color on every group.
-            colorDisabled = function() return DBVal("dispelGlowUseTypeColor") == true end,
+            colorDisabled = function() return DbValue("dispelGlowUseTypeColor") == true end,
             colorDisabledTooltip = "Color by Type (Magic/Enrage)",
             onChange = RefreshAuraGlows,
             get = function(f)
@@ -281,7 +281,7 @@ CUI.AtOptionsLogin(function()
                 {
                     type = "toggle",
                     label = "Color by Type (Magic/Enrage)",
-                    get = function() return DBVal("dispelGlowUseTypeColor") or false end,
+                    get = function() return DbValue("dispelGlowUseTypeColor") or false end,
                     set = function(value)
                         PlatesProfile().dispelGlowUseTypeColor = value
                         RefreshAuraGlows()
@@ -302,7 +302,7 @@ CUI.AtOptionsLogin(function()
                 host = "bar",
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = defaultSet[keyName.color],
-                isOff = function() return DBVal(prefixText) ~= true end,
+                isOff = function() return DbValue(prefixText) ~= true end,
                 onChange = RefreshCastGlows,
                 get = function(f)
                     local profile = PlatesProfile()
@@ -350,7 +350,7 @@ CUI.AtOptionsLogin(function()
             },
             caps = { mode = true, params = true, bg = true },
             defaultColor = defaultSet.pandemicGlowColor,
-            isOff = function() return DBVal("pandemicGlow") ~= true end,
+            isOff = function() return DbValue("pandemicGlow") ~= true end,
             onChange = RefreshAuraGlows,
             get = function(f)
                 local profile = PlatesProfile()
@@ -582,7 +582,7 @@ CUI.AtOptionsLogin(function()
                 backing:UpdateRaidIcon()
                 backing:UpdateClassification()
                 -- Rare/Quest + Faction: the classification pass already ran it.
-                if not DBVal("classificationIncludeFaction") then backing:UpdateFaction() end
+                if not DbValue("classificationIncludeFaction") then backing:UpdateFaction() end
                 if mod.ApplySlotStrata then mod.ApplySlotStrata(backing) end
             end
             mod.NP_RefreshFriendlyFaction()
@@ -641,8 +641,8 @@ CUI.AtOptionsLogin(function()
             if mod.NPC_ReloadAll then mod.NPC_ReloadAll() end
         end
 
-        local atFallback = DBVal("auraTextPosition") or defaultSet.auraTextPosition
-        local asFallback = DBVal("auraStackTextPosition") or defaultSet.auraStackTextPosition
+        local atFallback = DbValue("auraTextPosition") or defaultSet.auraTextPosition
+        local asFallback = DbValue("auraStackTextPosition") or defaultSet.auraStackTextPosition
 
         -- The sections live in Nameplates_Options\DisplayLayout_Options.lua
         -- (which calls CoreTextColoring_Options.lua) and DisplayBars_Options.lua;
@@ -1141,7 +1141,7 @@ CUI.AtOptionsLogin(function()
                     cpOverlay = cpBtn
                     -- Disable hover/click when class resource setting is off
                     local function UpdateCPOverlay()
-                        local off = DBVal("showClassPower") ~= true
+                        local off = DbValue("showClassPower") ~= true
                         cpBtn:EnableMouse(not off)
                         cpBtn:SetAlpha(off and 0 or 1)
                     end
@@ -1371,10 +1371,10 @@ CUI.AtOptionsLogin(function()
             label = "Textured Background",
             tooltip = cast and "Draws the bar texture on the cast bar background too."
                 or "Draws the bar texture on the health bar background too.",
-            disabled = function() return (DBVal(texKey) or "none") == "none" end,
+            disabled = function() return (DbValue(texKey) or "none") == "none" end,
             disabledTooltip = cast and "This option requires a Cast Bar Texture other than None."
                 or "This option requires a Bar Texture other than None.",
-            get = function() return DBVal(key) == true end,
+            get = function() return DbValue(key) == true end,
             set = function(value)
                 PlatesProfile()[key] = value and true or false
                 apply()
@@ -1390,7 +1390,7 @@ CUI.AtOptionsLogin(function()
         BAR_W = BAR_W,
         DB = PlatesProfile,
         DBColor = DBColor,
-        DBVal = DBVal,
+        DBVal = DbValue,
         defaults = defaultSet,
         displayCastIcons = displayCastIcons,
         FOCUS_LETTER_ANCHOR_ORDER = FOCUS_LETTER_ANCHOR_ORDER,

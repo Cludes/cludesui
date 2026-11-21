@@ -13,7 +13,7 @@ if not mod then return end -- module disabled: no options page
 
 local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local environ = mod._NPO_OptEnv
-    local DB, DBVal, defaultSet = environ.DB, environ.DBVal, environ.defaults
+    local DB, DbValue, defaultSet = environ.DB, environ.DBVal, environ.defaults
     local Pix, RepaintPreview, RedrawPlates = environ.PP, environ.UpdatePreview, environ.RefreshAllPlates
 
     -- The assigned texts in position order. While none is assigned the section
@@ -42,7 +42,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local COLOR_MODE_ORDER = { "custom", "class" }
     local COLOR_MODE_ORDER_LEVEL = { "custom", "class", "level" }
     local function TextColoringCfg(slotKey, labelText)
-        local el = DBVal(slotKey)
+        local el = DbValue(slotKey)
         if el == "none" then return CUI.BlankRowCfg() end
         local values, sequence
         if el == "targetOfTarget" then
@@ -83,7 +83,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
     -- a swatch, which the Spec Overrides capture follows on its own.
     local npcSwatchUpdates = {} -- the shared NPC swatches of every row, repainted together
     local function MakeTextColoringInline(row, regionKey, slotKey, title)
-        local el = DBVal(slotKey)
+        local el = DbValue(slotKey)
         if el == "none" then return end
         local region = row[regionKey]
         local colorKey = slotKey .. "Color"
@@ -114,7 +114,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     {
                         type = "toggle",
                         label = "Custom Name Color",
-                        get = function() return DBVal(nameOnKey) == true end,
+                        get = function() return DbValue(nameOnKey) == true end,
                         set = function(val)
                             DB()[nameOnKey] = val
                             ApplyColoring()
@@ -123,7 +123,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     {
                         type = "colorpicker",
                         label = "Name Color",
-                        hidden = function() return DBVal(nameOnKey) ~= true end,
+                        hidden = function() return DbValue(nameOnKey) ~= true end,
                         get = function() return PartColor(nameColorKey) end,
                         set = function(red, green, blue)
                             DB()[nameColorKey] = { r = red, g = green, b = blue }
@@ -133,7 +133,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     {
                         type = "toggle",
                         label = "Custom Level Color",
-                        get = function() return DBVal(lvlOnKey) == true end,
+                        get = function() return DbValue(lvlOnKey) == true end,
                         set = function(val)
                             DB()[lvlOnKey] = val
                             if val then DB()[diffKey] = false end
@@ -143,7 +143,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     {
                         type = "colorpicker",
                         label = "Level Color",
-                        hidden = function() return DBVal(lvlOnKey) ~= true end,
+                        hidden = function() return DbValue(lvlOnKey) ~= true end,
                         get = function() return PartColor(lvlColorKey) end,
                         set = function(red, green, blue)
                             DB()[lvlColorKey] = { r = red, g = green, b = blue }

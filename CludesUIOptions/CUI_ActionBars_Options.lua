@@ -316,7 +316,7 @@ CUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Short labels for sync icon multi-apply
     ---------------------------------------------------------------------------
-    local SHORT_LABELS = {
+    local SHORT_NAMES = {
         MainBar = "Bar 1",
         Bar2 = "Bar 2",
         Bar3 = "Bar 3",
@@ -337,7 +337,7 @@ CUI.AtOptionsLogin(function()
     -- Spec Overrides capture: label captured entries with the selected bar's element (e.g. "Action Bars > Bar 1 > ...").
     CUI.RegisterCaptureContext("CludesUIActionBars", function()
         local key = PickedBarKey()
-        return SHORT_LABELS[key] or key
+        return SHORT_NAMES[key] or key
     end)
 
     -- Legacy boolean flags and the visibility-mode dropdown must stay in sync: the runtime reads both shapes.
@@ -614,14 +614,14 @@ CUI.AtOptionsLogin(function()
         ---------------------------------------------------------------
         --  Unified Get / Set / DB abstraction
         ---------------------------------------------------------------
-        local function SGet(key) return PickedBarCfg()[key] end
-        local function SSet(key, val, applyFn)
+        local function ReadSetting(key) return PickedBarCfg()[key] end
+        local function WriteSetting(key, val, applyFn)
             PickedBarCfg()[key] = val
             if applyFn then applyFn(PickedBarKey()) end
             CUI:RefreshPage()
         end
-        local function SDB() return PickedBarCfg() end
-        local function SVal(key, default)
+        local function SettingsDB() return PickedBarCfg() end
+        local function SettingOr(key, default)
             local value = PickedBarCfg()[key]
             return value ~= nil and value or default
         end
@@ -639,7 +639,7 @@ CUI.AtOptionsLogin(function()
         -- and going back to Default therefore never move the text by the spacing,
         -- whatever the boxes held (a Cropped shape's preset included).
         local function SSeedTextOffsets(kind, anchorKey, oxKey, oyKey, anchor)
-            local prev = SVal(anchorKey, nil)
+            local prev = SettingOr(anchorKey, nil)
             if prev == anchor then return end
             local px, py, nx, ny = 0, 0, 0, 0
             if prev then
@@ -648,8 +648,8 @@ CUI.AtOptionsLogin(function()
             if anchor then
                 nx, ny = ABAR.StockTextOffsets(kind, anchor)
             end
-            PickedBarCfg()[oxKey] = SVal(oxKey, 0) - px + nx
-            PickedBarCfg()[oyKey] = SVal(oyKey, 0) - py + ny
+            PickedBarCfg()[oxKey] = SettingOr(oxKey, 0) - px + nx
+            PickedBarCfg()[oyKey] = SettingOr(oyKey, 0) - py + ny
         end
         local function SUpdatePreviewAndResize() UpdatePreviewAndResize() end
         hostFrame._showRowDivider = true
@@ -667,14 +667,14 @@ CUI.AtOptionsLogin(function()
         -- rows the click navigation below maps to.
         local context = {
             BgDisabled = BgDisabled,
-            SDB = SDB,
-            SGet = SGet,
+            SDB = SettingsDB,
+            SGet = ReadSetting,
             SSeedTextOffsets = SSeedTextOffsets,
-            SSet = SSet,
+            SSet = WriteSetting,
             SSetColor = SSetColor,
             SUpdatePreview = SUpdatePreview,
             SUpdatePreviewAndResize = SUpdatePreviewAndResize,
-            SVal = SVal,
+            SVal = SettingOr,
             visOnly = visOnly,
             W = W,
         }
@@ -952,7 +952,7 @@ CUI.AtOptionsLogin(function()
         SECTION_TEXT = SECTION_TEXT,
         SECTION_VISIBILITY = SECTION_VISIBILITY,
         SelectedKey = PickedBarKey,
-        SHORT_LABELS = SHORT_LABELS,
+        SHORT_LABELS = SHORT_NAMES,
         ShownBorderDefaults = ShownBorderDefaults,
         TEXT_ANCHOR_DROPDOWN_ORDER = TEXT_ANCHOR_DROPDOWN_ORDER,
         TEXT_ANCHOR_LABELS = TEXT_ANCHOR_LABELS,

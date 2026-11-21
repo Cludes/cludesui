@@ -18,7 +18,7 @@ local PoolGen, PoolIsIdle = CUI._Pool.Gen, CUI._Pool.IsIdle
 
 local function BuildDisplayBars(hostFrame, cursorY, context)
     local environ = mod._NPO_OptEnv
-    local BAR_W, DB, DBColor, DBVal = environ.BAR_W, environ.DB, environ.DBColor, environ.DBVal
+    local BAR_W, DB, DBColor, DbValue = environ.BAR_W, environ.DB, environ.DBColor, environ.DBVal
     local defaultSet, displayCastIcons, hbtOrder, hbtValues =
         environ.defaults, environ.displayCastIcons, environ.hbtOrder, environ.hbtValues
     local LazyColorPreviewBar, npImpCastGlowDesc, optionState, pairs =
@@ -48,7 +48,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         min = 100,
         max = BAR_W + 100,
         step = 1,
-        getValue = function() return BAR_W + DBVal("healthBarWidth") end,
+        getValue = function() return BAR_W + DbValue("healthBarWidth") end,
         setValue = function(val)
             local extra = val - BAR_W
             DB().healthBarWidth = extra
@@ -78,7 +78,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         min = 6,
         max = 50,
         step = 1,
-        getValue = function() return DBVal("healthBarHeight") end,
+        getValue = function() return DbValue("healthBarHeight") end,
         setValue = function(val)
             DB().healthBarHeight = val
             -- Classic WoW UI: the border scales with the bar, and the cast
@@ -114,7 +114,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         min = 10,
         max = 40,
         step = 1,
-        getValue = function() return DBVal("castBarHeight") or defaultSet.castBarHeight end,
+        getValue = function() return DbValue("castBarHeight") or defaultSet.castBarHeight end,
         setValue = function(val)
             DB().castBarHeight = val
             local barW = mod.GetHealthBarWidth()
@@ -163,7 +163,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     disabled = function() return CUI.BlizzStyle.Active("nameplates") == "classic" end,
                     disabledTooltip = function() return CUI.BlizzStyle.Label("nameplates") end,
                     requireState = "disabled",
-                    get = function() return DBVal("castIconScale") or defaultSet.castIconScale end,
+                    get = function() return DbValue("castIconScale") or defaultSet.castIconScale end,
                     set = function(val)
                         DB().castIconScale = val
                         if not (DB() and DB().castIconFullSize) then
@@ -180,7 +180,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function() return DBVal("castIconOffsetX") or defaultSet.castIconOffsetX or 0 end,
+                    get = function() return DbValue("castIconOffsetX") or defaultSet.castIconOffsetX or 0 end,
                     set = function(val)
                         DB().castIconOffsetX = val
                         mod.RefreshAllSettings()
@@ -193,7 +193,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function() return DBVal("castIconOffsetY") or defaultSet.castIconOffsetY or 0 end,
+                    get = function() return DbValue("castIconOffsetY") or defaultSet.castIconOffsetY or 0 end,
                     set = function(val)
                         DB().castIconOffsetY = val
                         mod.RefreshAllSettings()
@@ -287,7 +287,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         DB().castIconTargetBorder = val
                         mod.ApplyBorderWrapToAll()
                         -- The custom spell icon border (Icon Borders cog) takes the tint too.
-                        if DBVal("castIconCustomBorder") == true then
+                        if DbValue("castIconCustomBorder") == true then
                             for _, backing in pairs(plates) do
                                 mod.ApplyCastIconBorder(backing)
                             end
@@ -311,7 +311,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             max = 100,
             step = 1,
             getValue = function()
-                return math.floor(((DBVal("castBgAlpha") or defaultSet.castBgAlpha) * 100) + 0.5)
+                return math.floor(((DbValue("castBgAlpha") or defaultSet.castBgAlpha) * 100) + 0.5)
             end,
             setValue = function(val)
                 DB().castBgAlpha = val / 100
@@ -329,7 +329,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             max = 4,
             step = 1,
             tooltip = "Pixel-perfect border around the cast bar. Set to 0 for no border.",
-            getValue = function() return DBVal("castBorderSize") or defaultSet.castBorderSize end,
+            getValue = function() return DbValue("castBorderSize") or defaultSet.castBorderSize end,
             setValue = function(val)
                 DB().castBorderSize = val
                 mod.RefreshCastBorder()
@@ -346,7 +346,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end
         local castBgColorSet = function(red, green, blue)
             DB().castBgColor = { r = red, g = green, b = blue }
-            local a = DBVal("castBgAlpha") or defaultSet.castBgAlpha
+            local a = DbValue("castBgAlpha") or defaultSet.castBgAlpha
             for _, backing in pairs(plates) do
                 backing.castBG:SetColorTexture(red, green, blue, a)
             end
@@ -423,7 +423,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         max = 75,
         step = 1,
         tooltip = "Nudge the cast bar up or down from its default spot under the health bar.",
-        getValue = function() return DBVal("castBarOffsetY") or defaultSet.castBarOffsetY end,
+        getValue = function() return DbValue("castBarOffsetY") or defaultSet.castBarOffsetY end,
         setValue = function(val)
             DB().castBarOffsetY = val
             local barW = mod.GetHealthBarWidth()
@@ -455,19 +455,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             show = function(self)
                 ShowCogPopup(self, {
                     title = CUI.L("Cast Timer Settings"),
-                    xGet = function() return DBVal("castTimerOffsetX") or defaultSet.castTimerOffsetX end,
+                    xGet = function() return DbValue("castTimerOffsetX") or defaultSet.castTimerOffsetX end,
                     xSet = function(val)
                         DB().castTimerOffsetX = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
-                    yGet = function() return DBVal("castTimerOffsetY") or defaultSet.castTimerOffsetY end,
+                    yGet = function() return DbValue("castTimerOffsetY") or defaultSet.castTimerOffsetY end,
                     ySet = function(val)
                         DB().castTimerOffsetY = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
-                    sizeGet = function() return DBVal("castTimerSize") or defaultSet.castTimerSize end,
+                    sizeGet = function() return DbValue("castTimerSize") or defaultSet.castTimerSize end,
                     sizeSet = function(val)
                         DB().castTimerSize = val
                         mod.RefreshAllSettings()
@@ -769,7 +769,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             type = "toggle",
             text = "Casts In Front of Nameplates",
             tooltip = "Forces all casts to be shown in front of nameplates for visual clarity",
-            getValue = function() return DBVal("castOverlayEnabled") == true end,
+            getValue = function() return DbValue("castOverlayEnabled") == true end,
             setValue = function(val)
                 DB().castOverlayEnabled = val
                 mod.RefreshAllSettings()
@@ -926,8 +926,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         values = arrowVals,
         order = arrowOrd,
         getValue = function()
-            if DBVal("showTargetArrows") ~= true then return "none" end
-            return DBVal("targetArrowStyle") or (DBVal("targetArrowDouble") and "double") or "simple"
+            if DbValue("showTargetArrows") ~= true then return "none" end
+            return DbValue("targetArrowStyle") or (DbValue("targetArrowDouble") and "double") or "simple"
         end,
         setValue = function(val)
             if val == "none" then
@@ -991,10 +991,10 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     -- First-enable snapshot: seed the cog slider with the user's CURRENT border size, so enabling changes nothing until they move it (one-time, never re-snapshots later).
                     if val and DB().targetBorderSizeValue == nil then
                         if mod.IsCustomBorderEnabled() then
-                            DB().targetBorderSizeValue = DBVal("customBorderSize")
+                            DB().targetBorderSizeValue = DbValue("customBorderSize")
                                 or defaultSet.customBorderSize
                         else
-                            DB().targetBorderSizeValue = DBVal("borderSize") or defaultSet.borderSize
+                            DB().targetBorderSizeValue = DbValue("borderSize") or defaultSet.borderSize
                         end
                     end
                 end
@@ -1085,13 +1085,13 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         max = 4,
                         step = 1,
                         get = function()
-                            local val = DBVal("targetBorderSizeValue")
+                            local val = DbValue("targetBorderSizeValue")
                             if val ~= nil then return val end
                             -- Not snapshotted yet: show the current border size.
                             if mod.IsCustomBorderEnabled() then
-                                return DBVal("customBorderSize") or defaultSet.customBorderSize
+                                return DbValue("customBorderSize") or defaultSet.customBorderSize
                             end
-                            return DBVal("borderSize") or defaultSet.borderSize
+                            return DbValue("borderSize") or defaultSet.borderSize
                         end,
                         set = function(val)
                             DB().targetBorderSizeValue = val
@@ -1183,7 +1183,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     -- Inline cog (arrow scale), beside the control; the swatches sit left of it
     do
         local rightRegion = targetGlowRow._rightRegion
-        local arrowOff = function() return DBVal("showTargetArrows") ~= true end
+        local arrowOff = function() return DbValue("showTargetArrows") ~= true end
         CUI.BuildInlineCog(rightRegion, {
             disabled = arrowOff,
             disabledTooltip = "Target Arrows",
@@ -1195,11 +1195,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     min = 0.5,
                     max = 3.0,
                     step = 0.1,
-                    get = function() return DBVal("targetArrowScale") or defaultSet.targetArrowScale or 1.0 end,
+                    get = function() return DbValue("targetArrowScale") or defaultSet.targetArrowScale or 1.0 end,
                     set = function(val)
                         DB().targetArrowScale = val
-                        local _scKey = DBVal("targetArrowStyle")
-                            or (DBVal("targetArrowDouble") and "double")
+                        local _scKey = DbValue("targetArrowStyle")
+                            or (DbValue("targetArrowDouble") and "double")
                             or "simple"
                         local _scW = (mod.TARGET_ARROW_STYLES[_scKey] or mod.TARGET_ARROW_STYLES.simple).w
                         for _, backing in pairs(plates) do
@@ -1219,13 +1219,13 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     -- Inline Custom + Class color swatches on Target Arrows (custom adjacent to the cog, class to its left); click to switch, inactive swatch dims, both gray out when arrows off.
     do
         local rightRegion = targetGlowRow._rightRegion
-        local arrowOff = function() return DBVal("showTargetArrows") ~= true end
+        local arrowOff = function() return DbValue("showTargetArrows") ~= true end
         local customColorSwatch, updateCustom, classColorSwatch, updateClass
         local function paintArrowSwatches()
             if updateCustom then updateCustom() end
             if updateClass then updateClass() end
             local isOff = arrowOff()
-            local useClass = DBVal("targetArrowClassColor") == true
+            local useClass = DbValue("targetArrowClassColor") == true
             customColorSwatch:SetAlpha(isOff and 0.15 or (useClass and 0.3 or 1))
             classColorSwatch:SetAlpha(isOff and 0.15 or (useClass and 1 or 0.3))
             customColorSwatch:SetMouseClickEnabled(not isOff)
@@ -1235,7 +1235,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
             function()
-                local color = DBVal("targetArrowColor") or defaultSet.targetArrowColor
+                local color = DbValue("targetArrowColor") or defaultSet.targetArrowColor
                 return color.r, color.g, color.b
             end,
             function(red, green, blue)
@@ -1254,7 +1254,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local origCustomClick = customColorSwatch:GetScript("OnClick")
         customColorSwatch:SetScript("OnClick", function(self, ...)
             if arrowOff() then return end
-            if DBVal("targetArrowClassColor") == true then
+            if DbValue("targetArrowClassColor") == true then
                 DB().targetArrowClassColor = false
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
@@ -1332,11 +1332,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         return not defaultSet.targetColorEnabled
     end
     local targetTexNone = function()
-        return (DBVal("targetOverlayTexture") or defaultSet.targetOverlayTexture) == "none"
+        return (DbValue("targetOverlayTexture") or defaultSet.targetOverlayTexture) == "none"
     end
     -- No Tint: the target texture pattern becomes the bar's own fill texture (SetStatusBarTexture) instead of a tinted overlay, so the color swatch/opacity below stop applying.
     local isTargetNoTint = function()
-        local val = DBVal("targetOverlayNoTint")
+        local val = DbValue("targetOverlayNoTint")
         if val == nil then return defaultSet.targetOverlayNoTint end
         return val
     end
@@ -1346,10 +1346,10 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         return not defaultSet.focusColorEnabled
     end
     local focusTexNone = function()
-        return (DBVal("focusOverlayTexture") or defaultSet.focusOverlayTexture) == "none"
+        return (DbValue("focusOverlayTexture") or defaultSet.focusOverlayTexture) == "none"
     end
     local isFocusNoTint = function()
-        local val = DBVal("focusOverlayNoTint")
+        local val = DbValue("focusOverlayNoTint")
         if val == nil then return defaultSet.focusOverlayNoTint end
         return val
     end
@@ -1511,7 +1511,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         type = "dropdown",
         text = "Target Texture",
         values = ovtValues,
-        getValue = function() return DBVal("targetOverlayTexture") or defaultSet.targetOverlayTexture end,
+        getValue = function() return DbValue("targetOverlayTexture") or defaultSet.targetOverlayTexture end,
         setValue = function(val)
             DB().targetOverlayTexture = val
             RedrawPlates()
@@ -1523,7 +1523,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         type = "dropdown",
         text = "Focus Texture",
         values = ovtValues,
-        getValue = function() return DBVal("focusOverlayTexture") or defaultSet.focusOverlayTexture end,
+        getValue = function() return DbValue("focusOverlayTexture") or defaultSet.focusOverlayTexture end,
         setValue = function(val)
             DB().focusOverlayTexture = val
             RedrawPlates()
@@ -1550,7 +1550,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     step = 1,
                     get = function()
                         return math.floor(
-                            ((DBVal("targetOverlayAlpha") or defaultSet.targetOverlayAlpha) * 100) + 0.5
+                            ((DbValue("targetOverlayAlpha") or defaultSet.targetOverlayAlpha) * 100) + 0.5
                         )
                     end,
                     set = function(val)
@@ -1565,7 +1565,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     type = "toggle",
                     label = "Full alpha on empty part of bar",
                     get = function()
-                        local val = DBVal("targetOverlayFullBgAlpha")
+                        local val = DbValue("targetOverlayFullBgAlpha")
                         if val == nil then return defaultSet.targetOverlayFullBgAlpha end
                         return val
                     end,
@@ -1643,7 +1643,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     step = 1,
                     get = function()
                         return math.floor(
-                            ((DBVal("focusOverlayAlpha") or defaultSet.focusOverlayAlpha) * 100) + 0.5
+                            ((DbValue("focusOverlayAlpha") or defaultSet.focusOverlayAlpha) * 100) + 0.5
                         )
                     end,
                     set = function(val)
@@ -1655,7 +1655,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     type = "toggle",
                     label = "Full alpha on empty part of bar",
                     get = function()
-                        local val = DBVal("focusOverlayFullBgAlpha")
+                        local val = DbValue("focusOverlayFullBgAlpha")
                         if val == nil then return defaultSet.focusOverlayFullBgAlpha end
                         return val
                     end,
@@ -1841,7 +1841,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             tooltip = "Uses the Hover Effect color and opacity. Set to None for the flat hover highlight.",
             values = hoverOverlayValues,
             order = hoverOrder,
-            getValue = function() return DBVal("hoverOverlayTexture") or defaultSet.hoverOverlayTexture end,
+            getValue = function() return DbValue("hoverOverlayTexture") or defaultSet.hoverOverlayTexture end,
             setValue = function(val)
                 DB().hoverOverlayTexture = val
                 mod.RefreshHoverEffect()
@@ -1904,10 +1904,10 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         -- move it (one-time, never re-snapshots later).
                         if val and DB().hoverBorderSizeValue == nil then
                             if mod.IsCustomBorderEnabled() then
-                                DB().hoverBorderSizeValue = DBVal("customBorderSize")
+                                DB().hoverBorderSizeValue = DbValue("customBorderSize")
                                     or defaultSet.customBorderSize
                             else
-                                DB().hoverBorderSizeValue = DBVal("borderSize") or defaultSet.borderSize
+                                DB().hoverBorderSizeValue = DbValue("borderSize") or defaultSet.borderSize
                             end
                         end
                     end
@@ -1959,7 +1959,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             step = 1,
                             get = function()
                                 return math.floor(
-                                    ((DBVal("hoverAlpha") or defaultSet.hoverAlpha) * 100) + 0.5
+                                    ((DbValue("hoverAlpha") or defaultSet.hoverAlpha) * 100) + 0.5
                                 )
                             end,
                             set = function(val)
@@ -1987,12 +1987,12 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             max = 4,
                             step = 1,
                             get = function()
-                                local val = DBVal("hoverBorderSizeValue")
+                                local val = DbValue("hoverBorderSizeValue")
                                 if val ~= nil then return val end
                                 if mod.IsCustomBorderEnabled() then
-                                    return DBVal("customBorderSize") or defaultSet.customBorderSize
+                                    return DbValue("customBorderSize") or defaultSet.customBorderSize
                                 end
-                                return DBVal("borderSize") or defaultSet.borderSize
+                                return DbValue("borderSize") or defaultSet.borderSize
                             end,
                             set = function(val)
                                 DB().hoverBorderSizeValue = val
@@ -2063,7 +2063,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             -- Inline Hover Texture cog (Full alpha on empty part of bar), left of the dropdown; disabled while set to None.
             local leftRegion = hoverRow._leftRegion
             local isHoverTextureNone = function()
-                return (DBVal("hoverOverlayTexture") or defaultSet.hoverOverlayTexture) == "none"
+                return (DbValue("hoverOverlayTexture") or defaultSet.hoverOverlayTexture) == "none"
             end
             CUI.BuildInlineCog(leftRegion, {
                 disabled = isHoverTextureNone,
@@ -2074,7 +2074,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Full alpha on empty part of bar",
                         get = function()
-                            local val = DBVal("hoverOverlayFullBgAlpha")
+                            local val = DbValue("hoverOverlayFullBgAlpha")
                             if val == nil then return defaultSet.hoverOverlayFullBgAlpha end
                             return val
                         end,
@@ -2096,7 +2096,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     classResourceHeader, height = W:SectionHeader(hostFrame, "CLASS RESOURCE", cursorY)
     cursorY = cursorY - height
 
-    local function classPowerOff() return DBVal("showClassPower") ~= true end
+    local function classPowerOff() return DbValue("showClassPower") ~= true end
 
     local classResourceSectionTop = cursorY -- track top of content rows
 
@@ -2104,10 +2104,10 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     classResourceToggleRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Class Resource",
-        getValue = function() return DBVal("showClassPower") == true end,
+        getValue = function() return DbValue("showClassPower") == true end,
         -- DependentSetValue: Rows 2-4 below are hidden while class resource is off; the flip forces the full rebuild.
         setValue = CUI.DependentSetValue(
-            function() return DBVal("showClassPower") == true end,
+            function() return DbValue("showClassPower") == true end,
             function(val)
                 DB().showClassPower = val
                 mod.ApplyClassPowerSetting()
@@ -2135,7 +2135,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     RepaintPreview()
                 end,
                 onClick = function(self)
-                    local val = DBVal("classPowerClassColors")
+                    local val = DbValue("classPowerClassColors")
                     if val == nil then val = defaultSet.classPowerClassColors end
                     if val then
                         DB().classPowerClassColors = false
@@ -2147,7 +2147,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     if self._eabOrigClick then self._eabOrigClick(self) end
                 end,
                 refreshAlpha = function()
-                    local val = DBVal("classPowerClassColors")
+                    local val = DbValue("classPowerClassColors")
                     if val == nil then val = defaultSet.classPowerClassColors end
                     return val and 0.3 or 1
                 end,
@@ -2172,7 +2172,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    local val = DBVal("classPowerClassColors")
+                    local val = DbValue("classPowerClassColors")
                     if val == nil then val = defaultSet.classPowerClassColors end
                     return val and 1 or 0.3
                 end,
@@ -2189,7 +2189,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             type = "segmented",
             text = "Position",
             values = { top = "Top", bottom = "Bottom" },
-            getValue = function() return DBVal("classPowerPos") or defaultSet.classPowerPos end,
+            getValue = function() return DbValue("classPowerPos") or defaultSet.classPowerPos end,
             setValue = function(val)
                 DB().classPowerPos = val
                 mod.RefreshClassPower()
@@ -2202,7 +2202,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             min = 0.5,
             max = 4.0,
             step = 0.1,
-            getValue = function() return DBVal("classPowerScale") or defaultSet.classPowerScale end,
+            getValue = function() return DbValue("classPowerScale") or defaultSet.classPowerScale end,
             setValue = function(val)
                 DB().classPowerScale = val
                 mod.RefreshClassPower()
@@ -2222,13 +2222,13 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 show = function(self)
                     ShowCogPopup(self, {
                         title = "Position Settings",
-                        xGet = function() return DBVal("classPowerXOffset") or defaultSet.classPowerXOffset end,
+                        xGet = function() return DbValue("classPowerXOffset") or defaultSet.classPowerXOffset end,
                         xSet = function(val)
                             DB().classPowerXOffset = val
                             mod.RefreshClassPower()
                             RepaintPreview()
                         end,
-                        yGet = function() return DBVal("classPowerYOffset") or defaultSet.classPowerYOffset end,
+                        yGet = function() return DbValue("classPowerYOffset") or defaultSet.classPowerYOffset end,
                         ySet = function(val)
                             DB().classPowerYOffset = val
                             mod.RefreshClassPower()
@@ -2248,7 +2248,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             min = -5,
             max = 10,
             step = 1,
-            getValue = function() return DBVal("classPowerGap") or defaultSet.classPowerGap end,
+            getValue = function() return DbValue("classPowerGap") or defaultSet.classPowerGap end,
             setValue = function(val)
                 DB().classPowerGap = val
                 mod.RefreshClassPower()
@@ -2305,7 +2305,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 "arcane",
                 "essence",
             },
-            getValue = function() return DBVal("classPowerShape") or defaultSet.classPowerShape end,
+            getValue = function() return DbValue("classPowerShape") or defaultSet.classPowerShape end,
             setValue = function(val)
                 DB().classPowerShape = val
                 mod.RefreshClassPower()
@@ -2314,7 +2314,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         }, {
             type = "toggle",
             text = "Border",
-            getValue = function() return DBVal("classPowerBorder") == true end,
+            getValue = function() return DbValue("classPowerBorder") == true end,
             setValue = function(val)
                 DB().classPowerBorder = val
                 mod.RefreshClassPower()
@@ -2327,7 +2327,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         -- Inline thickness cog + border color swatch on the Border toggle
         if not CUI._prebuilding then
             local region = classResourceRow4._rightRegion
-            local function noBorder() return classPowerOff() or DBVal("classPowerBorder") ~= true end
+            local function noBorder() return classPowerOff() or DbValue("classPowerBorder") ~= true end
             local colorGet = function()
                 local color = (DB() and DB().classPowerBorderColor) or defaultSet.classPowerBorderColor
                 return color.r, color.g, color.b
@@ -2350,7 +2350,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         max = 4,
                         step = 1,
                         get = function()
-                            return DBVal("classPowerBorderSize") or defaultSet.classPowerBorderSize
+                            return DbValue("classPowerBorderSize") or defaultSet.classPowerBorderSize
                         end,
                         set = function(val)
                             DB().classPowerBorderSize = val
@@ -2418,7 +2418,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 type = "dropdown",
                 text = rowConf.text,
                 values = timerPosValues,
-                getValue = function() return DBVal(rowConf.key) or atFallback end,
+                getValue = function() return DbValue(rowConf.key) or atFallback end,
                 setValue = function(val)
                     DB()[rowConf.key] = val
                     LiveApplyAuraText()
@@ -2511,7 +2511,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             type = "dropdown",
             text = "Aura Stacks",
             values = timerPosValues,
-            getValue = function() return DBVal("auraStackTextPosition") or asFallback end,
+            getValue = function() return DbValue("auraStackTextPosition") or asFallback end,
             setValue = function(val)
                 DB().auraStackTextPosition = val
                 LiveApplyAuraText()
@@ -2546,7 +2546,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         min = 6,
                         max = 20,
                         step = 1,
-                        get = function() return DBVal("auraStackTextSize") or defaultSet.auraStackTextSize end,
+                        get = function() return DbValue("auraStackTextSize") or defaultSet.auraStackTextSize end,
                         set = function(val)
                             DB().auraStackTextSize = val
                             LiveApplyAuraText()
@@ -2559,7 +2559,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function() return DBVal("auraStackTextX") or defaultSet.auraStackTextX end,
+                        get = function() return DbValue("auraStackTextX") or defaultSet.auraStackTextX end,
                         set = function(val)
                             DB().auraStackTextX = val
                             LiveApplyAuraText()
@@ -2572,7 +2572,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function() return DBVal("auraStackTextY") or defaultSet.auraStackTextY end,
+                        get = function() return DbValue("auraStackTextY") or defaultSet.auraStackTextY end,
                         set = function(val)
                             DB().auraStackTextY = val
                             LiveApplyAuraText()
@@ -2620,7 +2620,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         text = "Spell Target",
         values = castTextPosValues,
         order = castTextPosOrder,
-        disabled = function() return DBVal("castCombineNameTarget") == true end,
+        disabled = function() return DbValue("castCombineNameTarget") == true end,
         disabledTooltip = "This option requires Combine Spell Name and Target to be disabled.",
         getValue = function() return (DB() and DB().castTargetSide) or defaultSet.castTargetSide end,
         setValue = function(val)
@@ -2652,19 +2652,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             show = function(self)
                 ShowCogPopup(self, {
                     title = CUI.L("Spell Name Settings"),
-                    xGet = function() return DBVal("castNameOffsetX") or defaultSet.castNameOffsetX end,
+                    xGet = function() return DbValue("castNameOffsetX") or defaultSet.castNameOffsetX end,
                     xSet = function(val)
                         DB().castNameOffsetX = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
-                    yGet = function() return DBVal("castNameOffsetY") or defaultSet.castNameOffsetY end,
+                    yGet = function() return DbValue("castNameOffsetY") or defaultSet.castNameOffsetY end,
                     ySet = function(val)
                         DB().castNameOffsetY = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
-                    sizeGet = function() return DBVal("castNameSize") or defaultSet.castNameSize end,
+                    sizeGet = function() return DbValue("castNameSize") or defaultSet.castNameSize end,
                     sizeSet = function(val)
                         DB().castNameSize = val
                         mod.RefreshAllSettings()
@@ -2676,13 +2676,13 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     sizeFirst = true,
                     -- Combined text has its own width; the name's applies while separate.
                     widthGet = function()
-                        if DBVal("castCombineNameTarget") == true then
-                            return DBVal("castCombinedWidthPct") or defaultSet.castCombinedWidthPct
+                        if DbValue("castCombineNameTarget") == true then
+                            return DbValue("castCombinedWidthPct") or defaultSet.castCombinedWidthPct
                         end
-                        return DBVal("castNameWidthPct") or defaultSet.castNameWidthPct
+                        return DbValue("castNameWidthPct") or defaultSet.castNameWidthPct
                     end,
                     widthSet = function(val)
-                        if DBVal("castCombineNameTarget") == true then
+                        if DbValue("castCombineNameTarget") == true then
                             DB().castCombinedWidthPct = val
                         else
                             DB().castNameWidthPct = val
@@ -2690,14 +2690,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
-                    wrapGet = function() return DBVal("castNameWrap") == true end,
+                    wrapGet = function() return DbValue("castNameWrap") == true end,
                     wrapSet = function(val)
                         DB().castNameWrap = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
                     toggleLabel = "Combine Spell Name and Target",
-                    toggleGet = function() return DBVal("castCombineNameTarget") == true end,
+                    toggleGet = function() return DbValue("castCombineNameTarget") == true end,
                     toggleSet = function(val)
                         DB().castCombineNameTarget = val
                         mod.RefreshAllSettings()
@@ -2729,19 +2729,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             show = function(self)
                 ShowCogPopup(self, {
                     title = CUI.L("Spell Target Settings"),
-                    xGet = function() return DBVal("castTargetOffsetX") or defaultSet.castTargetOffsetX end,
+                    xGet = function() return DbValue("castTargetOffsetX") or defaultSet.castTargetOffsetX end,
                     xSet = function(val)
                         DB().castTargetOffsetX = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
-                    yGet = function() return DBVal("castTargetOffsetY") or defaultSet.castTargetOffsetY end,
+                    yGet = function() return DbValue("castTargetOffsetY") or defaultSet.castTargetOffsetY end,
                     ySet = function(val)
                         DB().castTargetOffsetY = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
-                    sizeGet = function() return DBVal("castTargetSize") or defaultSet.castTargetSize end,
+                    sizeGet = function() return DbValue("castTargetSize") or defaultSet.castTargetSize end,
                     sizeSet = function(val)
                         DB().castTargetSize = val
                         mod.RefreshAllSettings()
@@ -2751,13 +2751,13 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     sizeMax = 20,
                     sizeLabel = CUI.L("Size"),
                     sizeFirst = true,
-                    widthGet = function() return DBVal("castTargetWidthPct") or defaultSet.castTargetWidthPct end,
+                    widthGet = function() return DbValue("castTargetWidthPct") or defaultSet.castTargetWidthPct end,
                     widthSet = function(val)
                         DB().castTargetWidthPct = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end,
-                    wrapGet = function() return DBVal("castTargetWrap") == true end,
+                    wrapGet = function() return DbValue("castTargetWrap") == true end,
                     wrapSet = function(val)
                         DB().castTargetWrap = val
                         mod.RefreshAllSettings()

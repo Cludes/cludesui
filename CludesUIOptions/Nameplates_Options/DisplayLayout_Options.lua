@@ -156,11 +156,11 @@ function mod.NPO_TextSlotShown(slotKey) return KNOWN[mod._NPO_OptEnv.DBVal(slotK
 -- rebuilt on restore (CUI_Nameplates_Options.lua, onPageCacheRestore).
 function mod.NPO_TextStructureFP()
     local environ = mod._NPO_OptEnv
-    local DBVal, saved = environ.DBVal, environ.DB()
+    local DbValue, saved = environ.DBVal, environ.DB()
     local parts = {}
     for idx = 1, #POS_ORDER do
         local key = POS_ORDER[idx]
-        local el = DBVal(key)
+        local el = DbValue(key)
         parts[#parts + 1] = tostring(el)
         if KNOWN[el] then parts[#parts + 1] = mod.NP_SlotColorMode(key, saved) end
     end
@@ -194,7 +194,7 @@ end
 
 local function BuildDisplayLayout(hostFrame, cursorY, context)
     local environ = mod._NPO_OptEnv
-    local DB, DBVal, defaultSet, GetNPOptOutline =
+    local DB, DbValue, defaultSet, GetNPOptOutline =
         environ.DB, environ.DBVal, environ.defaults, environ.GetNPOptOutline
     local hbtOrder, hbtValues, optionState, pairs =
         environ.hbtOrder, environ.hbtValues, environ.optState, environ.pairs
@@ -239,8 +239,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             values = { none = "None", basic = "Basic", custom = "Custom" },
             order = { "none", "basic", "custom" },
             getValue = function()
-                if DBVal("customBorderEnabled") then return "custom" end
-                local scrollBar = DBVal("showBorder")
+                if DbValue("customBorderEnabled") then return "custom" end
+                local scrollBar = DbValue("showBorder")
                 if scrollBar == nil then scrollBar = defaultSet.showBorder end
                 return scrollBar and "basic" or "none"
             end,
@@ -269,14 +269,14 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             step = 1,
             -- Only Basic uses this size (None has no border; Custom uses its own Custom Border Size below).
             disabled = function()
-                if DBVal("customBorderEnabled") then return true end
-                local val = DBVal("showBorder")
+                if DbValue("customBorderEnabled") then return true end
+                local val = DbValue("showBorder")
                 if val == nil then return not defaultSet.showBorder end
                 return not val
             end,
             disabledTooltip = "This option is only used by the Basic border.",
             rawTooltip = true,
-            getValue = function() return DBVal("borderSize") or defaultSet.borderSize end,
+            getValue = function() return DbValue("borderSize") or defaultSet.borderSize end,
             setValue = function(val)
                 DB().borderSize = val
                 mod.RefreshBorder()
@@ -294,17 +294,17 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             tip = "Corner Radius",
             disabled = function()
                 if CludesUI.BlizzStyle.Get("nameplates") then return true end
-                if DBVal("wrapBorderCastbar") == true then return true end
-                return DBVal("customBorderEnabled")
+                if DbValue("wrapBorderCastbar") == true then return true end
+                return DbValue("customBorderEnabled")
                     and not CludesUI.RoundedStyleOK(
-                        DBVal("customBorderTexture") or defaultSet.customBorderTexture
+                        DbValue("customBorderTexture") or defaultSet.customBorderTexture
                     )
             end,
             disabledTooltip = function()
                 if CludesUI.BlizzStyle.Get("nameplates") then
                     return CludesUI.BlizzStyle.Label("nameplates")
                 end
-                if DBVal("wrapBorderCastbar") == true then return "Wrap Around Castbar" end
+                if DbValue("wrapBorderCastbar") == true then return "Wrap Around Castbar" end
                 return "This option requires the Solid, Glow or Shadow border style."
             end,
             requireState = "disabled",
@@ -316,7 +316,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         min = 0,
                         max = CludesUI.ROUNDED_MAX_RADIUS,
                         step = 1,
-                        get = function() return DBVal("cornerRadius") or 0 end,
+                        get = function() return DbValue("cornerRadius") or 0 end,
                         set = function(val)
                             DB().cornerRadius = val
                             mod.RefreshBorder()
@@ -324,7 +324,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             RepaintPreview()
                         end,
                     },
-                }, function() return DBVal("cornerMask") end, function(val)
+                }, function() return DbValue("cornerMask") end, function(val)
                     DB().cornerMask = val
                     mod.RefreshBorder()
                     mod.RefreshCastBorder()
@@ -332,7 +332,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 end),
                 "Join Cast Bar",
                 "While a cast shows, rounds the health bar and the cast bar under it as one shape.",
-                function() return DBVal("cornerJoinCast") end,
+                function() return DbValue("cornerJoinCast") end,
                 function(val)
                     DB().cornerJoinCast = val
                     mod.RefreshBorder()
@@ -351,8 +351,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             -- draws the stock background art, Classic WoW UI the vanilla
             -- border sheets, and both stand the CUI borders down.
             if mod.NP_Blizz() then return true end
-            if DBVal("customBorderEnabled") then return false end
-            local val = DBVal("showBorder")
+            if DbValue("customBorderEnabled") then return false end
+            local val = DbValue("showBorder")
             if val == nil then val = defaultSet.showBorder end
             return not val
         end
@@ -365,7 +365,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 disabledTooltip = function() return CludesUI.BlizzStyle.Label("nameplates") end,
                 requireState = "disabled",
                 get = function()
-                    local val = DBVal("wrapBorderCastbar")
+                    local val = DbValue("wrapBorderCastbar")
                     if val == nil then return defaultSet.wrapBorderCastbar end
                     return val
                 end,
@@ -374,7 +374,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     -- Unconditional re-apply so toggling OFF also unwraps any plate mid-cast and wrapped.
                     mod.ApplyBorderWrapToAll()
                     -- Corner Radius stands down while the wrap is on: square or re-round the plates.
-                    if (DBVal("cornerRadius") or 0) > 0 then
+                    if (DbValue("cornerRadius") or 0) > 0 then
                         mod.RefreshBorder()
                         mod.RefreshCastBorder()
                     end
@@ -386,24 +386,24 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         }
         -- Show Seam Line: the custom border's wrap only, so it is built only while
         -- Border = Custom (the Border setter rebuilds the page).
-        if DBVal("customBorderEnabled") then
+        if DbValue("customBorderEnabled") then
             wrapRows[#wrapRows + 1] = {
                 type = "toggle",
                 label = "Show Seam Line",
                 tooltip = "Draws the border style's seam line between the health and cast bars.",
                 disabled = function()
-                    return DBVal("wrapBorderCastbar") ~= true
+                    return DbValue("wrapBorderCastbar") ~= true
                         or not mod.NP_CanShowWrapSeam(
-                            DBVal("customBorderTexture") or defaultSet.customBorderTexture
+                            DbValue("customBorderTexture") or defaultSet.customBorderTexture
                         )
                 end,
                 -- Wrap off: the standard requirement line; wrap on: the style is the lock.
                 disabledTooltip = function()
-                    if DBVal("wrapBorderCastbar") ~= true then return "Wrap Around Castbar" end
+                    if DbValue("wrapBorderCastbar") ~= true then return "Wrap Around Castbar" end
                     return "This option requires the Pixels or Pixels Textured border style."
                 end,
-                rawTooltip = function() return DBVal("wrapBorderCastbar") == true end,
-                get = function() return DBVal("wrapBorderSeam") == true end,
+                rawTooltip = function() return DbValue("wrapBorderCastbar") == true end,
+                get = function() return DbValue("wrapBorderSeam") == true end,
                 set = function(val)
                     DB().wrapBorderSeam = val
                     mod.ApplyBorderWrapToAll()
@@ -425,8 +425,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local function isBorderOff()
             -- Off for None and Custom (standard border/color is inert then) -- only Basic uses it.
             if CludesUI.BlizzStyle.Get("nameplates") then return true end
-            if DBVal("customBorderEnabled") then return true end
-            local val = DBVal("showBorder")
+            if DbValue("customBorderEnabled") then return true end
+            local val = DbValue("showBorder")
             if val == nil then return not defaultSet.showBorder end
             return not val
         end
@@ -474,7 +474,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             max = 40,
             step = 1,
             tooltip = "Size of the level in the border's plate. 0 follows the bar height.",
-            getValue = function() return DBVal("classicLevelSize") or 0 end,
+            getValue = function() return DbValue("classicLevelSize") or 0 end,
             setValue = function(val)
                 DB().classicLevelSize = val
                 mod.RefreshAllSettings()
@@ -487,7 +487,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             max = 40,
             step = 1,
             tooltip = "Size of the icon that replaces the level on a boss. 0 follows the bar height.",
-            getValue = function() return DBVal("classicSkullSize") or 0 end,
+            getValue = function() return DbValue("classicSkullSize") or 0 end,
             setValue = function(val)
                 DB().classicSkullSize = val
                 mod.RefreshAllSettings()
@@ -509,7 +509,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function() return DBVal(xKey) or 0 end,
+                            get = function() return DbValue(xKey) or 0 end,
                             set = function(val)
                                 DB()[xKey] = val
                                 mod.RefreshAllSettings()
@@ -522,7 +522,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function() return DBVal(yKey) or 0 end,
+                            get = function() return DbValue(yKey) or 0 end,
                             set = function(val)
                                 DB()[yKey] = val
                                 mod.RefreshAllSettings()
@@ -544,7 +544,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
 
     -- Custom Border row: only built when Border dropdown = "Custom" (selecting it triggers a page rebuild that reveals this row and reflows rows below;
     -- None/Basic collapse it). Uses the shared border engine (identical to Unit Frames, full SharedMedia support); the if-body scopes its locals to avoid growing this builder's local count.
-    if DBVal("customBorderEnabled") then
+    if DbValue("customBorderEnabled") then
         -- Custom Border Style dropdown (+ options cog) | Custom Border Size (+ color swatch)
         local cbTexValues, cbTexOrder = CludesUI.GetBorderTextureDropdown()
         local customBorderRow
@@ -556,7 +556,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 text = "Custom Border Style",
                 values = cbTexValues,
                 order = cbTexOrder,
-                getValue = function() return DBVal("customBorderTexture") or defaultSet.customBorderTexture end,
+                getValue = function() return DbValue("customBorderTexture") or defaultSet.customBorderTexture end,
                 setValue = function(val)
                     DB().customBorderTexture = val
                     DB().customBorderOffset = nil
@@ -582,9 +582,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     -- Narrower track: the slot also carries the colour swatch and the Icon Borders cog.
                     text = "Custom Border Size",
                     trackWidth = 120,
-                    getStep = function() return DBVal("customBorderSize") or defaultSet.customBorderSize end,
+                    getStep = function() return DbValue("customBorderSize") or defaultSet.customBorderSize end,
                     setStep = function(step) DB().customBorderSize = step end,
-                    getTex = function() return DBVal("customBorderTexture") or defaultSet.customBorderTexture end,
+                    getTex = function() return DbValue("customBorderTexture") or defaultSet.customBorderTexture end,
                     getPx = function() return DB() and DB().customBorderSizePx end,
                     setPx = function(val) DB().customBorderSizePx = val end,
                     apply = function()
@@ -599,13 +599,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         -- Width Offset | Height Offset: the textured border's outward offsets, shown only while a
         -- textured style is selected (Solid has none). Built during prebuild too so the y advance matches.
         do
-            local cbTexNow = DBVal("customBorderTexture") or defaultSet.customBorderTexture
+            local cbTexNow = DbValue("customBorderTexture") or defaultSet.customBorderTexture
             if cbTexNow and cbTexNow ~= "" and cbTexNow ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "nameplates",
-                    getTex = function() return DBVal("customBorderTexture") or defaultSet.customBorderTexture end,
-                    getStep = function() return DBVal("customBorderSize") or defaultSet.customBorderSize end,
-                    getSizeKey = function() return DBVal("customBorderSize") or defaultSet.customBorderSize end,
+                    getTex = function() return DbValue("customBorderTexture") or defaultSet.customBorderTexture end,
+                    getStep = function() return DbValue("customBorderSize") or defaultSet.customBorderSize end,
+                    getSizeKey = function() return DbValue("customBorderSize") or defaultSet.customBorderSize end,
                     getPx = function() return DB() and DB().customBorderSizePx end,
                     getX = function() return DB() and DB().customBorderOffset end,
                     setX = function(val) DB().customBorderOffset = val end,
@@ -631,7 +631,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local leftRegion = customBorderRow._leftRegion
             -- Shift offsets only apply to textured styles (row only exists when Custom is selected, so no enable gate needed).
             local function cbCogOff()
-                return (DBVal("customBorderTexture") or defaultSet.customBorderTexture) == "solid"
+                return (DbValue("customBorderTexture") or defaultSet.customBorderTexture) == "solid"
             end
             CludesUI.BuildInlineCog(leftRegion, {
                 disabled = cbCogOff,
@@ -647,8 +647,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         get = function()
                             local val = DB() and DB().customBorderShiftX
                             if val then return val end
-                            local texture = DBVal("customBorderTexture") or defaultSet.customBorderTexture
-                            local sz = DBVal("customBorderSize") or defaultSet.customBorderSize
+                            local texture = DbValue("customBorderTexture") or defaultSet.customBorderTexture
+                            local sz = DbValue("customBorderSize") or defaultSet.customBorderSize
                             local _, _, dsx = CludesUI.GetBorderDefaults("nameplates", texture, sz)
                             return dsx
                         end,
@@ -667,8 +667,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         get = function()
                             local val = DB() and DB().customBorderShiftY
                             if val then return val end
-                            local texture = DBVal("customBorderTexture") or defaultSet.customBorderTexture
-                            local sz = DBVal("customBorderSize") or defaultSet.customBorderSize
+                            local texture = DbValue("customBorderTexture") or defaultSet.customBorderTexture
+                            local sz = DbValue("customBorderSize") or defaultSet.customBorderSize
                             local _, _, _, dsy = CludesUI.GetBorderDefaults("nameplates", texture, sz)
                             return dsy
                         end,
@@ -682,7 +682,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Show Behind",
                         get = function()
-                            local val = DBVal("customBorderBehind")
+                            local val = DbValue("customBorderBehind")
                             if val == nil then return defaultSet.customBorderBehind end
                             return val
                         end,
@@ -711,13 +711,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         label = "Custom Border on Aura Icons",
                         tooltip = "Gives debuff, buff and crowd control icons the custom border instead of the 1-pixel border.",
                         disabled = function()
-                            return DBVal("hideDebuffIconBorder") == true
-                                and DBVal("hideBuffIconBorder") == true
-                                and DBVal("hideCCIconBorder") == true
+                            return DbValue("hideDebuffIconBorder") == true
+                                and DbValue("hideBuffIconBorder") == true
+                                and DbValue("hideCCIconBorder") == true
                         end,
                         disabledTooltip = "This option requires at least one aura type to show its border.",
                         rawTooltip = true,
-                        get = function() return DBVal("auraIconCustomBorder") == true end,
+                        get = function() return DbValue("auraIconCustomBorder") == true end,
                         set = function(val)
                             DB().auraIconCustomBorder = val
                             -- Fingerprint-gated aura restyle (the cast-lockout icon included).
@@ -730,18 +730,18 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         label = "Custom Border on Spell Icon",
                         tooltip = "Gives the cast bar spell icon the custom border instead of its 1-pixel border.",
                         disabled = function()
-                            return DBVal("showCastIcon") == false
-                                or DBVal("hideCastIconBorder") == true
-                                or DBVal("castbarIconInWidth") == true
+                            return DbValue("showCastIcon") == false
+                                or DbValue("hideCastIconBorder") == true
+                                or DbValue("castbarIconInWidth") == true
                         end,
                         disabledTooltip = function()
-                            if DBVal("castbarIconInWidth") == true then
+                            if DbValue("castbarIconInWidth") == true then
                                 return "This option is disabled while Make Icon Part of the Bar is enabled."
                             end
                             return "This option requires the spell icon and its border to be shown."
                         end,
                         rawTooltip = true,
-                        get = function() return DBVal("castIconCustomBorder") == true end,
+                        get = function() return DbValue("castIconCustomBorder") == true end,
                         set = function(val)
                             DB().castIconCustomBorder = val
                             -- Re-applies every plate's appearance (pooled plates too), which
@@ -757,7 +757,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         disabled = function() return not mod.NP_CanShowCastIconSeparator(DB()) end,
                         disabledTooltip = "Requires Make Icon Part of the Bar, a shown non-full-sized icon, and a Solid or Pixels border with size above 0.",
                         rawTooltip = true,
-                        get = function() return DBVal("castIconSeparator") == true end,
+                        get = function() return DbValue("castIconSeparator") == true end,
                         set = function(val)
                             DB().castIconSeparator = val
                             mod.RefreshAllSettings()
@@ -776,7 +776,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 return color.r,
                     color.g,
                     color.b,
-                    (DBVal("customBorderAlpha") or defaultSet.customBorderAlpha or 1)
+                    (DbValue("customBorderAlpha") or defaultSet.customBorderAlpha or 1)
             end
             local cbColSet = function(red, green, blue, a)
                 DB().customBorderColor = { r = red, g = green, b = blue }
@@ -859,7 +859,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             min = 0,
             max = 100,
             step = 1,
-            getValue = function() return math.floor(((DBVal("bgAlpha") or defaultSet.bgAlpha) * 100) + 0.5) end,
+            getValue = function() return math.floor(((DbValue("bgAlpha") or defaultSet.bgAlpha) * 100) + 0.5) end,
             setValue = function(val)
                 DB().bgAlpha = val / 100
                 local color = (DB() and DB().bgColor) or defaultSet.bgColor
@@ -874,7 +874,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             text = "Absorb Style",
             values = absorbStyleValues,
             order = absorbStyleOrder,
-            getValue = function() return DBVal("absorbStyle") or "blizzard" end,
+            getValue = function() return DbValue("absorbStyle") or "blizzard" end,
             setValue = function(val)
                 DB().absorbStyle = val
                 -- Selecting a style sets opacity to that style's default (Blizzard/Stripes 80%, Clean 30%); slider tweaks from there.
@@ -896,7 +896,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         end
         local cbColorSet = function(red, green, blue)
             DB().bgColor = { r = red, g = green, b = blue }
-            local a = DBVal("bgAlpha") or defaultSet.bgAlpha
+            local a = DbValue("bgAlpha") or defaultSet.bgAlpha
             for _, backing in pairs(plates) do
                 backing.healthBG:SetColorTexture(red, green, blue, a)
             end
@@ -929,11 +929,11 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     max = 100,
                     step = 1,
                     get = function()
-                        local val = DBVal("absorbAlpha")
+                        local val = DbValue("absorbAlpha")
                         if val then return val end
                         -- Untouched profiles: show the active style's default.
-                        local style = DBVal("absorbStyle") or "blizzard"
-                        if style == "clean" then return DBVal("absorbCleanAlpha") or 30 end
+                        local style = DbValue("absorbStyle") or "blizzard"
+                        if style == "clean" then return DbValue("absorbCleanAlpha") or 30 end
                         return math.floor(((mod.NP_ABSORB_STYLE_ALPHA[style] or 0.8) * 100) + 0.5)
                     end,
                     set = function(val)
@@ -957,7 +957,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         left = "From Left Edge",
                     },
                     order = { "overlay", "overlayReverse", "right", "left" },
-                    get = function() return DBVal("absorbEdgeMode") or "overlay" end,
+                    get = function() return DbValue("absorbEdgeMode") or "overlay" end,
                     set = function(val)
                         DB().absorbEdgeMode = val
                         mod.ApplyAbsorbStyleAll()
@@ -984,7 +984,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, acColorGet, acColorSet, nil, 20)
         Pix.Point(acSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = acSwatch
-        local function absorbColorOff() return (DBVal("absorbStyle") or "blizzard") == "blizzard" end
+        local function absorbColorOff() return (DbValue("absorbStyle") or "blizzard") == "blizzard" end
         CludesUI.RegisterWidgetRefresh(function()
             local off = absorbColorOff()
             acSwatch:SetAlpha(off and 0.15 or 1)
@@ -1038,7 +1038,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             text = "Bar Texture",
             values = hbtValues,
             order = hbtOrder,
-            getValue = function() return DBVal("healthBarTexture") or "none" end,
+            getValue = function() return DbValue("healthBarTexture") or "none" end,
             setValue = function(val)
                 DB().healthBarTexture = val
                 RefreshAllTextures()
@@ -1050,7 +1050,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             text = "Cast Bar Texture",
             values = hbtValues,
             order = hbtOrder,
-            getValue = function() return DBVal("castBarTexture") or "none" end,
+            getValue = function() return DbValue("castBarTexture") or "none" end,
             setValue = function(val)
                 DB().castBarTexture = val
                 RefreshAllTextures()
@@ -1091,7 +1091,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             type = "toggle",
             text = "Show Level Box",
             tooltip = "Shows the level box right of the health bar; with it off, Left Text can show the level instead.",
-            getValue = function() return not DBVal("foreverHideLevelBox") end,
+            getValue = function() return not DbValue("foreverHideLevelBox") end,
             setValue = function(val)
                 DB().foreverHideLevelBox = (not val) or nil
                 mod.RefreshAllSettings()
@@ -1199,26 +1199,26 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     }
 
     local function CoreHas(place, keyName)
-        if keyName == "debuffs" then return DBVal("debuffSlot") == place end
-        if keyName == "buffs" then return DBVal("buffSlot") == place end
+        if keyName == "debuffs" then return DbValue("debuffSlot") == place end
+        if keyName == "buffs" then return DbValue("buffSlot") == place end
         if keyName == "ccs" then
-            return DBVal("ccSlot") == place
-                or (DBVal("debuffIncludeCC") == true and DBVal("debuffSlot") == place)
+            return DbValue("ccSlot") == place
+                or (DbValue("debuffIncludeCC") == true and DbValue("debuffSlot") == place)
         end
-        if keyName == "raidmarker" then return DBVal("raidMarkerPos") == place end
+        if keyName == "raidmarker" then return DbValue("raidMarkerPos") == place end
         if keyName == "rare" then
-            return DBVal("classificationSlot") == place and not DBVal("classificationHideRare")
+            return DbValue("classificationSlot") == place and not DbValue("classificationHideRare")
         end
         if keyName == "quest" then
-            return DBVal("classificationSlot") == place and mod.NP_QuestIconOn(DB())
+            return DbValue("classificationSlot") == place and mod.NP_QuestIconOn(DB())
         end
         if keyName == "questtext" then return mod.NP_GetQuestTextSlot(DB()) == place end
         if keyName == "faction" then
             -- While Rare/Quest + Faction is on, a leftover faction slot is ignored.
-            if DBVal("classificationIncludeFaction") == true then
-                return DBVal("classificationSlot") == place
+            if DbValue("classificationIncludeFaction") == true then
+                return DbValue("classificationSlot") == place
             end
-            return DBVal("factionSlot") == place
+            return DbValue("factionSlot") == place
         end
         return false
     end
@@ -1228,7 +1228,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- right after the Quest Indicator (the runtime chain reads it the same way).
     local function CoreOrderKeys(place)
         local keyList, seen = {}, {}
-        local source = DBVal(place .. "SlotOrder")
+        local source = DbValue(place .. "SlotOrder")
         if type(source) == "string" then
             local qtAfterQuest = not string.find("," .. source .. ",", ",questtext,", 1, true)
             for keyName in string.gmatch(source, "[^,]+") do
@@ -1268,22 +1268,22 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         end
         if keyName == "debuffs" then
             if val then
-                local old = DBVal("debuffSlot")
-                local merged = DBVal("debuffIncludeCC") == true
-                if DBVal("ccSlot") == place then
+                local old = DbValue("debuffSlot")
+                local merged = DbValue("debuffIncludeCC") == true
+                if DbValue("ccSlot") == place then
                     -- CC already here on its own: the two become Debuffs + CC.
                     saved.ccSlot = "none"
                     merged = true
                 elseif merged and old ~= place then
                     -- Leaving a Debuffs + CC slot: CC stays there on its own
                     -- unless it already has a slot elsewhere.
-                    if old ~= "none" and DBVal("ccSlot") == "none" then saved.ccSlot = old end
+                    if old ~= "none" and DbValue("ccSlot") == "none" then saved.ccSlot = old end
                     merged = false
                 end
                 saved.debuffSlot = place
                 saved.debuffIncludeCC = merged
             else
-                if DBVal("debuffIncludeCC") == true and DBVal("ccSlot") == "none" then
+                if DbValue("debuffIncludeCC") == true and DbValue("ccSlot") == "none" then
                     saved.ccSlot = place
                 end
                 saved.debuffSlot = "none"
@@ -1291,7 +1291,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end
         elseif keyName == "ccs" then
             if val then
-                if DBVal("debuffSlot") == place then
+                if DbValue("debuffSlot") == place then
                     saved.debuffIncludeCC = true
                     saved.ccSlot = "none"
                 else
@@ -1299,29 +1299,29 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     saved.ccSlot = place
                 end
             else
-                if DBVal("debuffSlot") == place then saved.debuffIncludeCC = false end
-                if DBVal("ccSlot") == place then saved.ccSlot = "none" end
+                if DbValue("debuffSlot") == place then saved.debuffIncludeCC = false end
+                if DbValue("ccSlot") == place then saved.ccSlot = "none" end
             end
         elseif keyName == "buffs" then
             if val then
                 saved.buffSlot = place
-            elseif DBVal("buffSlot") == place then
+            elseif DbValue("buffSlot") == place then
                 saved.buffSlot = "none"
             end
         elseif keyName == "raidmarker" then
             if val then
                 saved.raidMarkerPos = place
-            elseif DBVal("raidMarkerPos") == place then
+            elseif DbValue("raidMarkerPos") == place then
                 saved.raidMarkerPos = "none"
             end
         elseif keyName == "rare" or keyName == "quest" then
             local hideKey = (keyName == "rare") and "classificationHideRare" or "classificationHideQuest"
             local otherKey = (keyName == "rare") and "classificationHideQuest" or "classificationHideRare"
             if val then
-                local old = DBVal("classificationSlot")
+                local old = DbValue("classificationSlot")
                 if old ~= place then
                     -- Moving: a Faction badge riding along stays behind on its own.
-                    if DBVal("classificationIncludeFaction") == true then
+                    if DbValue("classificationIncludeFaction") == true then
                         saved.classificationIncludeFaction = false
                         if old ~= "none" then saved.factionSlot = old end
                     end
@@ -1329,16 +1329,16 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     if old == "none" then saved[otherKey] = true end
                     saved.classificationSlot = place
                     -- Faction already here on its own joins them.
-                    if DBVal("factionSlot") == place then
+                    if DbValue("factionSlot") == place then
                         saved.classificationIncludeFaction = true
                         saved.factionSlot = "none"
                     end
                 end
                 saved[hideKey] = false
-            elseif DBVal(otherKey) then
+            elseif DbValue(otherKey) then
                 -- The last half goes: the indicator leaves the slot, a Faction
                 -- badge riding along stays there on its own.
-                if DBVal("classificationIncludeFaction") == true then
+                if DbValue("classificationIncludeFaction") == true then
                     saved.classificationIncludeFaction = false
                     saved.factionSlot = place
                 end
@@ -1350,7 +1350,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end
         elseif keyName == "faction" then
             if val then
-                if DBVal("classificationSlot") == place then
+                if DbValue("classificationSlot") == place then
                     saved.classificationIncludeFaction = true
                     saved.factionSlot = "none"
                 else
@@ -1358,8 +1358,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     saved.factionSlot = place
                 end
             else
-                if DBVal("classificationSlot") == place then saved.classificationIncludeFaction = false end
-                if DBVal("factionSlot") == place then saved.factionSlot = "none" end
+                if DbValue("classificationSlot") == place then saved.classificationIncludeFaction = false end
+                if DbValue("factionSlot") == place then saved.factionSlot = "none" end
             end
         elseif keyName == "questtext" then
             if val then
@@ -1424,8 +1424,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
 
     -- Slot-based offsets: pos .. "SlotXOffset" / "SlotYOffset"
 
-    local function CorePosXGet(place) return DBVal(place .. "SlotXOffset") or 0 end
-    local function CorePosYGet(place) return DBVal(place .. "SlotYOffset") or 0 end
+    local function CorePosXGet(place) return DbValue(place .. "SlotXOffset") or 0 end
+    local function CorePosYGet(place) return DbValue(place .. "SlotYOffset") or 0 end
     local function CorePosXSet(place, val)
         DB()[place .. "SlotXOffset"] = val
         RefreshAllSlots()
@@ -2209,7 +2209,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         CludesUI.ShowTrackedAurasPopup({
             eyebrow = CludesUI.L("NAMEPLATE AURA FILTERS"),
             title = NPF_KIND_TITLES[kind] or "Filters",
-            fontPath = (CludesUI.GetFontPath("nameplates")) or DBVal("font"),
+            fontPath = (CludesUI.GetFontPath("nameplates")) or DbValue("font"),
             includeGet = function() return mod.NPF_Include and mod.NPF_Include(side) end,
             excludeGet = function() return mod.NPF_Exclude and mod.NPF_Exclude(side) end,
             includePrompt = CludesUI.L("Enter the spell ID to always show on nameplates."),
@@ -2284,7 +2284,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local keyList = CoreOrderKeys(place)
         for idx = 1, #keyList do
             local a = CoreCog.AURA[keyList[idx]]
-            if a and DBVal(a.slot) == place then return keyList[idx] end
+            if a and DbValue(a.slot) == place then return keyList[idx] end
         end
         return "debuffs"
     end
@@ -2293,7 +2293,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     function CoreCog.AuraGet(place, field)
         local keyName = CoreCog.FirstAura(place)
         if field == "size" then return mod.NP_ElementSize(keyName, DB()) end
-        return DBVal(CoreCog.AURA[keyName][field])
+        return DbValue(CoreCog.AURA[keyName][field])
     end
     -- Written to every aura row the slot holds.
     function CoreCog.AuraSet(place, field, val)
@@ -2380,7 +2380,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 label = "Grow",
                 values = grow.values,
                 order = grow.order,
-                get = function() return DBVal(growthKey) end,
+                get = function() return DbValue(growthKey) end,
                 set = function(val)
                     DB()[growthKey] = val
                     redraw()
@@ -2411,7 +2411,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             type = "toggle",
             label = "Raise Strata",
             tooltip = "Renders this slot's element above the rest of the nameplate.",
-            get = function() return DBVal(rsKey) and true or false end,
+            get = function() return DbValue(rsKey) and true or false end,
             set = function(val)
                 DB()[rsKey] = val and true or false
                 redraw()
@@ -2513,7 +2513,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Objective Type Icon",
                         tooltip = "Shows a sword for kill objectives, a bag for item objectives, and the generic quest icon when the type cannot be matched exactly.",
-                        get = function() return DBVal("showQuestObjectiveTypeIcon") == true end,
+                        get = function() return DbValue("showQuestObjectiveTypeIcon") == true end,
                         set = function(val)
                             DB().showQuestObjectiveTypeIcon = val
                             mod.RefreshQuestObjective()
@@ -2526,8 +2526,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         min = 50,
                         max = 200,
                         step = 5,
-                        hidden = function() return DBVal("showQuestObjectiveTypeIcon") ~= true end,
-                        get = function() return DBVal("questObjectiveTypeIconScale") or 100 end,
+                        hidden = function() return DbValue("showQuestObjectiveTypeIcon") ~= true end,
+                        get = function() return DbValue("questObjectiveTypeIconScale") or 100 end,
                         set = function(val)
                             DB().questObjectiveTypeIconScale = val
                             redraw()
@@ -2560,7 +2560,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         label = "PvP Flag",
                         values = CoreCog.PVP_VALUES,
                         order = CoreCog.PVP_ORDER,
-                        get = function() return DBVal("factionPvP") end,
+                        get = function() return DbValue("factionPvP") end,
                         set = function(val)
                             DB().factionPvP = val
                             redraw()
@@ -2571,7 +2571,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         label = "Icon Style",
                         values = CoreCog.STYLE_VALUES,
                         order = CludesUI.FACTION_ART_ORDER,
-                        get = function() return DBVal("factionStyle") end,
+                        get = function() return DbValue("factionStyle") end,
                         set = function(val)
                             DB().factionStyle = val
                             redraw()
@@ -2580,7 +2580,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     {
                         type = "toggle",
                         label = "Opposite Faction Only",
-                        get = function() return DBVal("factionOppositeOnly") == true end,
+                        get = function() return DbValue("factionOppositeOnly") == true end,
                         set = function(val)
                             DB().factionOppositeOnly = val and true or false
                             redraw()
@@ -2590,7 +2590,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Players Only",
                         tooltip = "Hide the faction badge on faction NPCs such as guards.",
-                        get = function() return DBVal("factionPlayersOnly") == true end,
+                        get = function() return DbValue("factionPlayersOnly") == true end,
                         set = function(val)
                             DB().factionPlayersOnly = val and true or false
                             redraw()
@@ -2623,7 +2623,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         -- Edit Tracked Auras (slot filters): accent link left of the cog when this row holds a debuff-side aura element, opens the per-kind filter popup; refreshes on the same widget-refresh channel as the cog alpha.
         local itemLink = CreateFrame("Button", nil, region)
         itemLink:SetFrameLevel(region:GetFrameLevel() + 5)
-        local lfp = (CludesUI.GetFontPath("nameplates")) or DBVal("font")
+        local lfp = (CludesUI.GetFontPath("nameplates")) or DbValue("font")
         local lfs = itemLink:CreateFontString(nil, "OVERLAY")
         lfs:SetFont(lfp, 12, "")
         lfs:SetTextColor(CludesUI.GetAccentColor())
@@ -2645,7 +2645,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         -- Crowd Control inside it: both), else Crowd Control's own.
         local function LinkKind()
             if CoreHas(posKey, "debuffs") then
-                return (DBVal("debuffIncludeCC") == true) and "dcc" or "debuffs"
+                return (DbValue("debuffIncludeCC") == true) and "dcc" or "debuffs"
             elseif CoreHas(posKey, "ccs") then
                 return "cc"
             end
@@ -2912,7 +2912,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         -- Target of Target starts in Class mode whenever a slot newly takes it;
         -- the slot's Text Coloring dropdown still switches it back. The mode is
         -- saved only when the slot would not already derive Class.
-        local newToT = val == "targetOfTarget" and DBVal(slotKey) ~= "targetOfTarget"
+        local newToT = val == "targetOfTarget" and DbValue(slotKey) ~= "targetOfTarget"
         SetTextElementAtSlot(slotKey, val)
         if newToT then
             local saved = DB()
@@ -2934,8 +2934,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     end
 
     -- Text slot X/Y offset helpers (parallel to CorePosXGet etc.)
-    local function TextPosXGet(slotKey) return DBVal(slotKey .. "XOffset") or 0 end
-    local function TextPosYGet(slotKey) return DBVal(slotKey .. "YOffset") or 0 end
+    local function TextPosXGet(slotKey) return DbValue(slotKey .. "XOffset") or 0 end
+    local function TextPosYGet(slotKey) return DbValue(slotKey .. "YOffset") or 0 end
     local function TextPosXSet(slotKey, val)
         DB()[slotKey .. "XOffset"] = val
         TextOffsetRefresh()
@@ -2944,7 +2944,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         DB()[slotKey .. "YOffset"] = val
         TextOffsetRefresh()
     end
-    local function TextPosDisabled(slotKey) return DBVal(slotKey) == "none" end
+    local function TextPosDisabled(slotKey) return DbValue(slotKey) == "none" end
 
     local TEXT_DISABLED_TIP = "This option requires a text to be assigned"
 
@@ -2968,7 +2968,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 xSet = function(val) TextPosXSet(slotKey, val) end,
                 yGet = function() return TextPosYGet(slotKey) end,
                 ySet = function(val) TextPosYSet(slotKey, val) end,
-                sizeGet = function() return DBVal(sizeKey) or defaultSet[sizeKey] end,
+                sizeGet = function() return DbValue(sizeKey) or defaultSet[sizeKey] end,
                 sizeSet = function(val)
                     DB()[sizeKey] = val
                     TextOffsetRefresh()
@@ -2983,17 +2983,17 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 or slotKey == "textSlotBottomRight"
                 or slotKey == "textSlotTopLeft"
                 or slotKey == "textSlotTopRight"
-            if mod.IsNameElement(DBVal(slotKey)) then
+            if mod.IsNameElement(DbValue(slotKey)) then
                 if not cornerSlot then
                     cogOpts.widthGet = function()
-                        return DBVal("enemyNameWidthPct") or defaultSet.enemyNameWidthPct
+                        return DbValue("enemyNameWidthPct") or defaultSet.enemyNameWidthPct
                     end
                     cogOpts.widthSet = function(val)
                         DB().enemyNameWidthPct = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end
-                    cogOpts.wrapGet = function() return DBVal("enemyNameWrap") == true end
+                    cogOpts.wrapGet = function() return DbValue("enemyNameWrap") == true end
                     cogOpts.wrapSet = function(val)
                         DB().enemyNameWrap = val
                         mod.RefreshAllSettings()
@@ -3004,13 +3004,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 if not cornerSlot then
                     local widthKey = slotKey .. "WidthPct"
                     local wrapKey = slotKey .. "Wrap"
-                    cogOpts.widthGet = function() return DBVal(widthKey) or 100 end
+                    cogOpts.widthGet = function() return DbValue(widthKey) or 100 end
                     cogOpts.widthSet = function(val)
                         DB()[widthKey] = val
                         mod.RefreshAllSettings()
                         RepaintPreview()
                     end
-                    cogOpts.wrapGet = function() return DBVal(wrapKey) == true end
+                    cogOpts.wrapGet = function() return DbValue(wrapKey) == true end
                     cogOpts.wrapSet = function(val)
                         DB()[wrapKey] = val
                         mod.RefreshAllSettings()
@@ -3018,7 +3018,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     end
                 end
                 cogOpts.toggleLabel = "Show % Decimal"
-                cogOpts.toggleGet = function() return DBVal(slotKey .. "PctDecimal") == true end
+                cogOpts.toggleGet = function() return DbValue(slotKey .. "PctDecimal") == true end
                 cogOpts.toggleSet = function(val)
                     DB()[slotKey .. "PctDecimal"] = val
                     mod.RefreshAllSettings()
@@ -3027,7 +3027,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end
             -- Target of Target, the standalone level and Custom (its template writes the
             -- percent) have no use for "Show % Decimal".
-            local slotEl = DBVal(slotKey)
+            local slotEl = DbValue(slotKey)
             if slotEl == "targetOfTarget" or slotEl == "level" or slotEl == "custom" then
                 cogOpts.toggleLabel, cogOpts.toggleGet, cogOpts.toggleSet = nil, nil, nil
             end
@@ -3048,7 +3048,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     cogOpts.dropdown2Tooltip =
                         "First Name and Last Name only change players' names; Abbreviated and Character Count change every name."
                 end
-                cogOpts.dropdown2Get = function() return DBVal(nfKey) or "full" end
+                cogOpts.dropdown2Get = function() return DbValue(nfKey) or "full" end
                 cogOpts.dropdown2Set = function(val)
                     DB()[nfKey] = (val ~= "full") and val or nil
                     mod.RefreshAllSettings()
@@ -3057,7 +3057,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end
             -- Per-slot strata (partner request): standard strata dropdown,
             -- defaulting to the shared text tier's MEDIUM.
-            cogOpts.strataGet = function() return DBVal(slotKey .. "Strata") or "MEDIUM" end
+            cogOpts.strataGet = function() return DbValue(slotKey .. "Strata") or "MEDIUM" end
             cogOpts.strataSet = function(val)
                 DB()[slotKey .. "Strata"] = val
                 mod.RefreshAllSettings()
@@ -3076,7 +3076,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- position keeps its other settings) and its cog holds Size, offsets and
     -- the rest. Every check runs at click time, so a menu that outlived a
     -- change writes nothing stale; each structure change rebuilds the page.
-    local function IsAssigned(slotKey) return KNOWN[DBVal(slotKey)] == true end
+    local function IsAssigned(slotKey) return KNOWN[DbValue(slotKey)] == true end
     local function IsFree(slotKey) return not IsAssigned(slotKey) end
 
     -- Add Text Slot's text: the first of ADD_ORDER whose font string no shown
@@ -3084,7 +3084,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     local function FontStringUsed(fsKey)
         for idx = 1, #POS_ORDER do
             local s = POS_ORDER[idx]
-            if IsAssigned(s) and mod.NP_ElementFSKey(DBVal(s)) == fsKey then return true end
+            if IsAssigned(s) and mod.NP_ElementFSKey(DbValue(s)) == fsKey then return true end
         end
         return false
     end
@@ -3132,9 +3132,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         end
         local saved = DB()
         local mode = mod.NP_SlotColorMode(S, saved) -- read before any write
-        local el = DBVal(S)
-        local size = DBVal(S .. "Size")
-        local tSize = DBVal(T .. "Size")
+        local el = DbValue(S)
+        local size = DbValue(S .. "Size")
+        local tSize = DbValue(T .. "Size")
         for idx = 1, #MOVE_OFFSETS do
             local suf = MOVE_OFFSETS[idx]
             local sDef = defaultSet[S .. suf] or 0
@@ -3168,7 +3168,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- A combined health text cannot sit Left or Right while a name is centered
     -- on the health bar (the texts would overlap).
     local function COMBO_VS_CENTER_NAME(keyName)
-        if mod.IsComboHealthText(keyName) and mod.IsNameElement(DBVal("textSlotCenter")) then
+        if mod.IsComboHealthText(keyName) and mod.IsNameElement(DbValue("textSlotCenter")) then
             return "Disabled when the Name/Level text is centered on the health bar due to overlapping text"
         end
     end
@@ -3180,12 +3180,12 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             if not IsAssigned(S) then return true end
             if val == S then return nil end
             if IsAssigned(val) then return true end
-            if val == "textSlotLeft" or val == "textSlotRight" then return COMBO_VS_CENTER_NAME(DBVal(S)) end
+            if val == "textSlotLeft" or val == "textSlotRight" then return COMBO_VS_CENTER_NAME(DbValue(S)) end
         end
     end
 
     local function TextCellCfg(cfg)
-        local function readValue() return DBVal(cfg.key) end
+        local function readValue() return DbValue(cfg.key) end
         -- Custom opens its popup; a saved template selects it (the new cell reports
         -- the write to Spec Overrides, as Add Text Slot does).
         local values = mod.NPO_CustomTextValues(textElementValues, readValue, function()
@@ -3269,11 +3269,11 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         -- an accessor, on a Custom text or one holding a template an override may
         -- switch back to.
         local fk = cfg.key .. "CustomFormat"
-        if DBVal(cfg.key) == "custom" or type(DBVal(fk)) == "string" then
+        if DbValue(cfg.key) == "custom" or type(DbValue(fk)) == "string" then
             CludesUI.TextTags.AddFormatAccessor(
                 region,
                 cfg.label,
-                function() return DBVal(fk) end,
+                function() return DbValue(fk) end,
                 function(val)
                     DB()[fk] = val
                     mod.RefreshAllSettings()

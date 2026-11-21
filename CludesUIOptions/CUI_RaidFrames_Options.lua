@@ -894,7 +894,7 @@ CUI.AtLogin(function()
         local PARTY_KEY_SECTION = mod._PARTY_KEY_SECTION or {}
         local IsPartySectionCustom = mod._IsPartySectionCustom
 
-        local function SGet(key)
+        local function ReadSetting(key)
             if
                 optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
@@ -905,7 +905,7 @@ CUI.AtLogin(function()
             end
             return db.profile[key]
         end
-        local function SSet(key, val)
+        local function WriteSetting(key, val)
             if
                 optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
@@ -918,7 +918,7 @@ CUI.AtLogin(function()
             if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
             RebuildAndReload()
         end
-        local function SVal(key, default)
+        local function SettingOr(key, default)
             if
                 optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
@@ -932,7 +932,7 @@ CUI.AtLogin(function()
             return default
         end
         -- Context-aware direct write, for color swatches that bypass SSet.
-        local function SWrite(key, val)
+        local function StoreSetting(key, val)
             if
                 optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
@@ -956,7 +956,7 @@ CUI.AtLogin(function()
             then
                 return db.profile["party_" .. key]
             end
-            return SGet(key)
+            return ReadSetting(key)
         end
 
         -- WoW Forever: the Missing Buffs icons' glow (prefix keys missingBuffsGlow*)
@@ -1218,7 +1218,7 @@ CUI.AtLogin(function()
         -- runtime). Report what actually renders instead of showing a value the
         -- merged grid ignores.
         local function ReadGroupGrowth(value)
-            if value == "DOWNRIGHT" and SVal("mergeGroups", false) then return "RIGHT" end
+            if value == "DOWNRIGHT" and SettingOr("mergeGroups", false) then return "RIGHT" end
             return value
         end
 
@@ -2094,11 +2094,11 @@ CUI.AtLogin(function()
             PP = Pix,
             ReadGroupGrowth = ReadGroupGrowth,
             ReloadAndUpdate = RebuildAndReload,
-            SGet = SGet,
+            SGet = ReadSetting,
             SGetPx = SGetPx,
-            SSet = SSet,
-            SVal = SVal,
-            SWrite = SWrite,
+            SSet = WriteSetting,
+            SVal = SettingOr,
+            SWrite = StoreSetting,
         }
 
         ---------------------------------------------------------------------------

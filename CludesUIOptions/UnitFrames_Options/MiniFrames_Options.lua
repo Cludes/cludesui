@@ -1603,7 +1603,7 @@ end
 -- own single enable toggle + Show Portrait (right slot), Pet-style.
 function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
     local environ = mod._UFO_OptEnv
-    local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned =
+    local AddFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, AskReloadIfUnspawned =
         environ.AttachFrameSourceCog,
         environ.BuildApplyAllRow,
         environ.MINI_GROUP_ORDER,
@@ -1635,7 +1635,7 @@ function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
                 saved.profile.enabledFrames[unitName] = value
                 RebuildAndReload()
                 CUI:RefreshPage(true)
-                PromptReloadIfUnspawned({ unitName })
+                AskReloadIfUnspawned({ unitName })
             end,
         }, ownFrames and CUI.BlizzStyle.Gate("unitframes", {
             type = "toggle",
@@ -1652,7 +1652,7 @@ function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
         if ownFrames and not CUI._prebuilding then
             AttachPortraitSideCog(portraitLine._rightRegion, unitSettings, true, unitName)
         end
-        AttachFrameSourceCog(portraitLine._leftRegion, unitName, {
+        AddFrameSourceCog(portraitLine._leftRegion, unitName, {
             tooltip = "Due to Blizzard API restrictions, Blizzard's native "
                 .. childName
                 .. " can't be hidden in combat and will show the whole time you are in combat. Recommended: match the "
@@ -1709,7 +1709,7 @@ end
 
 function mod.UFO_BuildPetOptions(W, hostFrame, posY)
     local environ = mod._UFO_OptEnv
-    local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned =
+    local AddFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, AskReloadIfUnspawned =
         environ.AttachFrameSourceCog,
         environ.BuildApplyAllRow,
         environ.MINI_GROUP_ORDER,
@@ -1732,7 +1732,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                 saved.profile.enabledFrames.pet = value
                 RebuildAndReload()
                 CUI:RefreshPage(true)
-                PromptReloadIfUnspawned({ "pet" })
+                AskReloadIfUnspawned({ "pet" })
             end,
         }, ownFrames and CUI.BlizzStyle.Gate("unitframes", {
             type = "toggle",
@@ -1749,7 +1749,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
         if ownFrames and not CUI._prebuilding then
             AttachPortraitSideCog(portraitLine._rightRegion, saved.profile.pet)
         end
-        AttachFrameSourceCog(portraitLine._leftRegion, "pet", {
+        AddFrameSourceCog(portraitLine._leftRegion, "pet", {
             extraRows = {
                 {
                     type = "toggle",
@@ -2133,10 +2133,10 @@ end
 
 function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     local environ = mod._UFO_OptEnv
-    local AttachDebuffModeWarn, AttachFrameSourceCog, DebuffModeDropdownCfg, Pix =
+    local AttachDebuffModeWarn, AddFrameSourceCog, DebuffModeDropdownCfg, Pix =
         environ.AttachDebuffModeWarn, environ.AttachFrameSourceCog, environ.DebuffModeDropdownCfg, environ.PP
     local HideExhaustionRow = environ.HideExhaustionRow
-    local PromptReloadIfUnspawned, RebuildAndReload, SwapAuraSlot, abs =
+    local AskReloadIfUnspawned, RebuildAndReload, SwapAuraSlot, abs =
         environ.PromptReloadIfUnspawned, environ.ReloadAndUpdate, environ.SwapAuraSlot, environ.abs
     local buffAnchorOrder, buffAnchorValues, buffGrowthOrder, buffGrowthValues =
         environ.buffAnchorOrder, environ.buffAnchorValues, environ.buffGrowthOrder, environ.buffGrowthValues
@@ -2262,7 +2262,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 if mod.UF_SetBossFramesActive then mod.UF_SetBossFramesActive(value) end
                 RebuildAndReload()
                 CUI:RefreshPage(true)
-                PromptReloadIfUnspawned({ "boss" })
+                AskReloadIfUnspawned({ "boss" })
             end,
         }, ownFrames and CUI.BlizzStyle.Gate("unitframes", {
             type = "toggle",
@@ -2279,7 +2279,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         if ownFrames and not CUI._prebuilding then
             AttachPortraitSideCog(portraitLine._rightRegion, saved.profile.boss, false, "boss")
         end
-        AttachFrameSourceCog(portraitLine._leftRegion, "boss", {
+        AddFrameSourceCog(portraitLine._leftRegion, "boss", {
             onBeforeSet = function(value)
                 -- Force-stop the in-game preview when boss frames are no longer
                 -- CUI-owned; it rides on the real boss frames and renders broken.

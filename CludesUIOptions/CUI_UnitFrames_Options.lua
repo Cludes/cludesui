@@ -1301,7 +1301,7 @@ CludesUI.AtLogin(function()
         ---------------------------------------------------------------------------
         --  Group editing state  (sync icon targets)
         ---------------------------------------------------------------------------
-        local UNIT_DB_MAP = {
+        local UNIT_SETTINGS = {
             player = function() return saved.profile.player end,
             target = function() return saved.profile.target end,
             focus = function() return saved.profile.focus end,
@@ -1402,7 +1402,7 @@ CludesUI.AtLogin(function()
                 preSelect = SelectUnit("target"),
                 -- The Purgeable Buffs cog sits on the unit's Buff Filter row.
                 highlight = "Buff Filter",
-                desc = UF_PurgeGlowDesc(UNIT_DB_MAP.target),
+                desc = UF_PurgeGlowDesc(UNIT_SETTINGS.target),
             })
             GO.RegisterSite({
                 id = "uf_purge_focus",
@@ -1413,7 +1413,7 @@ CludesUI.AtLogin(function()
                 section = "BUFFS AND DEBUFFS",
                 preSelect = SelectUnit("focus"),
                 highlight = "Buff Filter",
-                desc = UF_PurgeGlowDesc(UNIT_DB_MAP.focus),
+                desc = UF_PurgeGlowDesc(UNIT_SETTINGS.focus),
             })
             GO.RegisterSite({
                 id = "uf_importantcast_target",
@@ -1424,7 +1424,7 @@ CludesUI.AtLogin(function()
                 section = "CAST BAR",
                 preSelect = SelectUnit("target"),
                 highlight = "Important Cast Glow",
-                desc = UF_ImpCastGlowDesc(UNIT_DB_MAP.target),
+                desc = UF_ImpCastGlowDesc(UNIT_SETTINGS.target),
             })
             GO.RegisterSite({
                 id = "uf_importantcast_focus",
@@ -1435,12 +1435,12 @@ CludesUI.AtLogin(function()
                 section = "CAST BAR",
                 preSelect = SelectUnit("focus"),
                 highlight = "Important Cast Glow",
-                desc = UF_ImpCastGlowDesc(UNIT_DB_MAP.focus),
+                desc = UF_ImpCastGlowDesc(UNIT_SETTINGS.focus),
             })
         end
 
-        local GROUP_UNIT_ORDER = { "player", "target", "focus" }
-        local SHORT_LABELS = {
+        local GROUP_ORDER = { "player", "target", "focus" }
+        local SHORT_NAMES = {
             player = "Player",
             target = "Target",
             focus = "Focus",
@@ -2581,7 +2581,7 @@ CludesUI.AtLogin(function()
         -- A unit whose source was Blizzard/Hidden at login has no spawned CUI frame this
         -- session (and Blizzard's frame can't be torn down live), so a visibility/enable
         -- change can't apply live -- prompt for a /reload. unitKeys: "boss" checks boss1.
-        local function PromptReloadIfUnspawned(unitKeys)
+        local function AskReloadIfUnspawned(unitKeys)
             local f = mod.frames
             if not f then return end
             local missing = false
@@ -2608,7 +2608,7 @@ CludesUI.AtLogin(function()
         -- Show" / Enable), so "Hidden" is not duplicated; the stored style survives
         -- hiding and resumes on re-enable. opts: tooltip, disabled/disabledTooltip
         -- (ToT/FoT parent gating), onBeforeSet(v) (boss stops its live preview).
-        local function AttachFrameSourceCog(region, unitName, options)
+        local function AddFrameSourceCog(region, unitName, options)
             options = options or {}
             local function StoredStyle()
                 local fontStr = saved.profile.frameSource and saved.profile.frameSource[unitName]
@@ -2742,8 +2742,8 @@ CludesUI.AtLogin(function()
             then
                 unitGroup = TARGET_FOCUS_PAIR
             end
-            local source = UNIT_DB_MAP[srcUnit]()
-            local dst = UNIT_DB_MAP[dstUnit]()
+            local source = UNIT_SETTINGS[srcUnit]()
+            local dst = UNIT_SETTINGS[dstUnit]()
             -- A target on the old "wingless" Elite/Rare style shows its dragon
             -- through a view (ns.UF_DragonLegacy) over target-only keys this copy
             -- never moves: pin both tables onto the dragon's own keys first.
@@ -2821,7 +2821,7 @@ CludesUI.AtLogin(function()
             local ddOrder = {}
             for _, settingKey in ipairs(unitGroup) do
                 if settingKey ~= curUnit then
-                    ddValues[settingKey] = SHORT_LABELS[settingKey] or settingKey
+                    ddValues[settingKey] = SHORT_NAMES[settingKey] or settingKey
                     ddOrder[#ddOrder + 1] = settingKey
                 end
             end
@@ -2846,8 +2846,8 @@ CludesUI.AtLogin(function()
                 function() return "" end,
                 function(srcUnit)
                     if srcUnit == "" then return end
-                    local srcLabel = SHORT_LABELS[srcUnit] or srcUnit
-                    local curLabel = SHORT_LABELS[curUnit] or curUnit
+                    local srcLabel = SHORT_NAMES[srcUnit] or srcUnit
+                    local curLabel = SHORT_NAMES[curUnit] or curUnit
                     local acked = CludesUIDB and CludesUIDB.ufApplyFromAck
                     CludesUI:ShowConfirmPopup({
                         title = "Apply All Settings",
@@ -2901,28 +2901,28 @@ CludesUI.AtLogin(function()
             ---------------------------------------------------------------
             --  Unified Get / Set / DB abstraction
             ---------------------------------------------------------------
-            local function SGet(settingKey) return UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] end
-            local function SSet(settingKey, val)
-                UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = val
+            local function ReadSetting(settingKey) return UNIT_SETTINGS[optionState.selectedUnit]()[settingKey] end
+            local function WriteSetting(settingKey, val)
+                UNIT_SETTINGS[optionState.selectedUnit]()[settingKey] = val
                 RebuildAndReload()
             end
-            local function SDB() return UNIT_DB_MAP[optionState.selectedUnit]() end
-            local function SVal(settingKey, default)
-                local value = UNIT_DB_MAP[optionState.selectedUnit]()[settingKey]
+            local function SettingsDB() return UNIT_SETTINGS[optionState.selectedUnit]() end
+            local function SettingOr(settingKey, default)
+                local value = UNIT_SETTINGS[optionState.selectedUnit]()[settingKey]
                 if value ~= nil then return value end
                 return default
             end
             -- Set that also writes to the current unit (for UNIT_SUPPORTS keys)
-            local function SSetSupported(settingKey, val)
-                UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = val
+            local function WriteSupported(settingKey, val)
+                UNIT_SETTINGS[optionState.selectedUnit]()[settingKey] = val
                 RebuildAndReload()
                 RepaintPreviews()
             end
-            local function SGetSupported(settingKey)
-                return UNIT_DB_MAP[optionState.selectedUnit]()[settingKey]
+            local function ReadSupported(settingKey)
+                return UNIT_SETTINGS[optionState.selectedUnit]()[settingKey]
             end
-            local function SValSupported(settingKey, default)
-                local value = UNIT_DB_MAP[optionState.selectedUnit]()[settingKey]
+            local function SupportedOr(settingKey, default)
+                local value = UNIT_SETTINGS[optionState.selectedUnit]()[settingKey]
                 if value == nil then return default end
                 return value
             end
@@ -2934,7 +2934,7 @@ CludesUI.AtLogin(function()
             end
             -- Dim a row region and add a tooltip when the current unit doesn't support
             -- the key; unsupportedTip (optional) shows over the dimmed row.
-            local function SApplySupport(regionFrame, settingKey, unsupportedTip)
+            local function ApplySupported(regionFrame, settingKey, unsupportedTip)
                 local visible = SVisible(settingKey)
                 if not visible then
                     regionFrame:SetAlpha(0.35)
@@ -2970,7 +2970,7 @@ CludesUI.AtLogin(function()
 
             hostFrame._showRowDivider = true
 
-            line, height = BuildApplyAllRow(hostFrame, cursorY, GROUP_UNIT_ORDER, optionState.selectedUnit)
+            line, height = BuildApplyAllRow(hostFrame, cursorY, GROUP_ORDER, optionState.selectedUnit)
             cursorY = cursorY - height
 
             -- The sections live in UnitFrames_Options\Shared*_Options.lua and read
@@ -2979,15 +2979,15 @@ CludesUI.AtLogin(function()
             -- the unit has no CUI frame (only the inactive notice is built).
             local context = {
                 W = W,
-                SGet = SGet,
-                SSet = SSet,
-                SDB = SDB,
-                SVal = SVal,
-                SSetSupported = SSetSupported,
-                SGetSupported = SGetSupported,
-                SValSupported = SValSupported,
+                SGet = ReadSetting,
+                SSet = WriteSetting,
+                SDB = SettingsDB,
+                SVal = SettingOr,
+                SSetSupported = WriteSupported,
+                SGetSupported = ReadSupported,
+                SValSupported = SupportedOr,
                 SVisible = SVisible,
-                SApplySupport = SApplySupport,
+                SApplySupport = ApplySupported,
             }
             local inactive
             cursorY, inactive = mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
@@ -3835,7 +3835,7 @@ CludesUI.AtLogin(function()
             ApplyClassIconTexture_Preview = ApplyClassIconTexture_Preview,
             ApplyPreviewPortraitShape = ApplyPreviewPortraitShape,
             AttachDebuffModeWarn = AttachDebuffModeWarn,
-            AttachFrameSourceCog = AttachFrameSourceCog,
+            AttachFrameSourceCog = AddFrameSourceCog,
             BlizzPreviewScale = BlizzPreviewScale,
             btbPositionOrder = btbPositionOrder,
             btbPositionValues = btbPositionValues,
@@ -3865,7 +3865,7 @@ CludesUI.AtLogin(function()
             detPortraitShapeOrder = detPortraitShapeOrder,
             detPortraitShapeValues = detPortraitShapeValues,
             frames = frameList,
-            GROUP_UNIT_ORDER = GROUP_UNIT_ORDER,
+            GROUP_UNIT_ORDER = GROUP_ORDER,
             HideExhaustionRow = HideExhaustionRow,
             healthTextOrder = healthTextOrder,
             healthTextOrderBoss = healthTextOrderBoss,
@@ -3882,17 +3882,17 @@ CludesUI.AtLogin(function()
             portraitNonPlayerValues = portraitNonPlayerValues,
             PP = Pix,
             PREVIEW_FONT = PREVIEW_FONT,
-            PromptReloadIfUnspawned = PromptReloadIfUnspawned,
+            PromptReloadIfUnspawned = AskReloadIfUnspawned,
             RegisterWidgetRefresh = RegisterWidgetRefresh,
             ReloadAndUpdate = RebuildAndReload,
             ResolveBlizzPreview = ResolveBlizzPreview,
             SetPVFont = SetPVFont,
-            SHORT_LABELS = SHORT_LABELS,
+            SHORT_LABELS = SHORT_NAMES,
             SOLID_BACKDROP = SOLID_BACKDROP,
             SwapAuraSlot = SwapAuraSlot,
             UF_ImpCastGlowDesc = UF_ImpCastGlowDesc,
             UF_PurgeGlowDesc = UF_PurgeGlowDesc,
-            UNIT_DB_MAP = UNIT_DB_MAP,
+            UNIT_DB_MAP = UNIT_SETTINGS,
             UNIT_LABELS_SUP = UNIT_LABELS_SUP,
             unitSide = unitSide,
             UpdatePreview = RepaintPreviews,

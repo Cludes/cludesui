@@ -43,25 +43,25 @@ end
 
 function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
-    local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, RebuildAndReload =
+    local GROUP_ORDER, Pix, RegisterWidgetRefresh, RebuildAndReload =
         environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local SHORT_LABELS, UF_ImpCastGlowDesc, UNIT_DB_MAP, RepaintPreview =
+    local SHORT_NAMES, UF_ImpCastGlowDesc, UNIT_SETTINGS, RepaintPreview =
         environ.SHORT_LABELS, environ.UF_ImpCastGlowDesc, environ.UNIT_DB_MAP, environ.UpdatePreview
     local saved, optionState = environ.db, environ.optState
-    local W, SGetSupported, SSetSupported, SVal =
+    local W, ReadSupported, WriteSupported, SettingOr =
         context.W, context.SGetSupported, context.SSetSupported, context.SVal
     -- Row setters over SSetSupported: the key written with the row's value, then ReloadAndUpdate() and UpdatePreview() for the Then form.
     local function SSetSupportedRowThen(key)
         return function(value)
-            SSetSupported(key, value)
+            WriteSupported(key, value)
             RebuildAndReload()
             RepaintPreview()
         end
     end
-    local SValSupported = context.SValSupported
+    local SupportedOr = context.SValSupported
     -- A row getter over SValSupported: the key's value, or the default given.
     local function SValSupportedRow(key, default)
-        return function() return SValSupported(key, default) end
+        return function() return SupportedOr(key, default) end
     end
     local height
 
@@ -75,16 +75,16 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
     -- Helper: get/set castbar visibility per unit
     local function GetCastbarEnabled(unitKey)
         if unitKey == "player" then
-            return UNIT_DB_MAP.player().showPlayerCastbar or false
+            return UNIT_SETTINGS.player().showPlayerCastbar or false
         else
-            return UNIT_DB_MAP[unitKey]().showCastbar ~= false
+            return UNIT_SETTINGS[unitKey]().showCastbar ~= false
         end
     end
     local function SetCastbarEnabled(unitKey, val)
         if unitKey == "player" then
-            UNIT_DB_MAP.player().showPlayerCastbar = val
+            UNIT_SETTINGS.player().showPlayerCastbar = val
         else
-            UNIT_DB_MAP[unitKey]().showCastbar = val
+            UNIT_SETTINGS[unitKey]().showCastbar = val
         end
     end
 
@@ -92,17 +92,17 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
     local function GetCastbarHeight()
         local u = optionState.selectedUnit
         if u == "player" then
-            local value = UNIT_DB_MAP.player().playerCastbarHeight or 0
+            local value = UNIT_SETTINGS.player().playerCastbarHeight or 0
             return (value <= 0) and 14 or value
         else
-            return UNIT_DB_MAP[u]().castbarHeight or 14
+            return UNIT_SETTINGS[u]().castbarHeight or 14
         end
     end
     local function SetCastbarHeight(value)
         if optionState.selectedUnit == "player" then
-            UNIT_DB_MAP.player().playerCastbarHeight = value
+            UNIT_SETTINGS.player().playerCastbarHeight = value
         else
-            UNIT_DB_MAP[optionState.selectedUnit]().castbarHeight = value
+            UNIT_SETTINGS[optionState.selectedUnit]().castbarHeight = value
         end
     end
 
@@ -211,23 +211,23 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 or "Apply Show Cast Bar and Fill Color to all Frames",
             onClick = function()
                 local value = GetCastbarEnabled(optionState.selectedUnit)
-                local color = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
+                local color = UNIT_SETTINGS[optionState.selectedUnit]().castbarFillColor
                 local readyC = isKickUnit
-                    and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
+                    and UNIT_SETTINGS[optionState.selectedUnit]().castbarInterruptReadyColor
                 local unintC = isKickUnit
-                    and UNIT_DB_MAP[optionState.selectedUnit]().castbarUninterruptibleColor
-                local keyList = isKickUnit and { "target", "focus" } or GROUP_UNIT_ORDER
+                    and UNIT_SETTINGS[optionState.selectedUnit]().castbarUninterruptibleColor
+                local keyList = isKickUnit and { "target", "focus" } or GROUP_ORDER
                 for _, key in ipairs(keyList) do
                     SetCastbarEnabled(key, value)
                     if color then
-                        UNIT_DB_MAP[key]().castbarFillColor = { r = color.r, g = color.g, b = color.b }
+                        UNIT_SETTINGS[key]().castbarFillColor = { r = color.r, g = color.g, b = color.b }
                     end
                     if readyC then
-                        UNIT_DB_MAP[key]().castbarInterruptReadyColor =
+                        UNIT_SETTINGS[key]().castbarInterruptReadyColor =
                             { r = readyC.r, g = readyC.g, b = readyC.b }
                     end
                     if unintC then
-                        UNIT_DB_MAP[key]().castbarUninterruptibleColor =
+                        UNIT_SETTINGS[key]().castbarUninterruptibleColor =
                             { r = unintC.r, g = unintC.g, b = unintC.b }
                     end
                 end
@@ -236,28 +236,28 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             end,
             isSynced = function()
                 local value = GetCastbarEnabled(optionState.selectedUnit)
-                local color = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
+                local color = UNIT_SETTINGS[optionState.selectedUnit]().castbarFillColor
                 local readyC = isKickUnit
-                    and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
+                    and UNIT_SETTINGS[optionState.selectedUnit]().castbarInterruptReadyColor
                 local unintC = isKickUnit
-                    and UNIT_DB_MAP[optionState.selectedUnit]().castbarUninterruptibleColor
-                local keyList = isKickUnit and { "target", "focus" } or GROUP_UNIT_ORDER
+                    and UNIT_SETTINGS[optionState.selectedUnit]().castbarUninterruptibleColor
+                local keyList = isKickUnit and { "target", "focus" } or GROUP_ORDER
                 for _, key in ipairs(keyList) do
                     if GetCastbarEnabled(key) ~= value then return false end
-                    local kc = UNIT_DB_MAP[key]().castbarFillColor
+                    local kc = UNIT_SETTINGS[key]().castbarFillColor
                     if color and kc then
                         if kc.r ~= color.r or kc.g ~= color.g or kc.b ~= color.b then return false end
                     elseif color ~= kc then
                         return false
                     end
                     if isKickUnit then
-                        local kr = UNIT_DB_MAP[key]().castbarInterruptReadyColor
+                        local kr = UNIT_SETTINGS[key]().castbarInterruptReadyColor
                         if readyC and kr then
                             if kr.r ~= readyC.r or kr.g ~= readyC.g or kr.b ~= readyC.b then return false end
                         elseif readyC ~= kr then
                             return false
                         end
-                        local ku = UNIT_DB_MAP[key]().castbarUninterruptibleColor
+                        local ku = UNIT_SETTINGS[key]().castbarUninterruptibleColor
                         if unintC and ku then
                             if ku.r ~= unintC.r or ku.g ~= unintC.g or ku.b ~= unintC.b then return false end
                         elseif unintC ~= ku then
@@ -269,27 +269,27 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             end,
             flashTargets = function() return { region } end,
             multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
+                elementKeys = GROUP_ORDER,
+                elementLabels = SHORT_NAMES,
                 getCurrentKey = function() return optionState.selectedUnit end,
                 onApply = function(checkedKeys)
                     local value = GetCastbarEnabled(optionState.selectedUnit)
-                    local color = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
+                    local color = UNIT_SETTINGS[optionState.selectedUnit]().castbarFillColor
                     local readyC = isKickUnit
-                        and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
+                        and UNIT_SETTINGS[optionState.selectedUnit]().castbarInterruptReadyColor
                     local unintC = isKickUnit
-                        and UNIT_DB_MAP[optionState.selectedUnit]().castbarUninterruptibleColor
+                        and UNIT_SETTINGS[optionState.selectedUnit]().castbarUninterruptibleColor
                     for _, key in ipairs(checkedKeys) do
                         SetCastbarEnabled(key, value)
                         if color then
-                            UNIT_DB_MAP[key]().castbarFillColor = { r = color.r, g = color.g, b = color.b }
+                            UNIT_SETTINGS[key]().castbarFillColor = { r = color.r, g = color.g, b = color.b }
                         end
                         if readyC and (key == "target" or key == "focus") then
-                            UNIT_DB_MAP[key]().castbarInterruptReadyColor =
+                            UNIT_SETTINGS[key]().castbarInterruptReadyColor =
                                 { r = readyC.r, g = readyC.g, b = readyC.b }
                         end
                         if unintC and (key == "target" or key == "focus") then
-                            UNIT_DB_MAP[key]().castbarUninterruptibleColor =
+                            UNIT_SETTINGS[key]().castbarUninterruptibleColor =
                                 { r = unintC.r, g = unintC.g, b = unintC.b }
                         end
                     end
@@ -310,12 +310,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 label = "Hide When Idle",
                 tooltip = "Only show the cast bar while a cast is in progress; hide it the rest of the time.",
                 get = function()
-                    local value = UNIT_DB_MAP[optionState.selectedUnit]().castbarHideWhenInactive
+                    local value = UNIT_SETTINGS[optionState.selectedUnit]().castbarHideWhenInactive
                     if value == nil then return true end
                     return value
                 end,
                 set = function(value)
-                    UNIT_DB_MAP[optionState.selectedUnit]().castbarHideWhenInactive = value
+                    UNIT_SETTINGS[optionState.selectedUnit]().castbarHideWhenInactive = value
                     RebuildAndReload()
                     RepaintPreview()
                 end,
@@ -327,9 +327,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 max = 100,
                 step = 1,
                 tooltip = "Opacity of the cast bar fill; below 100 the world shows through the fill instead of the background.",
-                get = function() return UNIT_DB_MAP[optionState.selectedUnit]().castFillOpacity or 100 end,
+                get = function() return UNIT_SETTINGS[optionState.selectedUnit]().castFillOpacity or 100 end,
                 set = function(value)
-                    UNIT_DB_MAP[optionState.selectedUnit]().castFillOpacity = value
+                    UNIT_SETTINGS[optionState.selectedUnit]().castFillOpacity = value
                     RebuildAndReload()
                     RepaintPreview()
                 end,
@@ -354,7 +354,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 label = "Show Kick Ready Mid-Cast Tick",
                 tooltip = "Shows a small white tick mark on the cast bar at the point where the cast will be when your interrupt comes off cooldown.",
                 get = function()
-                    local value = SGetSupported("castbarKickTickEnabled")
+                    local value = ReadSupported("castbarKickTickEnabled")
                     if value == nil then return true end
                     return value
                 end,
@@ -365,12 +365,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 label = "Show Kick Ready Mid-Cast Bar",
                 tooltip = "When your interrupt is on cooldown now but will be ready before the enemy cast finishes, color the part of the cast bar during which your interrupt will be available. The color clears the instant your interrupt comes off cooldown.",
                 get = function()
-                    local value = SGetSupported("castbarInterruptMidCastEnabled")
+                    local value = ReadSupported("castbarInterruptMidCastEnabled")
                     if value == nil then return false end
                     return value
                 end,
                 set = function(value)
-                    SSetSupported("castbarInterruptMidCastEnabled", value)
+                    WriteSupported("castbarInterruptMidCastEnabled", value)
                     RebuildAndReload()
                     RepaintPreview()
                     -- Refresh so the inline Mid-Cast swatch greys/ungreys at once;
@@ -388,9 +388,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             disabled = function() return CUI.BlizzStyle.Get("unitframes") end,
             disabledTooltip = function() return CUI.BlizzStyle.Label("unitframes") end,
             requireState = "disabled",
-            get = function() return UNIT_DB_MAP[optionState.selectedUnit]().castBorderCustom == true end,
+            get = function() return UNIT_SETTINGS[optionState.selectedUnit]().castBorderCustom == true end,
             set = function(value)
-                UNIT_DB_MAP[optionState.selectedUnit]().castBorderCustom = value
+                UNIT_SETTINGS[optionState.selectedUnit]().castBorderCustom = value
                 RebuildAndReload()
                 CUI.ReapplyMatchPads(optionState.selectedUnit .. "Castbar")
                 CUI:RefreshPage(true)
@@ -409,12 +409,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 function()
-                    local color = SGetSupported(colorKey)
+                    local color = ReadSupported(colorKey)
                     color = color or fallback
                     return color.r, color.g, color.b, 1
                 end,
                 function(red, green, blue)
-                    SSetSupported(colorKey, { r = red, g = green, b = blue })
+                    WriteSupported(colorKey, { r = red, g = green, b = blue })
                     RebuildAndReload()
                     RepaintPreview()
                 end,
@@ -447,7 +447,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 "Interrupt Ready Mid-Cast",
                 "castbarInterruptMidCastColor",
                 { r = 0.318, g = 0.820, b = 0.357 },
-                function() return not SValSupported("castbarInterruptMidCastEnabled", false) end
+                function() return not SupportedOr("castbarInterruptMidCastEnabled", false) end
             )
             AddCastColorSwatch(
                 "Interrupt on CD",
@@ -487,20 +487,20 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         -- Row 2: Show Icon | Bar Background (opacity slider + inline color swatch)
         local function GetShowIcon()
             if optionState.selectedUnit == "player" then
-                local value = UNIT_DB_MAP.player().showPlayerCastIcon
+                local value = UNIT_SETTINGS.player().showPlayerCastIcon
                 if value == nil then return true end
                 return value
             else
-                local value = UNIT_DB_MAP[optionState.selectedUnit]().showCastIcon
+                local value = UNIT_SETTINGS[optionState.selectedUnit]().showCastIcon
                 if value == nil then return true end
                 return value
             end
         end
         local function SetShowIcon(val)
             if optionState.selectedUnit == "player" then
-                UNIT_DB_MAP.player().showPlayerCastIcon = val
+                UNIT_SETTINGS.player().showPlayerCastIcon = val
             else
-                UNIT_DB_MAP[optionState.selectedUnit]().showCastIcon = val
+                UNIT_SETTINGS[optionState.selectedUnit]().showCastIcon = val
             end
         end
         castRow2, height = W:DualRow(hostFrame, cursorY, {
@@ -518,9 +518,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             min = 0,
             max = 100,
             step = 1,
-            getValue = function() return math.floor(SValSupported("castBgAlpha", 0.5) * 100 + 0.5) end,
+            getValue = function() return math.floor(SupportedOr("castBgAlpha", 0.5) * 100 + 0.5) end,
             setValue = function(value)
-                UNIT_DB_MAP[optionState.selectedUnit]().castBgAlpha = value / 100
+                UNIT_SETTINGS[optionState.selectedUnit]().castBgAlpha = value / 100
                 RebuildAndReload()
                 RepaintPreview()
             end,
@@ -550,7 +550,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             local function IconOnPortrait()
                 return mod.UF_CastIconOnPortrait(
                     optionState.selectedUnit,
-                    UNIT_DB_MAP[optionState.selectedUnit]()
+                    UNIT_SETTINGS[optionState.selectedUnit]()
                 )
             end
             CUI.BuildInlineCog(region, {
@@ -567,10 +567,10 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         end,
                         disabledTooltip = "This option requires Show Icon beside the cast bar and the CludesUI style.",
                         get = function()
-                            return UNIT_DB_MAP[optionState.selectedUnit]().castIconBorder == true
+                            return UNIT_SETTINGS[optionState.selectedUnit]().castIconBorder == true
                         end,
                         set = function(value)
-                            UNIT_DB_MAP[optionState.selectedUnit]().castIconBorder = value
+                            UNIT_SETTINGS[optionState.selectedUnit]().castIconBorder = value
                             RebuildAndReload()
                             RepaintPreview()
                         end,
@@ -594,15 +594,15 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         get = function()
                             if CUI.BlizzStyle.Get("unitframes") then return true end
                             if optionState.selectedUnit == "player" then
-                                return UNIT_DB_MAP.player().playerCastbarIconInWidth ~= false
+                                return UNIT_SETTINGS.player().playerCastbarIconInWidth ~= false
                             end
-                            return UNIT_DB_MAP[optionState.selectedUnit]().castbarIconInWidth ~= false
+                            return UNIT_SETTINGS[optionState.selectedUnit]().castbarIconInWidth ~= false
                         end,
                         set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastbarIconInWidth = value
+                                UNIT_SETTINGS.player().playerCastbarIconInWidth = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconInWidth = value
+                                UNIT_SETTINGS[optionState.selectedUnit]().castbarIconInWidth = value
                             end
                             RebuildAndReload()
                             RepaintPreview()
@@ -615,17 +615,17 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         label = "Border Wraps Icon",
                         tooltip = "Draw the custom cast bar border around the icon and the bar together. An icon with an offset keeps its own border.",
                         disabled = function()
-                            local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                            local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
                             return CUI.BlizzStyle.Get("unitframes")
                                 or cfg.castBorderCustom ~= true
                                 or not mod.UF_CastIconInWidth(optionState.selectedUnit, cfg)
                         end,
                         disabledTooltip = "This option requires Custom Border Style, Show Icon and Make Icon Part of the Bar, with the CludesUI style.",
                         get = function()
-                            return UNIT_DB_MAP[optionState.selectedUnit]().castBorderWrapIcon == true
+                            return UNIT_SETTINGS[optionState.selectedUnit]().castBorderWrapIcon == true
                         end,
                         set = function(value)
-                            UNIT_DB_MAP[optionState.selectedUnit]().castBorderWrapIcon = value
+                            UNIT_SETTINGS[optionState.selectedUnit]().castBorderWrapIcon = value
                             RebuildAndReload()
                             RepaintPreview()
                             CUI.ReapplyMatchPads(optionState.selectedUnit .. "Castbar")
@@ -638,13 +638,13 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         label = "Vertical Separator",
                         tooltip = "Draw a divider between the integrated icon and the bar, using the cast bar's border appearance.",
                         disabled = function()
-                            local s = UNIT_DB_MAP[optionState.selectedUnit]()
+                            local s = UNIT_SETTINGS[optionState.selectedUnit]()
                             return CUI.BlizzStyle.Get("unitframes")
                                 or not mod.UF_CastIconInWidth(optionState.selectedUnit, s)
                                 or not mod.UF_CastIconSeamOK(s)
                         end,
                         disabledTooltip = function()
-                            local s = UNIT_DB_MAP[optionState.selectedUnit]()
+                            local s = UNIT_SETTINGS[optionState.selectedUnit]()
                             if
                                 CUI.BlizzStyle.Get("unitframes")
                                 or not mod.UF_CastIconInWidth(optionState.selectedUnit, s)
@@ -654,10 +654,10 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             return "This option requires Solid or a border style with divider art, and a Border Size above 0."
                         end,
                         get = function()
-                            return UNIT_DB_MAP[optionState.selectedUnit]().castIconSeparator == true
+                            return UNIT_SETTINGS[optionState.selectedUnit]().castIconSeparator == true
                         end,
                         set = function(value)
-                            UNIT_DB_MAP[optionState.selectedUnit]().castIconSeparator = value
+                            UNIT_SETTINGS[optionState.selectedUnit]().castIconSeparator = value
                             RebuildAndReload()
                             RepaintPreview()
                         end,
@@ -671,15 +671,15 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         requireState = "disabled",
                         get = function()
                             if optionState.selectedUnit == "player" then
-                                return UNIT_DB_MAP.player().playerCastbarIconRight == true
+                                return UNIT_SETTINGS.player().playerCastbarIconRight == true
                             end
-                            return UNIT_DB_MAP[optionState.selectedUnit]().castbarIconRight == true
+                            return UNIT_SETTINGS[optionState.selectedUnit]().castbarIconRight == true
                         end,
                         set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastbarIconRight = value
+                                UNIT_SETTINGS.player().playerCastbarIconRight = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconRight = value
+                                UNIT_SETTINGS[optionState.selectedUnit]().castbarIconRight = value
                             end
                             RebuildAndReload()
                             RepaintPreview()
@@ -693,7 +693,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         tooltip = "Shows the spell icon over the portrait while casting and lets the bar use the full width.",
                         disabled = function()
                             if CUI.BlizzStyle.Get("unitframes") or not GetShowIcon() then return true end
-                            local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                            local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
                             return (cfg.portraitStyle or saved.profile.portraitStyle or "attached") == "none"
                                 or cfg.showPortrait == false
                                 or (cfg.portraitMode or saved.profile.portraitMode or "2d") == "none"
@@ -708,15 +708,15 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         requireState = "disabled",
                         get = function()
                             if optionState.selectedUnit == "player" then
-                                return UNIT_DB_MAP.player().playerCastbarIconOnPortrait == true
+                                return UNIT_SETTINGS.player().playerCastbarIconOnPortrait == true
                             end
-                            return UNIT_DB_MAP[optionState.selectedUnit]().castbarIconOnPortrait == true
+                            return UNIT_SETTINGS[optionState.selectedUnit]().castbarIconOnPortrait == true
                         end,
                         set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastbarIconOnPortrait = value
+                                UNIT_SETTINGS.player().playerCastbarIconOnPortrait = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconOnPortrait = value
+                                UNIT_SETTINGS[optionState.selectedUnit]().castbarIconOnPortrait = value
                             end
                             RebuildAndReload()
                             RepaintPreview()
@@ -733,15 +733,15 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         requireState = "disabled",
                         get = function()
                             if optionState.selectedUnit == "player" then
-                                return UNIT_DB_MAP.player().playerCastIconOffsetX or 0
+                                return UNIT_SETTINGS.player().playerCastIconOffsetX or 0
                             end
-                            return UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetX or 0
+                            return UNIT_SETTINGS[optionState.selectedUnit]().castIconOffsetX or 0
                         end,
                         set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastIconOffsetX = value
+                                UNIT_SETTINGS.player().playerCastIconOffsetX = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetX = value
+                                UNIT_SETTINGS[optionState.selectedUnit]().castIconOffsetX = value
                             end
                             RebuildAndReload()
                             RepaintPreview()
@@ -758,15 +758,15 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         requireState = "disabled",
                         get = function()
                             if optionState.selectedUnit == "player" then
-                                return UNIT_DB_MAP.player().playerCastIconOffsetY or 0
+                                return UNIT_SETTINGS.player().playerCastIconOffsetY or 0
                             end
-                            return UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetY or 0
+                            return UNIT_SETTINGS[optionState.selectedUnit]().castIconOffsetY or 0
                         end,
                         set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastIconOffsetY = value
+                                UNIT_SETTINGS.player().playerCastIconOffsetY = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetY = value
+                                UNIT_SETTINGS[optionState.selectedUnit]().castIconOffsetY = value
                             end
                             RebuildAndReload()
                             RepaintPreview()
@@ -779,12 +779,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CUI._prebuilding then
             local region = castRow2._rightRegion
             local bgSwGet = function()
-                local color = UNIT_DB_MAP[optionState.selectedUnit]().castBgColor
+                local color = UNIT_SETTINGS[optionState.selectedUnit]().castBgColor
                 if color then return color.r, color.g, color.b end
                 return 0, 0, 0
             end
             local bgSwSet = function(red, green, blue)
-                UNIT_DB_MAP[optionState.selectedUnit]().castBgColor = { r = red, g = green, b = blue }
+                UNIT_SETTINGS[optionState.selectedUnit]().castBgColor = { r = red, g = green, b = blue }
                 RebuildAndReload()
                 RepaintPreview()
             end
@@ -798,12 +798,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CUI._prebuilding then
             local region = castRow2._rightRegion
             local function ApplyCastBgTo(keyList)
-                local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                local source = UNIT_SETTINGS[optionState.selectedUnit]()
                 local bc = source.castBgColor or { r = 0, g = 0, b = 0 }
                 local bgA = source.castBgAlpha
                 for _, key in ipairs(keyList) do
                     if key ~= optionState.selectedUnit then
-                        local unitCfg = UNIT_DB_MAP[key]()
+                        local unitCfg = UNIT_SETTINGS[key]()
                         unitCfg.castBgColor = { r = bc.r, g = bc.g, b = bc.b }
                         unitCfg.castBgAlpha = bgA
                     end
@@ -814,7 +814,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             mod.UFO_UnitSync(region, "Bar Background", {
                 applyTo = ApplyCastBgTo,
                 isSynced = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local source = UNIT_SETTINGS[optionState.selectedUnit]()
                     local function colEq(a, b)
                         -- A nil color means "use the hardcoded default (black)", so a
                         -- nil color and an explicit black must compare equal. Without
@@ -824,8 +824,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         local cr, cg, cb = b and b.r or 0, b and b.g or 0, b and b.b or 0
                         return ar == cr and ag == cg and ab == cb
                     end
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local unitCfg = UNIT_DB_MAP[key]()
+                    for _, key in ipairs(GROUP_ORDER) do
+                        local unitCfg = UNIT_SETTINGS[key]()
                         if not colEq(unitCfg.castBgColor, source.castBgColor) then return false end
                         if (unitCfg.castBgAlpha or 0.5) ~= (source.castBgAlpha or 0.5) then return false end
                     end
@@ -848,7 +848,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             order = castTextPosOrder,
             getValue = SValSupportedRow("castSpellNameSide", "left"),
             setValue = function(value)
-                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
                 cfg.castSpellNameSide = value
                 if
                     value ~= "none"
@@ -867,11 +867,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             values = { none = "None", right = "Right", left = "Left" },
             order = { "none", "right", "left" },
             getValue = function()
-                if SValSupported("showCastDuration", true) == false then return "none" end
-                return SValSupported("castDurationSide", "right")
+                if SupportedOr("showCastDuration", true) == false then return "none" end
+                return SupportedOr("castDurationSide", "right")
             end,
             setValue = function(value)
-                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
                 if value == "none" then
                     cfg.showCastDuration = false
                 else
@@ -921,7 +921,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     tooltip = "Long spell names shrink to fit beside the duration instead of being cut off.",
                     get = SValSupportedRow("castFitSpellName", false),
                     set = function(value)
-                        SSetSupported("castFitSpellName", value)
+                        WriteSupported("castFitSpellName", value)
                         RebuildAndReload()
                     end,
                 },
@@ -933,7 +933,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     tooltip = "Appends the cast target to the spell name (Spell Name - Target), class colored, and disables the separate Spell Target display.",
                     get = SValSupportedRow("castCombineNameTarget", false),
                     set = function(value)
-                        SSetSupported("castCombineNameTarget", value)
+                        WriteSupported("castCombineNameTarget", value)
                         RebuildAndReload()
                         RepaintPreview()
                         -- Grey/ungrey the Spell Name dropdown immediately.
@@ -950,11 +950,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CUI._prebuilding then
             local snRgn = castTextRow._leftRegion
             local snSw = CUI.BuildColorSwatch(snRgn, snRgn:GetFrameLevel() + 5, function()
-                local color = SGetSupported("castSpellNameColor")
+                local color = ReadSupported("castSpellNameColor")
                 color = color or { r = 1, g = 1, b = 1 }
                 return color.r, color.g, color.b, 1
             end, function(red, green, blue)
-                UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameColor = { r = red, g = green, b = blue }
+                UNIT_SETTINGS[optionState.selectedUnit]().castSpellNameColor = { r = red, g = green, b = blue }
                 RebuildAndReload()
                 RepaintPreview()
             end, false, 20)
@@ -1000,7 +1000,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     tooltip = "While crafting several items at once, the duration shows the time left for the whole batch and the spell name shows the craft count.",
                     get = SValSupportedRow("castFullCraftTime", false),
                     set = function(value)
-                        SSetSupported("castFullCraftTime", value)
+                        WriteSupported("castFullCraftTime", value)
                         RebuildAndReload()
                     end,
                 }
@@ -1014,11 +1014,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CUI._prebuilding then
             local dtRgn = castTextRow._rightRegion
             local dtSw = CUI.BuildColorSwatch(dtRgn, dtRgn:GetFrameLevel() + 5, function()
-                local color = SGetSupported("castDurationColor")
+                local color = ReadSupported("castDurationColor")
                 color = color or { r = 1, g = 1, b = 1 }
                 return color.r, color.g, color.b, 1
             end, function(red, green, blue)
-                UNIT_DB_MAP[optionState.selectedUnit]().castDurationColor = { r = red, g = green, b = blue }
+                UNIT_SETTINGS[optionState.selectedUnit]().castDurationColor = { r = red, g = green, b = blue }
                 RebuildAndReload()
                 RepaintPreview()
             end, false, 20)
@@ -1056,16 +1056,16 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 if optionState.selectedUnit ~= "target" and optionState.selectedUnit ~= "focus" then
                     return false
                 end
-                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
                 return (cfg and cfg.castCombineNameTarget == true) and true or false
             end,
             disabledTooltip = "This option requires Combine Spell Name and Target to be disabled.",
             getValue = function()
-                if SValSupported("showCastTarget", true) == false then return "none" end
-                return SValSupported("castSpellTargetSide", "right")
+                if SupportedOr("showCastTarget", true) == false then return "none" end
+                return SupportedOr("castSpellTargetSide", "right")
             end,
             setValue = function(value)
-                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
                 if value == "none" then
                     cfg.showCastTarget = false
                 else
@@ -1124,11 +1124,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CUI._prebuilding then
             local trgRgn = castTargetRow._leftRegion
             local trgSw = CUI.BuildColorSwatch(trgRgn, trgRgn:GetFrameLevel() + 5, function()
-                local color = SGetSupported("castSpellTargetColor")
+                local color = ReadSupported("castSpellTargetColor")
                 color = color or { r = 1, g = 1, b = 1 }
                 return color.r, color.g, color.b, 1
             end, function(red, green, blue)
-                UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetColor =
+                UNIT_SETTINGS[optionState.selectedUnit]().castSpellTargetColor =
                     { r = red, g = green, b = blue }
                 RebuildAndReload()
                 RepaintPreview()
@@ -1150,21 +1150,21 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         end
         -- Custom Border Style rows (the Cast Bar cog's opt-in), inside the Show
         -- Cast Bar gate and ahead of the Classic-only Border Size row.
-        if SVal("castBorderCustom", false) == true then
+        if SettingOr("castBorderCustom", false) == true then
             cursorY = cursorY
                 - mod.UF_CastBorderRows(
                     W,
                     hostFrame,
                     cursorY,
-                    function() return UNIT_DB_MAP[optionState.selectedUnit]() end,
+                    function() return UNIT_SETTINGS[optionState.selectedUnit]() end,
                     RebuildAndReload,
                     optionState.selectedUnit .. "Castbar",
                     {
-                        units = GROUP_UNIT_ORDER,
-                        labels = SHORT_LABELS,
+                        units = GROUP_ORDER,
+                        labels = SHORT_NAMES,
                         current = function() return optionState.selectedUnit end,
                         db = function(unit)
-                            local f = UNIT_DB_MAP[unit]
+                            local f = UNIT_SETTINGS[unit]
                             return f and f()
                         end,
                     }
@@ -1174,7 +1174,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         local impGlowCfg, impGlowDesc
         if optionState.selectedUnit == "target" or optionState.selectedUnit == "focus" then
             impGlowDesc = UF_ImpCastGlowDesc(
-                function() return UNIT_DB_MAP[optionState.selectedUnit]() end,
+                function() return UNIT_SETTINGS[optionState.selectedUnit]() end,
                 function()
                     RebuildAndReload()
                     RepaintPreview()
@@ -1191,18 +1191,18 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             W,
             hostFrame,
             cursorY,
-            function() return UNIT_DB_MAP[optionState.selectedUnit]() end,
+            function() return UNIT_SETTINGS[optionState.selectedUnit]() end,
             mod.UF_CastClassicKey(optionState.selectedUnit),
             function()
                 RebuildAndReload()
                 RepaintPreview()
             end,
             {
-                units = GROUP_UNIT_ORDER,
-                labels = SHORT_LABELS,
+                units = GROUP_ORDER,
+                labels = SHORT_NAMES,
                 current = function() return optionState.selectedUnit end,
                 db = function(unit)
-                    local f = UNIT_DB_MAP[unit]
+                    local f = UNIT_SETTINGS[unit]
                     return f and f()
                 end,
                 reload = RebuildAndReload,
@@ -1417,24 +1417,24 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         environ.AttachDebuffModeWarn, environ.DebuffModeDropdownCfg, environ.PP
     local RegisterWidgetRefresh, RebuildAndReload, SwapAuraSlot =
         environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SwapAuraSlot
-    local UF_PurgeGlowDesc, UNIT_DB_MAP, UNIT_LABELS_SUP, RepaintPreview =
+    local UF_PurgeGlowDesc, UNIT_SETTINGS, UNIT_LABELS_SUP, RepaintPreview =
         environ.UF_PurgeGlowDesc, environ.UNIT_DB_MAP, environ.UNIT_LABELS_SUP, environ.UpdatePreview
     local HideExhaustionRow = environ.HideExhaustionRow
     local buffAnchorOrder, buffAnchorValues = environ.buffAnchorOrder, environ.buffAnchorValues
     local saved, frameList, optionState = environ.db, environ.frames, environ.optState
-    local W, SApplySupport, SDB, SGet = context.W, context.SApplySupport, context.SDB, context.SGet
-    local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
+    local W, ApplySupported, SettingsDB, ReadSetting = context.W, context.SApplySupport, context.SDB, context.SGet
+    local WriteSupported, SettingOr, SupportedOr = context.SSetSupported, context.SVal, context.SValSupported
     -- Row setters over SSetSupported: the key written with the row's value.
     local function SSetSupportedRow(key)
-        return function(value) SSetSupported(key, value) end
+        return function(value) WriteSupported(key, value) end
     end
     -- A row getter over SValSupported: the key's value, or the default given.
     local function SValSupportedRow(key, default)
-        return function() return SValSupported(key, default) end
+        return function() return SupportedOr(key, default) end
     end
     -- Row setters over SSetSupported: the key written with the row's value.
     local function SSetSupportedRow(key)
-        return function(value) SSetSupported(key, value) end
+        return function(value) WriteSupported(key, value) end
     end
     local _, height
 
@@ -1447,16 +1447,16 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
 
     -- When Buff/Debuff Display is "none", everything in that column is disabled.
     local function BuffsOff()
-        local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+        local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
         if not cfg then return false end
         -- Anchor Buffs with Debuffs renders buffs inside the debuff stack, so
         -- buff appearance settings stay live while Buff Display reads None (visibility belongs to the merge toggle).
-        if cfg.debuffAnchorBuffs and SValSupported("debuffAnchor", "bottomleft") ~= "none" then
+        if cfg.debuffAnchorBuffs and SupportedOr("debuffAnchor", "bottomleft") ~= "none" then
             return false
         end
         return cfg.showBuffs == false
     end
-    local function DebuffsOff() return SValSupported("debuffAnchor", "bottomleft") == "none" end
+    local function DebuffsOff() return SupportedOr("debuffAnchor", "bottomleft") == "none" end
 
     -- Buff Display gains "Anchor to Debuffs" -- a pure VIEW over the same stored
     -- keys the merge always used (debuffAnchorBuffs=true + showBuffs=false), so old
@@ -1496,20 +1496,20 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             if value == "anchor_debuffs" then return "Requires a Debuff Display" end
         end,
         getValue = function()
-            local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+            local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
             -- Active merge presents as its own display choice; an inert merge
             -- (Debuff Display None) falls through to the truthful None readout.
-            if cfg.debuffAnchorBuffs and SValSupported("debuffAnchor", "bottomleft") ~= "none" then
+            if cfg.debuffAnchorBuffs and SupportedOr("debuffAnchor", "bottomleft") ~= "none" then
                 return "anchor_debuffs"
             end
             if cfg.showBuffs == false then return "none" end
-            return SValSupported("buffAnchor", "topleft")
+            return SupportedOr("buffAnchor", "topleft")
         end,
         -- DependentSetValue: the Buff Duration/Stack row (and, together
         -- with Debuff Display, the filter row) hides while None; only
         -- the None <-> shown flip forces the full rebuild.
         setValue = CUI.DependentSetValue(function() return not BuffsOff() end, function(value)
-            local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+            local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
             if value == "anchor_debuffs" then
                 -- Same stored shape the old cog toggle wrote: the
                 -- merge owns visibility, Buff Display stores None.
@@ -1541,7 +1541,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         setValue = SSetSupportedRow("buffSize"),
     })
     cursorY = cursorY - height
-    SApplySupport(sharedAddRow2._leftRegion, "showBuffs")
+    ApplySupported(sharedAddRow2._leftRegion, "showBuffs")
     -- Sync icon: Buffs Location (left)
     if not CUI._prebuilding then
         -- Shown (on when unset) travels with the place it shows at; hidden buffs
@@ -1570,8 +1570,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         local leftRegion = sharedAddRow2._leftRegion
         local buffCogRows = mod.UFO_AuraSettingsRows(
             "buff",
-            SValSupported,
-            SSetSupported,
+            SupportedOr,
+            WriteSupported,
             40,
             4,
             nil,
@@ -1605,7 +1605,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             end,
             get = function()
                 return optionState.selectedUnit ~= "player"
-                    and SValSupported("buffDispelBorder", false) == true
+                    and SupportedOr("buffDispelBorder", false) == true
             end,
             set = SSetSupportedRow("buffDispelBorder"),
         }
@@ -1623,7 +1623,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             disabled = BuffsOff,
             disabledTooltip = "Buff Display",
             title = "Buff Position",
-            rows = mod.UFO_AuraPositionRows("buff", SValSupported, SSetSupported),
+            rows = mod.UFO_AuraPositionRows("buff", SupportedOr, WriteSupported),
         })
     end
 
@@ -1631,7 +1631,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     -- None (DependentSetValue rebuilds). Duration Size is gated by an inline
     -- "Show Cooldown Text" toggle; off disables the slider/cog/label.
     if not BuffsOff() then
-        local buffDurOff = function() return BuffsOff() or not SValSupported("buffShowCooldownText", false) end
+        local buffDurOff = function() return BuffsOff() or not SupportedOr("buffShowCooldownText", false) end
         local buffDurTip = function() return BuffsOff() and "Buff Display" or "Show Cooldown Text" end
         local sharedBuffRow2
         sharedBuffRow2, height = W:DualRow(hostFrame, cursorY, {
@@ -1690,11 +1690,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         max = 90,
                         step = 1,
                         get = function()
-                            local value = SValSupported("buffCooldownTextPrecision", nil)
+                            local value = SupportedOr("buffCooldownTextPrecision", nil)
                             return value and value / 60 or 0
                         end,
                         set = function(value)
-                            SSetSupported("buffCooldownTextPrecision", value > 0 and value * 60 or nil)
+                            WriteSupported("buffCooldownTextPrecision", value > 0 and value * 60 or nil)
                         end,
                     },
                 },
@@ -1766,7 +1766,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         -- with Buff Display, the filter row) hides while None; only the
         -- None <-> shown flip forces the full rebuild.
         setValue = CUI.DependentSetValue(function() return not DebuffsOff() end, function(value)
-            SwapAuraSlot(UNIT_DB_MAP[optionState.selectedUnit](), "debuffAnchor", value)
+            SwapAuraSlot(UNIT_SETTINGS[optionState.selectedUnit](), "debuffAnchor", value)
             RebuildAndReload()
             RepaintPreview()
             CUI:RefreshPage()
@@ -1789,15 +1789,15 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         local leftRegion = sharedAddRow3._leftRegion
         local maxImpRow
         if optionState.selectedUnit ~= "player" then
-            maxImpRow = mod.UFO_MaxImportantRow(SDB, function()
+            maxImpRow = mod.UFO_MaxImportantRow(SettingsDB, function()
                 RebuildAndReload()
                 RepaintPreview()
             end, 20, 20)
         end
         local debuffCogRows = mod.UFO_AuraSettingsRows(
             "debuff",
-            SValSupported,
-            SSetSupported,
+            SupportedOr,
+            WriteSupported,
             20,
             20,
             maxImpRow,
@@ -1836,7 +1836,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                 tooltip = "Colors the dispel type borders with your Dispel Colors instead of Blizzard's.",
                 disabled = function()
                     return CUI.BlizzStyle.Get("unitframes")
-                        or SValSupported("debuffDispelBorder", false) ~= true
+                        or SupportedOr("debuffDispelBorder", false) ~= true
                 end,
                 disabledTooltip = function()
                     if CUI.BlizzStyle.Get("unitframes") then
@@ -1845,10 +1845,10 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     return "This option requires Dispel Type Borders to be enabled."
                 end,
                 requireState = "disabled",
-                get = function() return SValSupported("debuffDispelUsePalette", false) == true end,
+                get = function() return SupportedOr("debuffDispelUsePalette", false) == true end,
                 -- RefreshPage (fast path) so the Dispel Colors swatches track it.
                 set = function(value)
-                    SSetSupported("debuffDispelUsePalette", value)
+                    WriteSupported("debuffDispelUsePalette", value)
                     CUI:RefreshPage()
                 end,
             }
@@ -1867,7 +1867,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             disabled = DebuffsOff,
             disabledTooltip = "Debuff Display",
             title = "Debuff Position",
-            rows = mod.UFO_AuraPositionRows("debuff", SValSupported, SSetSupported),
+            rows = mod.UFO_AuraPositionRows("debuff", SupportedOr, WriteSupported),
         })
     end
 
@@ -1876,7 +1876,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     -- "Show Cooldown Text" toggle; off disables the slider/cog/label.
     if not DebuffsOff() then
         local debuffDurOff = function()
-            return DebuffsOff() or not SValSupported("debuffShowCooldownText", false)
+            return DebuffsOff() or not SupportedOr("debuffShowCooldownText", false)
         end
         local debuffDurTip = function() return DebuffsOff() and "Debuff Display" or "Show Cooldown Text" end
         local sharedDebuffRow2
@@ -1936,11 +1936,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         max = 90,
                         step = 1,
                         get = function()
-                            local value = SValSupported("debuffCooldownTextPrecision", nil)
+                            local value = SupportedOr("debuffCooldownTextPrecision", nil)
                             return value and value / 60 or 0
                         end,
                         set = function(value)
-                            SSetSupported("debuffCooldownTextPrecision", value > 0 and value * 60 or nil)
+                            WriteSupported("debuffCooldownTextPrecision", value > 0 and value * 60 or nil)
                         end,
                     },
                 },
@@ -2018,10 +2018,10 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     text = "Border Style",
                     values = texValues,
                     order = texOrder,
-                    getValue = function() return SVal("auraBorderTexture", "solid") end,
+                    getValue = function() return SettingOr("auraBorderTexture", "solid") end,
                     setValue = function(value)
                         local color, behind, behindUnitFrame = CUI.GetBorderStyleSelectDefaults(value)
-                        local cfg = SDB()
+                        local cfg = SettingsDB()
                         cfg.auraBorderTexture = value
                         cfg.auraBorderTextureOffset = nil
                         cfg.auraBorderTextureOffsetY = nil
@@ -2049,11 +2049,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     CUI.BorderPxSliderCfg({
                         text = "Border Size",
                         trackWidth = 120,
-                        getStep = function() return SVal("auraBorderSize", 1) end,
-                        setStep = function(step) SDB().auraBorderSize = step end,
-                        getTex = function() return SVal("auraBorderTexture", "solid") end,
-                        getPx = function() return SGet("auraBorderSizePx") end,
-                        setPx = function(value) SDB().auraBorderSizePx = value end,
+                        getStep = function() return SettingOr("auraBorderSize", 1) end,
+                        setStep = function(step) SettingsDB().auraBorderSize = step end,
+                        getTex = function() return SettingOr("auraBorderTexture", "solid") end,
+                        getPx = function() return ReadSetting("auraBorderSizePx") end,
+                        setPx = function(value) SettingsDB().auraBorderSizePx = value end,
                         apply = function()
                             RebuildAndReload()
                             RepaintPreview()
@@ -2065,18 +2065,18 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             -- Width Offset | Height Offset: a textured aura border's outward offsets
             -- (a Solid border has none).
             do
-                local abTex = SVal("auraBorderTexture", "solid")
+                local abTex = SettingOr("auraBorderTexture", "solid")
                 if abTex ~= "solid" and abTex ~= "" then
                     local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                         addonKey = "unitframes",
-                        getTex = function() return SVal("auraBorderTexture", "solid") end,
-                        getStep = function() return SVal("auraBorderSize", 1) end,
-                        getSizeKey = function() return SVal("auraBorderSize", 1) end,
-                        getPx = function() return SGet("auraBorderSizePx") end,
-                        getX = function() return SGet("auraBorderTextureOffset") end,
-                        setX = function(value) SDB().auraBorderTextureOffset = value end,
-                        getY = function() return SGet("auraBorderTextureOffsetY") end,
-                        setY = function(value) SDB().auraBorderTextureOffsetY = value end,
+                        getTex = function() return SettingOr("auraBorderTexture", "solid") end,
+                        getStep = function() return SettingOr("auraBorderSize", 1) end,
+                        getSizeKey = function() return SettingOr("auraBorderSize", 1) end,
+                        getPx = function() return ReadSetting("auraBorderSizePx") end,
+                        getX = function() return ReadSetting("auraBorderTextureOffset") end,
+                        setX = function(value) SettingsDB().auraBorderTextureOffset = value end,
+                        getY = function() return ReadSetting("auraBorderTextureOffsetY") end,
+                        setY = function(value) SettingsDB().auraBorderTextureOffsetY = value end,
                         apply = function()
                             RebuildAndReload()
                             RepaintPreview()
@@ -2104,17 +2104,17 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local value = SGet("auraBorderTextureShiftX")
+                                local value = ReadSetting("auraBorderTextureShiftX")
                                 if value ~= nil then return value end
                                 local _, _, sx = CUI.GetBorderDefaults(
                                     "unitframes",
-                                    SVal("auraBorderTexture", "solid"),
-                                    SVal("auraBorderSize", 1)
+                                    SettingOr("auraBorderTexture", "solid"),
+                                    SettingOr("auraBorderSize", 1)
                                 )
                                 return sx
                             end,
                             set = function(value)
-                                SSetSupported("auraBorderTextureShiftX", value == 0 and nil or value)
+                                WriteSupported("auraBorderTextureShiftX", value == 0 and nil or value)
                             end,
                         },
                         {
@@ -2124,29 +2124,29 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local value = SGet("auraBorderTextureShiftY")
+                                local value = ReadSetting("auraBorderTextureShiftY")
                                 if value ~= nil then return value end
                                 local _, _, _, sy = CUI.GetBorderDefaults(
                                     "unitframes",
-                                    SVal("auraBorderTexture", "solid"),
-                                    SVal("auraBorderSize", 1)
+                                    SettingOr("auraBorderTexture", "solid"),
+                                    SettingOr("auraBorderSize", 1)
                                 )
                                 return sy
                             end,
                             set = function(value)
-                                SSetSupported("auraBorderTextureShiftY", value == 0 and nil or value)
+                                WriteSupported("auraBorderTextureShiftY", value == 0 and nil or value)
                             end,
                         },
                         {
                             type = "toggle",
                             label = "Show Behind",
-                            get = function() return SVal("auraBorderBehind", false) end,
+                            get = function() return SettingOr("auraBorderBehind", false) end,
                             set = SSetSupportedRow("auraBorderBehind"),
                         },
                         {
                             type = "toggle",
                             label = "Behind Unit Frame",
-                            get = function() return SVal("auraBorderBehindUnitFrame", false) end,
+                            get = function() return SettingOr("auraBorderBehindUnitFrame", false) end,
                             set = SSetSupportedRow("auraBorderBehindUnitFrame"),
                         },
                         {
@@ -2156,20 +2156,20 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                             -- Needs a dispel ring to draw: the debuff Dispel Type Borders,
                             -- or on Target/Focus the Buff Settings cog's own.
                             disabled = function()
-                                return SVal("debuffDispelBorder", false) ~= true
+                                return SettingOr("debuffDispelBorder", false) ~= true
                                     and not (
                                         optionState.selectedUnit ~= "player"
-                                        and SVal("buffDispelBorder", false) == true
+                                        and SettingOr("buffDispelBorder", false) == true
                                     )
                             end,
                             disabledTooltip = "Dispel Type Borders",
-                            get = function() return SVal("auraBorderDispelTextured", false) == true end,
+                            get = function() return SettingOr("auraBorderDispelTextured", false) == true end,
                             set = SSetSupportedRow("auraBorderDispelTextured"),
                         },
                     },
                 })
                 local function UpdateCogVis()
-                    if SVal("auraBorderTexture", "solid") == "solid" then
+                    if SettingOr("auraBorderTexture", "solid") == "solid" then
                         cogBtn:Hide()
                     else
                         cogBtn:Show()
@@ -2185,13 +2185,13 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     region,
                     auraBorderRow:GetFrameLevel() + 3,
                     function()
-                        return SVal("auraBorderR", 0),
-                            SVal("auraBorderG", 0),
-                            SVal("auraBorderB", 0),
-                            SVal("auraBorderA", 1)
+                        return SettingOr("auraBorderR", 0),
+                            SettingOr("auraBorderG", 0),
+                            SettingOr("auraBorderB", 0),
+                            SettingOr("auraBorderA", 1)
                     end,
                     function(red, green, blue, a)
-                        local cfg = SDB()
+                        local cfg = SettingsDB()
                         cfg.auraBorderR = red
                         cfg.auraBorderG = green
                         cfg.auraBorderB = blue
@@ -2284,7 +2284,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                 debuffSlot = DebuffModeDropdownCfg(
                     unitLabel .. " Debuff Filter",
                     optionState.selectedUnit,
-                    SDB,
+                    SettingsDB,
                     RebuildAndReload,
                     { disabled = DebuffsOff, disabledTooltip = "Debuffs", requireState = "displayed" }
                 )
@@ -2323,7 +2323,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     -- The registry list needs the curated presets present
                     -- (idempotent; PAB may be disabled).
                     if mod.PAB_ImportBM2Filters then mod.PAB_ImportBM2Filters() end
-                    local ps = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local ps = UNIT_SETTINGS[optionState.selectedUnit]()
                     local ALL_KEY, DUR_KEY = "__allBuffs", "__hasDuration"
                     -- Hovering a dimmed Show box explains the dim (the lane is inert
                     -- while a broad mode already shows everything), same wording as
@@ -2535,16 +2535,16 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         region:GetFrameLevel() + 2,
                         buffFilterItems,
                         function(keyName, neg)
-                            if keyName == "__hasDuration" then return SDB().buffDurOnly == true end
+                            if keyName == "__hasDuration" then return SettingsDB().buffDurOnly == true end
                             if neg then
-                                local m = SDB().buffNegClasses
+                                local m = SettingsDB().buffNegClasses
                                 local sk = BUFF_NEG_SKEYS[keyName]
                                 return m ~= nil and sk ~= nil and m[sk] == true
                             end
-                            return SValSupported(BUFF_FILTER_KEYS[keyName], false)
+                            return SupportedOr(BUFF_FILTER_KEYS[keyName], false)
                         end,
                         function(keyName, value, neg)
-                            local saved = SDB()
+                            local saved = SettingsDB()
                             if keyName == "__hasDuration" then
                                 -- Not buffHasDuration: that is the player's broad
                                 -- mode, which copies can have left on this unit.
@@ -2568,7 +2568,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 saved.buffNegClasses[sk] = nil
                                 if not next(saved.buffNegClasses) then saved.buffNegClasses = nil end
                             end
-                            SSetSupported(BUFF_FILTER_KEYS[keyName], value)
+                            WriteSupported(BUFF_FILTER_KEYS[keyName], value)
                         end
                     )
                 end
@@ -2585,7 +2585,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     -- Shared glow controls over the unit's own keys. Engine aura
                     -- buttons: C-side styles only. Unset color = the suite default (gold).
                     local GO = CUI.GlowOptions
-                    local pgDesc = UF_PurgeGlowDesc(SDB)
+                    local pgDesc = UF_PurgeGlowDesc(SettingsDB)
                     local pgRows = GO.PopupRows(pgDesc, "Glow Style")
                     pgRows[1].tooltip =
                         "Glows the buffs you can purge or spellsteal. Glowing buffs lead the row and have their own Max Buffs count."
@@ -2610,7 +2610,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                 if region._control then region._control:Hide() end
                 local checkDrop, cbRefresh
                 do
-                    local ps = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local ps = UNIT_SETTINGS[optionState.selectedUnit]()
                     local ALL_KEY, DUR_KEY = "__allDebuffs", "__debuffHasDuration"
                     local HIDE_EXH_KEY = "__hideExhaustion"
                     local function AllOn() return ps.debuffShowAll ~= false end
@@ -2843,7 +2843,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             -- Target/focus: Only Tracked Auras with an empty list renders
             -- nothing, so the mode dropdown carries the standard empty warning.
             if optionState.selectedUnit ~= "player" and not CUI._prebuilding then
-                AttachDebuffModeWarn(filterRow._rightRegion, SDB, DebuffsOff)
+                AttachDebuffModeWarn(filterRow._rightRegion, SettingsDB, DebuffsOff)
                 -- Has Duration: an AND-modifier on the picked mode (engine:
                 -- ChainFor), in the row's cog since the mode dropdown is
                 -- single-select.
@@ -2858,13 +2858,13 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                             type = "toggle",
                             label = "Has Duration",
                             tooltip = "Only show debuffs that have a duration, excluding permanent ones. Tracked Auras always show.",
-                            get = function() return SDB().debuffHasDuration == true end,
+                            get = function() return SettingsDB().debuffHasDuration == true end,
                             set = function(value)
-                                SDB().debuffHasDuration = value or nil
+                                SettingsDB().debuffHasDuration = value or nil
                                 RebuildAndReload()
                             end,
                         },
-                        HideExhaustionRow(SDB, RebuildAndReload),
+                        HideExhaustionRow(SettingsDB, RebuildAndReload),
                     },
                 })
             end

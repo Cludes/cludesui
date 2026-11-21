@@ -53,16 +53,16 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     local healthColorValues, IsPreviewOff, maxHealthStyleOrder =
         environ.healthColorValues, environ.IsPreviewOff, environ.maxHealthStyleOrder
     local optionState, Pix, RebuildAndReload = environ.optState, environ.PP, environ.ReloadAndUpdate
-    local SGet, SGetPx, SSet, SVal = environ.SGet, environ.SGetPx, environ.SSet, environ.SVal
+    local ReadSetting, SGetPx, WriteSetting, SettingOr = environ.SGet, environ.SGetPx, environ.SSet, environ.SVal
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(key, default)
-        return function() return SVal(key, default) end
+        return function() return SettingOr(key, default) end
     end
     -- Row setters over SSet: the key written with the row's value.
     local function SSetRow(key)
-        return function(value) SSet(key, value) end
+        return function(value) WriteSetting(key, value) end
     end
-    local SWrite = environ.SWrite
+    local StoreSetting = environ.SWrite
     local TexBgRowCfg = environ.TexBgRowCfg
     local _, height
     local row
@@ -303,7 +303,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         min = 0,
         max = 100,
         step = 1,
-        disabled = function() return SVal("healthColorMode", "class") == "dark" end,
+        disabled = function() return SettingOr("healthColorMode", "class") == "dark" end,
         disabledTooltip = "Not available in Dark Mode",
         rawTooltip = true,
         getValue = SValRow("healthBarOpacity", 100),
@@ -322,7 +322,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     get = SValRow("healthVerticalFill", false),
                     -- RefreshPage re-labels Absorbs Placement for the new axis; cog popups bake labels in on first build.
                     set = function(val)
-                        SSet("healthVerticalFill", val)
+                        WriteSetting("healthVerticalFill", val)
                         CUI:RefreshPage()
                     end,
                 }),
@@ -333,7 +333,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     get = SValRow("healthInvertFill", false),
                     set = SSetRow("healthInvertFill"),
                 }),
-                TexBgRowCfg(SVal, SSet),
+                TexBgRowCfg(SettingOr, WriteSetting),
             },
         })
     end
@@ -347,7 +347,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         tooltip = "Custom Dynamic Colors: the health bar smoothly blends between three colors you pick -- one for full health (100%), one for half (50%), and one for empty (0%) -- shifting through them as the unit takes damage or is healed.",
         getValue = SValRow("healthColorMode", "class"),
         setValue = function(val)
-            SSet("healthColorMode", val)
+            WriteSetting("healthColorMode", val)
             -- "dark" feeds the Dark Mode conditional-override condition.
             CUI.Conditions_Recheck()
             CUI:RefreshPage()
@@ -358,7 +358,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         min = 0,
         max = 100,
         step = 1,
-        disabled = function() return SVal("healthColorMode", "class") == "dark" end,
+        disabled = function() return SettingOr("healthColorMode", "class") == "dark" end,
         disabledTooltip = "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors.",
         rawTooltip = true,
         getValue = SValRow("bgDarkness", 50),
@@ -378,11 +378,11 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         local region = row._leftRegion
 
         local colorSwatch = CUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local color = SGet("customFillColor")
+            local color = ReadSetting("customFillColor")
             if color then return color.r, color.g, color.b, 1 end
             return 37 / 255, 193 / 255, 29 / 255, 1
         end, function(red, green, blue)
-            SWrite("customFillColor", { r = red, g = green, b = blue })
+            StoreSetting("customFillColor", { r = red, g = green, b = blue })
             RebuildAndReload()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -421,10 +421,10 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         for idx = #dynDefs, 1, -1 do
             local dropdown = dynDefs[idx]
             local sw = CUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-                local color = SGet(dropdown.key) or dropdown.def
+                local color = ReadSetting(dropdown.key) or dropdown.def
                 return color.r, color.g, color.b, 1
             end, function(red, green, blue)
-                SWrite(dropdown.key, { r = red, g = green, b = blue })
+                StoreSetting(dropdown.key, { r = red, g = green, b = blue })
                 RebuildAndReload()
             end, false, 18)
             sw:SetPoint("RIGHT", prevAnchor, "LEFT", (prevAnchor == region._control) and -8 or -6, 0)
@@ -435,7 +435,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         end
 
         local function UpdateSwatchVis()
-            local mode = SVal("healthColorMode", "class")
+            local mode = SettingOr("healthColorMode", "class")
             local isDynamic = mode == "customDynamic"
             -- Class Reactive shares the dynamic stops but its 100% color IS
             -- the class color: only the 0%/50% swatches apply there.
@@ -477,7 +477,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             return 1, 1, 1, 1
         end, function() end, false, 20)
         bgClassSwatch:SetScript("OnClick", function()
-            SSet("bgClassColored", true)
+            WriteSetting("bgClassColored", true)
             RebuildAndReload()
             CUI:RefreshPage()
         end)
@@ -490,17 +490,17 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         region._lastInline = bgClassSwatch
 
         local bgSwatch = CUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local color = SGet("customBgColor")
+            local color = ReadSetting("customBgColor")
             if color then return color.r, color.g, color.b, 1 end
             return 17 / 255, 17 / 255, 17 / 255, 1
         end, function(red, green, blue)
-            SWrite("customBgColor", { r = red, g = green, b = blue })
+            StoreSetting("customBgColor", { r = red, g = green, b = blue })
             RebuildAndReload()
         end, false, 20)
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
         bgSwatch:SetScript("OnClick", function(self)
-            if SVal("bgClassColored", false) then
-                SSet("bgClassColored", false)
+            if SettingOr("bgClassColored", false) then
+                WriteSetting("bgClassColored", false)
                 RebuildAndReload()
                 CUI:RefreshPage()
                 return
@@ -531,13 +531,13 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         )
         bgBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         local function UpdateBgSwatchVis()
-            if SVal("healthColorMode", "class") == "dark" then
+            if SettingOr("healthColorMode", "class") == "dark" then
                 bgSwatch:SetAlpha(0.3)
                 bgClassSwatch:SetAlpha(0.3)
                 bgBlock:Show()
             else
                 bgBlock:Hide()
-                local classOn = SVal("bgClassColored", false)
+                local classOn = SettingOr("bgClassColored", false)
                 bgSwatch:SetAlpha(classOn and 0.3 or 1)
                 bgClassSwatch:SetAlpha(classOn and 1 or 0.3)
             end
@@ -557,7 +557,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         text = "Heal Prediction",
         getValue = SValRow("healPrediction", false),
         setValue = function(val)
-            SSet("healPrediction", val)
+            WriteSetting("healPrediction", val)
             CUI:RefreshPage()
         end,
     }, {
@@ -566,7 +566,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         min = 5,
         max = 100,
         step = 1,
-        disabled = function() return not SVal("healPrediction", false) end,
+        disabled = function() return not SettingOr("healPrediction", false) end,
         disabledTooltip = "Heal Prediction",
         getValue = SValRow("healPredOpacity", 75),
         setValue = SSetRow("healPredOpacity"),
@@ -576,17 +576,17 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     if not CUI._prebuilding then
         local region = healPredRow._leftRegion
         local colorSwatch = CUI.BuildColorSwatch(region, healPredRow:GetFrameLevel() + 3, function()
-            local color = SGet("healPredColor")
+            local color = ReadSetting("healPredColor")
             if color then return color.r, color.g, color.b, 1 end
             return 102 / 255, 243 / 255, 102 / 255, 1
         end, function(red, green, blue)
-            SWrite("healPredColor", { r = red, g = green, b = blue })
+            StoreSetting("healPredColor", { r = red, g = green, b = blue })
             RebuildAndReload()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
         local function UpdateHealPredSwatchVis()
-            colorSwatch:SetAlpha(SVal("healPrediction", false) and 1 or 0.3)
+            colorSwatch:SetAlpha(SettingOr("healPrediction", false) and 1 or 0.3)
         end
         CUI.RegisterWidgetRefresh(UpdateHealPredSwatchVis)
         UpdateHealPredSwatchVis()
@@ -600,15 +600,15 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     local function CustomBorderOff()
         if mod.RF_CompactOnTab(optionState._partyCtx) then return true end
         if mod.RF_Stock and mod.RF_Stock() then return true end
-        local texture = SGet("borderTexture")
-        return texture == nil or texture == "" or texture == "solid" or SVal("borderSize", 1) <= 0
+        local texture = ReadSetting("borderTexture")
+        return texture == nil or texture == "" or texture == "solid" or SettingOr("borderSize", 1) <= 0
     end
     local function CustomBorderOffTip()
         if mod.RF_CompactOnTab(optionState._partyCtx) then return "Compact Mode" end
         if mod.RF_Stock and mod.RF_Stock() then
             return CUI.BlizzStyle and CUI.BlizzStyle.Label("raidframes")
         end
-        local texture = SGet("borderTexture")
+        local texture = ReadSetting("borderTexture")
         if texture == nil or texture == "" or texture == "solid" then
             return "This option requires a Border Style other than Solid."
         end
@@ -654,11 +654,11 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     requireState = "disabled",
                     get = function()
                         return not mod.RF_CompactOnTab(optionState._partyCtx)
-                            and SVal("threatCustomBorder", false)
+                            and SettingOr("threatCustomBorder", false)
                     end,
                     set = function(val)
                         if val and CustomBorderOff() then return end
-                        SSet("threatCustomBorder", val)
+                        WriteSetting("threatCustomBorder", val)
                     end,
                 },
             },
@@ -755,20 +755,20 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             -- leaving it, else kept. A set value is stored explicitly, so a party that
             -- starts keeping its own style here keeps the line it showed; an unset one
             -- stays unset and keeps following the style.
-            local was = SVal("absorbStyle", "none")
+            local was = SettingOr("absorbStyle", "none")
             local glow = SGetPx("absorbGlowLine", "absorbStyle")
             if val == "blizzardModern" then
                 glow = true
             elseif was == "blizzardModern" then
                 glow = false
             end
-            if glow ~= nil then SWrite("absorbGlowLine", glow == true) end
-            SSet("absorbStyle", val)
+            if glow ~= nil then StoreSetting("absorbGlowLine", glow == true) end
+            WriteSetting("absorbStyle", val)
             if val == "clean" then
-                SSet("absorbOpacity", 30)
+                WriteSetting("absorbOpacity", 30)
             elseif val ~= "blizzardModern" then
                 -- Blizzard (Modern) hardcodes color+opacity in the renderer; leave saved opacity untouched.
-                SSet("absorbOpacity", 90)
+                WriteSetting("absorbOpacity", 90)
             end
             CUI:RefreshPage()
         end,
@@ -779,7 +779,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         max = 100,
         step = 1,
         disabled = function()
-            local st = SVal("absorbStyle", "none")
+            local st = SettingOr("absorbStyle", "none")
             return st == "none" or st == "blizzardModern"
         end,
         disabledTooltip = "Absorb Style",
@@ -803,7 +803,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         local kitPage = mod.RF_OptPartyKit()
         -- Returns true ONLY when the axis flipped, so callers skip _invalidateMenu on unrelated refreshes -- it nils the cached menu and would break an open menu's wired click.
         local function SyncAbsorbEdgeLabels()
-            local vert = (not kitPage) and SVal("healthVerticalFill", false) and true or false
+            local vert = (not kitPage) and SettingOr("healthVerticalFill", false) and true or false
             if absorbEdgeLabelsVert == vert then return false end
             absorbEdgeLabelsVert = vert
             absorbEdgeLabels.right = vert and "From Top Edge" or "From Right Edge"
@@ -821,12 +821,12 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     -- Wide enough for "Overlay Reverse (Full)".
                     ddWidth = 190,
                     order = { "overlay", "overlayReverse", "overlayReverseFull", "right", "left" },
-                    disabled = function() return SVal("absorbStyle", "none") == "blizzardModern" end,
+                    disabled = function() return SettingOr("absorbStyle", "none") == "blizzardModern" end,
                     disabledTooltip = "Default Blizz Frames uses a fixed placement",
                     rawTooltip = true,
                     get = function()
                         SyncAbsorbEdgeLabels()
-                        return SVal("absorbEdgeMode", "overlay")
+                        return SettingOr("absorbEdgeMode", "overlay")
                     end,
                     set = SSetRow("absorbEdgeMode"),
                 },
@@ -841,22 +841,22 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     -- already clamps the whole absorb inside the fill and
                     -- its Full variant draws the excess from the origin edge.
                     itemDisabled = function(val)
-                        return val == "fromleft" and SVal("absorbEdgeMode", "overlay") ~= "overlay"
+                        return val == "fromleft" and SettingOr("absorbEdgeMode", "overlay") ~= "overlay"
                     end,
                     get = function()
                         -- Legacy boolean fallback: profiles saved before the
                         -- dropdown keep their toggle's meaning.
-                        local m = SVal("overshieldMode", nil)
+                        local m = SettingOr("overshieldMode", nil)
                         if m == nil then
-                            m = (SVal("showOvershield", true) == false) and "never" or "always"
+                            m = (SettingOr("showOvershield", true) == false) and "never" or "always"
                         end
                         return m
                     end,
                     set = function(val)
                         -- Mirror the legacy boolean so pre-dropdown readers
                         -- (incl. the live-client profile) track Never/Always.
-                        SSet("showOvershield", val ~= "never")
-                        SSet("overshieldMode", val)
+                        WriteSetting("showOvershield", val ~= "never")
+                        WriteSetting("overshieldMode", val)
                     end,
                 },
                 {
@@ -864,19 +864,19 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     label = "Blizzard Glow Line",
                     tooltip = "Adds the Default Blizz Frames glow line where the shield meets current health.",
                     disabled = function()
-                        if (not kitPage) and SVal("healthVerticalFill", false) == true then return true end
-                        return SVal("absorbEdgeMode", "overlay") == "left"
-                            and SVal("absorbStyle", "none") ~= "blizzardModern"
+                        if (not kitPage) and SettingOr("healthVerticalFill", false) == true then return true end
+                        return SettingOr("absorbEdgeMode", "overlay") == "left"
+                            and SettingOr("absorbStyle", "none") ~= "blizzardModern"
                     end,
                     disabledTooltip = "The glow line is not shown on a vertical fill or with the From Left Edge placement",
                     rawTooltip = true,
                     get = function()
                         -- Unset follows the style: on for Default Blizz Frames only.
                         local g = SGetPx("absorbGlowLine", "absorbStyle")
-                        if g == nil then return SVal("absorbStyle", "none") == "blizzardModern" end
+                        if g == nil then return SettingOr("absorbStyle", "none") == "blizzardModern" end
                         return g == true
                     end,
-                    set = function(val) SSet("absorbGlowLine", val and true or false) end,
+                    set = function(val) WriteSetting("absorbGlowLine", val and true or false) end,
                 },
             },
         })
@@ -894,11 +894,11 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     if not CUI._prebuilding then
         local region = absorbRow._leftRegion
         local colorSwatch = CUI.BuildColorSwatch(region, absorbRow:GetFrameLevel() + 3, function()
-            local color = SGet("absorbColor")
+            local color = ReadSetting("absorbColor")
             if color then return color.r, color.g, color.b, 1 end
             return 1, 1, 1, 1
         end, function(red, green, blue)
-            SWrite("absorbColor", { r = red, g = green, b = blue })
+            StoreSetting("absorbColor", { r = red, g = green, b = blue })
             RebuildAndReload()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -907,7 +907,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
         swatchBlock:Hide()
         local function UpdateAbsorbSwatchVis()
-            local st = SVal("absorbStyle", "none")
+            local st = SettingOr("absorbStyle", "none")
             local off = (st == "none" or st == "blizzardModern")
             colorSwatch:SetAlpha(off and 0.3 or 1)
             if off then
@@ -921,9 +921,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     end
 
     local function CurAbsorbBarPos()
-        local p = SGet("absorbBarPosition")
+        local p = ReadSetting("absorbBarPosition")
         if p then return p end
-        return SVal("absorbBarEnabled", false) and "aboveRight" or "none"
+        return SettingOr("absorbBarEnabled", false) and "aboveRight" or "none"
     end
     local absorbBarRow
     absorbBarRow, height = W:DualRow(hostFrame, cursorY, {
@@ -941,8 +941,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         order = { "none", "aboveRight", "aboveLeft", "topRight", "topLeft", "rightVertical", "leftVertical" },
         getValue = function() return CurAbsorbBarPos() end,
         setValue = function(val)
-            SWrite("absorbBarEnabled", val ~= "none") -- keep legacy flag in sync
-            SSet("absorbBarPosition", val)
+            StoreSetting("absorbBarEnabled", val ~= "none") -- keep legacy flag in sync
+            WriteSetting("absorbBarPosition", val)
             CUI:RefreshPage()
         end,
     }, {
@@ -1000,11 +1000,11 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     if not CUI._prebuilding then
         local region = absorbBarRow._rightRegion
         local colorSwatch = CUI.BuildColorSwatch(region, absorbBarRow:GetFrameLevel() + 3, function()
-            local color = SGet("absorbBarColor")
+            local color = ReadSetting("absorbBarColor")
             if color then return color.r, color.g, color.b, color.a or 1 end
             return 1, 1, 1, 1
         end, function(red, green, blue, a)
-            SWrite("absorbBarColor", { r = red, g = green, b = blue, a = a })
+            StoreSetting("absorbBarColor", { r = red, g = green, b = blue, a = a })
             RebuildAndReload()
         end, true, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1024,11 +1024,11 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         order = healAbsorbStyleOrder,
         getValue = SValRow("healAbsorbStyle", "clean"),
         setValue = function(val)
-            SSet("healAbsorbStyle", val)
+            WriteSetting("healAbsorbStyle", val)
             if val == "clean" then
-                SSet("healAbsorbOpacity", 50)
+                WriteSetting("healAbsorbOpacity", 50)
             else
-                SSet("healAbsorbOpacity", 75)
+                WriteSetting("healAbsorbOpacity", 75)
             end
             CUI:RefreshPage()
         end,
@@ -1038,7 +1038,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         min = 5,
         max = 100,
         step = 1,
-        disabled = function() return SVal("healAbsorbStyle", "clean") == "none" end,
+        disabled = function() return SettingOr("healAbsorbStyle", "clean") == "none" end,
         disabledTooltip = "Heal Absorb Style",
         getValue = SValRow("healAbsorbOpacity", 75),
         setValue = SSetRow("healAbsorbOpacity"),
@@ -1053,7 +1053,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         local healAbsorbEdgeLabelsVert -- last applied axis; nil until first sync
         local kitPage = mod.RF_OptPartyKit()
         local function SyncHealAbsorbEdgeLabels()
-            local vert = (not kitPage) and SVal("healthVerticalFill", false) and true or false
+            local vert = (not kitPage) and SettingOr("healthVerticalFill", false) and true or false
             if healAbsorbEdgeLabelsVert == vert then return false end
             healAbsorbEdgeLabelsVert = vert
             healAbsorbEdgeLabels.right = vert and "From Top Edge" or "From Right Edge"
@@ -1071,7 +1071,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     order = { "overlay", "right", "left" },
                     get = function()
                         SyncHealAbsorbEdgeLabels()
-                        return SVal("healAbsorbEdgeMode", "overlay")
+                        return SettingOr("healAbsorbEdgeMode", "overlay")
                     end,
                     set = SSetRow("healAbsorbEdgeMode"),
                 },
@@ -1087,7 +1087,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 {
                     type = "toggle",
                     label = "Show Over Dispels",
-                    get = function() return SVal("healAbsorbOverDispel", false) == true end,
+                    get = function() return SettingOr("healAbsorbOverDispel", false) == true end,
                     set = SSetRow("healAbsorbOverDispel"),
                 },
             },
@@ -1105,11 +1105,11 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     if not CUI._prebuilding then
         local region = healAbsorbRow._leftRegion
         local colorSwatch = CUI.BuildColorSwatch(region, healAbsorbRow:GetFrameLevel() + 3, function()
-            local color = SGet("healAbsorbColor")
+            local color = ReadSetting("healAbsorbColor")
             if color then return color.r or 0.8, color.g or 0.15, color.b or 0.15, 1 end
             return 0.8, 0.15, 0.15, 1
         end, function(red, green, blue)
-            SWrite("healAbsorbColor", { r = red, g = green, b = blue })
+            StoreSetting("healAbsorbColor", { r = red, g = green, b = blue })
             RebuildAndReload()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1118,7 +1118,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
         swatchBlock:Hide()
         local function UpdateHealAbsorbSwatchVis()
-            local st = SVal("healAbsorbStyle", "clean")
+            local st = SettingOr("healAbsorbStyle", "clean")
             local off = (
                 st == "none"
                 or st == "healBlizzModern"
@@ -1137,7 +1137,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     end
 
     do
-        local function CurHealAbsorbBarPos() return SGet("healAbsorbBarPosition") or "none" end
+        local function CurHealAbsorbBarPos() return ReadSetting("healAbsorbBarPosition") or "none" end
         local healAbsorbBarRow
         healAbsorbBarRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
@@ -1164,7 +1164,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             },
             getValue = function() return CurHealAbsorbBarPos() end,
             setValue = function(val)
-                SSet("healAbsorbBarPosition", val)
+                WriteSetting("healAbsorbBarPosition", val)
                 CUI:RefreshPage()
             end,
         }, {
@@ -1185,12 +1185,12 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 region,
                 healAbsorbBarRow:GetFrameLevel() + 3,
                 function()
-                    local color = SGet("healAbsorbBarColor")
+                    local color = ReadSetting("healAbsorbBarColor")
                     if color then return color.r, color.g, color.b, color.a or 1 end
                     return 200 / 255, 29 / 255, 29 / 255, 1
                 end,
                 function(red, green, blue, a)
-                    SWrite("healAbsorbBarColor", { r = red, g = green, b = blue, a = a })
+                    StoreSetting("healAbsorbBarColor", { r = red, g = green, b = blue, a = a })
                     RebuildAndReload()
                 end,
                 true,
@@ -1256,7 +1256,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             order = maxHealthStyleOrder,
             getValue = SValRow("maxHealthStyle", "maxHealthStripes"),
             setValue = function(val)
-                SSet("maxHealthStyle", val)
+                WriteSetting("maxHealthStyle", val)
                 CUI:RefreshPage()
             end,
         }, {
@@ -1265,7 +1265,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             min = 5,
             max = 100,
             step = 1,
-            disabled = function() return SVal("maxHealthStyle", "maxHealthStripes") == "none" end,
+            disabled = function() return SettingOr("maxHealthStyle", "maxHealthStripes") == "none" end,
             disabledTooltip = "Max Health Style",
             getValue = SValRow("maxHealthOpacity", 100),
             setValue = SSetRow("maxHealthOpacity"),
@@ -1293,11 +1293,11 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         if not CUI._prebuilding then
             local region = maxHealthRow._leftRegion
             local colorSwatch = CUI.BuildColorSwatch(region, maxHealthRow:GetFrameLevel() + 3, function()
-                local color = SGet("maxHealthColor")
+                local color = ReadSetting("maxHealthColor")
                 if color then return color.r or 0.7, color.g or 0.1, color.b or 0.1, 1 end
                 return 0.7, 0.1, 0.1, 1
             end, function(red, green, blue)
-                SWrite("maxHealthColor", { r = red, g = green, b = blue })
+                StoreSetting("maxHealthColor", { r = red, g = green, b = blue })
                 RebuildAndReload()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1306,7 +1306,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
             swatchBlock:Hide()
             local function UpdateMaxHealthSwatchVis()
-                local st = SVal("maxHealthStyle", "maxHealthStripes")
+                local st = SettingOr("maxHealthStyle", "maxHealthStripes")
                 local off = (
                     st == "none"
                     or st == "healBlizzModern"
@@ -1479,9 +1479,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     -- the page being built is only known then, and this runs on refreshes.
     local IsPowerOff = mod.RF_OptPartyKit() and function() return false end
         or function()
-            return not SVal("powerShowForHealer", true)
-                and not SVal("powerShowForTank", true)
-                and not SVal("powerShowForDPS", false)
+            return not SettingOr("powerShowForHealer", true)
+                and not SettingOr("powerShowForTank", true)
+                and not SettingOr("powerShowForDPS", false)
         end
 
     do
@@ -1551,9 +1551,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 170,
                 region:GetFrameLevel() + 2,
                 showForItems,
-                function(keyName) return SVal(showForKeyMap[keyName], true) end,
+                function(keyName) return SettingOr(showForKeyMap[keyName], true) end,
                 function(keyName, val)
-                    SSet(showForKeyMap[keyName], val)
+                    WriteSetting(showForKeyMap[keyName], val)
                     if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
                     CUI:RefreshPage()
                 end
@@ -1580,20 +1580,20 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     end
     local pwBdrRow
     local function CanMatchPowerBorder()
-        local key = SGet("borderTexture")
+        local key = ReadSetting("borderTexture")
         return not CUI.BlizzStyle.Get("raidframes") and CUI._pixelArtBorders[key] == true
     end
     local function MatchingPowerBorder()
-        return SVal("powerBorderMatchFrame", false)
+        return SettingOr("powerBorderMatchFrame", false)
             and CanMatchPowerBorder()
-            and SVal("powerBorderStyle", "cui") ~= "cui"
+            and SettingOr("powerBorderStyle", "cui") ~= "cui"
     end
     local pwSizeCfg
     if MatchingPowerBorder() then
         pwSizeCfg = CUI.BorderPxSliderCfg({
-            getStep = function() return SVal("borderSize", 1) end,
+            getStep = function() return SettingOr("borderSize", 1) end,
             setStep = function() end,
-            getTex = function() return SGet("borderTexture") end,
+            getTex = function() return ReadSetting("borderTexture") end,
             getPx = function() return SGetPx("borderSizePx", "borderSize") end,
             setPx = function() end,
             disabled = function() return true end,
@@ -1607,7 +1607,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             min = 0,
             max = 4,
             step = 1,
-            disabled = function() return IsPowerOff() or SVal("powerBorderStyle", "cui") == "cui" end,
+            disabled = function() return IsPowerOff() or SettingOr("powerBorderStyle", "cui") == "cui" end,
             disabledTooltip = "Show Power Bar For",
             getValue = SValRow("powerBorderSize", 1),
             setValue = SSetRow("powerBorderSize"),
@@ -1625,8 +1625,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             disabledTooltip = "Show Power Bar For",
             getValue = SValRow("powerBorderStyle", "divider"),
             setValue = function(val)
-                SSet("powerBorderStyle", val)
-                CUI:RefreshPage(SVal("powerBorderMatchFrame", false) and CanMatchPowerBorder())
+                WriteSetting("powerBorderStyle", val)
+                CUI:RefreshPage(SettingOr("powerBorderMatchFrame", false) and CanMatchPowerBorder())
             end,
         })),
         mod.RF_PartyKitGate(PwClassicGate(pwSizeCfg))
@@ -1646,7 +1646,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     tooltip = "Uses the frame border's art, size and color.",
                     get = SValRow("powerBorderMatchFrame", false),
                     set = function(val)
-                        SSet("powerBorderMatchFrame", val)
+                        WriteSetting("powerBorderMatchFrame", val)
                         CUI:RefreshPage(true)
                     end,
                 }),
@@ -1655,7 +1655,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     label = "Match Highlight Colors",
                     tooltip = "The divider follows hover and target colors.",
                     disabled = function()
-                        return not MatchingPowerBorder() or SVal("powerBorderStyle", "cui") ~= "divider"
+                        return not MatchingPowerBorder() or SettingOr("powerBorderStyle", "cui") ~= "divider"
                     end,
                     disabledTooltip = "Requires Match Frame Border and Divider.",
                     rawTooltip = true,
@@ -1670,19 +1670,19 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             pwBdrRow:GetFrameLevel() + 3,
             function()
                 if MatchingPowerBorder() then
-                    local color = SGet("borderColor")
+                    local color = ReadSetting("borderColor")
                     return color and color.r or 0,
                         color and color.g or 0,
                         color and color.b or 0,
-                        SVal("borderAlpha", 1)
+                        SettingOr("borderAlpha", 1)
                 end
-                local color = SGet("powerBorderColor")
-                if color then return color.r, color.g, color.b, SVal("powerBorderAlpha", 1) end
+                local color = ReadSetting("powerBorderColor")
+                if color then return color.r, color.g, color.b, SettingOr("powerBorderAlpha", 1) end
                 return 0, 0, 0, 1
             end,
             function(red, green, blue, a)
-                SWrite("powerBorderColor", { r = red, g = green, b = blue })
-                SWrite("powerBorderAlpha", a)
+                StoreSetting("powerBorderColor", { r = red, g = green, b = blue })
+                StoreSetting("powerBorderAlpha", a)
                 RebuildAndReload()
             end,
             true,
@@ -1705,8 +1705,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         local function UpdatePwBdrSwatchState()
             local off = IsPowerOff()
-                or SVal("powerBorderSize", 1) == 0
-                or SVal("powerBorderStyle", "cui") == "cui"
+                or SettingOr("powerBorderSize", 1) == 0
+                or SettingOr("powerBorderStyle", "cui") == "cui"
                 or MatchingPowerBorder()
             if off then
                 colorSwatch:SetAlpha(0.3)
@@ -1755,7 +1755,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             return 0, 0.5 * f, f, 1
         end, function() end, false, 20)
         bgPwrSwatch:SetScript("OnClick", function()
-            SSet("powerBgPowerColored", true)
+            WriteSetting("powerBgPowerColored", true)
             CUI:RefreshPage()
         end)
         bgPwrSwatch:HookScript(
@@ -1772,17 +1772,17 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         region._lastInline = bgPwrSwatch
 
         local bgSwatch = CUI.BuildColorSwatch(region, pwBgRow:GetFrameLevel() + 3, function()
-            local color = SGet("powerBgColor")
+            local color = ReadSetting("powerBgColor")
             if color then return color.r, color.g, color.b, 1 end
             return 0, 0, 0, 1
         end, function(red, green, blue)
-            SWrite("powerBgColor", { r = red, g = green, b = blue })
+            StoreSetting("powerBgColor", { r = red, g = green, b = blue })
             RebuildAndReload()
         end, false, 20)
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
         bgSwatch:SetScript("OnClick", function(self)
-            if SVal("powerBgPowerColored", false) then
-                SSet("powerBgPowerColored", false)
+            if SettingOr("powerBgPowerColored", false) then
+                WriteSetting("powerBgPowerColored", false)
                 CUI:RefreshPage()
                 return
             end
@@ -1797,7 +1797,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         region._lastInline = bgSwatch
 
         local function UpdatePwBgSwatchVis()
-            local pwrOn = SVal("powerBgPowerColored", false)
+            local pwrOn = SettingOr("powerBgPowerColored", false)
             bgSwatch:SetAlpha(pwrOn and 0.3 or 1)
             bgPwrSwatch:SetAlpha(pwrOn and 1 or 0.3)
         end
@@ -1823,9 +1823,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     -- not a place on the Name tile. Raid Frames saves "full" (an unset party
     -- key reads the raid's).
     do
-        local function Set(val) SSet("nameFormat", val) end
+        local function Set(val) WriteSetting("nameFormat", val) end
         local values, sequence, getValue = CUI.NameFormatMenu(
-            function() return SVal("nameFormat", "full") end,
+            function() return SettingOr("nameFormat", "full") end,
             Set
         )
         _, height = W:DualRow(hostFrame, cursorY, {

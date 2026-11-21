@@ -55,16 +55,16 @@ local function BuildVisualIndicators(
     local environ = mod._RFO_OptEnv
     local saved, floor, IsPreviewOff, MissingGlowDesc =
         environ.db, environ.floor, environ.IsPreviewOff, environ.MissingGlowDesc
-    local optionState, Pix, RebuildAndReload, SGet =
+    local optionState, Pix, RebuildAndReload, ReadSetting =
         environ.optState, environ.PP, environ.ReloadAndUpdate, environ.SGet
-    local SSet, SVal, SWrite = environ.SSet, environ.SVal, environ.SWrite
+    local WriteSetting, SettingOr, StoreSetting = environ.SSet, environ.SVal, environ.SWrite
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(key, default)
-        return function() return SVal(key, default) end
+        return function() return SettingOr(key, default) end
     end
     -- Row setters over SSet: the key written with the row's value.
     local function SSetRow(key)
-        return function(value) SSet(key, value) end
+        return function(value) WriteSetting(key, value) end
     end
     local _, height, heading
     local row
@@ -189,15 +189,15 @@ local function BuildVisualIndicators(
             order = mbPositionOrder,
             tooltip = "Shows Fortitude, Mark of the Wild, Spirit or Thorns on a member who is missing it, for the buffs you can cast yourself (choose which in the cog).",
             getValue = function()
-                if not SVal("showMissingBuffs", true) then return "none" end
-                return SVal("missingBuffsPosition", "top")
+                if not SettingOr("showMissingBuffs", true) then return "none" end
+                return SettingOr("missingBuffsPosition", "top")
             end,
             setValue = function(val)
                 if val == "none" then
-                    SSet("showMissingBuffs", false)
+                    WriteSetting("showMissingBuffs", false)
                 else
-                    SWrite("showMissingBuffs", true)
-                    SSet("missingBuffsPosition", val)
+                    StoreSetting("showMissingBuffs", true)
+                    WriteSetting("missingBuffsPosition", val)
                 end
                 CUI:RefreshPage()
             end,
@@ -207,7 +207,7 @@ local function BuildVisualIndicators(
             min = 8,
             max = 40,
             step = 1,
-            disabled = function() return not SVal("showMissingBuffs", true) end,
+            disabled = function() return not SettingOr("showMissingBuffs", true) end,
             disabledTooltip = "Missing Buffs",
             getValue = SValRow("missingBuffsSize", 22),
             setValue = SSetRow("missingBuffsSize"),
@@ -250,7 +250,7 @@ local function BuildVisualIndicators(
                 blessItems[#blessItems + 1] = { key = keyName, label = blessValues[keyName] }
             end
             local view = setmetatable({}, {
-                __index = function(_, keyName) return SGet(keyName) end,
+                __index = function(_, keyName) return ReadSetting(keyName) end,
             })
             -- A priority list per role: the checked blessings in the order
             -- shown (drag to reorder); the first one the member lacks shows.
@@ -312,7 +312,7 @@ local function BuildVisualIndicators(
                 local function Picked() return mod.RF_FvBlessingChoice(view, role) end
                 local exKey = mod.RF_FvBlessingExKey[role]
                 local function Own(class)
-                    local ex = SGet(exKey)
+                    local ex = ReadSetting(exKey)
                     local entries = type(ex) == "table" and ex[class]
                     return type(entries) == "table" and entries or nil
                 end
@@ -320,14 +320,14 @@ local function BuildVisualIndicators(
                 -- runtime reads.
                 local function SetOwn(class, entries)
                     local ex = {}
-                    local old = SGet(exKey)
+                    local old = ReadSetting(exKey)
                     if type(old) == "table" then
                         for keyName, val in pairs(old) do
                             ex[keyName] = val
                         end
                     end
                     ex[class] = entries
-                    SSet(exKey, next(ex) ~= nil and ex or nil)
+                    WriteSetting(exKey, next(ex) ~= nil and ex or nil)
                 end
                 local exShow, exAnchor
                 local function OpenExceptions(_, dropdownBtn)
@@ -372,7 +372,7 @@ local function BuildVisualIndicators(
                 local r = ListRow(
                     labelText,
                     Picked,
-                    function(entries) SSet(mod.RF_FvBlessingKey[role], entries) end
+                    function(entries) WriteSetting(mod.RF_FvBlessingKey[role], entries) end
                 )
                 r.tooltip = tipText
                 r.tail = { { key = "exceptions", label = "Class Exceptions" } }
@@ -399,8 +399,8 @@ local function BuildVisualIndicators(
                         { key = "missingBuffsThorns", label = "Thorns", fixed = true },
                         { key = "missingBuffsSalvation", label = "Salvation", fixed = true },
                     },
-                    get = function(key) return SVal(key, true) end,
-                    set = function(key, on) SSet(key, on) end,
+                    get = function(key) return SettingOr(key, true) end,
+                    set = function(key, on) WriteSetting(key, on) end,
                 },
                 -- Stored false, not nil, so a party tab with its own settings
                 -- can turn it off over a raid value that is on.
@@ -408,10 +408,10 @@ local function BuildVisualIndicators(
                     type = "toggle",
                     label = "Thorns Only on Tank",
                     tooltip = "Thorns shows on tanks only while the group has one, and on you while solo or without a tank.",
-                    disabled = function() return not SVal("missingBuffsThorns", true) end,
+                    disabled = function() return not SettingOr("missingBuffsThorns", true) end,
                     disabledTooltip = "Thorns",
                     get = SValRow("missingBuffsThornsTank", false),
-                    set = function(val) SSet("missingBuffsThornsTank", val and true or false) end,
+                    set = function(val) WriteSetting("missingBuffsThornsTank", val and true or false) end,
                 },
                 BlessRow(
                     "Tank Blessing",
@@ -450,13 +450,13 @@ local function BuildVisualIndicators(
             -- The icons' glow: the shared glow controls (also listed on
             -- Global Settings > Glows); the Pixel Glow rows show only
             -- while Pixel Glow is picked.
-            for _, r in ipairs(CUI.GlowOptions.PopupRows(MissingGlowDesc(SVal, SWrite), "Glow", true)) do
+            for _, r in ipairs(CUI.GlowOptions.PopupRows(MissingGlowDesc(SettingOr, StoreSetting), "Glow", true)) do
                 rowList[#rowList + 1] = r
             end
             CUI.BuildInlineCog(region, {
                 title = "Missing Buffs",
                 rows = rowList,
-                disabled = function() return not SVal("showMissingBuffs", true) end,
+                disabled = function() return not SettingOr("showMissingBuffs", true) end,
                 disabledTooltip = "Missing Buffs",
             })
         end
@@ -507,19 +507,19 @@ local function BuildVisualIndicators(
         text = "Role Icons",
         values = roleStyleValues,
         order = roleStyleOrder,
-        disabled = function() return SVal("roleText", false) end,
+        disabled = function() return SettingOr("roleText", false) end,
         disabledTooltip = "Role Text",
         requireState = "disabled",
         getValue = SValRow("roleIconStyle", "modern"),
         setValue = function(val)
-            SSet("roleIconStyle", val)
+            WriteSetting("roleIconStyle", val)
             CUI:RefreshPage()
         end,
     }, {
         type = "dropdown",
         text = "Show Role",
         disabled = function()
-            return not SVal("roleText", false) and SVal("roleIconStyle", "modern") == "none"
+            return not SettingOr("roleText", false) and SettingOr("roleIconStyle", "modern") == "none"
         end,
         disabledTooltip = "Role Icons",
         values = { __placeholder = "All Roles" },
@@ -538,16 +538,16 @@ local function BuildVisualIndicators(
                 { key = "healer", label = "Healer" },
                 { key = "dps", label = "DPS" },
             }
-            if SVal("roleText", false) then
+            if SettingOr("roleText", false) then
                 for _, entry in ipairs(itemList) do
                     local colorKey = "roleText" .. entry.label .. "Color"
                     entry.swatch = {
                         get = function()
-                            local color = SGet(colorKey) or mod._internals.defaults.profile[colorKey]
+                            local color = ReadSetting(colorKey) or mod._internals.defaults.profile[colorKey]
                             return color.r, color.g, color.b
                         end,
                         set = function(red, green, blue)
-                            SSet(colorKey, { r = red, g = green, b = blue })
+                            WriteSetting(colorKey, { r = red, g = green, b = blue })
                             if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
                         end,
                     }
@@ -561,8 +561,8 @@ local function BuildVisualIndicators(
             170,
             rightRegion:GetFrameLevel() + 2,
             ShowRoleItems,
-            function(keyName) return SVal(roleKeyMap[keyName], true) end,
-            function(keyName, val) SSet(roleKeyMap[keyName], val) end
+            function(keyName) return SettingOr(roleKeyMap[keyName], true) end,
+            function(keyName, val) WriteSetting(roleKeyMap[keyName], val) end
         )
         Pix.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
         rightRegion._control = checkDrop
@@ -579,7 +579,7 @@ local function BuildVisualIndicators(
                     tooltip = "Show Healer, Tank, or DPS text instead of the role icon, using the same size, position, and Show Role settings.",
                     get = SValRow("roleText", false),
                     set = function(val)
-                        SSet("roleText", val)
+                        WriteSetting("roleText", val)
                         if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
                         CUI:RefreshPage()
                     end,
@@ -590,7 +590,7 @@ local function BuildVisualIndicators(
                     tooltip = "Hide role icons while you are in combat.",
                     get = SValRow("roleIconHideInCombat", false),
                     set = function(val)
-                        SSet("roleIconHideInCombat", val)
+                        WriteSetting("roleIconHideInCombat", val)
                         if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
                     end,
                 },
@@ -617,7 +617,7 @@ local function BuildVisualIndicators(
     }
     local rolePositionOrder = CUI.POSITION_GRID_ORDER
     -- Attach Role Icons (Top Name Bar section) takes over the role icon's placement
-    local function RoleAttached() return SVal("roleIconOnNameBar", false) and SVal("topNameBarEnabled", false) end
+    local function RoleAttached() return SettingOr("roleIconOnNameBar", false) and SettingOr("topNameBarEnabled", false) end
     local roleRow2
     -- Party Frames kit: role, ready check and leader take the stock spots
     -- (their offset cogs stay live).
@@ -631,7 +631,7 @@ local function BuildVisualIndicators(
             order = rolePositionOrder,
             disabled = function()
                 return RoleAttached()
-                    or (not SVal("roleText", false) and SVal("roleIconStyle", "modern") == "none")
+                    or (not SettingOr("roleText", false) and SettingOr("roleIconStyle", "modern") == "none")
             end,
             disabledTooltip = function() return RoleAttached() and "Attach Role Icons" or "Role Icons" end,
             requireState = function() return RoleAttached() and "disabled" or nil end,
@@ -645,7 +645,7 @@ local function BuildVisualIndicators(
             max = 30,
             step = 1,
             disabled = function()
-                return not SVal("roleText", false) and SVal("roleIconStyle", "modern") == "none"
+                return not SettingOr("roleText", false) and SettingOr("roleIconStyle", "modern") == "none"
             end,
             disabledTooltip = "Role Icons",
             getValue = SValRow("roleIconSize", 14),
@@ -713,15 +713,15 @@ local function BuildVisualIndicators(
         values = markerPositionValues,
         order = markerPositionOrder,
         getValue = function()
-            if not SVal("showRaidMarker", true) then return "none" end
-            return SVal("raidMarkerPosition", "center")
+            if not SettingOr("showRaidMarker", true) then return "none" end
+            return SettingOr("raidMarkerPosition", "center")
         end,
         setValue = function(val)
             if val == "none" then
-                SSet("showRaidMarker", false)
+                WriteSetting("showRaidMarker", false)
             else
-                SWrite("showRaidMarker", true)
-                SSet("raidMarkerPosition", val)
+                StoreSetting("showRaidMarker", true)
+                WriteSetting("raidMarkerPosition", val)
             end
             CUI:RefreshPage()
         end,
@@ -731,7 +731,7 @@ local function BuildVisualIndicators(
         min = 8,
         max = 40,
         step = 1,
-        disabled = function() return not SVal("showRaidMarker", true) end,
+        disabled = function() return not SettingOr("showRaidMarker", true) end,
         disabledTooltip = "Marker Position",
         getValue = SValRow("raidMarkerSize", 16),
         setValue = SSetRow("raidMarkerSize"),
@@ -909,7 +909,7 @@ local function BuildVisualIndicators(
                         label = "Show AFK",
                         get = SValRow("statusShowAFK", false),
                         set = function(val)
-                            SSet("statusShowAFK", val)
+                            WriteSetting("statusShowAFK", val)
                             RebuildAndReload()
                         end,
                     },
@@ -937,11 +937,11 @@ local function BuildVisualIndicators(
         if not CUI._prebuilding then
             local region = stRow._rightRegion
             local colorSwatch = CUI.BuildColorSwatch(region, stRow:GetFrameLevel() + 3, function()
-                local color = SGet("statusTextColor")
+                local color = ReadSetting("statusTextColor")
                 if color then return color.r, color.g, color.b, 1 end
                 return 1, 1, 1, 1
             end, function(red, green, blue)
-                SWrite("statusTextColor", { r = red, g = green, b = blue })
+                StoreSetting("statusTextColor", { r = red, g = green, b = blue })
                 RebuildAndReload()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -979,9 +979,9 @@ local function BuildVisualIndicators(
             text = "Leader Icon",
             values = { kit = "Party Frame", none = "None" },
             order = { "kit", "none" },
-            getValue = function() return SVal("showLeaderIcon", false) and "kit" or "none" end,
+            getValue = function() return SettingOr("showLeaderIcon", false) and "kit" or "none" end,
             setValue = function(val)
-                SSet("showLeaderIcon", val ~= "none")
+                WriteSetting("showLeaderIcon", val ~= "none")
                 CUI:RefreshPage()
             end,
         } or {
@@ -990,15 +990,15 @@ local function BuildVisualIndicators(
             values = leaderPositionValues,
             order = leaderPositionOrder,
             getValue = function()
-                if not SVal("showLeaderIcon", false) then return "none" end
-                return SVal("leaderIconPosition", "top")
+                if not SettingOr("showLeaderIcon", false) then return "none" end
+                return SettingOr("leaderIconPosition", "top")
             end,
             setValue = function(val)
                 if val == "none" then
-                    SSet("showLeaderIcon", false)
+                    WriteSetting("showLeaderIcon", false)
                 else
-                    SWrite("showLeaderIcon", true)
-                    SSet("leaderIconPosition", val)
+                    StoreSetting("showLeaderIcon", true)
+                    WriteSetting("leaderIconPosition", val)
                 end
                 CUI:RefreshPage()
             end,
@@ -1008,7 +1008,7 @@ local function BuildVisualIndicators(
             min = 8,
             max = 30,
             step = 1,
-            disabled = function() return not SVal("showLeaderIcon", false) end,
+            disabled = function() return not SettingOr("showLeaderIcon", false) end,
             disabledTooltip = "Leader Icon",
             getValue = SValRow("leaderIconSize", 14),
             setValue = SSetRow("leaderIconSize"),
@@ -1025,7 +1025,7 @@ local function BuildVisualIndicators(
                         tooltip = "Show the leader/assistant icon while you are in combat. Disable to hide it during combat.",
                         get = SValRow("showLeaderIconInCombat", true),
                         set = function(val)
-                            SSet("showLeaderIconInCombat", val)
+                            WriteSetting("showLeaderIconInCombat", val)
                             if mod._UpdateLeaderIcons then mod._UpdateLeaderIcons() end
                         end,
                     },
@@ -1095,15 +1095,15 @@ local function BuildVisualIndicators(
             values = combatPositionValues,
             order = combatPositionOrder,
             getValue = function()
-                if not SVal("showCombatIndicator", false) then return "none" end
-                return SVal("combatIndicatorPosition", "right")
+                if not SettingOr("showCombatIndicator", false) then return "none" end
+                return SettingOr("combatIndicatorPosition", "right")
             end,
             setValue = function(val)
                 if val == "none" then
-                    SSet("showCombatIndicator", false)
+                    WriteSetting("showCombatIndicator", false)
                 else
-                    SWrite("showCombatIndicator", true)
-                    SSet("combatIndicatorPosition", val)
+                    StoreSetting("showCombatIndicator", true)
+                    WriteSetting("combatIndicatorPosition", val)
                 end
                 if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
                 CUI:RefreshPage()
@@ -1114,7 +1114,7 @@ local function BuildVisualIndicators(
             min = 8,
             max = 40,
             step = 1,
-            disabled = function() return not SVal("showCombatIndicator", false) end,
+            disabled = function() return not SettingOr("showCombatIndicator", false) end,
             disabledTooltip = "Combat Icon",
             getValue = SValRow("combatIndicatorSize", 16),
             setValue = SSetRow("combatIndicatorSize"),
@@ -1132,7 +1132,7 @@ local function BuildVisualIndicators(
                         order = combatStyleOrder,
                         get = SValRow("combatIndicatorStyle", "standard"),
                         set = function(val)
-                            SSet("combatIndicatorStyle", val)
+                            WriteSetting("combatIndicatorStyle", val)
                             if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
                         end,
                     },
@@ -1141,14 +1141,14 @@ local function BuildVisualIndicators(
                         label = "Class Colored",
                         tooltip = "Tint the combat icon by the member's class color. Not available for the Arcade/Dungeoneer/Classic/Cross/Circle/Square styles.",
                         disabled = function()
-                            local st = SVal("combatIndicatorStyle", "standard")
+                            local st = SettingOr("combatIndicatorStyle", "standard")
                             return st:find("^combat%d") and true or false
                         end,
                         disabledTooltip = "Not available for this combat icon style.",
                         rawTooltip = true,
-                        get = function() return SVal("combatIndicatorColor", "custom") == "classcolor" end,
+                        get = function() return SettingOr("combatIndicatorColor", "custom") == "classcolor" end,
                         set = function(val)
-                            SSet("combatIndicatorColor", val and "classcolor" or "custom")
+                            WriteSetting("combatIndicatorColor", val and "classcolor" or "custom")
                             if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
                         end,
                     },
@@ -1176,11 +1176,11 @@ local function BuildVisualIndicators(
         if not CUI._prebuilding then
             local region = ciRow._rightRegion
             local colorSwatch = CUI.BuildColorSwatch(region, ciRow:GetFrameLevel() + 3, function()
-                local color = SGet("combatIndicatorCustomColor")
+                local color = ReadSetting("combatIndicatorCustomColor")
                 if color then return color.r, color.g, color.b, 1 end
                 return 1, 0.2, 0.2, 1
             end, function(red, green, blue)
-                SWrite("combatIndicatorCustomColor", { r = red, g = green, b = blue })
+                StoreSetting("combatIndicatorCustomColor", { r = red, g = green, b = blue })
                 if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1208,11 +1208,11 @@ local function BuildVisualIndicators(
             if not CUI._prebuilding then
                 local region = gnRow._rightRegion
                 local colorSwatch = CUI.BuildColorSwatch(region, gnRow:GetFrameLevel() + 3, function()
-                    local color = SGet("groupNumberColor")
+                    local color = ReadSetting("groupNumberColor")
                     if color then return color.r, color.g, color.b, color.a or 0.75 end
                     return 1, 1, 1, 0.75
                 end, function(red, green, blue, a)
-                    SWrite("groupNumberColor", { r = red, g = green, b = blue, a = a })
+                    StoreSetting("groupNumberColor", { r = red, g = green, b = blue, a = a })
                     RebuildAndReload()
                 end, true, 20)
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1281,15 +1281,15 @@ local function BuildVisualIndicators(
             order = pingPositionOrder,
             tooltip = "Shows the ping mark on a member's frame when someone pings them (needs Blizzard's Show Pings on Raid Frames setting on).",
             getValue = function()
-                if not SVal("showPingMarker", true) then return "none" end
-                return SVal("pingMarkerPosition", "center")
+                if not SettingOr("showPingMarker", true) then return "none" end
+                return SettingOr("pingMarkerPosition", "center")
             end,
             setValue = function(val)
                 if val == "none" then
-                    SSet("showPingMarker", false)
+                    WriteSetting("showPingMarker", false)
                 else
-                    SWrite("showPingMarker", true)
-                    SSet("pingMarkerPosition", val)
+                    StoreSetting("showPingMarker", true)
+                    WriteSetting("pingMarkerPosition", val)
                 end
                 CUI:RefreshPage()
             end,
@@ -1299,7 +1299,7 @@ local function BuildVisualIndicators(
             min = 10,
             max = 60,
             step = 1,
-            disabled = function() return not SVal("showPingMarker", true) end,
+            disabled = function() return not SettingOr("showPingMarker", true) end,
             disabledTooltip = "Ping Marker",
             getValue = SValRow("pingMarkerSize", 30),
             setValue = SSetRow("pingMarkerSize"),
@@ -1436,7 +1436,7 @@ local function BuildVisualIndicators(
         order = dispelOverlayOrder,
         getValue = SValRow("dispelOverlay", "fill"),
         setValue = function(val)
-            SSet("dispelOverlay", val)
+            WriteSetting("dispelOverlay", val)
             CUI:RefreshPage()
         end,
     }, {
@@ -1445,7 +1445,7 @@ local function BuildVisualIndicators(
         min = 5,
         max = 100,
         step = 1,
-        disabled = function() return SVal("dispelOverlay", "fill") == "none" end,
+        disabled = function() return SettingOr("dispelOverlay", "fill") == "none" end,
         disabledTooltip = "Dispel Overlay",
         getValue = SValRow("dispelOverlayOpacity", 100),
         setValue = SSetRow("dispelOverlayOpacity"),
@@ -1490,15 +1490,15 @@ local function BuildVisualIndicators(
         values = dispelIconPositionValues,
         order = dispelIconPositionOrder,
         getValue = function()
-            if not SVal("showDispelIcons", false) then return "none" end
-            return SVal("dispelIconPosition", "center")
+            if not SettingOr("showDispelIcons", false) then return "none" end
+            return SettingOr("dispelIconPosition", "center")
         end,
         setValue = function(val)
             if val == "none" then
-                SSet("showDispelIcons", false)
+                WriteSetting("showDispelIcons", false)
             else
-                SSet("showDispelIcons", true)
-                SSet("dispelIconPosition", val)
+                WriteSetting("showDispelIcons", true)
+                WriteSetting("dispelIconPosition", val)
             end
             CUI:RefreshPage()
         end,
@@ -1507,7 +1507,7 @@ local function BuildVisualIndicators(
     do
         local region = row._rightRegion
         CUI.BuildInlineCog(region, {
-            disabled = function() return not SVal("showDispelIcons", false) end,
+            disabled = function() return not SettingOr("showDispelIcons", false) end,
             disabledTooltip = "This option requires a Type Icon Position other than None",
             title = "Dispel Icon",
             rows = {
@@ -1568,11 +1568,11 @@ local function BuildVisualIndicators(
                     requireState = "disabled",
                     get = function()
                         return not mod.RF_CompactOnTab(optionState._partyCtx)
-                            and SVal("dispelCustomBorder", false)
+                            and SettingOr("dispelCustomBorder", false)
                     end,
                     set = function(val)
                         if val and CustomBorderOff() then return end
-                        SSet("dispelCustomBorder", val)
+                        WriteSetting("dispelCustomBorder", val)
                     end,
                 },
             },
@@ -1589,12 +1589,12 @@ local function BuildVisualIndicators(
                 tooltip = "Magic",
                 hasAlpha = true,
                 getValue = function()
-                    local color = SGet("dispelColorMagic")
+                    local color = ReadSetting("dispelColorMagic")
                     if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.354, 0.396, 0.74, 1
                 end,
                 setValue = function(red, green, blue, a)
-                    SWrite("dispelColorMagic", { r = red, g = green, b = blue, a = a or 1 })
+                    StoreSetting("dispelColorMagic", { r = red, g = green, b = blue, a = a or 1 })
                     RebuildAndReload()
                 end,
             },
@@ -1602,12 +1602,12 @@ local function BuildVisualIndicators(
                 tooltip = "Curse",
                 hasAlpha = true,
                 getValue = function()
-                    local color = SGet("dispelColorCurse")
+                    local color = ReadSetting("dispelColorCurse")
                     if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.636, 0.0, 0.64, 1
                 end,
                 setValue = function(red, green, blue, a)
-                    SWrite("dispelColorCurse", { r = red, g = green, b = blue, a = a or 1 })
+                    StoreSetting("dispelColorCurse", { r = red, g = green, b = blue, a = a or 1 })
                     RebuildAndReload()
                 end,
             },
@@ -1615,12 +1615,12 @@ local function BuildVisualIndicators(
                 tooltip = "Disease",
                 hasAlpha = true,
                 getValue = function()
-                    local color = SGet("dispelColorDisease")
+                    local color = ReadSetting("dispelColorDisease")
                     if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.71, 0.379, 0.0, 1
                 end,
                 setValue = function(red, green, blue, a)
-                    SWrite("dispelColorDisease", { r = red, g = green, b = blue, a = a or 1 })
+                    StoreSetting("dispelColorDisease", { r = red, g = green, b = blue, a = a or 1 })
                     RebuildAndReload()
                 end,
             },
@@ -1628,12 +1628,12 @@ local function BuildVisualIndicators(
                 tooltip = "Poison",
                 hasAlpha = true,
                 getValue = function()
-                    local color = SGet("dispelColorPoison")
+                    local color = ReadSetting("dispelColorPoison")
                     if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.052, 0.586, 0.62, 1
                 end,
                 setValue = function(red, green, blue, a)
-                    SWrite("dispelColorPoison", { r = red, g = green, b = blue, a = a or 1 })
+                    StoreSetting("dispelColorPoison", { r = red, g = green, b = blue, a = a or 1 })
                     RebuildAndReload()
                 end,
             },
@@ -1641,12 +1641,12 @@ local function BuildVisualIndicators(
                 tooltip = "Bleed",
                 hasAlpha = true,
                 getValue = function()
-                    local color = SGet("dispelColorBleed")
+                    local color = ReadSetting("dispelColorBleed")
                     if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.75, 0.15, 0.15, 1
                 end,
                 setValue = function(red, green, blue, a)
-                    SWrite("dispelColorBleed", { r = red, g = green, b = blue, a = a or 1 })
+                    StoreSetting("dispelColorBleed", { r = red, g = green, b = blue, a = a or 1 })
                     RebuildAndReload()
                 end,
             },
@@ -1655,8 +1655,8 @@ local function BuildVisualIndicators(
         type = "toggle",
         text = "Only Show Dispellable",
         -- Inverse of dispelShowAll: ON = only-mine (dispelShowAll=false).
-        getValue = function() return not SVal("dispelShowAll", true) end,
-        setValue = function(val) SSet("dispelShowAll", not val) end,
+        getValue = function() return not SettingOr("dispelShowAll", true) end,
+        setValue = function(val) WriteSetting("dispelShowAll", not val) end,
     })
     cursorY = cursorY - height
 
@@ -1672,14 +1672,14 @@ local function BuildVisualIndicators(
         _, height = W:SectionHeader(hostFrame, "TOP NAME BAR", cursorY)
         cursorY = cursorY - height
 
-        local function TNBOff() return not SVal("topNameBarEnabled", false) end
+        local function TNBOff() return not SettingOr("topNameBarEnabled", false) end
 
         -- Enable Top Name Bar | Height. The master toggle HIDES the dependent rows while off; SectionToggleSetValue forces that rebuild.
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Top Name Bar",
             getValue = SValRow("topNameBarEnabled", false),
-            setValue = CUI.SectionToggleSetValue(function(val) SSet("topNameBarEnabled", val) end),
+            setValue = CUI.SectionToggleSetValue(function(val) WriteSetting("topNameBarEnabled", val) end),
         }, TNBOff() and { type = "label", text = "" } or {
             type = "slider",
             text = "Height",
@@ -1694,7 +1694,7 @@ local function BuildVisualIndicators(
         if not TNBOff() and not CUI._prebuilding then
             CUI.BuildInlineCog(row._rightRegion, {
                 disabled = function()
-                    local key = SGet("borderTexture")
+                    local key = ReadSetting("borderTexture")
                     return TNBOff()
                         or CUI.BlizzStyle.Get("raidframes")
                         or not CUI._pixelArtBorders[key]
@@ -1715,7 +1715,7 @@ local function BuildVisualIndicators(
                         type = "toggle",
                         label = "Match Highlight Colors",
                         tooltip = "The divider follows hover and target colors.",
-                        disabled = function() return not SVal("topNameBarDivider", false) end,
+                        disabled = function() return not SettingOr("topNameBarDivider", false) end,
                         disabledTooltip = "Requires Divider.",
                         rawTooltip = true,
                         get = SValRow("topNameBarDividerMatchColor", false),
@@ -1748,11 +1748,11 @@ local function BuildVisualIndicators(
             if not CUI._prebuilding then
                 local region = tnbRow2._leftRegion
                 local bgSwatch = CUI.BuildColorSwatch(region, tnbRow2:GetFrameLevel() + 3, function()
-                    local color = SGet("topNameBarBgColor")
+                    local color = ReadSetting("topNameBarBgColor")
                     if color then return color.r, color.g, color.b, 1 end
                     return 17 / 255, 17 / 255, 17 / 255, 1
                 end, function(red, green, blue)
-                    SWrite("topNameBarBgColor", { r = red, g = green, b = blue })
+                    StoreSetting("topNameBarBgColor", { r = red, g = green, b = blue })
                     RebuildAndReload()
                 end, false, 20)
                 bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1818,8 +1818,8 @@ local function BuildVisualIndicators(
                     region._lastInline = sw
                     sw._eabOrigClick = sw:GetScript("OnClick")
                     sw:SetScript("OnClick", function(self)
-                        if SVal("topNameBarTextColorMode", "class") ~= mode then
-                            SSet("topNameBarTextColorMode", mode)
+                        if SettingOr("topNameBarTextColorMode", "class") ~= mode then
+                            WriteSetting("topNameBarTextColorMode", mode)
                             CUI:RefreshPage()
                             return
                         end
@@ -1830,18 +1830,18 @@ local function BuildVisualIndicators(
                         sw:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                     end
                     local function vis()
-                        sw:SetAlpha(SVal("topNameBarTextColorMode", "class") == mode and 1 or 0.3)
+                        sw:SetAlpha(SettingOr("topNameBarTextColorMode", "class") == mode and 1 or 0.3)
                     end
                     CUI.RegisterWidgetRefresh(vis)
                     vis()
                 end
                 -- Custom (rightmost): editable, opens the picker when active.
                 AddTNBSwatch(function()
-                    local color = SGet("topNameBarTextColor")
+                    local color = ReadSetting("topNameBarTextColor")
                     if color then return color.r, color.g, color.b, 1 end
                     return 1, 1, 1, 1
                 end, function(red, green, blue)
-                    SWrite("topNameBarTextColor", { r = red, g = green, b = blue })
+                    StoreSetting("topNameBarTextColor", { r = red, g = green, b = blue })
                     RebuildAndReload()
                 end, "custom", true, "Custom Color")
                 AddTNBSwatch(function()
@@ -1862,7 +1862,7 @@ local function BuildVisualIndicators(
                 tooltip = "Places role icons on the Top Name Bar, in the same spot on every frame whether or not it shows a power bar.",
                 getValue = SValRow("roleIconOnNameBar", false),
                 setValue = function(val)
-                    SSet("roleIconOnNameBar", val)
+                    WriteSetting("roleIconOnNameBar", val)
                     CUI:RefreshPage()
                 end,
             }, CUI.BlankRowCfg())
@@ -1870,7 +1870,7 @@ local function BuildVisualIndicators(
             if not CUI._prebuilding then
                 CUI.BuildInlineCog(tnbRow4._leftRegion, {
                     title = "Role Icon Position",
-                    disabled = function() return not SVal("roleIconOnNameBar", false) end,
+                    disabled = function() return not SettingOr("roleIconOnNameBar", false) end,
                     disabledTooltip = "Attach Role Icons",
                     rows = {
                         {
@@ -2506,9 +2506,9 @@ local function BuildVisualIndicators(
     -- OOR Alpha | Show Raid Frames Tooltip (dropdown + cog). The dropdown is a pure VIEW over the legacy keys: with tooltipMode unset it derives the shown option from the showTooltip toggle plus the global "show in combat" flag, so behavior only changes once the user picks.
     -- Same derive as the runtime ns._ResolveTooltipMode.
     local function CurTooltipMode()
-        local m = SVal("tooltipMode", nil)
+        local m = SettingOr("tooltipMode", nil)
         if m ~= nil then return m end
-        if SVal("showTooltip", true) == false then return "never" end
+        if SettingOr("showTooltip", true) == false then return "never" end
         if CludesUIDB and CludesUIDB.showUnitTooltipsInCombat then return "always" end
         return "outOfCombat"
     end
@@ -2518,9 +2518,9 @@ local function BuildVisualIndicators(
         min = 10,
         max = 100,
         step = 1,
-        getValue = function() return floor((SVal("oorAlpha", 0.4)) * 100) end,
+        getValue = function() return floor((SettingOr("oorAlpha", 0.4)) * 100) end,
         setValue = function(val)
-            SSet("oorAlpha", val / 100)
+            WriteSetting("oorAlpha", val / 100)
             -- SetAlphaFromBoolean bakes the value in at call time, so already-OOR units keep the old alpha until a range re-eval.
             -- Seed all buttons so the slider takes effect now.
             if mod._RangeSeedAll then mod._RangeSeedAll() end
@@ -2558,7 +2558,7 @@ local function BuildVisualIndicators(
                 },
                 order = { "hidden", "shown", "cursor", "combat" },
                 get = function()
-                    local val = SVal("buffHideTooltips", true)
+                    local val = SettingOr("buffHideTooltips", true)
                     if val == false then return "shown" end
                     if val == "cursor" or val == "combat" then return val end
                     return "hidden"
@@ -2570,7 +2570,7 @@ local function BuildVisualIndicators(
                     elseif keyName == "hidden" then
                         val = true
                     end
-                    SSet("buffHideTooltips", val)
+                    WriteSetting("buffHideTooltips", val)
                     if mod.ReloadFrames then mod.ReloadFrames() end
                 end,
             },
@@ -3037,12 +3037,12 @@ local function BuildVisualIndicators(
                 tooltip = "Offline",
                 hasAlpha = false,
                 getValue = function()
-                    local color = SGet("statusColorOffline")
+                    local color = ReadSetting("statusColorOffline")
                     if color then return color.r, color.g, color.b end
                     return 0x66 / 255, 0x66 / 255, 0x66 / 255
                 end,
                 setValue = function(red, green, blue)
-                    SWrite("statusColorOffline", { r = red, g = green, b = blue })
+                    StoreSetting("statusColorOffline", { r = red, g = green, b = blue })
                     RebuildAndReload()
                 end,
             },
@@ -3050,12 +3050,12 @@ local function BuildVisualIndicators(
                 tooltip = "Dead",
                 hasAlpha = false,
                 getValue = function()
-                    local color = SGet("statusColorDead")
+                    local color = ReadSetting("statusColorDead")
                     if color then return color.r, color.g, color.b end
                     return 0x24 / 255, 0x17 / 255, 0x17 / 255
                 end,
                 setValue = function(red, green, blue)
-                    SWrite("statusColorDead", { r = red, g = green, b = blue })
+                    StoreSetting("statusColorDead", { r = red, g = green, b = blue })
                     RebuildAndReload()
                 end,
             },
@@ -3070,7 +3070,7 @@ local function BuildVisualIndicators(
         tooltip = "Allows free camera movement while holding and dragging right mouse button over raid and party frames. Right-click tap still opens the unit menu.",
         getValue = SValRow("freeRightClickCamera", false),
         setValue = function(val)
-            SSet("freeRightClickCamera", val)
+            WriteSetting("freeRightClickCamera", val)
             if mod.FRCM_Refresh then mod.FRCM_Refresh() end
         end,
     }, {
@@ -3082,7 +3082,7 @@ local function BuildVisualIndicators(
         getValue = SValRow("frameStrata", "LOW"),
         setValue = function(val)
             -- Reload after changing strata to restore child frame levels.
-            SWrite("frameStrata", val)
+            StoreSetting("frameStrata", val)
             if mod.ApplyFrameStrata then mod.ApplyFrameStrata() end
             RebuildAndReload()
         end,

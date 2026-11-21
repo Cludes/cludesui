@@ -23,10 +23,10 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         environ.FirstBarButton, environ.floor, environ.GetVisibilityKey
     local GROUP_BAR_ORDER, IsDataBar, Pix, SB =
         environ.GROUP_BAR_ORDER, environ.IsDataBar, environ.PP, environ.SB
-    local SECTION_LAYOUT, SECTION_VISIBILITY, SelectedKey, SHORT_LABELS =
+    local SECTION_LAYOUT, SECTION_VISIBILITY, SelectedKey, SHORT_NAMES =
         environ.SECTION_LAYOUT, environ.SECTION_VISIBILITY, environ.SelectedKey, environ.SHORT_LABELS
-    local SDB, SGet, SSet = context.SDB, context.SGet, context.SSet
-    local SUpdatePreview, SUpdatePreviewAndResize, SVal =
+    local SettingsDB, ReadSetting, WriteSetting = context.SDB, context.SGet, context.SSet
+    local SUpdatePreview, SUpdatePreviewAndResize, SettingOr =
         context.SUpdatePreview, context.SUpdatePreviewAndResize, context.SVal
     local visOnly = context.visOnly
     local W = context.W
@@ -219,7 +219,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
+                    elementLabels = SHORT_NAMES,
                     getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local source = SB()
@@ -461,7 +461,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     -- The Advanced Fade layer rests on this value.
                     if ABAR.AdvancedFadeOn(bs) then ABAR:RefreshCustomFadeForBar(SelectedKey(), false) end
                 else
-                    SSet("mouseoverAlpha", value / 100, function(keyName) ABAR:ApplyBarOpacity(keyName) end)
+                    WriteSetting("mouseoverAlpha", value / 100, function(keyName) ABAR:ApplyBarOpacity(keyName) end)
                 end
                 SUpdatePreview()
             end,
@@ -509,7 +509,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             flashTargets = function() return { region } end,
             multiApply = {
                 elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
+                elementLabels = SHORT_NAMES,
                 getCurrentKey = function() return SelectedKey() end,
                 onApply = function(checkedKeys)
                     local value = SB().mouseoverAlpha or 1
@@ -581,7 +581,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         return floor(((SB().fadeMaxAlpha ~= nil and SB().fadeMaxAlpha or 1) * 100) + 0.5)
                     end,
                     set = function(value)
-                        SSet(
+                        WriteSetting(
                             "fadeMaxAlpha",
                             value / 100,
                             function(keyName) ABAR:RefreshCustomFadeForBar(keyName, true) end
@@ -596,7 +596,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     step = 0.01,
                     tooltip = "Seconds the fade to Advanced Fade Opacity takes.",
                     get = function() return SB().fadeInSpeed or 0.15 end,
-                    set = function(value) SSet("fadeInSpeed", value) end,
+                    set = function(value) WriteSetting("fadeInSpeed", value) end,
                 },
                 {
                     type = "slider",
@@ -606,7 +606,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     step = 0.01,
                     tooltip = "Seconds the fade back to Bar Opacity takes.",
                     get = function() return SB().fadeOutSpeed or 0.15 end,
-                    set = function(value) SSet("fadeOutSpeed", value) end,
+                    set = function(value) WriteSetting("fadeOutSpeed", value) end,
                 },
             },
         })
@@ -618,7 +618,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             flashTargets = function() return { region } end,
             multiApply = {
                 elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
+                elementLabels = SHORT_NAMES,
                 getCurrentKey = function() return SelectedKey() end,
                 onApply = ApplyAdvancedFadeTo,
             },
@@ -631,12 +631,12 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         type = "toggle",
         text = "Always Show Buttons",
         getValue = function()
-            local value = SGet("alwaysShowButtons")
+            local value = ReadSetting("alwaysShowButtons")
             if value == nil then return true end
             return value
         end,
         setValue = function(value)
-            SSet("alwaysShowButtons", value, function(keyName)
+            WriteSetting("alwaysShowButtons", value, function(keyName)
                 ABAR:ApplyAlwaysShowButtons(keyName)
                 ABAR:ApplyPaddingForBar(keyName)
                 ABAR:ApplyBackgroundForBar(keyName)
@@ -756,9 +756,9 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             min = -10,
             max = 20,
             step = 1,
-            getValue = function() return SVal("buttonPadding", 2) end,
+            getValue = function() return SettingOr("buttonPadding", 2) end,
             setValue = function(value)
-                SSet("buttonPadding", value, function(keyName) ABAR:ApplyPaddingForBar(keyName) end)
+                WriteSetting("buttonPadding", value, function(keyName) ABAR:ApplyPaddingForBar(keyName) end)
                 SUpdatePreview()
             end,
         })
@@ -799,7 +799,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
+                    elementLabels = SHORT_NAMES,
                     getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local barCfg = SB()
@@ -841,7 +841,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
+                    elementLabels = SHORT_NAMES,
                     getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local value = SB().buttonPadding or 2
@@ -866,14 +866,14 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 return details and details.isStance
             end,
             getValue = function()
-                local value = SGet("overrideNumIcons")
+                local value = ReadSetting("overrideNumIcons")
                 if value and value > 0 then return value end
                 local barCfg = SB()
                 if barCfg and barCfg.numIcons and barCfg.numIcons > 0 then return barCfg.numIcons end
                 return 12
             end,
             setValue = function(value)
-                SSet("overrideNumIcons", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
+                WriteSetting("overrideNumIcons", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
                 SUpdatePreviewAndResize()
             end,
         }, {
@@ -883,14 +883,14 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             max = 12,
             step = 1,
             getValue = function()
-                local value = SGet("overrideNumRows")
+                local value = ReadSetting("overrideNumRows")
                 if value and value > 0 then return value end
                 local barCfg = SB()
                 if barCfg and barCfg.numRows and barCfg.numRows > 0 then return barCfg.numRows end
                 return 1
             end,
             setValue = function(value)
-                SSet("overrideNumRows", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
+                WriteSetting("overrideNumRows", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
                 SUpdatePreviewAndResize()
             end,
         })
@@ -918,7 +918,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
+                    elementLabels = SHORT_NAMES,
                     getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local value = SB().overrideNumIcons or 12
@@ -954,7 +954,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
+                    elementLabels = SHORT_NAMES,
                     getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local value = SB().overrideNumRows or 1
@@ -969,7 +969,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         end
         do
             local rightRegion = row._rightRegion
-            local isVert = SVal("orientation", "horizontal") == "vertical"
+            local isVert = SettingOr("orientation", "horizontal") == "vertical"
             local growDirValues, growDirOrder
             if isVert then
                 growDirValues = { up = "Up", down = "Down", center = "Centered" }
@@ -988,12 +988,12 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         values = growDirValues,
                         order = growDirOrder,
                         get = function()
-                            local val = SVal("growDirection", "up")
+                            local val = SettingOr("growDirection", "up")
                             if not growDirValues[val] then return "center" end
                             return val
                         end,
                         set = function(value)
-                            SSet(
+                            WriteSetting(
                                 "growDirection",
                                 value,
                                 function(keyName) ABAR:ApplyIconRowOverrides(keyName) end
@@ -1034,15 +1034,15 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 },
                 order = { "default", "reversed", "TOPLEFT", "TOPRIGHT", "BOTTOMLEFT", "BOTTOMRIGHT" },
                 getValue = function()
-                    local value = SVal("iconOrder", nil)
+                    local value = SettingOr("iconOrder", nil)
                     if value == nil then
-                        value = SVal("reverseIconOrder", false) and "reversed" or "default"
+                        value = SettingOr("reverseIconOrder", false) and "reversed" or "default"
                     end
                     return value
                 end,
                 setValue = function(value)
-                    SDB().reverseIconOrder = (value == "reversed")
-                    SSet("iconOrder", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
+                    SettingsDB().reverseIconOrder = (value == "reversed")
+                    WriteSetting("iconOrder", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
                     SUpdatePreviewAndResize()
                 end,
             })
@@ -1076,7 +1076,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     flashTargets = function() return { region } end,
                     multiApply = {
                         elementKeys = GROUP_BAR_ORDER,
-                        elementLabels = SHORT_LABELS,
+                        elementLabels = SHORT_NAMES,
                         getCurrentKey = function() return SelectedKey() end,
                         onApply = function(checkedKeys)
                             local isHoriz = ABAR:GetOrientationForBar(SelectedKey())

@@ -183,22 +183,22 @@ end
 
 function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
-    local AttachFrameSourceCog, BuildBarTexDropdown, BuildInactiveNotice, CLASS_FULL_COORDS =
+    local AddFrameSourceCog, BuildBarTexDropdown, BuildInactiveNotice, CLASS_FULL_COORDS =
         environ.AttachFrameSourceCog,
         environ.BuildBarTexDropdown,
         environ.BuildInactiveNotice,
         environ.CLASS_FULL_COORDS
-    local CLASS_FULL_SPRITE_BASE, GROUP_UNIT_ORDER, Pix, PromptReloadIfUnspawned =
+    local CLASS_FULL_SPRITE_BASE, GROUP_ORDER, Pix, AskReloadIfUnspawned =
         environ.CLASS_FULL_SPRITE_BASE, environ.GROUP_UNIT_ORDER, environ.PP, environ.PromptReloadIfUnspawned
-    local RebuildAndReload, UNIT_DB_MAP, RepaintPreview =
+    local RebuildAndReload, UNIT_SETTINGS, RepaintPreview =
         environ.ReloadAndUpdate, environ.UNIT_DB_MAP, environ.UpdatePreview
     local saved, frameList, optionState, portraitArtValues =
         environ.db, environ.frames, environ.optState, environ.portraitArtValues
     local TexBgRowCfg = environ.TexBgRowCfg
-    local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local W, SettingsDB, SGet, WriteSetting = context.W, context.SDB, context.SGet, context.SSet
     -- Row setters over SSet: the key written with the row's value.
     local function SSetRow(settingKey)
-        return function(value) SSet(settingKey, value) end
+        return function(value) WriteSetting(settingKey, value) end
     end
     local ReadSetting = context.SVal
     -- A row getter over SVal: the key's value, or the default given.
@@ -227,7 +227,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     do
         local sn = portraitArtValues["class"].subnav
         sn.onSelect = function(styleKey)
-            local unitCfg = UNIT_DB_MAP[optionState.selectedUnit]()
+            local unitCfg = UNIT_SETTINGS[optionState.selectedUnit]()
             unitCfg.portraitMode = "class"
             unitCfg.classThemeStyle = styleKey
             unitCfg.showPortrait = true
@@ -321,7 +321,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         hostFrame,
         cursorY,
         {
-            getStore = function() return UNIT_DB_MAP[optionState.selectedUnit]() end,
+            getStore = function() return UNIT_SETTINGS[optionState.selectedUnit]() end,
             legacyKey = "barVisibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
             refreshPageArg = true,
@@ -332,7 +332,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             -- visibility pass instead (ns.UpdateFrameVisibility), which reverses.
             applyScalarFn = function(cfg, mode) cfg.barVisibility = mode end,
             onChanged = function()
-                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                local cfg = UNIT_SETTINGS[optionState.selectedUnit]()
                 SyncUnitVisBooleans(cfg)
                 if mod.UpdateFrameVisibility then mod.UpdateFrameVisibility() end
                 RebuildAndReload()
@@ -342,7 +342,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 -- of Always on a unit whose shared value is "never" un-hides it too.
                 local visOv = CUI.VisOverrideValue(cfg)
                 if (visOv or cfg.barVisibility or "always") ~= "never" then
-                    PromptReloadIfUnspawned({ optionState.selectedUnit })
+                    AskReloadIfUnspawned({ optionState.selectedUnit })
                 end
             end,
             onOptionChanged = function()
@@ -374,7 +374,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     -- for consistency. Fade rows appear only for the CludesUI source.
     local _visSrcIsEui = mod.GetUnitFrameSource(optionState.selectedUnit) == "cui"
     if not CUI._prebuilding then
-        AttachFrameSourceCog(visRow._leftRegion, optionState.selectedUnit, {
+        AddFrameSourceCog(visRow._leftRegion, optionState.selectedUnit, {
             title = _visSrcIsEui and "Frame Source & Visibility" or "Frame Source",
             cogTooltip = _visSrcIsEui and "Frame Source & Visibility" or "Frame Source",
             extraRows = _visSrcIsEui
@@ -387,7 +387,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                         disabledTooltip = "Change health visibility out of combat",
                         get = function() return ReadSetting("showWhenHealthMissing", false) == true end,
                         set = function(value)
-                            SSet("showWhenHealthMissing", value)
+                            WriteSetting("showWhenHealthMissing", value)
                             if mod.UpdateFrameVisibility then mod.UpdateFrameVisibility() end
                         end,
                     },
@@ -397,7 +397,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                         tooltip = "Fades the entire frame (portrait, health and power bars, text) while out of combat.",
                         get = function() return ReadSetting("oocFadeEnabled", false) == true end,
                         set = function(value)
-                            SSet("oocFadeEnabled", value)
+                            WriteSetting("oocFadeEnabled", value)
                             if mod.UpdateFrameVisibility then mod.UpdateFrameVisibility() end
                         end,
                     },
@@ -412,7 +412,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                         rawTooltip = true,
                         get = function() return math.floor((ReadSetting("oocAlpha", 0.5)) * 100 + 0.5) end,
                         set = function(value)
-                            SSet("oocAlpha", value / 100)
+                            WriteSetting("oocAlpha", value / 100)
                             if mod.UpdateFrameVisibility then mod.UpdateFrameVisibility() end
                         end,
                     },
@@ -478,8 +478,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 if mod.UpdateFrameVisibility then mod.UpdateFrameVisibility() end
                 RebuildAndReload()
                 CUI:RefreshPage(true)
-                if (UNIT_DB_MAP[optionState.selectedUnit]().barVisibility or "always") ~= "never" then
-                    PromptReloadIfUnspawned(list)
+                if (UNIT_SETTINGS[optionState.selectedUnit]().barVisibility or "always") ~= "never" then
+                    AskReloadIfUnspawned(list)
                 end
             end,
         })
@@ -498,7 +498,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             return ReadSetting("healthBarTexture", saved.profile.healthBarTexture or "none")
         end,
         setValue = function(value)
-            SSet("healthBarTexture", value)
+            WriteSetting("healthBarTexture", value)
             RepaintPreview()
             CUI:RefreshPage()
         end,
@@ -506,9 +506,9 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         type = "toggle",
         text = "Dark Mode",
         tooltip = "Dark Mode for this frame. Global Settings > Colors switches every frame.",
-        getValue = function() return mod.UF_DarkThemeOn(SDB()) end,
+        getValue = function() return mod.UF_DarkThemeOn(SettingsDB()) end,
         setValue = function(value)
-            SSet("darkTheme", value)
+            WriteSetting("darkTheme", value)
             RepaintPreview()
             -- Dark Mode feeds the conditional-override condition.
             CUI.Conditions_Recheck()
@@ -541,7 +541,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         CUI.BuildInlineCog(region, {
             title = "Texture Settings",
             rows = {
-                TexBgRowCfg(function() return UNIT_DB_MAP[optionState.selectedUnit]() end, RebuildAndReload),
+                TexBgRowCfg(function() return UNIT_SETTINGS[optionState.selectedUnit]() end, RebuildAndReload),
             },
         })
     end
@@ -559,20 +559,20 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             order = texOrder,
             getValue = function() return SGet("borderTexture") or "solid" end,
             setValue = function(value)
-                SSet("borderTexture", value)
-                SSet("borderTextureOffset", nil)
-                SSet("borderTextureOffsetY", nil)
-                SSet("borderTextureShiftX", nil)
-                SSet("borderTextureShiftY", nil)
+                WriteSetting("borderTexture", value)
+                WriteSetting("borderTextureOffset", nil)
+                WriteSetting("borderTextureOffsetY", nil)
+                WriteSetting("borderTextureShiftX", nil)
+                WriteSetting("borderTextureShiftY", nil)
                 local _bcol, _bbehind = CUI.GetBorderStyleSelectDefaults(value)
-                SSet("borderColor", _bcol)
-                SSet("borderAlpha", 1)
-                SSet("borderBehind", _bbehind)
+                WriteSetting("borderColor", _bcol)
+                WriteSetting("borderAlpha", 1)
+                WriteSetting("borderBehind", _bbehind)
                 local defSz = CUI.GetBorderDefaultSize("unitframes", value)
-                if defSz then SSet("borderSize", defSz) end
+                if defSz then WriteSetting("borderSize", defSz) end
                 -- A style pick returns the frame to its legacy step; clear a set
                 -- exact size (false travels through mirror sync, nil would not).
-                if SGet("borderSizePx") then SDB().borderSizePx = false end
+                if SGet("borderSizePx") then SettingsDB().borderSizePx = false end
                 RebuildAndReload()
                 -- The Width / Height Offset row exists only under a textured style.
                 CUI:RefreshPage(true)
@@ -584,10 +584,10 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 text = "Border Size",
                 trackWidth = 120,
                 getStep = function() return ReadSetting("borderSize", 1) end,
-                setStep = function(step) SDB().borderSize = step end,
+                setStep = function(step) SettingsDB().borderSize = step end,
                 getTex = function() return SGet("borderTexture") or "solid" end,
                 getPx = function() return SGet("borderSizePx") end,
-                setPx = function(value) SDB().borderSizePx = value end,
+                setPx = function(value) SettingsDB().borderSizePx = value end,
                 apply = RebuildAndReload,
             })
         )
@@ -606,9 +606,9 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 getSizeKey = function() return ReadSetting("borderSize", 1) end,
                 getPx = function() return SGet("borderSizePx") end,
                 getX = function() return SGet("borderTextureOffset") end,
-                setX = function(value) SDB().borderTextureOffset = value end,
+                setX = function(value) SettingsDB().borderTextureOffset = value end,
                 getY = function() return SGet("borderTextureOffsetY") end,
-                setY = function(value) SDB().borderTextureOffsetY = value end,
+                setY = function(value) SettingsDB().borderTextureOffsetY = value end,
                 apply = RebuildAndReload,
             })
             _, height = W:DualRow(
@@ -641,7 +641,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                         return dsx
                     end,
                     set = function(value)
-                        SSet("borderTextureShiftX", value == 0 and nil or value)
+                        WriteSetting("borderTextureShiftX", value == 0 and nil or value)
                         RebuildAndReload()
                     end,
                 },
@@ -660,7 +660,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                         return dsy
                     end,
                     set = function(value)
-                        SSet("borderTextureShiftY", value == 0 and nil or value)
+                        WriteSetting("borderTextureShiftY", value == 0 and nil or value)
                         RebuildAndReload()
                     end,
                 },
@@ -669,7 +669,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                     label = "Show Behind",
                     get = SValRow("borderBehind", false),
                     set = function(value)
-                        SSet("borderBehind", value)
+                        WriteSetting("borderBehind", value)
                         RebuildAndReload()
                         CUI:RefreshPage()
                     end,
@@ -812,12 +812,12 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                             },
                         },
                         function() return SGet("cornerMask") end,
-                        function(value) SSet("cornerMask", value) end
+                        function(value) WriteSetting("cornerMask", value) end
                     ),
                     "Join Power Bar",
                     "Rounds a detached power bar right above or below the frame as one shape with it.",
                     function() return SGet("cornerJoinPower") end,
-                    function(value) SSet("cornerJoinPower", value) end,
+                    function(value) WriteSetting("cornerJoinPower", value) end,
                     function()
                         local place = SGet("powerPosition") or "below"
                         return place == "detached_top" or place == "detached_bottom"
@@ -836,8 +836,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 return color.r, color.g, color.b, ReadSetting("borderAlpha", 1)
             end,
             function(red, green, blue, a)
-                UNIT_DB_MAP[optionState.selectedUnit]().borderColor = { r = red, g = green, b = blue }
-                UNIT_DB_MAP[optionState.selectedUnit]().borderAlpha = a
+                UNIT_SETTINGS[optionState.selectedUnit]().borderColor = { r = red, g = green, b = blue }
+                UNIT_SETTINGS[optionState.selectedUnit]().borderAlpha = a
                 RebuildAndReload()
             end,
             true,
@@ -909,20 +909,20 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             function(keyName)
                 if keyName == "unit" then return ReadSetting("showUnitTooltip", true) end
                 if keyName == "auras" then return ReadSetting("showAuraTooltips", true) end
-                if keyName == "bossauras" then return UNIT_DB_MAP["boss"]().showAuraTooltips ~= false end
+                if keyName == "bossauras" then return UNIT_SETTINGS["boss"]().showAuraTooltips ~= false end
                 return false
             end,
             function(keyName, value)
                 if keyName == "unit" then
                     for _, settingKey in ipairs(ALL_UNITS) do
-                        UNIT_DB_MAP[settingKey]().showUnitTooltip = value
+                        UNIT_SETTINGS[settingKey]().showUnitTooltip = value
                     end
                 elseif keyName == "auras" then
                     for _, settingKey in ipairs(MAIN_UNITS) do
-                        UNIT_DB_MAP[settingKey]().showAuraTooltips = value
+                        UNIT_SETTINGS[settingKey]().showAuraTooltips = value
                     end
                 elseif keyName == "bossauras" then
-                    UNIT_DB_MAP["boss"]().showAuraTooltips = value
+                    UNIT_SETTINGS["boss"]().showAuraTooltips = value
                 else
                     return
                 end
@@ -1105,15 +1105,15 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             hbItems,
             function(keyName)
                 -- Highlight is shared across all 3 main frames; read the player copy.
-                if keyName == "highlight" then return UNIT_DB_MAP.player().highlightEnabled ~= false end
+                if keyName == "highlight" then return UNIT_SETTINGS.player().highlightEnabled ~= false end
                 if keyName == "playerThreat" then return saved.profile.playerThreatBorderEnabled or false end
                 return false
             end,
             function(keyName, value)
                 if keyName == "highlight" then
                     -- Shared across all 3 main frames; threat stays player-only below.
-                    for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[settingKey]().highlightEnabled = value
+                    for _, settingKey in ipairs(GROUP_ORDER) do
+                        UNIT_SETTINGS[settingKey]().highlightEnabled = value
                     end
                     RebuildAndReload()
                 elseif keyName == "playerThreat" then
@@ -1130,12 +1130,12 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         local lvl = decimalRow:GetFrameLevel() + 3
         -- Highlight swatch (per-unit), nearest the dropdown.
         local hlSwatch, updHl = CUI.BuildColorSwatch(rightRegion, lvl, function()
-            local color = UNIT_DB_MAP.player().highlightColor or { r = 1, g = 1, b = 1 }
-            return color.r, color.g, color.b, UNIT_DB_MAP.player().highlightAlpha or 1
+            local color = UNIT_SETTINGS.player().highlightColor or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b, UNIT_SETTINGS.player().highlightAlpha or 1
         end, function(red, green, blue, a)
             -- Shared across all 3 main frames (see Highlight enable above).
-            for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                local unitCfg = UNIT_DB_MAP[settingKey]()
+            for _, settingKey in ipairs(GROUP_ORDER) do
+                local unitCfg = UNIT_SETTINGS[settingKey]()
                 unitCfg.highlightColor = { r = red, g = green, b = blue }
                 unitCfg.highlightAlpha = a
             end
@@ -1174,7 +1174,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
 
         -- Gray a swatch when its toggle is off (still clickable to pre-set).
         UpdateHBSwatchVis = function()
-            hlSwatch:SetAlpha(UNIT_DB_MAP.player().highlightEnabled ~= false and 1 or 0.3)
+            hlSwatch:SetAlpha(UNIT_SETTINGS.player().highlightEnabled ~= false and 1 or 0.3)
             if hasSwatch then
                 local enabled = saved.profile.playerThreatBorderEnabled
                 hasSwatch:SetAlpha(enabled and 1 or 0.3)
@@ -1283,12 +1283,12 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             type = "toggle",
             text = "Blizz Colored Target Header",
             tooltip = "Colors the strip behind the target's name by its reaction.",
-            getValue = function() return UNIT_DB_MAP.target().blizzColoredHeader ~= false end,
+            getValue = function() return UNIT_SETTINGS.target().blizzColoredHeader ~= false end,
             setValue = function(value)
                 if value then
-                    UNIT_DB_MAP.target().blizzColoredHeader = nil
+                    UNIT_SETTINGS.target().blizzColoredHeader = nil
                 else
-                    UNIT_DB_MAP.target().blizzColoredHeader = false
+                    UNIT_SETTINGS.target().blizzColoredHeader = false
                 end
                 RebuildAndReload()
                 RepaintPreview()
@@ -1305,18 +1305,18 @@ end
 
 function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
-    local RebuildAndReload, UNIT_DB_MAP = environ.ReloadAndUpdate, environ.UNIT_DB_MAP
+    local RebuildAndReload, UNIT_SETTINGS = environ.ReloadAndUpdate, environ.UNIT_DB_MAP
     local RepaintPreview, saved, detPortraitShapeOrder, detPortraitShapeValues =
         environ.UpdatePreview, environ.db, environ.detPortraitShapeOrder, environ.detPortraitShapeValues
     local optionState, portraitArtOrder, portraitArtValues, portraitModeOrder2 =
         environ.optState, environ.portraitArtOrder, environ.portraitArtValues, environ.portraitModeOrder2
     local portraitModeValues2, portraitNonPlayerOrder, portraitNonPlayerValues =
         environ.portraitModeValues2, environ.portraitNonPlayerOrder, environ.portraitNonPlayerValues
-    local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local W, SettingsDB, SGet, WriteSetting = context.W, context.SDB, context.SGet, context.SSet
     -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
     local function SSetRowThen(settingKey)
         return function(value)
-            SSet(settingKey, value)
+            WriteSetting(settingKey, value)
             RepaintPreview()
         end
     end
@@ -1358,25 +1358,25 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 -- dragon row hidden at None, Shape detached-only), so a real
                 -- change forces a rebuild.
                 local prevStyle = ReadSetting("portraitStyle", "attached")
-                SSet("portraitStyle", value)
+                WriteSetting("portraitStyle", value)
                 -- Auto-set shape to "none" when entering detached + 3D
                 if value == "detached" and ReadSetting("portraitMode", "2d") == "3d" then
-                    UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape = "none"
+                    UNIT_SETTINGS[optionState.selectedUnit]().detachedPortraitShape = "none"
                 end
                 -- Reset detached-only settings when leaving detached mode
                 if value ~= "detached" then
-                    UNIT_DB_MAP[optionState.selectedUnit]().portraitSize = 0
-                    local edgeSide = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide
+                    UNIT_SETTINGS[optionState.selectedUnit]().portraitSize = 0
+                    local edgeSide = UNIT_SETTINGS[optionState.selectedUnit]().portraitSide
                     if
                         edgeSide == "top"
                         or edgeSide == "insideleft"
                         or edgeSide == "insideright"
                         or edgeSide == "insidecenter"
                     then
-                        UNIT_DB_MAP[optionState.selectedUnit]().portraitSide = "left"
+                        UNIT_SETTINGS[optionState.selectedUnit]().portraitSide = "left"
                     end
                 end
-                UNIT_DB_MAP[optionState.selectedUnit]().showPortrait = (value ~= "none")
+                UNIT_SETTINGS[optionState.selectedUnit]().showPortrait = (value ~= "none")
                 RepaintPreview()
                 if value ~= prevStyle then
                     CUI:RefreshPage(true)
@@ -1418,7 +1418,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 return value or "2d"
             end,
             setValue = function(value)
-                local prefs = SDB()
+                local prefs = SettingsDB()
                 local function ApplyArt()
                     prefs.portraitMode = value
                     prefs.showPortrait = true
@@ -1490,7 +1490,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 tooltip = "Pick what NPCs show in Class art instead of their 2D portrait.",
                 get = SValRow("portraitNonPlayerOn", false),
                 set = function(value)
-                    SSet("portraitNonPlayerOn", value or nil)
+                    WriteSetting("portraitNonPlayerOn", value or nil)
                     CUI:RefreshPage(true)
                 end,
             },
@@ -1507,7 +1507,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 disabledTooltip = "This option requires a border style with divider art and a Border Size above 0.",
                 rawTooltip = true,
                 get = SValRow("portraitSeparator", false),
-                set = function(value) SSet("portraitSeparator", value or nil) end,
+                set = function(value) WriteSetting("portraitSeparator", value or nil) end,
             }
         end
         if ReadSetting("portraitStyle", "attached") == "detached" then
@@ -1516,7 +1516,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 label = "Clickable Portrait",
                 tooltip = "Clicking or hovering the detached portrait acts like clicking or hovering the frame's bars.",
                 get = SValRow("detachedPortraitClickable", false),
-                set = function(value) SSet("detachedPortraitClickable", value or nil) end,
+                set = function(value) WriteSetting("detachedPortraitClickable", value or nil) end,
             }
             rowList[#rowList + 1] = {
                 type = "colorpicker",
@@ -1532,7 +1532,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                     return 0.1, 0.1, 0.1, 1
                 end,
                 set = function(red, green, blue, a)
-                    SSet("detachedPortraitBgColor", { r = red, g = green, b = blue, a = a or 1 })
+                    WriteSetting("detachedPortraitBgColor", { r = red, g = green, b = blue, a = a or 1 })
                     RepaintPreview()
                 end,
             }
@@ -1550,7 +1550,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 rawTooltip = true,
                 get = SValRow("portrait3dBelowBorder", false),
                 set = function(value)
-                    SSet("portrait3dBelowBorder", value or nil)
+                    WriteSetting("portrait3dBelowBorder", value or nil)
                     RepaintPreview()
                 end,
             }
@@ -1611,13 +1611,13 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         value == "3d"
                         and ReadSetting("portraitNonPlayer", "2d") ~= "3d"
                         and mod.UF_Ask3DPortraits(function()
-                            SSet("portraitNonPlayer", "3d")
+                            WriteSetting("portraitNonPlayer", "3d")
                             CUI:RefreshPage()
                         end)
                     then
                         return
                     end
-                    SSet("portraitNonPlayer", value)
+                    WriteSetting("portraitNonPlayer", value)
                 end,
             }),
             CUI.BlankRowCfg()
@@ -1760,7 +1760,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         requireState = "disabled",
                         get = SValRow("portraitMirror", false),
                         set = function(value)
-                            local unitKey, prefs = optionState.selectedUnit, SDB()
+                            local unitKey, prefs = optionState.selectedUnit, SettingsDB()
                             local function ApplyMirror()
                                 prefs.portraitMirror = value
                                 mod.UF_RefreshPortraitMirror(unitKey)
@@ -1853,14 +1853,14 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         return color.r, color.g, color.b
                     end,
                     setValue = function(red, green, blue)
-                        UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitBorderColor =
+                        UNIT_SETTINGS[optionState.selectedUnit]().detachedPortraitBorderColor =
                             { r = red, g = green, b = blue }
                         RebuildAndReload()
                         RepaintPreview()
                     end,
                     onClick = function(self)
                         if ReadSetting("detachedPortraitClassColor", true) then
-                            SSet("detachedPortraitClassColor", false)
+                            WriteSetting("detachedPortraitClassColor", false)
                             RebuildAndReload()
                             RepaintPreview()
                             CUI:RefreshPage()
@@ -1885,7 +1885,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        SSet("detachedPortraitClassColor", true)
+                        WriteSetting("detachedPortraitClassColor", true)
                         RebuildAndReload()
                         RepaintPreview()
                         CUI:RefreshPage()
@@ -1929,7 +1929,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         tooltip = "Keeps the unit's class or reaction color on the ring in Dark Mode instead of your own class color.",
                         disabled = function()
                             return not (
-                                ReadSetting("detachedPortraitClassColor", true) and mod.UF_DarkThemeOn(SDB())
+                                ReadSetting("detachedPortraitClassColor", true) and mod.UF_DarkThemeOn(SettingsDB())
                             )
                         end,
                         disabledTooltip = "This option requires the Class Colored Shape Border and Dark Mode.",
@@ -2080,10 +2080,10 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
     if ReadSetting("portraitStyle", "attached") ~= "none" then
         local playerDragon = optionState.selectedUnit == "player"
         local dragonName = playerDragon and "Player Frame Dragon" or "Elite Enemy Dragon"
-        local function DVal(keyName) return mod.UF_DragonSettings(optionState.selectedUnit, SDB())[keyName] end
+        local function DVal(keyName) return mod.UF_DragonSettings(optionState.selectedUnit, SettingsDB())[keyName] end
         local function DSet(settingKey, value)
-            mod.UF_PinLegacyDragon(SDB())
-            SSet(settingKey, value)
+            mod.UF_PinLegacyDragon(SettingsDB())
+            WriteSetting(settingKey, value)
         end
         local function dragonOff() return not DVal("on") end
         local dragonRow
@@ -2199,13 +2199,13 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
     local Pix, RegisterWidgetRefresh, RebuildAndReload =
         environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local UNIT_DB_MAP, RepaintPreview, btbPositionOrder =
+    local UNIT_SETTINGS, RepaintPreview, btbPositionOrder =
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.btbPositionOrder
     local btbPositionValues, btbTextOrder, btbTextValues, classIconLocOrder =
         environ.btbPositionValues, environ.btbTextOrder, environ.btbTextValues, environ.classIconLocOrder
     local classIconLocValues, classIconOrder, classIconValues, optionState =
         environ.classIconLocValues, environ.classIconOrder, environ.classIconValues, environ.optState
-    local W, SGet, SSet, ReadSetting = context.W, context.SGet, context.SSet, context.SVal
+    local W, SGet, WriteSetting, ReadSetting = context.W, context.SGet, context.SSet, context.SVal
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(settingKey, default)
         return function() return ReadSetting(settingKey, default) end
@@ -2213,7 +2213,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
     -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
     local function SSetRowThen(settingKey)
         return function(value)
-            SSet(settingKey, value)
+            WriteSetting(settingKey, value)
             RepaintPreview()
         end
     end
@@ -2243,7 +2243,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             setValue = CUI.DependentSetValue(
                 function() return ReadSetting("bottomTextBar", false) end,
                 function(value)
-                    SSet("bottomTextBar", value)
+                    WriteSetting("bottomTextBar", value)
                     RepaintPreview()
                     CUI:RefreshPage()
                 end
@@ -2257,7 +2257,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             disabledTooltip = "Text Bar",
             getValue = SValRow("btbPosition", "bottom"),
             setValue = function(value)
-                SSet("btbPosition", value)
+                WriteSetting("btbPosition", value)
                 RepaintPreview()
                 if _sharedBtbWidthRgn then
                     local isDet = (value == "detached_top" or value == "detached_bottom")
@@ -2293,8 +2293,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 local a = SGet("btbBgOpacity")
                 return color.r, color.g, color.b, a or 1.0
             end, function(red, green, blue, a)
-                UNIT_DB_MAP[optionState.selectedUnit]().btbBgColor = { r = red, g = green, b = blue }
-                UNIT_DB_MAP[optionState.selectedUnit]().btbBgOpacity = a
+                UNIT_SETTINGS[optionState.selectedUnit]().btbBgColor = { r = red, g = green, b = blue }
+                UNIT_SETTINGS[optionState.selectedUnit]().btbBgOpacity = a
                 RebuildAndReload()
                 RepaintPreview()
             end, true, 20)
@@ -2430,30 +2430,30 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             mod.UFO_RefreshMenus(t and t._leftRegion, t and t._rightRegion, c and c._leftRegion)
         end
         local function SetBtbLeft(value)
-            SSet("btbLeftContent", value)
+            WriteSetting("btbLeftContent", value)
             if mod.UF_IsUniqueContent(value) then
-                if SGet("btbRightContent") == value then SSet("btbRightContent", "none") end
-                if SGet("btbCenterContent") == value then SSet("btbCenterContent", "none") end
+                if SGet("btbRightContent") == value then WriteSetting("btbRightContent", "none") end
+                if SGet("btbCenterContent") == value then WriteSetting("btbCenterContent", "none") end
             end
             RebuildAndReload()
             RepaintPreview()
             RefreshBtbMenus()
         end
         local function SetBtbRight(value)
-            SSet("btbRightContent", value)
+            WriteSetting("btbRightContent", value)
             if mod.UF_IsUniqueContent(value) then
-                if SGet("btbLeftContent") == value then SSet("btbLeftContent", "none") end
-                if SGet("btbCenterContent") == value then SSet("btbCenterContent", "none") end
+                if SGet("btbLeftContent") == value then WriteSetting("btbLeftContent", "none") end
+                if SGet("btbCenterContent") == value then WriteSetting("btbCenterContent", "none") end
             end
             RebuildAndReload()
             RepaintPreview()
             RefreshBtbMenus()
         end
         local function SetBtbCenter(value)
-            SSet("btbCenterContent", value)
+            WriteSetting("btbCenterContent", value)
             if value ~= "none" then
-                SSet("btbLeftContent", "none")
-                SSet("btbRightContent", "none")
+                WriteSetting("btbLeftContent", "none")
+                WriteSetting("btbRightContent", "none")
             end
             RebuildAndReload()
             RepaintPreview()
@@ -2530,7 +2530,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Left Text Settings",
-                rows = mod.UF_NameFormatRows("btbLeft", "none", ReadSetting, SSet, {
+                rows = mod.UF_NameFormatRows("btbLeft", "none", ReadSetting, WriteSetting, {
                     {
                         type = "slider",
                         label = "Size",
@@ -2584,12 +2584,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     return 1, 1, 1
                                 end,
                                 setValue = function(red, green, blue)
-                                    SSet("btbLeftTargetSepColor", { r = red, g = green, b = blue })
+                                    WriteSetting("btbLeftTargetSepColor", { r = red, g = green, b = blue })
                                     RepaintPreview()
                                 end,
                                 onClick = function(self)
                                     if ReadSetting("btbLeftTargetSepClassColor", false) then
-                                        SSet("btbLeftTargetSepClassColor", false)
+                                        WriteSetting("btbLeftTargetSepClassColor", false)
                                         RepaintPreview()
                                         return
                                     end
@@ -2605,7 +2605,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 getValue = CUI.PlayerClassRGB,
                                 setValue = function() end,
                                 onClick = function()
-                                    SSet("btbLeftTargetSepClassColor", true)
+                                    WriteSetting("btbLeftTargetSepClassColor", true)
                                     RepaintPreview()
                                 end,
                                 refreshAlpha = function()
@@ -2622,7 +2622,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         set = function(value)
                             value = tostring(value or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                             if value == "" then value = ">" end
-                            SSet("btbLeftTargetSep", value)
+                            WriteSetting("btbLeftTargetSep", value)
                             RepaintPreview()
                         end,
                         disabled = function() return ReadSetting("btbLeftContent", "none") ~= "nametotarget" end,
@@ -2655,8 +2655,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             Pix.Point(blClassSwatch, "RIGHT", btbLRgn._lastInline or btbLRgn._control, "LEFT", -8, 0)
             blClassSwatch:SetScript("OnClick", function()
                 if blOff() then return end
-                SSet("btbLeftClassColor", true)
-                SSet("btbLeftPowerColor", false)
+                WriteSetting("btbLeftClassColor", true)
+                WriteSetting("btbLeftPowerColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
@@ -2667,9 +2667,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                     ReadSetting("btbLeftColorB", 1)
             end
             local blSwSet = function(red, green, blue)
-                SSet("btbLeftColorR", red)
-                SSet("btbLeftColorG", green)
-                SSet("btbLeftColorB", blue)
+                WriteSetting("btbLeftColorR", red)
+                WriteSetting("btbLeftColorG", green)
+                WriteSetting("btbLeftColorB", blue)
                 RepaintPreview()
             end
             local blSwatch, blUpdateSwatch =
@@ -2680,8 +2680,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             blSwatch:SetScript("OnClick", function(self, ...)
                 if blOff() then return end
                 if ReadSetting("btbLeftClassColor", false) or ReadSetting("btbLeftPowerColor", false) then
-                    SSet("btbLeftClassColor", false)
-                    SSet("btbLeftPowerColor", false)
+                    WriteSetting("btbLeftClassColor", false)
+                    WriteSetting("btbLeftPowerColor", false)
                     RepaintPreview()
                     CUI:RefreshPage()
                     return
@@ -2709,8 +2709,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             btbLRgn._lastInline = blPowerSwatch
             blPowerSwatch:SetScript("OnClick", function()
                 if blOff() then return end
-                SSet("btbLeftPowerColor", true)
-                SSet("btbLeftClassColor", false)
+                WriteSetting("btbLeftPowerColor", true)
+                WriteSetting("btbLeftClassColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
@@ -2744,7 +2744,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Right Text Settings",
-                rows = mod.UF_NameFormatRows("btbRight", "none", ReadSetting, SSet, {
+                rows = mod.UF_NameFormatRows("btbRight", "none", ReadSetting, WriteSetting, {
                     {
                         type = "slider",
                         label = "Size",
@@ -2798,12 +2798,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     return 1, 1, 1
                                 end,
                                 setValue = function(red, green, blue)
-                                    SSet("btbRightTargetSepColor", { r = red, g = green, b = blue })
+                                    WriteSetting("btbRightTargetSepColor", { r = red, g = green, b = blue })
                                     RepaintPreview()
                                 end,
                                 onClick = function(self)
                                     if ReadSetting("btbRightTargetSepClassColor", false) then
-                                        SSet("btbRightTargetSepClassColor", false)
+                                        WriteSetting("btbRightTargetSepClassColor", false)
                                         RepaintPreview()
                                         return
                                     end
@@ -2819,7 +2819,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 getValue = CUI.PlayerClassRGB,
                                 setValue = function() end,
                                 onClick = function()
-                                    SSet("btbRightTargetSepClassColor", true)
+                                    WriteSetting("btbRightTargetSepClassColor", true)
                                     RepaintPreview()
                                 end,
                                 refreshAlpha = function()
@@ -2836,7 +2836,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         set = function(value)
                             value = tostring(value or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                             if value == "" then value = ">" end
-                            SSet("btbRightTargetSep", value)
+                            WriteSetting("btbRightTargetSep", value)
                             RepaintPreview()
                         end,
                         disabled = function() return ReadSetting("btbRightContent", "none") ~= "nametotarget" end,
@@ -2869,8 +2869,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             Pix.Point(brClassSwatch, "RIGHT", btbRRgn._lastInline or btbRRgn._control, "LEFT", -8, 0)
             brClassSwatch:SetScript("OnClick", function()
                 if brOff() then return end
-                SSet("btbRightClassColor", true)
-                SSet("btbRightPowerColor", false)
+                WriteSetting("btbRightClassColor", true)
+                WriteSetting("btbRightPowerColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
@@ -2881,9 +2881,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                     ReadSetting("btbRightColorB", 1)
             end
             local brSwSet = function(red, green, blue)
-                SSet("btbRightColorR", red)
-                SSet("btbRightColorG", green)
-                SSet("btbRightColorB", blue)
+                WriteSetting("btbRightColorR", red)
+                WriteSetting("btbRightColorG", green)
+                WriteSetting("btbRightColorB", blue)
                 RepaintPreview()
             end
             local brSwatch, brUpdateSwatch =
@@ -2894,8 +2894,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             brSwatch:SetScript("OnClick", function(self, ...)
                 if brOff() then return end
                 if ReadSetting("btbRightClassColor", false) or ReadSetting("btbRightPowerColor", false) then
-                    SSet("btbRightClassColor", false)
-                    SSet("btbRightPowerColor", false)
+                    WriteSetting("btbRightClassColor", false)
+                    WriteSetting("btbRightPowerColor", false)
                     RepaintPreview()
                     CUI:RefreshPage()
                     return
@@ -2923,8 +2923,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             btbRRgn._lastInline = brPowerSwatch
             brPowerSwatch:SetScript("OnClick", function()
                 if brOff() then return end
-                SSet("btbRightPowerColor", true)
-                SSet("btbRightClassColor", false)
+                WriteSetting("btbRightPowerColor", true)
+                WriteSetting("btbRightClassColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
@@ -3002,7 +3002,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Center Text Settings",
-                rows = mod.UF_NameFormatRows("btbCenter", "none", ReadSetting, SSet, {
+                rows = mod.UF_NameFormatRows("btbCenter", "none", ReadSetting, WriteSetting, {
                     {
                         type = "slider",
                         label = "Size",
@@ -3058,12 +3058,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     return 1, 1, 1
                                 end,
                                 setValue = function(red, green, blue)
-                                    SSet("btbCenterTargetSepColor", { r = red, g = green, b = blue })
+                                    WriteSetting("btbCenterTargetSepColor", { r = red, g = green, b = blue })
                                     RepaintPreview()
                                 end,
                                 onClick = function(self)
                                     if ReadSetting("btbCenterTargetSepClassColor", false) then
-                                        SSet("btbCenterTargetSepClassColor", false)
+                                        WriteSetting("btbCenterTargetSepClassColor", false)
                                         RepaintPreview()
                                         return
                                     end
@@ -3079,7 +3079,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 getValue = CUI.PlayerClassRGB,
                                 setValue = function() end,
                                 onClick = function()
-                                    SSet("btbCenterTargetSepClassColor", true)
+                                    WriteSetting("btbCenterTargetSepClassColor", true)
                                     RepaintPreview()
                                 end,
                                 refreshAlpha = function()
@@ -3096,7 +3096,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         set = function(value)
                             value = tostring(value or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                             if value == "" then value = ">" end
-                            SSet("btbCenterTargetSep", value)
+                            WriteSetting("btbCenterTargetSep", value)
                             RepaintPreview()
                         end,
                         disabled = function()
@@ -3131,8 +3131,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             Pix.Point(bcClassSwatch, "RIGHT", btbCRgn._lastInline or btbCRgn._control, "LEFT", -8, 0)
             bcClassSwatch:SetScript("OnClick", function()
                 if bcOff() then return end
-                SSet("btbCenterClassColor", true)
-                SSet("btbCenterPowerColor", false)
+                WriteSetting("btbCenterClassColor", true)
+                WriteSetting("btbCenterPowerColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
@@ -3143,9 +3143,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                     ReadSetting("btbCenterColorB", 1)
             end
             local bcSwSet = function(red, green, blue)
-                SSet("btbCenterColorR", red)
-                SSet("btbCenterColorG", green)
-                SSet("btbCenterColorB", blue)
+                WriteSetting("btbCenterColorR", red)
+                WriteSetting("btbCenterColorG", green)
+                WriteSetting("btbCenterColorB", blue)
                 RepaintPreview()
             end
             local bcSwatch, bcUpdateSwatch =
@@ -3156,8 +3156,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             bcSwatch:SetScript("OnClick", function(self, ...)
                 if bcOff() then return end
                 if ReadSetting("btbCenterClassColor", false) or ReadSetting("btbCenterPowerColor", false) then
-                    SSet("btbCenterClassColor", false)
-                    SSet("btbCenterPowerColor", false)
+                    WriteSetting("btbCenterClassColor", false)
+                    WriteSetting("btbCenterPowerColor", false)
                     RepaintPreview()
                     CUI:RefreshPage()
                     return
@@ -3185,8 +3185,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             btbCRgn._lastInline = bcPowerSwatch
             bcPowerSwatch:SetScript("OnClick", function()
                 if bcOff() then return end
-                SSet("btbCenterPowerColor", true)
-                SSet("btbCenterClassColor", false)
+                WriteSetting("btbCenterPowerColor", true)
+                WriteSetting("btbCenterClassColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
@@ -3281,19 +3281,19 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
     local CLASS_FULL_COORDS, RegisterWidgetRefresh, RebuildAndReload =
         environ.CLASS_FULL_COORDS, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local UNIT_DB_MAP, RepaintPreview, saved = environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db
+    local UNIT_SETTINGS, RepaintPreview, saved = environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db
     local optionState = environ.optState
-    local W, SApplySupport, SDB, SGetSupported =
+    local W, ApplySupported, SettingsDB, ReadSupported =
         context.W, context.SApplySupport, context.SDB, context.SGetSupported
-    local SSetSupported, SValSupported, SVisible =
+    local WriteSupported, SupportedOr, SVisible =
         context.SSetSupported, context.SValSupported, context.SVisible
     -- A row getter over SValSupported: the key's value, or the default given.
     local function SValSupportedRow(settingKey, default)
-        return function() return SValSupported(settingKey, default) end
+        return function() return SupportedOr(settingKey, default) end
     end
     -- Row setters over SSetSupported: the key written with the row's value.
     local function SSetSupportedRow(settingKey)
-        return function(value) SSetSupported(settingKey, value) end
+        return function(value) WriteSupported(settingKey, value) end
     end
     local height
 
@@ -3385,13 +3385,13 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             order = combatIndOrder,
             -- Target ships disabled ("none"): opt-in, no change for existing users.
             getValue = function()
-                return SValSupported(
+                return SupportedOr(
                     "combatIndicatorStyle",
                     optionState.selectedUnit == "player" and "class" or "none"
                 )
             end,
             setValue = function(value)
-                SSetSupported("combatIndicatorStyle", value)
+                WriteSupported("combatIndicatorStyle", value)
                 RebuildAndReload()
                 RepaintPreview()
             end,
@@ -3407,7 +3407,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
         })
         cursorY = cursorY - height
         if not CUI._prebuilding then
-            SApplySupport(
+            ApplySupported(
                 sharedAddRow1._leftRegion,
                 "combatIndicatorStyle",
                 "The Combat Indicator is not available for the Focus frame."
@@ -3460,16 +3460,16 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                         -- Square = combat0..5) are shown as-is, so class coloring doesn't
                         -- apply to them.
                         disabled = function()
-                            local st = SValSupported("combatIndicatorStyle", "class")
+                            local st = SupportedOr("combatIndicatorStyle", "class")
                             return st:find("^combat%d") and true or false
                         end,
                         disabledTooltip = "Not available for this combat indicator style.",
                         rawTooltip = true,
                         get = function()
-                            return SValSupported("combatIndicatorColor", "custom") == "classcolor"
+                            return SupportedOr("combatIndicatorColor", "custom") == "classcolor"
                         end,
                         set = function(value)
-                            SSetSupported("combatIndicatorColor", value and "classcolor" or "custom")
+                            WriteSupported("combatIndicatorColor", value and "classcolor" or "custom")
                             RebuildAndReload()
                             RepaintPreview()
                         end,
@@ -3480,12 +3480,12 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                         values = combatPosValues,
                         order = combatPosOrder,
                         get = function()
-                            local place = SValSupported("combatIndicatorPosition", "healthbar")
+                            local place = SupportedOr("combatIndicatorPosition", "healthbar")
                             if place == "center" then place = "healthbar" end
                             return combatPosValues[place] and place or "healthbar"
                         end,
                         set = function(value)
-                            SSetSupported("combatIndicatorPosition", value)
+                            WriteSupported("combatIndicatorPosition", value)
                             RebuildAndReload()
                             RepaintPreview()
                         end,
@@ -3498,7 +3498,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                         step = 1,
                         get = SValSupportedRow("combatIndicatorSize", 22),
                         set = function(value)
-                            SSetSupported("combatIndicatorSize", value)
+                            WriteSupported("combatIndicatorSize", value)
                             RebuildAndReload()
                             RepaintPreview()
                         end,
@@ -3511,7 +3511,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                         step = 1,
                         get = SValSupportedRow("combatIndicatorX", 0),
                         set = function(value)
-                            SSetSupported("combatIndicatorX", value)
+                            WriteSupported("combatIndicatorX", value)
                             RebuildAndReload()
                             RepaintPreview()
                         end,
@@ -3524,7 +3524,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                         step = 1,
                         get = SValSupportedRow("combatIndicatorY", 0),
                         set = function(value)
-                            SSetSupported("combatIndicatorY", value)
+                            WriteSupported("combatIndicatorY", value)
                             RebuildAndReload()
                             RepaintPreview()
                         end,
@@ -3540,12 +3540,12 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                 combatRegion,
                 combatRegion:GetFrameLevel() + 5,
                 function()
-                    local classColor = SGetSupported("combatIndicatorCustomColor")
+                    local classColor = ReadSupported("combatIndicatorCustomColor")
                     classColor = classColor or { r = 1, g = 1, b = 1 }
                     return classColor.r, classColor.g, classColor.b, 1
                 end,
                 function(red, green, blue)
-                    UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorCustomColor =
+                    UNIT_SETTINGS[optionState.selectedUnit]().combatIndicatorCustomColor =
                         { r = red, g = green, b = blue }
                     RebuildAndReload()
                     RepaintPreview()
@@ -3558,8 +3558,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             local combatSwatchBlock = CUI.NewSwatchBlocker(combatSwatch)
             combatSwatchBlock:Hide()
             local function UpdateSwatchVisibility()
-                local colorMode = SValSupported("combatIndicatorColor", "custom")
-                local styleName = SValSupported("combatIndicatorStyle", "class")
+                local colorMode = SupportedOr("combatIndicatorColor", "custom")
+                local styleName = SupportedOr("combatIndicatorStyle", "class")
                 -- All custom combat icons (combat0..5) are shown as-is, so the custom-
                 -- color swatch doesn't apply to them.
                 local isRawIcon = styleName:find("^combat%d") and true or false
@@ -3607,14 +3607,14 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
     end
 
     -- Row 4: Raid Marker toggle | Icon Size slider + inline directions cog (X/Y)
-    local function raidMarkerOff() return SValSupported("raidMarkerEnabled", false) == false end
+    local function raidMarkerOff() return SupportedOr("raidMarkerEnabled", false) == false end
     local sharedAddRow4
     sharedAddRow4, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Raid Marker",
         getValue = SValSupportedRow("raidMarkerEnabled", false),
         setValue = function(value)
-            SSetSupported("raidMarkerEnabled", value)
+            WriteSupported("raidMarkerEnabled", value)
             CUI:RefreshPage()
         end,
     }, {
@@ -3690,7 +3690,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
     -- Row 5: Leader Indicator toggle | Leader Icon Size slider + inline directions cog (X/Y)
     -- Visible for player and target.
     local sharedAddRow5, BuildLeaderSync
-    local function leaderIndOff() return SValSupported("leaderIndicatorEnabled", true) == false end
+    local function leaderIndOff() return SupportedOr("leaderIndicatorEnabled", true) == false end
     local function leaderIndSupported()
         return optionState.selectedUnit == "player" or optionState.selectedUnit == "target"
     end
@@ -3701,7 +3701,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             text = "Leader Indicator",
             getValue = SValSupportedRow("leaderIndicatorEnabled", true),
             setValue = function(value)
-                SSetSupported("leaderIndicatorEnabled", value)
+                WriteSupported("leaderIndicatorEnabled", value)
                 CUI:RefreshPage()
             end,
         }, {
@@ -3716,8 +3716,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             setValue = SSetSupportedRow("leaderIndicatorSize"),
         })
         cursorY = cursorY - height
-        SApplySupport(sharedAddRow5._leftRegion, "leaderIndicatorEnabled")
-        SApplySupport(sharedAddRow5._rightRegion, "leaderIndicatorSize")
+        ApplySupported(sharedAddRow5._leftRegion, "leaderIndicatorEnabled")
+        ApplySupported(sharedAddRow5._rightRegion, "leaderIndicatorSize")
         if not CUI._prebuilding then
             local region = sharedAddRow5._rightRegion
             local leaderPosValues = {
@@ -3796,20 +3796,20 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
         -- A table on the "wingless" style belongs to the Portrait Dragon
         -- (ns.UF_DragonLegacy): the indicator reads as off and as Badge, and
         -- every setter pins that view over first.
-        local function eliteLegacy() return mod.UF_DragonLegacy(SDB()) end
+        local function eliteLegacy() return mod.UF_DragonLegacy(SettingsDB()) end
         local function eliteSet(settingKey, value)
-            mod.UF_PinLegacyDragon(SDB())
-            SSetSupported(settingKey, value)
+            mod.UF_PinLegacyDragon(SettingsDB())
+            WriteSupported(settingKey, value)
         end
         local function eliteIndOff()
-            return SValSupported("eliteIndicatorEnabled", false) ~= true or eliteLegacy()
+            return SupportedOr("eliteIndicatorEnabled", false) ~= true or eliteLegacy()
         end
         -- The Pixels Dragon style sits on the portrait: Size, Position and the
         -- X/Y offsets apply to the Badge style only. The stock styles always
         -- draw the Badge.
         local function eliteDragon()
             return not eliteLegacy()
-                and SValSupported("eliteIndicatorStyle", "badge") ~= "badge"
+                and SupportedOr("eliteIndicatorStyle", "badge") ~= "badge"
                 and not CUI.BlizzStyle.Get("unitframes")
         end
         local eliteRow
@@ -3837,8 +3837,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             setValue = function(value) eliteSet("eliteIndicatorSize", value) end,
         })
         cursorY = cursorY - height
-        SApplySupport(eliteRow._leftRegion, "eliteIndicatorEnabled")
-        SApplySupport(eliteRow._rightRegion, "eliteIndicatorSize")
+        ApplySupported(eliteRow._leftRegion, "eliteIndicatorEnabled")
+        ApplySupported(eliteRow._rightRegion, "eliteIndicatorSize")
         if not CUI._prebuilding then
             CUI.BuildInlineCog(eliteRow._leftRegion, {
                 disabled = eliteIndOff,
@@ -3849,7 +3849,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Show in Instances",
                         tooltip = "Also show the badge in dungeons and raids, where most enemies are elite.",
-                        get = function() return SValSupported("eliteIndicatorShowInInstances", false) == true end,
+                        get = function() return SupportedOr("eliteIndicatorShowInInstances", false) == true end,
                         set = function(value) eliteSet("eliteIndicatorShowInInstances", value) end,
                     },
                 },
@@ -3883,7 +3883,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                         requireState = "disabled",
                         get = function()
                             if eliteLegacy() then return "badge" end
-                            return SValSupported("eliteIndicatorStyle", "badge")
+                            return SupportedOr("eliteIndicatorStyle", "badge")
                         end,
                         -- Only dims or lifts the Badge-only controls.
                         set = function(value)
@@ -3939,7 +3939,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
     -- Only are target-only.
     if optionState.selectedUnit == "player" or optionState.selectedUnit == "target" then
         local isTarget = optionState.selectedUnit == "target"
-        local function factionIndOff() return SValSupported("factionIndicatorMode", "off") == "off" end
+        local function factionIndOff() return SupportedOr("factionIndicatorMode", "off") == "off" end
         local modeValues, modeOrder
         if isTarget then
             modeValues = { off = "Off", always = "Always", opposite = "Opposite Faction" }
@@ -3955,12 +3955,12 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             values = modeValues,
             order = modeOrder,
             getValue = function()
-                local value = SValSupported("factionIndicatorMode", "off")
+                local value = SupportedOr("factionIndicatorMode", "off")
                 if not isTarget and value == "opposite" then value = "always" end
                 return value
             end,
             setValue = function(value)
-                SSetSupported("factionIndicatorMode", value)
+                WriteSupported("factionIndicatorMode", value)
                 CUI:RefreshPage()
             end,
         }, {
@@ -3975,8 +3975,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             setValue = SSetSupportedRow("factionIndicatorSize"),
         })
         cursorY = cursorY - height
-        SApplySupport(factionRow._leftRegion, "factionIndicatorMode")
-        SApplySupport(factionRow._rightRegion, "factionIndicatorSize")
+        ApplySupported(factionRow._leftRegion, "factionIndicatorMode")
+        ApplySupported(factionRow._rightRegion, "factionIndicatorSize")
         if not CUI._prebuilding then
             local pvpValues = { dim = "Dim Unflagged", only = "Flagged Only", ignore = "Ignore" }
             local pvpOrder = { "dim", "only", "ignore" }
@@ -3987,7 +3987,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                     label = "PvP Flag",
                     values = pvpValues,
                     order = pvpOrder,
-                    get = function() return SValSupported("factionIndicatorPvP", pvpDefault) end,
+                    get = function() return SupportedOr("factionIndicatorPvP", pvpDefault) end,
                     set = SSetSupportedRow("factionIndicatorPvP"),
                 },
             }
@@ -3996,7 +3996,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                     type = "toggle",
                     label = "Players Only",
                     tooltip = "Hide the faction badge on faction NPCs such as guards.",
-                    get = function() return SValSupported("factionIndicatorPlayersOnly", false) == true end,
+                    get = function() return SupportedOr("factionIndicatorPlayersOnly", false) == true end,
                     set = SSetSupportedRow("factionIndicatorPlayersOnly"),
                 }
             end

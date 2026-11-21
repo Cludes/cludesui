@@ -41,7 +41,7 @@ local COLOR = { 0x4d / 255, 0xb5 / 255, 0xf5 / 255 }
 local SEPARATOR = "  ||  "
 local LONG_FIRST = { "%s %s per mana", "%s %s per second", "%s %s per mana per second" }
 local LONG_NEXT = { "%s per mana", "%s per second", "%s per mana per second" }
-local SHORT_LABELS = { [HEAL] = { "HPM", "HPS", "HPM/s" }, [DAMAGE] = { "DPM", "DPS", "DPM/s" } }
+local SHORT_NAMES = { [HEAL] = { "HPM", "HPS", "HPM/s" }, [DAMAGE] = { "DPM", "DPS", "DPM/s" } }
 local KIND_WORDS = { [HEAL] = "healing", [DAMAGE] = "damage" }
 local PER_MANA, PER_SECOND, PER_MANA_SECOND = 1, 2, 3
 
@@ -162,7 +162,7 @@ local function Piece(textValue, which, kind, value, area)
     local number = Number(value, which == PER_SECOND)
     local piece
     if Get("style") == "short" then
-        piece = ("%s %s"):format(SHORT_LABELS[kind][which], number)
+        piece = ("%s %s"):format(SHORT_NAMES[kind][which], number)
     elseif textValue then
         piece = LONG_NEXT[which]:format(number)
     else

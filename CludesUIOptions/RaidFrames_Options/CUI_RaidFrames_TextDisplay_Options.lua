@@ -58,11 +58,11 @@ local CustomText = {}
 do
     -- The text's colour mode as the preview shows it, for the player's class and power.
     function CustomText.Color(tbl)
-        local SVal = mod._RFO_OptEnv.SVal
+        local SettingOr = mod._RFO_OptEnv.SVal
         local _, classTok = UnitClass("player")
         local _, pTok = UnitPowerType("player")
         local red, green, blue =
-            mod.RF_PreviewTextColor(SVal(tbl.cm, "custom"), SVal(tbl.col), classTok, 1, 1, 1, pTok)
+            mod.RF_PreviewTextColor(SettingOr(tbl.cm, "custom"), SettingOr(tbl.col), classTok, 1, 1, 1, pTok)
         return { r = red, g = green, b = blue }
     end
 
@@ -110,24 +110,24 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         return cursorY
     end
     local environ = mod._RFO_OptEnv
-    local SVal, SWrite, RebuildAndReload = environ.SVal, environ.SWrite, environ.ReloadAndUpdate
+    local SettingOr, StoreSetting, RebuildAndReload = environ.SVal, environ.SWrite, environ.ReloadAndUpdate
     local TEXTS, POSITIONS, POS_INDEX = mod.RF_TEXTS, mod.RF_TEXT_POSITIONS, mod.RF_TEXT_POS_INDEX
     local POS = CUI.POSITION_GRID_VALUES
     local LEVEL_DEFAULT = mod.RF_LEVEL_DEFAULT
 
     local function PosOf(tbl)
-        if tbl.kind == "level" then return SVal(tbl.pos, LEVEL_DEFAULT) end
-        return SVal(tbl.pos, "center")
+        if tbl.kind == "level" then return SettingOr(tbl.pos, LEVEL_DEFAULT) end
+        return SettingOr(tbl.pos, "center")
     end
     -- Shown by the engine's own rule, read through the page's (party-aware) SVal.
     local view = setmetatable({}, {
-        __index = function(_, keyName) return SVal(keyName) end,
+        __index = function(_, keyName) return SettingOr(keyName) end,
     })
-    local function Shown(t) return mod.RF_TextShown(t, view, SVal("levelTextPosition", LEVEL_DEFAULT)) ~= nil end
+    local function Shown(t) return mod.RF_TextShown(t, view, SettingOr("levelTextPosition", LEVEL_DEFAULT)) ~= nil end
     -- The value the tile's dropdown shows.
     local function ModeOf(tbl)
-        if tbl.kind == "name" then return ATTACH_VALUE[SVal("levelTextPosition", LEVEL_DEFAULT)] or "name" end
-        if tbl.mode then return SVal(tbl.mode, "none") end
+        if tbl.kind == "name" then return ATTACH_VALUE[SettingOr("levelTextPosition", LEVEL_DEFAULT)] or "name" end
+        if tbl.mode then return SettingOr(tbl.mode, "none") end
         return tbl.kind
     end
     -- The first position no shown text uses, else pref.
@@ -152,27 +152,27 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     local function SetMode(tbl, val)
         if tbl.kind == "name" then
             if val == "none" then
-                SWrite(tbl.pos, "none")
+                StoreSetting(tbl.pos, "none")
             else
-                local lp = SVal("levelTextPosition", LEVEL_DEFAULT)
+                local lp = SettingOr("levelTextPosition", LEVEL_DEFAULT)
                 if val == "levelname" then
-                    SWrite("levelTextPosition", "name")
+                    StoreSetting("levelTextPosition", "name")
                 elseif val == "levelnameDiv" then
-                    SWrite("levelTextPosition", "nameDiv")
+                    StoreSetting("levelTextPosition", "nameDiv")
                 elseif ATTACH_VALUE[lp] then
-                    SWrite("levelTextPosition", "none")
+                    StoreSetting("levelTextPosition", "none")
                 end
             end
         elseif tbl.kind == "level" or tbl.kind == "custom" then
-            if val == "none" then SWrite(tbl.pos, "none") end
-        elseif val ~= SVal(tbl.mode, "none") then
-            SWrite(tbl.mode, val)
+            if val == "none" then StoreSetting(tbl.pos, "none") end
+        elseif val ~= SettingOr(tbl.mode, "none") then
+            StoreSetting(tbl.mode, val)
         end
         ApplyTextDisplay()
     end
     local function Move(tbl, place)
         if place == PosOf(tbl) then return end
-        SWrite(tbl.pos, place)
+        StoreSetting(tbl.pos, place)
         Notify(tbl)
         ApplyTextDisplay()
     end
@@ -181,21 +181,21 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     local function Show(tbl)
         if tbl.kind == "custom" then
             CustomText.Edit(tbl.fmt, CustomText.Color(tbl), function()
-                SWrite(tbl.pos, FreePos("center"))
+                StoreSetting(tbl.pos, FreePos("center"))
                 Notify(tbl)
                 ApplyTextDisplay()
             end)
             return
         end
         if tbl.kind == "name" then
-            SWrite(tbl.pos, FreePos("topleft"))
+            StoreSetting(tbl.pos, FreePos("topleft"))
         elseif tbl.kind == "level" then
-            SWrite(tbl.pos, FreePos("topright"))
+            StoreSetting(tbl.pos, FreePos("topright"))
         else
             -- The second Health Text has no upstream spot of its own: a free one
             -- (looked up while it is still hidden).
-            if tbl.id == "hp2" then SWrite(tbl.pos, FreePos(SVal(tbl.pos, "bottom"))) end
-            SWrite(tbl.mode, FIRST_MODE[tbl.kind])
+            if tbl.id == "hp2" then StoreSetting(tbl.pos, FreePos(SettingOr(tbl.pos, "bottom"))) end
+            StoreSetting(tbl.mode, FIRST_MODE[tbl.kind])
         end
         Notify(tbl)
         ApplyTextDisplay()
@@ -213,7 +213,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 min = 6,
                 max = 26,
                 step = 1,
-                get = function() return SVal(tbl.size, 10) end,
+                get = function() return SettingOr(tbl.size, 10) end,
                 set = function(val) environ.SSet(tbl.size, val) end,
             },
             {
@@ -222,7 +222,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 min = -500,
                 max = 500,
                 step = 1,
-                get = function() return SVal(tbl.x, 0) end,
+                get = function() return SettingOr(tbl.x, 0) end,
                 set = function(val) environ.SSet(tbl.x, val) end,
             },
             {
@@ -231,7 +231,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 min = -500,
                 max = 500,
                 step = 1,
-                get = function() return SVal(tbl.y, 0) end,
+                get = function() return SettingOr(tbl.y, 0) end,
                 set = function(val) environ.SSet(tbl.y, val) end,
             },
         }
@@ -239,7 +239,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         -- has its own row: it shapes the Top Name Bar too).
         local showsName = tbl.kind == "name"
         if tbl.kind == "custom" then
-            local parsed = CUI.TextTags.Parse(mod.RF_TextTags, SVal(tbl.fmt))
+            local parsed = CUI.TextTags.Parse(mod.RF_TextTags, SettingOr(tbl.fmt))
             showsName = parsed and parsed.has and parsed.has.name and true or false
         end
         if showsName then
@@ -249,7 +249,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 min = 0,
                 max = 30,
                 step = 1,
-                get = function() return SVal("nameMaxLength", 15) end,
+                get = function() return SettingOr("nameMaxLength", 15) end,
                 set = function(val) environ.SSet("nameMaxLength", val) end,
             }
         end
@@ -259,7 +259,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 type = "toggle",
                 label = "Show Above Icons",
                 tooltip = "Render the name above buff and debuff icons. Texts without a setting of their own follow it.",
-                get = function() return SVal(tbl.above, false) and true or false end,
+                get = function() return SettingOr(tbl.above, false) and true or false end,
                 set = function(val) environ.SSet(tbl.above, val) end,
             }
         else
@@ -268,8 +268,8 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 label = "Show Above Icons",
                 tooltip = "Render this text above buff and debuff icons. Follows the name's setting until changed here.",
                 get = function()
-                    local val = SVal(tbl.above)
-                    if val == nil then val = SVal("nameTextAboveIcons", false) end
+                    local val = SettingOr(tbl.above)
+                    if val == nil then val = SettingOr("nameTextAboveIcons", false) end
                     return val and true or false
                 end,
                 set = function(val) environ.SSet(tbl.above, val) end,
@@ -294,7 +294,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 region._lastInline = sw
                 sw._eabOrigClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self)
-                    if SVal(modeKey, "custom") ~= mode then
+                    if SettingOr(modeKey, "custom") ~= mode then
                         -- Attribution read before the write: the rebuild dresses the swatch again.
                         local snap = CUI._SOAttribution(self)
                         environ.SSet(modeKey, mode)
@@ -306,16 +306,16 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 end)
                 sw:HookScript("OnEnter", function() CUI.ShowWidgetTooltip(sw, tooltip) end)
                 sw:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
-                local function vis() sw:SetAlpha(SVal(modeKey, "custom") == mode and 1 or 0.3) end
+                local function vis() sw:SetAlpha(SettingOr(modeKey, "custom") == mode and 1 or 0.3) end
                 CUI.RegisterWidgetRefresh(vis)
                 vis()
             end
             AddColorSwatch(function()
-                local color = SVal(tbl.col)
+                local color = SettingOr(tbl.col)
                 if color then return color.r or 1, color.g or 1, color.b or 1, 1 end
                 return 1, 1, 1, 1
             end, function(red, green, blue)
-                SWrite(tbl.col, { r = red, g = green, b = blue })
+                StoreSetting(tbl.col, { r = red, g = green, b = blue })
                 RebuildAndReload()
             end, "custom", true, "Custom Color")
             AddColorSwatch(function()
@@ -348,7 +348,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 text = tbl.label .. " Color Mode",
                 values = modeValues,
                 order = modeOrder,
-                getValue = function() return SVal(modeKey, "custom") end,
+                getValue = function() return SettingOr(modeKey, "custom") end,
                 setValue = function(val) environ.SSet(modeKey, val) end,
             })
         end
@@ -420,7 +420,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             addOrder[#addOrder + 1] = tbl.id
             addValues[tbl.id] = tbl.label
             -- An attached level placed on its own spot leaves the Top Name Bar's prefix.
-            if tbl.kind == "level" and ATTACH_VALUE[PosOf(tbl)] and SVal("topNameBarEnabled", false) then
+            if tbl.kind == "level" and ATTACH_VALUE[PosOf(tbl)] and SettingOr("topNameBarEnabled", false) then
                 addValues[tbl.id] = "Level (moves it off the Top Name Bar)"
             end
             addText[tbl.id] = tbl
@@ -518,7 +518,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             end
             return table.concat(parts, "\31")
         end
-        local saved = Sig(SVal)
+        local saved = Sig(SettingOr)
         local party = options.party
         mod._rfTextChecks = mod._rfTextChecks or {}
         mod._rfTextChecks[options.page] = function()
