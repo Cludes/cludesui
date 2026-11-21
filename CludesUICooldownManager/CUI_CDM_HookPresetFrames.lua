@@ -554,17 +554,17 @@ local function GetOrCreatePlaceholderFrame(barId, spellId, iconID, identKey)
         mod.CdmOwnIconCrop(texture)
         frame.Icon = texture
         frame._tex = texture
-        local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-        cd:SetAllPoints()
-        cd:SetDrawEdge(false)
-        cd:SetDrawBling(false)
-        cd:SetHideCountdownNumbers(true)
-        cd:EnableMouse(false)
-        if cd.SetMouseClickEnabled then cd:SetMouseClickEnabled(false) end
-        if cd.SetMouseMotionEnabled then cd:SetMouseMotionEnabled(false) end
-        cd:Clear() -- permanent placeholder: never arm a 0-duration swipe (strobe)
-        frame.Cooldown = cd
-        frame._cooldown = cd
+        local cdFrame = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+        cdFrame:SetAllPoints()
+        cdFrame:SetDrawEdge(false)
+        cdFrame:SetDrawBling(false)
+        cdFrame:SetHideCountdownNumbers(true)
+        cdFrame:EnableMouse(false)
+        if cdFrame.SetMouseClickEnabled then cdFrame:SetMouseClickEnabled(false) end
+        if cdFrame.SetMouseMotionEnabled then cdFrame:SetMouseMotionEnabled(false) end
+        cdFrame:Clear() -- permanent placeholder: never arm a 0-duration swipe (strobe)
+        frame.Cooldown = cdFrame
+        frame._cooldown = cdFrame
         frame._isPlaceholderFrame = true
         frame._phSpellID = spellId
         -- Never claimed/routed like a Blizzard frame; carries no live aura state.
@@ -628,18 +628,18 @@ local function GetOrCreateCustomBuffFrame(barId, spellRef)
         mod.CdmOwnIconCrop(texture)
         frame.Icon = texture
         frame._tex = texture
-        local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-        cd:SetAllPoints()
-        cd:SetDrawEdge(false)
-        cd:SetDrawBling(false)
-        cd:SetReverse(true)
-        frame.Cooldown = cd
-        frame._cooldown = cd
+        local cdFrame = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+        cdFrame:SetAllPoints()
+        cdFrame:SetDrawEdge(false)
+        cdFrame:SetDrawBling(false)
+        cdFrame:SetReverse(true)
+        frame.Cooldown = cdFrame
+        frame._cooldown = cdFrame
         frame._isCustomSpellFrame = true
         frame._isCustomBuffFrame = true
         frame.cooldownID = nil
         frame.cooldownInfo = nil
-        cd:HookScript("OnCooldownDone", function()
+        cdFrame:HookScript("OnCooldownDone", function()
             -- Re-lay-out the bar so the expired buff is removed. Also poke the
             -- legacy custom_buff updater (harmless for buff bars).
             if mod.QueueCustomBuffUpdate then C_Timer.After(0, mod.QueueCustomBuffUpdate) end
@@ -697,14 +697,14 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
     mod.CdmOwnIconCrop(texture)
     frame.Icon = texture
     frame._tex = texture
-    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-    cd:SetAllPoints()
-    cd:SetDrawEdge(false)
-    cd:SetDrawBling(false)
-    cd:SetHideCountdownNumbers(true)
-    cd:EnableMouse(false)
-    if cd.SetMouseClickEnabled then cd:SetMouseClickEnabled(false) end
-    if cd.SetMouseMotionEnabled then cd:SetMouseMotionEnabled(false) end
+    local cdFrame = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+    cdFrame:SetAllPoints()
+    cdFrame:SetDrawEdge(false)
+    cdFrame:SetDrawBling(false)
+    cdFrame:SetHideCountdownNumbers(true)
+    cdFrame:EnableMouse(false)
+    if cdFrame.SetMouseClickEnabled then cdFrame:SetMouseClickEnabled(false) end
+    if cdFrame.SetMouseMotionEnabled then cdFrame:SetMouseMotionEnabled(false) end
     -- Item cooldowns fire no event when they naturally expire, so the
     -- desaturation pass (ProcessPresetCooldowns) wouldn't re-run at the ready
     -- edge and the icon would stay greyed until some unrelated event marked it
@@ -712,11 +712,11 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
     -- without this the pot glows while still desaturated). Poke the processor at
     -- the expiry edge so the next tick re-evaluates count/CD/lockout (a plain
     -- re-saturate would be wrong when the last charge was just used -- total==0 must keep it greyed).
-    cd:SetScript("OnCooldownDone", function()
+    cdFrame:SetScript("OnCooldownDone", function()
         if mod._MarkPresetCdDirty then mod._MarkPresetCdDirty() end
     end)
-    frame.Cooldown = cd
-    frame._cooldown = cd
+    frame.Cooldown = cdFrame
+    frame._cooldown = cdFrame
     frame._isItemPresetFrame = true
     frame._presetItemID = itemId
     frame._presetData = preset

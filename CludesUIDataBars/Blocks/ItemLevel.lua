@@ -18,7 +18,7 @@ local CUI = CludesUI
 --  precision (0-2, default 0); prefix = "short" | "long" | "icon" | "none".
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local format, floor, max, min = string.format, math.floor, math.max, math.min
@@ -37,7 +37,7 @@ end
 local function Show(v, decimals) return v and format("%." .. decimals .. "f", v) or "-" end
 
 -- The game's own translated "Item Level" label, else ours.
-local function LongLabel() return STAT_AVERAGE_ITEM_LEVEL or CUI.L(L["ITEM_LEVEL"]) end
+local function LongLabel() return STAT_AVERAGE_ITEM_LEVEL or CUI.L(Loc["ITEM_LEVEL"]) end
 
 mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
@@ -85,7 +85,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
         -- the game's own translated label.
         local prefix = cfg.prefix or "short"
         if prefix == "short" then
-            return CUI.L(L["ILVL"]) .. " " .. body
+            return CUI.L(Loc["ILVL"]) .. " " .. body
         elseif prefix == "long" then
             return LongLabel() .. " " .. body
         end
@@ -106,16 +106,16 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_AddLine(LongLabel(), 1, 1, 1)
         mod.Tip_AddLine(" ")
         if equipped then
-            mod.Tip_AddDouble(L["EQUIPPED"], format("%.2f", equipped), 0.6, 0.6, 0.6, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["EQUIPPED"], format("%.2f", equipped), 0.6, 0.6, 0.6, 1, 1, 1)
         end
-        if all then mod.Tip_AddDouble(L["TOTAL"], format("%.2f", all), 0.6, 0.6, 0.6, 1, 1, 1) end
+        if all then mod.Tip_AddDouble(Loc["TOTAL"], format("%.2f", all), 0.6, 0.6, 0.6, 1, 1, 1) end
         -- A PvP average exists only with PvP-scaled gear.
         if pvp and pvp > 0 then
-            mod.Tip_AddDouble(L["PVP_ITEM_LEVEL"], format("%.2f", pvp), 0.6, 0.6, 0.6, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["PVP_ITEM_LEVEL"], format("%.2f", pvp), 0.6, 0.6, 0.6, 1, 1, 1)
         end
         mod.Tip_AddLine(" ")
         local red, green, blue = mod.GetAccent()
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CHARACTER"], 1, 1, 1, red, green, blue)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["OPEN_CHARACTER"], 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end
 

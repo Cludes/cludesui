@@ -25,7 +25,7 @@ local PAGE_DATABARS = "Info Bar"
 
 CUI.AtOptionsLogin(function()
     local Pix = CUI.PP
-    local L = CUI.L
+    local Loc = CUI.L
     local Lf = CUI.Lf
     local format = string.format
     local floor = math.floor
@@ -352,14 +352,14 @@ CUI.AtOptionsLogin(function()
         Pix.Point(titleFs, "RIGHT", cardFrame, "RIGHT", -8, 0)
         titleFs:SetJustifyH("LEFT")
         titleFs:SetWordWrap(false)
-        titleFs:SetText(L(def.title))
+        titleFs:SetText(Loc(def.title))
 
         local descFs = CUI.MakeFont(cardFrame, 10, nil, 1, 1, 1, 0.35)
         Pix.Point(descFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -4)
         Pix.Point(descFs, "RIGHT", cardFrame, "RIGHT", -8, 0)
         descFs:SetJustifyH("LEFT")
         descFs:SetWordWrap(false)
-        descFs:SetText(L(def.desc))
+        descFs:SetText(Loc(def.desc))
 
         cardFrame:SetScript("OnEnter", function()
             cbg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
@@ -415,7 +415,7 @@ CUI.AtOptionsLogin(function()
         backdrop:SetColorTexture(0, 0, 0, 0.9)
         local title = CUI.MakeFont(popout, 13, nil, 1, 1, 1, 0.9)
         title:SetPoint("TOP", popout, "TOP", 0, -7)
-        title:SetText(L("Preview"))
+        title:SetText(Loc("Preview"))
         popout._title = title
         local hintText = CUI.MakeFont(popout, 10, nil, 1, 1, 1, 0.4)
         -- Edge-anchored so the text wraps inside the narrow popout instead
@@ -423,7 +423,7 @@ CUI.AtOptionsLogin(function()
         hintText:SetPoint("BOTTOMLEFT", popout, "BOTTOMLEFT", 8, 7)
         hintText:SetPoint("BOTTOMRIGHT", popout, "BOTTOMRIGHT", -8, 7)
         hintText:SetJustifyH("CENTER")
-        hintText:SetText(L("Drag to Reorder. Click to Scroll. Right Click to Remove."))
+        hintText:SetText(Loc("Drag to Reorder. Click to Scroll. Right Click to Remove."))
         popout._hint = hintText
         -- Self-heal (runs ONLY while shown = zero cost hidden): hide when
         -- the panel closes or another page fronts, like the TBB popout.
@@ -497,7 +497,7 @@ CUI.AtOptionsLogin(function()
             if nm == nil then nm = "" end
             dropCaption:SetText(nm)
         else
-            dropCaption:SetText(L("No Info Bar"))
+            dropCaption:SetText(Loc("No Info Bar"))
         end
 
         -- The bar menu is built on its first open and kept across header builds
@@ -616,7 +616,7 @@ CUI.AtOptionsLogin(function()
                 local addCaption = CUI.MakeFont(addEntry, 11, nil, tDimR, tDimG, tDimB, tDimA)
                 addCaption:SetPoint("LEFT", addEntry, "LEFT", 10, 0)
                 addCaption:SetJustifyH("LEFT")
-                addCaption:SetText(L("+ Create New DataBar..."))
+                addCaption:SetText(Loc("+ Create New DataBar..."))
                 local addHl = addEntry:CreateTexture(nil, "ARTWORK")
                 addHl:SetAllPoints()
                 addHl:SetColorTexture(1, 1, 1, 1)
@@ -758,7 +758,7 @@ CUI.AtOptionsLogin(function()
         if not rowConf then
             local hintText = CUI.MakeFont(heading, 12, nil, 1, 1, 1, 0.4)
             hintText:SetPoint("TOPLEFT", heading, "TOPLEFT", PAD + 4, rowY - 2)
-            hintText:SetText(L("Create a DataBar to get started."))
+            hintText:SetText(Loc("Create a DataBar to get started."))
             rowY = rowY - 24
             return math.abs(rowY) + 6
         end
@@ -844,7 +844,7 @@ CUI.AtOptionsLogin(function()
                 hintFS:SetWidth(130)
                 hintFS:SetJustifyH("CENTER")
             end
-            hintFS:SetText(L("Click + to add your first block"))
+            hintFS:SetText(Loc("Click + to add your first block"))
         end
 
         -- Segment overlays: one invisible button per block, retargeted by
@@ -888,7 +888,7 @@ CUI.AtOptionsLogin(function()
                 fs:SetMaxLines(1)
                 return fs
             end
-            Label(10, 0.85, 6):SetText(L(TYPE_LABEL[block.type] or block.type))
+            Label(10, 0.85, 6):SetText(Loc(TYPE_LABEL[block.type] or block.type))
             local shareFS = Label(9, 0.5, -7)
 
             -- Settings-section hover wash (driven by the body watcher).
@@ -991,7 +991,7 @@ CUI.AtOptionsLogin(function()
                     button._curOff = 0
                     button._tgtOff = 0
                     if segment.isFill then
-                        shareFSs[i]:SetText(L("fill"))
+                        shareFSs[i]:SetText(Loc("fill"))
                     else
                         shareFSs[i]:SetText(format("%.1f%%", mod.NormalizedShare(rowConf, segment.block.id)))
                     end
@@ -1202,7 +1202,7 @@ CUI.AtOptionsLogin(function()
             if not gh or gh < 12 then gh = stripThick end
             ghost:SetSize(math.max(gw or 0, 24), gh)
             local kind = blocks[fromIdx].type
-            ghost._lbl:SetText(L(TYPE_LABEL[kind] or kind))
+            ghost._lbl:SetText(Loc(TYPE_LABEL[kind] or kind))
             ghost:SetScale(0.5)
             ghost:Show()
             EnsureAnimTicker()
@@ -1251,7 +1251,7 @@ CUI.AtOptionsLogin(function()
                     end)
                     rowY = rowY - ROW_H2
                 end
-                AddRow(L("Remove Block"), function()
+                AddRow(Loc("Remove Block"), function()
                     mod.RemoveBlock(dropMenu._barId, dropMenu._blockId)
                     -- Full refresh: the preview strip lives in the content
                     -- header, which a plain RefreshPage never rebuilds.
@@ -1387,7 +1387,7 @@ CUI.AtOptionsLogin(function()
                     local itemCaption = CUI.MakeFont(entry, 11, nil, tDimR, tDimG, tDimB, tDimA)
                     itemCaption:SetPoint("LEFT", entry, "LEFT", 10, 0)
                     itemCaption:SetJustifyH("LEFT")
-                    itemCaption:SetText(L(t.label))
+                    itemCaption:SetText(Loc(t.label))
                     local iHl = entry:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
@@ -1467,7 +1467,7 @@ CUI.AtOptionsLogin(function()
         addButton:SetScript("OnEnter", function()
             addCaption:SetTextColor(EGc.r, EGc.g, EGc.b, 1)
             addBrd:Show()
-            CUI.ShowWidgetTooltip(addButton, L("Add a block to this bar"))
+            CUI.ShowWidgetTooltip(addButton, Loc("Add a block to this bar"))
         end)
         addButton:SetScript("OnLeave", function()
             addCaption:SetTextColor(EGc.r, EGc.g, EGc.b, 0.7)
@@ -1484,7 +1484,7 @@ CUI.AtOptionsLogin(function()
             local vh = CUI.MakeFont(heading, 12, nil, 1, 1, 1, 0.4)
             vh:SetPoint("TOP", heading, "TOP", 0, rowY - 2)
             vh:SetJustifyH("CENTER")
-            vh:SetText(L("Vertical bar: the interactive preview is docked beside this window."))
+            vh:SetText(Loc("Vertical bar: the interactive preview is docked beside this window."))
             rowY = rowY - 24
         else
             rowY = rowY - stripThick - 8
@@ -1494,7 +1494,7 @@ CUI.AtOptionsLogin(function()
             ph:SetWidth(stripLen - 20)
             ph:SetJustifyH("CENTER")
             ph:SetWordWrap(true)
-            ph:SetText(L("Drag to Reorder. Click to Scroll. Right Click to Remove."))
+            ph:SetText(Loc("Drag to Reorder. Click to Scroll. Right Click to Remove."))
             rowY = rowY - 16 - 10
         end
 
@@ -1627,7 +1627,7 @@ CUI.AtOptionsLogin(function()
             host._sectionName = "Create New DataBar"
             local hintText = CUI.MakeFont(host, 13, nil, 1, 1, 1, 0.55)
             hintText:SetPoint("TOPLEFT", host, "TOPLEFT", 4, -8)
-            hintText:SetText(L("Create your first DataBar from a starter template, or start empty."))
+            hintText:SetText(Loc("Create your first DataBar from a starter template, or start empty."))
             for i = 1, 4 do
                 local col = (i - 1) % 2
                 local rowI = floor((i - 1) / 2)
@@ -3414,7 +3414,7 @@ CUI.AtOptionsLogin(function()
                 local cValues, cOrder = mod.BuildCurrencyList()
                 cValues._noLoc = true
                 cValues._menuOpts = { searchable = true, itemHeight = 26 }
-                cValues[0] = L("Select a currency")
+                cValues[0] = Loc("Select a currency")
                 table.insert(cOrder, 1, 0)
                 typeRowList = {
                     {
@@ -3599,14 +3599,14 @@ CUI.AtOptionsLogin(function()
                 local lValues, lOrder = mod.BuildLDBList()
                 lValues._noLoc = true
                 lValues._menuOpts = { searchable = true, itemHeight = 26 }
-                lValues[""] = L("Select a plugin")
+                lValues[""] = Loc("Select a plugin")
                 table.insert(lOrder, 1, "")
                 -- A source whose addon is not loaded this session still has to
                 -- read as the current pick: an empty-looking dropdown invites a
                 -- change the player never meant to make, and the block itself is
                 -- only collapsed, not unconfigured.
                 if cfg.source and not lValues[cfg.source] then
-                    lValues[cfg.source] = cfg.source .. " |cff808080(" .. L("not loaded") .. ")|r"
+                    lValues[cfg.source] = cfg.source .. " |cff808080(" .. Loc("not loaded") .. ")|r"
                     lOrder[#lOrder + 1] = cfg.source
                 end
                 typeRowList = {

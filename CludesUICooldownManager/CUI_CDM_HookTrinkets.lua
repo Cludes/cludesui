@@ -41,23 +41,23 @@ local function GetOrCreateTrinketFrame(slotID)
     frame.Icon = texture
     frame._tex = texture
 
-    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-    cd:SetAllPoints()
-    cd:SetDrawEdge(false)
-    cd:SetDrawBling(false)
-    cd:SetHideCountdownNumbers(true)
-    cd:EnableMouse(false)
-    if cd.SetMouseClickEnabled then cd:SetMouseClickEnabled(false) end
-    if cd.SetMouseMotionEnabled then cd:SetMouseMotionEnabled(false) end
+    local cdFrame = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+    cdFrame:SetAllPoints()
+    cdFrame:SetDrawEdge(false)
+    cdFrame:SetDrawBling(false)
+    cdFrame:SetHideCountdownNumbers(true)
+    cdFrame:EnableMouse(false)
+    if cdFrame.SetMouseClickEnabled then cdFrame:SetMouseClickEnabled(false) end
+    if cdFrame.SetMouseMotionEnabled then cdFrame:SetMouseMotionEnabled(false) end
     -- On-use trinket cooldowns fire no event at natural expiry, so the CD-driven
     -- re-saturate (UpdateTrinketCooldown) would not run at the ready edge while
     -- the CD-ready glow lit up immediately -- same lag as the item preset frames.
     -- Re-run the trinket CD check at the expiry edge to clear the desaturation.
-    cd:SetScript("OnCooldownDone", function()
+    cdFrame:SetScript("OnCooldownDone", function()
         if mod.UpdateTrinketCooldown then mod.UpdateTrinketCooldown(slotID) end
     end)
-    frame.Cooldown = cd
-    frame._cooldown = cd
+    frame.Cooldown = cdFrame
+    frame._cooldown = cdFrame
 
     frame._isTrinketFrame = true
     frame._trinketSlot = slotID
@@ -490,12 +490,12 @@ do
     -- frame that engine has painted (fd._presetCdTouched): a native icon's kick
     -- never wakes the preset sweep.
     function mod.CdGlowKick(widget)
-        local fd = widget and hookFrameData[widget]
-        if not fd then return end
-        fd._cdGlowOwed = nil
+        local frameData = widget and hookFrameData[widget]
+        if not frameData then return end
+        frameData._cdGlowOwed = nil
         if not _cdGlowWatched[widget] then _cdGlowWatched[widget] = false end
         QueueCDGlowUpdate()
-        if fd._presetCdTouched and mod.FakeActive_QueueCdStateEval then mod.FakeActive_QueueCdStateEval() end
+        if frameData._presetCdTouched and mod.FakeActive_QueueCdStateEval then mod.FakeActive_QueueCdStateEval() end
     end
 
     _cdGlowUpdateFrame:SetScript("OnUpdate", function(self)

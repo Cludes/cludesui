@@ -37,9 +37,9 @@ local function SkinBlizzardFlyoutButton(
     brdSz
 )
     -- Strip default Blizzard art (one-time)
-    local fd = EFD(button)
-    if not fd.blizzStripped then
-        fd.blizzStripped = true
+    local frameData = EFD(button)
+    if not frameData.blizzStripped then
+        frameData.blizzStripped = true
         local nt = button.NormalTexture or button:GetNormalTexture()
         if nt then nt:SetAlpha(0) end
         if button.IconMask and CUI and CUI._hiddenParent then
@@ -52,8 +52,8 @@ local function SkinBlizzardFlyoutButton(
 
     if shape ~= "none" and shape ~= "cropped" and SHAPE_MASKS and SHAPE_MASKS[shape] then
         local maskTex = SHAPE_MASKS[shape]
-        if not fd.shapeMask then fd.shapeMask = button:CreateMaskTexture() end
-        local mask = fd.shapeMask
+        if not frameData.shapeMask then frameData.shapeMask = button:CreateMaskTexture() end
+        local mask = frameData.shapeMask
         mask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         mask:ClearAllPoints()
         if brdSz and brdSz >= 1 then
@@ -104,8 +104,8 @@ local function SkinBlizzardFlyoutButton(
         end
 
         -- Shape border
-        if not fd.shapeBorder then fd.shapeBorder = button:CreateTexture(nil, "OVERLAY", nil, 6) end
-        local borderTex = fd.shapeBorder
+        if not frameData.shapeBorder then frameData.shapeBorder = button:CreateTexture(nil, "OVERLAY", nil, 6) end
+        local borderTex = frameData.shapeBorder
         pcall(borderTex.RemoveMaskTexture, borderTex, mask)
         borderTex:ClearAllPoints()
         borderTex:SetAllPoints(button)
@@ -117,18 +117,18 @@ local function SkinBlizzardFlyoutButton(
             borderTex:Hide()
         end
 
-        if fd.borders and CUI and CUI.PP then CUI.PP.HideBorder(button) end
+        if frameData.borders and CUI and CUI.PP then CUI.PP.HideBorder(button) end
     else
         -- Square / cropped / none
-        if fd.shapeMask then
-            pcall(iconTex.RemoveMaskTexture, iconTex, fd.shapeMask)
+        if frameData.shapeMask then
+            pcall(iconTex.RemoveMaskTexture, iconTex, frameData.shapeMask)
             if button.cooldown and not button.cooldown:IsForbidden() then
-                pcall(button.cooldown.RemoveMaskTexture, button.cooldown, fd.shapeMask)
+                pcall(button.cooldown.RemoveMaskTexture, button.cooldown, frameData.shapeMask)
                 pcall(button.cooldown.SetSwipeTexture, button.cooldown, "")
             end
-            fd.shapeMask:Hide()
+            frameData.shapeMask:Hide()
         end
-        if fd.shapeBorder then fd.shapeBorder:Hide() end
+        if frameData.shapeBorder then frameData.shapeBorder:Hide() end
 
         iconTex:ClearAllPoints()
         iconTex:SetAllPoints(button)
@@ -144,13 +144,13 @@ local function SkinBlizzardFlyoutButton(
         local Pix = CUI and CUI.PP
         if Pix then
             if brdOn then
-                if not fd.borders then
+                if not frameData.borders then
                     Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", -1)
-                    fd.borders = Pix.GetBorders(button)
+                    frameData.borders = Pix.GetBorders(button)
                 end
                 Pix.UpdateBorder(button, brdSz, cr, cg, callback, ca)
                 Pix.ShowBorder(button)
-            elseif fd.borders then
+            elseif frameData.borders then
                 Pix.HideBorder(button)
             end
         end
@@ -186,9 +186,9 @@ local function OnBlizzardFlyoutShow(flyout)
     if cfg.borderClassColor then
         local _, classTok = UnitClass("player")
         if classTok then
-            local cc = RAID_CLASS_COLORS[classTok]
-            if cc then
-                cr, cg, callback = cc.r, cc.g, cc.b
+            local classColor = RAID_CLASS_COLORS[classTok]
+            if classColor then
+                cr, cg, callback = classColor.r, classColor.g, classColor.b
             end
         end
     end
@@ -197,9 +197,9 @@ local function OnBlizzardFlyoutShow(flyout)
     if cfg.borderClassColor then
         local _, classTok = UnitClass("player")
         if classTok then
-            local cc = RAID_CLASS_COLORS[classTok]
-            if cc then
-                sbR, sbG, sbB = cc.r, cc.g, cc.b
+            local classColor = RAID_CLASS_COLORS[classTok]
+            if classColor then
+                sbR, sbG, sbB = classColor.r, classColor.g, classColor.b
             end
         end
     end

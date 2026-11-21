@@ -19,7 +19,7 @@ if CUI.IS_FOREVER then return end -- one spec per class on WoW Forever, nothing 
 --  iconStyle = "wow", showIcon (default on).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local MEDIA = mod.MEDIA
 local K = mod.BlockKit
 
@@ -492,15 +492,15 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         BuildPopup(
             specPool,
             specButton,
-            L["CHANGE_SPEC"],
+            Loc["CHANGE_SPEC"],
             entries,
             function(e) C_SpecializationInfo.SetSpecialization(e.specIndex) end,
             true,
             {
-                { L["LEFT_CLICK"], L["CHANGE_SPEC_SHORT"] },
-                { L["CTRL_LEFT_CLICK"], L["CHANGE_LOADOUT"] },
-                { L["SHIFT_LEFT_CLICK"], L["OPEN_TALENTS"] },
-                { L["RIGHT_CLICK"], L["CHANGE_LOOT_SPEC"] },
+                { Loc["LEFT_CLICK"], Loc["CHANGE_SPEC_SHORT"] },
+                { Loc["CTRL_LEFT_CLICK"], Loc["CHANGE_LOADOUT"] },
+                { Loc["SHIFT_LEFT_CLICK"], Loc["OPEN_TALENTS"] },
+                { Loc["RIGHT_CLICK"], Loc["CHANGE_LOOT_SPEC"] },
             }
         )
     end
@@ -515,7 +515,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         if currentSpecIdx and specCache[currentSpecIdx] then activeIcon = specCache[currentSpecIdx].icon end
         local entries = {
             {
-                name = L["CURRENT_SPEC"],
+                name = Loc["CURRENT_SPEC"],
                 icon = activeIcon,
                 isActive = currentLootSpecID == 0,
                 specIndex = 0,
@@ -537,7 +537,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         -- WITHOUT the fullscreen click-catcher (an invisible click-eater must
         -- never go live in combat) and dismisses via the hover watcher.
         local inCombat = InCombatLockdown()
-        BuildPopup(lootPool, specButton, L["CHANGE_LOOT_SPEC"], entries, function(e)
+        BuildPopup(lootPool, specButton, Loc["CHANGE_LOOT_SPEC"], entries, function(e)
             local ident = 0
             if e.specIndex > 0 then
                 ident = select(1, C_SpecializationInfo.GetSpecializationInfo(e.specIndex)) or 0
@@ -589,7 +589,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         BuildPopup(
             loadoutPool,
             specButton,
-            L["CHANGE_LOADOUT"],
+            Loc["CHANGE_LOADOUT"],
             entries,
             function(e) BeginLoadoutSwap(specId, e.configID) end,
             inCombat

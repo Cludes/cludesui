@@ -154,8 +154,8 @@ do
     end
 
     local function StackGlowOnHide(iconTex)
-        local fd = hookFrameData[iconTex]
-        local st = fd and fd.stackGlow
+        local frameData = hookFrameData[iconTex]
+        local st = frameData and frameData.stackGlow
         if st then EndStackGlow(st) end
     end
 
@@ -163,9 +163,9 @@ do
     -- RefreshCDMIconAppearance with everything pre-resolved; called with only
     -- the icon to tear down (toggle off, frame pooled onto a non-buff spell).
     function mod.StackGlow_Configure(iconTex, threshold, operator, style, red, green, blue, prefs)
-        local fd = iconTex and hookFrameData[iconTex]
-        if not fd then return end
-        local st = fd.stackGlow
+        local frameData = iconTex and hookFrameData[iconTex]
+        if not frameData then return end
+        local st = frameData.stackGlow
         threshold, style = tonumber(threshold), tonumber(style)
         if
             operator ~= "lt"
@@ -196,7 +196,7 @@ do
 
         if not st then
             st = { icon = iconTex }
-            fd.stackGlow = st
+            frameData.stackGlow = st
             -- The gate oversizes the icon so a FULL fill (and therefore the
             -- open mask) covers the glow textures' overhang past the icon
             -- edges (flipbook/pixel padding); proportional so big icons keep
@@ -269,8 +269,8 @@ do
     -- for them). Plain counts decide in Lua; secret counts go straight to the
     -- gate and the engine's clamp + the mask decide what renders.
     function mod.StackGlow_Feed(iconTex, isActive)
-        local fd = iconTex and hookFrameData[iconTex]
-        local st = fd and fd.stackGlow
+        local frameData = iconTex and hookFrameData[iconTex]
+        local st = frameData and frameData.stackGlow
         if not (st and st.threshold) then return end
         if not isActive then
             EndStackGlow(st)
@@ -328,8 +328,8 @@ function mod.RefreshBuffGlows()
     for _, icons in pairs(cdmBarIcons) do
         for fi = 1, #icons do
             local widget = icons[fi]
-            local fd = widget and hookFrameData[widget]
-            if fd and fd.buffGlowActive then fd.buffGlowActive = false end
+            local frameData = widget and hookFrameData[widget]
+            if frameData and frameData.buffGlowActive then frameData.buffGlowActive = false end
         end
     end
 end
@@ -362,18 +362,18 @@ end
 -- leaves it set -- so a visibility toggle mid-pandemic keeps its glow. The bias is
 -- deliberate: a suppressed glow costs a tick, a wrong one is what was reported.
 function mod._PandemicIconHide(self)
-    local fd = hookFrameData[self]
-    if fd then
-        if fd.pandemicGlowActive then
-            if fd.pandemicOverlay then mod.StopNativeGlow(fd.pandemicOverlay) end
-            fd.pandemicGlowActive = false
+    local frameData = hookFrameData[self]
+    if frameData then
+        if frameData.pandemicGlowActive then
+            if frameData.pandemicOverlay then mod.StopNativeGlow(frameData.pandemicOverlay) end
+            frameData.pandemicGlowActive = false
         end
         -- auraInstanceID can be SECRET in instanced combat; comparing a
         -- secret against nil yields a secret boolean the `if` would error
         -- testing. A secret ID means the aura state is unknowable: take the
         -- conservative path (not stale), same bias as the visibility toggle.
         local aid = self.auraInstanceID
-        if not (_G.issecretvalue and _G.issecretvalue(aid)) and aid == nil then fd._panStale = true end
+        if not (_G.issecretvalue and _G.issecretvalue(aid)) and aid == nil then frameData._panStale = true end
     end
     if mod._pandemicState then mod._pandemicState[self] = nil end
 end
@@ -382,8 +382,8 @@ end
 -- on the icon NOW. Runs on every application that carries time over, well before
 -- the window itself opens.
 function mod._PandemicWindowSet(self)
-    local fd = hookFrameData[self]
-    if fd then fd._panStale = nil end
+    local frameData = hookFrameData[self]
+    if frameData then frameData._panStale = nil end
 end
 
 mod.FD = FD

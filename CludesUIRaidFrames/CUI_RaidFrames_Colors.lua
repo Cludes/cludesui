@@ -177,7 +177,7 @@ do
     function mod.ResolveClassReactiveColor(cfg, classToken, pct01)
         local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
         cfg = cfg or saved.profile
-        local cc = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
+        local classColor = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
         local c0 = cfg.dynamicColor0 or DEF0
         local c50 = cfg.dynamicColor50 or DEF50
         if pct01 >= 0.4 then
@@ -187,7 +187,7 @@ do
             else
                 wid = (pct01 - 0.4) / 0.35 * 0.75
             end
-            return c50.r + (cc.r - c50.r) * wid, c50.g + (cc.g - c50.g) * wid, c50.b + (cc.b - c50.b) * wid
+            return c50.r + (classColor.r - c50.r) * wid, c50.g + (classColor.g - c50.g) * wid, c50.b + (classColor.b - c50.b) * wid
         end
         local t = pct01 / 0.4
         return c0.r + (c50.r - c0.r) * t, c0.g + (c50.g - c0.g) * t, c0.b + (c50.b - c0.b) * t

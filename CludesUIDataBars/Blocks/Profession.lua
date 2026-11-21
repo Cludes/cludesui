@@ -20,7 +20,7 @@ local CUI = CludesUI
 --  showIcon (default on).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local InCombatLockdown = InCombatLockdown
@@ -142,9 +142,9 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_PROFESSION"], 1, 1, 1, 1, 1, 1)
-        local right = secondary and L["START_CAMPFIRE"] or L["OPEN_PROFESSION_BOOK"]
-        mod.Tip_AddDouble(L["RIGHT_CLICK"], right, 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["OPEN_PROFESSION"], 1, 1, 1, 1, 1, 1)
+        local right = secondary and Loc["START_CAMPFIRE"] or Loc["OPEN_PROFESSION_BOOK"]
+        mod.Tip_AddDouble(Loc["RIGHT_CLICK"], right, 1, 1, 1, 1, 1, 1)
         mod.Tip_Show()
     end
 

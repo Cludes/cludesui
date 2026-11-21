@@ -36,7 +36,7 @@ local LOGO = "Interface\\AddOns\\CludesUI\\media\\logo-full-thin.png"
 
 CUI_NS.unlockParts.Bar = function(LM)
     local mod = CUI_NS
-    local L = CUI.L
+    local Loc = CUI.L
     local movers = LM.movers
     local FONT = LM.FONT_PATH
 
@@ -164,7 +164,7 @@ CUI_NS.unlockParts.Bar = function(LM)
     -- The controls the help chip lists, keys in the accent colour.
     local function HelpText()
         local hex = CUI.HexColor(Accent())
-        local function Line(key, what) return hex .. L(key) .. "|r: " .. L(what) end
+        local function Line(key, what) return hex .. Loc(key) .. "|r: " .. Loc(what) end
         local lines = {
             Line("Shift + Drag", "Move it on one axis only."),
             Line("Arrow Keys", "Move the selected element 1px."),
@@ -292,7 +292,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         local function MakeToggle(def)
             local caption = bar:CreateFontString(nil, "OVERLAY")
             caption:SetFont(FONT, CAPTION_SZ, "OUTLINE, SLUG")
-            caption:SetText(L(def.caption))
+            caption:SetText(Loc(def.caption))
             local button = Control(
                 "Button",
                 math.max(CHIP, math.ceil(caption:GetStringWidth() or CHIP) + 4),
@@ -343,11 +343,11 @@ CUI_NS.unlockParts.Bar = function(LM)
                 Tip(
                     button,
                     CUI.HexColor(Accent())
-                        .. L(def.name)
+                        .. Loc(def.name)
                         .. "|r  "
-                        .. L(def.state())
+                        .. Loc(def.state())
                         .. "\n"
-                        .. L(def.tip)
+                        .. Loc(def.tip)
                 )
             end
             button:SetScript("OnEnter", function()
@@ -411,7 +411,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             local labelText = button:CreateFontString(nil, "OVERLAY")
             labelText:SetFont(FONT, 10, "OUTLINE, SLUG")
             labelText:SetPoint("CENTER")
-            labelText:SetText(L(textValue))
+            labelText:SetText(Loc(textValue))
             local hover = false
             local function Paint()
                 local red, green, blue = 1, 1, 1
@@ -448,7 +448,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         title:SetFont(FONT, 13, "OUTLINE, SLUG")
         title:SetPoint("LEFT", logo, "RIGHT", 8, 0)
         title:SetTextColor(1, 1, 1, 0.92)
-        title:SetText(L("LAYOUT MODE"))
+        title:SetText(Loc("LAYOUT MODE"))
         brand:SetSize(LOGO_SZ + 8 + math.ceil(title:GetStringWidth() or 90), CHIP)
         bar._badgeLogo = logo
         repaint[#repaint + 1] = function(red, green, blue) logo:SetVertexColor(red, green, blue, 1) end
@@ -478,7 +478,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         hint:SetFont(FONT, 10, "")
         hint:SetPoint("LEFT", box, "LEFT", 6, 0)
         hint:SetTextColor(1, 1, 1, 0.35)
-        hint:SetText(L("Filter elements..."))
+        hint:SetText(Loc("Filter elements..."))
         local clear = CreateFrame("Button", nil, box)
         clear:SetSize(16, 16)
         clear:SetPoint("RIGHT", box, "RIGHT", -2, 0)
@@ -508,7 +508,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             "Show only the elements whose name contains every word typed here. Escape clears it."
         edit:SetScript("OnEnter", function(self)
             PaintFilter()
-            Tip(self, L(FILTER_TIP))
+            Tip(self, Loc(FILTER_TIP))
         end)
         edit:SetScript("OnLeave", function()
             PaintFilter()
@@ -516,7 +516,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         end)
         funnel:SetScript("OnEnter", function(self)
             PaintFilter()
-            Tip(self, L(FILTER_TIP))
+            Tip(self, Loc(FILTER_TIP))
         end)
         funnel:SetScript("OnLeave", function()
             PaintFilter()

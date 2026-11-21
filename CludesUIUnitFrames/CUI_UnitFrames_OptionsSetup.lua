@@ -308,15 +308,15 @@ local function SetupOptionsPanel()
                 -- Static fake cooldown swipe: a huge duration parked at a fixed fraction so
                 -- the wedge never visibly moves. Native countdown numbers stay hidden; the
                 -- duration text below is a manual static FontString instead.
-                local cd = CreateFrame("Cooldown", nil, iconFrame, "CooldownFrameTemplate")
-                cd:SetAllPoints(iconFrame)
-                cd:SetDrawEdge(false)
-                cd:SetDrawBling(false)
-                cd:SetReverse(false)
-                cd:SetDrawSwipe(true)
-                cd:SetSwipeColor(0, 0, 0, 0.6)
-                cd:SetHideCountdownNumbers(true)
-                iconFrame._cd = cd
+                local cdFrame = CreateFrame("Cooldown", nil, iconFrame, "CooldownFrameTemplate")
+                cdFrame:SetAllPoints(iconFrame)
+                cdFrame:SetDrawEdge(false)
+                cdFrame:SetDrawBling(false)
+                cdFrame:SetReverse(false)
+                cdFrame:SetDrawSwipe(true)
+                cdFrame:SetSwipeColor(0, 0, 0, 0.6)
+                cdFrame:SetHideCountdownNumbers(true)
+                iconFrame._cd = cdFrame
                 -- Text host above the swipe AND the border container so the
                 -- duration/stack text renders over the icon border, not under it.
                 local textHost = CreateFrame("Frame", nil, iconFrame)

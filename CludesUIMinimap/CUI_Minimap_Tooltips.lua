@@ -537,8 +537,8 @@ do
                 FTTNameFont(line.name, 10)
                 line.zone:SetFont(fontFile, 10, "")
 
-                local cc = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
-                local colored = cc and cc:WrapTextInColorCode(e.name) or e.name
+                local classColor = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
+                local colored = classColor and classColor:WrapTextInColorCode(e.name) or e.name
                 -- BNet friends: show battle tag before the in-game name, e.g. "Bigmacz (Unholyftw)"
                 if e.bnetTag then colored = "|cffffd100" .. e.bnetTag .. "|r (" .. colored .. ")" end
                 -- Level to the right of the in-game name, e.g. "Unholyftw 80"

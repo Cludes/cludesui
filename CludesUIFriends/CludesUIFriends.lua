@@ -737,8 +737,8 @@ local function UpdateNameColor(btnFrame, bnetAccount, wowInfo)
     if not class then return end
 
     if wowInfo then
-        local cc = RAID_CLASS_COLORS[class]
-        if cc then nameLabel:SetTextColor(cc.r, cc.g, cc.b) end
+        local classColor = RAID_CLASS_COLORS[class]
+        if classColor then nameLabel:SetTextColor(classColor.r, classColor.g, classColor.b) end
     elseif bnetAccount then
         local textValue = nameLabel:GetText()
         if not textValue then return end

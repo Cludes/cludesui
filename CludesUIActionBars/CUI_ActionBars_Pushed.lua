@@ -251,17 +251,17 @@ end
 -- Pressed-state drivers, one shared function each. Bodies return unless the
 -- pushed role is armed (or, to release, a press is recorded).
 mod._ixPressOn = function(button)
-    local fd = mod._eabFD[button]
-    if fd and fd.ixPush and not fd.ixPressed then
-        fd.ixPressed = true
-        mod._ixPaint(button, fd)
+    local frameData = mod._eabFD[button]
+    if frameData and frameData.ixPush and not frameData.ixPressed then
+        frameData.ixPressed = true
+        mod._ixPaint(button, frameData)
     end
 end
 mod._ixPressOff = function(button)
-    local fd = mod._eabFD[button]
-    if fd and fd.ixPressed then
-        fd.ixPressed = nil
-        mod._ixPaint(button, fd)
+    local frameData = mod._eabFD[button]
+    if frameData and frameData.ixPressed then
+        frameData.ixPressed = nil
+        mod._ixPaint(button, frameData)
     end
 end
 
@@ -314,46 +314,46 @@ end
 -- Dropping the last role hides the copy, restores the bar border's alpha and
 -- takes the host out of the px re-apply registry (HideBorderStyle).
 mod._ixRole = function(button, s, role, enabled)
-    local fd = EFD(button)
+    local frameData = EFD(button)
     if enabled then
-        local needHook = (role == "ixPush" and not fd.ixPressHooked)
-            or (role == "ixCast" and not fd.ixCheckHooked)
-        if not fd.ixStyled or needHook then
+        local needHook = (role == "ixPush" and not frameData.ixPressHooked)
+            or (role == "ixCast" and not frameData.ixCheckHooked)
+        if not frameData.ixStyled or needHook then
             if InCombatLockdown() then
                 mod._eabApplyDeferred = true
                 return false
             end
-            if not fd.ixBorder then
+            if not frameData.ixBorder then
                 local wid = CreateFrame("Frame", nil, button)
                 wid:SetAllPoints(button)
                 wid:Hide()
                 local owner = CreateFrame("Frame", nil, wid)
                 owner:SetAllPoints(wid)
-                fd.ixBorder, fd.ixHost = wid, owner
+                frameData.ixBorder, frameData.ixHost = wid, owner
                 mod._ixEver = true
             end
-            if not fd.ixStyled then mod._ixStyle(button, fd, s) end
-            if role == "ixPush" and not fd.ixPressHooked then mod._ixHookPress(button, fd) end
-            if role == "ixCast" and not fd.ixCheckHooked then mod._ixHookChecked(button, fd) end
+            if not frameData.ixStyled then mod._ixStyle(button, frameData, s) end
+            if role == "ixPush" and not frameData.ixPressHooked then mod._ixHookPress(button, frameData) end
+            if role == "ixCast" and not frameData.ixCheckHooked then mod._ixHookChecked(button, frameData) end
         end
-        fd[role] = true
+        frameData[role] = true
         -- A (re)armed cast role starts from the button's real state.
-        if role == "ixCast" then mod._ixSampleChecked(button, fd) end
-        mod._ixPaint(button, fd)
+        if role == "ixCast" then mod._ixSampleChecked(button, frameData) end
+        mod._ixPaint(button, frameData)
         return true
-    elseif fd[role] then
-        fd[role] = nil
+    elseif frameData[role] then
+        frameData[role] = nil
         if role == "ixPush" then
-            fd.ixPressed = nil
+            frameData.ixPressed = nil
         elseif role == "ixHover" then
-            fd.ixOver = nil
+            frameData.ixOver = nil
         else
-            fd.ixChecked = nil
+            frameData.ixChecked = nil
         end
-        mod._ixPaint(button, fd)
-        if fd.ixStyled and not (fd.ixPush or fd.ixHover or fd.ixCast) then
-            CUI.HideBorderStyle(fd.ixHost)
-            fd.ixStyled = nil
+        mod._ixPaint(button, frameData)
+        if frameData.ixStyled and not (frameData.ixPush or frameData.ixHover or frameData.ixCast) then
+            CUI.HideBorderStyle(frameData.ixHost)
+            frameData.ixStyled = nil
         end
     end
     return false
@@ -371,9 +371,9 @@ function ABAR:ApplyPushedTextures()
     if useCC then
         local _, classTok = UnitClass("player")
         if classTok then
-            local cc = RAID_CLASS_COLORS[classTok]
-            if cc then
-                cr, cg, callback = cc.r, cc.g, cc.b
+            local classColor = RAID_CLASS_COLORS[classTok]
+            if classColor then
+                cr, cg, callback = classColor.r, classColor.g, classColor.b
             end
         end
     end
@@ -576,9 +576,9 @@ function ABAR:ApplyHighlightTextures()
     if useCC then
         local _, classTok = UnitClass("player")
         if classTok then
-            local cc = RAID_CLASS_COLORS[classTok]
-            if cc then
-                cr, cg, callback = cc.r, cc.g, cc.b
+            local classColor = RAID_CLASS_COLORS[classTok]
+            if classColor then
+                cr, cg, callback = classColor.r, classColor.g, classColor.b
             end
         end
     end
@@ -632,13 +632,13 @@ function ABAR:ApplyHighlightTextures()
                                 -- Hover driver for both looks: the armed copy, else
                                 -- today's edges.
                                 button:HookScript("OnEnter", function(self)
-                                    local fd = EFD(self)
-                                    if fd.ixHover then
-                                        fd.ixOver = true
-                                        mod._ixPaint(self, fd)
+                                    local frameData = EFD(self)
+                                    if frameData.ixHover then
+                                        frameData.ixOver = true
+                                        mod._ixPaint(self, frameData)
                                         return
                                     end
-                                    local be = fd._highlightBorder
+                                    local be = frameData._highlightBorder
                                     if be and be._active then
                                         for jdx = 1, 4 do
                                             be[jdx]:Show()
@@ -646,12 +646,12 @@ function ABAR:ApplyHighlightTextures()
                                     end
                                 end)
                                 button:HookScript("OnLeave", function(self)
-                                    local fd = EFD(self)
-                                    if fd.ixOver then
-                                        fd.ixOver = nil
-                                        mod._ixPaint(self, fd)
+                                    local frameData = EFD(self)
+                                    if frameData.ixOver then
+                                        frameData.ixOver = nil
+                                        mod._ixPaint(self, frameData)
                                     end
-                                    local be = fd._highlightBorder
+                                    local be = frameData._highlightBorder
                                     if be then
                                         for jdx = 1, 4 do
                                             be[jdx]:Hide()
@@ -675,8 +675,8 @@ function ABAR:ApplyHighlightTextures()
                         if ixEver and not ixBar then mod._ixRole(button, s, "ixHover", false) end
                     end
                     if ixCast and ixEver and button then
-                        local fd = mod._eabFD[button]
-                        if fd and fd.ixCast then mod._ixPaint(button, fd) end
+                        local frameData = mod._eabFD[button]
+                        if frameData and frameData.ixCast then mod._ixPaint(button, frameData) end
                     end
                     _quickKeybindState.art.RefreshButton(button)
                 end

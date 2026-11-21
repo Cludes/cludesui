@@ -442,9 +442,9 @@ function mod.ApplyActiveOverlays(widget, fd, ss, isActive, edge)
                 if ss.activeGlowClassColor then
                     local _, classTok = UnitClass("player")
                     if classTok then
-                        local cc = RAID_CLASS_COLORS[classTok]
-                        if cc then
-                            gr, gg, gb = cc.r, cc.g, cc.b
+                        local classColor = RAID_CLASS_COLORS[classTok]
+                        if classColor then
+                            gr, gg, gb = classColor.r, classColor.g, classColor.b
                         end
                     end
                 elseif ss.activeGlowR ~= nil then

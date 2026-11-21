@@ -1640,7 +1640,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         local on = _tipsOn()
         -- Extras exist only under the reskin, as on the live tooltip.
         local posX = on and saved or {}
-        local L = CUI.L
+        local Loc = CUI.L
         if _pv.place then _pv.place(tip) end
         -- SetOwner clears the lines and re-owns the tooltip after the header was hidden.
         tip:SetOwner(hostFrame, "ANCHOR_NONE")
@@ -1705,7 +1705,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 and C_ChallengeMode.GetDungeonScoreRarityColor
                 and C_ChallengeMode.GetDungeonScoreRarityColor(_PV_SCORE)
             tip:AddDoubleLine(
-                L("M+ Score:"),
+                Loc("M+ Score:"),
                 _PV_SCORE,
                 1,
                 1,
@@ -1718,7 +1718,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         local mount = posX.tooltipShowMount and C_Spell.GetSpellName(_PV_MOUNT_SPELL)
         if mount then
             tip:AddDoubleLine(
-                L("Mount:"),
+                Loc("Mount:"),
                 mount .. " |TInterface\\RaidFrame\\ReadyCheck-Ready:0|t",
                 1,
                 1,
@@ -1728,11 +1728,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 1
             )
         end
-        if posX.tooltipShowTarget then tip:AddDoubleLine(L("Targeting:"), L("You"), 1, 1, 1, 0.1, 1, 0.1) end
+        if posX.tooltipShowTarget then tip:AddDoubleLine(Loc("Targeting:"), Loc("You"), 1, 1, 1, 0.1, 1, 0.1) end
         if on and saved.tooltipItemLevel ~= false then
             local _, isEquipped = GetAverageItemLevel()
             if isEquipped and isEquipped > 0 then
-                tip:AddDoubleLine(L("Item Level:"), math.floor(isEquipped), 1, 1, 1, 1, 1, 1)
+                tip:AddDoubleLine(Loc("Item Level:"), math.floor(isEquipped), 1, 1, 1, 1, 1, 1)
             end
         end
 

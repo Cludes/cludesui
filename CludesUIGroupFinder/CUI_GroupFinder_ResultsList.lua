@@ -1733,16 +1733,16 @@ function mod.OwnListPreviewTip(region)
     if enumerate then
         local roleName = { TANK = TANK, HEALER = HEALER, DAMAGER = DAMAGER }
         for _, p in ipairs(players) do
-            local cc = RAID_CLASS_COLORS[p.classFilename] or NORMAL_FONT_COLOR
+            local classColor = RAID_CLASS_COLORS[p.classFilename] or NORMAL_FONT_COLOR
             tipText:AddLine(
                 string.format(
                     LFG_LIST_TOOLTIP_CLASS_ROLE or "%s - %s",
                     p.className,
                     roleName[p.assignedRole] or ""
                 ),
-                cc.r,
-                cc.g,
-                cc.b
+                classColor.r,
+                classColor.g,
+                classColor.b
             )
         end
     else
@@ -2252,9 +2252,9 @@ end
 
 if mod.WhenGroupFinder then
     mod.WhenGroupFinder(function()
-        local sp = LFGListFrame and LFGListFrame.SearchPanel
-        if sp then
-            sp:HookScript("OnShow", function()
+        local searchPane = LFGListFrame and LFGListFrame.SearchPanel
+        if searchPane then
+            searchPane:HookScript("OnShow", function()
                 -- a profile switched while the window was closed brings its own sizes
                 styleGen = styleGen + 1
                 if mod.OwnListOn() then mod.OwnListRefresh() end

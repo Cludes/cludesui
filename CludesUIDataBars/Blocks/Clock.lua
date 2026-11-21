@@ -17,7 +17,7 @@ local CUI = CludesUI
 --  setting); showResting, showMail (default on); fontSizeClock.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 -- Kept as locals: the clock reads them every second.
@@ -233,7 +233,7 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
         local hour, minute = GetGameTime()
         local _, use24 = Modes()
         mod.Tip_AddDouble(
-            L["SERVER_TIME"],
+            Loc["SERVER_TIME"],
             ClockText(floor(hour), floor(minute), use24),
             0.6,
             0.6,
@@ -246,7 +246,7 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
         local saved = GetNumSavedInstances and GetNumSavedInstances() or 0
         if saved > 0 then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(L["SAVED_INSTANCES"], 1, 0.82, 0)
+            mod.Tip_AddLine(Loc["SAVED_INSTANCES"], 1, 0.82, 0)
             for i = 1, saved do
                 local name, _, reset, _, locked, extended = GetSavedInstanceInfo(i)
                 if locked or extended then
@@ -257,23 +257,23 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_AddLine(" ")
         local daily = GetQuestResetTime and GetQuestResetTime() or 0
         if daily > 0 then
-            mod.Tip_AddDouble(L["DAILY_RESET"], mod.FormatTimeLeft(daily), 0.6, 0.6, 0.6, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["DAILY_RESET"], mod.FormatTimeLeft(daily), 0.6, 0.6, 0.6, 1, 1, 1)
         end
         local weekly = C_DateAndTime
                 and C_DateAndTime.GetSecondsUntilWeeklyReset
                 and C_DateAndTime.GetSecondsUntilWeeklyReset()
             or 0
         if weekly > 0 then
-            mod.Tip_AddDouble(L["WEEKLY_RESET"], mod.FormatTimeLeft(weekly), 0.6, 0.6, 0.6, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["WEEKLY_RESET"], mod.FormatTimeLeft(weekly), 0.6, 0.6, 0.6, 1, 1, 1)
         end
         if HasNewMail() then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(L["YOU_HAVE_MAIL"], 1, 0.82, 0)
+            mod.Tip_AddLine(Loc["YOU_HAVE_MAIL"], 1, 0.82, 0)
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["TOGGLE_CALENDAR"], 1, 1, 1, 1, 1, 1)
-        mod.Tip_AddDouble(L["RIGHT_CLICK"], L["TOGGLE_CLOCK"], 1, 1, 1, 1, 1, 1)
-        mod.Tip_AddDouble(L["SHIFT_MIDDLE_CLICK"], L["RELOAD_UI"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["TOGGLE_CALENDAR"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["RIGHT_CLICK"], Loc["TOGGLE_CLOCK"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["SHIFT_MIDDLE_CLICK"], Loc["RELOAD_UI"], 1, 1, 1, 1, 1, 1)
         mod.Tip_Show()
     end
 

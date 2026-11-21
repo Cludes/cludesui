@@ -1437,7 +1437,7 @@ end
 --  the scroll frame and its child.
 -------------------------------------------------------------------------------
 function CUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
-    local L = CUI.L
+    local Loc = CUI.L
     local ar, ag, ab = 1, 0.82, 0.30
     if CUI.GetAccentColor then
         ar, ag, ab = CUI.GetAccentColor()
@@ -1457,7 +1457,7 @@ function CUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
     local title = CUI.MakeFont(pane, 13, nil, 1, 1, 1)
     title:SetAlpha(0.9)
     title:SetPoint("TOPLEFT", pane, "TOPLEFT", 2, -2)
-    title:SetText(L(sel.name))
+    title:SetText(Loc(sel.name))
     if not sel.preset then
         local link = CreateFrame("Button", nil, pane)
         link:SetSize(54, 16)
@@ -1466,15 +1466,15 @@ function CUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
         local text = CUI.MakeFont(link, 11, nil, ar, ag, ab)
         text:SetAlpha(0.9)
         text:SetPoint("LEFT")
-        text:SetText(L("Rename"))
+        text:SetText(Loc("Rename"))
         link:SetScript("OnEnter", function() text:SetAlpha(1) end)
         link:SetScript("OnLeave", function() text:SetAlpha(0.9) end)
         link:SetScript("OnClick", function()
             opts.input({
-                title = L("Rename Filter"),
+                title = Loc("Rename Filter"),
                 placeholder = opts.renamePlaceholder,
-                confirmText = L("Rename"),
-                cancelText = L("Cancel"),
+                confirmText = Loc("Rename"),
+                cancelText = Loc("Cancel"),
                 onConfirm = function(textValue)
                     opts.rename(sel.id, textValue)
                     opts.rebuild()
@@ -1521,17 +1521,17 @@ function CUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
     -- reads wrong for a search, and every add draws the editor again.
     for _, region in ipairs({ search:GetRegions() }) do
         if region.SetText and region.GetText then
-            region:SetText(L("Search Spells"))
+            region:SetText(Loc("Search Spells"))
             break
         end
     end
 
     local addId = CUI.BuildPopupButton(pane, 110, 24, "Add Spell ID", function()
         opts.input({
-            title = L("Add Spell ID"),
-            message = L("Enter the spell ID to add to this filter."),
-            confirmText = L("Add"),
-            cancelText = L("Cancel"),
+            title = Loc("Add Spell ID"),
+            message = Loc("Enter the spell ID to add to this filter."),
+            confirmText = Loc("Add"),
+            cancelText = Loc("Cancel"),
             onConfirm = function(textValue)
                 local id = tonumber(textValue or "")
                 if id then Added(opts.addTyped(id)) end

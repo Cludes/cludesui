@@ -301,7 +301,7 @@ end
 -- of the middle. Returns the header's height.
 local function BuildHeader(heading)
     local PP = CUI.PanelPP
-    local L = CUI.L
+    local Loc = CUI.L
     local cursorY = -16
 
     local tabs, tabsH, refreshTabs = BuildTypeTabs(heading)
@@ -318,7 +318,7 @@ local function BuildHeader(heading)
     local precisionLabel, precisionDropdown = BuildHeaderSetting(heading, {
         label = TYPE_INFO[shownType].precision,
         tooltip = function()
-            return L(TYPE_INFO[shownType].tip) .. "\n\n" .. CUI.L("Numbers are cut, not rounded.")
+            return Loc(TYPE_INFO[shownType].tip) .. "\n\n" .. CUI.L("Numbers are cut, not rounded.")
         end,
         width = 170,
         choices = PRECISION_CHOICES,
@@ -331,7 +331,7 @@ local function BuildHeader(heading)
 
     local thresholdLabel, thresholdDropdown = BuildHeaderSetting(heading, {
         label = THRESHOLD_LABEL,
-        tooltip = function() return L(THRESHOLD_TIP) end,
+        tooltip = function() return Loc(THRESHOLD_TIP) end,
         width = 110,
         choices = THRESHOLD_CHOICES,
         get = function() return Threshold(shownType) end,
@@ -344,7 +344,7 @@ local function BuildHeader(heading)
 
     RefreshHeader = function()
         local valueType = shownType
-        precisionLabel:SetText(L(TYPE_INFO[valueType].precision))
+        precisionLabel:SetText(Loc(TYPE_INFO[valueType].precision))
         for i, result in ipairs(results) do
             result:SetText(CUI.AbbreviateValue(PREVIEW_VALUES[i], valueType))
         end
@@ -377,7 +377,7 @@ end
 -- not on the page). The body rows are shared by every type and stay
 -- untagged, so a jump to one keeps the shown type.
 local function RegisterHeaderSearch(valueType)
-    local L = CUI.L
+    local Loc = CUI.L
     local module, page = CUI._buildingModule, CUI._buildingPage
     local entries = {
         { TYPE_INFO[valueType].precision, TYPE_INFO[valueType].tip },
@@ -385,7 +385,7 @@ local function RegisterHeaderSearch(valueType)
     }
     for _, entry in ipairs(entries) do
         local label, tip = entry[1], entry[2]
-        local localized = L(label)
+        local localized = Loc(label)
         CUI._RegisterSearchEntry(
             label,
             localized ~= label and localized or nil,

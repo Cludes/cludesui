@@ -1116,8 +1116,8 @@ local function ShowRoll(key, itemLink, itemName, winner, class, roll, retried)
     local textValue
     if winner then
         -- The suite's class colour (custom class colours included); an unknown class stays uncoloured.
-        local cc = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
-        if cc then winner = CUI.HexColor(cc.r, cc.g, cc.b) .. winner .. "|r" end
+        local classColor = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
+        if classColor then winner = CUI.HexColor(classColor.r, classColor.g, classColor.b) .. winner .. "|r" end
         textValue = CUI.Lf("%s won %s", winner, entry)
     else
         textValue = CUI.Lf("Everyone passed on %s", entry)

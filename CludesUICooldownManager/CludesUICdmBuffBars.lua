@@ -219,9 +219,9 @@ local _classR, _classG, _classB = 0.30, 0.79, 0.94
 do
     local _, classTok = UnitClass("player")
     if classTok then
-        local cc = RAID_CLASS_COLORS[classTok]
-        if cc then
-            _classR, _classG, _classB = cc.r, cc.g, cc.b
+        local classColor = RAID_CLASS_COLORS[classTok]
+        if classColor then
+            _classR, _classG, _classB = classColor.r, classColor.g, classColor.b
         end
     end
 end

@@ -4,7 +4,7 @@ local CUI = CludesUI
 -- Travel block factory (hearthstones and M+ teleports).
 
 local ADDON_NAME, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 -- Upvalues
@@ -300,7 +300,7 @@ local function TravelHouseName(hgt)
     if num and not issecretvalue(num) and num ~= "" and not num:match("^Home%-opaque%-%d+$") then
         return num
     end
-    return L["HOME"]
+    return Loc["HOME"]
 end
 
 local function TravelCanReturnHome()
@@ -510,19 +510,19 @@ local function TravelAddAltRows(ar, ag, ab, onRemoved)
     if num == 0 then return 0 end
     table.sort(_altBuf, TravelAltSort)
     mod.Tip_AddLine(" ")
-    mod.Tip_AddLine(L["OTHER_CHARACTERS"], ar, ag, ab)
+    mod.Tip_AddLine(Loc["OTHER_CHARACTERS"], ar, ag, ab)
     local nowTime = time()
     for index = 1, num do
         local e = _altBuf[index]
-        local cc = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
+        local classColor = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
         local cr, cg, callback = 1, 1, 1
-        if cc then
-            cr, cg, callback = cc.r, cc.g, cc.b
+        if classColor then
+            cr, cg, callback = classColor.r, classColor.g, classColor.b
         end
         local rem = (e.readyAt or 0) - nowTime
-        local cooldownText, rr, rg, rb = L["READY"], 0, 1, 0
+        local cooldownText, rr, rg, rb = Loc["READY"], 0, 1, 0
         if rem > 0 then
-            cooldownText = mod.FormatCooldown(rem) or L["READY"]
+            cooldownText = mod.FormatCooldown(rem) or Loc["READY"]
             rr, rg, rb = 0.5, 0.5, 0.5
         end
         local key = _altKeyOf[e]
@@ -571,20 +571,20 @@ local HOUSE_ZONE_LABELS = { [2352] = "HOME_ALLIANCE", [2351] = "HOME_HORDE" } --
 local function TravelBarDestination(pick, tagHouses)
     local hgt = TravelFindHouse(pick)
     if hgt then
-        if not tagHouses then return CUI.L(L["HOME"]) end
+        if not tagHouses then return CUI.L(Loc["HOME"]) end
         local frame = C_Housing.GetUIMapIDForNeighborhood
         local success, mapID = false, nil
         if frame then
             success, mapID = pcall(frame, hgt.neighborhoodGUID)
         end
         local key = success and HOUSE_ZONE_LABELS[mapID]
-        if key then return CUI.L(L[key]) end
+        if key then return CUI.L(Loc[key]) end
         return CUI.L(TravelHouseName(hgt))
     end
     if TRAVEL_EXTRA_SET[pick] and TravelExtraKind(pick) then
         local skinData = TRAVEL_DESTINATIONS[pick]
         local name = skinData
-            and ((skinData.global and _G[skinData.global]) or (skinData.key and CUI.L(L[skinData.key])))
+            and ((skinData.global and _G[skinData.global]) or (skinData.key and CUI.L(Loc[skinData.key])))
         if name then return name end
         if pick ~= 556 then return TravelEntryName(pick) end -- Astral Recall: the bind point
     end
@@ -663,7 +663,7 @@ local function TravelBarText(deltaTime, bind, plain)
                 elseif mode == "both" then
                     part = cooldownText and (dest .. " " .. cooldownText) or dest
                 else
-                    part = cooldownText or (isKnown and CUI.L(L["READY"]) or "-")
+                    part = cooldownText or (isKnown and CUI.L(Loc["READY"]) or "-")
                 end
             end
             local dup = false
@@ -756,13 +756,13 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_Begin(hearthBtn)
         -- Hover-persistent like the spec tip: the cursor can travel onto it to click ready teleport rows, even when no row is clickable right now.
         mod.Tip_MarkInteractive()
-        mod.Tip_AddLine("|cFFFFFFFF[|r" .. L["TRAVEL_COOLDOWNS"] .. "|cFFFFFFFF]|r", ar, ag, ab)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. Loc["TRAVEL_COOLDOWNS"] .. "|cFFFFFFFF]|r", ar, ag, ab)
         mod.Tip_AddLine(" ")
         local cd2, cdKnown = TravelGetPrimaryCooldown()
         local cooldownText
         if cdKnown then
             cooldownText = mod.FormatCooldown(cd2)
-            if not cooldownText then cooldownText = L["READY"] end
+            if not cooldownText then cooldownText = Loc["READY"] end
         else
             cooldownText = "-"
         end
@@ -774,7 +774,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
         -- Click-to-use when ready (shared overlay), always a hearthstone: the left click's when
         -- it is one. White while ready, M+ "On Cooldown" gray otherwise; plain label so state and
         -- hover color the whole line; the plain-state row is pad-marked to match the clickable row.
-        local hsLabel = L["HEARTHSTONE"] .. " (" .. (GetBindLocation() or "?") .. ")"
+        local hsLabel = Loc["HEARTHSTONE"] .. " (" .. (GetBindLocation() or "?") .. ")"
         local hsMacro
         if ready then
             local pick = TravelClickChoice(D(), 1)
@@ -819,7 +819,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
                     local tstr
                     if tKnown then
                         tstr = mod.FormatCooldown(tcd)
-                        if not tstr then tstr = L["READY"] end
+                        if not tstr then tstr = Loc["READY"] end
                     else
                         tstr = "-"
                     end
@@ -865,11 +865,11 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
             local hstr, hready = "-", false
             local returnTrip = TravelCanReturnHome()
             if returnTrip then
-                hstr, hready = L["RETURN_AVAILABLE"], true
+                hstr, hready = Loc["RETURN_AVAILABLE"], true
             else
                 local rem, isKnown = TravelHouseCooldown()
                 if isKnown then
-                    hstr = mod.FormatCooldown(rem) or L["READY"]
+                    hstr = mod.FormatCooldown(rem) or Loc["READY"]
                     hready = rem <= 0
                 end
             end
@@ -924,7 +924,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
         end
         if _mythicLineCount > 0 then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(L["MYTHIC_TELEPORTS"], ar, ag, ab)
+            mod.Tip_AddLine(Loc["MYTHIC_TELEPORTS"], ar, ag, ab)
             -- Insertion sort on active entries only (max ~8)
             for index = 2, _mythicLineCount do
                 local jdx = index
@@ -951,17 +951,17 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
                 elseif e.cd <= 0 then
                     -- Ready teleport: left-click casts it (secure overlay button
                     -- keyed to the static spell ID; row highlights on hover).
-                    mod.Tip_AddActionDouble(e.name, L["READY"], e.spellId, 0.8, 0.8, 0.8, 0, 1, 0)
+                    mod.Tip_AddActionDouble(e.name, Loc["READY"], e.spellId, 0.8, 0.8, 0.8, 0, 1, 0)
                 elseif not cdMin or e.cd < cdMin then
                     cdMin = e.cd
                 end
             end
             if cdMin then
                 local cs = mod.FormatCooldown(cdMin)
-                if not cs then cs = L["READY"] end
-                mod.Tip_AddDouble(L["ON_COOLDOWN"], cs, 0.65, 0.65, 0.65, 0.5, 0.5, 0.5)
+                if not cs then cs = Loc["READY"] end
+                mod.Tip_AddDouble(Loc["ON_COOLDOWN"], cs, 0.65, 0.65, 0.65, 0.5, 0.5, 0.5)
             elseif cdUnknown then
-                mod.Tip_AddDouble(L["ON_COOLDOWN"], "-", 0.65, 0.65, 0.65, 0.5, 0.5, 0.5)
+                mod.Tip_AddDouble(Loc["ON_COOLDOWN"], "-", 0.65, 0.65, 0.65, 0.5, 0.5, 0.5)
             end
         end
         mod.Tip_AddLine(" ")
@@ -971,22 +971,22 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
                 local what
                 local hgt = TravelFindHouse(pick)
                 if pick == "random" then
-                    what = L["RANDOM_HEARTHSTONE"]
+                    what = Loc["RANDOM_HEARTHSTONE"]
                 elseif hgt then
-                    what = TravelCanReturnHome() and L["RETURN_FROM_HOME"] or TravelHouseName(hgt)
+                    what = TravelCanReturnHome() and Loc["RETURN_FROM_HOME"] or TravelHouseName(hgt)
                 elseif TRAVEL_EXTRA_SET[pick] and TravelExtraKind(pick) then
-                    what = TravelEntryName(pick) or L["USE_HEARTHSTONE"]
+                    what = TravelEntryName(pick) or Loc["USE_HEARTHSTONE"]
                 else
-                    what = L["USE_HEARTHSTONE"]
+                    what = Loc["USE_HEARTHSTONE"]
                 end
-                local labelText = (button == 1 and L["LEFT_CLICK"])
-                    or (button == 2 and L["RIGHT_CLICK"])
-                    or L["MIDDLE_CLICK"]
+                local labelText = (button == 1 and Loc["LEFT_CLICK"])
+                    or (button == 2 and Loc["RIGHT_CLICK"])
+                    or Loc["MIDDLE_CLICK"]
                 mod.Tip_AddDouble(labelText, what, 1, 1, 1, ar, ag, ab)
             end
         end
         if altRows > 0 then
-            mod.Tip_AddDouble(L["CTRL_ALT_LEFT_CLICK"], L["REMOVE_CHARACTER"], 1, 1, 1, ar, ag, ab)
+            mod.Tip_AddDouble(Loc["CTRL_ALT_LEFT_CLICK"], Loc["REMOVE_CHARACTER"], 1, 1, 1, ar, ag, ab)
         end
         mod.Tip_Show()
     end

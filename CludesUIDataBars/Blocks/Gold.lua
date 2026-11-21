@@ -23,7 +23,7 @@ local CUI = CludesUI
 --  default text colour (set once per block, below).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local format, concat = string.format, table.concat
@@ -335,17 +335,17 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
         local tracking = Ledger.IsTracking()
         local withChars = cfg.tipCharacters ~= false and tracking
         mod.Tip_Begin(button)
-        mod.Tip_AddLine(L["GOLD"], 1, 1, 1)
+        mod.Tip_AddLine(Loc["GOLD"], 1, 1, 1)
         if cfg.tipSession ~= false then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(L["SESSION"], 0.8, 0.8, 0.8)
-            mod.Tip_AddDouble(L["EARNED"], Money(session.earned), 0.6, 0.6, 0.6, 0, 1, 0)
-            mod.Tip_AddDouble(L["SPENT"], Money(session.spent), 0.6, 0.6, 0.6, 1, 0.3, 0.3)
+            mod.Tip_AddLine(Loc["SESSION"], 0.8, 0.8, 0.8)
+            mod.Tip_AddDouble(Loc["EARNED"], Money(session.earned), 0.6, 0.6, 0.6, 0, 1, 0)
+            mod.Tip_AddDouble(Loc["SPENT"], Money(session.spent), 0.6, 0.6, 0.6, 1, 0.3, 0.3)
             local net = session.earned - session.spent
             if net > 0 then
-                mod.Tip_AddDouble(L["PROFIT"], Money(net), 0.6, 0.6, 0.6, 0, 1, 0.3)
+                mod.Tip_AddDouble(Loc["PROFIT"], Money(net), 0.6, 0.6, 0.6, 0, 1, 0.3)
             elseif net < 0 then
-                mod.Tip_AddDouble(L["DEFICIT"], Money(abs(net)), 0.6, 0.6, 0.6, 1, 0.3, 0.3)
+                mod.Tip_AddDouble(Loc["DEFICIT"], Money(abs(net)), 0.6, 0.6, 0.6, 1, 0.3, 0.3)
             end
         end
         local listed, unlisted = 0, 0 -- unlisted: characters left out (the hint offers them)
@@ -400,7 +400,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                     end
                 end
                 if left > 0 then
-                    mod.Tip_AddLine(format(L["PLUS_N_MORE"], left), 0.6, 0.6, 0.6)
+                    mod.Tip_AddLine(format(Loc["PLUS_N_MORE"], left), 0.6, 0.6, 0.6)
                     unlisted = unlisted + left
                 end
             end
@@ -421,27 +421,27 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                 sum = sum + bank
             end
             mod.Tip_AddLine(" ")
-            mod.Tip_AddDouble(L["TOTAL"], Money(sum), 1, 1, 1, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["TOTAL"], Money(sum), 1, 1, 1, 1, 1, 1)
         elseif not tracking and cfg.tipCharacters ~= false then
             mod.Tip_AddLine(" ")
             mod.Tip_AddLine(CUI.L("Account gold tracking is disabled"), 0.6, 0.6, 0.6)
         end
         if cfg.tipToken ~= false and session.tokenPrice and session.tokenPrice > 0 then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddDouble(L["WOW_TOKEN"], Money(session.tokenPrice), 0, 0.8, 1, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["WOW_TOKEN"], Money(session.tokenPrice), 0, 0.8, 1, 1, 1, 1)
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_BAGS"], 1, 1, 1, 1, 1, 1)
-        mod.Tip_AddDouble(L["RIGHT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, 1, 1, 1)
-        mod.Tip_AddDouble(L["CTRL_RIGHT_CLICK"], L["RESET_SESSION"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["OPEN_BAGS"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["RIGHT_CLICK"], Loc["OPEN_CURRENCIES"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["CTRL_RIGHT_CLICK"], Loc["RESET_SESSION"], 1, 1, 1, 1, 1, 1)
         if withChars then
-            mod.Tip_AddDouble(L["CTRL_SHIFT_RIGHT_CLICK"], L["RESET_ALL_DATA"], 1, 1, 1, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["CTRL_SHIFT_RIGHT_CLICK"], Loc["RESET_ALL_DATA"], 1, 1, 1, 1, 1, 1)
         end
         if listed > 1 then
-            mod.Tip_AddDouble(L["CTRL_ALT_LEFT_CLICK"], L["REMOVE_CHARACTER"], 1, 1, 1, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["CTRL_ALT_LEFT_CLICK"], Loc["REMOVE_CHARACTER"], 1, 1, 1, 1, 1, 1)
         end
         if unlisted > 0 then
-            mod.Tip_AddDouble(L["SHIFT_HOVER"], L["SHOW_EVERY_CHARACTER"], 1, 1, 1, 1, 1, 1)
+            mod.Tip_AddDouble(Loc["SHIFT_HOVER"], Loc["SHOW_EVERY_CHARACTER"], 1, 1, 1, 1, 1, 1)
         end
         mod.Tip_Show()
     end

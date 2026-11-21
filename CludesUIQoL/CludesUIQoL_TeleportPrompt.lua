@@ -211,14 +211,14 @@ BuildPopup = function()
 
     -- The cooldown inherits the button's protection, so anchor it to the button
     -- FRAME (matching the icon's position/size), never to the icon texture.
-    local cd = CreateFrame("Cooldown", nil, secureBtn, "CooldownFrameTemplate")
-    cd:SetPoint("LEFT", secureBtn, "LEFT", 8, 0)
-    cd:SetSize(40, 40)
-    cd:SetHideCountdownNumbers(true)
-    cd:SetDrawSwipe(true)
-    cd:SetDrawBling(false)
-    cd:SetDrawEdge(false)
-    secureBtn._cd = cd
+    local cdFrame = CreateFrame("Cooldown", nil, secureBtn, "CooldownFrameTemplate")
+    cdFrame:SetPoint("LEFT", secureBtn, "LEFT", 8, 0)
+    cdFrame:SetSize(40, 40)
+    cdFrame:SetHideCountdownNumbers(true)
+    cdFrame:SetDrawSwipe(true)
+    cdFrame:SetDrawBling(false)
+    cdFrame:SetDrawEdge(false)
+    secureBtn._cd = cdFrame
 
     secureBtn:SetScript("OnEnter", function(self)
         local spellRef = pendingSpellID

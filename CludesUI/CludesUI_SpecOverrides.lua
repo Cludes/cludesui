@@ -280,7 +280,7 @@ local ROLE_ICONS = {
 }
 local ROLE_ORDER = { "TANK", "HEALER", "DAMAGER" }
 
-local L = function(s) return CUI.L(s) or s end
+local Loc = function(s) return CUI.L(s) or s end
 
 -- Forward declarations
 local RequestGoldWalk -- assigned by CUI_SpecOverrides_Borders.lua
@@ -416,7 +416,7 @@ function CUI._SO_ForeverGroupNames(specs, curSpec)
     end
     if inactive then
         result[#result + 1] =
-            string.format(L("Inactive on WoW Forever: this character uses %s"), SpecName(curSpec))
+            string.format(Loc("Inactive on WoW Forever: this character uses %s"), SpecName(curSpec))
     end
     return result
 end
@@ -917,7 +917,7 @@ CUI_NS.NewInternals(CUI_NS, "_soInternals", {
     GOLD_R = GOLD_R,
     GroupById = GroupById,
     HasRegisteredDefault = HasRegisteredDefault,
-    L = L,
+    L = Loc,
     LayerOwnedFKey = LayerOwnedFKey,
     LIST_PAGE = LIST_PAGE,
     MatchOwnedFKey = MatchOwnedFKey,

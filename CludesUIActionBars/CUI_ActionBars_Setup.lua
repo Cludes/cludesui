@@ -1234,9 +1234,9 @@ function ABAR:FinishSetup()
                                     bindToken = (t2 or "-") .. (ident or 0) .. (st or "")
                                 end
                                 signature[#signature + 1] = bindToken
-                                local fd = EFD(button)
-                                if fd.spellsTok ~= bindToken then
-                                    fd.spellsTok = bindToken
+                                local frameData = EFD(button)
+                                if frameData.spellsTok ~= bindToken then
+                                    frameData.spellsTok = bindToken
                                     if not coldStart then
                                         if not didChange then
                                             didChange = {}

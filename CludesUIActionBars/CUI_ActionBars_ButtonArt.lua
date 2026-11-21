@@ -294,9 +294,9 @@ _quickKeybindState.art.ApplyButtonHighlight = function(buttonFrame)
     if useCC then
         local _, countText = UnitClass("player")
         if countText then
-            local cc = RAID_CLASS_COLORS[countText]
-            if cc then
-                cr, cg, callback = cc.r, cc.g, cc.b
+            local classColor = RAID_CLASS_COLORS[countText]
+            if classColor then
+                cr, cg, callback = classColor.r, classColor.g, classColor.b
             end
         end
     end
@@ -1201,9 +1201,9 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
         if profile then
             if profile.cooldownEdgeUseClassColor then
                 local _, classTok = UnitClass("player")
-                local cc = RAID_CLASS_COLORS[classTok]
-                if cc then
-                    cr, cg, callback = cc.r, cc.g, cc.b
+                local classColor = RAID_CLASS_COLORS[classTok]
+                if classColor then
+                    cr, cg, callback = classColor.r, classColor.g, classColor.b
                 end
                 ca = (profile.cooldownEdgeColor and profile.cooldownEdgeColor.a) or 1
             elseif profile.cooldownEdgeColor then

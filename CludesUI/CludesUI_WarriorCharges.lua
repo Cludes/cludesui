@@ -127,8 +127,8 @@ end
 HostRecolor = function(HostRec, powerKey, red, green, blue, a)
     if HostRec.armed ~= powerKey then return end
     HostRec.pendR, HostRec.pendG, HostRec.pendB, HostRec.pendA = red, green, blue, a
-    local st = HostRec.ph[powerKey]
-    local bft = st and st.bft
+    local powerSet = HostRec.ph[powerKey]
+    local bft = powerSet and powerSet.bft
     if not bft then return end -- not built yet: stash only, no write to try
     if HostRec.lastR == red and HostRec.lastG == green and HostRec.lastB == blue and HostRec.lastA == a then
         return
@@ -148,8 +148,8 @@ end
 local function BuildHostPhase(HostRec, powerKey, options)
     local AK = CUI.AuraKit
     local conf = PHASES[powerKey]
-    local st = HostRec.ph[powerKey]
-    if st.container then return end
+    local powerSet = HostRec.ph[powerKey]
+    if powerSet.container then return end
 
     local styleKey = "war:" .. HostRec.key .. ":" .. powerKey
     AK.styles[styleKey] = AK.styles[styleKey] or { noRegions = true, width = 1, height = 1 }
@@ -188,7 +188,7 @@ local function BuildHostPhase(HostRec, powerKey, options)
             -- host's row for as long as the buff is up.
             if btnFrame.SetMouseClickEnabled then btnFrame:SetMouseClickEnabled(false) end
             if btnFrame.SetMouseMotionEnabled then btnFrame:SetMouseMotionEnabled(false) end
-            st.btn = btnFrame
+            powerSet.btn = btnFrame
 
             local bar = CreateFrame("StatusBar", nil, btnFrame)
             bar:SetAllPoints(btnFrame)
@@ -216,12 +216,12 @@ local function BuildHostPhase(HostRec, powerKey, options)
                 btnFrame:SetApplicationBar(bar, barOpts)
             end)
             if not success then
-                st.err = err
+                powerSet.err = err
                 return
             end
-            st.bar = bar
-            st.bft = bft
-            st.regMax = maxApps
+            powerSet.bar = bar
+            powerSet.bft = bft
+            powerSet.regMax = maxApps
 
             -- Threshold apparatus, baked IN-WINDOW (the only moment subtree
             -- creation is always legal): one mask riding the fill texture's
@@ -233,23 +233,23 @@ local function BuildHostPhase(HostRec, powerKey, options)
             -- unrestricted, pcall'd with a lift re-apply under restriction.
             -- ARTWORK on the bar draws above the fill; the separator ticks
             -- live at +4 above all of it.
-            st.thMask = bar:CreateMaskTexture()
-            st.thMask:SetTexture(
+            powerSet.thMask = bar:CreateMaskTexture()
+            powerSet.thMask:SetTexture(
                 "Interface\\Buttons\\WHITE8x8",
                 "CLAMPTOBLACKADDITIVE",
                 "CLAMPTOBLACKADDITIVE",
                 "NEAREST"
             )
-            st.thMask:SetAllPoints(bft)
-            st.thStrips = {}
+            powerSet.thMask:SetAllPoints(bft)
+            powerSet.thStrips = {}
             for idx = 1, 5 do
                 -- Sublevels +1..+5: the StatusBar fill texture draws at
                 -- ARTWORK sublevel 0, and strips below it never render
                 -- (field-proven). Ticks stay above on the +4 sepHost frame.
                 local strip = bar:CreateTexture(nil, "ARTWORK", nil, idx)
-                strip:AddMaskTexture(st.thMask)
+                strip:AddMaskTexture(powerSet.thMask)
                 strip:Hide()
-                st.thStrips[idx] = strip
+                powerSet.thStrips[idx] = strip
             end
 
             -- Count text (opt-in per host): engine-stamped true count via
@@ -298,35 +298,35 @@ local function BuildHostPhase(HostRec, powerKey, options)
                         if okB then fmt = nf end
                     end
                     btnFrame:SetApplicationCount(fontStr, fmt and { formatter = fmt } or nil)
-                    st.tc, st.fs = tc, fontStr
+                    powerSet.tc, powerSet.fs = tc, fontStr
                     tc:SetShown(options.text.shown and true or false)
                 end)
-                if not okT then st.textErr = errT end
+                if not okT then powerSet.textErr = errT end
             end
         end,
     })
     AK.FinishContainer(boxHolder, "player")
-    st.container = boxHolder
-    st.built = true
+    powerSet.container = boxHolder
+    powerSet.built = true
 end
 
 local function EnsureHostBuilt(HostRec, powerKey, options)
-    local st = HostRec.ph[powerKey]
-    if not st then
-        st = {}
-        HostRec.ph[powerKey] = st
+    local powerSet = HostRec.ph[powerKey]
+    if not powerSet then
+        powerSet = {}
+        HostRec.ph[powerKey] = powerSet
     end
-    if st.built or st.queued or st.err then return end
+    if powerSet.built or powerSet.queued or powerSet.err then return end
     local AK = CUI.AuraKit
     if not (AK and AK.QueueBuildJob) then return end
-    st.queued = true
+    powerSet.queued = true
     AK.QueueBuildJob(function()
-        st.queued = nil
+        powerSet.queued = nil
         -- Latched, not retried: a hard build failure must not re-enter on
         -- every consumer pass and turn one broken container into a storm.
         local success, err = pcall(BuildHostPhase, HostRec, powerKey, options)
         if not success then
-            st.err = err
+            powerSet.err = err
             return
         end
         -- The build was deferred past the Sync that requested it: re-run the
@@ -541,8 +541,8 @@ local function HostThresholds(
     reverse
 )
     if HostRec.armed ~= powerKey then return end
-    local st = HostRec.ph[powerKey]
-    local num = (st and st.regMax) or 0
+    local powerSet = HostRec.ph[powerKey]
+    local num = (powerSet and powerSet.regMax) or 0
     -- v1: "Up to" modes render nothing (no engine expression).
     if reverse then total = nil end
     if bandReverse then bandOn = false end
@@ -648,14 +648,14 @@ HostSyncByKey = function(HostRec, widget, powerKey, options)
     if HostRec.armed ~= powerKey then HostRec.lastR = nil end -- phase swap: re-apply color
     HostRec.armed = powerKey
     HostRec.syncFrame, HostRec.syncOpts = widget, options
-    local st = HostRec.ph[powerKey]
-    if not (st and st.built) then
+    local powerSet = HostRec.ph[powerKey]
+    if not (powerSet and powerSet.built) then
         EnsureHostBuilt(HostRec, powerKey, options)
         -- Nothing to show yet (sub-second build window): row stays empty.
         if HostRec.proxy then HostRec.proxy:Hide() end
         return
     end
-    if st.err or not st.bar then
+    if powerSet.err or not powerSet.bar then
         if HostRec.proxy then HostRec.proxy:Hide() end
         return
     end
@@ -669,35 +669,35 @@ HostSyncByKey = function(HostRec, widget, powerKey, options)
         HostRec.proxy:SetAllPoints(widget)
     end
     local lvl = options.manualAttach and HostRec.proxy:GetFrameLevel() or widget:GetFrameLevel()
-    st.container:SetFrameLevel(lvl + 1)
-    st.container:Show()
+    powerSet.container:SetFrameLevel(lvl + 1)
+    powerSet.container:Show()
     -- Talent-dependent cap (Broad Strokes): re-register the bar when the
     -- effective max changes. Post-window button calls are denied under
     -- restriction: pcall, and a denial re-applies at the lift (which re-runs
     -- this Sync). The ticks below always follow the REGISTERED max, so a
     -- denied re-register never splits fill scale from tick count.
     local wantMax = EffectiveMaxApps(powerKey, conf)
-    if st.regMax ~= wantMax and st.btn and st.bar then
+    if powerSet.regMax ~= wantMax and powerSet.btn and powerSet.bar then
         local okR = pcall(function()
             local barOpts = { maxApplications = wantMax }
             if Enum.StatusBarInterpolation then
                 barOpts.interpolation = Enum.StatusBarInterpolation.Immediate
             end
-            st.btn:SetApplicationBar(st.bar, barOpts)
+            powerSet.btn:SetApplicationBar(powerSet.bar, barOpts)
         end)
         if okR then
-            st.regMax = wantMax
+            powerSet.regMax = wantMax
         else
             HostRec.dirty = true
             HookLift()
         end
     end
-    StyleSeparators(HostRec, options.manualAttach and HostRec.proxy or widget, options, st.regMax or wantMax)
+    StyleSeparators(HostRec, options.manualAttach and HostRec.proxy or widget, options, powerSet.regMax or wantMax)
     -- Stashed for mid-session threshold restyles (settings edit between
     -- Syncs); NOT a resize-heal mechanism.
     HostRec.lastStyleFrame = options.manualAttach and HostRec.proxy or widget
     HostRec.lastStyleOpts = options
-    HostRec.lastStyleN = st.regMax or wantMax
+    HostRec.lastStyleN = powerSet.regMax or wantMax
     StyleThresholds(HostRec, HostRec.lastStyleFrame, options, HostRec.lastStyleN)
     -- +4, not +1..+3: the engine subtree stacks container(+1) -> slot button
     -- -> fill bar, so the fill paints around +2/+3 (its exact level cannot be
@@ -705,8 +705,8 @@ HostSyncByKey = function(HostRec, widget, powerKey, options)
     HostRec.sepHost:SetFrameLevel(lvl + 4)
     -- Count text visibility rides every Sync (the carrier is ours to toggle;
     -- the fontstring itself is engine-fed). Denied writes defer to the lift.
-    if st.tc and options.text then
-        if not pcall(st.tc.SetShown, st.tc, options.text.shown and true or false) then
+    if powerSet.tc and options.text then
+        if not pcall(powerSet.tc.SetShown, powerSet.tc, options.text.shown and true or false) then
             HostRec.dirty = true
             HookLift()
         end
@@ -721,8 +721,8 @@ end
 
 local function HostEngineOn(HostRec, powerKey)
     if not HostRec or HostRec.armed ~= powerKey then return false end
-    local st = HostRec.ph[powerKey]
-    return (st and st.built and st.bar and not st.err) and true or false
+    local powerSet = HostRec.ph[powerKey]
+    return (powerSet and powerSet.built and powerSet.bar and not powerSet.err) and true or false
 end
 
 -------------------------------------------------------------------------------

@@ -82,12 +82,12 @@ local function CooldownsNotReady()
     local _, class = UnitClass("player")
     for ident, details in pairs(presets or {}) do
         if details.class == class and IsPlayerSpell(ident) then
-            local cd = C_Spell.GetSpellCooldown(ident)
+            local cdInfo = C_Spell.GetSpellCooldown(ident)
             if
-                cd
-                and not (issecretvalue and issecretvalue(cd.duration))
-                and cd.duration
-                and cd.duration > 1.5
+                cdInfo
+                and not (issecretvalue and issecretvalue(cdInfo.duration))
+                and cdInfo.duration
+                and cdInfo.duration > 1.5
             then
                 local name = C_Spell.GetSpellName(ident)
                 if type(name) == "string" then result[#result + 1] = name end

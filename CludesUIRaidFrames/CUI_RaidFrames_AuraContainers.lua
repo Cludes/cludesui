@@ -2058,13 +2058,13 @@ local function BmSquareInit(btnFrame, dropdown, look, indicator, healthBar)
     dropdown.tex = btnFrame:CreateTexture(nil, "ARTWORK")
     dropdown.tex:SetAllPoints(btnFrame)
 
-    local cd = CreateFrame("Cooldown", nil, btnFrame, "CooldownFrameTemplate")
-    cd:SetAllPoints(btnFrame)
-    cd:SetReverse(true)
-    cd:SetDrawEdge(false)
-    cd:SetHideCountdownNumbers(true)
-    dropdown.cooldown = cd
-    btnFrame:SetDurationCooldown(cd)
+    local cdFrame = CreateFrame("Cooldown", nil, btnFrame, "CooldownFrameTemplate")
+    cdFrame:SetAllPoints(btnFrame)
+    cdFrame:SetReverse(true)
+    cdFrame:SetDrawEdge(false)
+    cdFrame:SetHideCountdownNumbers(true)
+    dropdown.cooldown = cdFrame
+    btnFrame:SetDurationCooldown(cdFrame)
 
     dropdown.borderHost = CreateFrame("Frame", nil, btnFrame)
     dropdown.borderHost:SetAllPoints(btnFrame)
@@ -2074,7 +2074,7 @@ local function BmSquareInit(btnFrame, dropdown, look, indicator, healthBar)
     -- the swipe). Fonts MUST be applied before the engine registrations below.
     dropdown.stackCarrier = CreateFrame("Frame", nil, btnFrame)
     dropdown.stackCarrier:SetAllPoints(btnFrame)
-    dropdown.stackCarrier:SetFrameLevel(cd:GetFrameLevel() + 1)
+    dropdown.stackCarrier:SetFrameLevel(cdFrame:GetFrameLevel() + 1)
     dropdown.stack = dropdown.stackCarrier:CreateFontString(nil, "OVERLAY")
     dropdown.duration = dropdown.stackCarrier:CreateFontString(nil, "OVERLAY")
 

@@ -18,7 +18,7 @@ local CUI = CludesUI
 --  "to level" / faction name). blockCfg.labelAlign places the label.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local InCombatLockdown = InCombatLockdown
@@ -335,7 +335,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         mod.Tip_AddLine(state.label ~= "" and state.label or state.tooltipLabel, 1, 1, 1)
         if state.maxV and state.maxV > 1 then
             mod.Tip_AddDouble(
-                L["PROGRESS"],
+                Loc["PROGRESS"],
                 Number(state.curV) .. " / " .. Number(state.maxV),
                 0.6,
                 0.6,
@@ -346,11 +346,11 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             )
         end
         if state.rested and state.rested > 0 then
-            mod.Tip_AddDouble(L["RESTED"], Number(state.rested), 0.6, 0.6, 0.6, 0.3, 0.3, 1)
+            mod.Tip_AddDouble(Loc["RESTED"], Number(state.rested), 0.6, 0.6, 0.6, 0.3, 0.3, 1)
         end
         mod.Tip_AddLine(" ")
-        local switch = mode == "xp" and L["SWITCH_TO_REP"] or L["SWITCH_TO_XP"]
-        mod.Tip_AddDouble(L["RIGHT_CLICK"], switch, 1, 1, 1, red, green, blue)
+        local switch = mode == "xp" and Loc["SWITCH_TO_REP"] or Loc["SWITCH_TO_XP"]
+        mod.Tip_AddDouble(Loc["RIGHT_CLICK"], switch, 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end)
     hit:SetScript("OnLeave", function() mod.Tip_Hide(hit) end)

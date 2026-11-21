@@ -16,7 +16,7 @@ if CUI.IS_FOREVER then return end -- no Great Vault on WoW Forever (the main fil
 --  tooltip in place. Replies are kept only for current group members.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local format, floor, max, min = string.format, math.floor, math.max, math.min
@@ -361,7 +361,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], CUI.L("Open Great Vault"), 1, 1, 1, red, green, blue)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], CUI.L("Open Great Vault"), 1, 1, 1, red, green, blue)
         mod.Tip_Show()
         return count
     end

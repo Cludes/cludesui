@@ -799,8 +799,8 @@ local function ResolveGlowColor(ss)
     if ss.glowColor == "class" then
         local _, classTok = UnitClass("player")
         if classTok then
-            local cc = RAID_CLASS_COLORS[classTok]
-            if cc then return cc.r, cc.g, cc.b end
+            local classColor = RAID_CLASS_COLORS[classTok]
+            if classColor then return classColor.r, classColor.g, classColor.b end
         end
     elseif ss.glowColor == "custom" and ss.glowColorR ~= nil then
         return ss.glowColorR, ss.glowColorG or 0.788, ss.glowColorB or 0.137
@@ -813,10 +813,10 @@ mod.ResolveGlowColor = ResolveGlowColor
 -- Show proc glow on one of our icons. Uses per-spell settings if available.
 local function ShowProcGlow(iconTex, cr, cg, callback)
     if not iconTex then return end
-    local fd = _getFD(iconTex)
-    local glow = fd and fd.glowOverlay or iconTex._glowOverlay
+    local frameData = _getFD(iconTex)
+    local glow = frameData and frameData.glowOverlay or iconTex._glowOverlay
     if not glow then return end
-    if fd and fd.procGlowActive then return end
+    if frameData and frameData.procGlowActive then return end
 
     local fc = _ecmeFC[iconTex]
     -- Force Shape Glow (style 2) for custom-shaped icons (any but none/cropped)
@@ -847,9 +847,9 @@ local function ShowProcGlow(iconTex, cr, cg, callback)
             elseif ss.procGlowClassColor then
                 local _, classTok = UnitClass("player")
                 if classTok then
-                    local cc = RAID_CLASS_COLORS[classTok]
-                    if cc then
-                        cr, cg, callback = cc.r, cc.g, cc.b
+                    local classColor = RAID_CLASS_COLORS[classTok]
+                    if classColor then
+                        cr, cg, callback = classColor.r, classColor.g, classColor.b
                     end
                 end
             elseif ss.procGlowR ~= nil then
@@ -870,15 +870,15 @@ local function ShowProcGlow(iconTex, cr, cg, callback)
     -- memo, so the memo-gated stop sites still take it down when its cooldown
     -- ends, proc or not.
     if glow._glowActive then StopNativeGlow(glow) end
-    if fd then
-        local bo = fd.blackoutOverlay
+    if frameData then
+        local bo = frameData.blackoutOverlay
         if not (bo and bo._glowActive) then
-            if fd._cdStateGlowOn or fd._presetCdGlowOn then fd._cdGlowOwed = true end
-            fd._cdStateGlowOn = false
+            if frameData._cdStateGlowOn or frameData._presetCdGlowOn then frameData._cdGlowOwed = true end
+            frameData._cdStateGlowOn = false
         end
     end
     StartNativeGlow(glow, style, cr, cg, callback)
-    if fd then fd.procGlowActive = true end
+    if frameData then frameData.procGlowActive = true end
 end
 
 local function StopProcGlow(iconTex)

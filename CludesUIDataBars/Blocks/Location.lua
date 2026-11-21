@@ -19,7 +19,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Zone events draw only when the name (or the instance state) changed.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local InCombatLockdown = InCombatLockdown
@@ -102,7 +102,7 @@ local function ShowTooltip(owner)
     local sr, sg, sb = K.ZoneReactionColor()
     mod.Tip_AddDouble(STATUS, Status(), 0.6, 0.6, 0.6, sr, sg, sb)
     mod.Tip_AddLine(" ")
-    mod.Tip_AddDouble(L["LEFT_CLICK"], L["TOGGLE_WORLD_MAP"], 1, 1, 1, red, green, blue)
+    mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["TOGGLE_WORLD_MAP"], 1, 1, 1, red, green, blue)
     mod.Tip_Show()
 end
 

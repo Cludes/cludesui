@@ -181,8 +181,8 @@ local function Place()
     if mod.Search_Rows then
         r1, r2, size = mod.Search_Rows()
     end
-    local sp = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
-    local st, pt = sp and sp:GetTop(), pve:GetTop()
+    local searchPane = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
+    local st, pt = searchPane and searchPane:GetTop(), pve:GetTop()
     local dy = (st and pt) and (st - pt) or 0
     local ref = _G.GroupFinderFrame and _G.GroupFinderFrame.groupButton1
     if type(ref) ~= "table" or not ref.GetLeft then ref = inset end
@@ -335,8 +335,8 @@ end
 
 -- Only shown on the Dungeons search, the only category it counts.
 local function InDungeonSearch()
-    local sp = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
-    return sp and sp:IsShown() and sp.categoryID == (GROUP_FINDER_CATEGORY_ID_DUNGEONS or 2) or false
+    local searchPane = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
+    return searchPane and searchPane:IsShown() and searchPane.categoryID == (GROUP_FINDER_CATEGORY_ID_DUNGEONS or 2) or false
 end
 
 -- The status event is registered only while the bar is on.
@@ -435,10 +435,10 @@ local function HookPVE()
     -- Next frame, after the skin lays the window out.
     pve:HookScript("OnShow", function() C_Timer.After(0, Apply) end)
     if pve:IsShown() then C_Timer.After(0, Apply) end
-    local sp = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
-    if sp then
-        sp:HookScript("OnShow", function() C_Timer.After(0, Apply) end)
-        sp:HookScript("OnHide", Apply)
+    local searchPane = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
+    if searchPane then
+        searchPane:HookScript("OnShow", function() C_Timer.After(0, Apply) end)
+        searchPane:HookScript("OnHide", Apply)
     end
 end
 

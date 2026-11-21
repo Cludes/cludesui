@@ -295,9 +295,9 @@ ResolveSwipeColor = function(spellSettings)
     if spellSettings and spellSettings.activeSwipeClassColor then
         local _, classTok = UnitClass("player")
         if classTok then
-            local cc = RAID_CLASS_COLORS[classTok]
-            if cc then
-                cr, cg, callback = cc.r, cc.g, cc.b
+            local classColor = RAID_CLASS_COLORS[classTok]
+            if classColor then
+                cr, cg, callback = classColor.r, classColor.g, classColor.b
             end
         end
     end

@@ -13,7 +13,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  turn the text lowColor, default soft red); reagent (count the reagent bag).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local C_Container = C_Container
@@ -158,7 +158,7 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
     local function ShowTooltip()
         local free, total = Count()
         mod.Tip_Begin(button)
-        mod.Tip_AddLine(L["BAGS"], 1, 1, 1)
+        mod.Tip_AddLine(Loc["BAGS"], 1, 1, 1)
         mod.Tip_AddLine(" ")
         local function Row(bag)
             local size = C_Container.GetContainerNumSlots(bag) or 0
@@ -181,10 +181,10 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
         end
         if Settings().reagent == true then Row(REAGENT_BAG) end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["FREE"], free .. "/" .. total, 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["FREE"], free .. "/" .. total, 1, 1, 1, 1, 1, 1)
         mod.Tip_AddLine(" ")
         local red, green, blue = mod.GetAccent()
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_BAGS"], 1, 1, 1, red, green, blue)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["OPEN_BAGS"], 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end
 

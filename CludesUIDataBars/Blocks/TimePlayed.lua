@@ -26,7 +26,7 @@ local CUI = CludesUI
 --  Settings (blockCfg.settings): alwaysTotal (show the total below max level).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 -- Kept as locals: the minute heartbeat runs these for as long as a block is on.
@@ -344,11 +344,11 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["TOTAL"], Duration(sum), 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["TOTAL"], Duration(sum), 1, 1, 1, 1, 1, 1)
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["CTRL_SHIFT_RIGHT_CLICK"], L["RESET_ALL_DATA"], 1, 1, 1, ar, ag, ab)
+        mod.Tip_AddDouble(Loc["CTRL_SHIFT_RIGHT_CLICK"], Loc["RESET_ALL_DATA"], 1, 1, 1, ar, ag, ab)
         if count > 1 then
-            mod.Tip_AddDouble(L["CTRL_ALT_LEFT_CLICK"], L["REMOVE_CHARACTER"], 1, 1, 1, ar, ag, ab)
+            mod.Tip_AddDouble(Loc["CTRL_ALT_LEFT_CLICK"], Loc["REMOVE_CHARACTER"], 1, 1, 1, ar, ag, ab)
         end
         mod.Tip_Show()
     end

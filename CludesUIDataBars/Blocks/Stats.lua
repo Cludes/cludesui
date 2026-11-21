@@ -18,7 +18,7 @@ local CUI = CludesUI
 --  Hovering any of them only recolours: nothing is measured again.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local InCombatLockdown = InCombatLockdown
@@ -311,18 +311,18 @@ mod.BlockFactories.fps = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_Begin(contentFrame)
         local fps = floor(GetFramerate())
         local red, green, blue = FPSColour(fps)
-        mod.Tip_AddDouble(L["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, red, green, blue)
+        mod.Tip_AddDouble(Loc["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, red, green, blue)
         if not fromTick then ScanMemory() end
         if #memory > 0 then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(L["MEMORY_USAGE"], 1, 1, 1)
+            mod.Tip_AddLine(Loc["MEMORY_USAGE"], 1, 1, 1)
             mod.Tip_AddLine(" ")
             for i = 1, min(10, #memory) do
                 mod.Tip_AddDouble(memory[i].name, Memory(memory[i].mem), 1, 1, 1, 1, 1, 1)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["SHIFT_LEFT_CLICK"], L["FORCE_GC"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["SHIFT_LEFT_CLICK"], Loc["FORCE_GC"], 1, 1, 1, 1, 1, 1)
         mod.Tip_Show()
     end
 
@@ -405,11 +405,11 @@ mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
         local unit = mod.GetMSSuffix()
         local hr, hg, hb = LatencyColour(home)
         local wr, wg, wb = LatencyColour(world)
-        mod.Tip_AddDouble(L["HOME"], home .. unit, 0.6, 0.6, 0.6, hr, hg, hb)
-        mod.Tip_AddDouble(L["WORLD"], world .. unit, 0.6, 0.6, 0.6, wr, wg, wb)
-        local rate = " " .. L["KB_PER_SEC"]
-        mod.Tip_AddDouble(L["DOWNLOAD"], format("%.1f", down or 0) .. rate, 0.6, 0.6, 0.6, 1, 1, 1)
-        mod.Tip_AddDouble(L["UPLOAD"], format("%.1f", up or 0) .. rate, 0.6, 0.6, 0.6, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["HOME"], home .. unit, 0.6, 0.6, 0.6, hr, hg, hb)
+        mod.Tip_AddDouble(Loc["WORLD"], world .. unit, 0.6, 0.6, 0.6, wr, wg, wb)
+        local rate = " " .. Loc["KB_PER_SEC"]
+        mod.Tip_AddDouble(Loc["DOWNLOAD"], format("%.1f", down or 0) .. rate, 0.6, 0.6, 0.6, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["UPLOAD"], format("%.1f", up or 0) .. rate, 0.6, 0.6, 0.6, 1, 1, 1)
         mod.Tip_Show()
     end
 
@@ -587,12 +587,12 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
     inst.events = { "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }
 
     local function Fighting() return UnitAffectingCombat("player") and 1 or 0 end
-    local function Words(v) return v == 1 and L["IN_COMBAT"] or L["OUT_OF_COMBAT"] end
+    local function Words(v) return v == 1 and Loc["IN_COMBAT"] or Loc["OUT_OF_COMBAT"] end
     local function OnlyInCombat() return (blockCfg.settings or {}).onlyInCombat == true end
 
     local function Tooltip()
         mod.Tip_Begin(contentFrame)
-        mod.Tip_AddDouble(L["COMBAT_STATUS"], Words(Fighting()), 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["COMBAT_STATUS"], Words(Fighting()), 1, 1, 1, 1, 1, 1)
         mod.Tip_Show()
     end
 

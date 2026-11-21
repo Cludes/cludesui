@@ -310,8 +310,8 @@ function mod.BlockIconDefault(bType, prefs)
     end
     if bType == "spec" then
         local _, class = UnitClass("player")
-        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-        if cc then return cc.r, cc.g, cc.b end
+        local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+        if classColor then return classColor.r, classColor.g, classColor.b end
         return 1, 1, 1
     end
     if bType == "profession" or bType == "profession2" then return mod.GetAccent() end

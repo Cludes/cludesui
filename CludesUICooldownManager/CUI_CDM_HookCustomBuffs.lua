@@ -852,21 +852,21 @@ local function UpdateCustomBuffBars()
                                     mod.CdmOwnIconCrop(texture)
                                     frame.Icon = texture
                                     frame._tex = texture
-                                    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-                                    cd:SetAllPoints()
-                                    cd:SetDrawEdge(false)
-                                    cd:SetDrawBling(false)
-                                    cd:SetHideCountdownNumbers(not mod.CdmDurationTextOn(barInfo))
-                                    cd:SetReverse(true)
-                                    frame.Cooldown = cd
-                                    frame._cooldown = cd
+                                    local cdFrame = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+                                    cdFrame:SetAllPoints()
+                                    cdFrame:SetDrawEdge(false)
+                                    cdFrame:SetDrawBling(false)
+                                    cdFrame:SetHideCountdownNumbers(not mod.CdmDurationTextOn(barInfo))
+                                    cdFrame:SetReverse(true)
+                                    frame.Cooldown = cdFrame
+                                    frame._cooldown = cdFrame
                                     frame._isCustomSpellFrame = true
                                     frame._isCustomBuffFrame = true
                                     frame.cooldownID = nil
                                     frame.cooldownInfo = nil
                                     frame.layoutIndex = 99999
                                     _presetFrames[fkey] = frame
-                                    cd:HookScript(
+                                    cdFrame:HookScript(
                                         "OnCooldownDone",
                                         function() C_Timer.After(0, QueueCustomBuffUpdate) end
                                     )

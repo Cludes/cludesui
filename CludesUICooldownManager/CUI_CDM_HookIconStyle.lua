@@ -161,8 +161,8 @@ function mod.CdmApplyBlizzIconArt(widget)
         -- Own frames carry no viewer mask or swipe art: the rounded kit adds
         -- both (classic icons stay square on the default swipe).
         if not widget.viewerFrame and not classic then
-            local fd = hookFrameData[widget]
-            local texture = (fd and fd.tex) or widget._tex or widget.Icon
+            local frameData = hookFrameData[widget]
+            local texture = (frameData and frameData.tex) or widget._tex or widget.Icon
             if texture and texture.AddMaskTexture then
                 local mask = widget:CreateMaskTexture()
                 mask:SetAtlas(mod.CDM_BLIZZ_MASK)
@@ -170,7 +170,7 @@ function mod.CdmApplyBlizzIconArt(widget)
                 texture:AddMaskTexture(mask)
                 fc.blizzMask = mask
             end
-            local cd = (fd and fd.cooldown) or widget._cooldown or widget.Cooldown
+            local cd = (frameData and frameData.cooldown) or widget._cooldown or widget.Cooldown
             if cd and cd.SetSwipeTexture then pcall(cd.SetSwipeTexture, cd, mod.CDM_BLIZZ_SWIPE) end
         end
     end
@@ -179,8 +179,8 @@ function mod.CdmApplyBlizzIconArt(widget)
     -- Classic keeps the square mask HideBlizzardDecorations gave it.
     if widget.viewerFrame and not classic and not fc.blizzMaskOK then
         fc.blizzMaskOK = true
-        local fd = hookFrameData[widget]
-        local texture = (fd and fd.tex) or widget.Icon
+        local frameData = hookFrameData[widget]
+        local texture = (frameData and frameData.tex) or widget.Icon
         local num = texture and texture.GetNumMaskTextures and texture:GetNumMaskTextures() or 0
         for index = 1, num do
             local m = texture:GetMaskTexture(index)
@@ -227,8 +227,8 @@ function mod.CdmBlizzIconMask(widget)
     if mod.CdmClassicIcons() then return nil end
     local fc = widget and _ecmeFC[widget]
     if fc and fc.blizzMask then return fc.blizzMask end
-    local fd = widget and hookFrameData[widget]
-    local texture = (fd and fd.tex) or (widget and (widget.Icon or widget._tex))
+    local frameData = widget and hookFrameData[widget]
+    local texture = (frameData and frameData.tex) or (widget and (widget.Icon or widget._tex))
     if texture and texture.GetNumMaskTextures and texture:GetNumMaskTextures() > 0 then
         return texture:GetMaskTexture(1)
     end
@@ -427,12 +427,12 @@ end
 -- updates a CURRENTLY recharging spell now. No-op on non-charge frames
 -- (ApplyCdmChargeStyle self-skips); reentry-guarded so siblings cannot recurse.
 function mod.ReapplyChargeStyle(widget)
-    local fd = widget and hookFrameData[widget]
-    local cd = fd and fd.cooldown
-    if not cd or fd._isProcessingOverride then return end
-    fd._isProcessingOverride = true
+    local frameData = widget and hookFrameData[widget]
+    local cd = frameData and frameData.cooldown
+    if not cd or frameData._isProcessingOverride then return end
+    frameData._isProcessingOverride = true
     ApplyCdmChargeStyle(widget, cd)
-    fd._isProcessingOverride = false
+    frameData._isProcessingOverride = false
 end
 
 -- Max Stacks Glow (per-spell): glow a charge spell at max charges. 1:1 with
@@ -527,8 +527,8 @@ end
 -- once watched SPELL_UPDATE_CHARGES keeps it current. Self-cleans when disabled.
 function mod.WatchMaxStacksIfEnabled(widget)
     if not widget then return end
-    local fd = hookFrameData[widget]
-    if not fd then return end
+    local frameData = hookFrameData[widget]
+    if not frameData then return end
     local fcw = _ecmeFC[widget]
     local sidw = fcw and fcw.spellID
     local bkw = fcw and fcw.barKey
@@ -544,11 +544,11 @@ function mod.WatchMaxStacksIfEnabled(widget)
     local ssw = isCharge and ResolveSpellSettings(widget, sidw, mod.GetBarSpellData(bkw)) or nil
     if ssw and ssw.maxStacksGlow and ssw.maxStacksGlow > 0 then
         mod._cdmAnyMaxStacksGlow = true
-        WatchMaxStacksFrame(widget, fd)
-        EvalMaxStacksFrame(widget, fd)
+        WatchMaxStacksFrame(widget, frameData)
+        EvalMaxStacksFrame(widget, frameData)
     elseif mod._maxStacksWatch[widget] then
         mod._maxStacksWatch[widget] = nil
-        ApplyMaxStacksGlow(widget, fd, nil, false)
+        ApplyMaxStacksGlow(widget, frameData, nil, false)
     end
 end
 

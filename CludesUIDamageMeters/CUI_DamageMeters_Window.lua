@@ -13,7 +13,7 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
-local L = _G.CludesUI.L
+local Loc = _G.CludesUI.L
 
 local BAR_POOL_SIZE, BAR_TEX, DB = Inner.BAR_POOL_SIZE, Inner.BAR_TEX, Inner.DB
 local DM_TYPE_ICONS, DM_TYPE_NAMES, GetHeaderH = Inner.DM_TYPE_ICONS, Inner.DM_TYPE_NAMES, Inner.GetHeaderH
@@ -715,7 +715,7 @@ local function CreateDMWindow(winIdx)
                 EnsureTooltipFrame()
                 -- Show header with player name + type
                 local playerName = StripRealm(barFrame._src and barFrame._src.name, barFrame._src)
-                local typeName = L(DM_TYPE_NAMES[Win.curDMType] or "Damage Done")
+                local typeName = Loc(DM_TYPE_NAMES[Win.curDMType] or "Damage Done")
                 _ttFrame._hdrText:SetText(CludesUI.Lf("%1$s's %2$s Breakdown", playerName, typeName))
                 local cfg2 = DB()
                 local hc = cfg2.hdrBgColor
@@ -900,8 +900,8 @@ local function CreateDMWindow(winIdx)
         end
         Win.titleText:SetTextColor(tR, tG, tB, 1)
     end
-    Win._fullTitle = L("Damage Done")
-    Win.titleText:SetText(L("Damage Done"))
+    Win._fullTitle = Loc("Damage Done")
+    Win.titleText:SetText(Loc("Damage Done"))
 
     Win.timerText = header:CreateFontString(nil, "OVERLAY")
     SetDMFont(Win.timerText, hdrFS)
@@ -997,19 +997,19 @@ local function CreateDMWindow(winIdx)
         end
         local mStartChildren = {
             {
-                text = L("Off"),
+                text = Loc("Off"),
                 isActive = not wdb.mythicStartDMType,
                 onClick = function() wdb.mythicStartDMType = false end,
             },
             "---",
-            mythicStartEntry(L("Damage Done"), Enum.DamageMeterType.DamageDone),
-            mythicStartEntry(L("Healing"), Enum.DamageMeterType.HealingDone),
-            mythicStartEntry(L("Damage Taken"), Enum.DamageMeterType.DamageTaken),
-            mythicStartEntry(L("Avoidable Damage Taken"), Enum.DamageMeterType.AvoidableDamageTaken),
-            mythicStartEntry(L("Enemy Damage Taken"), Enum.DamageMeterType.EnemyDamageTaken),
-            mythicStartEntry(L("Interrupts"), Enum.DamageMeterType.Interrupts),
-            mythicStartEntry(L("Dispels"), Enum.DamageMeterType.Dispels),
-            mythicStartEntry(L("Deaths"), Enum.DamageMeterType.Deaths),
+            mythicStartEntry(Loc("Damage Done"), Enum.DamageMeterType.DamageDone),
+            mythicStartEntry(Loc("Healing"), Enum.DamageMeterType.HealingDone),
+            mythicStartEntry(Loc("Damage Taken"), Enum.DamageMeterType.DamageTaken),
+            mythicStartEntry(Loc("Avoidable Damage Taken"), Enum.DamageMeterType.AvoidableDamageTaken),
+            mythicStartEntry(Loc("Enemy Damage Taken"), Enum.DamageMeterType.EnemyDamageTaken),
+            mythicStartEntry(Loc("Interrupts"), Enum.DamageMeterType.Interrupts),
+            mythicStartEntry(Loc("Dispels"), Enum.DamageMeterType.Dispels),
+            mythicStartEntry(Loc("Deaths"), Enum.DamageMeterType.Deaths),
         }
         -- An instance rule changed: re-apply every window now, and move the mouseover
         -- scan's cached predicate on next frame (deferred like the hotkey toggle), so a
@@ -1022,7 +1022,7 @@ local function CreateDMWindow(winIdx)
         end
         local itemList = {
             {
-                text = L("Hide in Dungeons"),
+                text = Loc("Hide in Dungeons"),
                 isActive = wdb.hideInDungeon,
                 onClick = function()
                     wdb.hideInDungeon = not wdb.hideInDungeon
@@ -1030,7 +1030,7 @@ local function CreateDMWindow(winIdx)
                 end,
             },
             {
-                text = L("Hide in Raids"),
+                text = Loc("Hide in Raids"),
                 isActive = wdb.hideInRaid,
                 onClick = function()
                     wdb.hideInRaid = not wdb.hideInRaid
@@ -1038,7 +1038,7 @@ local function CreateDMWindow(winIdx)
                 end,
             },
             {
-                text = L("Hide in Delves"),
+                text = Loc("Hide in Delves"),
                 noForever = true,
                 isActive = wdb.hideInDelve,
                 onClick = function()
@@ -1047,7 +1047,7 @@ local function CreateDMWindow(winIdx)
                 end,
             },
             {
-                text = L("Hide in PvP"),
+                text = Loc("Hide in PvP"),
                 isActive = wdb.hideInPvP,
                 onClick = function()
                     wdb.hideInPvP = not wdb.hideInPvP
@@ -1055,7 +1055,7 @@ local function CreateDMWindow(winIdx)
                 end,
             },
             {
-                text = L("Hide out of Instances"),
+                text = Loc("Hide out of Instances"),
                 isActive = wdb.hideOutOfInstance,
                 onClick = function()
                     wdb.hideOutOfInstance = not wdb.hideOutOfInstance
@@ -1064,7 +1064,7 @@ local function CreateDMWindow(winIdx)
             },
             "---",
             {
-                text = L("Width"),
+                text = Loc("Width"),
                 isInput = true,
                 getValue = function() return math.floor(widget:GetWidth() + 0.5) end,
                 setValue = function(v)
@@ -1079,7 +1079,7 @@ local function CreateDMWindow(winIdx)
                 min = MIN_W,
             },
             {
-                text = L("Height"),
+                text = Loc("Height"),
                 isInput = true,
                 getValue = function() return math.floor(widget:GetHeight() + 0.5) end,
                 setValue = function(v)
@@ -1094,14 +1094,14 @@ local function CreateDMWindow(winIdx)
                 min = MIN_H,
             },
             {
-                text = Win.snapDisabled and L("Enable Snapping") or L("Disable Snapping"),
+                text = Win.snapDisabled and Loc("Enable Snapping") or Loc("Disable Snapping"),
                 onClick = function()
                     Win.snapDisabled = not Win.snapDisabled
                     wdb.snapDisabled = Win.snapDisabled
                 end,
             },
             {
-                text = L("Hide Timer"),
+                text = Loc("Hide Timer"),
                 noThreat = true,
                 isActive = wdb.hideTimer,
                 onClick = function()
@@ -1110,36 +1110,36 @@ local function CreateDMWindow(winIdx)
                 end,
             },
             {
-                text = L("Auto Swap Current/Overall"),
+                text = Loc("Auto Swap Current/Overall"),
                 noForever = true,
-                tooltip = L(
+                tooltip = Loc(
                     "Auto switch your window to overall at the end of an M+ run, and current at the start"
                 ),
                 isActive = wdb.autoSwapMythic,
                 onClick = function() wdb.autoSwapMythic = not wdb.autoSwapMythic end,
             },
             {
-                text = L("Auto Current on Combat"),
+                text = Loc("Auto Current on Combat"),
                 noThreat = true,
-                tooltip = L("Entering combat switches this window back to Current if viewing a past segment"),
+                tooltip = Loc("Entering combat switches this window back to Current if viewing a past segment"),
                 isActive = wdb.autoCurrentOnCombat,
                 onClick = function() wdb.autoCurrentOnCombat = not wdb.autoCurrentOnCombat end,
             },
             {
-                text = L("Sync Segment Selection"),
+                text = Loc("Sync Segment Selection"),
                 noThreat = true,
-                tooltip = L("Selecting a segment switches all synced windows to it"),
+                tooltip = Loc("Selecting a segment switches all synced windows to it"),
                 isActive = wdb.syncSegments,
                 onClick = function() wdb.syncSegments = not wdb.syncSegments end,
             },
             {
-                text = L("Default on M+ Start"),
+                text = Loc("Default on M+ Start"),
                 noForever = true,
-                tooltip = L("Set your window to this Meter Type on dungeon start"),
+                tooltip = Loc("Set your window to this Meter Type on dungeon start"),
                 children = mStartChildren,
             },
             {
-                text = L("Settings"),
+                text = Loc("Settings"),
                 onClick = function() CUI:ShowModule("CludesUIDamageMeters") end,
             },
         }
@@ -1156,7 +1156,7 @@ local function CreateDMWindow(winIdx)
         ShowEDMMenu(itemList, Win.settingsBtn)
     end, "settings")
 
-    Win.segmentBtn = NewHeaderBtn("dm_sheet.png", -(btnSize + btnPad * 2 + 2), L("Select Segment"), function()
+    Win.segmentBtn = NewHeaderBtn("dm_sheet.png", -(btnSize + btnPad * 2 + 2), Loc("Select Segment"), function()
         -- A Threat list (WoW Forever) has no segments.
         if Win.curDMType == "threat" then return end
         local itemList = {}
@@ -1186,7 +1186,7 @@ local function CreateDMWindow(winIdx)
         itemList[#itemList + 1] = "---"
         for _, sType in ipairs(SESSION_TYPES) do
             itemList[#itemList + 1] = {
-                text = L(SESSION_TYPE_NAMES[sType] or "Unknown"),
+                text = Loc(SESSION_TYPE_NAMES[sType] or "Unknown"),
                 isActive = (not Win.curSessionID and sType == Win.curSession),
                 onClick = function() mod.ApplySegmentSelection(Win, sType, nil) end,
             }
@@ -1234,28 +1234,28 @@ local function CreateDMWindow(winIdx)
             )
             local itemList = {
                 {
-                    text = L("Damage"),
+                    text = Loc("Damage"),
                     isActive = dmActive,
                     children = {
-                        record(L("Damage Done"), Enum.DamageMeterType.DamageDone),
-                        record(L("Damage Taken"), Enum.DamageMeterType.DamageTaken),
-                        record(L("Avoidable Damage Taken"), Enum.DamageMeterType.AvoidableDamageTaken),
-                        record(L("Enemy Damage Taken"), Enum.DamageMeterType.EnemyDamageTaken),
+                        record(Loc("Damage Done"), Enum.DamageMeterType.DamageDone),
+                        record(Loc("Damage Taken"), Enum.DamageMeterType.DamageTaken),
+                        record(Loc("Avoidable Damage Taken"), Enum.DamageMeterType.AvoidableDamageTaken),
+                        record(Loc("Enemy Damage Taken"), Enum.DamageMeterType.EnemyDamageTaken),
                     },
                 },
-                record(L("Healing"), Enum.DamageMeterType.HealingDone),
+                record(Loc("Healing"), Enum.DamageMeterType.HealingDone),
                 {
-                    text = L("Actions"),
+                    text = Loc("Actions"),
                     isActive = actActive,
                     children = {
-                        record(L("Interrupts"), Enum.DamageMeterType.Interrupts),
-                        record(L("Dispels"), Enum.DamageMeterType.Dispels),
-                        record(L("Deaths"), Enum.DamageMeterType.Deaths),
+                        record(Loc("Interrupts"), Enum.DamageMeterType.Interrupts),
+                        record(Loc("Dispels"), Enum.DamageMeterType.Dispels),
+                        record(Loc("Deaths"), Enum.DamageMeterType.Deaths),
                     },
                 },
             }
             -- WoW Forever with Forever Essentials: its threat list
-            if DM_TYPE_NAMES.threat then itemList[#itemList + 1] = record(L("Threat"), "threat") end
+            if DM_TYPE_NAMES.threat then itemList[#itemList + 1] = record(Loc("Threat"), "threat") end
             ShowEDMMenu(itemList, Win.modeBtn)
         end
     )
@@ -1265,7 +1265,7 @@ local function CreateDMWindow(winIdx)
 
     -- + (new window) or x (close window) button, left of mode icon
     local winActionIcon = (winIdx == 1) and (MEDIA .. "dm_open.png") or (MEDIA .. "dm_close.png")
-    local winActionTip = (winIdx == 1) and L("New Window") or L("Close Window")
+    local winActionTip = (winIdx == 1) and Loc("New Window") or Loc("Close Window")
     local winActionKey = (winIdx == 1) and "open" or "close"
     Win.winActionBtn = NewHeaderBtn(
         "dm_settings.png",
@@ -2217,9 +2217,9 @@ local function CreateDMWindow(winIdx)
             barFrame.fill:SetPoint("TOPLEFT", barFrame.row, "TOPLEFT", iconOffset, 0)
             barFrame.fill:SetPoint("TOPRIGHT", barFrame.row, "TOPRIGHT", 0, 0)
             if showClassColor then
-                local cc = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
-                if cc then
-                    barFrame.fill:SetStatusBarColor(cc.r, cc.g, cc.b)
+                local classColor = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
+                if classColor then
+                    barFrame.fill:SetStatusBarColor(classColor.r, classColor.g, classColor.b)
                 elseif Win.curDMType == Enum.DamageMeterType.EnemyDamageTaken then
                     barFrame.fill:SetStatusBarColor(0xDD / 255, 0x31 / 255, 0x31 / 255)
                 else
@@ -2513,9 +2513,9 @@ local function CreateDMWindow(winIdx)
                             if class ~= barFrame._cachedColorClass then
                                 barFrame._cachedColorClass = class
                                 barFrame._cachedThreatColor = nil
-                                local cc = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
-                                if cc then
-                                    barFrame.fill:SetStatusBarColor(cc.r, cc.g, cc.b)
+                                local classColor = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
+                                if classColor then
+                                    barFrame.fill:SetStatusBarColor(classColor.r, classColor.g, classColor.b)
                                 elseif Win.curDMType == Enum.DamageMeterType.EnemyDamageTaken then
                                     barFrame.fill:SetStatusBarColor(0xDD / 255, 0x31 / 255, 0x31 / 255)
                                 else
@@ -2540,8 +2540,8 @@ local function CreateDMWindow(winIdx)
 
                         -- Left text color (pos + label)
                         if cfg.leftTextUseClassColor then
-                            local cc = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
-                            local lr, lg, lb = cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1
+                            local classColor = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
+                            local lr, lg, lb = classColor and classColor.r or 1, classColor and classColor.g or 1, classColor and classColor.b or 1
                             barFrame.label:SetTextColor(lr, lg, lb)
                             barFrame.pos:SetTextColor(lr, lg, lb)
                         elseif fullRebuild then
@@ -2554,8 +2554,8 @@ local function CreateDMWindow(winIdx)
                         if cfg.rightTextUseThreatGradient then
                             mod.DMPaintValueGradient(barFrame, Win, source, i)
                         elseif cfg.rightTextUseClassColor then
-                            local cc = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
-                            local rr, rg, rb = cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1
+                            local classColor = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
+                            local rr, rg, rb = classColor and classColor.r or 1, classColor and classColor.g or 1, classColor and classColor.b or 1
                             barFrame.amount:SetTextColor(rr, rg, rb)
                         elseif fullRebuild then
                             local tc = cfg.rightTextColor
@@ -2635,7 +2635,7 @@ local function CreateDMWindow(winIdx)
 
         Win.UpdateTimerText()
         local isOverall = (not Win.curSessionID and Win.curSession == Enum.DamageMeterSessionType.Overall)
-        local typeName = L(DM_TYPE_NAMES[Win.curDMType] or "Damage Done")
+        local typeName = Loc(DM_TYPE_NAMES[Win.curDMType] or "Damage Done")
         Win._fullTitle = isOverall and CludesUI.Lf("Overall %1$s", typeName) or typeName
         -- A Threat list (WoW Forever) names its mob and has no segments.
         if session and session.threatTitle then Win._fullTitle = session.threatTitle end
@@ -2991,9 +2991,9 @@ local function CreateDMWindow(winIdx)
                     ApplyBarTexture(barFrame.fill, texPath, texKey)
                     barFrame.fill:SetMinMaxValues(0, maxAmt)
                     barFrame.fill:SetValue(p.total)
-                    local cc = p.class and RAID_CLASS_COLORS[p.class] and CUI.GetClassColor(p.class)
-                    if cc then
-                        barFrame.fill:SetStatusBarColor(cc.r, cc.g, cc.b)
+                    local classColor = p.class and RAID_CLASS_COLORS[p.class] and CUI.GetClassColor(p.class)
+                    if classColor then
+                        barFrame.fill:SetStatusBarColor(classColor.r, classColor.g, classColor.b)
                     else
                         local ar2, ag2, ab2 = GetAccentRGB()
                         barFrame.fill:SetStatusBarColor(ar2, ag2, ab2)
@@ -3138,7 +3138,7 @@ local function CreateDMWindow(winIdx)
                     )
                     spellName = (okS and sn) or nil
                 end
-                barFrame.label:SetText(spellName or spell.creatureName or L("Unknown"))
+                barFrame.label:SetText(spellName or spell.creatureName or Loc("Unknown"))
                 if canPercent and totalDmg > 0 then
                     barFrame.amount:SetText(
                         format("%s  %.1f%%", AbbrevNumber(record.amount), (record.amount / totalDmg) * 100)
@@ -3379,7 +3379,7 @@ local function CreateDMWindow(winIdx)
                 homeCards[isShown] = cardFrame
             end
 
-            local labelText = L(DM_TYPE_NAMES[dmType] or "Unknown")
+            local labelText = Loc(DM_TYPE_NAMES[dmType] or "Unknown")
             local isActive = (dmType == Win.curDMType)
 
             local xOff = CARD_PAD_X + colour * (colW + CARD_COL_GAP)
@@ -3904,7 +3904,7 @@ local function CreateDMWindow(winIdx)
             tB = tc and tc.b or 1
         end
         Win.titleText:SetTextColor(tR, tG, tB, 1)
-        Win._fullTitle = L("Damage Done")
+        Win._fullTitle = Loc("Damage Done")
         Win.titleText:SetText(Win._fullTitle)
         SetDMFont(Win.timerText, titleFS)
         Win.timerText:SetText("(0:00)")

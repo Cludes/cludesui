@@ -2172,24 +2172,24 @@ CUI.AtOptionsLogin(function()
 
         -- Ensure cooldown widget exists on preview slot
         if not slotFrame._previewCD then
-            local cd = CreateFrame("Cooldown", nil, slotFrame, "CooldownFrameTemplate")
-            cd:SetAllPoints()
-            cd:SetDrawEdge(false)
-            cd:SetDrawSwipe(true)
-            cd:SetDrawBling(false)
-            cd:SetReverse(false)
-            cd:SetHideCountdownNumbers(false)
+            local cdFrame = CreateFrame("Cooldown", nil, slotFrame, "CooldownFrameTemplate")
+            cdFrame:SetAllPoints()
+            cdFrame:SetDrawEdge(false)
+            cdFrame:SetDrawSwipe(true)
+            cdFrame:SetDrawBling(false)
+            cdFrame:SetReverse(false)
+            cdFrame:SetHideCountdownNumbers(false)
             -- Blizzard Style: the viewer's rounded swipe, matching its mask
             -- (classic icons are square and keep the plain swipe).
-            cd:SetSwipeTexture(
+            cdFrame:SetSwipeTexture(
                 (CUI.BlizzStyle.Active("cdmicons") == "blizzard" and mod.CDM_BLIZZ_SWIPE)
                     or "Interface\\Buttons\\WHITE8x8"
             )
-            if cd.SetSnapToPixelGrid then
-                cd:SetSnapToPixelGrid(false)
-                cd:SetTexelSnappingBias(0)
+            if cdFrame.SetSnapToPixelGrid then
+                cdFrame:SetSnapToPixelGrid(false)
+                cdFrame:SetTexelSnappingBias(0)
             end
-            slotFrame._previewCD = cd
+            slotFrame._previewCD = cdFrame
         end
 
         -- The timers below stand down once the preview slot was dressed again

@@ -14,7 +14,7 @@ if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
-local L = _G.CludesUI.L
+local Loc = _G.CludesUI.L
 
 local BAR_TEX, DB, DM_TYPE_NAMES = Inner.BAR_TEX, Inner.DB, Inner.DM_TYPE_NAMES
 local AbbrevNumber, AggregateEnemyPlayers = Inner.AbbrevNumber, Inner.AggregateEnemyPlayers
@@ -233,9 +233,9 @@ local function PaintAttackerRow(b, profile, maxAmount, texFile, textureKey, numF
     ApplyBarTexture(b.fill, texFile, textureKey)
     b.fill:SetMinMaxValues(0, maxAmount)
     b.fill:SetValue(profile.total)
-    local cc = profile.class and RAID_CLASS_COLORS[profile.class] and CUI.GetClassColor(profile.class)
-    if cc then
-        b.fill:SetStatusBarColor(cc.r, cc.g, cc.b)
+    local classColor = profile.class and RAID_CLASS_COLORS[profile.class] and CUI.GetClassColor(profile.class)
+    if classColor then
+        b.fill:SetStatusBarColor(classColor.r, classColor.g, classColor.b)
     else
         b.fill:SetStatusBarColor(0x33 / 255, 0x33 / 255, 0x33 / 255)
     end
@@ -409,7 +409,7 @@ local function GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHead
     local mobs = SeasonMobsHere()
     if not mobs then return false end
     EnsureGateHost()
-    ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src) or "Unknown", L("Damage Taken"))
+    ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src) or "Unknown", Loc("Damage Taken"))
     for bi = 1, #_ttBars do
         _ttBars[bi].row:Hide()
     end
@@ -688,7 +688,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
             AggregateEnemyPlayers(srcData, GetBreakdownDuration(curSession, curSessionID), _ttEnemyRows)
         if not players then return false end
 
-        ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src) or "Unknown", L("Damage Taken"))
+        ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src) or "Unknown", Loc("Damage Taken"))
         local texFile, textureKey = GetBreakdownBarTexturePath()
         local maxAmount = players[1].total
         local ttMax = TipRowCap()
@@ -730,7 +730,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
     end
     if not srcData or not srcData.combatSpells or #srcData.combatSpells == 0 then return false end
 
-    ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src), L(DM_TYPE_NAMES[curDMType] or "Damage Done"))
+    ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src), Loc(DM_TYPE_NAMES[curDMType] or "Damage Done"))
 
     wipe(_ttSorted)
     for _, spellRec in ipairs(srcData.combatSpells) do
@@ -804,7 +804,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                 -- SetText displays it, where the old nil-out fell to "Unknown".
                 spellLabel = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellRec.spellID)
             end
-            b.label:SetText(spellLabel or spellRec.creatureName or L("Unknown"))
+            b.label:SetText(spellLabel or spellRec.creatureName or Loc("Unknown"))
             if canPercent and totalDmg > 0 then
                 b.amount:SetText(
                     format("%s  %.1f%%", AbbrevNumber(record.amount), (record.amount / totalDmg) * 100)

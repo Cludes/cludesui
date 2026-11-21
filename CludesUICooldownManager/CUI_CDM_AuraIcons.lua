@@ -301,13 +301,13 @@ local function HostFrame(barId, key)
     frame._tex = texture
     -- Never armed (the slot draws the aura's swipe); the decoration styles it
     -- like any icon's.
-    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-    cd:SetAllPoints()
-    cd:SetDrawEdge(false)
-    cd:SetDrawBling(false)
-    cd:SetHideCountdownNumbers(true)
-    frame.Cooldown = cd
-    frame._cooldown = cd
+    local cdFrame = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+    cdFrame:SetAllPoints()
+    cdFrame:SetDrawEdge(false)
+    cdFrame:SetDrawBling(false)
+    cdFrame:SetHideCountdownNumbers(true)
+    frame.Cooldown = cdFrame
+    frame._cooldown = cdFrame
     frame._isPresetFrame = true
     frame._isAuraIconFrame = true
     frame.cooldownID = nil

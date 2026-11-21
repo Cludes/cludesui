@@ -53,9 +53,9 @@ function ABAR:ApplyBordersForBar(barId)
     if barCfg.borderClassColor then
         local _, classToken = UnitClass("player")
         if classToken then
-            local cc = RAID_CLASS_COLORS[classToken]
-            if cc then
-                cr, cg, callback = cc.r, cc.g, cc.b
+            local classColor = RAID_CLASS_COLORS[classToken]
+            if classColor then
+                cr, cg, callback = classColor.r, classColor.g, classColor.b
             end
         end
     end
@@ -125,9 +125,9 @@ function ABAR:ApplyShapesForBar(barId)
     if barCfg.borderClassColor then
         local _, countText = UnitClass("player")
         if countText then
-            local cc = RAID_CLASS_COLORS[countText]
-            if cc then
-                brdR, brdG, brdB = cc.r, cc.g, cc.b
+            local classColor = RAID_CLASS_COLORS[countText]
+            if classColor then
+                brdR, brdG, brdB = classColor.r, classColor.g, classColor.b
             end
         end
     end
@@ -657,10 +657,10 @@ function ABAR:RefreshCountVisibility(barId)
                         local action = button:GetAttribute("action")
                         if action and HasAction(action) then
                             -- The count alpha finds the bar by this key.
-                            local fd = EFD(button)
-                            fd.barKey = details.key
+                            local frameData = EFD(button)
+                            frameData.barKey = details.key
                             mod._EABZeroCountAlpha(
-                                fd,
+                                frameData,
                                 button.Count,
                                 C_ActionBar.GetActionDisplayCount(action),
                                 action

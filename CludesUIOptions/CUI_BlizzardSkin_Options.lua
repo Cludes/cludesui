@@ -3669,7 +3669,7 @@ CUI.AtOptionsLogin(function()
     local function BuildWindowCard(hostFrame, cursorY, window)
         local Pix = CUI.PanelPP
         local ACC = CUI.CLUDES_GREEN
-        local L = CUI.L
+        local Loc = CUI.L
         local hasSettings = window.buildContent ~= nil
         local expanded = hasSettings and _wsExpanded[window.key]
         local cardTop = cursorY
@@ -3695,13 +3695,13 @@ CUI.AtOptionsLogin(function()
         if window.searchText then
             for _, labelText in ipairs(window.searchText) do
                 extra = extra .. " " .. labelText
-                extraLoc = extraLoc .. " " .. L(labelText)
+                extraLoc = extraLoc .. " " .. Loc(labelText)
             end
         end
         local searchName = window.title .. " " .. (window.desc or "") .. extra
         heading._isSectionHeader = true
         heading._sectionName = searchName
-        local searchNameLoc = L(window.title) .. " " .. L(window.desc or "") .. extraLoc
+        local searchNameLoc = Loc(window.title) .. " " .. Loc(window.desc or "") .. extraLoc
         if searchNameLoc ~= searchName then heading._sectionNameLoc = searchNameLoc end
 
         -- Global (sidebar) search: the card header never goes through
@@ -3714,9 +3714,9 @@ CUI.AtOptionsLogin(function()
         -- a jump scrolls to and glows this header; the page's
         -- NavigateToElementSettings pre-hook expands the cards first.
         if CUI._RegisterSearchEntry then
-            local titleLoc = L(window.title)
+            local titleLoc = Loc(window.title)
             local descSearch = window.desc or ""
-            local descLoc = L(window.desc or "")
+            local descLoc = Loc(window.desc or "")
             if descLoc ~= descSearch then descSearch = descSearch .. " " .. descLoc end
             descSearch = descSearch .. extra
             if extraLoc ~= extra then descSearch = descSearch .. extraLoc end
@@ -3755,14 +3755,14 @@ CUI.AtOptionsLogin(function()
 
         local title = CUI.MakeFont(heading, 14, nil, 1, 1, 1, 0.9)
         Pix.Point(title, "TOPLEFT", heading, "TOPLEFT", 50, -12)
-        title:SetText(L(window.title))
+        title:SetText(Loc(window.title))
 
         local description = CUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.42)
         Pix.Point(description, "TOPLEFT", title, "BOTTOMLEFT", 0, -4)
         description:SetWidth(590)
         description:SetJustifyH("LEFT")
         description:SetWordWrap(false)
-        description:SetText(L(window.desc))
+        description:SetText(Loc(window.desc))
 
         -- Expand chevron only on cards that actually have settings; cards
         -- without any are not expandable at all.
@@ -3923,7 +3923,7 @@ CUI.AtOptionsLogin(function()
     local function BuildWindowSkinsDisabledHero(hostFrame, yOffset)
         local Pix = CUI.PanelPP
         local ACC = CUI.CLUDES_GREEN
-        local L = CUI.L
+        local Loc = CUI.L
         local MakeBorder = CUI.MakeBorder
         local FONT = CUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
@@ -3990,13 +3990,13 @@ CUI.AtOptionsLogin(function()
         eyebrow:SetFont(FONT, 13, "")
         eyebrow:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
         Pix.Point(eyebrow, "TOP", owner, "TOP", 0, -122)
-        eyebrow:SetText(L("CUI FEATURE"))
+        eyebrow:SetText(Loc("CUI FEATURE"))
 
         local title = owner:CreateFontString(nil, "OVERLAY")
         title:SetFont(FONT, 25, "")
         title:SetTextColor(1, 1, 1, 1)
         Pix.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
-        title:SetText(L("Blizzard Window Skinning"))
+        title:SetText(Loc("Blizzard Window Skinning"))
 
         local description = owner:CreateFontString(nil, "OVERLAY")
         description:SetFont(FONT, 15, "")
@@ -4006,7 +4006,7 @@ CUI.AtOptionsLogin(function()
         description:SetWordWrap(true)
         Pix.Point(description, "TOP", title, "BOTTOM", 0, -12)
         description:SetText(
-            L(
+            Loc(
                 "Blizzard's windows match the CludesUI theme with a WoW 2.0 Dark Theme, from the Dungeon Journal to the Auction House and beyond."
             )
         )
@@ -4028,7 +4028,7 @@ CUI.AtOptionsLogin(function()
             else
                 Pix.Point(bl, "TOPLEFT", prev, "BOTTOMLEFT", 0, -10)
             end
-            bl:SetText(L(textValue))
+            bl:SetText(Loc(textValue))
             local bdot = owner:CreateTexture(nil, "OVERLAY")
             bdot:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
             Pix.Size(bdot, 5, 5)
@@ -4052,7 +4052,7 @@ CUI.AtOptionsLogin(function()
         footnote:SetFont(FONT, 12, "")
         footnote:SetTextColor(1, 1, 1, 0.35)
         Pix.Point(footnote, "TOP", enableBtn, "BOTTOM", 0, -12)
-        footnote:SetText(L("Window skins are currently disabled for this profile."))
+        footnote:SetText(Loc("Window skins are currently disabled for this profile."))
 
         -- Builders return the page's total HEIGHT (positive), same as the
         -- normal page's math.abs(y) tail.
@@ -4154,7 +4154,7 @@ CUI.AtOptionsLogin(function()
     local function BuildWindowSkinsPage(pageTitle, hostFrame, yOffset)
         local Widg = CUI.Widgets
         local Pix = CUI.PanelPP
-        local L = CUI.L
+        local Loc = CUI.L
         local cursorY = yOffset
         local _, height
 
@@ -4181,7 +4181,7 @@ CUI.AtOptionsLogin(function()
         Pix.Point(introHost, "TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY)
         local intro = CUI.MakeFont(introHost, 13, nil, 1, 1, 1, 0.5)
         Pix.Point(intro, "TOP", introHost, "TOP", 0, 0)
-        intro:SetText(L("Pick a style for all reskinned Blizzard windows."))
+        intro:SetText(Loc("Pick a style for all reskinned Blizzard windows."))
 
         -- Per-profile master switch (top right; the only per-profile setting
         -- in this section). One step below Blizz Default: no-ops the whole
@@ -4202,7 +4202,7 @@ CUI.AtOptionsLogin(function()
             function(s)
                 CUI.ShowWidgetTooltip(
                     s,
-                    L("Turns off ALL window skinning for this profile. Requires a reload.")
+                    Loc("Turns off ALL window skinning for this profile. Requires a reload.")
                 )
             end
         )

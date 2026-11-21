@@ -179,8 +179,8 @@ local function ShowGoldTooltip(anchor)
     for region, record in ipairs(charList) do
         local nameFS = _goldTTRows[region][0]
         local goldFS = _goldTTRows[region][1]
-        local cc = RAID_CLASS_COLORS[record.data.class] or { r = 1, g = 1, b = 1 }
-        local hex = string.format("%02x%02x%02x", cc.r * 255, cc.g * 255, cc.b * 255)
+        local classColor = RAID_CLASS_COLORS[record.data.class] or { r = 1, g = 1, b = 1 }
+        local hex = string.format("%02x%02x%02x", classColor.r * 255, classColor.g * 255, classColor.b * 255)
         nameFS:SetText("|cff" .. hex .. StripRealm(record.data.name or record.id) .. "|r")
         goldFS:SetText(FormatGoldOnly(record.data.money))
         goldFS:SetTextColor(1, 1, 1, 1)

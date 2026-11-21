@@ -16,7 +16,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  dialog; default master), showIcon (default on).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local floor, max, abs = math.floor, math.max, math.abs
@@ -114,7 +114,7 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
 
     local function ShowTooltip()
         mod.Tip_Begin(button)
-        mod.Tip_AddLine("|cFFFFFFFF[|r" .. L["AUDIO"] .. "|cFFFFFFFF]|r", 1, 1, 1)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. Loc["AUDIO"] .. "|cFFFFFFFF]|r", 1, 1, 1)
         mod.Tip_AddLine(" ")
         local selected = Channel()
         -- With master off every other channel is silent: their rows dim (the
@@ -128,11 +128,11 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
             end
             if GetCVarBool(ch.enable) then
                 local pct = floor(Volume(ch) * 100 + 0.5) .. "%"
-                mod.Tip_AddClickable(L[ch.label], pct, rowClick[key], name, name, name, value, value, value)
+                mod.Tip_AddClickable(Loc[ch.label], pct, rowClick[key], name, name, name, value, value, value)
             else
                 mod.Tip_AddClickable(
-                    L[ch.label],
-                    L["AUDIO_MUTED"],
+                    Loc[ch.label],
+                    Loc["AUDIO_MUTED"],
                     rowClick[key],
                     name,
                     name,
@@ -143,10 +143,10 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
             mod.Tip_SetRowWheel(rowWheel[key])
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["AUDIO_MUTE_HINT"], 1, 1, 1, 1, 1, 1)
-        mod.Tip_AddDouble(L["DRAG_BAR"], L["AUDIO_SET_HINT"], 1, 1, 1, 1, 1, 1)
-        mod.Tip_AddDouble(L["SCROLL_WHEEL"], L["AUDIO_SCROLL_HINT"], 1, 1, 1, 1, 1, 1)
-        mod.Tip_AddLine(L["AUDIO_SHIFT_HINT"], 0.65, 0.65, 0.65)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["AUDIO_MUTE_HINT"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["DRAG_BAR"], Loc["AUDIO_SET_HINT"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["SCROLL_WHEEL"], Loc["AUDIO_SCROLL_HINT"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddLine(Loc["AUDIO_SHIFT_HINT"], 0.65, 0.65, 0.65)
         mod.Tip_Show()
     end
 

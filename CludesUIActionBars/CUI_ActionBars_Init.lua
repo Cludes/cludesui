@@ -137,12 +137,12 @@ function ABAR:OnInitialize()
         end
 
         local function SetRankShown(button, atlas)
-            local fd = EFD(button)
+            local frameData = EFD(button)
             if not atlas then
-                if fd.rankIconTex then fd.rankIconTex:Hide() end
+                if frameData.rankIconTex then frameData.rankIconTex:Hide() end
                 return
             end
-            local texture = fd.rankIconTex
+            local texture = frameData.rankIconTex
             if not texture then
                 -- First paint creates the holder. A new cosmetic child frame
                 -- writes nothing onto the secure button's table; skip only
@@ -153,16 +153,16 @@ function ABAR:OnInitialize()
                 holderFrame:SetFrameLevel((button:GetFrameLevel() or 1) + 18)
                 holderFrame:EnableMouse(false)
                 texture = holderFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-                fd.rankIconHolder = holderFrame
-                fd.rankIconTex = texture
+                frameData.rankIconHolder = holderFrame
+                frameData.rankIconTex = texture
             end
-            if fd.rankIconAtlas ~= atlas then
-                fd.rankIconAtlas = atlas
+            if frameData.rankIconAtlas ~= atlas then
+                frameData.rankIconAtlas = atlas
                 -- The atlas name comes straight from Blizzard's quality info
                 -- (or the probe-verified fallback), but guard anyway: an
                 -- unknown atlas must read as no-rank, not an error.
                 if not pcall(texture.SetAtlas, texture, atlas, true) then
-                    fd.rankIconAtlas = nil
+                    frameData.rankIconAtlas = nil
                     texture:Hide()
                     return
                 end
@@ -175,7 +175,7 @@ function ABAR:OnInitialize()
             texture:SetPoint("CENTER", button, "TOPLEFT", 14 * sc, -14 * sc)
             texture:SetScale(sc)
             texture:Show()
-            fd.rankIconHolder:Show()
+            frameData.rankIconHolder:Show()
         end
 
         local function ScanButton(button, featureOn)

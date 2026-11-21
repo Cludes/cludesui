@@ -1368,8 +1368,8 @@ LayoutCDMBar = function(barId)
                 anchorY = -(yPx * pixel) * iconScale
             end
 
-            local fd = _getFD(iconTex)
-            if fd then fd._cdmAnchor = { "TOPLEFT", widget, "TOPLEFT", anchorX, anchorY } end
+            local frameData = _getFD(iconTex)
+            if frameData then frameData._cdmAnchor = { "TOPLEFT", widget, "TOPLEFT", anchorX, anchorY } end
             iconTex:SetPoint("TOPLEFT", widget, "TOPLEFT", anchorX, anchorY)
         end
     else
@@ -1487,8 +1487,8 @@ LayoutCDMBar = function(barId)
 
             if anchorPt then
                 -- Stamp BEFORE SetPoint so the synchronous hook sees the new anchor and treats our own SetPoint as a no-op.
-                local fd = _getFD(iconTex)
-                if fd then fd._cdmAnchor = { anchorPt, widget, anchorRelPt, anchorX, anchorY } end
+                local frameData = _getFD(iconTex)
+                if frameData then frameData._cdmAnchor = { anchorPt, widget, anchorRelPt, anchorX, anchorY } end
                 iconTex:SetPoint(anchorPt, widget, anchorRelPt, anchorX, anchorY)
             end
         end

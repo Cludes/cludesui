@@ -1558,8 +1558,8 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                 end
                 local colorMode = cfg.combatIndicatorColor or "custom"
                 if colorMode == "classcolor" then
-                    local cc = (classToken and CludesUI.GetClassColor(classToken)) or { r = 1, g = 1, b = 1 }
-                    frame._combatIcon:SetVertexColor(cc.r, cc.g, cc.b, 1)
+                    local classColor = (classToken and CludesUI.GetClassColor(classToken)) or { r = 1, g = 1, b = 1 }
+                    frame._combatIcon:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
                 else
                     local cc = cfg.combatIndicatorCustomColor or { r = 1, g = 1, b = 1 }
                     frame._combatIcon:SetVertexColor(cc.r, cc.g, cc.b, 1)

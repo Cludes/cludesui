@@ -138,16 +138,16 @@ local function SkinButton(button, cfg)
         end
         pcall(iconTex.SetTexCoord, iconTex, ZOOM, 1 - ZOOM, ZOOM, 1 - ZOOM)
     end
-    local cd = button.cooldown
-    if cd then
-        cd:SetHideCountdownNumbers(not cfg.showTimer)
-        if cfg.showTimer and cd.SetCountdownFont then
-            if homeFont[cd] == nil then
-                local fontStr = cd.GetCountdownFontString and cd:GetCountdownFontString()
+    local cdFrame = button.cooldown
+    if cdFrame then
+        cdFrame:SetHideCountdownNumbers(not cfg.showTimer)
+        if cfg.showTimer and cdFrame.SetCountdownFont then
+            if homeFont[cdFrame] == nil then
+                local fontStr = cdFrame.GetCountdownFontString and cdFrame:GetCountdownFontString()
                 local object = fontStr and fontStr:GetFontObject()
-                homeFont[cd] = (object and object:GetName()) or false
+                homeFont[cdFrame] = (object and object:GetName()) or false
             end
-            cd:SetCountdownFont(FONT_NAME)
+            cdFrame:SetCountdownFont(FONT_NAME)
         end
     end
     -- Our border frame, in the button's own scale like the active bar's.
@@ -195,11 +195,11 @@ local function UnskinButton(button, hideNumbers)
         end
         pcall(iconTex.SetTexCoord, iconTex, 0, 1, 0, 1)
     end
-    local cd = button.cooldown
-    if cd then
-        cd:SetHideCountdownNumbers(hideNumbers)
-        local fontName = homeFont[cd]
-        if fontName and cd.SetCountdownFont then cd:SetCountdownFont(fontName) end
+    local cdFrame = button.cooldown
+    if cdFrame then
+        cdFrame:SetHideCountdownNumbers(hideNumbers)
+        local fontName = homeFont[cdFrame]
+        if fontName and cdFrame.SetCountdownFont then cdFrame:SetCountdownFont(fontName) end
     end
     local o = borders[button]
     if o then o:Hide() end

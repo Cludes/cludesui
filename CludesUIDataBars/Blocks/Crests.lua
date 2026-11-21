@@ -18,7 +18,7 @@ if CUI.IS_FOREVER then return end -- no season crests on WoW Forever (the main f
 --  showSeasonProgress, hideEmpty.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local format, concat = string.format, table.concat
@@ -176,7 +176,7 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
         local red, green, blue = mod.GetAccent()
         mod.Tip_Begin(button)
         -- The header names the dimmed figure, as the game's own tooltip does.
-        mod.Tip_AddDouble(L["CRESTS"], L["SEASON_MAXIMUM"], 1, 1, 1, 0.667, 0.667, 0.667)
+        mod.Tip_AddDouble(Loc["CRESTS"], Loc["SEASON_MAXIMUM"], 1, 1, 1, 0.667, 0.667, 0.667)
         mod.Tip_AddLine(" ")
         -- All five, whatever the bar shows.
         for _, crest in ipairs(K.CRESTS) do
@@ -195,7 +195,7 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, red, green, blue)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["OPEN_CURRENCIES"], 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end
 

@@ -322,8 +322,8 @@ _quickKeybindState.InitMacroButton = function(btnFrame)
         _quickKeybindState.RefreshMacroButton(self)
     end)
 
-    local fd = EFD(btnFrame)
-    fd.qkbMacroHooked = true
+    local frameData = EFD(btnFrame)
+    frameData.qkbMacroHooked = true
     _quickKeybindState.macroButtons[btnFrame] = true
     _quickKeybindState.RefreshMacroButton(btnFrame)
 end
@@ -462,8 +462,8 @@ _quickKeybindState.InitButtons = function()
                         if not button.QuickKeybindButtonOnClick then
                             Mixin(button, QuickKeybindButtonTemplateMixin)
                         end
-                        local fd = EFD(button)
-                        if not fd.qkbClickHooked and button.QuickKeybindButtonOnClick then
+                        local frameData = EFD(button)
+                        if not frameData.qkbClickHooked and button.QuickKeybindButtonOnClick then
                             button:HookScript("OnClick", button.QuickKeybindButtonOnClick)
                             button:HookScript("OnEnter", button.QuickKeybindButtonOnEnter)
                             button:HookScript("OnLeave", button.QuickKeybindButtonOnLeave)
@@ -471,21 +471,21 @@ _quickKeybindState.InitButtons = function()
                             button:HookScript("OnEnter", function(self)
                                 if not _quickKeybindState.open then return end
                                 if not ACC then return end
-                                local fd = EFD(self)
-                                if fd.borders and Pix then
+                                local frameData = EFD(self)
+                                if frameData.borders and Pix then
                                     Pix.UpdateBorder(self, nil, ACC.r, ACC.g, ACC.b, 0.9)
-                                    fd.borderKey = nil
+                                    frameData.borderKey = nil
                                 end
                                 local highlight = self.HighlightTexture
                                 if highlight then highlight:SetVertexColor(ACC.r, ACC.g, ACC.b, 1) end
-                                fd.qkbHoverActive = true
+                                frameData.qkbHoverActive = true
                             end)
                             button:HookScript("OnLeave", function(self)
-                                local fd = EFD(self)
-                                if not fd.qkbHoverActive then return end
-                                fd.qkbHoverActive = nil
-                                fd.borderKey = nil
-                                local bk = fd.barKey
+                                local frameData = EFD(self)
+                                if not frameData.qkbHoverActive then return end
+                                frameData.qkbHoverActive = nil
+                                frameData.borderKey = nil
+                                local bk = frameData.barKey
                                 if bk and Pix then ABAR:ApplyBordersForBar(bk) end
                                 local highlight = self.HighlightTexture
                                 if highlight then
@@ -530,7 +530,7 @@ _quickKeybindState.InitButtons = function()
                                     end
                                 end
                             end)
-                            fd.qkbClickHooked = true
+                            frameData.qkbClickHooked = true
                         end
                     end
                 end

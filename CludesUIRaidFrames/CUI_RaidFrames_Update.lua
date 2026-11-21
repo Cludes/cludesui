@@ -437,8 +437,8 @@ mod._UpdateCombatIcon = function(skinData, cfg, unitToken)
         end
         local colorMode = cfg.combatIndicatorColor or "custom"
         if colorMode == "classcolor" then
-            local cc = (classToken and CludesUI.GetClassColor(classToken)) or { r = 1, g = 1, b = 1 }
-            iconTex:SetVertexColor(cc.r, cc.g, cc.b, 1)
+            local classColor = (classToken and CludesUI.GetClassColor(classToken)) or { r = 1, g = 1, b = 1 }
+            iconTex:SetVertexColor(classColor.r, classColor.g, classColor.b, 1)
         else
             local cc = cfg.combatIndicatorCustomColor or { r = 1, g = 1, b = 1 }
             iconTex:SetVertexColor(cc.r, cc.g, cc.b, 1)

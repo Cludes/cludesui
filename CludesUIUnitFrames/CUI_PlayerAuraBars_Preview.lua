@@ -1229,16 +1229,16 @@ local function RenderPreviewIcons(box, icons, buffSide, conf, fontFile, pool)
             -- fraction on an hour-long cooldown, so each icon shows a varied
             -- mid-flight state without visibly animating. Reverse per the bar's
             -- Reverse Swipe cog; placeholder slots carry no swipe.
-            local cd = button.cooldown
-            if cd then
+            local cdFrame = button.cooldown
+            if cdFrame then
                 if slotFrame.kind ~= "placeholder" and look.hideSwipe ~= true then
                     local dur = 3600
-                    cd:SetReverse(look.cooldownReverse ~= false)
-                    cd:SetCooldown(GetTime() - dur * (1 - GetPvCDSeed(i)), dur)
-                    cd:Show()
+                    cdFrame:SetReverse(look.cooldownReverse ~= false)
+                    cdFrame:SetCooldown(GetTime() - dur * (1 - GetPvCDSeed(i)), dur)
+                    cdFrame:Show()
                 else
-                    cd:SetCooldown(0, 0)
-                    cd:Hide()
+                    cdFrame:SetCooldown(0, 0)
+                    cdFrame:Hide()
                 end
             end
 

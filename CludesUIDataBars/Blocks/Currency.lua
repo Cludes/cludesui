@@ -12,7 +12,7 @@ local CUI = CludesUI
 --  showDescription (default on).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local floor, max, min = math.floor, math.max, math.min
@@ -72,7 +72,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         if not cfg.currencyId then
             -- Bar text is set directly, not through the tooltip helpers that
             -- translate, so it is translated here.
-            text = CUI.L(L["SELECT_CURRENCY"])
+            text = CUI.L(Loc["SELECT_CURRENCY"])
         elseif skinData then
             text = Number(skinData.quantity)
         else
@@ -142,9 +142,9 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         if not cfg.currencyId then
             -- The placeholder is the whole block, so the tooltip says where a currency is picked.
             mod.Tip_Begin(button)
-            mod.Tip_AddLine(L["SELECT_CURRENCY"], 1, 1, 1)
+            mod.Tip_AddLine(Loc["SELECT_CURRENCY"], 1, 1, 1)
             mod.Tip_AddLine(" ")
-            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, ar, ag, ab)
+            mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["OPEN_SETTINGS"], 1, 1, 1, ar, ag, ab)
             mod.Tip_Show()
             return
         end
@@ -169,9 +169,9 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         elseif cap and cap > 0 then
             total = total .. " / " .. Number(cap)
         end
-        mod.Tip_AddDouble(L["TOTAL"], total, 0.6, 0.6, 0.6, 1, 1, 1)
+        mod.Tip_AddDouble(Loc["TOTAL"], total, 0.6, 0.6, 0.6, 1, 1, 1)
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, ar, ag, ab)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["OPEN_CURRENCIES"], 1, 1, 1, ar, ag, ab)
         mod.Tip_Show()
     end
 

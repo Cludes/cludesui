@@ -426,8 +426,8 @@ end
 -- override is live, since Blizzard's own check is correct for the base spell.
 -- On ns.* because the main chunk is at Lua 5.1's 200-local cap.
 function mod.ApplyOverrideRangeTint(iconTex, overrideSpellID)
-    local fd = _getFD(iconTex)
-    local texture = fd and fd.tex
+    local frameData = _getFD(iconTex)
+    local texture = frameData and frameData.tex
     local C = CooldownViewerConstants
     if not (texture and C) then return end
     -- Live-override count, kept on the nil<->value transitions of the ONLY
@@ -435,15 +435,15 @@ function mod.ApplyOverrideRangeTint(iconTex, overrideSpellID)
     -- it, so the event dispatches Blizzard's own base-spell registrations
     -- produce (nearly all of them, for nearly every player) cost one integer
     -- read instead of a full bar scan.
-    if (fd._oorSpellID ~= nil) ~= (overrideSpellID ~= nil) then
+    if (frameData._oorSpellID ~= nil) ~= (overrideSpellID ~= nil) then
         mod._oorLiveCount = (mod._oorLiveCount or 0) + (overrideSpellID and 1 or -1)
     end
-    fd._oorSpellID = overrideSpellID
-    if not fd._oorHooked then
-        fd._oorHooked = true
+    frameData._oorSpellID = overrideSpellID
+    if not frameData._oorHooked then
+        frameData._oorHooked = true
         local guard = false
         hooksecurefunc(texture, "SetVertexColor", function()
-            local spellRef = fd._oorSpellID
+            local spellRef = frameData._oorSpellID
             if guard or not spellRef then return end
             local region = C_Spell.IsSpellInRange(spellRef)
             if issecretvalue and issecretvalue(region) then return end
@@ -528,8 +528,8 @@ function mod.DisarmOverrideRanges()
     -- keeps the live count exact across spec changes.
     for _, icons in pairs(cdmBarIcons) do
         for _, iconTex in ipairs(icons) do
-            local fd = _getFD(iconTex)
-            if fd and fd._oorSpellID ~= nil then fd._oorSpellID = nil end
+            local frameData = _getFD(iconTex)
+            if frameData and frameData._oorSpellID ~= nil then frameData._oorSpellID = nil end
         end
     end
     mod._oorLiveCount = 0
@@ -548,8 +548,8 @@ function mod.RepaintOverrideRange(spellId)
     if issecretvalue and issecretvalue(spellId) then return end
     for _, icons in pairs(cdmBarIcons) do
         for _, iconTex in ipairs(icons) do
-            local fd = _getFD(iconTex)
-            if fd and fd._oorSpellID == spellId then mod.ApplyOverrideRangeTint(iconTex, spellId) end
+            local frameData = _getFD(iconTex)
+            if frameData and frameData._oorSpellID == spellId then mod.ApplyOverrideRangeTint(iconTex, spellId) end
         end
     end
 end

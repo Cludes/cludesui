@@ -1298,8 +1298,8 @@ local function LatencyRequestQueued()
     if UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil then return true end
     -- A GCD that began before this request belongs to an earlier spell. One that
     -- cannot be read counts as queued: a reading that cannot be checked is not taken.
-    local cd = C_Spell.GetSpellCooldown(CUI.GCD_SPELL)
-    local s, skinData = cd and cd.startTime, cd and cd.duration
+    local cdInfo = C_Spell.GetSpellCooldown(CUI.GCD_SPELL)
+    local s, skinData = cdInfo and cdInfo.startTime, cdInfo and cdInfo.duration
     if not (s and skinData) then return false end
     if issecretvalue and (issecretvalue(s) or issecretvalue(skinData)) then return true end
     local nowTime = GetTime()

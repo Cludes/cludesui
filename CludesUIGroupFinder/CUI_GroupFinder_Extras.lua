@@ -532,8 +532,8 @@ end)
 
 -- filters menu spans search box to refresh
 GFNS.ExtraWidenMenu = function(m, anchor, spacing, right)
-    local sp = LFGListFrame and LFGListFrame.SearchPanel
-    local leftX = sp and (sp.SearchBox or sp.BackButton)
+    local searchPane = LFGListFrame and LFGListFrame.SearchPanel
+    local leftX = searchPane and (searchPane.SearchBox or searchPane.BackButton)
     if not (leftX and leftX:IsVisible() and leftX:GetLeft() and anchor:GetLeft()) then return end
     -- split evenly
     if m.side and right and right:GetRight() then
@@ -907,8 +907,8 @@ local function TagEntry(record)
 end
 
 local function RetagRows()
-    local sp = LFGListFrame and LFGListFrame.SearchPanel
-    local box = sp and sp.ScrollBox
+    local searchPane = LFGListFrame and LFGListFrame.SearchPanel
+    local box = searchPane and searchPane.ScrollBox
     if box and box.ForEachFrame then box:ForEachFrame(TagEntry) end
     -- our results list too
     if mod.OwnListRefresh then mod.OwnListRefresh() end

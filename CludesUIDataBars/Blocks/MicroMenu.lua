@@ -4,7 +4,7 @@ local CUI = CludesUI
 -- Micro menu block factory and Blizzard micro menu hider.
 
 local ADDON_NAME, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 -- Upvalues
@@ -791,23 +791,23 @@ local function MMBuildSocialTip()
     end
 
     if isShown == 0 then
-        mod.Tip_AddLine(L["NO_FRIENDS_ONLINE"], 0.6, 0.6, 0.6)
+        mod.Tip_AddLine(Loc["NO_FRIENDS_ONLINE"], 0.6, 0.6, 0.6)
         return
     end
     if hidden > 0 then mod.Tip_AddLine(format("...and %d more", hidden), 0.53, 0.53, 0.53) end
 
     -- Left-click BNet-whispers (reaches them cross-realm/faction), right-click whispers the character directly: distinct actions, distinct labels.
     mod.Tip_AddLine(" ")
-    mod.Tip_AddDouble(L["LEFT_CLICK"], L["WHISPER_BNET"], 1, 1, 1, ar, ag, ab)
-    mod.Tip_AddDouble(L["SHIFT_LEFT_CLICK"], L["INVITE"], 1, 1, 1, ar, ag, ab)
-    mod.Tip_AddDouble(L["RIGHT_CLICK"], L["WHISPER"], 1, 1, 1, ar, ag, ab)
+    mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["WHISPER_BNET"], 1, 1, 1, ar, ag, ab)
+    mod.Tip_AddDouble(Loc["SHIFT_LEFT_CLICK"], Loc["INVITE"], 1, 1, 1, ar, ag, ab)
+    mod.Tip_AddDouble(Loc["RIGHT_CLICK"], Loc["WHISPER"], 1, 1, 1, ar, ag, ab)
 end
 
 local function MMBuildGuildTip(cfg)
     local ar, ag, ab = mod.GetAccent()
     mod.Tip_AddLine(" ")
     if not IsInGuild() then
-        mod.Tip_AddLine(L["NOT_IN_GUILD"], 0.6, 0.6, 0.6)
+        mod.Tip_AddLine(Loc["NOT_IN_GUILD"], 0.6, 0.6, 0.6)
         return
     end
 
@@ -869,8 +869,8 @@ local function MMBuildGuildTip(cfg)
     if hidden > 0 then mod.Tip_AddLine(format("...and %d more", hidden), 0.53, 0.53, 0.53) end
 
     mod.Tip_AddLine(" ")
-    mod.Tip_AddDouble(L["LEFT_CLICK"], L["WHISPER"], 1, 1, 1, ar, ag, ab)
-    mod.Tip_AddDouble(L["SHIFT_LEFT_CLICK"], L["INVITE"], 1, 1, 1, ar, ag, ab)
+    mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["WHISPER"], 1, 1, 1, ar, ag, ab)
+    mod.Tip_AddDouble(Loc["SHIFT_LEFT_CLICK"], Loc["INVITE"], 1, 1, 1, ar, ag, ab)
 end
 
 mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
@@ -1046,7 +1046,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             local hexAccent = format("%02x%02x%02x", floor(red * 255), floor(green * 255), floor(blue * 255))
             mod.Tip_AddLine(" ")
             mod.Tip_AddDouble(
-                "|cFFFFFFFF" .. L["ACH_POINTS"] .. "|r",
+                "|cFFFFFFFF" .. Loc["ACH_POINTS"] .. "|r",
                 "|cFF" .. hexAccent .. pts .. "|r",
                 1,
                 1,
@@ -1078,7 +1078,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 end
             end
             mod.Tip_AddDouble(
-                "|cFFFFFFFF" .. L["DELVE_JOURNEY"] .. "|r",
+                "|cFFFFFFFF" .. Loc["DELVE_JOURNEY"] .. "|r",
                 "|cFF" .. hexAccent .. delveRank .. "|r |cFFAAAAAA/ " .. delveMax .. "|r",
                 1,
                 1,
@@ -1101,7 +1101,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 end
             end
             mod.Tip_AddDouble(
-                "|cFFFFFFFF" .. L["COMPANION_LEVEL"] .. "|r",
+                "|cFFFFFFFF" .. Loc["COMPANION_LEVEL"] .. "|r",
                 "|cFF" .. hexAccent .. companionLvl .. "|r",
                 1,
                 1,
@@ -1157,7 +1157,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 local def = mmButtonDefsByKey[name]
                 mod.Tip_Begin(widget)
                 mod.Tip_AddLine("|cFFFFFFFF" .. ((def and def.label) or name) .. "|r", 1, 1, 1)
-                mod.Tip_AddLine(L["CANNOT_USE_COMBAT"], 0.65, 0.65, 0.65)
+                mod.Tip_AddLine(Loc["CANNOT_USE_COMBAT"], 0.65, 0.65, 0.65)
                 mod.Tip_Show()
                 return
             end

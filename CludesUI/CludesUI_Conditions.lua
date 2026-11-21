@@ -33,7 +33,7 @@ local CUI = CludesUI
 --  twice during a fight).
 -------------------------------------------------------------------------------
 
-local L = function(s) return CUI.L(s) or s end
+local Loc = function(s) return CUI.L(s) or s end
 
 -------------------------------------------------------------------------------
 --  Condition definitions (ordered display list for the picker UI; the

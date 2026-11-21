@@ -155,8 +155,8 @@ BuildGCDBar = function()
         -- refresh an already-open lifecycle window, never open one --
         -- otherwise random cooldown chatter would flash an empty bar.
         local function captureGCD(self, gc, windowOnly)
-            local cd = getCD and getCD(CUI.GCD_SPELL)
-            if not cd or not cd.startTime then return end
+            local cdInfo = getCD and getCD(CUI.GCD_SPELL)
+            if not cdInfo or not cdInfo.startTime then return end
             -- Engine-true fill, same duration-object push-through as the
             -- action bar swipes: hand the GCD's duration object to the bar
             -- timer and the engine renders TRUE progress every frame --
@@ -171,7 +171,7 @@ BuildGCDBar = function()
                 and C_Spell
                 and C_Spell.GetSpellCooldownDuration
             local success, elapsed, dur = pcall(function()
-                local skinData, s = cd.duration, cd.startTime
+                local skinData, s = cdInfo.duration, cdInfo.startTime
                 if skinData and skinData > 0 and skinData <= 1.6 and s and s > 0 then
                     return GetTime() - s, skinData
                 end
@@ -229,7 +229,7 @@ BuildGCDBar = function()
                 end
                 -- A GCD that is already over (a hard cast's SUCCEEDED, an
                 -- off-GCD spell) opens nothing; isActive is never secret.
-                if not cd.isActive then return end
+                if not cdInfo.isActive then return end
                 if armNativeGCD(barFrame, gc.depleteFill) then
                     self._nativeGCD = true
                     self._gcdStart = GetTime()
@@ -306,11 +306,11 @@ BuildGCDBar = function()
                 or evt == "UNIT_SPELLCAST_INTERRUPTED"
                 or evt == "UNIT_SPELLCAST_STOP"
             then
-                local cd = getCD and getCD(CUI.GCD_SPELL)
+                local cdInfo = getCD and getCD(CUI.GCD_SPELL)
                 local stillActive = false
-                if cd and cd.startTime then
+                if cdInfo and cdInfo.startTime then
                     local success, act = pcall(function()
-                        local skinData, s = cd.duration, cd.startTime
+                        local skinData, s = cdInfo.duration, cdInfo.startTime
                         return (skinData and skinData > 0 and skinData <= 1.6 and s and s > 0) and true
                             or false
                     end)
@@ -611,8 +611,8 @@ SetUpdateGCDBar(function(_dt)
     -- Secret values: the real length is unreadable, so the window above is only a ceiling.
     -- The cooldown's isActive stays a plain boolean; end the window when the GCD is over.
     if active and gcdBarFrame._gcdUnread then
-        local cd = C_Spell.GetSpellCooldown(CUI.GCD_SPELL)
-        local act = cd and cd.isActive
+        local cdInfo = C_Spell.GetSpellCooldown(CUI.GCD_SPELL)
+        local act = cdInfo and cdInfo.isActive
         if not (issecretvalue and issecretvalue(act)) and act == false then
             gcdBarFrame._gcdStart = nil
             gcdBarFrame._gcdDur = nil

@@ -28,7 +28,7 @@ local CUI = CludesUI
 --  showLabel, showIcon (default on), stripColors (default on), maxWidth.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local InCombatLockdown = InCombatLockdown
@@ -112,7 +112,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         if not cfg.source then
             -- Bar text is set directly, not through the tooltip helpers that
             -- translate, so it is translated here.
-            return CUI.L(L["SELECT_PLUGIN"]), true
+            return CUI.L(Loc["SELECT_PLUGIN"]), true
         end
         local body = cfg.showText ~= false and PluginText(object) or nil
         local name = object.label
@@ -315,9 +315,9 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
             -- The placeholder is the whole block, so say where a plugin is picked.
             local red, green, blue = mod.GetAccent()
             mod.Tip_Begin(button)
-            mod.Tip_AddLine(L["SELECT_PLUGIN"], 1, 1, 1)
+            mod.Tip_AddLine(Loc["SELECT_PLUGIN"], 1, 1, 1)
             mod.Tip_AddLine(" ")
-            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, red, green, blue)
+            mod.Tip_AddDouble(Loc["LEFT_CLICK"], Loc["OPEN_SETTINGS"], 1, 1, 1, red, green, blue)
             mod.Tip_Show()
             return
         end

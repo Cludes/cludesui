@@ -3889,13 +3889,13 @@ local function LayoutPanel()
         refreshButton:EnableMouse(false) -- blizzard's button underneath takes the click
         refreshButton.Glyph:SetSize(14, 14)
         local px = CUI.PP.mult
-        local cd = CreateFrame("Cooldown", nil, refreshButton, "CooldownFrameTemplate")
-        cd:SetPoint("TOPLEFT", refreshButton, "TOPLEFT", px, -px)
-        cd:SetPoint("BOTTOMRIGHT", refreshButton, "BOTTOMRIGHT", -px, px)
-        if cd.SetDrawEdge then cd:SetDrawEdge(false) end
-        if cd.SetHideCountdownNumbers then cd:SetHideCountdownNumbers(true) end
-        if cd.SetSwipeColor then cd:SetSwipeColor(0, 0, 0, 0.65) end
-        refreshButton.cd = cd
+        local cdFrame = CreateFrame("Cooldown", nil, refreshButton, "CooldownFrameTemplate")
+        cdFrame:SetPoint("TOPLEFT", refreshButton, "TOPLEFT", px, -px)
+        cdFrame:SetPoint("BOTTOMRIGHT", refreshButton, "BOTTOMRIGHT", -px, px)
+        if cdFrame.SetDrawEdge then cdFrame:SetDrawEdge(false) end
+        if cdFrame.SetHideCountdownNumbers then cdFrame:SetHideCountdownNumbers(true) end
+        if cdFrame.SetSwipeColor then cdFrame:SetSwipeColor(0, 0, 0, 0.65) end
+        refreshButton.cd = cdFrame
         local function Tip(ownerFrame)
             refreshButton.hover = true
             refreshButton:LockHighlight()
@@ -4540,13 +4540,13 @@ local function LayoutViewerRefresh(AppViewer)
         lookName:EnableMouse(false)
         lookName.Glyph:SetSize(14, 14)
         local px = CUI.PP.mult
-        local cd = CreateFrame("Cooldown", nil, lookName, "CooldownFrameTemplate")
-        cd:SetPoint("TOPLEFT", lookName, "TOPLEFT", px, -px)
-        cd:SetPoint("BOTTOMRIGHT", lookName, "BOTTOMRIGHT", -px, px)
-        if cd.SetDrawEdge then cd:SetDrawEdge(false) end
-        if cd.SetHideCountdownNumbers then cd:SetHideCountdownNumbers(true) end
-        if cd.SetSwipeColor then cd:SetSwipeColor(0, 0, 0, 0.65) end
-        refreshBtn:HookScript("OnClick", function() cd:SetCooldown(GetTime(), 1) end)
+        local cdFrame = CreateFrame("Cooldown", nil, lookName, "CooldownFrameTemplate")
+        cdFrame:SetPoint("TOPLEFT", lookName, "TOPLEFT", px, -px)
+        cdFrame:SetPoint("BOTTOMRIGHT", lookName, "BOTTOMRIGHT", -px, px)
+        if cdFrame.SetDrawEdge then cdFrame:SetDrawEdge(false) end
+        if cdFrame.SetHideCountdownNumbers then cdFrame:SetHideCountdownNumbers(true) end
+        if cdFrame.SetSwipeColor then cdFrame:SetSwipeColor(0, 0, 0, 0.65) end
+        refreshBtn:HookScript("OnClick", function() cdFrame:SetCooldown(GetTime(), 1) end)
         refreshBtn:SetAlpha(0)
         refreshBtn:HookScript("OnEnter", function()
             lookName:LockHighlight()

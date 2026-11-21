@@ -96,8 +96,8 @@ end
 
 -- When the running GCD ends; 0 while none runs (or it reads secret).
 local function ReadGCD()
-    local cd = C_Spell.GetSpellCooldown(GCD_SPELL)
-    local s, skinData = cd and cd.startTime, cd and cd.duration
+    local cdInfo = C_Spell.GetSpellCooldown(GCD_SPELL)
+    local s, skinData = cdInfo and cdInfo.startTime, cdInfo and cdInfo.duration
     if
         type(s) == "number"
         and type(skinData) == "number"

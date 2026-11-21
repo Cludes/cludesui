@@ -7,7 +7,7 @@ local CUI = CludesUI
 -------------------------------------------------------------------------------
 local FOLDER, mod = ...
 if CUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
-local L = CUI.L
+local Loc = CUI.L
 
 local FLAG_DIR = "Interface\\AddOns\\" .. FOLDER .. "\\media\\flags\\"
 
@@ -23,10 +23,10 @@ end
 local SETS = {
     [1] = {
         list = {
-            { key = "na", label = L("North America"), tag = "NA", r = 1, g = 0.35, b = 0.35 },
-            { key = "oce", label = L("Oceanic"), tag = "OCE", r = 0.35, g = 0.65, b = 1 },
-            { key = "la", label = L("Latin America"), tag = "MEX", r = 1, g = 0.5, b = 0.82 },
-            { key = "br", label = L("Brazil"), tag = "BRA", r = 0.35, g = 0.9, b = 0.45 },
+            { key = "na", label = Loc("North America"), tag = "NA", r = 1, g = 0.35, b = 0.35 },
+            { key = "oce", label = Loc("Oceanic"), tag = "OCE", r = 0.35, g = 0.65, b = 1 },
+            { key = "la", label = Loc("Latin America"), tag = "MEX", r = 1, g = 0.5, b = 0.82 },
+            { key = "br", label = Loc("Brazil"), tag = "BRA", r = 0.35, g = 0.9, b = 0.45 },
         },
         realms = {
             oce = {
@@ -50,13 +50,13 @@ local SETS = {
     },
     [3] = {
         list = {
-            { key = "en", label = L("English"), tag = "EN", r = 0.35, g = 0.65, b = 1 },
-            { key = "de", label = L("German"), tag = "DE", r = 1, g = 0.82, b = 0.2 },
-            { key = "fr", label = L("French"), tag = "FR", r = 0.6, g = 0.6, b = 1 },
-            { key = "es", label = L("Spanish"), tag = "ES", r = 1, g = 0.55, b = 0.25 },
-            { key = "it", label = L("Italian"), tag = "IT", r = 0.35, g = 0.9, b = 0.45 },
-            { key = "pt", label = L("Portuguese"), tag = "PT", r = 0.3, g = 0.85, b = 0.75 },
-            { key = "ru", label = L("Russian"), tag = "RU", r = 1, g = 0.35, b = 0.35 },
+            { key = "en", label = Loc("English"), tag = "EN", r = 0.35, g = 0.65, b = 1 },
+            { key = "de", label = Loc("German"), tag = "DE", r = 1, g = 0.82, b = 0.2 },
+            { key = "fr", label = Loc("French"), tag = "FR", r = 0.6, g = 0.6, b = 1 },
+            { key = "es", label = Loc("Spanish"), tag = "ES", r = 1, g = 0.55, b = 0.25 },
+            { key = "it", label = Loc("Italian"), tag = "IT", r = 0.35, g = 0.9, b = 0.45 },
+            { key = "pt", label = Loc("Portuguese"), tag = "PT", r = 0.3, g = 0.85, b = 0.75 },
+            { key = "ru", label = Loc("Russian"), tag = "RU", r = 1, g = 0.35, b = 0.35 },
         },
         language = true, -- filter titled language, short names in two columns
         -- eu realms by language, english is everything else. accents and cyrillic

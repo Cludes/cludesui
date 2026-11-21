@@ -134,8 +134,8 @@ local function OutcomeColor(statusText)
     local historyCfg = HistoryDB()
     if historyCfg.barColorUseClass then
         local _, class = UnitClass("player")
-        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
-        if cc then return cc.r, cc.g, cc.b end
+        local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
+        if classColor then return classColor.r, classColor.g, classColor.b end
     end
     if historyCfg.barColorUseAccent then return GetAccentRGB() end
     local color = historyCfg.barColor

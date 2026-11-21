@@ -16,7 +16,7 @@ if CUI.IS_FOREVER then return end -- Mythic+ Tools does not load on WoW Forever 
 --  Settings (blockCfg.settings): hideWhenEmpty (no runs = no block).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local L = mod.L
+local Loc = mod.L
 local K = mod.BlockKit
 
 local InCombatLockdown = InCombatLockdown
@@ -168,9 +168,9 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
             mod.Tip_AddDouble(RunName(runs[i]), time, 0.8, 0.8, 0.8, tr, tg, tb)
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], CUI.L("Open Run Summary"), 1, 1, 1, red, green, blue)
+        mod.Tip_AddDouble(Loc["LEFT_CLICK"], CUI.L("Open Run Summary"), 1, 1, 1, red, green, blue)
         if count > 0 then
-            mod.Tip_AddDouble(L["RIGHT_CLICK"], CUI.L("Clear Run History"), 1, 1, 1, red, green, blue)
+            mod.Tip_AddDouble(Loc["RIGHT_CLICK"], CUI.L("Clear Run History"), 1, 1, 1, red, green, blue)
         end
         mod.Tip_Show()
     end
