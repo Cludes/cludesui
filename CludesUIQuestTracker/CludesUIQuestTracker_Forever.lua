@@ -14,8 +14,8 @@ end
 --  options reach it only through EQT fields that are nil there.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local EQT = mod.EQT
-local Cfg = EQT.Cfg
+local TrackerNS = mod.EQT
+local Cfg = TrackerNS.Cfg
 
 -- The progress colour stops: the defaults, the paint's fallbacks and the
 -- options' swatches all read this.
@@ -24,7 +24,7 @@ local OBJ_STOPS = {
     Mid = { 1.0, 1.0, 0.4 },
     End = { 0.4, 1.0, 0.4 },
 }
-EQT.OBJ_STOPS = OBJ_STOPS
+TrackerNS.OBJ_STOPS = OBJ_STOPS
 
 -- Defaults, added to the module's table before its database is made at login.
 do
@@ -505,18 +505,18 @@ end
 
 -- For our tracker, which reads only: one snapshot per pass, then area,
 -- filters and sorting against it. No watch edits.
-function EQT.QuestLogSnapshot()
+function TrackerNS.QuestLogSnapshot()
     Snapshot()
     return logList, logHeader
 end
-EQT.QuestInArea = InArea
-function EQT.IsQuestFiltered(questId)
+TrackerNS.QuestInArea = InArea
+function TrackerNS.IsQuestFiltered(questId)
     return FilterOn() and Filtered(questId, C_SuperTrack.GetSuperTrackedQuestID())
 end
-function EQT.AutoTrackOn()
+function TrackerNS.AutoTrackOn()
     return AutoOn()
 end
-function EQT.SortQuestList(ids)
+function TrackerNS.SortQuestList(ids)
     SortList(ids, SortMode(), SortCompleted(), SortThenBy())
 end
 
@@ -550,7 +550,7 @@ local waitingForMap = false
 -- securecallfunction, so this stays out of the map's chain; it unhooks
 -- itself once it has run.
 local function MapClosed()
-    EventRegistry:UnregisterCallback("WorldMapOnHide", EQT)
+    EventRegistry:UnregisterCallback("WorldMapOnHide", TrackerNS)
     if waitingForMap then
         waitingForMap = false
         QueueWatches()
@@ -564,7 +564,7 @@ local function WatchPass()
         dungeonPass = false
         if MapOpen() and not waitingForMap then
             waitingForMap = true
-            EventRegistry:RegisterCallback("WorldMapOnHide", MapClosed, EQT)
+            EventRegistry:RegisterCallback("WorldMapOnHide", MapClosed, TrackerNS)
         end
         -- Combat or an open-world encounter: again when it ends. Instances
         -- wait for the zone events on the way out.
@@ -700,22 +700,22 @@ local function MakeFilterButton()
         CludesUI.HideWidgetTooltip()
     end)
     button:SetScript("OnClick", function(self)
-        EQT.Set("filterEnabled", not Cfg("filterEnabled"))
-        EQT.ApplyQuestWatches()
+        TrackerNS.Set("filterEnabled", not Cfg("filterEnabled"))
+        TrackerNS.ApplyQuestWatches()
         CludesUI:RefreshPage()
         CludesUI.ShowWidgetTooltip(self, FilterTip())
     end)
-    EQT.FilterToggle = button
-    EQT.SkinHeader(headerFrame)
-    if EQT._trackerMouseOff then
-        EQT.MouseOff(button)
+    TrackerNS.FilterToggle = button
+    TrackerNS.SkinHeader(headerFrame)
+    if TrackerNS._trackerMouseOff then
+        TrackerNS.MouseOff(button)
     end
     return button
 end
 
 local function ApplyFilterButton()
     local wanted = ToolsOn() and Cfg("filterHeaderToggle") == true
-    local button = EQT.FilterToggle
+    local button = TrackerNS.FilterToggle
     if not button then
         if not wanted then
             return
@@ -730,11 +730,11 @@ local function ApplyFilterButton()
 end
 
 -- The options' and profile switch's entry point.
-function EQT.ApplyQuestWatches()
+function TrackerNS.ApplyQuestWatches()
     -- Our tracker keeps its own list; the watch list is left alone.
     if mod.UseCustomTracker() then
-        if EQT.RefreshCustom then
-            EQT.RefreshCustom()
+        if TrackerNS.RefreshCustom then
+            TrackerNS.RefreshCustom()
         end
         return
     end
@@ -825,7 +825,7 @@ local PEON_SOUNDS = {
 local isFile = {}
 
 local soundFiles
-function EQT.Sounds()
+function TrackerNS.Sounds()
     if not soundFiles then
         local names, order
         soundFiles, names, order = CludesUI.BuildAlertSoundTables()
@@ -836,18 +836,18 @@ function EQT.Sounds()
             table.insert(order, #CludesUI.ALERT_SOUND_ORDER + i, key)
         end
         CludesUI.AppendSharedMediaSounds(soundFiles, names, order)
-        EQT.SoundNames, EQT.SoundOrder = names, order
+        TrackerNS.SoundNames, TrackerNS.SoundOrder = names, order
     end
-    return soundFiles, EQT.SoundNames, EQT.SoundOrder
+    return soundFiles, TrackerNS.SoundNames, TrackerNS.SoundOrder
 end
 
 -- Also the options dropdown's preview.
 local function PlaySoundKey(key)
     if key and key ~= "none" then
-        CludesUI.PlaySoundPath(EQT.Sounds()[key], isFile[key] ~= nil)
+        CludesUI.PlaySoundPath(TrackerNS.Sounds()[key], isFile[key] ~= nil)
     end
 end
-EQT.PlaySoundKey = PlaySoundKey
+TrackerNS.PlaySoundKey = PlaySoundKey
 
 local function ProgressOn()
     return (Cfg("soundObjective") or "none") ~= "none"
@@ -959,7 +959,7 @@ local function OnProgressEvent(_, eventName, questId)
 end
 
 -- The options' and profile switch's entry point.
-function EQT.ApplyQuestProgress()
+function TrackerNS.ApplyQuestProgress()
     local isOn = ProgressOn()
     if not progressFrame then
         if not isOn then
@@ -1007,7 +1007,7 @@ for _, stop in ipairs(STOPS) do
 end
 local seen, generation = {}, 0
 local function Generation()
-    local db = EQT.DB()
+    local db = TrackerNS.DB()
     local moved = false
     for _, key in ipairs(COLOUR_KEYS) do
         if seen[key] ~= db[key] then
@@ -1022,7 +1022,7 @@ local function Generation()
 end
 
 local function StopColour(stop)
-    local db = EQT.DB()
+    local db = TrackerNS.DB()
     return db[stop[1]] or stop.def[1], db[stop[2]] or stop.def[2], db[stop[3]] or stop.def[3]
 end
 
@@ -1038,7 +1038,7 @@ local function ProgressRGB(frame)
     local r2, g2, b2 = StopColour(to)
     return r1 + (r2 - r1) * frame, g1 + (g2 - g1) * frame, b1 + (b2 - b1) * frame
 end
-EQT.ProgressRGB = ProgressRGB
+TrackerNS.ProgressRGB = ProgressRGB
 
 -- Back to Blizzard's colour.
 local function Restore(text)
@@ -1059,11 +1059,11 @@ end
 
 -- Whether the skin should hand blocks over: a mode is on, or lines still
 -- carry our colour.
-function EQT.ObjColorsWanted()
+function TrackerNS.ObjColorsWanted()
     return Cfg("objProgressColor") or Cfg("objDimCompleted") or next(painted) ~= nil
 end
 
-function EQT.ColorObjectiveLines(questBlock)
+function TrackerNS.ColorObjectiveLines(questBlock)
     local lines = questBlock and questBlock.usedLines
     if not lines then
         return

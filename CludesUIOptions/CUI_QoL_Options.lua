@@ -2644,17 +2644,17 @@ CludesUI.AtOptionsLogin(function()
         -- "Custom" if enabled) -- i.e. H/V widths differ or don't match a preset.
         -- Checked regardless of None so a saved custom config can be restored.
         local function crosshairIsCustom()
-            local P = CludesUI.CROSSHAIR_PRESETS
+            local PRESETS = CludesUI.CROSSHAIR_PRESETS
             local s = cursorGet("crosshairSize")
             local sizeForBase = (s and s ~= "None" and s) or "Normal"
-            local base = (P and (P[sizeForBase] or P.Normal)) or { width = 2 }
+            local base = (PRESETS and (PRESETS[sizeForBase] or PRESETS.Normal)) or { width = 2 }
             local hw = cursorGet("crosshairHWidth") or base.width
             local vw = cursorGet("crosshairVWidth") or base.width
             if hw ~= vw then
                 return true
             end
-            if P then
-                for _, p in pairs(P) do
+            if PRESETS then
+                for _, p in pairs(PRESETS) do
                     if p.width == hw then
                         return false
                     end
@@ -2696,12 +2696,12 @@ CludesUI.AtOptionsLogin(function()
                 if size == "None" then
                     return "None"
                 end
-                local P = CludesUI.CROSSHAIR_PRESETS
-                local base = (P and (P[size] or P.Normal)) or { width = 2 }
+                local PRESETS = CludesUI.CROSSHAIR_PRESETS
+                local base = (PRESETS and (PRESETS[size] or PRESETS.Normal)) or { width = 2 }
                 local hw = cursorGet("crosshairHWidth") or base.width
                 local vw = cursorGet("crosshairVWidth") or base.width
-                if hw == vw and P then
-                    for name, p in pairs(P) do
+                if hw == vw and PRESETS then
+                    for name, p in pairs(PRESETS) do
                         if p.width == hw then
                             return name
                         end
@@ -2862,8 +2862,8 @@ CludesUI.AtOptionsLogin(function()
             end
             local function presetThick()
                 local s = cursorGet("crosshairSize")
-                local P = CludesUI.CROSSHAIR_PRESETS
-                local p = P and (P[s] or P.Normal)
+                local PRESETS = CludesUI.CROSSHAIR_PRESETS
+                local p = PRESETS and (PRESETS[s] or PRESETS.Normal)
                 return (p and p.width) or 2
             end
             local function applyCH()

@@ -1046,41 +1046,41 @@ end
 -- (ApplyRowChrome), not by the slicing.
 -- Each piece: atlas u0, u1, v0, v1 (pixels), under-the-rows flag, and its
 -- TOPLEFT / BOTTOMRIGHT as { column point, x, y }.
-local PANEL_R = 0
+local PANEL_RADIUS = 0
 local PANEL_PIECES = {
     -- corners
-    { 0, 2 + PANEL_R, 0, 3 + PANEL_R, false, { "TOPLEFT", -2, 3 }, { "TOPLEFT", PANEL_R, -PANEL_R } },
-    { 126 - PANEL_R, 132, 0, 3 + PANEL_R, false, { "TOPRIGHT", -PANEL_R, 3 }, { "TOPRIGHT", 6, -PANEL_R } },
-    { 0, 2 + PANEL_R, 12 - PANEL_R, 19, false, { "BOTTOMLEFT", -2, PANEL_R }, { "BOTTOMLEFT", PANEL_R, -7 } },
+    { 0, 2 + PANEL_RADIUS, 0, 3 + PANEL_RADIUS, false, { "TOPLEFT", -2, 3 }, { "TOPLEFT", PANEL_RADIUS, -PANEL_RADIUS } },
+    { 126 - PANEL_RADIUS, 132, 0, 3 + PANEL_RADIUS, false, { "TOPRIGHT", -PANEL_RADIUS, 3 }, { "TOPRIGHT", 6, -PANEL_RADIUS } },
+    { 0, 2 + PANEL_RADIUS, 12 - PANEL_RADIUS, 19, false, { "BOTTOMLEFT", -2, PANEL_RADIUS }, { "BOTTOMLEFT", PANEL_RADIUS, -7 } },
     {
-        126 - PANEL_R,
+        126 - PANEL_RADIUS,
         132,
-        12 - PANEL_R,
+        12 - PANEL_RADIUS,
         19,
         false,
-        { "BOTTOMRIGHT", -PANEL_R, PANEL_R },
+        { "BOTTOMRIGHT", -PANEL_RADIUS, PANEL_RADIUS },
         { "BOTTOMRIGHT", 6, -7 },
     },
     -- edges
-    { 2 + PANEL_R, 126 - PANEL_R, 0, 3, false, { "TOPLEFT", PANEL_R, 3 }, { "TOPRIGHT", -PANEL_R, 0 } },
+    { 2 + PANEL_RADIUS, 126 - PANEL_RADIUS, 0, 3, false, { "TOPLEFT", PANEL_RADIUS, 3 }, { "TOPRIGHT", -PANEL_RADIUS, 0 } },
     {
-        2 + PANEL_R,
-        126 - PANEL_R,
+        2 + PANEL_RADIUS,
+        126 - PANEL_RADIUS,
         12,
         19,
         false,
-        { "BOTTOMLEFT", PANEL_R, 0 },
-        { "BOTTOMRIGHT", -PANEL_R, -7 },
+        { "BOTTOMLEFT", PANEL_RADIUS, 0 },
+        { "BOTTOMRIGHT", -PANEL_RADIUS, -7 },
     },
-    { 0, 2, 3 + PANEL_R, 12 - PANEL_R, false, { "TOPLEFT", -2, -PANEL_R }, { "BOTTOMLEFT", 0, PANEL_R } },
+    { 0, 2, 3 + PANEL_RADIUS, 12 - PANEL_RADIUS, false, { "TOPLEFT", -2, -PANEL_RADIUS }, { "BOTTOMLEFT", 0, PANEL_RADIUS } },
     {
         126,
         132,
-        3 + PANEL_R,
-        12 - PANEL_R,
+        3 + PANEL_RADIUS,
+        12 - PANEL_RADIUS,
         false,
-        { "TOPRIGHT", 0, -PANEL_R },
-        { "BOTTOMRIGHT", 6, PANEL_R },
+        { "TOPRIGHT", 0, -PANEL_RADIUS },
+        { "BOTTOMRIGHT", 6, PANEL_RADIUS },
     },
     -- centre (backdrop)
     { 2, 126, 3, 12, true, { "TOPLEFT", 0, 0 }, { "BOTTOMRIGHT", 0, 0 } },

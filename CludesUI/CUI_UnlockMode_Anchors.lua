@@ -325,9 +325,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
     end
 
     -- Width/Height match persistent links
-    local MatchH = {}
+    local MatchKit = {}
 
-    function MatchH.GetWidthMatchDB()
+    function MatchKit.GetWidthMatchDB()
         if not CludesUIDB then
             return nil
         end
@@ -337,7 +337,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         return CludesUIDB.unlockWidthMatch
     end
 
-    function MatchH.GetHeightMatchDB()
+    function MatchKit.GetHeightMatchDB()
         if not CludesUIDB then
             return nil
         end
@@ -369,7 +369,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         return nil
     end
 
-    function MatchH.SetMatchExtra(dim, barKey, px)
+    function MatchKit.SetMatchExtra(dim, barKey, px)
         if not CludesUIDB or not barKey then
             return
         end
@@ -395,18 +395,18 @@ CUI_NS.unlockParts.Anchors = function(LM)
         tbl[barKey] = px
     end
 
-    function MatchH.GetWidthMatchInfo(barId)
-        local saved = MatchH.GetWidthMatchDB()
+    function MatchKit.GetWidthMatchInfo(barId)
+        local saved = MatchKit.GetWidthMatchDB()
         return saved and saved[barId] or nil
     end
 
-    function MatchH.GetHeightMatchInfo(barId)
-        local saved = MatchH.GetHeightMatchDB()
+    function MatchKit.GetHeightMatchInfo(barId)
+        local saved = MatchKit.GetHeightMatchDB()
         return saved and saved[barId] or nil
     end
 
     -- Cycle detect: walk the chain from targetKey; reaching childKey would loop forever.
-    function MatchH.WouldCreateCycle(saved, childBarKey, targetBarKey)
+    function MatchKit.WouldCreateCycle(saved, childBarKey, targetBarKey)
         local seen = {}
         local current = targetBarKey
         while current do
@@ -427,15 +427,15 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- link (0-hop start mirrors call-site direct-target tests, so a bar matched
     -- DIRECTLY to a plain action bar never qualifies). Match DBs key on literal element
     -- keys (no alias resolution), as the anchor cascade reads them; visited guards malformed cycles.
-    function MatchH.ChainDrivenToBar(barId, dim)
+    function MatchKit.ChainDrivenToBar(barId, dim)
         if not barId then
             return false
         end
         local saved
         if dim == "width" then
-            saved = MatchH.GetWidthMatchDB()
+            saved = MatchKit.GetWidthMatchDB()
         elseif dim == "height" then
-            saved = MatchH.GetHeightMatchDB()
+            saved = MatchKit.GetHeightMatchDB()
         else
             return false
         end
@@ -458,40 +458,40 @@ CUI_NS.unlockParts.Anchors = function(LM)
         return false
     end
 
-    function MatchH.SetWidthMatch(childBarKey, targetBarKey)
-        local saved = MatchH.GetWidthMatchDB()
+    function MatchKit.SetWidthMatch(childBarKey, targetBarKey)
+        local saved = MatchKit.GetWidthMatchDB()
         if not saved then
             return
         end
-        if MatchH.WouldCreateCycle(saved, childBarKey, targetBarKey) then
+        if MatchKit.WouldCreateCycle(saved, childBarKey, targetBarKey) then
             -- Break the cycle: clear the link that targetKey has, then set ours
             saved[targetBarKey] = nil
-            MatchH.SetMatchExtra("w", targetBarKey, nil)
+            MatchKit.SetMatchExtra("w", targetBarKey, nil)
         end
         -- A new match starts at +0.
         if saved[childBarKey] ~= targetBarKey then
-            MatchH.SetMatchExtra("w", childBarKey, nil)
+            MatchKit.SetMatchExtra("w", childBarKey, nil)
         end
         saved[childBarKey] = targetBarKey
     end
 
-    function MatchH.SetHeightMatch(childBarKey, targetBarKey)
-        local saved = MatchH.GetHeightMatchDB()
+    function MatchKit.SetHeightMatch(childBarKey, targetBarKey)
+        local saved = MatchKit.GetHeightMatchDB()
         if not saved then
             return
         end
-        if MatchH.WouldCreateCycle(saved, childBarKey, targetBarKey) then
+        if MatchKit.WouldCreateCycle(saved, childBarKey, targetBarKey) then
             saved[targetBarKey] = nil
-            MatchH.SetMatchExtra("h", targetBarKey, nil)
+            MatchKit.SetMatchExtra("h", targetBarKey, nil)
         end
         if saved[childBarKey] ~= targetBarKey then
-            MatchH.SetMatchExtra("h", childBarKey, nil)
+            MatchKit.SetMatchExtra("h", childBarKey, nil)
         end
         saved[childBarKey] = targetBarKey
     end
 
-    function MatchH.ClearWidthMatch(childBarKey)
-        local saved = MatchH.GetWidthMatchDB()
+    function MatchKit.ClearWidthMatch(childBarKey)
+        local saved = MatchKit.GetWidthMatchDB()
         if not saved then
             return
         end
@@ -503,20 +503,20 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if widget then
                 local curW = widget:GetWidth()
                 if curW and curW > 0 then
-                    local PPm = CludesUI and CludesUI.PP
-                    if PPm and PPm.SnapForES then
-                        curW = PPm.SnapForES(curW, widget:GetEffectiveScale())
+                    local PixKit = CludesUI and CludesUI.PP
+                    if PixKit and PixKit.SnapForES then
+                        curW = PixKit.SnapForES(curW, widget:GetEffectiveScale())
                     end
                     pcall(element.setWidth, childBarKey, curW)
                 end
             end
         end
         saved[childBarKey] = nil
-        MatchH.SetMatchExtra("w", childBarKey, nil)
+        MatchKit.SetMatchExtra("w", childBarKey, nil)
     end
 
-    function MatchH.ClearHeightMatch(childBarKey)
-        local saved = MatchH.GetHeightMatchDB()
+    function MatchKit.ClearHeightMatch(childBarKey)
+        local saved = MatchKit.GetHeightMatchDB()
         if not saved then
             return
         end
@@ -526,28 +526,28 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if widget then
                 local curH = widget:GetHeight()
                 if curH and curH > 0 then
-                    local PPm = CludesUI and CludesUI.PP
-                    if PPm and PPm.SnapForES then
-                        curH = PPm.SnapForES(curH, widget:GetEffectiveScale())
+                    local PixKit = CludesUI and CludesUI.PP
+                    if PixKit and PixKit.SnapForES then
+                        curH = PixKit.SnapForES(curH, widget:GetEffectiveScale())
                     end
                     pcall(element.setHeight, childBarKey, curH)
                 end
             end
         end
         saved[childBarKey] = nil
-        MatchH.SetMatchExtra("h", childBarKey, nil)
+        MatchKit.SetMatchExtra("h", childBarKey, nil)
     end
 
     -------------------------------------------------------------------------------
     --  Public API: query width/height match state from any addon
     -------------------------------------------------------------------------------
     function CludesUI.GetWidthMatchTarget(barId)
-        local saved = MatchH.GetWidthMatchDB()
+        local saved = MatchKit.GetWidthMatchDB()
         return saved and saved[barId] or nil
     end
 
     function CludesUI.GetHeightMatchTarget(barId)
-        local saved = MatchH.GetHeightMatchDB()
+        local saved = MatchKit.GetHeightMatchDB()
         return saved and saved[barId] or nil
     end
 
@@ -916,7 +916,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     local _propagatingMatch = false
     CludesUI._propagatingMatch = false
 
-    function MatchH.ApplyWidthMatch(sourceBarKey, targetBarKey)
+    function MatchKit.ApplyWidthMatch(sourceBarKey, targetBarKey)
         local targetElement = registeredElements[targetBarKey]
         local targetFrame = LM.GetBarFrame(targetBarKey)
         local targetWidth
@@ -940,9 +940,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             -- Snap to the physical pixel grid with round-to-nearest: PP.Scale
             -- truncates and drops a pixel on float boundary values; SnapForES uses
             -- floor(x/px + 0.5), which is safe.
-            local PPm = CludesUI and CludesUI.PP
-            if PPm and PPm.SnapForES and targetFrame then
-                targetWidth = PPm.SnapForES(targetWidth, targetFrame:GetEffectiveScale())
+            local PixKit = CludesUI and CludesUI.PP
+            if PixKit and PixKit.SnapForES and targetFrame then
+                targetWidth = PixKit.SnapForES(targetWidth, targetFrame:GetEffectiveScale())
             else
                 targetWidth = floor(targetWidth + 0.5)
             end
@@ -967,8 +967,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
                     local padW = sourceElement.getMatchPad(sourceBarKey)
                     if padW and padW > 0 then
                         targetWidth = rawW * conv - padW
-                        if PPm and PPm.SnapForES and sourceBar then
-                            targetWidth = PPm.SnapForES(targetWidth, sourceBar:GetEffectiveScale())
+                        if PixKit and PixKit.SnapForES and sourceBar then
+                            targetWidth = PixKit.SnapForES(targetWidth, sourceBar:GetEffectiveScale())
                         else
                             targetWidth = floor(targetWidth + 0.5)
                         end
@@ -981,7 +981,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 local ex = CludesUI.GetMatchExtra("w", sourceBarKey)
                 if ex then
                     local es = sourceBar and sourceBar:GetEffectiveScale()
-                    local one = (PPm and PPm.perfect and es and es > 0) and (PPm.perfect / es) or 1
+                    local one = (PixKit and PixKit.perfect and es and es > 0) and (PixKit.perfect / es) or 1
                     targetWidth = math.max(1, targetWidth + ex * one)
                 end
                 if LM.isUnlocked then
@@ -1027,7 +1027,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
     end
 
-    function MatchH.ApplyHeightMatch(sourceBarKey, targetBarKey)
+    function MatchKit.ApplyHeightMatch(sourceBarKey, targetBarKey)
         local targetElement = registeredElements[targetBarKey]
         local targetFrame = LM.GetBarFrame(targetBarKey)
         local _, targetHeight
@@ -1045,9 +1045,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
         if targetHeight and CludesUI.PP.IsNum(targetHeight) and targetHeight > 0 then
             local rawH, conv = targetHeight, 1
-            local PPm = CludesUI and CludesUI.PP
-            if PPm and PPm.SnapForES and targetFrame then
-                targetHeight = PPm.SnapForES(targetHeight, targetFrame:GetEffectiveScale())
+            local PixKit = CludesUI and CludesUI.PP
+            if PixKit and PixKit.SnapForES and targetFrame then
+                targetHeight = PixKit.SnapForES(targetHeight, targetFrame:GetEffectiveScale())
             else
                 targetHeight = floor(targetHeight + 0.5)
             end
@@ -1071,8 +1071,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
                     local _, ph = sourceElement.getMatchPad(sourceBarKey)
                     if ph and ph > 0 then
                         targetHeight = rawH * conv - ph
-                        if PPm and PPm.SnapForES and sourceBar then
-                            targetHeight = PPm.SnapForES(targetHeight, sourceBar:GetEffectiveScale())
+                        if PixKit and PixKit.SnapForES and sourceBar then
+                            targetHeight = PixKit.SnapForES(targetHeight, sourceBar:GetEffectiveScale())
                         else
                             targetHeight = floor(targetHeight + 0.5)
                         end
@@ -1083,7 +1083,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 local ex = CludesUI.GetMatchExtra("h", sourceBarKey)
                 if ex then
                     local es = sourceBar and sourceBar:GetEffectiveScale()
-                    local one = (PPm and PPm.perfect and es and es > 0) and (PPm.perfect / es) or 1
+                    local one = (PixKit and PixKit.perfect and es and es > 0) and (PixKit.perfect / es) or 1
                     targetHeight = math.max(1, targetHeight + ex * one)
                 end
                 if LM.isUnlocked then
@@ -1334,7 +1334,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     end
 
     function CludesUI.PropagateWidthMatch(barKey)
-        local saved = MatchH.GetWidthMatchDB()
+        local saved = MatchKit.GetWidthMatchDB()
         if not saved then
             return
         end
@@ -1345,7 +1345,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             for childBarKey, tKey in pairs(saved) do
                 if tKey == parentKey and not seen[childBarKey] then
                     seen[childBarKey] = true
-                    MatchH.ApplyWidthMatch(childBarKey, parentKey)
+                    MatchKit.ApplyWidthMatch(childBarKey, parentKey)
                     LM._pendingAnchorKeys[childBarKey] = "width"
                     pushChildren(childBarKey)
                 end
@@ -1356,7 +1356,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     end
 
     function CludesUI.PropagateHeightMatch(barKey)
-        local saved = MatchH.GetHeightMatchDB()
+        local saved = MatchKit.GetHeightMatchDB()
         if not saved then
             return
         end
@@ -1365,7 +1365,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             for childBarKey, tKey in pairs(saved) do
                 if tKey == parentKey and not seen[childBarKey] then
                     seen[childBarKey] = true
-                    MatchH.ApplyHeightMatch(childBarKey, parentKey)
+                    MatchKit.ApplyHeightMatch(childBarKey, parentKey)
                     LM._pendingAnchorKeys[childBarKey] = "height"
                     pushChildren(childBarKey)
                 end
@@ -1500,7 +1500,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- Propagate width/height matches to dependents (suppressed during spec-swap
         -- / zone-transition -- see suppressMatchProp above).
         if not suppressMatchProp then
-            local wdb = MatchH.GetWidthMatchDB()
+            local wdb = MatchKit.GetWidthMatchDB()
             if wdb then
                 local hasChildren = false
                 for childBarKey, tKey in pairs(wdb) do
@@ -1515,10 +1515,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 -- Re-pull from own target if this element is a width-match child
                 local ownTarget = wdb[barKey]
                 if ownTarget and widthChanged then
-                    MatchH.ApplyWidthMatch(barKey, ownTarget)
+                    MatchKit.ApplyWidthMatch(barKey, ownTarget)
                 end
             end
-            local hdb = MatchH.GetHeightMatchDB()
+            local hdb = MatchKit.GetHeightMatchDB()
             if hdb then
                 local hasChildren = false
                 for childBarKey, tKey in pairs(hdb) do
@@ -1533,7 +1533,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 -- Re-pull from own target if this element is a height-match child
                 local ownHTarget = hdb[barKey]
                 if ownHTarget and heightChanged then
-                    MatchH.ApplyHeightMatch(barKey, ownHTarget)
+                    MatchKit.ApplyHeightMatch(barKey, ownHTarget)
                 end
             end
         end
@@ -1641,17 +1641,17 @@ CUI_NS.unlockParts.Anchors = function(LM)
             local padW, ph = pe.getMatchPad(barKey)
             matchPad.w[barKey], matchPad.h[barKey] = padW or 0, ph or 0
         end
-        local wdb = MatchH.GetWidthMatchDB()
+        local wdb = MatchKit.GetWidthMatchDB()
         if wdb and mask ~= 2 then
             if wdb[barKey] then
-                MatchH.ApplyWidthMatch(barKey, wdb[barKey])
+                MatchKit.ApplyWidthMatch(barKey, wdb[barKey])
             end
             CludesUI.PropagateWidthMatch(barKey)
         end
-        local hdb = MatchH.GetHeightMatchDB()
+        local hdb = MatchKit.GetHeightMatchDB()
         if hdb and mask ~= 1 then
             if hdb[barKey] then
-                MatchH.ApplyHeightMatch(barKey, hdb[barKey])
+                MatchKit.ApplyHeightMatch(barKey, hdb[barKey])
             end
             CludesUI.PropagateHeightMatch(barKey)
         end
@@ -1662,16 +1662,16 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- then re-push its match children and anchor chain exactly as a fresh match pick
     -- does. ReapplyMatchPads cannot serve here, it stands down in unlock mode. File
     -- scope because CreateMover sits at Lua 5.1's 60-upvalue cap.
-    function MatchH.CommitMatchExtra(dim, barKey, px)
+    function MatchKit.CommitMatchExtra(dim, barKey, px)
         if not barKey then
             return
         end
         local isH = (dim == "h")
         local target
         if isH then
-            target = MatchH.GetHeightMatchInfo(barKey)
+            target = MatchKit.GetHeightMatchInfo(barKey)
         else
-            target = MatchH.GetWidthMatchInfo(barKey)
+            target = MatchKit.GetWidthMatchInfo(barKey)
         end
         if not target then
             return
@@ -1681,11 +1681,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if px == (CludesUI.GetMatchExtra(ax, barKey) or 0) then
             return
         end
-        MatchH.SetMatchExtra(ax, barKey, px)
+        MatchKit.SetMatchExtra(ax, barKey, px)
         if isH then
-            MatchH.ApplyHeightMatch(barKey, target)
+            MatchKit.ApplyHeightMatch(barKey, target)
         else
-            MatchH.ApplyWidthMatch(barKey, target)
+            MatchKit.ApplyWidthMatch(barKey, target)
         end
         LM.hasChanges = true
         local handle = movers[barKey]
@@ -1723,14 +1723,14 @@ CUI_NS.unlockParts.Anchors = function(LM)
 
     -- Each match's Extra Width / Height as it stood when unlock mode opened
     -- (SnapshotPositions), restored with the links on discard (RevertPositions).
-    MatchH.snapExtra = { w = {}, h = {} }
+    MatchKit.snapExtra = { w = {}, h = {} }
 
     -------------------------------------------------------------------------------
     --  Apply ALL width/height matches globally (used on login/reload)
     -------------------------------------------------------------------------------
     -- Break circular chains in a match DB before applying: walk each chain and
     -- remove the link that closes a loop.
-    function MatchH.BreakMatchCycles(saved)
+    function MatchKit.BreakMatchCycles(saved)
         if not saved then
             return
         end
@@ -1800,10 +1800,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- the end of CollectAndReanchor, which corrects any transient widths read while its
         -- icon counts were stale. A guard blocked unrelated UF height matches during spec
         -- swap. Break circular chains from old data before applying.
-        MatchH.BreakMatchCycles(MatchH.GetWidthMatchDB())
-        MatchH.BreakMatchCycles(MatchH.GetHeightMatchDB())
-        ApplyMatchesInDependencyOrder(MatchH.GetWidthMatchDB(), MatchH.ApplyWidthMatch)
-        ApplyMatchesInDependencyOrder(MatchH.GetHeightMatchDB(), MatchH.ApplyHeightMatch)
+        MatchKit.BreakMatchCycles(MatchKit.GetWidthMatchDB())
+        MatchKit.BreakMatchCycles(MatchKit.GetHeightMatchDB())
+        ApplyMatchesInDependencyOrder(MatchKit.GetWidthMatchDB(), MatchKit.ApplyWidthMatch)
+        ApplyMatchesInDependencyOrder(MatchKit.GetHeightMatchDB(), MatchKit.ApplyHeightMatch)
     end
 
     -- Re-sync every active width/height match when the global UI Scale changes.  -- cui-style: allow comment-budget
@@ -2493,7 +2493,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     LM.GetBarGrowDirActual, LM.GetBarGrowDir, LM.GetAnchorDB, LM.GetAnchorInfo =
         GetBarGrowDirActual, GetBarGrowDir, GetAnchorDB, GetAnchorInfo
     LM.SetAnchorInfo, LM.ClearAnchorInfo, LM.IsAnchored, LM.MatchH =
-        SetAnchorInfo, ClearAnchorInfo, IsAnchored, MatchH
+        SetAnchorInfo, ClearAnchorInfo, IsAnchored, MatchKit
     LM.ValidateStoredLinks, LM.ScheduleAnchorBatch, LM.ApplyAllWidthHeightMatches, LM.HookFrameSizeChanged =
         ValidateStoredLinks, QueueAnchorBatch, ApplyAllWidthHeightMatches, HookFrameSizeChanged
     LM.FadeOverlayForSelectElement, LM.CancelPickMode, LM.FlashRedBorder, LM.RejectH =

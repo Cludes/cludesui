@@ -79,7 +79,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         }
     end
 
-    local ST_TIP = "Swing Timer"
+    local SWING_TIP = "Swing Timer"
     local stOff = function()
         local profile = DB()
         return profile and not profile.swingTimer.enabled
@@ -125,7 +125,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(
         _sec,
-        { key = "ERB_SwingTimer", disabled = stOff, disabledTooltip = ST_TIP }
+        { key = "ERB_SwingTimer", disabled = stOff, disabledTooltip = SWING_TIP }
     )
 
     local sStrataValues = CludesUI.FRAME_STRATA_LABELS
@@ -144,7 +144,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Frame Strata",
         tooltip = "Controls the order that overlapping elements display in. Set higher to show above other elements.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         values = sStrataValues,
         order = sStrataOrder,
         getValue = Getter("frameStrata", "MEDIUM"),
@@ -159,7 +159,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 local profile = DB()
                 return profile and not profile.swingTimer.enabled
             end,
-            disabledTooltip = ST_TIP,
+            disabledTooltip = SWING_TIP,
             title = "Swing Timer Position",
             rows = {
                 {
@@ -230,8 +230,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     end
 
     -- Row: Row Height | Width. Height is per row; the mover reports the whole stack.
-    local shDis, shTip, shRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Height", stOff, ST_TIP)
-    local swDis, swTip, swRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Width", stOff, ST_TIP)
+    local shDis, shTip, shRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Height", stOff, SWING_TIP)
+    local swDis, swTip, swRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Width", stOff, SWING_TIP)
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Row Height",
@@ -269,7 +269,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         step = 1,
         tooltip = "Gap between the weapon rows.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = Getter("rowSpacing", 2),
         setValue = Setter("rowSpacing"),
     }, {
@@ -279,7 +279,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         max = 24,
         step = 1,
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = Getter("textSize", 11),
         setValue = Setter("textSize"),
     })
@@ -308,7 +308,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         end
         CludesUI.BuildInlineCog(stTextRow._rightRegion, {
             disabled = stOff,
-            disabledTooltip = ST_TIP,
+            disabledTooltip = SWING_TIP,
             title = "Text Position",
             rows = {
                 OffsetRow("Time X Offset", "timeX"),
@@ -329,7 +329,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         legacyKey = "visibility",
         caps = { partyIncludesRaid = false, luaDragonriding = true },
         disabledFn = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         onChanged = function()
             ApplySwingTimer()
         end,
@@ -341,7 +341,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Hide When Idle",
         tooltip = "Hide the bar while no swing is running.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = Getter("hideWhenIdle"),
         setValue = Setter("hideWhenIdle"),
     })
@@ -400,14 +400,14 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             formRows[#formRows + 1] = { type = "button", label = "Talent Conditions", action = OpenTalents }
             _, condShow = CludesUI.BuildInlineCog(stShowRow._leftRegion, {
                 disabled = stOff,
-                disabledTooltip = ST_TIP,
+                disabledTooltip = SWING_TIP,
                 title = "Forms and Talents",
                 rows = formRows,
             })
         else
             CludesUI.BuildInlineCog(stShowRow._leftRegion, {
                 disabled = stOff,
-                disabledTooltip = ST_TIP,
+                disabledTooltip = SWING_TIP,
                 tip = "Talent Conditions",
                 show = OpenTalents,
             })
@@ -476,7 +476,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 type = "dropdown",
                 text = "Border Style",
                 disabled = stOff,
-                disabledTooltip = ST_TIP,
+                disabledTooltip = SWING_TIP,
                 values = btValues,
                 order = btOrder,
                 getValue = Getter("borderTexture", "solid"),
@@ -521,11 +521,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         ApplySwingTimer()
                         CludesUI.ReapplyMatchPads("ERB_SwingTimer")
                         CludesUI:RefreshPage()
-                    end, { disabled = stOff, disabledTooltip = ST_TIP })
+                    end, { disabled = stOff, disabledTooltip = SWING_TIP })
                 or Gate(CludesUI.BorderPxSliderCfg({
                     text = "Border Size",
                     disabled = stOff,
-                    disabledTooltip = ST_TIP,
+                    disabledTooltip = SWING_TIP,
                     getStep = function()
                         local profile = DB()
                         return profile and (profile.swingTimer.borderSize or 0) or 0
@@ -569,7 +569,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "resourcebars",
                     disabled = stOff,
-                    disabledTooltip = ST_TIP,
+                    disabledTooltip = SWING_TIP,
                     getTex = function()
                         local profile = DB()
                         return profile and (profile.swingTimer.borderTexture or "solid") or "solid"
@@ -631,7 +631,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return CludesUI.BlizzStyle.Label("resourcebars")
                     end
                     if stOff() then
-                        return ST_TIP
+                        return SWING_TIP
                     end
                     return "This option requires the Solid, Glow or Shadow border style."
                 end,
@@ -670,7 +670,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = function()
                         if stOff() then
-                            return ST_TIP
+                            return SWING_TIP
                         end
                         return "This option requires a Border Size above 0."
                     end,
@@ -846,7 +846,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         type = "multiSwatch",
         text = "Color",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         swatches = {
             {
                 tooltip = "Gradient End Color",
@@ -857,7 +857,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end,
                 disabledTooltip = function()
                     if stOff() then
-                        return ST_TIP
+                        return SWING_TIP
                     end
                     return "Gradient"
                 end,
@@ -917,7 +917,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         max = 100,
         step = 1,
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = function()
             local profile = DB()
             return math.floor(((profile and profile.swingTimer.bgA or 0.7) * 100) + 0.5)
@@ -939,7 +939,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 local profile = DB()
                 return profile and not profile.swingTimer.enabled
             end,
-            disabledTooltip = ST_TIP,
+            disabledTooltip = SWING_TIP,
             title = "Gradient Settings",
             rows = {
                 {
@@ -978,7 +978,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     ApplySwingTimer()
                 end,
             },
-        }, { size = 20, disabled = stOff, disabledTooltip = ST_TIP })
+        }, { size = 20, disabled = stOff, disabledTooltip = SWING_TIP })
     end
 
     -- Row: Bar Texture | Deplete Fill
@@ -986,7 +986,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         type = "dropdown",
         text = "Bar Texture",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         values = texValues,
         order = texOrder,
         getValue = Getter("texture", "none"),
@@ -996,7 +996,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Deplete Fill",
         tooltip = "Start each row full and drain it as the swing timer elapses, instead of filling it up.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = Getter("depleteFill"),
         setValue = Setter("depleteFill"),
     })
@@ -1009,7 +1009,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Show Spark",
         tooltip = "Show a small glowing spark that moves along the leading edge of the fill while a swing is running.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = Getter("showSpark"),
         setValue = Setter("showSpark"),
     }, {
@@ -1017,7 +1017,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Tracked Weapons",
         tooltip = "Choose which weapons get a swing row. A row also needs a weapon in that slot.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         values = { __placeholder = "..." },
         order = { "__placeholder" },
         getValue = function()
@@ -1067,7 +1067,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         end
         CludesUI.BuildInlineCog(sparkRow._leftRegion, {
             disabled = stOff,
-            disabledTooltip = ST_TIP,
+            disabledTooltip = SWING_TIP,
             title = "Spark",
             rows = {
                 {
@@ -1148,7 +1148,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         -- Combine Hands needs both hands tracked, so it rides this row's cog.
         CludesUI.BuildInlineCog(region, {
             disabled = stOff,
-            disabledTooltip = ST_TIP,
+            disabledTooltip = SWING_TIP,
             title = "Tracked Weapons",
             rows = {
                 {
@@ -1214,7 +1214,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Show Time",
         tooltip = "Show the seconds left to the next swing on each row.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = function()
             local profile = DB()
             return profile and profile.swingTimer.showTime ~= false
@@ -1225,7 +1225,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Show Weapon Label",
         tooltip = "Tag each row with its weapon slot: MH (Main Hand), OH (Off Hand), R (Ranged).",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = function()
             local profile = DB()
             return profile and profile.swingTimer.showLabel ~= false
@@ -1292,7 +1292,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Range Check",
         tooltip = "Dim a row and paint its text red while the current target is out of that weapon's auto attack range.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         getValue = function()
             local profile = DB()
             return profile and profile.swingTimer.rangeCheck ~= false
@@ -1303,7 +1303,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Attack State",
         tooltip = "Queued Only colors and names a queued attack; Full also colors rows while the attack is on or waiting.",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         values = { off = "Off", queued = "Queued Only", full = "Full" },
         order = { "off", "queued", "full" },
         getValue = Getter("attackState", "queued"),
@@ -1313,7 +1313,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(stateRow._rightRegion, {
             disabled = stOff,
-            disabledTooltip = ST_TIP,
+            disabledTooltip = SWING_TIP,
             title = "Attack State Colors",
             rows = {
                 ColorRow(
@@ -1417,7 +1417,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Movement Guide",
         tooltip = "Marks when you can move (GO) and, for wand Shoot and Auto Shot, when you must stand still (STILL).",
         disabled = stOff,
-        disabledTooltip = ST_TIP,
+        disabledTooltip = SWING_TIP,
         values = { off = "Off", segments = "Segments", windup = "Wind-Up Bar" },
         order = { "off", "segments", "windup" },
         getValue = Getter("moveGuide", "off"),
@@ -1431,7 +1431,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             end,
             disabledTooltip = function()
                 if stOff() then
-                    return ST_TIP
+                    return SWING_TIP
                 end
                 return "Movement Guide"
             end,

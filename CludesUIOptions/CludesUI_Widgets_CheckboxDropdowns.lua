@@ -302,7 +302,7 @@ function CUI.BuildVisOptsCBDropdown(
     -- menu out again for the new items: rows come from per-kind pools (AcquireRow),
     -- and the ones a layout leaves unused are hidden.
     local menuStale
-    local ITEM_H = 28
+    local ITEM_HEIGHT = 28
     local HDR_H = 22
     -- _allRows: { frame, isHeader, label(string), height } per laid-out row.
     -- Top-action locked tints refresh in the same sweeps as _allRows. They can't JOIN _allRows: the search relayout repositions every frame in that list, and top actions live above the search box.
@@ -328,7 +328,7 @@ function CUI.BuildVisOptsCBDropdown(
     -- Label row: a top action (parent: the menu) or an action item (the scroll child).
     local function MakeTextRow(hostFrame)
         local row = CreateFrame("Button", nil, hostFrame)
-        row:SetHeight(ITEM_H)
+        row:SetHeight(ITEM_HEIGHT)
         local labelFS = row:CreateFontString(nil, "OVERLAY")
         labelFS:SetFont(fontFile, 13, "")
         labelFS:SetPoint("LEFT", row, "LEFT", 10, 0)
@@ -360,7 +360,7 @@ function CUI.BuildVisOptsCBDropdown(
     -- lane, swatch); the pool key carries that shape, so a reused row has them.
     local function MakeCheckRow(entry)
         local row = CreateFrame("Button", nil, childFrame)
-        row:SetHeight(ITEM_H)
+        row:SetHeight(ITEM_HEIGHT)
         row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
         if not entry.noCheck then
             local boxFrame = CreateFrame("Frame", nil, row)
@@ -463,7 +463,7 @@ function CUI.BuildVisOptsCBDropdown(
                 topActions[#topActions + 1] = entry
             end
         end
-        local TOP_H = (#topActions > 0) and (#topActions * ITEM_H + 7) or 0
+        local TOP_H = (#topActions > 0) and (#topActions * ITEM_HEIGHT + 7) or 0
         local checkableCount = 0
         local contentH = 8
         for _, entry in ipairs(itemList) do
@@ -471,7 +471,7 @@ function CUI.BuildVisOptsCBDropdown(
             elseif entry.isHeader then
                 contentH = contentH + HDR_H
             else
-                contentH = contentH + ITEM_H
+                contentH = contentH + ITEM_HEIGHT
                 checkableCount = checkableCount + 1
             end
         end
@@ -482,7 +482,7 @@ function CUI.BuildVisOptsCBDropdown(
         contentH = contentH + CLOSE_BTN_H
         local needsScroll = maxVisibleItems and checkableCount > maxVisibleItems
         -- +2 accounts for scroll frame 1px top + 1px bottom insets so non-scrolling menus don't scroll
-        local menuH = (needsScroll and (4 + maxVisibleItems * ITEM_H + 4 + CLOSE_BTN_H) or (contentH + 4))
+        local menuH = (needsScroll and (4 + maxVisibleItems * ITEM_HEIGHT + 4 + CLOSE_BTN_H) or (contentH + 4))
             + SEARCH_PAD
             + TOP_H
         if firstBuild then
@@ -581,7 +581,7 @@ function CUI.BuildVisOptsCBDropdown(
                         entry.onClick()
                     end
                 end)
-                ay = ay - ITEM_H
+                ay = ay - ITEM_HEIGHT
             end
             if not taDivider then
                 taDivider = dropMenu:CreateTexture(nil, "ARTWORK")
@@ -722,7 +722,7 @@ function CUI.BuildVisOptsCBDropdown(
                     return
                 end
                 local current = self:GetVerticalScroll()
-                self:SetVerticalScroll(math.max(0, math.min(maxScroll, current - delta * ITEM_H)))
+                self:SetVerticalScroll(math.max(0, math.min(maxScroll, current - delta * ITEM_HEIGHT)))
                 UpdateCBThumb()
             end)
         end
@@ -858,9 +858,9 @@ function CUI.BuildVisOptsCBDropdown(
                     isHeader = false,
                     isAction = true,
                     label = entry.label,
-                    height = ITEM_H,
+                    height = ITEM_HEIGHT,
                 }
-                yOff = yOff - ITEM_H
+                yOff = yOff - ITEM_HEIGHT
             else
                 -- Opt-in plain rows (item.noCheck): the identical row minus the checkbox -- the regular-dropdown look for select-style pickers. Click still routes setFn(key, not getFn(key)), so a picker whose getFn is constant-false always selects with true.
                 local shape = (entry.noCheck and "n" or "c")
@@ -888,7 +888,7 @@ function CUI.BuildVisOptsCBDropdown(
                 end
                 -- Optional icon (spell icon etc.) between checkbox and label
                 if row._ico then
-                    local icoSz = entry.iconSize or (ITEM_H - 6)
+                    local icoSz = entry.iconSize or (ITEM_HEIGHT - 6)
                     row._ico:SetSize(icoSz, icoSz)
                     row._ico:SetTexture(entry.icon)
                 end
@@ -1171,8 +1171,8 @@ function CUI.BuildVisOptsCBDropdown(
                 -- Marks the contiguous run the override overlay below seals off.
                 row._ovBlock = entry.ovLockedFn and true or nil
                 _allRows[#_allRows + 1] =
-                    { frame = row, isHeader = false, label = entry.label, height = ITEM_H }
-                yOff = yOff - ITEM_H
+                    { frame = row, isHeader = false, label = entry.label, height = ITEM_HEIGHT }
+                yOff = yOff - ITEM_HEIGHT
             end -- isHeader else
         end
 
@@ -1718,7 +1718,7 @@ end
 --  host's level + 2 and float at + 10. Every row gets row:_cancelDrag().
 -------------------------------------------------------------------------------
 function CUI.AttachRowReorder(host, specInfo)
-    local rowList, movable, ITEM_H, SlotY = specInfo.rows, specInfo.items, specInfo.itemH, specInfo.slotY
+    local rowList, movable, ITEM_HEIGHT, SlotY = specInfo.rows, specInfo.items, specInfo.itemH, specInfo.slotY
     local insLine, status = specInfo.insLine, specInfo.state
     -- Read live: a host raised after this call (a cog popup lifts its open
     -- dropdown menu) would otherwise park dropped rows behind its background.
@@ -1738,7 +1738,7 @@ function CUI.AttachRowReorder(host, specInfo)
         local iI = #movable
         for idx = 1, #movable do
             if idx ~= fromIdx then
-                local mid = mT + SlotY(idx) - ITEM_H / 2
+                local mid = mT + SlotY(idx) - ITEM_HEIGHT / 2
                 if cursorY > mid then
                     iI = idx
                     break
@@ -1983,7 +1983,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
     local orderChanged = false
     local allRows = {}
 
-    local ITEM_H = 28
+    local ITEM_HEIGHT = 28
     local HINT_H = options.hint2 and 32 or 18
     local DIV_H = 7
 
@@ -1991,14 +1991,14 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
         if dropMenu then
             return
         end
-        local HEAD_H = (#head > 0) and (#head * ITEM_H + DIV_H) or 0
-        local TAIL_H = (#tail > 0) and (DIV_H + #tail * ITEM_H) or 0
+        local HEAD_H = (#head > 0) and (#head * ITEM_HEIGHT + DIV_H) or 0
+        local TAIL_H = (#tail > 0) and (DIV_H + #tail * ITEM_HEIGHT) or 0
         local ROWS_BASE_Y = -4 - HEAD_H - HINT_H
         local menuH = 4
             + HEAD_H
             + HINT_H
-            + #movable * ITEM_H
-            + ((#fixedItems > 0) and (DIV_H + #fixedItems * ITEM_H) or 0)
+            + #movable * ITEM_HEIGHT
+            + ((#fixedItems > 0) and (DIV_H + #fixedItems * ITEM_HEIGHT) or 0)
             + TAIL_H
             + 4
         -- One menu per dropdown button for the session: a build that dresses the
@@ -2043,7 +2043,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
         -- current choice.
         local function BuildPlainRow(entry, slotY, onPick, selFn)
             local row = CreateFrame("Button", nil, dropMenu)
-            row:SetHeight(ITEM_H)
+            row:SetHeight(ITEM_HEIGHT)
             row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, slotY)
             row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, slotY)
             row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
@@ -2083,13 +2083,13 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
             end)
         end
         for idx = 1, #head do
-            BuildPlainRow(head[idx], -4 - (idx - 1) * ITEM_H, options.onHead)
+            BuildPlainRow(head[idx], -4 - (idx - 1) * ITEM_HEIGHT, options.onHead)
         end
         if #head > 0 then
             local hd = dropMenu:CreateTexture(nil, "ARTWORK")
             hd:SetHeight(1)
-            hd:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 10, -4 - #head * ITEM_H - 3)
-            hd:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -10, -4 - #head * ITEM_H - 3)
+            hd:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 10, -4 - #head * ITEM_HEIGHT - 3)
+            hd:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -10, -4 - #head * ITEM_HEIGHT - 3)
             hd:SetColorTexture(1, 1, 1, 0.08)
         end
 
@@ -2102,12 +2102,12 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
         insLine:Hide()
 
         local function SlotY(idx)
-            return ROWS_BASE_Y - (idx - 1) * ITEM_H
+            return ROWS_BASE_Y - (idx - 1) * ITEM_HEIGHT
         end
 
         local function BuildRow(entry, slotY, draggable)
             local row = CreateFrame("Button", nil, dropMenu)
-            row:SetHeight(ITEM_H)
+            row:SetHeight(ITEM_HEIGHT)
             row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, slotY)
             row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, slotY)
             row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
@@ -2220,7 +2220,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
         CUI.AttachRowReorder(dropMenu, {
             rows = movableRows,
             items = movable,
-            itemH = ITEM_H,
+            itemH = ITEM_HEIGHT,
             slotY = SlotY,
             insLine = insLine,
             state = dragState,
@@ -2244,22 +2244,22 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
 
         -- Divider + fixed (non-draggable) rows below the movable group
         if #fixedItems > 0 then
-            local divY = ROWS_BASE_Y - #movable * ITEM_H - 3
+            local divY = ROWS_BASE_Y - #movable * ITEM_HEIGHT - 3
             local dl = dropMenu:CreateTexture(nil, "ARTWORK")
             dl:SetHeight(1)
             dl:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 10, divY)
             dl:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -10, divY)
             dl:SetColorTexture(1, 1, 1, 0.08)
             for idx = 1, #fixedItems do
-                BuildRow(fixedItems[idx], ROWS_BASE_Y - #movable * ITEM_H - DIV_H - (idx - 1) * ITEM_H, false)
+                BuildRow(fixedItems[idx], ROWS_BASE_Y - #movable * ITEM_HEIGHT - DIV_H - (idx - 1) * ITEM_HEIGHT, false)
             end
         end
 
         -- Divider + plain tail rows at the bottom
         if #tail > 0 then
             local tailTop = ROWS_BASE_Y
-                - #movable * ITEM_H
-                - ((#fixedItems > 0) and (DIV_H + #fixedItems * ITEM_H) or 0)
+                - #movable * ITEM_HEIGHT
+                - ((#fixedItems > 0) and (DIV_H + #fixedItems * ITEM_HEIGHT) or 0)
             local td = dropMenu:CreateTexture(nil, "ARTWORK")
             td:SetHeight(1)
             td:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 10, tailTop - 3)
@@ -2268,7 +2268,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
             for idx = 1, #tail do
                 BuildPlainRow(
                     tail[idx],
-                    tailTop - DIV_H - (idx - 1) * ITEM_H,
+                    tailTop - DIV_H - (idx - 1) * ITEM_HEIGHT,
                     options.onTail,
                     options.tailSelected
                 )

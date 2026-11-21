@@ -7,8 +7,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- place for filter-string normalization (exact-string dedup inside the engine),
 -- decoration presets, the restyle registry, and combat-safe creation.
 
-local AK = {}
-CludesUI.AuraKit = AK
+local Kit = {}
+CludesUI.AuraKit = Kit
 
 local InCombatLockdown = InCombatLockdown
 local CreateFrame = CreateFrame
@@ -35,7 +35,7 @@ local function TokenSortKey(unitToken)
     return unitToken
 end
 
-function AK.Filter(...)
+function Kit.Filter(...)
     local styleId = table.concat({ ... }, "|")
     local cached = filterCache[styleId]
     if cached then
@@ -187,7 +187,7 @@ end
 -- (every pre-existing caller) returns the bare-seconds formatter. The
 -- SecondsFormatter fallback shows the unit in both variants (it cannot drop
 -- it) -- the accepted degraded look either way.
-function AK.GetDurationFormatter(showSecondsUnit, preciseBelow)
+function Kit.GetDurationFormatter(showSecondsUnit, preciseBelow)
     preciseBelow = tonumber(preciseBelow)
     if preciseBelow and preciseBelow > 0 then
         -- The UI tops out at 90 minutes, where the hours begin. Clamp saved and
@@ -202,7 +202,7 @@ function AK.GetDurationFormatter(showSecondsUnit, preciseBelow)
             preciseDurationFormatters[styleId] = BuildRuleDurationFormatter(showSecondsUnit, preciseBelow)
                 or false
         end
-        return preciseDurationFormatters[styleId] or AK.GetDurationFormatter(showSecondsUnit)
+        return preciseDurationFormatters[styleId] or Kit.GetDurationFormatter(showSecondsUnit)
     end
     if showSecondsUnit then
         if not durationFormatterS then
@@ -225,7 +225,7 @@ end
 -- children of the button, anchored inside it; that is a hard engine rule.
 ------------------------------------------------------------------------------
 
-AK.styles = {}
+Kit.styles = {}
 
 -- Per-button region refs: bd[button] = { icon, cooldown, stackCarrier, stack,
 -- duration, borderHost, styleKey }
@@ -271,7 +271,7 @@ local RING_SLICES = { "topLeft", "topRight", "bottomLeft", "bottomRight", "top",
 local pxRingStyles = {}
 local function RestylePxRings()
     for styleId in pairs(pxRingStyles) do
-        AK.RestyleSoon(styleId)
+        Kit.RestyleSoon(styleId)
     end
 end
 
@@ -314,7 +314,7 @@ end
 -- shapeInsetPx of its 128 clear on every side), and the art's middle (1 - 2 * zoom)
 -- fills it, the crop an unshaped icon takes at the same Icon Zoom. Shared with the
 -- Player Aura Bars options preview.
-function AK.IconTexCoord(look)
+function Kit.IconTexCoord(look)
     if look.iconShape and look.iconShape ~= "none" and look.shapeMaskPath then
         local visRatio = (128 - 2 * (look.shapeInsetPx or 17)) / 128
         local half = (0.5 - (look.iconZoom or 0.055)) / visRatio
@@ -365,7 +365,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     end
 
     if state.icon then
-        state.icon:SetTexCoord(AK.IconTexCoord(look))
+        state.icon:SetTexCoord(Kit.IconTexCoord(look))
 
         -- AddMaskTexture is change-guarded and deferred like d.borderHost's anchor
         -- below: denied while auras are secret, retried once the restriction lifts.
@@ -377,14 +377,14 @@ local function ApplyStyleToRegions(btnFrame, look)
                 end)
                 if success then
                     state.akIconShapeKey = look.iconShape
-                elseif state.styleKey and AK.AurasRestricted() then
+                elseif state.styleKey and Kit.AurasRestricted() then
                     pendingRestyles[state.styleKey] = true
                 end
             end
         elseif state.akIconShapeKey then
             if not state.shapeMask or pcall(state.icon.RemoveMaskTexture, state.icon, state.shapeMask) then
                 state.akIconShapeKey = nil
-            elseif state.styleKey and AK.AurasRestricted() then
+            elseif state.styleKey and Kit.AurasRestricted() then
                 pendingRestyles[state.styleKey] = true
             end
         end
@@ -682,7 +682,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             state.akRingPx = true
             if state.styleKey and not pxRingStyles[state.styleKey] then
                 pxRingStyles[state.styleKey] = true
-                CludesUI.RegisterPxReapply(AK, RestylePxRings)
+                CludesUI.RegisterPxReapply(Kit, RestylePxRings)
             end
         end
     elseif state.akRingPx then
@@ -690,7 +690,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         if state.styleKey and pxRingStyles[state.styleKey] then
             pxRingStyles[state.styleKey] = nil
             if not next(pxRingStyles) then
-                CludesUI.RegisterPxReapply(AK, nil)
+                CludesUI.RegisterPxReapply(Kit, nil)
             end
         end
     end
@@ -934,7 +934,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                 end)
                 if success then
                     state.akDispelGeom = shapeKey
-                elseif state.styleKey and AK.AurasRestricted() then
+                elseif state.styleKey and Kit.AurasRestricted() then
                     pendingRestyles[state.styleKey] = true
                 end
             end
@@ -992,7 +992,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                             .. aR
                             .. "|"
                             .. aB
-                    elseif state.styleKey and AK.AurasRestricted() then
+                    elseif state.styleKey and Kit.AurasRestricted() then
                         pendingRestyles[state.styleKey] = true
                     end
                 end
@@ -1191,11 +1191,11 @@ local function ApplyStyleToRegions(btnFrame, look)
                             pcall(clearFn, btnFrame)
                         end
                         state.dispelBorderOn = false
-                        if state.styleKey and AK.AurasRestricted() then
+                        if state.styleKey and Kit.AurasRestricted() then
                             pendingRestyles[state.styleKey] = true
                         end
                     end
-                elseif state.styleKey and AK.AurasRestricted() then
+                elseif state.styleKey and Kit.AurasRestricted() then
                     pendingRestyles[state.styleKey] = true
                 end
             else
@@ -1209,7 +1209,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                         state.dispelIconTex:Hide()
                     end
                     state.dispelBorderOn = wanted
-                elseif state.styleKey and AK.AurasRestricted() then
+                elseif state.styleKey and Kit.AurasRestricted() then
                     pendingRestyles[state.styleKey] = true
                 end
             end
@@ -1235,7 +1235,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         if state.akMotionOff and btnFrame.SetMouseMotionEnabled then
             if pcall(btnFrame.SetMouseMotionEnabled, btnFrame, true) then
                 state.akMotionOff = nil
-            elseif state.styleKey and AK.AurasRestricted() then
+            elseif state.styleKey and Kit.AurasRestricted() then
                 pendingRestyles[state.styleKey] = true
             end
         end
@@ -1244,7 +1244,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             if state.akTipCombat ~= wantCombat then
                 if pcall(btnFrame.SetHideTooltipInCombat, btnFrame, wantCombat) then
                     state.akTipCombat = wantCombat
-                elseif state.styleKey and AK.AurasRestricted() then
+                elseif state.styleKey and Kit.AurasRestricted() then
                     pendingRestyles[state.styleKey] = true
                 end
             end
@@ -1254,7 +1254,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             if state.akTipAnchor ~= wantAnchor then
                 if pcall(btnFrame.SetTooltipAnchorPoint, btnFrame, wantAnchor) then
                     state.akTipAnchor = wantAnchor
-                elseif state.styleKey and AK.AurasRestricted() then
+                elseif state.styleKey and Kit.AurasRestricted() then
                     pendingRestyles[state.styleKey] = true
                 end
             end
@@ -1286,14 +1286,14 @@ local function ApplyStyleToRegions(btnFrame, look)
         if state.akClickOff and btnFrame.SetMouseClickEnabled then
             if pcall(btnFrame.SetMouseClickEnabled, btnFrame, true) then
                 state.akClickOff = nil
-            elseif state.styleKey and AK.AurasRestricted() then
+            elseif state.styleKey and Kit.AurasRestricted() then
                 pendingRestyles[state.styleKey] = true
             end
         end
         if state.akCancel ~= look.cancelButtons and btnFrame.SetCancelAuraButtons then
             if pcall(btnFrame.SetCancelAuraButtons, btnFrame, look.cancelButtons) then
                 state.akCancel = look.cancelButtons
-            elseif state.styleKey and AK.AurasRestricted() then
+            elseif state.styleKey and Kit.AurasRestricted() then
                 pendingRestyles[state.styleKey] = true
             end
         end
@@ -1304,7 +1304,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         -- the re-arm above.
         if pcall(btnFrame.SetMouseClickEnabled, btnFrame, false) then
             state.akClickOff = true
-        elseif state.styleKey and AK.AurasRestricted() then
+        elseif state.styleKey and Kit.AurasRestricted() then
             pendingRestyles[state.styleKey] = true
         end
     end
@@ -1314,7 +1314,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             -- as a side effect of tooltip config); the stamp only records
             -- that WE own the off state, for the flip-back re-arm above.
             state.akMotionOff = true
-        elseif state.styleKey and AK.AurasRestricted() then
+        elseif state.styleKey and Kit.AurasRestricted() then
             pendingRestyles[state.styleKey] = true
         end
     end
@@ -1333,7 +1333,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             btnFrame.SetHitRectInsets and pcall(btnFrame.SetHitRectInsets, btnFrame, hitX, hitX, hitY, hitY)
         then
             state.akHitX, state.akHitY = hitX, hitY
-        elseif state.styleKey and AK.AurasRestricted() then
+        elseif state.styleKey and Kit.AurasRestricted() then
             pendingRestyles[state.styleKey] = true
         end
     end
@@ -1341,12 +1341,12 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- Weapon-enchant cells (stamped by AK.EnchantCellInit): the stock
     -- temp-enchant ring under Blizzard Style, re-fitted on every restyle.
     if state.enchantCell then
-        AK.ApplyBlizzEnchantRing(btnFrame, state, look)
+        Kit.ApplyBlizzEnchantRing(btnFrame, state, look)
     end
 
     -- Blizzard Style nameplate cells: the stock rounded mask and ring.
     if look.blizzRoundArt or state.blizzRoundRing then
-        AK.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
+        Kit.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
     end
 
     -- Module-specific styling pass; runs at init and on every Restyle.
@@ -1365,7 +1365,7 @@ end
 
 -- The curve property the engine recolors against; RemainingDuration is 0, so resolve
 -- with an explicit nil check (never `and/or` an enum that can legitimately be zero).
-function AK.DurationTextColor(curve)
+function Kit.DurationTextColor(curve)
     if not curve then
         return nil
     end
@@ -1381,7 +1381,7 @@ end
 -- binding-level knob (updateInterval) is requested, the formatter and the
 -- knob are configured on a fresh binding and passed via options.binding;
 -- otherwise the plain textFormatter key suffices.
-function AK.BuildDurationTextOpts(formatFn, colorCurve, updateInterval)
+function Kit.BuildDurationTextOpts(formatFn, colorCurve, updateInterval)
     local options
     if updateInterval and C_DurationUtil and C_DurationUtil.CreateDurationTextBinding then
         local binding = C_DurationUtil.CreateDurationTextBinding()
@@ -1394,7 +1394,7 @@ function AK.BuildDurationTextOpts(formatFn, colorCurve, updateInterval)
         options = { textFormatter = formatFn }
     end
     if colorCurve then
-        options.textColor = AK.DurationTextColor(colorCurve)
+        options.textColor = Kit.DurationTextColor(colorCurve)
     end
     return options
 end
@@ -1409,7 +1409,7 @@ end
 -- full = the complete option set landed. Callers that stamp-after-success
 -- (BmRebindDurationCurve) key off these -- this function never throws, so
 -- a denied button call under restriction must be visible in the returns.
-function AK.SetDurationTextSafe(btnFrame, fontString, durationOpts)
+function Kit.SetDurationTextSafe(btnFrame, fontString, durationOpts)
     if pcall(btnFrame.SetDurationText, btnFrame, fontString, durationOpts) then
         return true, true
     end
@@ -1431,10 +1431,10 @@ end
 -- reference. All region wiring happens here. rec: the group record of an
 -- aura group (AK.AddGroupToContainer), which numbers its buttons in build
 -- order for AK.ButtonCanShow.
-function AK.MakeInitializer(lookKey, extra, record)
+function Kit.MakeInitializer(lookKey, extra, record)
     local wasBuilt = 0
     local function Init(btnFrame)
-        local look = AK.styles[lookKey] or {}
+        local look = Kit.styles[lookKey] or {}
         local state = {}
         bd[btnFrame] = state
         state.styleKey = lookKey
@@ -1538,13 +1538,13 @@ function AK.MakeInitializer(lookKey, extra, record)
         -- style.durationFormatter: a module whose countdown must agree with a
         -- neighboring non-AuraKit display supplies its own rule formatter.
         -- Omitted (every pre-existing style) keeps the shared one.
-        local durationOpts = AK.BuildDurationTextOpts(
+        local durationOpts = Kit.BuildDurationTextOpts(
             look.durationFormatter
-                or AK.GetDurationFormatter(look.durationShowSeconds, look.durationPrecisionThreshold),
+                or Kit.GetDurationFormatter(look.durationShowSeconds, look.durationPrecisionThreshold),
             look.durationColorCurve,
             look.durationUpdateInterval
         )
-        AK.SetDurationTextSafe(btnFrame, state.duration, durationOpts)
+        Kit.SetDurationTextSafe(btnFrame, state.duration, durationOpts)
         -- Formatter-choice stamp for live rebinds (style.applyExtra reruns on
         -- restyles; duration opts otherwise land only here at creation).
         state.durationFmtS = (look.durationShowSeconds and "s" or "b")
@@ -1582,8 +1582,8 @@ end
 -- initializer, registered for restyles, minus the engine registrations (icon,
 -- duration, stacks, cancel), which the caller drives itself. For content the
 -- engine has no source for (WoW Forever's weapon imbues). Returns frame, d.
-function AK.CreateStyledCell(hostFrame, lookKey, extra)
-    local look = AK.styles[lookKey] or {}
+function Kit.CreateStyledCell(hostFrame, lookKey, extra)
+    local look = Kit.styles[lookKey] or {}
     local btnFrame = CreateFrame("Frame", nil, hostFrame)
     local state = {}
     bd[btnFrame] = state
@@ -1618,8 +1618,8 @@ end
 -- Re-applies a style to every registered button (settings changed). Geometry
 -- owned by the container (element sizes, spacing, growth) is re-driven by the
 -- caller through AK.ApplyContainerLayout / group setters, not here.
-function AK.Restyle(lookKey)
-    local look = AK.styles[lookKey]
+function Kit.Restyle(lookKey)
+    local look = Kit.styles[lookKey]
     local set = styleButtons[lookKey]
     if not look or not set then
         return
@@ -1652,7 +1652,7 @@ restyler:SetScript("OnUpdate", function(self)
             end
             restyleQueue[styleId] = nil
             local set = styleButtons[styleId]
-            if AK.styles[styleId] and set then
+            if Kit.styles[styleId] and set then
                 local buttons = {}
                 for b in pairs(set) do
                     buttons[#buttons + 1] = b
@@ -1662,9 +1662,9 @@ restyler:SetScript("OnUpdate", function(self)
         end
         if restyleWork then
             local wid = restyleWork
-            local look = AK.styles[wid.key]
+            local look = Kit.styles[wid.key]
             local num = #wid.buttons
-            local restricted = AK.AurasRestricted()
+            local restricted = Kit.AurasRestricted()
             while budget > 0 and wid.index <= num do
                 local btnFrame = wid.buttons[wid.index]
                 -- Advance BEFORE applying: an error must never wedge the
@@ -1711,7 +1711,7 @@ restyler:SetScript("OnUpdate", function(self)
     end
 end)
 
-function AK.RestyleSoon(lookKey)
+function Kit.RestyleSoon(lookKey)
     restyleQueue[lookKey] = true
     restyler:Show()
 end
@@ -1725,7 +1725,7 @@ end
 ------------------------------------------------------------------------------
 
 local liftCallbacks = {}
-function AK.OnRestrictionLift(func)
+function Kit.OnRestrictionLift(func)
     liftCallbacks[#liftCallbacks + 1] = func
 end
 
@@ -1742,7 +1742,7 @@ liftWatcher:SetScript("OnEvent", function(_, evt, cvarName)
     if not next(pendingRestyles) and #liftCallbacks == 0 then
         return
     end
-    if AK.AurasRestricted() then
+    if Kit.AurasRestricted() then
         return
     end
     for styleId in pairs(pendingRestyles) do
@@ -1781,28 +1781,28 @@ local containerData = setmetatable({}, { __mode = "k" })
 -- flow axis; resolve per call with the old names as fallback so a stale PTR
 -- build degrades to the previous behavior instead of erroring. Every module
 -- goes through these instead of calling the container methods directly.
-function AK.SetContainerAnchor(boxHolder, anchorPoint)
+function Kit.SetContainerAnchor(boxHolder, anchorPoint)
     local f = boxHolder.SetFlowLayoutAnchorPoint or boxHolder.SetAuraLayoutAnchorPoint
     if f then
         f(boxHolder, anchorPoint)
     end
 end
 
-function AK.SetContainerGrowth(boxHolder, growthH, growthV)
+function Kit.SetContainerGrowth(boxHolder, growthH, growthV)
     local f = boxHolder.SetFlowLayoutGrowthDirection or boxHolder.SetAuraLayoutGrowthDirection
     if f then
         f(boxHolder, growthH, growthV)
     end
 end
 
-function AK.SetContainerPadding(boxHolder, l, r, t, b)
+function Kit.SetContainerPadding(boxHolder, l, r, t, b)
     local f = boxHolder.SetFlowLayoutPadding or boxHolder.SetAuraLayoutPadding
     if f then
         f(boxHolder, l, r, t, b)
     end
 end
 
-function AK.SetContainerRowWidth(boxHolder, rowWidth)
+function Kit.SetContainerRowWidth(boxHolder, rowWidth)
     -- nil resets to unlimited on both API generations
     local f = boxHolder.SetFlowLayoutMaximumLineSize or boxHolder.SetAuraLayoutRowWidth
     if f then
@@ -1814,7 +1814,7 @@ end
 -- Vertical = lines are COLUMNS (fill down/up first, wrap sideways at the
 -- line size). No-op on builds without the API -- callers degrade to the
 -- old single-column vertical behavior there.
-function AK.SetContainerAxis(boxHolder, vertical)
+function Kit.SetContainerAxis(boxHolder, vertical)
     local axes = AnchorUtil and AnchorUtil.FlowLayoutAxis
     local f = boxHolder.SetFlowLayoutAxis
     if not (axes and f) then
@@ -1823,21 +1823,21 @@ function AK.SetContainerAxis(boxHolder, vertical)
     f(boxHolder, vertical and axes.Vertical or axes.Horizontal)
 end
 
-function AK.ApplyContainerLayout(boxHolder, layout)
+function Kit.ApplyContainerLayout(boxHolder, layout)
     if not layout then
         return
     end
     if layout.anchorPoint then
-        AK.SetContainerAnchor(boxHolder, layout.anchorPoint)
+        Kit.SetContainerAnchor(boxHolder, layout.anchorPoint)
     end
     if layout.growthH and layout.growthV then
-        AK.SetContainerGrowth(boxHolder, layout.growthH, layout.growthV)
+        Kit.SetContainerGrowth(boxHolder, layout.growthH, layout.growthV)
     end
     if layout.padding then
         local p = layout.padding
-        AK.SetContainerPadding(boxHolder, p[1] or 0, p[2] or 0, p[3] or 0, p[4] or 0)
+        Kit.SetContainerPadding(boxHolder, p[1] or 0, p[2] or 0, p[3] or 0, p[4] or 0)
     end
-    AK.SetContainerRowWidth(boxHolder, layout.rowWidth)
+    Kit.SetContainerRowWidth(boxHolder, layout.rowWidth)
 end
 
 -- Incremental construction: each AddAuraGroup call eagerly creates a
@@ -1847,7 +1847,7 @@ end
 -- across the shared build scheduler below; CreateContainer composes them
 -- for synchronous callers (settings-change swaps, small containers).
 
-function AK.CreateContainerShell(hostFrame, specInfo)
+function Kit.CreateContainerShell(hostFrame, specInfo)
     -- Combat creation is legal since 68914 (PTR-7 notes; /cuit3 field PASS
     -- 2026-07-23). The old in-combat zombie soft-fail -- and the OOC assert
     -- that guarded against it -- are gone.
@@ -1872,7 +1872,7 @@ function AK.CreateContainerShell(hostFrame, specInfo)
         )
     end
 
-    AK.ApplyContainerLayout(boxHolder, specInfo.layout)
+    Kit.ApplyContainerLayout(boxHolder, specInfo.layout)
 
     containerData[boxHolder] = { spec = specInfo, slotFrames = {} }
     return boxHolder
@@ -1914,7 +1914,7 @@ local animErrShown = false
 -- A refused button call: deferred to the lift while auras are restricted,
 -- else a real error, reported once a session. Returns false.
 local function AnimCallFailed(state, problem)
-    if AK.AurasRestricted() then
+    if Kit.AurasRestricted() then
         if state and state.styleKey then
             pendingRestyles[state.styleKey] = true
         end
@@ -1926,26 +1926,26 @@ local function AnimCallFailed(state, problem)
 end
 
 -- True while this button's initializeFrame callback runs.
-function AK.InCreationWindow(btnFrame)
+function Kit.InCreationWindow(btnFrame)
     return btnFrame ~= nil and btnFrame == initButton
 end
 
 -- May our code call into this button's subtree right now: inside its creation
 -- window, or while auras are not restricted.
-function AK.CanTouchButton(btnFrame)
-    return (btnFrame ~= nil and btnFrame == initButton) or not AK.AurasRestricted()
+function Kit.CanTouchButton(btnFrame)
+    return (btnFrame ~= nil and btnFrame == initButton) or not Kit.AurasRestricted()
 end
 
 -- Re-runs a style key once the aura restriction lifts (for module code that
 -- skipped a button call it may not make yet).
-function AK.DeferRestyle(lookKey)
+function Kit.DeferRestyle(lookKey)
     if lookKey then
         pendingRestyles[lookKey] = true
     end
 end
 
 -- Can the live button run animations itself (12.1.5+; not on WoW Forever).
-function AK.CanRunAnimations(btnFrame)
+function Kit.CanRunAnimations(btnFrame)
     return btnFrame ~= nil
         and btnFrame.AddAuraShownAnimation ~= nil
         and btnFrame.RemoveAuraShownAnimation ~= nil
@@ -1956,7 +1956,7 @@ end
 -- asserts on a duplicate). A call the button refuses under restriction defers
 -- d.styleKey to the lift (callers that can test first use AK.CanTouchButton).
 -- true when the button's registration now matches on.
-function AK.SetShownAnimation(btnFrame, state, ag, enabled)
+function Kit.SetShownAnimation(btnFrame, state, ag, enabled)
     local region = state.akShown
     if enabled then
         if region and region[ag] then
@@ -1992,7 +1992,7 @@ end
 -- visibility, which stops them again on a button with no aura. A no-op inside
 -- the button's creation window; refused under restriction like the calls
 -- above. true when it landed.
-function AK.KickShownAnimations(btnFrame, state, groups, num)
+function Kit.KickShownAnimations(btnFrame, state, groups, num)
     if btnFrame == initButton then
         return true
     end
@@ -2006,7 +2006,7 @@ function AK.KickShownAnimations(btnFrame, state, groups, num)
     local icon = state.akKickIcon
     -- A bare button without one: making and registering it is the kick.
     if not icon then
-        return AK.EnsureKickIcon(btnFrame, state)
+        return Kit.EnsureKickIcon(btnFrame, state)
     end
     local success, problem = pcall(btnFrame.SetIcon, btnFrame, icon)
     if not success then
@@ -2021,7 +2021,7 @@ end
 -- Without held, a hidden texture is made on the button and registered as its
 -- icon (the engine only ever sets its texture), in the creation window or out
 -- of restriction. true once the button has a kick element.
-function AK.EnsureKickIcon(btnFrame, state, held)
+function Kit.EnsureKickIcon(btnFrame, state, held)
     if held then
         state.akKickIcon = held
         return true
@@ -2074,7 +2074,7 @@ end
 -- are re-dressed when their cap grows.
 local GROUP_BATCH = 10
 
-function AK.ButtonCanShow(btnFrame)
+function Kit.ButtonCanShow(btnFrame)
     local state = bd[btnFrame]
     local record = state and state.akGroup
     if not record or record.allShow or record.maxCap > GROUP_BATCH or state.akIndex > GROUP_BATCH - record.maxCap then
@@ -2094,25 +2094,25 @@ local function RedressGroupButtons(record, first, last)
     for idx = first, last do
         local btnFrame = record.buttons[idx]
         local state = btnFrame and bd[btnFrame]
-        local look = state and AK.styles[state.styleKey]
+        local look = state and Kit.styles[state.styleKey]
         if look and not pcall(ApplyStyleToRegions, btnFrame, look) then
-            if AK.AurasRestricted() then
+            if Kit.AurasRestricted() then
                 pendingRestyles[state.styleKey] = true
             else
-                AK.RestyleSoon(state.styleKey)
+                Kit.RestyleSoon(state.styleKey)
             end
         end
     end
 end
 
-function AK.AddGroupToContainer(boxHolder, g)
+function Kit.AddGroupToContainer(boxHolder, g)
     local record = { maxCap = g.maxFrameCount or math.huge, buttons = {} }
-    boxHolder:AddAuraGroup(g.key, AK.Filter(unpack(g.filter)), {
+    boxHolder:AddAuraGroup(g.key, Kit.Filter(unpack(g.filter)), {
         maxFrameCount = g.maxFrameCount,
         sortMethod = g.sortMethod,
         sortDirection = g.sortDirection,
         candidateFilters = g.candidateFilters,
-        initializeFrame = AK.MakeInitializer(g.style, g.extraInit, record),
+        initializeFrame = Kit.MakeInitializer(g.style, g.extraInit, record),
         layout = g.layout,
     })
     -- A first batch of another size breaks the stack rule: every button can show.
@@ -2138,7 +2138,7 @@ end
 -- only a real flip costs anything (the container re-parses, once per frame).
 -- A cap above the group's highest yet brings more of its buttons into use
 -- (AK.ButtonCanShow): those are re-dressed.
-function AK.SetGroupCap(boxHolder, styleId, cap)
+function Kit.SetGroupCap(boxHolder, styleId, cap)
     if boxHolder.SetAuraGroupEnabled then
         if cap > 0 then
             boxHolder:SetAuraGroupEnabled(styleId, true)
@@ -2163,12 +2163,12 @@ function AK.SetGroupCap(boxHolder, styleId, cap)
     RedressGroupButtons(record, GROUP_BATCH - math.min(cap, GROUP_BATCH) + 1, GROUP_BATCH - old)
 end
 
-function AK.AddSlotToContainer(boxHolder, cfg)
-    local f = boxHolder:AddAuraSlot(cfg.key, AK.Filter(unpack(cfg.filter)), {
+function Kit.AddSlotToContainer(boxHolder, cfg)
+    local f = boxHolder:AddAuraSlot(cfg.key, Kit.Filter(unpack(cfg.filter)), {
         candidateFilters = cfg.candidateFilters,
         sortMethod = cfg.sortMethod,
         sortDirection = cfg.sortDirection,
-        initializeFrame = AK.MakeInitializer(cfg.style, cfg.extraInit),
+        initializeFrame = Kit.MakeInitializer(cfg.style, cfg.extraInit),
     })
     local cooldown = containerData[boxHolder]
     if cooldown then
@@ -2185,7 +2185,7 @@ end
 -- aura group, resolves the icon off the inventory slot, shows the item
 -- tooltip, and runs the protected CancelTemporaryEnchantment on a cancel
 -- click (style.cancelButtons feeds SetCancelAuraButtons, as for auras).
-AK.ITEM_ENCH_SLOTS = { "MainHand", "OffHand", "Ranged" }
+Kit.ITEM_ENCH_SLOTS = { "MainHand", "OffHand", "Ranged" }
 
 -- Blizzard Style (style.blizzEnchant, set by the consumers' style builders):
 -- the stock purple temp-enchant ring round a weapon-enchant cell, the one
@@ -2193,7 +2193,7 @@ AK.ITEM_ENCH_SLOTS = { "MainHand", "OffHand", "Ranged" }
 -- style is harmful-only). 32px round a 30px icon in the stock buff frame,
 -- so a thirtieth of the cell on each side; anchored to the border host
 -- (button rects are restricted). Hidden, never destroyed, without the flag.
-function AK.ApplyBlizzEnchantRing(btnFrame, state, look)
+function Kit.ApplyBlizzEnchantRing(btnFrame, state, look)
     local ringTex = state.blizzEnchantRing
     if not look.blizzEnchant then
         if ringTex then
@@ -2227,9 +2227,9 @@ end
 -- extraInit for AddItemEnchantmentsToContainer: marks the cell so the style
 -- pass (ApplyStyleToRegions, at init and on every restyle) can tell it from
 -- an aura button, and fits the ring once now (the pass ran before this hook).
-function AK.EnchantCellInit(btnFrame, state, look)
+function Kit.EnchantCellInit(btnFrame, state, look)
     state.enchantCell = true
-    AK.ApplyBlizzEnchantRing(btnFrame, state, look)
+    Kit.ApplyBlizzEnchantRing(btnFrame, state, look)
 end
 
 -- Blizzard Style (style.blizzRoundArt, set by the nameplate style builder):
@@ -2242,23 +2242,23 @@ end
 -- flag. Yields to an icon shape, which owns the mask and swipe itself. The
 -- ring is the retail art on WoW Forever too (CludesUI.StockAtlas) unless
 -- style.blizzRoundNative (that client's own look) is set.
-AK.BLIZZ_ROUND_MASK = "UI-HUD-CoolDownManager-Mask"
-AK.BLIZZ_ROUND_RING = "UI-HUD-CoolDownManager-IconOverlay"
-AK.BLIZZ_ROUND_SWIPE = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe"
-function AK.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
+Kit.BLIZZ_ROUND_MASK = "UI-HUD-CoolDownManager-Mask"
+Kit.BLIZZ_ROUND_RING = "UI-HUD-CoolDownManager-IconOverlay"
+Kit.BLIZZ_ROUND_SWIPE = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe"
+function Kit.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
     local ringTex = state.blizzRoundRing
     local wanted = look.blizzRoundArt and not shaped
-    if wanted and AK._blizzRoundOK == nil then
-        AK._blizzRoundOK = (
+    if wanted and Kit._blizzRoundOK == nil then
+        Kit._blizzRoundOK = (
             C_Texture
             and C_Texture.GetAtlasInfo
-            and C_Texture.GetAtlasInfo(AK.BLIZZ_ROUND_MASK)
-            and C_Texture.GetAtlasInfo(AK.BLIZZ_ROUND_RING)
+            and C_Texture.GetAtlasInfo(Kit.BLIZZ_ROUND_MASK)
+            and C_Texture.GetAtlasInfo(Kit.BLIZZ_ROUND_RING)
         )
                 and true
             or false
     end
-    if not (wanted and AK._blizzRoundOK) then
+    if not (wanted and Kit._blizzRoundOK) then
         if ringTex then
             ringTex:Hide()
         end
@@ -2277,9 +2277,9 @@ function AK.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
     if not ringTex then
         ringTex = host:CreateTexture(nil, "OVERLAY")
         if look.blizzRoundNative then
-            ringTex:SetAtlas(AK.BLIZZ_ROUND_RING)
+            ringTex:SetAtlas(Kit.BLIZZ_ROUND_RING)
         else
-            CludesUI.StockAtlas(ringTex, AK.BLIZZ_ROUND_RING)
+            CludesUI.StockAtlas(ringTex, Kit.BLIZZ_ROUND_RING)
         end
         if ringTex.SetSnapToPixelGrid then
             ringTex:SetSnapToPixelGrid(false)
@@ -2289,7 +2289,7 @@ function AK.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
     end
     if not state.blizzRoundMask then
         local mask = btnFrame:CreateMaskTexture()
-        mask:SetAtlas(AK.BLIZZ_ROUND_MASK)
+        mask:SetAtlas(Kit.BLIZZ_ROUND_MASK)
         mask:SetAllPoints(btnFrame)
         state.blizzRoundMask = mask
     end
@@ -2297,9 +2297,9 @@ function AK.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
         if pcall(state.icon.AddMaskTexture, state.icon, state.blizzRoundMask) then
             state.akBlizzRoundMasked = true
             if state.cooldown and state.cooldown.SetSwipeTexture then
-                pcall(state.cooldown.SetSwipeTexture, state.cooldown, AK.BLIZZ_ROUND_SWIPE)
+                pcall(state.cooldown.SetSwipeTexture, state.cooldown, Kit.BLIZZ_ROUND_SWIPE)
             end
-        elseif state.styleKey and AK.AurasRestricted() then
+        elseif state.styleKey and Kit.AurasRestricted() then
             pendingRestyles[state.styleKey] = true
         end
     end
@@ -2318,7 +2318,7 @@ end
 -- Their position is LAYOUT data: they are a flow group of their own, and
 -- `placement`/`layoutIndex` decides whether they lead or trail the aura
 -- groups. Nothing may be anchored to a container (forbidden aspects).
-function AK.SetContainerItemEnchantmentLayout(boxHolder, layout)
+function Kit.SetContainerItemEnchantmentLayout(boxHolder, layout)
     if not (boxHolder and layout and boxHolder.SetItemEnchantmentLayout) then
         return
     end
@@ -2327,7 +2327,7 @@ end
 
 -- BOTH halves required: the inbound setter validates before it defaults, so a
 -- method without a direction is a hard error engine-side.
-function AK.SetContainerItemEnchantmentSort(boxHolder, sortMethod, sortDirection)
+function Kit.SetContainerItemEnchantmentSort(boxHolder, sortMethod, sortDirection)
     if not (boxHolder and sortMethod and sortDirection and boxHolder.SetItemEnchantmentSortMethod) then
         return
     end
@@ -2340,7 +2340,7 @@ end
 -- ONE-WAY: with no addon-facing unregister, a consumer that must stop
 -- showing them releases the container and builds a fresh one. Re-calling is
 -- idempotent and re-applies layout and sort only.
-function AK.AddItemEnchantmentsToContainer(boxHolder, e)
+function Kit.AddItemEnchantmentsToContainer(boxHolder, e)
     if not (boxHolder and e and boxHolder.AddItemEnchantment) then
         return
     end
@@ -2353,7 +2353,7 @@ function AK.AddItemEnchantmentsToContainer(boxHolder, e)
         cooldown.itemEnchFrames = {}
     end
     local tracked = cooldown and cooldown.itemEnchFrames
-    local nameList = AK.ITEM_ENCH_SLOTS
+    local nameList = Kit.ITEM_ENCH_SLOTS
     local last = math.min(e.maxSlots or #nameList, #nameList)
     for idx = 1, last do
         local name = nameList[idx]
@@ -2365,7 +2365,7 @@ function AK.AddItemEnchantmentsToContainer(boxHolder, e)
         -- that today) would hit that assert with the tracking gone.
         if slot ~= nil and not (tracked and tracked[name]) then
             local success, widget = pcall(boxHolder.AddItemEnchantment, boxHolder, slot, {
-                initializeFrame = AK.MakeInitializer(e.style, e.extraInit),
+                initializeFrame = Kit.MakeInitializer(e.style, e.extraInit),
                 hidePermanent = e.hidePermanent ~= false,
             })
             if success and tracked then
@@ -2373,8 +2373,8 @@ function AK.AddItemEnchantmentsToContainer(boxHolder, e)
             end
         end
     end
-    AK.SetContainerItemEnchantmentLayout(boxHolder, e.layout)
-    AK.SetContainerItemEnchantmentSort(boxHolder, e.sortMethod, e.sortDirection)
+    Kit.SetContainerItemEnchantmentLayout(boxHolder, e.layout)
+    Kit.SetContainerItemEnchantmentSort(boxHolder, e.sortMethod, e.sortDirection)
 end
 
 -- Binds the unit, then requests a full refresh. Builders call it once their
@@ -2383,27 +2383,27 @@ end
 -- engine's event registration (12.1 and WoW Forever), which holds UNIT_AURA
 -- only while the container has content and is visible. Unit Frames binds
 -- every element at build and declares an element's groups only once it is on.
-function AK.FinishContainer(boxHolder, unitToken)
+function Kit.FinishContainer(boxHolder, unitToken)
     boxHolder:SetUnit(unitToken)
     boxHolder:UpdateAllAuras()
 end
 
-function AK.CreateContainer(hostFrame, unitToken, specInfo)
-    local boxHolder = AK.CreateContainerShell(hostFrame, specInfo)
+function Kit.CreateContainer(hostFrame, unitToken, specInfo)
+    local boxHolder = Kit.CreateContainerShell(hostFrame, specInfo)
 
     if specInfo.groups then
         for idx = 1, #specInfo.groups do
-            AK.AddGroupToContainer(boxHolder, specInfo.groups[idx])
+            Kit.AddGroupToContainer(boxHolder, specInfo.groups[idx])
         end
     end
 
     if specInfo.slots then
         for idx = 1, #specInfo.slots do
-            AK.AddSlotToContainer(boxHolder, specInfo.slots[idx])
+            Kit.AddSlotToContainer(boxHolder, specInfo.slots[idx])
         end
     end
 
-    AK.FinishContainer(boxHolder, unitToken)
+    Kit.FinishContainer(boxHolder, unitToken)
 
     return boxHolder, containerData[boxHolder].slotFrames
 end
@@ -2525,7 +2525,7 @@ end
 -- A module's build worker. Call it from the module's MAIN CHUNK: the frame has
 -- to be created in the module's own load context for its builds to bill the
 -- module. worker:Queue(fn, label) queues a job on it.
-function AK.NewBuildWorker()
+function Kit.NewBuildWorker()
     local job = CreateFrame("Frame")
     job:Hide()
     job._akQueue, job._akHead, job._akTail = {}, 1, 0
@@ -2536,7 +2536,7 @@ function AK.NewBuildWorker()
 end
 
 -- The parent's own worker, for callers that bring none.
-local buildWorker = AK.NewBuildWorker()
+local buildWorker = Kit.NewBuildWorker()
 
 -- Shows every worker holding jobs; true when any did.
 local function WakeWorkers()
@@ -2551,13 +2551,13 @@ local function WakeWorkers()
     return any
 end
 
-function AK.QueueBuildJob(func, labelText, job)
+function Kit.QueueBuildJob(func, labelText, job)
     QueueOnWorker(job or buildWorker, func, labelText)
 end
 
 -- Back-compat name: a combat-runnable job (declarations/setters on
 -- EXISTING containers). Back-compat alias; identical to QueueBuildJob.
-function AK.QueueLiveBuildJob(func, labelText, job)
+function Kit.QueueLiveBuildJob(func, labelText, job)
     QueueOnWorker(job or buildWorker, func, labelText)
 end
 
@@ -2599,8 +2599,8 @@ end)
 -- PLAYER_REGEN_ENABLED" gate this wrapper used to carry left Player Aura Bars
 -- (and the Movement Alert) blank until combat ended after an in-combat reload.
 -- Kept as a wrapper so callers keep one entry point.
-function AK.RequestContainer(hostFrame, unitToken, specInfo, callback)
-    local boxHolder, slotFrames = AK.CreateContainer(hostFrame, unitToken, specInfo)
+function Kit.RequestContainer(hostFrame, unitToken, specInfo, callback)
+    local boxHolder, slotFrames = Kit.CreateContainer(hostFrame, unitToken, specInfo)
     if callback then
         callback(boxHolder, slotFrames)
     end
@@ -2612,7 +2612,7 @@ end
 -- restyle cost grows with every swap. Group buttons are engine-created without a handle
 -- list and are not individually tracked; group-based containers swap rarely
 -- (filter-class changes), so their zombies are accepted for now.
-function AK.ReleaseContainer(boxHolder)
+function Kit.ReleaseContainer(boxHolder)
     if not boxHolder then
         return
     end
@@ -2652,7 +2652,7 @@ function AK.ReleaseContainer(boxHolder)
     end
     if payload and payload.groups then
         for styleId in pairs(payload.groups) do
-            pcall(AK.SetGroupCap, boxHolder, styleId, 0)
+            pcall(Kit.SetGroupCap, boxHolder, styleId, 0)
         end
     end
 end
@@ -2677,7 +2677,7 @@ end
 -- zone edges); the success probe is a cheap C call, so not caching it costs nothing. A
 -- stale "true" merely suppresses a display for one frame -- safe.
 local restrictedStamp = -1
-function AK.AurasRestricted()
+function Kit.AurasRestricted()
     local nowTime = GetTime()
     if C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() then
         restrictedStamp = nowTime
@@ -2801,13 +2801,13 @@ do
     end
 
     -- canDispelMagic, canDispelEnrage.
-    function AK.OffensiveDispelTypes()
+    function Kit.OffensiveDispelTypes()
         Ensure()
         return magic, enrage
     end
 
     -- fn() runs whenever either answer flips (talents, spec, pet).
-    function AK.OnOffensiveDispelChange(func)
+    function Kit.OnOffensiveDispelChange(func)
         Ensure()
         listeners[#listeners + 1] = func
     end

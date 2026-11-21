@@ -1642,13 +1642,13 @@ CludesUI.Glows = {
 --  then only resize, tint and toggle it.
 -------------------------------------------------------------------------------
 do
-    local G = CludesUI.Glows
+    local GlowNS = CludesUI.Glows
     local TEX = "Interface\\TargetingFrame\\UI-TargetingFrame-Stealable"
     -- Blizzard draws it 24 px on a 21 px buff icon.
     local SCALE = 24 / 21
-    G.STEALABLE_BORDER = STEALABLE_BORDER
+    GlowNS.STEALABLE_BORDER = STEALABLE_BORDER
 
-    function G.EnsureStealableBorder(owner)
+    function GlowNS.EnsureStealableBorder(owner)
         local texture = owner._cuiStealTex
         if not texture then
             texture = owner:CreateTexture(nil, "OVERLAY")
@@ -1663,8 +1663,8 @@ do
 
     -- w/h: the icon's size; nil color = Blizzard's own look. A tint
     -- desaturates first, like the flipbook glows, so the pick reads true.
-    function G.ShowStealableBorder(owner, wid, hgt, cornerR, cornerG, cornerB)
-        local texture = G.EnsureStealableBorder(owner)
+    function GlowNS.ShowStealableBorder(owner, wid, hgt, cornerR, cornerG, cornerB)
+        local texture = GlowNS.EnsureStealableBorder(owner)
         wid = wid or 24
         hgt = hgt or wid
         texture:SetSize(wid * SCALE, hgt * SCALE)
@@ -1684,11 +1684,11 @@ end
 --  PrewarmEngineHost); Show/Hide then only re-anchor and toggle it.
 -------------------------------------------------------------------------------
 do
-    local G = CludesUI.Glows
+    local GlowNS = CludesUI.Glows
     local ATLAS = "UI-CooldownManager-PandemicBorder"
-    G.PANDEMIC_BORDER = PANDEMIC_BORDER
+    GlowNS.PANDEMIC_BORDER = PANDEMIC_BORDER
 
-    function G.EnsurePandemicBorder(owner)
+    function GlowNS.EnsurePandemicBorder(owner)
         local texture = owner._cuiPanTex
         if not texture then
             texture = owner:CreateTexture(nil, "ARTWORK")
@@ -1700,8 +1700,8 @@ do
     end
 
     -- w/h: the icon's size (the host covers the icon).
-    function G.ShowPandemicBorder(owner, wid, hgt)
-        local texture = G.EnsurePandemicBorder(owner)
+    function GlowNS.ShowPandemicBorder(owner, wid, hgt)
+        local texture = GlowNS.EnsurePandemicBorder(owner)
         wid = wid or 24
         hgt = hgt or wid
         local result = floor(min(wid, hgt) * 0.2 + 0.5)
@@ -1721,12 +1721,12 @@ end
 --  helpers only translate and render.
 -------------------------------------------------------------------------------
 do
-    local G = CludesUI.Glows
+    local GlowNS = CludesUI.Glows
 
     -- Suite default look ("default" color mode): gold for the drawn engines,
     -- the atlas's own untinted look for FlipBook styles.
     local DEF_R, DEF_G, DEF_B = 1.0, 0.788, 0.137
-    G.DEFAULT_COLOR = { r = DEF_R, g = DEF_G, b = DEF_B }
+    GlowNS.DEFAULT_COLOR = { r = DEF_R, g = DEF_G, b = DEF_B }
 
     -- A module's style list in its saved order. list[i] is the shared entry
     -- itself, or a proxy over it when overrides[i] adds module-only fields
@@ -1734,7 +1734,7 @@ do
     -- table). toShared[i] / fromShared[shared] translate saved <-> shared.
     -- ordered = the saved values in shared order, so every menu lists the
     -- styles the same way whatever a module's saved numbering is.
-    function G.MakeView(sequence, overrides)
+    function GlowNS.MakeView(sequence, overrides)
         local entries, toShared, fromShared, ordered = {}, {}, {}, {}
         for i = 1, #sequence do
             local si = sequence[i]
@@ -1760,7 +1760,7 @@ do
     --   bar    : our own rectangular frame; Shape has no shape to follow
     --   engine : 12.1 aura-button subtree; no driver ticks, so no Auto-Cast or
     --            Shape (Pixel renders as animated ants, ABG as its FlipBook twin)
-    G.HOSTS = {
+    GlowNS.HOSTS = {
         icon = { true, true, true, true, true, true, true },
         bar = { true, true, true, false, true, true, true },
         engine = { true, true, false, false, true, true, true },
@@ -1771,7 +1771,7 @@ do
     -- and Shape has no shape to follow, so only Pixel and Auto-Cast draw
     -- cleanly. Rectangle sites pass this as their excludes, in the options and
     -- in the live spec (an engine host drops Auto-Cast on top: Pixel only).
-    G.RECT_EXCLUDES = { [2] = true, [4] = true, [5] = true, [6] = true, [7] = true }
+    GlowNS.RECT_EXCLUDES = { [2] = true, [4] = true, [5] = true, [6] = true, [7] = true }
 
     -- Nearest renderable replacement, in preference order, per wanted style.
     local FALLBACK = {
@@ -1786,7 +1786,7 @@ do
     }
 
     -- Shared index -> renderable shared index, plus whether it had to change.
-    function G.ResolveStyle(position, owner, excludes)
+    function GlowNS.ResolveStyle(position, owner, excludes)
         position = tonumber(position) or 1
         -- The two static borders are plain textures: every host can show them.
         if position == STEALABLE_BORDER or position == PANDEMIC_BORDER then
@@ -1795,7 +1795,7 @@ do
         if position < 1 or position > #GLOW_STYLES then
             position = 1
         end
-        local caps = G.HOSTS[owner or "icon"] or G.HOSTS.icon
+        local caps = GlowNS.HOSTS[owner or "icon"] or GlowNS.HOSTS.icon
         if caps[position] and not (excludes and excludes[position]) then
             return position, false
         end
@@ -1812,7 +1812,7 @@ do
     -- Color for a mode. nil = the suite default (StartSpecGlow resolves it per
     -- style). A nil mode is a legacy site that never stored one: it reads as
     -- custom with the site's own default, so its look is unchanged.
-    function G.ResolveColor(mode, red, green, blue, defR, defG, defB)
+    function GlowNS.ResolveColor(mode, red, green, blue, defR, defG, defB)
         if mode == "default" then
             return nil
         end
@@ -1828,7 +1828,7 @@ do
     end
 
     -- Legacy sites store a class-color boolean instead of a mode.
-    function G.DeriveColorMode(mode, classFlag)
+    function GlowNS.DeriveColorMode(mode, classFlag)
         if mode then
             return mode
         end
@@ -1838,7 +1838,7 @@ do
     -- Speed: the UI shows 1-8 with higher = faster; saved values are the march
     -- period in seconds. Stored periods above 8 (older 1-10 sliders) still
     -- render as saved and read as the slowest step until edited.
-    function G.SpeedToUI(period)
+    function GlowNS.SpeedToUI(period)
         local val = 9 - (period or 4)
         if val < 1 then
             val = 1
@@ -1847,7 +1847,7 @@ do
         end
         return val
     end
-    function G.SpeedFromUI(val)
+    function GlowNS.SpeedFromUI(val)
         return 9 - val
     end
 
@@ -1878,9 +1878,9 @@ do
         end
         return k
     end
-    G.PrefixKeys = PrefixKeys
+    GlowNS.PrefixKeys = PrefixKeys
 
-    function G.SpecFromPrefix(result, tbl, p, defR, defG, defB)
+    function GlowNS.SpecFromPrefix(result, tbl, p, defR, defG, defB)
         local k = PrefixKeys(p)
         local style = tbl and tbl[k.type] or 0
         if not style or style == 0 then
@@ -1888,7 +1888,7 @@ do
         end
         result.style = style
         result.r, result.g, result.b =
-            G.ResolveColor(G.DeriveColorMode(tbl[k.mode], tbl[k.class]), tbl[k.r], tbl[k.g], tbl[k.b], defR, defG, defB)
+            GlowNS.ResolveColor(GlowNS.DeriveColorMode(tbl[k.mode], tbl[k.class]), tbl[k.r], tbl[k.g], tbl[k.b], defR, defG, defB)
         result.lines, result.thickness, result.speed = tbl[k.lines], tbl[k.th], tbl[k.speed]
         if tbl[k.bg] then
             result.bg, result.bgR, result.bgG, result.bgB = true, tbl[k.bgR] or 0, tbl[k.bgG] or 0, tbl[k.bgB] or 0
@@ -1904,7 +1904,7 @@ do
     -- {r,g,b} tables), plus <p>Style and <p>ColorMode where a site keeps them.
     -- Keys are built once per prefix; the options' FlatGet / FlatSet read them.
     local _flatKeys = {}
-    function G.FlatKeys(p)
+    function GlowNS.FlatKeys(p)
         local k = _flatKeys[p]
         if not k then
             k = {
@@ -1933,9 +1933,9 @@ do
         end
         return val
     end
-    function G.SpecFromFlat(result, t, key, mode, defs)
+    function GlowNS.SpecFromFlat(result, t, key, mode, defs)
         local color = FlatVal(t, defs, key.color)
-        result.r, result.g, result.b = G.ResolveColor(mode, color and color.r, color and color.g, color and color.b)
+        result.r, result.g, result.b = GlowNS.ResolveColor(mode, color and color.r, color and color.g, color and color.b)
         result.lines = FlatVal(t, defs, key.lines)
         result.thickness = FlatVal(t, defs, key.thickness)
         result.speed = FlatVal(t, defs, key.speed)
@@ -1954,8 +1954,8 @@ do
     -- UIParent's: a raw thickness would draw a different (or no) pixel count
     -- there. Pass PANEL_EXTRA as StartSpecGlow's extra to draw the pixels the
     -- live UIParent glow shows.
-    G.PANEL_EXTRA = { panel = true }
-    function G.PanelThickness(th)
+    GlowNS.PANEL_EXTRA = { panel = true }
+    function GlowNS.PanelThickness(th)
         local Pix, PPP = CludesUI.PP, CludesUI.PanelPP
         local px = math.floor(th / ((Pix and Pix.mult) or 1) + 0.5)
         if px < 1 then
@@ -1984,11 +1984,11 @@ do
     -- calls (auras restricted, outside the creation window) a call that would
     -- change anything returns nothing and defers the button's style key to
     -- the restriction lift; an unchanged glow still returns at once.
-    function G.StartSpecGlow(holder, specInfo, wid, hgt, owner, extra)
+    function GlowNS.StartSpecGlow(holder, specInfo, wid, hgt, owner, extra)
         if not (holder and specInfo) then
             return
         end
-        local position, converted = G.ResolveStyle(specInfo.style, owner, specInfo.excludes)
+        local position, converted = GlowNS.ResolveStyle(specInfo.style, owner, specInfo.excludes)
         wid = wid or 36
         hgt = hgt or wid
         local color = holder._cuiSpecSig
@@ -2032,9 +2032,9 @@ do
                 end
             end
             if position == STEALABLE_BORDER then
-                G.ShowStealableBorder(holder, wid, hgt, red, green, blue)
+                GlowNS.ShowStealableBorder(holder, wid, hgt, red, green, blue)
             else
-                G.ShowPandemicBorder(holder, wid, hgt)
+                GlowNS.ShowPandemicBorder(holder, wid, hgt)
             end
             -- A static border plays no group: a bound host hands them back.
             if rec and not SyncBoundHost(holder, rec, 0) then
@@ -2060,7 +2060,7 @@ do
         end
         local N, th, period = specInfo.lines or 8, specInfo.thickness or 2, specInfo.speed or 4
         if extra and extra.panel then
-            th = G.PanelThickness(th)
+            th = GlowNS.PanelThickness(th)
         end
         local bgOn = specInfo.bg and true or false
         -- An off background draws nothing, so its colour never counts (a
@@ -2150,7 +2150,7 @@ do
     -- Blizzard Pandemic Border texture). Pass a file-scope constant. w, h
     -- stay for call compatibility (creation needs no size). Repeat calls are
     -- free: each family's data table appears only once its regions exist.
-    function G.PrewarmEngineHost(holder, wid, hgt, need)
+    function GlowNS.PrewarmEngineHost(holder, wid, hgt, need)
         if not holder then
             return
         end
@@ -2161,10 +2161,10 @@ do
             _EnsureFlip(holder, true, true)
         end
         if not need or need.stealable then
-            G.EnsureStealableBorder(holder)
+            GlowNS.EnsureStealableBorder(holder)
         end
         if not need or need.pandemic then
-            G.EnsurePandemicBorder(holder)
+            GlowNS.EnsurePandemicBorder(holder)
         end
     end
 
@@ -2180,7 +2180,7 @@ do
     -- AddAuraShownAnimation: WoW Forever), and the caller keeps its unbound
     -- path. A glow already running on the host restarts through the next
     -- StartSpecGlow, which registers it.
-    function G.BindEngineHost(holder, btnFrame, glowData, kickIcon)
+    function GlowNS.BindEngineHost(holder, btnFrame, glowData, kickIcon)
         if not (holder and btnFrame and glowData) then
             return false
         end
@@ -2203,7 +2203,7 @@ do
         return true
     end
 
-    function G.IsEngineHostBound(holder)
+    function GlowNS.IsEngineHostBound(holder)
         return holder ~= nil and BOUND[holder] ~= nil
     end
 end

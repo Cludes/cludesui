@@ -17,7 +17,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --    3. Edit Mode owns the position.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local EQT = mod.EQT
+local TrackerNS = mod.EQT
 
 local suppressed = false -- another module hides the tracker (_CUQT_SetSuppressed)
 local background -- our frame behind the tracker (made in InitVisibility)
@@ -29,7 +29,7 @@ end
 -- Blizzard's quest icons stick out 13px left of the tracker: the background
 -- covers them, keeping its 6px of room where they are off.
 local function BackgroundLeft()
-    return EQT.Cfg("showQuestIcons") and -19 or -6
+    return TrackerNS.Cfg("showQuestIcons") and -19 or -6
 end
 
 -- Where the background's top edge goes. With "Hide All Objectives" on, the
@@ -42,7 +42,7 @@ local function BackgroundTop()
     if not otf then
         return nil, "TOP"
     end
-    if EQT.ShouldHideMasterHeader and EQT.ShouldHideMasterHeader() then
+    if TrackerNS.ShouldHideMasterHeader and TrackerNS.ShouldHideMasterHeader() then
         local header = otf.HeaderMenu or otf.Header
         if header then
             return header, "BOTTOM"
@@ -67,7 +67,7 @@ local function HiddenByPlace()
     if instanceType ~= "raid" then
         return false
     end
-    local mode = EQT.DB() and EQT.DB().hideInRaidMode
+    local mode = TrackerNS.DB() and TrackerNS.DB().hideInRaidMode
     if mode == "always" then
         return true
     elseif mode == "never" then
@@ -84,7 +84,7 @@ end
 local function TrackerIsVisible(otf)
     return otf ~= nil and otf:IsShown() and otf:GetAlpha() > 0 and not HiddenByPlace()
 end
-EQT.TrackerIsVisible = TrackerIsVisible
+TrackerNS.TrackerIsVisible = TrackerIsVisible
 
 -- While the tracker is hidden (raids, arenas, M+, suppression) the module's
 -- event frames stop listening, so quest events cause no skin or layout work.
@@ -97,7 +97,7 @@ local function StopEvents()
         return
     end
     eventsStopped = true
-    for _, frame in ipairs(EQT._eventFrames or {}) do
+    for _, frame in ipairs(TrackerNS._eventFrames or {}) do
         frame:UnregisterAllEvents()
     end
 end
@@ -106,11 +106,11 @@ local function ResumeEvents()
         return
     end
     eventsStopped = false
-    if not (EQT._eventFrames and EQT._eventRegistrations) then
+    if not (TrackerNS._eventFrames and TrackerNS._eventRegistrations) then
         return
     end
-    for i, frame in ipairs(EQT._eventFrames) do
-        local events = EQT._eventRegistrations[i]
+    for i, frame in ipairs(TrackerNS._eventFrames) do
+        local events = TrackerNS._eventRegistrations[i]
         if events then
             local catchUp
             for _, event in ipairs(events) do
@@ -127,10 +127,10 @@ end
 
 -- Other modules' hide, through the normal visibility pass so it combines
 -- with the player's own visibility settings.
-function EQT.ApplySuppression(on)
+function TrackerNS.ApplySuppression(on)
     suppressed = on and true or false
-    if EQT.UpdateVisibility then
-        EQT.UpdateVisibility()
+    if TrackerNS.UpdateVisibility then
+        TrackerNS.UpdateVisibility()
     end
 end
 
@@ -142,8 +142,8 @@ end
 local function HardHide(otf)
     if InCombatLockdown() then
         otf:SetAlpha(0)
-        if EQT.ApplyTrackerMouse then
-            EQT.ApplyTrackerMouse(false)
+        if TrackerNS.ApplyTrackerMouse then
+            TrackerNS.ApplyTrackerMouse(false)
         end
     else
         otf:SetAlpha(1) -- undo a combat fade before hiding
@@ -180,11 +180,11 @@ local function HookShow()
         if suppressed then
             return
         end
-        if EQT.ResizeBGToContent then
-            EQT.ResizeBGToContent()
+        if TrackerNS.ResizeBGToContent then
+            TrackerNS.ResizeBGToContent()
         end
-        if EQT.QueueResize then
-            EQT.QueueResize()
+        if TrackerNS.QueueResize then
+            TrackerNS.QueueResize()
         end
     end)
 end
@@ -218,7 +218,7 @@ local function SyncTrackerShown()
     -- options, as true / false / "mouseover" (the hover check raises it).
     local vis = true
     if CludesUI and CludesUI.EvalVisibility then
-        vis = CludesUI.EvalVisibility(EQT.DB())
+        vis = CludesUI.EvalVisibility(TrackerNS.DB())
     end
     local alpha = (suppressed or vis == false or vis == "mouseover") and 0 or 1
     otf:SetAlpha(alpha)
@@ -227,19 +227,19 @@ local function SyncTrackerShown()
     end
     -- Alpha does not stop clicks: an invisible tracker's blocks would take
     -- clicks meant for the world.
-    if EQT.ApplyTrackerMouse then
-        EQT.ApplyTrackerMouse(alpha > 0)
+    if TrackerNS.ApplyTrackerMouse then
+        TrackerNS.ApplyTrackerMouse(alpha > 0)
     end
     -- The resize decides whether the background shows (by real content);
     -- showing it here would bring back an empty one.
-    if EQT.ResizeBGToContent then
-        EQT.ResizeBGToContent()
+    if TrackerNS.ResizeBGToContent then
+        TrackerNS.ResizeBGToContent()
     end
 end
-EQT.UpdateVisibility = SyncTrackerShown
+TrackerNS.UpdateVisibility = SyncTrackerShown
 
 -- The options once rebuilt a state driver through this; it stays for them.
-function EQT.RefreshStateDriver()
+function TrackerNS.RefreshStateDriver()
     SyncTrackerShown()
 end
 
@@ -259,7 +259,7 @@ local function MakeBackground()
         return background
     end
     -- The stock styles keep Blizzard's own panel: no background of ours.
-    if EQT.Blizz() then
+    if TrackerNS.Blizz() then
         return nil
     end
     local otf = Tracker()
@@ -290,7 +290,7 @@ local function PaintTopLine()
     if not line then
         return
     end
-    if EQT.Cfg("showTopLine") == false then
+    if TrackerNS.Cfg("showTopLine") == false then
         line:Hide()
         return
     end
@@ -363,12 +363,12 @@ local function QueueResize()
     resizeQueued = true
     C_Timer.After(0.05, function()
         resizeQueued = false
-        if EQT.ResizeBGToContent then
-            EQT.ResizeBGToContent()
+        if TrackerNS.ResizeBGToContent then
+            TrackerNS.ResizeBGToContent()
         end
     end)
 end
-EQT.QueueResize = QueueResize
+TrackerNS.QueueResize = QueueResize
 
 local function HideBackground()
     if background:IsShown() then
@@ -408,8 +408,8 @@ local function ResizeBGToContent()
             background._hideCheck = true
             C_Timer.After(0.2, function()
                 background._hideCheck = nil
-                if EQT.ResizeBGToContent then
-                    EQT.ResizeBGToContent()
+                if TrackerNS.ResizeBGToContent then
+                    TrackerNS.ResizeBGToContent()
                 end
             end)
         end
@@ -437,13 +437,13 @@ local function ResizeBGToContent()
     background:SetPoint("BOTTOM", lowest, "BOTTOM", 0, spacing - 15)
     background._lastLowest = lowest
 end
-EQT.ResizeBGToContent = ResizeBGToContent
+TrackerNS.ResizeBGToContent = ResizeBGToContent
 
-function EQT.ApplyBackground()
+function TrackerNS.ApplyBackground()
     if not MakeBackground() then
         return
     end
-    local conf = EQT.DB()
+    local conf = TrackerNS.DB()
     background._tex:SetColorTexture(conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgAlpha or 0.5)
     ResizeBGToContent()
     PaintTopLine()
@@ -451,10 +451,10 @@ end
 
 -- Force Quest Tracker on Screen: keeps the tracker inside the screen when
 -- on, lets it be dragged off when off.
-function EQT.ApplyForceOnScreen()
+function TrackerNS.ApplyForceOnScreen()
     local otf = Tracker()
     if otf then
-        local conf = EQT.DB()
+        local conf = TrackerNS.DB()
         otf:SetClampedToScreen(conf and conf.forceOnScreen == true or false)
     end
 end
@@ -463,8 +463,8 @@ end
 -- hovering either fades both in.
 local function MouseoverTarget(otf)
     local function Mouse(on)
-        if EQT.ApplyTrackerMouse then
-            EQT.ApplyTrackerMouse(on)
+        if TrackerNS.ApplyTrackerMouse then
+            TrackerNS.ApplyTrackerMouse(on)
         end
     end
     return {
@@ -519,19 +519,19 @@ local function MouseoverTarget(otf)
     }
 end
 
-function EQT.InitVisibility()
+function TrackerNS.InitVisibility()
     local otf = Tracker()
     if not otf then
         return
     end
     MakeBackground()
-    EQT.ApplyBackground()
-    EQT.ApplyForceOnScreen()
+    TrackerNS.ApplyBackground()
+    TrackerNS.ApplyForceOnScreen()
     HookShow()
 
     -- The top line follows the UI accent colour (not under the stock styles,
     -- which have no background).
-    if not EQT.Blizz() and CludesUI and CludesUI.RegAccent then
+    if not TrackerNS.Blizz() and CludesUI and CludesUI.RegAccent then
         CludesUI.RegAccent({ type = "callback", fn = PaintTopLine })
     end
 
@@ -579,7 +579,7 @@ function EQT.InitVisibility()
             end
             -- Hover-gated sets reveal only while their conditions pass; a
             -- plain "mouseover" behaves as it always did.
-            return CludesUI.VisWantsMouseover(EQT.DB(), "visibility")
+            return CludesUI.VisWantsMouseover(TrackerNS.DB(), "visibility")
         end)
     end
 

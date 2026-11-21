@@ -368,8 +368,8 @@ function _AC.InitExtra(btnFrame, skinData)
     skinData.cdmRing:SetSnapToPixelGrid(false)
     skinData.cdmRing:SetTexelSnappingBias(0)
     skinData.cdmRing:Hide()
-    local AK = CludesUI.AuraKit
-    local style = AK and skinData.styleKey and AK.styles[skinData.styleKey]
+    local Kit = CludesUI.AuraKit
+    local style = Kit and skinData.styleKey and Kit.styles[skinData.styleKey]
     -- Custom Icon art gets a texture of its own instead of a SetTexture on d.icon:
     -- the engine re-stamps the aura's art onto its registered icon on every update,
     -- so ApplyExtra hides d.icon and this takes its place. Anchored to d.icon so it
@@ -679,8 +679,8 @@ function _AC.SyncFixedIcons(rec, edge, cis)
     if not (styles and cis) then
         return
     end
-    local AK = CludesUI.AuraKit
-    if not (AK and AK.styles) then
+    local Kit = CludesUI.AuraKit
+    if not (Kit and Kit.styles) then
         return
     end
     for spellRef, ci in pairs(cis) do
@@ -688,9 +688,9 @@ function _AC.SyncFixedIcons(rec, edge, cis)
         local current = styles[key]
         if current and current ~= ci then
             styles[key] = ci
-            AK.styles[key] = _AC.BuildStyle(edge, ci)
-            if AK.RestyleSoon then
-                AK.RestyleSoon(key)
+            Kit.styles[key] = _AC.BuildStyle(edge, ci)
+            if Kit.RestyleSoon then
+                Kit.RestyleSoon(key)
             end
         end
     end
@@ -698,19 +698,19 @@ end
 
 -- cis: optional sid -> Custom Icon fileID for the entries that carry one.
 function _AC.Build(rec, barId, edge, sids, sig, cis)
-    local AK = CludesUI.AuraKit
+    local Kit = CludesUI.AuraKit
     local barFrame = cdmBarFrames[barId]
     -- Bar not built yet (login race): bail WITHOUT stamping the signature;
     -- the next tracking sync re-queues the build.
-    if not (AK and AK.CreateContainerShell and AK.AddGroupToContainer and barFrame) then
+    if not (Kit and Kit.CreateContainerShell and Kit.AddGroupToContainer and barFrame) then
         return
     end
     local styleKey = "cdm:aurabuff:" .. barId
-    AK.styles[styleKey] = _AC.BuildStyle(edge)
+    Kit.styles[styleKey] = _AC.BuildStyle(edge)
     rec.styleSig = _AC.StyleSig(edge)
     -- Retire the previous generation properly (the holder is reused).
-    if rec.container and AK.ReleaseContainer then
-        AK.ReleaseContainer(rec.container)
+    if rec.container and Kit.ReleaseContainer then
+        Kit.ReleaseContainer(rec.container)
     end
     local holderFrame = rec.holder
     if not holderFrame then
@@ -763,17 +763,17 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
     else
         pt = "LEFT"
     end
-    local boxHolder = AK.CreateContainerShell(holderFrame, { point = { pt } })
+    local boxHolder = Kit.CreateContainerShell(holderFrame, { point = { pt } })
     rec.pt = pt
     rec.curPt = pt
-    if AK.SetContainerAxis then
-        AK.SetContainerAxis(boxHolder, vertical)
+    if Kit.SetContainerAxis then
+        Kit.SetContainerAxis(boxHolder, vertical)
     end
     -- Group keys in flow order. The shared group is skipped when nothing is left
     -- in its map: an EMPTY includeSpellIDs would not narrow the HELPFUL filter.
     local groupKeys = {}
     if nShared > 0 and next(includeMap) then
-        AK.AddGroupToContainer(boxHolder, {
+        Kit.AddGroupToContainer(boxHolder, {
             key = "spells",
             filter = { "HELPFUL" },
             style = styleKey,
@@ -797,10 +797,10 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
         for index = 1, #ciGroups do
             local g = ciGroups[index]
             local ciStyleKey = _AC.FixedIconStyleKey(barId, g.sid)
-            AK.styles[ciStyleKey] = _AC.BuildStyle(edge, g.ci)
+            Kit.styles[ciStyleKey] = _AC.BuildStyle(edge, g.ci)
             ciStyles[ciStyleKey] = g.ci
             local gKey = "ci:" .. g.sid
-            AK.AddGroupToContainer(boxHolder, {
+            Kit.AddGroupToContainer(boxHolder, {
                 key = gKey,
                 filter = { "HELPFUL" },
                 style = ciStyleKey,
@@ -817,7 +817,7 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
     if rec.ciStyles then
         for oldKey in pairs(rec.ciStyles) do
             if not (ciStyles and ciStyles[oldKey]) then
-                AK.styles[oldKey] = nil
+                Kit.styles[oldKey] = nil
             end
         end
     end
@@ -828,7 +828,7 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
         -- default, so any bar not at that size overlaps or gaps -- and a cropped
         -- bar, whose buttons are shorter (ns.CdmCropFactor), is off on both axes. Every group
         -- shares one layout: their styles differ only in the fixed art.
-        local st = AK.styles[styleKey]
+        local st = Kit.styles[styleKey]
         local gapPx = _AC.SnapPx(gap)
         local layout = {
             elementWidth = st and st.width,
@@ -842,7 +842,7 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
             boxHolder:SetAuraGroupLayout(groupKeys[index], layout)
         end
     end
-    AK.FinishContainer(boxHolder, "player")
+    Kit.FinishContainer(boxHolder, "player")
     rec.container = boxHolder
     rec.sig, rec.sids = sig, sids
     rec.bdRef = edge
@@ -1140,8 +1140,8 @@ function mod.UpdateCustomBuffAuraTracking()
                         end
                         rec.bdRef = edge
                         if rec.sig ~= sig and not rec.queued then
-                            local AK = CludesUI.AuraKit
-                            if AK and AK.QueueBuildJob then
+                            local Kit = CludesUI.AuraKit
+                            if Kit and Kit.QueueBuildJob then
                                 rec.queued = true
                                 local barId, bdRef, sidsRef, sigRef, cisRef = edge.key, edge, sids, sig, cis
                                 AKWorker:Queue(function()
@@ -1177,17 +1177,17 @@ function mod.UpdateCustomBuffAuraTracking()
             if rec.holder then
                 rec.holder:Hide()
             end
-            local AK = CludesUI.AuraKit
-            if rec.container and AK and AK.ReleaseContainer then
-                AK.ReleaseContainer(rec.container)
+            local Kit = CludesUI.AuraKit
+            if rec.container and Kit and Kit.ReleaseContainer then
+                Kit.ReleaseContainer(rec.container)
             end
             rec.container = nil
             rec.sig = nil
             rec.sids = nil
             rec.styleSig = nil
-            if rec.ciStyles and AK and AK.styles then
+            if rec.ciStyles and Kit and Kit.styles then
                 for oldKey in pairs(rec.ciStyles) do
-                    AK.styles[oldKey] = nil
+                    Kit.styles[oldKey] = nil
                 end
             end
             rec.ciStyles = nil
@@ -1214,24 +1214,24 @@ function mod.RefreshAuraCustomStyle(barId)
     if rec.styleSig == sig then
         return
     end
-    local AK = CludesUI.AuraKit
-    if not (AK and AK.styles) then
+    local Kit = CludesUI.AuraKit
+    if not (Kit and Kit.styles) then
         return
     end
     if rec.holder then
         rec.holder:SetFrameStrata(edge.barStrata or "MEDIUM")
     end
     local styleKey = "cdm:aurabuff:" .. barId
-    AK.styles[styleKey] = _AC.BuildStyle(edge)
-    if AK.RestyleSoon then
-        AK.RestyleSoon(styleKey)
+    Kit.styles[styleKey] = _AC.BuildStyle(edge)
+    if Kit.RestyleSoon then
+        Kit.RestyleSoon(styleKey)
     end
     -- Custom Icon groups carry the same appearance under their own style keys.
     if rec.ciStyles then
         for ciStyleKey, ci in pairs(rec.ciStyles) do
-            AK.styles[ciStyleKey] = _AC.BuildStyle(edge, ci)
-            if AK.RestyleSoon then
-                AK.RestyleSoon(ciStyleKey)
+            Kit.styles[ciStyleKey] = _AC.BuildStyle(edge, ci)
+            if Kit.RestyleSoon then
+                Kit.RestyleSoon(ciStyleKey)
             end
         end
     end

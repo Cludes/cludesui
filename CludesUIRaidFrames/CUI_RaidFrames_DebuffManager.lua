@@ -1662,21 +1662,21 @@ local function BuildRecords(s, dmCfg)
                     if inside then break end
                     table.sort(xs)
                     for k = 1, #xs do
-                        local X = xs[k]
-                        if restT and not split[X] then
-                            split[X] = true
+                        local Other = xs[k]
+                        if restT and not split[Other] then
+                            split[Other] = true
                             local place = MatchCopy(rest)
-                            if MatchApply(place, X, true, dmCfg) then
+                            if MatchApply(place, Other, true, dmCfg) then
                                 local pT, pC = MatchFinish(place)
                                 if pT then
-                                    local pcats = { X }
+                                    local pcats = { Other }
                                     for c = 1, #catList do pcats[#pcats + 1] = catList[c] end
                                     table.sort(pcats)
                                     pC.excludeSpellIDs = ex
                                     records[#records + 1] = { key = "match:" .. table.concat(pcats, "+"),
                                         tokens = pT, cand = pC, cats = pcats, tile = tile, match = true }
                                     local negm = MatchCopy(rest)
-                                    MatchApply(negm, X, false, dmCfg)
+                                    MatchApply(negm, Other, false, dmCfg)
                                     rest = negm
                                     restT, restC = MatchFinish(negm)
                                 end
@@ -1884,23 +1884,23 @@ local function BuildRecords(s, dmCfg)
                         end
                         table.sort(xs)
                         for posX = 1, #xs do
-                            local X = xs[posX]
-                            local xo = BOOL_OWN[X]
-                            if xo and xo.field and xo.rank > own.rank and has[X] and not done[X]
-                                and castFrame[xo.field] == nil and not (tn and tn[X] == true) then
-                                done[X] = true
+                            local Other = xs[posX]
+                            local xo = BOOL_OWN[Other]
+                            if xo and xo.field and xo.rank > own.rank and has[Other] and not done[Other]
+                                and castFrame[xo.field] == nil and not (tn and tn[Other] == true) then
+                                done[Other] = true
                                 local castCopy, tokenCopy = {}, {}
                                 for kk, val in pairs(castFrame) do castCopy[kk] = val end
                                 for kk = 1, #record.tokens do tokenCopy[kk] = record.tokens[kk] end
                                 local key, pcats = own.npKey, own.npCats
-                                if X == "nonplayer" then
+                                if Other == "nonplayer" then
                                     castCopy[xo.field], castFrame[xo.field] = npAny, npHideVal
                                 else
                                     castCopy[xo.field], castFrame[xo.field] = true, false
-                                    key = record.key .. "+" .. X
-                                    pcats = { X }
-                                    if merged and (X == "boss" or X == "role") then
-                                        pcats[2] = (X == "boss") and "role" or "boss"
+                                    key = record.key .. "+" .. Other
+                                    pcats = { Other }
+                                    if merged and (Other == "boss" or Other == "role") then
+                                        pcats[2] = (Other == "boss") and "role" or "boss"
                                     end
                                     for c = 1, #own.cats do pcats[#pcats + 1] = own.cats[c] end
                                 end

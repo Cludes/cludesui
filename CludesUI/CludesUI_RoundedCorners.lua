@@ -907,8 +907,8 @@ end
 -- The layer's edges on whole pixels: a parent centred on its row or header
 -- can sit half a pixel off the grid, which spread a 1 px outline over two.
 -- Each edge moves to its nearest pixel (offsets in layer units = pixels).
-local function SeatLayer(L, drawLayer, key)
-    local p = L.parent
+local function SeatLayer(Lay, drawLayer, key)
+    local p = Lay.parent
     local l, t, r, b = p:GetLeft(), p:GetTop(), p:GetRight(), p:GetBottom()
     if
         not (l and t and r and b)
@@ -921,41 +921,41 @@ local function SeatLayer(L, drawLayer, key)
     end
     l, t, r, b = l * key, t * key, r * key, b * key
     l, t, r, b = floor(l + 0.5) - l, floor(t + 0.5) - t, floor(r + 0.5) - r, floor(b + 0.5) - b
-    if L.sl == l and L.st == t and L.sr == r and L.sb == b then
+    if Lay.sl == l and Lay.st == t and Lay.sr == r and Lay.sb == b then
         return
     end
-    L.sl, L.st, L.sr, L.sb = l, t, r, b
+    Lay.sl, Lay.st, Lay.sr, Lay.sb = l, t, r, b
     drawLayer:ClearAllPoints()
     drawLayer:SetPoint("TOPLEFT", p, "TOPLEFT", l, t)
     drawLayer:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", r, b)
 end
 
-local function FitLayer(L)
-    local drawLayer = L._frame
-    if L.gen ~= PoolDress(drawLayer) then
+local function FitLayer(Lay)
+    local drawLayer = Lay._frame
+    if Lay.gen ~= PoolDress(drawLayer) then
         layers[drawLayer] = nil
         return
     end
     local px = CludesUI.PP.perfect
-    if L.px ~= px then
-        L.px = px
+    if Lay.px ~= px then
+        Lay.px = px
         drawLayer:SetScale(px)
     end
-    local key = L.parent:GetEffectiveScale() / px
+    local key = Lay.parent:GetEffectiveScale() / px
     if key > 0 then
-        SeatLayer(L, drawLayer, key)
-        L.fit(L, key)
+        SeatLayer(Lay, drawLayer, key)
+        Lay.fit(Lay, key)
     end
 end
 
 local function LayerOnShow(self)
-    local L = layers[self]
-    if not L then
+    local Lay = layers[self]
+    if not Lay then
         return
     end
-    FitLayer(L)
-    if L.onShow and layers[self] then
-        L.onShow(L)
+    FitLayer(Lay)
+    if Lay.onShow and layers[self] then
+        Lay.onShow(Lay)
     end
 end
 
@@ -966,10 +966,10 @@ local newLayers, newQueued = {}, false
 local function FitNewLayers()
     newQueued = false
     for idx = 1, #newLayers do
-        local L = newLayers[idx]
+        local Lay = newLayers[idx]
         newLayers[idx] = nil
-        if layers[L._frame] == L and L._frame:IsVisible() then
-            FitLayer(L)
+        if layers[Lay._frame] == Lay and Lay._frame:IsVisible() then
+            FitLayer(Lay)
         end
     end
 end
@@ -980,22 +980,22 @@ function CludesUI.MakePixelLayer(hostFrame, fit)
     drawLayer:SetAllPoints(hostFrame)
     drawLayer:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
     drawLayer:EnableMouse(false)
-    local L = { _frame = drawLayer, parent = hostFrame, fit = fit, gen = PoolDress(drawLayer), Fit = FitLayer }
-    layers[drawLayer] = L
+    local Lay = { _frame = drawLayer, parent = hostFrame, fit = fit, gen = PoolDress(drawLayer), Fit = FitLayer }
+    layers[drawLayer] = Lay
     drawLayer:SetScript("OnShow", LayerOnShow)
-    newLayers[#newLayers + 1] = L
+    newLayers[#newLayers + 1] = Lay
     if not newQueued then
         newQueued = true
         C_Timer.After(0, FitNewLayers)
     end
-    return L
+    return Lay
 end
 
 -- A Window Scale change: the shown layers re-fit once the panel settles.
 local function RefitLayers()
-    for drawLayer, L in pairs(layers) do
+    for drawLayer, Lay in pairs(layers) do
         if drawLayer:IsVisible() then
-            FitLayer(L)
+            FitLayer(Lay)
         end
     end
 end

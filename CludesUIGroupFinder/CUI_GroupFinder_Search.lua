@@ -451,7 +451,7 @@ local function Regions()
     return mod.RegionList() or Finder.EMPTY
 end
 
-local IsSecret = CludesUI.IsSecret
+local SecretVal = CludesUI.IsSecret
 local function RegionsAvailable()
     return mod.RegionList() ~= nil
 end
@@ -477,7 +477,7 @@ end
 
 local function ResultInfo(resultID)
     local details = C_LFGList.GetSearchResultInfo(resultID)
-    if not details or IsSecret(details) or (canaccesstable and not canaccesstable(details)) then
+    if not details or SecretVal(details) or (canaccesstable and not canaccesstable(details)) then
         return nil
     end
     return details
@@ -485,7 +485,7 @@ end
 
 function Finder.Num(counts, filterKey)
     local val = counts[filterKey]
-    return (type(val) == "number" and not IsSecret(val)) and val or nil
+    return (type(val) == "number" and not SecretVal(val)) and val or nil
 end
 
 -- activity info, cached per session
@@ -506,11 +506,11 @@ end
 Finder.regionByRealm = {}
 local function LeaderRegion(details)
     local leader = details and details.leaderName
-    if not leader or IsSecret(leader) then
+    if not leader or SecretVal(leader) then
         return nil
     end
     local realm = leader:match("%-(.+)$") or (GetNormalizedRealmName and GetNormalizedRealmName())
-    if not realm or IsSecret(realm) then
+    if not realm or SecretVal(realm) then
         return nil
     end
     local regionFrame = Finder.regionByRealm[realm]
@@ -557,7 +557,7 @@ end
 
 -- tier from the activity name; '?' is 12 and '??' is 13.
 function Finder.TierOf(fullName)
-    if type(fullName) ~= "string" or IsSecret(fullName) then
+    if type(fullName) ~= "string" or SecretVal(fullName) then
         return nil
     end
     local n = tonumber(fullName:match("(%d+)%D*$"))
@@ -694,8 +694,8 @@ end
 -- delve / tier filter (unknown activity passes).
 local function DelveKeep(details)
     local acts = details and details.activityIDs
-    local activity = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local skinData = activity and not IsSecret(activity) and delveByActivity and delveByActivity[activity]
+    local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
+    local skinData = activity and not SecretVal(activity) and delveByActivity and delveByActivity[activity]
     if not skinData then
         return true
     end
@@ -934,18 +934,18 @@ end
 Finder.dead = {}
 local function BossKeep(resultID, details)
     local acts = details and details.activityIDs
-    local activity = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local raid = activity and not IsSecret(activity) and raidByActivity and raidByActivity[activity]
+    local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
+    local raid = activity and not SecretVal(activity) and raidByActivity and raidByActivity[activity]
     if not raid then
         return true
     end
     local done = C_LFGList.GetSearchResultEncounterInfo(resultID)
-    if done and (IsSecret(done) or (canaccesstable and not canaccesstable(done))) then
+    if done and (SecretVal(done) or (canaccesstable and not canaccesstable(done))) then
         return true
     end
     local dead = wipe(Finder.dead)
     for _, label in ipairs(done or Finder.EMPTY) do
-        if IsSecret(label) then
+        if SecretVal(label) then
             return true
         end
         dead[label] = true
@@ -1084,7 +1084,7 @@ local function ActivityDiffKey(activityInfo)
     end
     -- last resort: the difficulty word in the name.
     local label = activityInfo.fullName
-    if type(label) == "string" and not IsSecret(label) then
+    if type(label) == "string" and not SecretVal(label) then
         for filterKey, word in pairs(Finder.DIFF_WORDS) do
             if label:find(word, 1, true) then
                 return filterKey
@@ -1101,8 +1101,8 @@ end
 
 local function RaidListKeep(resultID, details)
     local acts = details and details.activityIDs
-    local activity = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local activityInfo = activity and not IsSecret(activity) and Finder.ActInfo(activity)
+    local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
+    local activityInfo = activity and not SecretVal(activity) and Finder.ActInfo(activity)
     if not activityInfo then
         return true
     end
@@ -1120,13 +1120,13 @@ local function RaidListKeep(resultID, details)
     end
     local styles = ChosenRaidPlaystyles()
     local ps = styles and details.generalPlaystyle
-    if type(ps) == "number" and not IsSecret(ps) and ps >= 1 and ps <= #PLAYSTYLES and not styles[ps] then
+    if type(ps) == "number" and not SecretVal(ps) and ps >= 1 and ps <= #PLAYSTYLES and not styles[ps] then
         return false
     end
     local roles = ChosenRaidRoles()
     if roles then
         local c = C_LFGList.GetSearchResultMemberCounts(resultID)
-        if type(c) == "table" and not IsSecret(c) then
+        if type(c) == "table" and not SecretVal(c) then
             local num = Finder.Num
             -- match any role
             if mod.ExtraRolesAny and mod.ExtraRolesAny() then
@@ -1204,7 +1204,7 @@ end
 -- info: the result's readable info, or false when it has none.
 function Finder.IsDeclinedResult(ident, details)
     local _, status = C_LFGList.GetApplicationInfo(ident)
-    if IsSecret(status) then
+    if SecretVal(status) then
         return false
     end
     if status == "declined" or status == "declined_full" or status == "declined_delisted" then
@@ -1212,7 +1212,7 @@ function Finder.IsDeclinedResult(ident, details)
     end
     local unitGuid = details and details.partyGUID
     local declines = LFGListFrame and LFGListFrame.declines
-    return (declines and unitGuid and not IsSecret(unitGuid) and declines[unitGuid]) and true or false
+    return (declines and unitGuid and not SecretVal(unitGuid) and declines[unitGuid]) and true or false
 end
 
 -- your party's roles, nil while one reads secret
@@ -1239,7 +1239,7 @@ function Finder.ExtraKeep(ident, details, need)
         return false
     end
     local counts = C_LFGList.GetSearchResultMemberCounts(ident)
-    if type(counts) == "table" and not IsSecret(counts) then
+    if type(counts) == "table" and not SecretVal(counts) then
         local num = Finder.Num
         if cfg.partyFit and need then
             for roleName, n in pairs(need) do
@@ -1281,12 +1281,12 @@ function Finder.ExtraKeep(ident, details, need)
         end
     elseif cfg.hasLust or cfg.hasBrez then
         local n = details and details.numMembers
-        if type(n) == "number" and not IsSecret(n) then
+        if type(n) == "number" and not SecretVal(n) then
             local lust, brez = false, false
             for index = 1, n do
                 local p = C_LFGList.GetSearchResultPlayerInfo(ident, index)
                 local cls = p and p.classFilename
-                if cls and not IsSecret(cls) then
+                if cls and not SecretVal(cls) then
                     if Finder.LUST_CLASSES[cls] then
                         lust = true
                     end
@@ -1313,17 +1313,17 @@ function Finder.ResultsSecret()
     if not first then
         return false
     end
-    if IsSecret(first) then
+    if SecretVal(first) then
         return true
     end
     local details = C_LFGList.GetSearchResultInfo(first)
     if not details then
         return false
     end
-    if IsSecret(details) or (canaccesstable and not canaccesstable(details)) then
+    if SecretVal(details) or (canaccesstable and not canaccesstable(details)) then
         return true
     end
-    return IsSecret(details.activityIDs) and true or false
+    return SecretVal(details.activityIDs) and true or false
 end
 
 -- one pass shares secrecy, active filters and party fit's needs (once per frame)
@@ -1375,11 +1375,11 @@ function Finder.DimKeep(ident, details)
         return true
     end
     local acts = details.activityIDs
-    local activity = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local activityInfo = activity and not IsSecret(activity) and C_LFGList.GetActivityInfoTable(activity)
-    if activityInfo and not IsSecret(activityInfo) then
+    local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
+    local activityInfo = activity and not SecretVal(activity) and C_LFGList.GetActivityInfoTable(activity)
+    if activityInfo and not SecretVal(activityInfo) then
         local groupId = activityInfo.groupFinderActivityGroupID
-        if not DungeonsDefault(p) and not IsSecret(groupId) and not Contains(p.activities, groupId) then
+        if not DungeonsDefault(p) and not SecretVal(groupId) and not Contains(p.activities, groupId) then
             return false
         end
         if not DiffAllOrNone(p) then
@@ -1396,13 +1396,13 @@ function Finder.DimKeep(ident, details)
     end
     local min = tonumber(p.minimumRating) or 0
     local score = details.leaderOverallDungeonScore
-    if min > 0 and not IsSecret(score) and type(score) == "number" and score < min then
+    if min > 0 and not SecretVal(score) and type(score) == "number" and score < min then
         return false
     end
     local ps = details.generalPlaystyle
     if
         DungeonPlaystyles(p)
-        and not IsSecret(ps)
+        and not SecretVal(ps)
         and type(ps) == "number"
         and ps > 0
         and not p["generalPlaystyle" .. ps]
@@ -1411,7 +1411,7 @@ function Finder.DimKeep(ident, details)
     end
     if DungeonRolesSet(p) then
         local counts = C_LFGList.GetSearchResultMemberCounts(ident)
-        if type(counts) == "table" and not IsSecret(counts) then
+        if type(counts) == "table" and not SecretVal(counts) then
             local num = Finder.Num
             if p.hasTank and (num(counts, "TANK") or 1) < 1 then
                 return false
@@ -1432,10 +1432,10 @@ function Finder.DimKeep(ident, details)
         if p.needsMyClass then
             local _, mine = UnitClass("player")
             local n = details.numMembers
-            for index = 1, (type(n) == "number" and not IsSecret(n)) and n or 0 do
+            for index = 1, (type(n) == "number" and not SecretVal(n)) and n or 0 do
                 local member = C_LFGList.GetSearchResultPlayerInfo(ident, index)
                 local cls = member and member.classFilename
-                if cls and not IsSecret(cls) and cls == mine then
+                if cls and not SecretVal(cls) and cls == mine then
                     return false
                 end
             end
@@ -1482,7 +1482,7 @@ function Finder.PassesFilters(ident, details)
     end
     local cfg = FinderCfg()
     local _, appStatus = C_LFGList.GetApplicationInfo(ident)
-    if IsSecret(appStatus) then
+    if SecretVal(appStatus) then
         return true
     end
     if details == nil then
@@ -1607,12 +1607,12 @@ local function LockedOut(activityInfo, resultID)
                 return false
             end
             local done = C_LFGList.GetSearchResultEncounterInfo(resultID)
-            if done and (IsSecret(done) or (canaccesstable and not canaccesstable(done))) then
+            if done and (SecretVal(done) or (canaccesstable and not canaccesstable(done))) then
                 return false
             end
             local dead = wipe(Finder.dead)
             for _, label in ipairs(done or Finder.EMPTY) do
-                if IsSecret(label) then
+                if SecretVal(label) then
                     return false
                 end
                 dead[label] = true
@@ -1771,14 +1771,14 @@ local function DecorateIcons(record, resultID, details, activityInfo)
     -- none = no missing roles
     local crownOn, specOn = Opt("leaderCrown"), Opt("specIcons")
     local missOn = not (mod.OwnListGet and mod.OwnListGet("missingIcons") == "none")
-    local disabled = (not IsSecret(details.isDelisted) and details.isDelisted) and true or false
+    local disabled = (not SecretVal(details.isDelisted) and details.isDelisted) and true or false
     -- sort like blizzard fills its icons
     local members = wipe(Finder.members)
     local n = details.numMembers
-    if isShown and (crownOn or specOn) and type(n) == "number" and not IsSecret(n) then
+    if isShown and (crownOn or specOn) and type(n) == "number" and not SecretVal(n) then
         for index = 1, n do
             local p = C_LFGList.GetSearchResultPlayerInfo(resultID, index)
-            if p and not IsSecret(p.classFilename) and not IsSecret(p.assignedRole) then
+            if p and not SecretVal(p.classFilename) and not SecretVal(p.assignedRole) then
                 members[#members + 1] = p
             end
         end
@@ -1790,11 +1790,11 @@ local function DecorateIcons(record, resultID, details, activityInfo)
     local maxN = activityInfo and activityInfo.maxNumPlayers or 0
     local counts = isShown and missOn and maxN == 5 and C_LFGList.GetSearchResultMemberCounts(resultID)
     local missing
-    if type(counts) == "table" and not IsSecret(counts) then
+    if type(counts) == "table" and not SecretVal(counts) then
         missing = wipe(Finder.missing)
         for _, roleName in ipairs(Finder.ROLE_ORDER) do
             local have = counts[roleName]
-            if IsSecret(have) then
+            if SecretVal(have) then
                 missing = nil
                 break
             end
@@ -1814,7 +1814,7 @@ local function DecorateIcons(record, resultID, details, activityInfo)
         local ccAtlas = live and cc and cc:IsShown() and cc:GetAtlas()
         local riAtlas = live and ri and ri:IsShown() and ri:GetAtlas()
         local bgAtlas = live and backdrop and backdrop:IsShown() and backdrop:GetAtlas()
-        if live and (IsSecret(ccAtlas) or IsSecret(riAtlas) or IsSecret(bgAtlas)) then
+        if live and (SecretVal(ccAtlas) or SecretVal(riAtlas) or SecretVal(bgAtlas)) then
             -- restricted row: its art reads secret, blizzard's stays
             local a = disabled and 0.5 or 1
             if cc then
@@ -1905,7 +1905,7 @@ local function DecorateIcons(record, resultID, details, activityInfo)
                     end
                     local specInfo = m
                         and m.specName
-                        and not IsSecret(m.specName)
+                        and not SecretVal(m.specName)
                         and SpecIcon(m.classFilename, m.specName)
                     if ccAtlas then
                         skinData.circle:SetAtlas(ccAtlas, false)
@@ -1946,13 +1946,13 @@ local function DecorateIcons(record, resultID, details, activityInfo)
                     end
                     local lv = iconTex.LeaverIcon
                     local leaver = lv and lv:IsShown()
-                    if not IsSecret(leaver) and leaver then
+                    if not SecretVal(leaver) and leaver then
                         skinData.leaver:SetDesaturated(disabled)
                         skinData.leaver:SetAlpha(disabled and 0.5 or 1)
                         skinData.leaver:Show()
                     end
                 end
-                if m and crownOn and not IsSecret(m.isLeader) and m.isLeader then
+                if m and crownOn and not SecretVal(m.isLeader) and m.isLeader then
                     skinData.crown:SetDesaturated(disabled)
                     skinData.crown:Show()
                 end
@@ -1990,7 +1990,7 @@ function Finder.ShouldCancelOldest(resultID)
         return false
     end
     local details = ResultInfo(resultID)
-    return details ~= nil and not IsSecret(details.isDelisted) and not details.isDelisted
+    return details ~= nil and not SecretVal(details.isDelisted) and not details.isDelisted
 end
 
 -- same for our rows
@@ -2053,12 +2053,12 @@ local function DecorateEntry(record)
         return
     end
     local acts = details.activityIDs
-    local activity = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local activityInfo = activity and not IsSecret(activity) and Finder.ActInfo(activity)
+    local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
+    local activityInfo = activity and not SecretVal(activity) and Finder.ActInfo(activity)
 
     -- name colour (blizzard already reds declined ones).
     local delisted, censored = details.isDelisted, details.censored
-    if IsSecret(delisted) or IsSecret(censored) then
+    if SecretVal(delisted) or SecretVal(censored) then
         Finder.ClearIcons(record)
         return
     end
@@ -2082,7 +2082,7 @@ local function DecorateEntry(record)
         and enum:IsShown()
         and record.DataDisplay:IsShown()
         and type(score) == "number"
-        and not IsSecret(score)
+        and not SecretVal(score)
         and score > 0
     then
         local n = activityInfo and activityInfo.maxNumPlayers or 5
@@ -2112,7 +2112,7 @@ local function DecorateEntry(record)
             if label and not censored then
                 local success, wid = pcall(label.GetWidth, label)
                 local cap = (record.isApplication and 165 or 176) - extra
-                if success and type(wid) == "number" and not IsSecret(wid) and wid > cap then
+                if success and type(wid) == "number" and not SecretVal(wid) and wid > cap then
                     label:SetWidth(cap)
                 end
             end
@@ -2133,11 +2133,11 @@ function mod.GFNameColor(resultID, details, activityInfo)
         return nil
     end
     local delisted, censored = details.isDelisted, details.censored
-    if IsSecret(delisted) or IsSecret(censored) or delisted or censored then
+    if SecretVal(delisted) or SecretVal(censored) or delisted or censored then
         return nil
     end
     local _, appStatus = C_LFGList.GetApplicationInfo(resultID)
-    if IsSecret(appStatus) then
+    if SecretVal(appStatus) then
         return nil
     end
     local declined = appStatus == "declined"
@@ -2206,17 +2206,17 @@ local function AddClassesByRole(tooltip, resultID)
         return
     end
     local details = ResultInfo(resultID)
-    if not details or IsSecret(details.isDelisted) or details.isDelisted then
+    if not details or SecretVal(details.isDelisted) or details.isDelisted then
         return
     end
     local acts = details.activityIDs
-    local activity = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local activityInfo = activity and not IsSecret(activity) and Finder.ActInfo(activity)
+    local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
+    local activityInfo = activity and not SecretVal(activity) and Finder.ActInfo(activity)
     if not activityInfo then
         return
     end
     local n = details.numMembers
-    if type(n) ~= "number" or IsSecret(n) or n < 1 then
+    if type(n) ~= "number" or SecretVal(n) or n < 1 then
         return
     end
     local players = {}
@@ -2236,7 +2236,7 @@ function Finder.AddMembers(tooltip, players, enumerate)
     local byRole = { TANK = {}, HEALER = {}, DAMAGER = {} }
     for _, p in ipairs(players) do
         local roleName, class = p and p.assignedRole, p and p.classFilename
-        if roleName and class and not IsSecret(roleName) and not IsSecret(class) and byRole[roleName] then
+        if roleName and class and not SecretVal(roleName) and not SecretVal(class) and byRole[roleName] then
             local entries = byRole[roleName]
             entries[#entries + 1] = p
         end
@@ -2246,7 +2246,7 @@ function Finder.AddMembers(tooltip, players, enumerate)
         local nameList = {}
         for _, roleName in ipairs(Finder.ROLE_ORDER) do
             for _, p in ipairs(byRole[roleName]) do
-                local label = p.name and not IsSecret(p.name) and p.name
+                local label = p.name and not SecretVal(p.name) and p.name
                 if label then
                     local colour = RAID_CLASS_COLORS[p.classFilename]
                     nameList[#nameList + 1] = (colour and colour.colorStr)
@@ -2277,16 +2277,16 @@ function Finder.AddMembers(tooltip, players, enumerate)
                 added = true
             end
             local colour = RAID_CLASS_COLORS[p.classFilename] or NORMAL_FONT_COLOR
-            local className = (not IsSecret(p.className) and p.className)
+            local className = (not SecretVal(p.className) and p.className)
                 or (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[p.classFilename])
                 or p.classFilename
-            local specInfo = p.specName and not IsSecret(p.specName) and p.specName
+            local specInfo = p.specName and not SecretVal(p.specName) and p.specName
             local iconTex = CreateAtlasMarkup and CreateAtlasMarkup(ROLE_ICON[roleName], 12, 12) or ""
             local crown = (p.isLeader and CreateAtlasMarkup)
                     and (" " .. CreateAtlasMarkup("groupfinder-icon-leader", 12, 8))
                 or ""
             local leftX = iconTex .. " " .. (specInfo and (specInfo .. " ") or "") .. className .. crown
-            local label = p.name and not IsSecret(p.name) and p.name or ""
+            local label = p.name and not SecretVal(p.name) and p.name or ""
             tooltip:AddDoubleLine(leftX, label, colour.r, colour.g, colour.b, colour.r, colour.g, colour.b)
         end
     end
@@ -2551,25 +2551,25 @@ end
 
 -- shared less than / more than / equal to list.
 function Finder.OpenOpList(button, roleName)
-    local L = Finder.opList
-    if not L then
-        L = CreateFrame("Frame", nil, SP)
-        Finder.opList = L
-        L:SetFrameStrata("FULLSCREEN_DIALOG")
-        L:SetFrameLevel(330)
-        L:SetClampedToScreen(true)
-        L:EnableMouse(true)
-        L:SetWidth(92)
-        local backdrop = L:CreateTexture(nil, "BACKGROUND")
+    local OpList = Finder.opList
+    if not OpList then
+        OpList = CreateFrame("Frame", nil, SP)
+        Finder.opList = OpList
+        OpList:SetFrameStrata("FULLSCREEN_DIALOG")
+        OpList:SetFrameLevel(330)
+        OpList:SetClampedToScreen(true)
+        OpList:EnableMouse(true)
+        OpList:SetWidth(92)
+        local backdrop = OpList:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 1)
-        CUI.MakeBorder(L, ThemeBorder())
-        L.items = {}
+        CUI.MakeBorder(OpList, ThemeBorder())
+        OpList.items = {}
         for index, o in ipairs(Finder.COUNT_OPS) do
-            local entry = CreateFrame("Button", nil, L)
+            local entry = CreateFrame("Button", nil, OpList)
             entry:SetHeight(ITEM_H)
-            entry:SetPoint("TOPLEFT", L, "TOPLEFT", 1, -(2 + (index - 1) * ITEM_H))
-            entry:SetPoint("TOPRIGHT", L, "TOPRIGHT", -1, -(2 + (index - 1) * ITEM_H))
+            entry:SetPoint("TOPLEFT", OpList, "TOPLEFT", 1, -(2 + (index - 1) * ITEM_H))
+            entry:SetPoint("TOPRIGHT", OpList, "TOPRIGHT", -1, -(2 + (index - 1) * ITEM_H))
             entry.text = entry:CreateFontString(nil, "OVERLAY")
             Finder.Font(entry.text, ITEM_FONT)
             entry.text:SetPoint("LEFT", entry, "LEFT", 8, 0)
@@ -2583,40 +2583,40 @@ function Finder.OpenOpList(button, roleName)
                 if type(cfg.roleCounts) ~= "table" then
                     cfg.roleCounts = {}
                 end
-                local region = cfg.roleCounts[L.role] or {}
+                local region = cfg.roleCounts[OpList.role] or {}
                 region.op = o.key
-                cfg.roleCounts[L.role] = region
-                L:Hide()
+                cfg.roleCounts[OpList.role] = region
+                OpList:Hide()
                 RunFilters()
                 Paint()
             end)
-            L.items[index] = entry
+            OpList.items[index] = entry
         end
-        L:SetHeight(4 + #Finder.COUNT_OPS * ITEM_H)
-        Finder.ClickOff(L, function(self)
+        OpList:SetHeight(4 + #Finder.COUNT_OPS * ITEM_H)
+        Finder.ClickOff(OpList, function(self)
             return self:IsMouseOver() or (self.owner and self.owner:IsMouseOver())
         end)
-        L:Hide()
+        OpList:Hide()
     end
-    if L:IsShown() and L.owner == button then
-        L:Hide()
+    if OpList:IsShown() and OpList.owner == button then
+        OpList:Hide()
         return
     end
-    L.owner, L.role = button, roleName
+    OpList.owner, OpList.role = button, roleName
     local rule = (FinderCfg().roleCounts or Finder.EMPTY)[roleName]
     local current = (type(rule) == "table" and rule.op) or "lt"
     local ar, ag, ab = AccentRGB()
     local tR, tG, tB, tA = CUI.TEXT_DIM_R, CUI.TEXT_DIM_G, CUI.TEXT_DIM_B, CUI.TEXT_DIM_A
-    for _, entry in ipairs(L.items) do
+    for _, entry in ipairs(OpList.items) do
         if entry.opKey == current then
             entry.text:SetTextColor(ar, ag, ab, 1)
         else
             entry.text:SetTextColor(tR, tG, tB, tA)
         end
     end
-    L:ClearAllPoints()
-    L:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -2)
-    L:Show()
+    OpList:ClearAllPoints()
+    OpList:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -2)
+    OpList:Show()
 end
 
 -- small black input box.
@@ -4298,7 +4298,7 @@ end
 -- the season's portal label when it's a seasonal dungeon, else initials
 local portalShort, portalsDone
 function Finder.ShortName(label)
-    if type(label) ~= "string" or IsSecret(label) then
+    if type(label) ~= "string" or SecretVal(label) then
         return ""
     end
     if not portalsDone then
@@ -5042,7 +5042,7 @@ local SW_W, SW_H, SW_PAD = 30, 16, 2
 -- returns nil, true.
 local function CheckedState(callback)
     local val = callback:GetChecked()
-    if IsSecret(val) then
+    if SecretVal(val) then
         return nil, true
     end
     return val and true or false, false
@@ -5058,7 +5058,7 @@ local function PaintSwitch(callback)
     local swatchBtn = skinData.switch
     local red, green, blue = AccentRGB()
     swatchBtn.trackOn:SetColorTexture(red, green, blue, 0.75)
-    if IsSecret(raw) then
+    if SecretVal(raw) then
         -- secret: draw both looks and let the value pick one.
         swatchBtn.trackOn:SetAlphaFromBoolean(raw, 1, 0)
         swatchBtn.knobOn:SetAlphaFromBoolean(raw, 1, 0)
@@ -5134,7 +5134,7 @@ local function SwitchCheckbox(line)
             if frameData then
                 -- don't remember secret values.
                 local nowTime = nil
-                if not IsSecret(val) then
+                if not SecretVal(val) then
                     nowTime = val and true or false
                 end
                 frameData.prevOn, frameData.curOn, frameData.setAt = frameData.curOn, nowTime, GetTime()
@@ -5166,7 +5166,7 @@ local function SwitchCheckbox(line)
             end)
             if line.EditBox.SetEnabled then
                 hooksecurefunc(line.EditBox, "SetEnabled", function(checkBox, val)
-                    if not IsSecret(val) and val and CheckedState(callback) == false and not FFD[callback].reEnable then
+                    if not SecretVal(val) and val and CheckedState(callback) == false and not FFD[callback].reEnable then
                         FFD[callback].reEnable = true
                         checkBox:SetEnabled(false)
                         FFD[callback].reEnable = nil
@@ -5394,7 +5394,7 @@ local function Init()
         end
         for index = 1, #res do
             local ident = res[index]
-            if not IsSecret(ident) then
+            if not SecretVal(ident) then
                 seenResults[ident] = true
             end
         end

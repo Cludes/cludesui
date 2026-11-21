@@ -1987,12 +1987,12 @@ end
 function REMIND.FvSyncGroupWatch(fams, roster)
     local num = fams and #fams or 0
     local anyMissing = num > 0 or roster
-    local W = REMIND._fvWatch
-    if not W then
+    local Watch = REMIND._fvWatch
+    if not Watch then
         if not anyMissing then
             return
         end
-        W = { ids = {}, frames = {}, fams = {} }
+        Watch = { ids = {}, frames = {}, fams = {} }
         -- With a refresh already queued there is nothing to probe.
         local function OnUnitEvent(_, evt, unitToken, details)
             if refreshQueued then
@@ -2009,46 +2009,46 @@ function REMIND.FvSyncGroupWatch(fams, roster)
                 local frame = CreateFrame("Frame")
                 frame.kind, frame.u1, frame.u2 = kind, entries[index], entries[index + 1]
                 frame:SetScript("OnEvent", OnUnitEvent)
-                W.frames[#W.frames + 1] = frame
+                Watch.frames[#Watch.frames + 1] = frame
             end
         end
-        W.world = CreateFrame("Frame")
-        W.world:SetScript("OnEvent", function()
+        Watch.world = CreateFrame("Frame")
+        Watch.world:SetScript("OnEvent", function()
             QueueRefresh()
         end)
-        REMIND._fvWatch = W
+        REMIND._fvWatch = Watch
     end
     -- The watched buffs, copied (the collector reuses its list).
-    local same = #W.fams == num
+    local same = #Watch.fams == num
     for index = 1, num do
-        if W.fams[index] ~= fams[index] then
+        if Watch.fams[index] ~= fams[index] then
             same = false
         end
     end
     if not same then
-        wipe(W.fams)
-        wipe(W.ids)
+        wipe(Watch.fams)
+        wipe(Watch.ids)
         for index = 1, num do
             local fam = fams[index]
-            W.fams[index] = fam
+            Watch.fams[index] = fam
             for _, ident in ipairs(fam.ids) do
-                W.ids[ident] = true
+                Watch.ids[ident] = true
             end
         end
     end
-    if W.any ~= anyMissing then
-        W.any = anyMissing
+    if Watch.any ~= anyMissing then
+        Watch.any = anyMissing
         if anyMissing then
-            W.world:RegisterEvent("GROUP_ROSTER_UPDATE")
+            Watch.world:RegisterEvent("GROUP_ROSTER_UPDATE")
         else
-            W.world:UnregisterEvent("GROUP_ROSTER_UPDATE")
+            Watch.world:UnregisterEvent("GROUP_ROSTER_UPDATE")
         end
     end
     local mode = anyMissing and IsInGroup() and (IsInRaid() and "raid" or "party") or nil
     local auraOn = mode ~= nil and num > 0
-    if W.mode ~= mode or W.auraOn ~= auraOn then
-        W.mode, W.auraOn = mode, auraOn
-        for _, frame in ipairs(W.frames) do
+    if Watch.mode ~= mode or Watch.auraOn ~= auraOn then
+        Watch.mode, Watch.auraOn = mode, auraOn
+        for _, frame in ipairs(Watch.frames) do
             frame:UnregisterAllEvents()
             if frame.kind == mode then
                 frame:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", frame.u1, frame.u2)
@@ -2067,8 +2067,8 @@ function REMIND.FvSyncGroupWatch(fams, roster)
 end
 
 -- Whether any watched buff stays readable under the restriction.
-local function FvWatchReadable(W)
-    local fams = W.fams
+local function FvWatchReadable(Watch)
+    local fams = Watch.fams
     for index = 1, #fams do
         if REMIND.FvReadable(fams[index], true) then
             return true
@@ -2082,19 +2082,19 @@ end
 -- a full update always does; a payload the restriction made unreadable does
 -- while a watched buff itself stays readable.
 function REMIND.FvAuraRelevant(unitToken, details)
-    local W = REMIND._fvWatch
-    if not (W and W.fams[1]) then
+    local Watch = REMIND._fvWatch
+    if not (Watch and Watch.fams[1]) then
         return false
     end
     if not details then
         return true
     end
     if isSecret(details) then
-        return FvWatchReadable(W)
+        return FvWatchReadable(Watch)
     end
     local full = details.isFullUpdate
     if isSecret(full) then
-        return FvWatchReadable(W)
+        return FvWatchReadable(Watch)
     end
     if full then
         return true
@@ -2102,18 +2102,18 @@ function REMIND.FvAuraRelevant(unitToken, details)
     local added = details.addedAuras
     if added then
         if isSecret(added) then
-            return FvWatchReadable(W)
+            return FvWatchReadable(Watch)
         end
         for index = 1, #added do
             local aura = added[index]
             if isSecret(aura) then
-                return FvWatchReadable(W)
+                return FvWatchReadable(Watch)
             end
             local spellRef = aura.spellId
             if isSecret(spellRef) then
-                return FvWatchReadable(W)
+                return FvWatchReadable(Watch)
             end
-            if spellRef and W.ids[spellRef] then
+            if spellRef and Watch.ids[spellRef] then
                 return true
             end
         end
@@ -2121,12 +2121,12 @@ function REMIND.FvAuraRelevant(unitToken, details)
     local removed, found = details.removedAuraInstanceIDs, REMIND._fvInst and REMIND._fvInst[unitToken]
     if removed and found and next(found) then
         if isSecret(removed) then
-            return FvWatchReadable(W)
+            return FvWatchReadable(Watch)
         end
         for index = 1, #removed do
             local iid = removed[index]
             if isSecret(iid) then
-                return FvWatchReadable(W)
+                return FvWatchReadable(Watch)
             end
             if found[iid] then
                 return true

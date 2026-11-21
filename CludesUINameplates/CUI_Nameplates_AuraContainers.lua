@@ -1653,7 +1653,7 @@ end
 -- PlatePool): without the host it keeps its own spot. NPC_SideRow hands the target arrows
 -- and the Kick Tracker the chain's outermost element on a side.
 ------------------------------------------------------------------------------
-local Chain = {
+local ChainKit = {
     DEFAULT = "debuffs,buffs,ccs,raidmarker,rare,quest,questtext,faction",
     -- Option key -> member (rare and quest are one frame).
     MEMBER = {
@@ -1682,14 +1682,14 @@ local Chain = {
 }
 
 local function ChainKeys(place)
-    local k = Chain.keys[place]
+    local k = ChainKit.keys[place]
     if not k then
         k = {
             order = place .. "SlotOrder",
             spacing = place .. "SlotElementSpacing",
             growth = place .. "SlotGrowth",
         }
-        Chain.keys[place] = k
+        ChainKit.keys[place] = k
     end
     return k
 end
@@ -1700,9 +1700,9 @@ end
 local function ChainOrder(place)
     local source = ProfileVal(ChainKeys(place).order)
     if type(source) ~= "string" then
-        source = Chain.DEFAULT
+        source = ChainKit.DEFAULT
     end
-    local memo = Chain.orderMemo[place]
+    local memo = ChainKit.orderMemo[place]
     if memo and memo.src == source then
         return memo.list
     end
@@ -1715,7 +1715,7 @@ local function ChainOrder(place)
     end
     local function take(text, textAfterQuest)
         for auraKey in string.gmatch(text, "[^,]+") do
-            add(Chain.MEMBER[auraKey])
+            add(ChainKit.MEMBER[auraKey])
             if textAfterQuest and auraKey == "quest" then
                 add("qtext")
             end
@@ -1729,8 +1729,8 @@ local function ChainOrder(place)
         end
     end
     take(source, not hasText)
-    take(Chain.DEFAULT)
-    Chain.orderMemo[place] = { src = source, list = entries }
+    take(ChainKit.DEFAULT)
+    ChainKit.orderMemo[place] = { src = source, list = entries }
     return entries
 end
 
@@ -1739,7 +1739,7 @@ end
 -- indicator is part of that member, Crowd Control inside the debuff row is the debuff row's.
 -- The Rare/Quest member counts only while one of its halves is on or the badge rides it.
 local function ChainMembers(place)
-    local m = Chain.m
+    local m = ChainKit.m
     local num = 0
     local ds, bs, cs = mod.GetAuraSlots()
     local raid, class = mod.GetRaidMarkerPos(), mod.GetClassificationSlot()
@@ -1801,7 +1801,7 @@ local function ChainSpacing(place)
     if type(val) == "number" then
         return val
     end
-    local m = Chain.m
+    local m = ChainKit.m
     for i = 1, #m do
         local ident = m[i]
         if ident == "debuffs" or ident == "buffs" or ident == "cc" then
@@ -1851,7 +1851,7 @@ local function ChainShown(backing, place, num)
     local barH = mod.GetHealthBarHeight()
     local k = 0
     for i = 1, num do
-        local ident = Chain.m[i]
+        local ident = ChainKit.m[i]
         local leadSlot, trail, isRow
         if ident == "raid" then
             leadSlot = backing.raidFrame
@@ -1884,15 +1884,15 @@ local function ChainShown(backing, place, num)
             if not isRow then
                 sz = leadSlot._npSz or mod.GetSlotSize(place)
             end
-            Chain.lead[k], Chain.trail[k], Chain.row[k], Chain.id[k] =
+            ChainKit.lead[k], ChainKit.trail[k], ChainKit.row[k], ChainKit.id[k] =
                 leadSlot, trail or leadSlot, isRow or false, ident
-            Chain.sz[k] = sz
-            Chain.base[k] = ChainBase(place, ident, isRow, sz, yOff, barH)
+            ChainKit.sz[k] = sz
+            ChainKit.base[k] = ChainBase(place, ident, isRow, sz, yOff, barH)
         end
     end
-    for i = k + 1, #Chain.lead do
-        Chain.lead[i], Chain.trail[i], Chain.base[i], Chain.row[i], Chain.id[i] = nil, nil, nil, nil, nil
-        Chain.sz[i] = nil
+    for i = k + 1, #ChainKit.lead do
+        ChainKit.lead[i], ChainKit.trail[i], ChainKit.base[i], ChainKit.row[i], ChainKit.id[i] = nil, nil, nil, nil, nil
+        ChainKit.sz[i] = nil
     end
     return k
 end
@@ -1916,16 +1916,16 @@ end
 -- Places member i by its own rule: an icon by the slot icon placer (Name.lua), a row by
 -- AnchorNPContainer, behind its lockout icon where one shows (PositionLockout).
 local function ChainPlaceOwn(backing, place, i)
-    local ident, leadSlot = Chain.id[i], Chain.lead[i]
-    if Chain.row[i] then
-        local c = Chain.trail[i]
+    local ident, leadSlot = ChainKit.id[i], ChainKit.lead[i]
+    if ChainKit.row[i] then
+        local c = ChainKit.trail[i]
         if leadSlot ~= c then
             PositionLockout(backing, leadSlot, place)
         end
         AnchorNPContainer(c, ident, backing, place)
     else
         local xOff, yOff = mod.GetSlotOffsets(place)
-        mod.NP_PlaceSlotIcon(backing, leadSlot, place, xOff, yOff, (ident == "raid") and 0 or 2, Chain.sz[i])
+        mod.NP_PlaceSlotIcon(backing, leadSlot, place, xOff, yOff, (ident == "raid") and 0 or 2, ChainKit.sz[i])
     end
 end
 
@@ -1945,13 +1945,13 @@ end
 -- its own spot (no aspect host). The Crowd Control row then chains off its lockout icon,
 -- sp apart, in the same direction.
 local function ChainPlaceAfter(backing, place, i, jdx, previous, s, direction, sp)
-    local leadSlot, c = Chain.lead[i], Chain.trail[i]
-    local raw = Chain.row[i] or leadSlot ~= c
-    if Chain.row[jdx] and not backing.coreHost and (leadSlot ~= c or not Chain.row[i]) then
+    local leadSlot, c = ChainKit.lead[i], ChainKit.trail[i]
+    local raw = ChainKit.row[i] or leadSlot ~= c
+    if ChainKit.row[jdx] and not backing.coreHost and (leadSlot ~= c or not ChainKit.row[i]) then
         ChainPlaceOwn(backing, place, i)
         return
     end
-    local dy = Chain.base[i] - Chain.base[jdx]
+    local dy = ChainKit.base[i] - ChainKit.base[jdx]
     leadSlot:ClearAllPoints()
     if direction == "up" then
         local edgeSide = (place == "topleft") and "LEFT" or "RIGHT"
@@ -1967,7 +1967,7 @@ local function ChainPlaceAfter(backing, place, i, jdx, previous, s, direction, s
     else
         ChainPoint(leadSlot, raw, "BOTTOMLEFT", previous, "BOTTOMRIGHT", s, dy)
     end
-    if Chain.row[i] and c ~= leadSlot then
+    if ChainKit.row[i] and c ~= leadSlot then
         c:ClearAllPoints()
         if direction == "up" then
             local edgeSide = (place == "topleft") and "LEFT" or "RIGHT"
@@ -1987,7 +1987,7 @@ local function ChainRun(backing, place, key)
     local pivot = 1
     if centred then
         for i = 1, key do
-            if Chain.row[i] then
+            if ChainKit.row[i] then
                 pivot = i
                 break
             end
@@ -1998,20 +1998,20 @@ local function ChainRun(backing, place, key)
     local direction = ChainDir(place)
     ChainPlaceOwn(backing, place, pivot)
     for i = pivot + 1, key do
-        ChainPlaceAfter(backing, place, i, i - 1, Chain.trail[i - 1], s, direction, sp)
+        ChainPlaceAfter(backing, place, i, i - 1, ChainKit.trail[i - 1], s, direction, sp)
     end
     if centred then
         -- Leftward from the pivot, whose left edge is its lead (its lockout icon, where the
         -- Crowd Control row is the pivot: the row chains rightward off it).
         for i = pivot - 1, 1, -1 do
-            local previous = (i + 1 == pivot) and Chain.lead[i + 1] or Chain.trail[i + 1]
+            local previous = (i + 1 == pivot) and ChainKit.lead[i + 1] or ChainKit.trail[i + 1]
             ChainPlaceAfter(backing, place, i, i + 1, previous, s, "left", sp)
         end
     end
 end
 
 function mod.NP_CoreChain(backing, place)
-    if Chain.busy or not place or place == "none" then
+    if ChainKit.busy or not place or place == "none" then
         return
     end
     local num = ChainMembers(place)
@@ -2022,9 +2022,9 @@ function mod.NP_CoreChain(backing, place)
     if k == 0 then
         return
     end
-    Chain.busy = true
+    ChainKit.busy = true
     local success, err = pcall(ChainRun, backing, place, k)
-    Chain.busy = false
+    ChainKit.busy = false
     if not success then
         error(err, 0)
     end
@@ -2214,14 +2214,14 @@ end
 -- too: its bottom over the bar's bottom and its size), the outermost that meets the span
 -- a0..a1 over the bar's bottom when one is given (the target arrows' own).
 function mod.NPC_SideRow(backing, edgeSide, a0, a1)
-    if not Chain.busy and mod.NP_CoreChained(edgeSide) then
-        local k = ChainShown(backing, edgeSide, #Chain.m)
+    if not ChainKit.busy and mod.NP_CoreChained(edgeSide) then
+        local k = ChainShown(backing, edgeSide, #ChainKit.m)
         for i = k, 1, -1 do
-            local ident = Chain.id[i]
-            local posY = Chain.base[i]
-            local hgt = Chain.row[i] and (NPHeight(ident, NPSize(ident))) or Chain.sz[i]
+            local ident = ChainKit.id[i]
+            local posY = ChainKit.base[i]
+            local hgt = ChainKit.row[i] and (NPHeight(ident, NPSize(ident))) or ChainKit.sz[i]
             if not a0 or (posY < a1 and a0 < posY + hgt) then
-                return Chain.trail[i], posY, hgt
+                return ChainKit.trail[i], posY, hgt
             end
         end
         return nil

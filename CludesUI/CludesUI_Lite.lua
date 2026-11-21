@@ -9,9 +9,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
 
-local CUILite = {}
+local LiteKit = {}
 CludesUI = CludesUI or {}
-CludesUI.Lite = CUILite
+CludesUI.Lite = LiteKit
 
 -- WoW Forever (game type "camelot"): the 12.1 engine reporting a 1.60+ toc.
 -- Stamped by CludesUI_ClientGate.lua before any other file runs. Content
@@ -90,7 +90,7 @@ end
 
 --- Create a new addon object. Replaces AceAddon:NewAddon().
 -- Returns a table with :RegisterEvent / :UnregisterEvent mixed in.
-function CUILite.NewAddon(name)
+function LiteKit.NewAddon(name)
     if addons[name] then
         return addons[name]
     end
@@ -102,15 +102,15 @@ function CUILite.NewAddon(name)
     GetOrCreateEventFrame(addon)
 
     -- Mix in event methods
-    addon.RegisterEvent = CUILite._RegisterEvent
-    addon.UnregisterEvent = CUILite._UnregisterEvent
+    addon.RegisterEvent = LiteKit._RegisterEvent
+    addon.UnregisterEvent = LiteKit._UnregisterEvent
 
     return addon
 end
 
 --- Retrieve an addon by name (for cross-addon access).
 -- Replaces LibStub("AceAddon-3.0"):GetAddon(name).
-function CUILite.GetAddon(name, silent)
+function LiteKit.GetAddon(name, silent)
     if not addons[name] and not silent then
         error("CUILite.GetAddon: addon '" .. name .. "' not found.", 2)
     end
@@ -132,7 +132,7 @@ end
 --   addon:RegisterEvent("EVENT_NAME", function(self, event, ...) end)
 --   addon:RegisterEvent("EVENT_NAME", "MethodName")
 --   addon:RegisterEvent("EVENT_NAME")  -- calls self:EVENT_NAME(event, ...)
-function CUILite._RegisterEvent(self, eventname, callback)
+function LiteKit._RegisterEvent(self, eventname, callback)
     local frame = GetOrCreateEventFrame(self)
     local handler
     if type(callback) == "function" then
@@ -162,7 +162,7 @@ function CUILite._RegisterEvent(self, eventname, callback)
 end
 
 --- Unregister a Blizzard event.
-function CUILite._UnregisterEvent(self, eventname)
+function LiteKit._UnregisterEvent(self, eventname)
     local frame = self._eventFrame
     if not frame then
         return
@@ -199,7 +199,7 @@ local function DeepMergeDefaults(dest, source)
 end
 
 -- Expose for use by the profile system when applying old snapshots
-CUILite.DeepMergeDefaults = DeepMergeDefaults
+LiteKit.DeepMergeDefaults = DeepMergeDefaults
 
 local function StripDefaults(saved, defaultSet)
     -- Remove values that match defaults (for clean SavedVariables on logout)
@@ -223,12 +223,12 @@ local function DeepCopy(source)
     return CopyTable(source)
 end
 
-CUILite.DeepCopy = DeepCopy
+LiteKit.DeepCopy = DeepCopy
 
 local dbRegistry = {} -- all db objects, for logout cleanup
 
 -- Expose so the profile system can update db.profile in-place after injection
-CUILite._dbRegistry = dbRegistry
+LiteKit._dbRegistry = dbRegistry
 
 -- Pre-SavedVariables db tracking. A NewDB call at FILE SCOPE in the addon that OWNS the
 -- central store runs before WoW loads that addon's SavedVariables: it builds its
@@ -255,7 +255,7 @@ local _preSVDBs = {} -- dbs created before that, awaiting re-root
 -- persisting, anything derived from db.profile.
 --
 -- Always true in the suite, where no db is ever created pre-SavedVariables.
-function CUILite.IsDBReady()
+function LiteKit.IsDBReady()
     return (not IS_STANDALONE) or _svLoaded
 end
 
@@ -265,7 +265,7 @@ end
 -- @param svName  Global SavedVariables name (string), e.g. "CludesUIActionBarsDB"
 -- @param defaults  Table with a .profile sub-table of default values
 -- @param defaultToCharKey  (ignored, kept for call-site compat)
-function CUILite.NewDB(svName, defaultSet, defaultToCharKey)
+function LiteKit.NewDB(svName, defaultSet, defaultToCharKey)
     -- Derive the addon folder name from the SV name (strip trailing "DB")
     local folder = svName:match("^(.+)DB$") or svName
 
@@ -320,8 +320,8 @@ function CUILite.NewDB(svName, defaultSet, defaultToCharKey)
             wipe(profile)
             DeepMergeDefaults(profile, profileDefaults)
             -- One-time warning per session
-            if not CUILite._corruptionWarned then
-                CUILite._corruptionWarned = true
+            if not LiteKit._corruptionWarned then
+                LiteKit._corruptionWarned = true
                 C_Timer.After(5, function()
                     CludesUI.Print(
                         "|cffff6600CludesUI:|r Profile data for "
@@ -374,7 +374,7 @@ local preLogoutCallbacks = {}
 
 --- Register a function to run before StripDefaults on logout.
 --- Used by the profile system to save a complete snapshot.
-function CUILite.RegisterPreLogout(fn)
+function LiteKit.RegisterPreLogout(fn)
     tinsert(preLogoutCallbacks, fn)
 end
 
@@ -511,14 +511,14 @@ end
 -- re-rooted and before any OnInitialize opens a profile and merges defaults
 -- into it -- in the suite and in every standalone alike.
 local _svLoadedHooks = {}
-function CUILite.OnSavedVariablesLoaded(fn)
+function LiteKit.OnSavedVariablesLoaded(fn)
     _svLoadedHooks[#_svLoadedHooks + 1] = fn
 end
 
 --- For those passes: true while CludesUIDB is still the stand-in a
 --- pre-SavedVariables db built (a standalone's file-scope NewDB), with no saved
 --- data loaded over it -- a fresh account, whatever the stand-in holds.
-function CUILite.StoreFromBeforeLoad()
+function LiteKit.StoreFromBeforeLoad()
     local saved = _preSVDBs[1]
     return saved ~= nil and saved.sv == CludesUIDB
 end

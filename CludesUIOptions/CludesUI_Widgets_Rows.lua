@@ -189,9 +189,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
     -- Button  (execute action, matches the reset/reload button style)
     function WidgetFactory:Button(hostFrame, textValue, yOffset, onClick)
-        local ROW_H = 50
+        local ROW_HEIGHT = 50
         local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         RowBg(widget, hostFrame)
         TagOptionRow(widget, hostFrame, textValue)
@@ -200,16 +200,16 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         Pix.Point(button, "LEFT", widget, "LEFT", 20, 0)
         button:SetFrameLevel(widget:GetFrameLevel() + 1)
         MakeStyledButton(button, textValue, 13, RB_COLOURS, onClick)
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- WideButton  (centered, no row background, customizable width -- for prominent actions)
     function WidgetFactory:WideButton(hostFrame, textValue, yOffset, onClick, btnWidth)
         btnWidth = btnWidth or 450
         local BTN_H = 42
-        local ROW_H = BTN_H + 20
+        local ROW_HEIGHT = BTN_H + 20
         local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         TagOptionRow(widget, hostFrame, textValue)
         local button = CreateFrame("Button", nil, widget)
@@ -217,7 +217,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         Pix.Point(button, "CENTER", widget, "CENTER", 0, 0)
         button:SetFrameLevel(widget:GetFrameLevel() + 1)
         MakeStyledButton(button, textValue, 14, WB_COLOURS, onClick)
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- Spec Overrides capture: append an extra accessor to a region/row's capture config so inline extras (swatches, cog fields, inline toggles) built outside the factory capture TOGETHER with the slot's main setting as one override. acc = { type, text, getValue, setValue, step/values/order/hasAlpha }.
@@ -530,14 +530,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     end
 
     function WidgetFactory:DualRow(hostFrame, yOffset, leftCfg, rightCfg)
-        local ROW_H = 50
+        local ROW_HEIGHT = 50
         local SIDE_PAD = 20 -- padding inside each half
         -- Blizzard Style: a row whose every control is gated for the active style is built (callers still hang cogs and sync icons on its regions) but hidden, takes no row background or search entry, and returns no height, so the page reads as if it were not there.
         local BS = CUI.BlizzStyle
         local hiddenRow = BS and BS.RowHidden and BS.RowHidden(leftCfg, rightCfg)
         local widget = CreateFrame("Frame", nil, hostFrame)
         local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
-        Pix.Size(widget, totalW, ROW_H)
+        Pix.Size(widget, totalW, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         if not rightCfg then
             widget._skipRowDivider = true
@@ -558,11 +558,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local fullWidth = not rightCfg
         local halfW = math.floor(totalW / 2)
         local leftRegion = CreateFrame("Frame", nil, widget)
-        leftRegion:SetSize(fullWidth and totalW or halfW, ROW_H)
+        leftRegion:SetSize(fullWidth and totalW or halfW, ROW_HEIGHT)
         leftRegion:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
 
         local rightRegion = CreateFrame("Frame", nil, widget)
-        rightRegion:SetSize(halfW, ROW_H)
+        rightRegion:SetSize(halfW, ROW_HEIGHT)
         rightRegion:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
 
         local function BuildHalf(regionFrame, rowConf)
@@ -1102,16 +1102,16 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             widget:Hide()
             return widget, 0
         end
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- TripleRow: three widgets on one full-width row, 1px dividers at the splits. Each column uses the DualRow cfg format.
     function WidgetFactory:TripleRow(hostFrame, yOffset, leftCfg, midCfg, rightCfg, splits)
-        local ROW_H = (splits and splits.rowHeight) or 50
+        local ROW_HEIGHT = (splits and splits.rowHeight) or 50
         local SIDE_PAD = 20
         local widget = CreateFrame("Frame", nil, hostFrame)
         local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
-        Pix.Size(widget, totalW, ROW_H)
+        Pix.Size(widget, totalW, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         widget._skipRowDivider = true
         RowBg(widget, hostFrame)
@@ -1132,15 +1132,15 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local rightW = totalW - leftW - midW
 
         local leftRegion = CreateFrame("Frame", nil, widget)
-        leftRegion:SetSize(leftW, ROW_H)
+        leftRegion:SetSize(leftW, ROW_HEIGHT)
         leftRegion:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
 
         local midRegion = CreateFrame("Frame", nil, widget)
-        midRegion:SetSize(midW, ROW_H)
+        midRegion:SetSize(midW, ROW_HEIGHT)
         midRegion:SetPoint("TOPLEFT", leftRegion, "TOPRIGHT", 0, 0)
 
         local rightRegion = CreateFrame("Frame", nil, widget)
-        rightRegion:SetSize(rightW, ROW_H)
+        rightRegion:SetSize(rightW, ROW_HEIGHT)
         rightRegion:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
 
         local function BuildThird(regionFrame, rowConf)
@@ -1319,7 +1319,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 -- Generic label hidden: the checkbox draws its own label + box
                 labelText:Hide()
                 local button = CreateFrame("Button", nil, regionFrame)
-                button:SetSize(regionFrame:GetWidth(), ROW_H)
+                button:SetSize(regionFrame:GetWidth(), ROW_HEIGHT)
                 button:SetAllPoints(regionFrame)
                 button:SetFrameLevel(widget:GetFrameLevel() + 2)
 
@@ -1445,19 +1445,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         widget._midRegion = midRegion
         widget._rightRegion = rightRegion
 
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- MultiSwatchRow: label left, N full-size color swatches right with tooltips.
     -- cfg = { text = "Row Label", swatches = {
     --   { tooltip = "Swatch 1", getValue = fn, setValue = fn, hasAlpha = bool }, ... } }
     function WidgetFactory:MultiSwatchRow(hostFrame, yOffset, rowConf)
-        local ROW_H = 50
+        local ROW_HEIGHT = 50
         local SIDE_PAD = 20
         local SWATCH_GAP = 8
         local widget = CreateFrame("Frame", nil, hostFrame)
         local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
-        Pix.Size(widget, totalW, ROW_H)
+        Pix.Size(widget, totalW, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         widget._skipRowDivider = true
         RowBg(widget, hostFrame)
@@ -1542,7 +1542,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
         end
 
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- DropdownWithOffsets: dropdown left, X and Y mini-sliders side by side right.
@@ -1550,11 +1550,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     --              disabledValues, disabled).
     -- xSliderCfg / ySliderCfg: { text, min, max, step, getValue, setValue, disabled }
     function WidgetFactory:DropdownWithOffsets(hostFrame, yOffset, dropdownCfg, xSliderCfg, ySliderCfg)
-        local ROW_H = 50
+        local ROW_HEIGHT = 50
         local SIDE_PAD = 20
         local widget = CreateFrame("Frame", nil, hostFrame)
         local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
-        Pix.Size(widget, totalW, ROW_H)
+        Pix.Size(widget, totalW, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         RowBg(widget, hostFrame)
         TagOptionRow(
@@ -1576,7 +1576,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
         -- Left half: label + dropdown (as in a DualRow dropdown half)
         local leftRegion = CreateFrame("Frame", nil, widget)
-        leftRegion:SetSize(halfW, ROW_H)
+        leftRegion:SetSize(halfW, ROW_HEIGHT)
         leftRegion:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
 
         local ddLabel = MakeFont(leftRegion, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
@@ -1608,7 +1608,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
         -- Right half: X and Y mini-sliders on one line
         local rightRegion = CreateFrame("Frame", nil, widget)
-        rightRegion:SetSize(halfW, ROW_H)
+        rightRegion:SetSize(halfW, ROW_HEIGHT)
         rightRegion:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
 
         local MINI_TRACK_W = 120
@@ -1702,16 +1702,16 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             .. " "
             .. (ySliderCfg and ySliderCfg.text or "")
 
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- WideDualButton: two centered buttons side by side (each 100px narrower and 5px shorter than WideButton)
     function WidgetFactory:WideDualButton(hostFrame, text1, text2, yOffset, onClick1, onClick2, btnWidth)
         btnWidth = btnWidth or DUAL_ITEM_W
         local BTN_H = 37
-        local ROW_H = BTN_H + 20
+        local ROW_HEIGHT = BTN_H + 20
         local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         TagOptionRow(widget, hostFrame, (text1 or "") .. " " .. (text2 or ""), nil, true)
         IndexSlotForSearch(hostFrame, text1)
@@ -1727,7 +1727,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             button:SetFrameLevel(widget:GetFrameLevel() + 1)
             MakeStyledButton(button, details[1], 14, WB_COLOURS, details[3])
         end
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- WideTripleButton: three centered buttons side by side, for action rows. disabledOpts (optional): keyed by button index 1..3, e.g. { [3] = { disabled = true, tooltip = "why it's off" } }. A disabled button is dimmed, ignores hover highlight + clicks, and shows its tooltip on hover. Evaluated at build time (callers rebuild on RefreshPage).
@@ -1745,9 +1745,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     )
         btnWidth = btnWidth or 205
         local BTN_H = 37
-        local ROW_H = BTN_H + 20
+        local ROW_HEIGHT = BTN_H + 20
         local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         TagOptionRow(
             widget,
@@ -1781,7 +1781,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 button:SetScript("OnClick", nil)
             end
         end
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- WideDropdown: centered, no row background, title above; prominent selectors.
@@ -1800,9 +1800,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     )
         btnWidth = btnWidth or 450
         local BTN_H, TITLE_H, GAP = 38, 20, 12
-        local ROW_H = TITLE_H + GAP + BTN_H + 5
+        local ROW_HEIGHT = TITLE_H + GAP + BTN_H + 5
         local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         TagOptionRow(widget, hostFrame, title)
         local titleLabel = MakeFont(
@@ -1860,16 +1860,16 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 dropCaption:SetTextColor(1, 1, 1, dimA or DD_TXT_A)
             end
         end)
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- TripleDropdown: 3 normal-sized dropdowns side by side, centered, each with a small title above
     function WidgetFactory:TripleDropdown(hostFrame, configs, yOffset)
         local DD_W, DD_H, TITLE_H, GAP_Y = TRIPLE_ITEM_W, 30, 16, 6
-        local ROW_H = TITLE_H + GAP_Y + DD_H + 12
+        local ROW_HEIGHT = TITLE_H + GAP_Y + DD_H + 12
         local widget = CreateFrame("Frame", nil, hostFrame)
         local frameW = hostFrame:GetWidth() - CONTENT_PAD * 2
-        Pix.Size(widget, frameW, ROW_H)
+        Pix.Size(widget, frameW, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         TagOptionRow(
             widget,
@@ -1914,16 +1914,16 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
             end)
         end
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- TripleSlider: three mini-sliders side by side, mirroring TripleDropdown columns. configs = exactly 3 x { title (unused), minVal, maxVal, step, getValue, setValue }
     function WidgetFactory:TripleSlider(hostFrame, configs, yOffset)
         local SL_W, SL_H = TRIPLE_ITEM_W, 26
-        local ROW_H = SL_H + 12
+        local ROW_HEIGHT = SL_H + 12
         local widget = CreateFrame("Frame", nil, hostFrame)
         local frameW = hostFrame:GetWidth() - CONTENT_PAD * 2
-        Pix.Size(widget, frameW, ROW_H)
+        Pix.Size(widget, frameW, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         TagOptionRow(widget, hostFrame, "")
         local totalW = SL_W * 3 + TRIPLE_GAP * 2
@@ -1937,7 +1937,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             local TRACK_W = SL_W - INPUT_W - 16
             local slRow = CreateFrame("Frame", nil, widget)
             Pix.Size(slRow, SL_W, SL_H)
-            Pix.Point(slRow, "TOPLEFT", widget, "TOPLEFT", col, -((ROW_H - SL_H) / 2))
+            Pix.Point(slRow, "TOPLEFT", widget, "TOPLEFT", col, -((ROW_HEIGHT - SL_H) / 2))
             slRow:SetFrameLevel(widget:GetFrameLevel() + 1)
             local trackFrame, valBox = BuildSliderCore(
                 slRow,
@@ -1958,7 +1958,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             Pix.Point(valBox, "RIGHT", slRow, "RIGHT", 0, 0)
             Pix.Point(trackFrame, "LEFT", slRow, "LEFT", 4, 0)
         end
-        return widget, ROW_H
+        return widget, ROW_HEIGHT
     end
 
     -- Spacer

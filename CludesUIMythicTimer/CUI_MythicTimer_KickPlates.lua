@@ -356,14 +356,14 @@ end
 --  a count from an older fight is no baseline (Gate.Base: 0, so any
 --  interrupt of the member in this fight hides the element).
 --------------------------------------------------------------------------------
-local Gate = {}
-Gate.SPAN = 100 -- gate width in spans: counts up to this many move the fill by a span at least
+local PlateGate = {}
+PlateGate.SPAN = 100 -- gate width in spans: counts up to this many move the fill by a span at least
 
 -- How far a gate reaches past its cell on every side, in the cell's units:
 -- the countdown may sit past the cell by a corner's baked nudge (up to 4
 -- units) and the Timer X/Y offsets, and a timer font larger than the icon
 -- spills round it; twice the font size covers its widest digits.
-function Gate.Margin()
+function PlateGate.Margin()
     return 2 * (sTimerSize or 11) + math.abs(sTimerX or 0) + math.abs(sTimerY or 0) + 4
 end
 
@@ -371,14 +371,14 @@ end
 -- cell width `cw`: the cell and its margin on every side, Gate.SPAN of those
 -- wide, its right edge 2 units past the margin's. The clip is hung again
 -- after this, since the fill's edge moved with the gate.
-function Gate.Size(gateRec, about, cellW)
-    local m = Gate.Margin()
-    gateRec:SetSize(Gate.SPAN * (cellW + 2 * m + 4), cellW + 2 * m)
+function PlateGate.Size(gateRec, about, cellW)
+    local m = PlateGate.Margin()
+    gateRec:SetSize(PlateGate.SPAN * (cellW + 2 * m + 4), cellW + 2 * m)
     gateRec:ClearAllPoints()
     gateRec:SetPoint("RIGHT", about, "RIGHT", m + 2, 0)
 end
 
-function Gate.New(hostFrame)
+function PlateGate.New(hostFrame)
     local gateRec = CreateFrame("StatusBar", nil, hostFrame)
     gateRec:EnableMouse(false)
     gateRec:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
@@ -394,7 +394,7 @@ function Gate.New(hostFrame)
     return gateRec, fillTex
 end
 
-function Gate.NewClip(hostFrame)
+function PlateGate.NewClip(hostFrame)
     local clipFrame = CreateFrame("Frame", nil, hostFrame)
     clipFrame:SetClipsChildren(true)
     clipFrame:EnableMouse(false)
@@ -404,7 +404,7 @@ end
 -- The clip open while the fill is whole: from the gate's left edge to the
 -- fill's right edge, hung again after every feed so it never keeps the edge
 -- of a fill that moved.
-function Gate.HangWhole(clipFrame, fillTex, gateRec)
+function PlateGate.HangWhole(clipFrame, fillTex, gateRec)
     clipFrame:ClearAllPoints()
     clipFrame:SetPoint("TOPLEFT", gateRec, "TOPLEFT", 0, 0)
     clipFrame:SetPoint("BOTTOMLEFT", gateRec, "BOTTOMLEFT", 0, 0)
@@ -414,17 +414,17 @@ end
 
 -- The count at the element's placing as the value, the latest as the
 -- maximum: whole while the count did not move, short once it rose.
-function Gate.FeedWhole(gateRec, fillTex, clipFrame, base, current)
+function PlateGate.FeedWhole(gateRec, fillTex, clipFrame, base, current)
     gateRec:SetMinMaxValues(0, current)
     gateRec:SetValue(base)
-    Gate.HangWhole(clipFrame, fillTex, gateRec)
+    PlateGate.HangWhole(clipFrame, fillTex, gateRec)
 end
 
 -- Whole from plain values: the element shows.
-function Gate.ResetWhole(gateRec, fillTex, clipFrame)
+function PlateGate.ResetWhole(gateRec, fillTex, clipFrame)
     gateRec:SetMinMaxValues(0, 1)
     gateRec:SetValue(1)
-    Gate.HangWhole(clipFrame, fillTex, gateRec)
+    PlateGate.HangWhole(clipFrame, fillTex, gateRec)
 end
 
 -- A hidden element must not keep its slot either (the owner's blank spot,
@@ -446,7 +446,7 @@ end
 -- fixed length a plain offset undoes (Ghosts.Chain). A bar of a chain:
 -- a standard or a reverse fill (set before the texture, which a fill style
 -- change re-mints), drawing nothing, the fill unsnapped like the gates'.
-function Gate.NewBar(hostFrame, reverse)
+function PlateGate.NewBar(hostFrame, reverse)
     local barFrame = CreateFrame("StatusBar", nil, hostFrame)
     barFrame:EnableMouse(false)
     if reverse then
@@ -464,18 +464,18 @@ function Gate.NewBar(hostFrame, reverse)
     return barFrame, fillTex
 end
 
-function Gate.NewStep(hostFrame)
-    local std, stdFill = Gate.NewBar(hostFrame, false)
-    local rev, revFill = Gate.NewBar(hostFrame, true)
+function PlateGate.NewStep(hostFrame)
+    local std, stdFill = PlateGate.NewBar(hostFrame, false)
+    local rev, revFill = PlateGate.NewBar(hostFrame, true)
     return { std = std, stdFill = stdFill, rev = rev, revFill = revFill }
 end
 
-function Gate.SizeStep(plateRow, pitch, cellW)
+function PlateGate.SizeStep(plateRow, pitch, cellW)
     plateRow.std:SetSize(pitch, cellW)
     plateRow.rev:SetSize(pitch, cellW)
 end
 
-function Gate.ShowStep(plateRow, isShown)
+function PlateGate.ShowStep(plateRow, isShown)
     plateRow.std:SetShown(isShown)
     plateRow.rev:SetShown(isShown)
 end
@@ -484,7 +484,7 @@ end
 -- and returns its end: a fill and the point of it the next thing hangs
 -- from. The reverse bar leads leftward and trails rightward, so the first
 -- bar's fill edge faces the second whichever way the row grows.
-function Gate.AnchorStep(plateRow, from, fromPoint, off, goesLeft)
+function PlateGate.AnchorStep(plateRow, from, fromPoint, off, goesLeft)
     local firstPlate, firstFill, secondary, secondFill
     if goesLeft then
         firstPlate, firstFill, secondary, secondFill = plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
@@ -504,7 +504,7 @@ function Gate.AnchorStep(plateRow, from, fromPoint, off, goesLeft)
 end
 
 -- The pair's first bar v1 and its second v2 over the range (lo, hi).
-function Gate.FeedStep(plateRow, lo, hi, v1, v2, goesLeft)
+function PlateGate.FeedStep(plateRow, lo, hi, v1, v2, goesLeft)
     local firstPlate, secondary
     if goesLeft then
         firstPlate, secondary = plateRow.rev, plateRow.std
@@ -518,32 +518,32 @@ function Gate.FeedStep(plateRow, lo, hi, v1, v2, goesLeft)
 end
 
 -- One pitch from plain values.
-function Gate.ResetStep(plateRow, goesLeft)
-    Gate.FeedStep(plateRow, 0, 1, 0, 0, goesLeft)
+function PlateGate.ResetStep(plateRow, goesLeft)
+    PlateGate.FeedStep(plateRow, 0, 1, 0, 0, goesLeft)
 end
 
 -- Where the next element of a row hangs from after `e`: a fill, the point
 -- of it and a plain offset along the row (a ghost's chain undoes its fixed
 -- length with it).
-function Gate.ElementEnd(e)
+function PlateGate.ElementEnd(e)
     return e.endFill, e.endPoint, e.endOffset or 0
 end
 
 -- A pooled icon's count gate and its step pair, fed together: the clip
 -- closes and the slot collapses on the same rise.
-function Gate.FeedIconGate(b, base, current)
-    Gate.FeedWhole(b.gate, b.fill, b.clip, base, current)
-    Gate.FeedStep(b.step, base, current, base, current, stackAnchor == "LEFT")
+function PlateGate.FeedIconGate(b, base, current)
+    PlateGate.FeedWhole(b.gate, b.fill, b.clip, base, current)
+    PlateGate.FeedStep(b.step, base, current, base, current, stackAnchor == "LEFT")
 end
 
-function Gate.ResetIconGate(b)
-    Gate.ResetWhole(b.gate, b.fill, b.clip)
-    Gate.ResetStep(b.step, stackAnchor == "LEFT")
+function PlateGate.ResetIconGate(b)
+    PlateGate.ResetWhole(b.gate, b.fill, b.clip)
+    PlateGate.ResetStep(b.step, stackAnchor == "LEFT")
 end
 
 -- A baseline count taken in the fight `gen`: as it is in this fight, 0 from
 -- an older one (the counts restarted since).
-function Gate.Base(base, gen)
+function PlateGate.Base(base, gen)
     if gen == KE.FightGen() then
         return base
     end
@@ -552,11 +552,11 @@ end
 
 -- A pooled icon's gate fed again as it was (the icon moved, and the fill's
 -- edge with it), or whole while it was never fed.
-function Gate.RefeedIcon(b)
+function PlateGate.RefeedIcon(b)
     if b.cCur ~= nil then
-        Gate.FeedIconGate(b, Gate.Base(b.cBase, b.cGen), b.cCur)
+        PlateGate.FeedIconGate(b, PlateGate.Base(b.cBase, b.cGen), b.cCur)
     else
-        Gate.ResetIconGate(b)
+        PlateGate.ResetIconGate(b)
     end
 end
 
@@ -565,7 +565,7 @@ end
 -- own cooldown length where the engine knows none): a gate is fed only past
 -- it, so nothing the count does while a member cannot kick (a grip of a
 -- caster) ever cuts a running cooldown's display.
-function Gate.StillDownAt(unit, startAt, duration, T)
+function PlateGate.StillDownAt(unit, startAt, duration, T)
     if not startAt then
         return false
     end
@@ -577,15 +577,15 @@ end
 -- kick with their count read at it (a sample never is; a kick whose count
 -- could not be read keeps no gate, unless the fight moved since), and only
 -- once that kick's cooldown is over.
-function Gate.FeedIcon(b, unit, current, T)
+function PlateGate.FeedIcon(b, unit, current, T)
     if b.cGen == nil or (b.cBase == nil and b.cGen == KE.FightGen()) then
         return
     end
-    if Gate.StillDownAt(unit, b.cdStart, b.cdDur, T) then
+    if PlateGate.StillDownAt(unit, b.cdStart, b.cdDur, T) then
         return
     end
     b.cCur = current
-    Gate.FeedIconGate(b, Gate.Base(b.cBase, b.cGen), current)
+    PlateGate.FeedIconGate(b, PlateGate.Base(b.cBase, b.cGen), current)
 end
 
 --------------------------------------------------------------------------------
@@ -912,7 +912,7 @@ local function PlaceIcon(b)
             Pix.Point(frame, "TOPLEFT", hang, "CENTER", -const, half)
         end
     elseif previous then
-        local ef, ep, eo = Gate.ElementEnd(previous)
+        local ef, ep, eo = PlateGate.ElementEnd(previous)
         if stackAnchor == "LEFT" then
             Pix.Point(frame, "RIGHT", ef, ep, eo, 0)
         elseif stackAnchor == "RIGHT" then
@@ -936,7 +936,7 @@ local function PlaceIcon(b)
     -- The count gate's clip hung again about the moved wrap; a fed gate is
     -- fed once more on the driver's next pass (its fill's edge moved).
     if b.gate then
-        Gate.HangWhole(b.clip, b.fill, b.gate)
+        PlateGate.HangWhole(b.clip, b.fill, b.gate)
         if b.cCur ~= nil then
             b.feed = true
         end
@@ -1229,13 +1229,13 @@ local function StyleIcon(b)
         end
         local cellW = Pix.Scale(iconPx)
         wrap:SetSize(cellW, cellW)
-        Gate.Size(b.gate, wrap, cellW)
-        Gate.HangWhole(b.clip, b.fill, b.gate)
+        PlateGate.Size(b.gate, wrap, cellW)
+        PlateGate.HangWhole(b.clip, b.fill, b.gate)
         -- The step pair from the wrap's inner edge, one pitch wide (the
         -- rail chains' own measure), and the row end frame at its end.
         local goesLeft = stackAnchor == "LEFT"
-        Gate.SizeStep(b.step, iconPx + ICON_GAP, cellW)
-        local ef, ep = Gate.AnchorStep(b.step, wrap, goesLeft and "RIGHT" or "LEFT", 0, goesLeft)
+        PlateGate.SizeStep(b.step, iconPx + ICON_GAP, cellW)
+        local ef, ep = PlateGate.AnchorStep(b.step, wrap, goesLeft and "RIGHT" or "LEFT", 0, goesLeft)
         b.endFill, b.endPoint = ef, ep
         b.rowEnd:SetSize(1, cellW)
         b.rowEnd:ClearAllPoints()
@@ -1387,7 +1387,7 @@ local function FreePlate(b)
     -- The count gate whole again from plain values, its baseline dropped.
     b.cBase, b.cGen, b.cCur, b.feed = nil, nil, nil, nil
     if b.gate then
-        Gate.ResetIconGate(b)
+        PlateGate.ResetIconGate(b)
     end
     free[#free + 1] = b
 end
@@ -1547,7 +1547,7 @@ local function DriverOnUpdate(self, elapsed)
             -- icon moved (AnchorIcon).
             if b.feed and b.gate then
                 b.feed = nil
-                Gate.RefeedIcon(b)
+                PlateGate.RefeedIcon(b)
             end
         end
     end
@@ -1586,8 +1586,8 @@ local function BuildIcon(hostFrame)
         wrap = CreateFrame("Frame", nil, parked)
         wrap:EnableMouse(false)
         wrap:SetIgnoreParentScale(true)
-        gateRec, fillTex = Gate.New(wrap)
-        clipFrame = Gate.NewClip(wrap)
+        gateRec, fillTex = PlateGate.New(wrap)
+        clipFrame = PlateGate.NewClip(wrap)
     end
     local b, skinData = AK.CreateStyledCell(hostFrame or clipFrame, STYLE, CellExtra)
     b.d = skinData
@@ -1596,11 +1596,11 @@ local function BuildIcon(hostFrame)
     else
         b.wrap, b.gate, b.fill, b.clip = wrap, gateRec, fillTex, clipFrame
         b:SetAllPoints(wrap)
-        Gate.HangWhole(clipFrame, fillTex, gateRec)
+        PlateGate.HangWhole(clipFrame, fillTex, gateRec)
         -- The step pair the next element of the row hangs from (one pitch
         -- past the wrap while the icon shows), and the row end frame at its
         -- end for the target arrows (SideGuest); anchored by StyleIcon.
-        b.step = Gate.NewStep(wrap)
+        b.step = PlateGate.NewStep(wrap)
         b.rowEnd = CreateFrame("Frame", nil, wrap)
         b.rowEnd:SetSize(1, 1)
         -- The edge frame the icon hangs from past an aura row (PlaceEdge):
@@ -1782,7 +1782,7 @@ end
 --  cell's cooldown is over, so a cell that opened closes again, for good,
 --  when its member interrupts again (their newer kick shows instead).
 --------------------------------------------------------------------------------
-GhostPool.SPAN = Gate.SPAN -- gate width in spans: counts up to this many open the whole cell
+GhostPool.SPAN = PlateGate.SPAN -- gate width in spans: counts up to this many open the whole cell
 GhostPool.LEVELS = 5 -- frame levels a kit cell takes: icon, swipe, border, dispel, countdown (SetIconLevels)
 
 -- A ghost: born under the park for its aspect (it may hang from an aura
@@ -1826,11 +1826,11 @@ function GhostPool.Chain(g)
         local subRow = subRows[k]
         local on = k <= g.used
         if on then
-            from, fp = Gate.AnchorStep(subRow.stepA, from, fp, 0, goesLeft)
-            from, fp = Gate.AnchorStep(subRow.stepB, from, fp, 0, goesLeft)
+            from, fp = PlateGate.AnchorStep(subRow.stepA, from, fp, 0, goesLeft)
+            from, fp = PlateGate.AnchorStep(subRow.stepB, from, fp, 0, goesLeft)
         end
-        Gate.ShowStep(subRow.stepA, on)
-        Gate.ShowStep(subRow.stepB, on)
+        PlateGate.ShowStep(subRow.stepA, on)
+        PlateGate.ShowStep(subRow.stepB, on)
     end
     local undo = 2 * (iconPx + ICON_GAP) * g.used
     g.endFill, g.endPoint, g.endOffset = from, fp, goesLeft and undo or -undo
@@ -1845,30 +1845,30 @@ end
 function GhostPool.FeedSteps(subRow)
     local goesLeft = stackAnchor == "LEFT"
     local current = (subRow.cCur ~= nil) and subRow.cCur or subRow.after
-    local floorA = Gate.Base(subRow.before, subRow.gen)
-    Gate.FeedStep(subRow.stepA, floorA, current, current, floorA, goesLeft)
+    local floorA = PlateGate.Base(subRow.before, subRow.gen)
+    PlateGate.FeedStep(subRow.stepA, floorA, current, current, floorA, goesLeft)
     if subRow.cCur ~= nil then
-        local floorB = Gate.Base(subRow.after, subRow.gen)
-        Gate.FeedStep(subRow.stepB, floorB, current, floorB, current, goesLeft)
+        local floorB = PlateGate.Base(subRow.after, subRow.gen)
+        PlateGate.FeedStep(subRow.stepB, floorB, current, floorB, current, goesLeft)
     else
-        Gate.ResetStep(subRow.stepB, goesLeft)
+        PlateGate.ResetStep(subRow.stepB, goesLeft)
     end
 end
 
 -- How far a gate (and so an open clip) reaches past the cell on every side,
 -- in the ghost's units (Gate.Margin).
 function GhostPool.Margin()
-    return Gate.Margin()
+    return PlateGate.Margin()
 end
 
 -- Both gates' size and place on ghost g for the cell width `cw`, in the
 -- ghost's units (Gate.Size). The clips are hung again after this (Feed,
 -- Hang), since the fills' edges moved with the gates.
 function GhostPool.Size(g, subRow, cellW)
-    Gate.Size(subRow.gate, g, cellW)
-    Gate.Size(subRow.gateB, g, cellW)
-    Gate.SizeStep(subRow.stepA, iconPx + ICON_GAP, cellW)
-    Gate.SizeStep(subRow.stepB, iconPx + ICON_GAP, cellW)
+    PlateGate.Size(subRow.gate, g, cellW)
+    PlateGate.Size(subRow.gateB, g, cellW)
+    PlateGate.SizeStep(subRow.stepA, iconPx + ICON_GAP, cellW)
+    PlateGate.SizeStep(subRow.stepB, iconPx + ICON_GAP, cellW)
 end
 
 -- The clip from the gate's fill edge to the gate's right edge, anchored again
@@ -1887,9 +1887,9 @@ end
 -- the baseline was read in), or whole while it was never fed.
 function GhostPool.FeedB(subRow)
     if subRow.cCur ~= nil then
-        Gate.FeedWhole(subRow.gateB, subRow.fillB, subRow.clipB, Gate.Base(subRow.after, subRow.gen), subRow.cCur)
+        PlateGate.FeedWhole(subRow.gateB, subRow.fillB, subRow.clipB, PlateGate.Base(subRow.after, subRow.gen), subRow.cCur)
     else
-        Gate.ResetWhole(subRow.gateB, subRow.fillB, subRow.clipB)
+        PlateGate.ResetWhole(subRow.gateB, subRow.fillB, subRow.clipB)
     end
     GhostPool.FeedSteps(subRow)
 end
@@ -1910,13 +1910,13 @@ end
 -- holding a lane-style kit cell, anchored on the ghost for good. All of them
 -- are born under the ghost, so they carry the park's aspect.
 function GhostPool.BuildSub(g, key)
-    local gateRec, fillTex = Gate.New(g)
+    local gateRec, fillTex = PlateGate.New(g)
     gateRec:Hide()
-    local clipFrame = Gate.NewClip(g)
+    local clipFrame = PlateGate.NewClip(g)
     clipFrame:Hide()
-    local gateBottom, fillB = Gate.New(g)
+    local gateBottom, fillB = PlateGate.New(g)
     gateBottom:Hide()
-    local clipB = Gate.NewClip(clipFrame)
+    local clipB = PlateGate.NewClip(clipFrame)
     local cellFrame = BuildIcon(clipB)
     cellFrame:ClearAllPoints()
     cellFrame:SetAllPoints(g)
@@ -1928,13 +1928,13 @@ function GhostPool.BuildSub(g, key)
         fillB = fillB,
         clipB = clipB,
         cell = cellFrame,
-        stepA = Gate.NewStep(g),
-        stepB = Gate.NewStep(g),
+        stepA = PlateGate.NewStep(g),
+        stepB = PlateGate.NewStep(g),
     }
     g.subs[key] = subRow
     GhostPool.Size(g, subRow, Pix.Scale(iconPx))
     GhostPool.Hang(subRow)
-    Gate.HangWhole(clipB, fillB, gateBottom)
+    PlateGate.HangWhole(clipB, fillB, gateBottom)
     return subRow
 end
 
@@ -1948,10 +1948,10 @@ function GhostPool.Park(subRow)
     gateRec:SetValue(1)
     GhostPool.Hang(subRow)
     subRow.cCur, subRow.gen = nil, nil
-    Gate.ResetWhole(subRow.gateB, subRow.fillB, subRow.clipB)
+    PlateGate.ResetWhole(subRow.gateB, subRow.fillB, subRow.clipB)
     local goesLeft = stackAnchor == "LEFT"
-    Gate.ResetStep(subRow.stepA, goesLeft)
-    Gate.ResetStep(subRow.stepB, goesLeft)
+    PlateGate.ResetStep(subRow.stepA, goesLeft)
+    PlateGate.ResetStep(subRow.stepB, goesLeft)
     subRow.clip:Hide()
     gateRec:Hide()
     subRow.gateB:Hide()
@@ -2270,7 +2270,7 @@ function GhostPool.LaneBase(unitGuid)
         for k = 1, g.used do
             local subRow = subRows[k]
             if subRow.guid == unitGuid then
-                return Gate.Base(subRow.before, subRow.gen)
+                return PlateGate.Base(subRow.before, subRow.gen)
             end
         end
     end
@@ -2293,7 +2293,7 @@ function GhostPool.Counts(unit, current, T)
         local subRows = g.subs
         for k = 1, g.used do
             local subRow = subRows[k]
-            if subRow.guid == unitGuid and not Gate.StillDownAt(unit, subRow.cell.cdStart, subRow.cell.cdDur, T) then
+            if subRow.guid == unitGuid and not PlateGate.StillDownAt(unit, subRow.cell.cdStart, subRow.cell.cdDur, T) then
                 subRow.cCur = current
                 GhostPool.FeedB(subRow)
             end
@@ -2512,7 +2512,7 @@ local function OnKick(unitToken, who, _, _, _, _)
     -- this kick, in this fight (none for your own cast: you are never a
     -- candidate), the gate whole until a later read says they kicked again.
     b.cBase, b.cGen, b.cCur = KE.Count(who), KE.FightGen(), nil
-    Gate.ResetIconGate(b)
+    PlateGate.ResetIconGate(b)
 end
 
 -- A member's modeled cooldown moved: their icon follows, wherever it sits,
@@ -2565,7 +2565,7 @@ function HANDLERS.counts(T, units, after)
         if current ~= nil then
             local b = icons[u]
             if b and b.gate then
-                Gate.FeedIcon(b, u, current, T)
+                PlateGate.FeedIcon(b, u, current, T)
             end
             if GhostPool.live[1] then
                 GhostPool.Counts(u, current, T)
@@ -2850,7 +2850,7 @@ end
 -- the cell (so it rides the fill with it), its clip holding the cell: the
 -- marker gate draws at full alpha, since the cell is its descendant.
 local function BuildLane(track, i)
-    local clipFrame = Gate.NewClip(track)
+    local clipFrame = PlateGate.NewClip(track)
     local gateRec = CreateFrame("StatusBar", nil, clipFrame)
     gateRec:EnableMouse(false)
     gateRec:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
@@ -2860,13 +2860,13 @@ local function BuildLane(track, i)
         fillTex:SetSnapToPixelGrid(false)
         fillTex:SetTexelSnappingBias(0)
     end
-    local gateBottom, fillB = Gate.New(gateRec)
-    local clipB = Gate.NewClip(gateRec)
+    local gateBottom, fillB = PlateGate.New(gateRec)
+    local clipB = PlateGate.NewClip(gateRec)
     local cellFrame = BuildIcon(clipB)
     cellFrame:ClearAllPoints()
     cellFrame:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
     cellFrame.rail = track
-    Gate.HangWhole(clipB, fillB, gateBottom)
+    PlateGate.HangWhole(clipB, fillB, gateBottom)
     local laneRec = {
         clip = clipFrame,
         gate = gateRec,
@@ -2888,10 +2888,10 @@ end
 function MarkRails.LaneFeed(laneRec, unit, current, T)
     if current == nil then
         laneRec.cBase, laneRec.cCur = nil, nil
-        Gate.ResetWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB)
+        PlateGate.ResetWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB)
         return
     end
-    if Gate.StillDownAt(unit, laneRec.cell.cdStart, laneRec.cell.cdDur, T) then
+    if PlateGate.StillDownAt(unit, laneRec.cell.cdStart, laneRec.cell.cdDur, T) then
         return
     end
     local m = KE.Member(unit)
@@ -2900,23 +2900,23 @@ function MarkRails.LaneFeed(laneRec, unit, current, T)
         base = current
     end
     laneRec.cBase, laneRec.cCur = base, current
-    Gate.FeedWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB, base, current)
+    PlateGate.FeedWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB, base, current)
 end
 
 -- Fed again as it was (the cell moved with the marker fill: the count gate
 -- and its fill's edge with it), or whole while it was never fed.
 function MarkRails.LaneRefeed(laneRec)
     if laneRec.cCur ~= nil then
-        Gate.FeedWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB, laneRec.cBase, laneRec.cCur)
+        PlateGate.FeedWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB, laneRec.cBase, laneRec.cCur)
     else
-        Gate.ResetWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB)
+        PlateGate.ResetWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB)
     end
 end
 
 -- A bar of the shift chain: one slot pitch wide, a standard or a reverse
 -- fill (Gate.NewBar).
 local function ChainBar(track, reverse)
-    local barFrame, fillTex = Gate.NewBar(track, reverse)
+    local barFrame, fillTex = PlateGate.NewBar(track, reverse)
     barFrame:SetSize(iconPx + ICON_GAP, Pix.Scale(iconPx))
     barFrame:SetFrameStrata(track:GetFrameStrata())
     barFrame:SetFrameLevel(track:GetFrameLevel())
@@ -3043,8 +3043,8 @@ local function StyleRail(track)
         if laneRec.cell.styleGen ~= styleStamp then
             StyleIcon(laneRec.cell)
         end
-        Gate.Size(laneRec.gateB, laneRec.cell, cellW)
-        Gate.HangWhole(laneRec.clipB, laneRec.fillB, laneRec.gateB)
+        PlateGate.Size(laneRec.gateB, laneRec.cell, cellW)
+        PlateGate.HangWhole(laneRec.clipB, laneRec.fillB, laneRec.gateB)
     end
     for p = 1, #track.chain do
         local plateRow = track.chain[p]
@@ -3194,7 +3194,7 @@ LayoutRail = function(track, R, L, entries)
     -- The start: after the ready live icons.
     local scrollFrame, sp, so = track, inner, 0
     if R > 0 and entries then
-        scrollFrame, sp, so = Gate.ElementEnd(entries[R])
+        scrollFrame, sp, so = PlateGate.ElementEnd(entries[R])
     end
     -- The shift chain from it, and the edge at its end.
     local from, fromPoint, off = AnchorChain(track, track.chain, usedSet, goesLeft, scrollFrame, sp, so)
@@ -3206,7 +3206,7 @@ LayoutRail = function(track, R, L, entries)
     -- chain's own length undone while none is on cooldown.
     local ef, ep, eo
     if L > R and entries then
-        ef, ep, eo = Gate.ElementEnd(entries[L])
+        ef, ep, eo = PlateGate.ElementEnd(entries[L])
     else
         ef, ep, eo = track.shift, "CENTER", -result * track.shiftConst
     end

@@ -93,9 +93,9 @@ local function ReadAliases()
             end
         end
         -- What it read can widen the include set of an entry built earlier.
-        local E = entries[p.key]
-        if E then
-            E.dirty = true
+        local Rec = entries[p.key]
+        if Rec then
+            Rec.dirty = true
         end
     end
 end
@@ -118,8 +118,8 @@ end
 local listening = false
 local events = mod.TakeShell()
 events:SetScript("OnEvent", function()
-    for _, E in pairs(entries) do
-        E.dirty = true
+    for _, Rec in pairs(entries) do
+        Rec.dirty = true
     end
     if mod.QueueReanchor then
         mod.QueueReanchor()
@@ -142,23 +142,23 @@ local function Listen(enabled)
 end
 
 local function Entry(provider)
-    local E = entries[provider.key]
-    if E then
-        return E
+    local Rec = entries[provider.key]
+    if Rec then
+        return Rec
     end
-    E = { provider = provider, styleKey = "cdm:auraicon:" .. provider.key }
+    Rec = { provider = provider, styleKey = "cdm:auraicon:" .. provider.key }
     local proxy = CreateFrame("Frame", nil, UIParent)
     proxy:Hide()
     proxy:EnableMouse(false)
-    E.proxy = proxy
+    Rec.proxy = proxy
     -- Creation window: the CDM look's own regions, then the button fills the
     -- proxy (two-point anchors size it by the proxy for good).
-    E.init = function(btnFrame, skinData)
+    Rec.init = function(btnFrame, skinData)
         _AC.InitExtra(btnFrame, skinData)
         btnFrame:SetAllPoints(proxy)
     end
-    entries[provider.key] = E
-    return E
+    entries[provider.key] = Rec
+    return Rec
 end
 
 -- The host's laid-out size. The bar layout sizes every icon itself (Width or
@@ -166,8 +166,8 @@ end
 -- AuraKit sizes the slot's border host from the style, not from the button,
 -- so the look is cut for the host rather than for the bar's Icon Size. nil
 -- before the first layout (the bar's Icon Size stands in).
-local function HostSize(E)
-    local owner = E.host
+local function HostSize(Rec)
+    local owner = Rec.host
     if not owner then
         return nil
     end
@@ -186,9 +186,9 @@ local function HostSize(E)
 end
 
 -- The slot's look: the bar's custom-aura look, cut for the host's size.
-local function HostStyle(E, edge)
+local function HostStyle(Rec, edge)
     local style = _AC.BuildStyle(edge)
-    local wid, hgt = HostSize(E)
+    local wid, hgt = HostSize(Rec)
     if wid then
         style.width, style.height = wid, hgt
         if style.cdm then
@@ -200,8 +200,8 @@ end
 
 -- The look's fingerprint: the bar settings a restyle carries, and the size
 -- the look's own regions are cut for.
-local function StyleSig(E, edge)
-    local wid, hgt = HostSize(E)
+local function StyleSig(Rec, edge)
+    local wid, hgt = HostSize(Rec)
     return _AC.StyleSig(edge)
         .. "|"
         .. tostring(edge.iconSize or 36)
@@ -211,95 +211,95 @@ local function StyleSig(E, edge)
         .. tostring(hgt)
 end
 
-local function Restyle(E, barId)
+local function Restyle(Rec, barId)
     local edge = barDataByKey[barId]
     if not edge then
         return
     end
-    local sig = StyleSig(E, edge)
-    if E.styleBar == barId and E.styleSig == sig then
+    local sig = StyleSig(Rec, edge)
+    if Rec.styleBar == barId and Rec.styleSig == sig then
         return
     end
     local AK = CludesUI.AuraKit
-    AK.styles[E.styleKey] = HostStyle(E, edge)
-    E.styleBar, E.styleSig = barId, sig
+    AK.styles[Rec.styleKey] = HostStyle(Rec, edge)
+    Rec.styleBar, Rec.styleSig = barId, sig
     if AK.RestyleSoon then
-        AK.RestyleSoon(E.styleKey)
+        AK.RestyleSoon(Rec.styleKey)
     end
 end
 
 -- Levels follow the host: DecorateFrame levels its regions off the frame's
 -- own level, which the reanchor's reparent moves.
-local function Level(E)
-    local owner, boxHolder = E.host, E.container
+local function Level(Rec)
+    local owner, boxHolder = Rec.host, Rec.container
     if not (owner and boxHolder) then
         return
     end
     local lvl = owner:GetFrameLevel() + SLOT_LEVEL
-    if E.level == lvl then
+    if Rec.level == lvl then
         return
     end
-    E.level = lvl
-    E.proxy:SetFrameLevel(lvl)
+    Rec.level = lvl
+    Rec.proxy:SetFrameLevel(lvl)
     boxHolder:SetFrameLevel(lvl + 1)
 end
 
-local function Build(E, include, sig)
-    local edge = E.hostBar and barDataByKey[E.hostBar]
+local function Build(Rec, include, sig)
+    local edge = Rec.hostBar and barDataByKey[Rec.hostBar]
     if not edge then
         return
     end
     local AK = CludesUI.AuraKit
-    AK.styles[E.styleKey] = HostStyle(E, edge)
-    E.styleBar, E.styleSig = E.hostBar, StyleSig(E, edge)
-    if E.container then
-        AK.ReleaseContainer(E.container)
+    AK.styles[Rec.styleKey] = HostStyle(Rec, edge)
+    Rec.styleBar, Rec.styleSig = Rec.hostBar, StyleSig(Rec, edge)
+    if Rec.container then
+        AK.ReleaseContainer(Rec.container)
     end
-    local boxHolder = AK.CreateContainerShell(E.proxy, { point = { "CENTER" } })
+    local boxHolder = AK.CreateContainerShell(Rec.proxy, { point = { "CENTER" } })
     AK.AddSlotToContainer(boxHolder, {
         key = "aura",
         filter = { "HELPFUL" },
         -- Helpful spell id includes on the player pass the identity gate
         -- whatever the spell's secrecy flag.
         candidateFilters = { includeSpellIDs = include },
-        style = E.styleKey,
-        extraInit = E.init,
+        style = Rec.styleKey,
+        extraInit = Rec.init,
     })
     AK.FinishContainer(boxHolder, "player")
-    E.container, E.sig, E.level = boxHolder, sig, nil
-    Level(E)
+    Rec.container, Rec.sig, Rec.level = boxHolder, sig, nil
+    Level(Rec)
 end
 
 -- The reanchor placed the entry's frame on a bar: the slot follows it, and is
 -- built (or built again for a new include set) on the AuraKit worker.
-local function Attach(E, frame, barId)
-    E.host, E.hostBar = frame, barId
-    hostEntry[frame] = E
-    placed[E] = true
+local function Attach(Rec, frame, barId)
+    Rec.host, Rec.hostBar = frame, barId
+    hostEntry[frame] = Rec
+    placed[Rec] = true
     Listen(true)
-    local proxy = E.proxy
+    local proxy = Rec.proxy
     if proxy:GetParent() ~= frame then
         proxy:SetParent(frame)
         proxy:ClearAllPoints()
         proxy:SetAllPoints(frame)
-        E.level = nil
+        Rec.level = nil
     end
     if not proxy:IsShown() then
         proxy:Show()
     end
-    if (not E.container or E.dirty) and not E.queued then
-        E.dirty = nil
-        local include, sig = E.provider.Include()
-        if not E.container or sig ~= E.sig then
-            E.queued = true
+    if (not Rec.container or Rec.dirty) and not Rec.queued then
+        Rec.dirty = nil
+        local include, sig = Rec.provider.Include()
+        if not Rec.container or sig ~= Rec.sig then
+            Rec.queued = true
             AKWorker:Queue(function()
-                E.queued = nil
-                Build(E, include, sig)
+                Rec.queued = nil
+                Build(Rec, include, sig)
             end, "cdm:auraicon")
         end
     end
-    if E.container and E.styleBar ~= barId then
-        Restyle(E, barId)
+    if Rec.container and Rec.styleBar ~= barId then
+        Restyle(Rec, barId)
     end
 end
 
@@ -328,9 +328,9 @@ end
 -- The layout resized a host (a Width Match target moved, the bar's icon count
 -- changed): its slot's look follows.
 local function OnHostSize(self)
-    local E = hostEntry[self]
-    if E and E.host == self and E.container then
-        Restyle(E, E.hostBar)
+    local Rec = hostEntry[self]
+    if Rec and Rec.host == self and Rec.container then
+        Restyle(Rec, Rec.hostBar)
     end
 end
 
@@ -463,11 +463,11 @@ end
 -- their providers' checks, and let the listener go once nothing is placed.
 function mod.CDM_AuraIconsPlaced()
     local any = false
-    for E in pairs(placed) do
-        placed[E] = nil
+    for Rec in pairs(placed) do
+        placed[Rec] = nil
         any = true
-        Level(E)
-        local after = E.provider.Placed
+        Level(Rec)
+        local after = Rec.provider.Placed
         if after then
             after()
         end
@@ -479,10 +479,10 @@ end
 
 -- RefreshCDMIconAppearance: the slots on this bar take its new look.
 function mod.CDM_AuraIconsRestyle(barId)
-    for _, E in pairs(entries) do
-        if E.container and E.hostBar == barId then
-            Restyle(E, barId)
-            Level(E)
+    for _, Rec in pairs(entries) do
+        if Rec.container and Rec.hostBar == barId then
+            Restyle(Rec, barId)
+            Level(Rec)
         end
     end
 end

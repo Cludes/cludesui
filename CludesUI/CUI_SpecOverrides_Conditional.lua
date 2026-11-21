@@ -107,13 +107,13 @@ local EXCLUDED_CONTEXTS = {
     },
 }
 
-local Cond = {}
-CludesUI._CondOv = Cond
+local CondKit = {}
+CludesUI._CondOv = CondKit
 
 -- Condition icon art (media\icons\overrides). battleground uses the horde crest
 -- art; the toolbar button rests on the dungeons icon.
-Cond.ICON_DIR = "Interface\\AddOns\\CludesUI\\media\\icons\\overrides\\"
-Cond.ICONS = {
+CondKit.ICON_DIR = "Interface\\AddOns\\CludesUI\\media\\icons\\overrides\\"
+CondKit.ICONS = {
     keybind = "override-keybinds.png",
     dungeon = "override-dungeons.png",
     raid = "override-raid.png",
@@ -125,7 +125,7 @@ Cond.ICONS = {
 
 --- True while EITHER override editing session (spec or conditional) is live.
 function CludesUI.SpecOverrides_EditSessionActive()
-    return (_editGroup ~= nil) or (Cond._edit ~= nil)
+    return (_editGroup ~= nil) or (CondKit._edit ~= nil)
 end
 
 --- Overlay policy for the Raid Frames Buff Manager page, evaluated at page build.
@@ -138,8 +138,8 @@ function CludesUI.SpecOverrides_BmOverlayState()
     local group, kindName
     if _editGroup then
         group, kindName = _editGroup, "spec"
-    elseif Cond._edit then
-        group, kindName = Cond._edit, "cond"
+    elseif CondKit._edit then
+        group, kindName = CondKit._edit, "cond"
     else
         return nil
     end
@@ -274,24 +274,24 @@ function CludesUI.SpecOverrides_BmPagePrelude()
     -- actually LIVE. A spec owning a BM fork gets it auto-activated here; a stale
     -- pointer (login ordering, interrupted session) heals instead of letting the
     -- page edit an off-screen layer ("changing settings does nothing" with no error).
-    if not _editGroup and not Cond._edit then
+    if not _editGroup and not CondKit._edit then
         CludesUI.SpecOverrides_ApplyBm(CurrentSpecID(), false, true)
     end
     -- Editing-as-conditional with an existing fork that is not the runtime layer
     -- (condition not met right now): engage the session swap so the page and
     -- on-screen frames show the fork being edited. Spec-wins gate still blocks
     -- when a spec owner exists.
-    if Cond._edit then
+    if CondKit._edit then
         local condStore = GetCondBmStore()
         if
             condStore
-            and condStore.layouts[Cond._edit.id]
-            and CludesUI._bmSessionGid ~= Cond._edit.id
+            and condStore.layouts[CondKit._edit.id]
+            and CludesUI._bmSessionGid ~= CondKit._edit.id
             and not BmOwnerGid(CurrentSpecID())
         then
             local bmStore = GetBmStore()
-            if not (bmStore and bmStore.active == ("cond:" .. Cond._edit.id)) then
-                BmSessionEngage(Cond._edit.id)
+            if not (bmStore and bmStore.active == ("cond:" .. CondKit._edit.id)) then
+                BmSessionEngage(CondKit._edit.id)
             end
         end
     end
@@ -446,8 +446,8 @@ function CludesUI.SpecOverrides_DmOverlayState()
     local group, kindName
     if _editGroup then
         group, kindName = _editGroup, "spec"
-    elseif Cond._edit then
-        group, kindName = Cond._edit, "cond"
+    elseif CondKit._edit then
+        group, kindName = CondKit._edit, "cond"
     else
         return nil
     end
@@ -510,20 +510,20 @@ end
 --- Page-build entry point for the Debuff Manager page (mirror of
 --- BmPagePrelude): call FIRST, before any content builds.
 function CludesUI.SpecOverrides_DmPagePrelude()
-    if not _editGroup and not Cond._edit then
+    if not _editGroup and not CondKit._edit then
         CludesUI.SpecOverrides_ApplyDm(CurrentSpecID(), false, true)
     end
-    if Cond._edit then
+    if CondKit._edit then
         local condStore = GetCondDmStore()
         if
             condStore
-            and condStore.layouts[Cond._edit.id]
-            and CludesUI._dmSessionGid ~= Cond._edit.id
+            and condStore.layouts[CondKit._edit.id]
+            and CludesUI._dmSessionGid ~= CondKit._edit.id
             and not DmOwnerGid(CurrentSpecID())
         then
             local bmStore = GetDmStore()
-            if not (bmStore and bmStore.active == ("cond:" .. Cond._edit.id)) then
-                DmSessionEngage(Cond._edit.id)
+            if not (bmStore and bmStore.active == ("cond:" .. CondKit._edit.id)) then
+                DmSessionEngage(CondKit._edit.id)
             end
         end
     end
@@ -640,7 +640,7 @@ do
     end
 end
 
-function Cond.GetStore(create)
+function CondKit.GetStore(create)
     local profileTbl = GetProfileRoot()
     if not profileTbl then
         return nil
@@ -654,7 +654,7 @@ function Cond.GetStore(create)
     return profileTbl.condOverrides
 end
 
-function Cond.GetUnlockStore(create)
+function CondKit.GetUnlockStore(create)
     local profileTbl = GetProfileRoot()
     if not profileTbl then
         return nil
@@ -673,22 +673,22 @@ end
 
 -- fkey -> entry index over the conditional store (parallel to _fkeyIndex,
 -- never merged into it: EntryOwning stays spec-only by definition).
-Cond._fkeyIndex = nil
-function Cond.RebuildIndex()
-    Cond._fkeyIndex = {}
-    for _, record in ipairs(Cond.GetStore() or {}) do
+CondKit._fkeyIndex = nil
+function CondKit.RebuildIndex()
+    CondKit._fkeyIndex = {}
+    for _, record in ipairs(CondKit.GetStore() or {}) do
         if record.values and record.values.default then
             for fieldKey in pairs(record.values.default) do
-                Cond._fkeyIndex[fieldKey] = record
+                CondKit._fkeyIndex[fieldKey] = record
             end
         end
     end
 end
-function Cond.EntryOwning(fieldKey)
-    if not Cond._fkeyIndex then
-        Cond.RebuildIndex()
+function CondKit.EntryOwning(fieldKey)
+    if not CondKit._fkeyIndex then
+        CondKit.RebuildIndex()
     end
-    return Cond._fkeyIndex[fieldKey]
+    return CondKit._fkeyIndex[fieldKey]
 end
 
 --- Writes the effective conditional values for the given active group (nil = no
@@ -697,8 +697,8 @@ end
 --- where the conditional's own values must show even for fkeys the SPEC store
 --- also tracks. Runtime applies (transitions, overlays, restores) omit it --
 --- spec overrides always win at apply time.
-function Cond.WriteValues(groupId, forSession)
-    local storage = Cond.GetStore()
+function CondKit.WriteValues(groupId, forSession)
+    local storage = CondKit.GetStore()
     if not storage or #storage == 0 then
         return nil
     end
@@ -752,7 +752,7 @@ end
 --- (blacklisted/match-owned/SPEC-owned/unloaded-module skipped; NIL_SENT on a
 --- defaults-backed key is harvest residue, not a real removal).
 --- touched: folder-set accumulator; the caller refreshes once.
-function Cond.RestoreEntryDefaults(record, touched)
+function CondKit.RestoreEntryDefaults(record, touched)
     local groupDef = record.values and record.values.default
     if not groupDef then
         return
@@ -787,8 +787,8 @@ end
 --- NEVER judges by equality against the default: the default is movable, and
 --- equality-pruning against a moved/poisoned default silently deletes
 --- intentional override values.
-function Cond.PruneRedundant()
-    local storage = Cond.GetStore()
+function CondKit.PruneRedundant()
+    local storage = CondKit.GetStore()
     if not storage then
         return
     end
@@ -824,7 +824,7 @@ function Cond.PruneRedundant()
         end
     end
     if changed then
-        Cond.RebuildIndex()
+        CondKit.RebuildIndex()
         RequestGoldWalk()
     end
 end
@@ -835,8 +835,8 @@ end
 --- clear when it matches) so a transition harvest never seeds default-equal
 --- junk maps onto entries the group never customized; the default maps
 --- themselves always track live verbatim.
-function Cond.Harvest(groupId)
-    local storage = Cond.GetStore()
+function CondKit.Harvest(groupId)
+    local storage = CondKit.GetStore()
     if not storage or #storage == 0 then
         return
     end
@@ -844,7 +844,7 @@ function Cond.Harvest(groupId)
     -- the Default view holds swapped values, banking poisons the recorded defaults.
     -- (HarvestCurrent orders its call after the canonical restore; this is the belt
     -- for any other caller.)
-    local sessionLive = _defaultView or _editGroup or Cond._edit
+    local sessionLive = _defaultView or _editGroup or CondKit._edit
     -- SPEC-OWNED fkeys are never harvested in either direction: while the spec store
     -- tracks an fkey, live reflects SPEC values (runtime applies skip it), so banking
     -- live here would poison the conditional's default/group maps with spec-scoped
@@ -896,17 +896,17 @@ function Cond.Harvest(groupId)
             end
         end
     end
-    Cond.PruneRedundant()
+    CondKit.PruneRedundant()
 end
 
 --- Values-only overlay for profile-apply paths (RefreshAllAddons): re-paints
 --- the applied conditional group's values after spec values. While an
 --- editing-as-conditional session holds swapped values live, generic re-applies
 --- must preserve the session's view instead.
-function Cond.ApplyValues()
+function CondKit.ApplyValues()
     local groupId
-    if Cond._edit then
-        groupId = Cond._edit.id
+    if CondKit._edit then
+        groupId = CondKit._edit.id
     else
         groupId = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid()
     end
@@ -915,7 +915,7 @@ function Cond.ApplyValues()
     -- generic re-apply just wrote there. Returns the touched folder set so
     -- callers outside RefreshAllAddons (the FlushUnlock value overlay) can
     -- refresh what actually changed.
-    return Cond.WriteValues(groupId, Cond._edit ~= nil)
+    return CondKit.WriteValues(groupId, CondKit._edit ~= nil)
 end
 
 -------------------------------------------------------------------------------
@@ -1352,7 +1352,7 @@ end
 function CludesUI.SpecOverrides_RebaselineDefaults(folderSet)
     -- Never re-bank while an editing view holds swapped values live (the import
     -- flow closes sessions first; this guards any other caller).
-    if _editGroup or _defaultView or Cond._edit then
+    if _editGroup or _defaultView or CondKit._edit then
         return
     end
     local function Rebank(storage)
@@ -1377,15 +1377,15 @@ function CludesUI.SpecOverrides_RebaselineDefaults(folderSet)
         end
     end
     Rebank(GetStore())
-    Rebank(Cond.GetStore())
+    Rebank(CondKit.GetStore())
     RebuildFKeyIndex()
-    Cond.RebuildIndex()
+    CondKit.RebuildIndex()
 end
 
 --- Prune: strip blacklisted folders, spec-owned fkeys (spec-wins eviction),
 --- excluded-context entries, and maps for deleted groups; drop empty entries.
-function Cond.PruneEntries()
-    local storage = Cond.GetStore()
+function CondKit.PruneEntries()
+    local storage = CondKit.GetStore()
     if not storage then
         return
     end
@@ -1438,7 +1438,7 @@ function Cond.PruneEntries()
         end
     end
     if removed then
-        Cond.RebuildIndex()
+        CondKit.RebuildIndex()
     end
 end
 
@@ -1450,7 +1450,7 @@ local function CondTransitionBody(oldGid, newGid, setUp)
     -- (possibly the EXPORTER's overlaid state), so banking it corrupts the new
     -- profile's default maps and baseline layer. Apply only; never harvest.
     if not setUp then
-        Cond.Harvest(oldGid)
+        CondKit.Harvest(oldGid)
     end
     -- Unlock/BM layout: bank live into whichever layer is live now, BEFORE the
     -- incoming conditional's values are written -- value writes mutate module
@@ -1466,16 +1466,16 @@ local function CondTransitionBody(oldGid, newGid, setUp)
     if not setUp and CludesUI.SpecOverrides_HarvestDmLayout then
         CludesUI.SpecOverrides_HarvestDmLayout()
     end
-    local touched = Cond.WriteValues(newGid)
+    local touched = CondKit.WriteValues(newGid)
     if CludesUI.SpecOverrides_ApplyUnlock then
-        Cond._resolveOverride = newGid or false -- false = explicit none
+        CondKit._resolveOverride = newGid or false -- false = explicit none
         -- Forced on establish: the incoming raw stores may hold the layer that
         -- was live at export/save time while the imported active pointer was
         -- reset, and a nil==nil early-out would strand them.
         CludesUI.SpecOverrides_ApplyUnlock(CurrentSpecID(), setUp)
         CludesUI.SpecOverrides_ApplyBm(CurrentSpecID(), setUp)
         CludesUI.SpecOverrides_ApplyDm(CurrentSpecID(), setUp)
-        Cond._resolveOverride = nil
+        CondKit._resolveOverride = nil
     end
     if touched then
         RunRefreshers(touched)
@@ -1497,7 +1497,7 @@ end
 -- would strand the flip whenever the panel is open -- for the Dark Mode condition
 -- that is ALWAYS (its only inputs are options widgets).
 function CludesUI.SpecOverrides_CondTransition(oldGid, newGid, setUp)
-    if _inTransition or _editGroup or Cond._edit then
+    if _inTransition or _editGroup or CondKit._edit then
         return false
     end
     -- NON-RE-ENTRANT: the refresh fan-out in CondTransitionBody can reach RefreshAllAddons
@@ -1515,7 +1515,7 @@ function CludesUI.SpecOverrides_CondTransition(oldGid, newGid, setUp)
     -- may already hold the incoming values, so the retry establishes (applies
     -- without banking them into the outgoing group).
     local success = xpcall(CondTransitionBody, geterrorhandler(), oldGid, newGid, setUp)
-    Cond._resolveOverride = nil
+    CondKit._resolveOverride = nil
     _condBusy = false
     if not success and CludesUI.Conditions_MarkStale then
         CludesUI.Conditions_MarkStale()
@@ -1526,13 +1526,13 @@ end
 --- The conditional gid unlock layer resolution should use: during a condition
 --- transition the engine's applied pointer is still the OLD one, so the handler
 --- passes the target explicitly via _resolveOverride.
-function Cond.ResolveGid()
-    local shade = Cond._resolveOverride
+function CondKit.ResolveGid()
+    local shade = CondKit._resolveOverride
     if shade ~= nil then
         return shade or nil
     end
     return CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
 end
 
-Inner.Cond, Inner.EXCLUDED_CONTEXTS = Cond, EXCLUDED_CONTEXTS
+Inner.Cond, Inner.EXCLUDED_CONTEXTS = CondKit, EXCLUDED_CONTEXTS
 Inner.broken = false

@@ -31,41 +31,41 @@ local function ResetButtonHidden(conf)
     return conf.hideResetButton == true
 end
 
-local function GetHeaderLayoutButtons(W, conf)
+local function GetHeaderLayoutButtons(Win, conf)
     local buttons = {}
-    if not W or not W.hdrBtns then
+    if not Win or not Win.hdrBtns then
         return buttons
     end
     local hideReset = ResetButtonHidden(conf)
-    for _, button in ipairs(W.hdrBtns) do
-        if button ~= W.resetBtn or not hideReset then
+    for _, button in ipairs(Win.hdrBtns) do
+        if button ~= Win.resetBtn or not hideReset then
             buttons[#buttons + 1] = button
         end
     end
     return buttons
 end
 -- The same count without building the list (the title fit runs on every paint).
-function mod.DMHeaderButtonCount(W, conf)
-    if not W or not W.hdrBtns then
+function mod.DMHeaderButtonCount(Win, conf)
+    if not Win or not Win.hdrBtns then
         return 0
     end
     local hideReset = ResetButtonHidden(conf)
     local num = 0
-    for _, button in ipairs(W.hdrBtns) do
-        if button ~= W.resetBtn or not hideReset then
+    for _, button in ipairs(Win.hdrBtns) do
+        if button ~= Win.resetBtn or not hideReset then
             num = num + 1
         end
     end
     return num
 end
 
-local function LayoutHeaderButtons(W, conf, iconSz)
-    if not W or not W.header or not W.hdrBtns then
+local function LayoutHeaderButtons(Win, conf, iconSz)
+    if not Win or not Win.header or not Win.hdrBtns then
         return
     end
     local btnPad = mod.DMHdrIconPad()
     local lift = mod.DMHdrLift(conf and conf.hdrHeight)
-    local layoutBtns = GetHeaderLayoutButtons(W, conf)
+    local layoutBtns = GetHeaderLayoutButtons(Win, conf)
     for bi, button in ipairs(layoutBtns) do
         if iconSz then
             button:SetSize(iconSz, iconSz)
@@ -75,17 +75,17 @@ local function LayoutHeaderButtons(W, conf, iconSz)
             end
         end
         button:ClearAllPoints()
-        button:SetPoint("RIGHT", W.header, "RIGHT", -(iconSz * (bi - 1) + btnPad * bi + 2), lift)
+        button:SetPoint("RIGHT", Win.header, "RIGHT", -(iconSz * (bi - 1) + btnPad * bi + 2), lift)
     end
 end
 
-local function SetHeaderButtonsShown(W, isShown)
-    if not W or not W.hdrBtns then
+local function SetHeaderButtonsShown(Win, isShown)
+    if not Win or not Win.hdrBtns then
         return
     end
     local hideReset = ResetButtonHidden()
-    for _, button in ipairs(W.hdrBtns) do
-        if button == W.resetBtn and hideReset then
+    for _, button in ipairs(Win.hdrBtns) do
+        if button == Win.resetBtn and hideReset then
             button:Hide()
             button:SetAlpha(0)
             button:EnableMouse(false)
@@ -96,24 +96,24 @@ local function SetHeaderButtonsShown(W, isShown)
         end
     end
     -- Title reserves room for the icons and must re-fit whenever hide-until-hover shows/hides them
-    W._hdrIconsShown = isShown and true or false
-    if W.FitTitle then
-        W.FitTitle()
+    Win._hdrIconsShown = isShown and true or false
+    if Win.FitTitle then
+        Win.FitTitle()
     end
 end
 
-local function EnsureHeaderButtonsHoverHooks(W)
-    if not W or W._hdrHideUntilHoverHooksInstalled then
+local function EnsureHeaderButtonsHoverHooks(Win)
+    if not Win or Win._hdrHideUntilHoverHooksInstalled then
         return
     end
-    W._hdrHideUntilHoverHooksInstalled = true
+    Win._hdrHideUntilHoverHooksInstalled = true
 
     local function Show()
         local conf = DB()
         if not conf.hdrMouseoverIcons then
             return
         end
-        SetHeaderButtonsShown(W, true)
+        SetHeaderButtonsShown(Win, true)
     end
 
     local function MaybeHide()
@@ -121,41 +121,41 @@ local function EnsureHeaderButtonsHoverHooks(W)
         if not conf.hdrMouseoverIcons then
             return
         end
-        if not W.header then
+        if not Win.header then
             return
         end
         C_Timer.After(0, function()
-            if not W.header then
+            if not Win.header then
                 return
             end
-            if W.header:IsMouseOver() then
+            if Win.header:IsMouseOver() then
                 return
             end
-            SetHeaderButtonsShown(W, false)
+            SetHeaderButtonsShown(Win, false)
         end)
     end
 
-    if W.header then
-        W.header:HookScript("OnEnter", Show)
-        W.header:HookScript("OnLeave", MaybeHide)
+    if Win.header then
+        Win.header:HookScript("OnEnter", Show)
+        Win.header:HookScript("OnLeave", MaybeHide)
     end
-    if W.hdrBtns then
-        for _, button in ipairs(W.hdrBtns) do
+    if Win.hdrBtns then
+        for _, button in ipairs(Win.hdrBtns) do
             button:HookScript("OnEnter", Show)
             button:HookScript("OnLeave", MaybeHide)
         end
     end
 end
 
-local function ApplyHeaderButtonsHoverVisibility(W, conf)
-    if not W or not W.header or not W.hdrBtns then
+local function ApplyHeaderButtonsHoverVisibility(Win, conf)
+    if not Win or not Win.header or not Win.hdrBtns then
         return
     end
-    EnsureHeaderButtonsHoverHooks(W)
+    EnsureHeaderButtonsHoverHooks(Win)
     if conf and conf.hdrMouseoverIcons then
-        SetHeaderButtonsShown(W, W.header:IsMouseOver())
+        SetHeaderButtonsShown(Win, Win.header:IsMouseOver())
     else
-        SetHeaderButtonsShown(W, true)
+        SetHeaderButtonsShown(Win, true)
     end
 end
 
@@ -184,8 +184,8 @@ mod.ApplyWinPosition = function(widget, wdb, idx)
     -- ns._windows, not the _windows local: that local is declared BELOW this
     -- function, so referencing it here would read a nil global and the guard
     -- would silently never fire.
-    local W = mod._windows and mod._windows[idx]
-    if W and W.resizing then
+    local Win = mod._windows and mod._windows[idx]
+    if Win and Win.resizing then
         return
     end
     local place = wdb.position
@@ -487,9 +487,9 @@ local _deathStamps = {}
 
 -- Switch a window to a segment (sessionID) or session type (Current/Overall); windows with
 -- syncSegments switch together. On ns not local: CreateDMWindow is at Lua 5.1's 60-upvalue limit.
-function mod.ApplySegmentSelection(W, sessionType, sessionID)
-    local targets = { W }
-    if WinDB(W.idx).syncSegments then
+function mod.ApplySegmentSelection(Win, sessionType, sessionID)
+    local targets = { Win }
+    if WinDB(Win.idx).syncSegments then
         targets = {}
         for _, wid in ipairs(_windows) do
             if WinDB(wid.idx).syncSegments then

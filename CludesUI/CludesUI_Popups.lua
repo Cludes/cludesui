@@ -15,7 +15,7 @@ local SolidTex = CUI.SolidTex
 local lerp = CUI.lerp
 local CLUDES_GREEN = CUI.CLUDES_GREEN
 local BORDER_COLOR = CUI.BORDER_COLOR
-local TEXT_DIM = CUI.TEXT_DIM
+local DIM_TEXT = CUI.TEXT_DIM
 
 -------------------------------------------------------------------------------
 --  Popup Scale Helper -- pixel-perfect base scale * user panel scale, so popups grow/shrink with the main panel when the scale slider moves.
@@ -436,7 +436,7 @@ local function MakePopupCheckbox(dialog, width)
     CUI.RoundBody(cbBox, cbCheck, 1)
     cbCheck:Hide()
 
-    local cbLabel = MakeFont(cbRow, 11, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+    local cbLabel = MakeFont(cbRow, 11, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
     cbLabel:SetPoint("LEFT", cbBox, "RIGHT", 6, 0)
 
     dialog._cbChecked = false
@@ -574,7 +574,7 @@ local function CreateConfirmPopup()
     dialog._title = title
 
     -- Message, left-aligned under the header
-    local messageText = MakeFont(dialog, 12, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+    local messageText = MakeFont(dialog, 12, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
     messageText:SetPoint("TOPLEFT", dialog, "TOPLEFT", DIALOG_PAD, -(DIALOG_HEAD + 14))
     messageText:SetWidth(POPUP_W - 2 * DIALOG_PAD)
     messageText:SetJustifyH("LEFT")
@@ -585,7 +585,7 @@ local function CreateConfirmPopup()
     -- Disclaimer (smaller, italic, below message)
     local disc = dialog:CreateFontString(nil, "OVERLAY")
     disc:SetFont(CUI.EXPRESSWAY, 11, "")
-    disc:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a * 0.7)
+    disc:SetTextColor(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a * 0.7)
     disc:SetPoint("TOPLEFT", messageText, "BOTTOMLEFT", 0, -8)
     disc:SetWidth(POPUP_W - 2 * DIALOG_PAD)
     disc:SetJustifyH("LEFT")
@@ -804,7 +804,7 @@ function CUI:ShowConfirmPopup(options)
             local line = CreateFrame("Frame", nil, dialog)
             line:SetSize(220, 26)
             line:SetFrameLevel(dialog:GetFrameLevel() + 2)
-            local tLbl = MakeFont(line, 12, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+            local tLbl = MakeFont(line, 12, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
             tLbl:SetPoint("LEFT", line, "LEFT", 0, 0)
             local inputBox = CreateFrame("EditBox", nil, line)
             inputBox:SetSize(110, 26)
@@ -857,7 +857,7 @@ function CUI:ShowConfirmPopup(options)
     if padGate then
         local caption = dialog._padGateLbl
         if not caption then
-            caption = MakeFont(dialog, 12, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+            caption = MakeFont(dialog, 12, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
             caption:SetWidth(dialog:GetWidth() - 2 * DIALOG_PAD)
             caption:SetJustifyH("LEFT")
             dialog._padGateLbl = caption
@@ -1094,7 +1094,7 @@ local function BuildInfoDialog()
     scroll:SetScrollChild(child)
     local text = child:CreateFontString(nil, "OVERLAY")
     text:SetFont(CUI.EXPRESSWAY, 12, "")
-    text:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.85)
+    text:SetTextColor(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, 0.85)
     text:SetPoint("TOPLEFT")
     text:SetJustifyH("LEFT")
     text:SetWordWrap(true)
@@ -1220,7 +1220,7 @@ local function BuildMoneyRow(dialog)
         entry:SetMaxLetters(i == 1 and 7 or 2)
         local zero = entry:CreateFontString(nil, "ARTWORK")
         zero:SetFont(CUI.EXPRESSWAY, 11, "")
-        zero:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a * 0.5)
+        zero:SetTextColor(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a * 0.5)
         zero:SetPoint("RIGHT")
         zero:SetText("0")
         entry:SetScript("OnTextChanged", function(self)
@@ -1330,7 +1330,7 @@ function CUI:ShowInputPopup(options)
         info:Hide()
         dialog._info = info
 
-        local messageText = MakeFont(dialog, 12, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        local messageText = MakeFont(dialog, 12, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
         messageText:SetPoint("TOP", dialog, "TOP", 0, -(DIALOG_HEAD + 12))
         messageText:SetWidth(POPUP_W - 60)
         messageText:SetJustifyH("CENTER")
@@ -1388,7 +1388,7 @@ function CUI:ShowInputPopup(options)
 
         local placeholder = textInput:CreateFontString(nil, "ARTWORK")
         placeholder:SetFont(CUI.EXPRESSWAY, 11, "")
-        placeholder:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a * 0.5)
+        placeholder:SetTextColor(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a * 0.5)
         placeholder:SetPoint("LEFT", textInput, "LEFT", 0, 0)
         dialog._placeholder = placeholder
 
@@ -1798,7 +1798,7 @@ function CUI:ShowInputPopup(options)
     end
     if options.showCount and not dialog._countLabel then
         dialog._countLabel =
-            MakeFont(dialog._inputFrame, 9, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+            MakeFont(dialog._inputFrame, 9, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
     end
     dialog._maxCount = options.showCount and (options.maxLetters or 0) or nil
     if dialog._countLabel then
@@ -1811,7 +1811,7 @@ function CUI:ShowInputPopup(options)
         end
     end
     dialog._msg:SetFont(CUI.EXPRESSWAY, options.messageSize or 12, "")
-    local mc = options.messageColor or TEXT_DIM
+    local mc = options.messageColor or DIM_TEXT
     dialog._msg:SetTextColor(mc.r, mc.g, mc.b, mc.a or 1)
     -- Optional preview block under the input (opts.preview), centred, one line
     -- each at a fixed height so typing never re-lays out the popup; the
@@ -1823,7 +1823,7 @@ function CUI:ShowInputPopup(options)
         local div = SolidTex(dialog, "ARTWORK", 1, 1, 1, 0.1)
         PanelPP.Size(div, inputW, 1)
         PanelPP.Point(div, "TOP", dialog._inputFrame, "BOTTOM", 0, -10)
-        local label = MakeFont(dialog, 10, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        local label = MakeFont(dialog, 10, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
         label:SetPoint("TOP", div, "BOTTOM", 0, -6)
         local value = MakeFont(dialog, 12, nil, 1, 1, 1, 1)
         value:SetPoint("TOP", label, "BOTTOM", 0, -3)
@@ -1876,9 +1876,9 @@ function CUI:ShowInputPopup(options)
             PanelPP.Width(line._bar, 2)
             line._key = MakeFont(line, 11, nil, 1, 1, 1, 0.9)
             line._key:SetPoint("LEFT", line, "LEFT", 8, 0)
-            line._detail = MakeFont(line, 10, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+            line._detail = MakeFont(line, 10, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
             line._detail:SetPoint("RIGHT", line, "RIGHT", -8, 0)
-            line._desc = MakeFont(line, 10, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+            line._desc = MakeFont(line, 10, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
             line._desc:SetPoint("LEFT", line, "LEFT", 104, 0)
             line._desc:SetPoint("RIGHT", line._detail, "LEFT", -8, 0)
             line._desc:SetJustifyH("LEFT")
@@ -1902,7 +1902,7 @@ function CUI:ShowInputPopup(options)
         track:SetAllPoints()
         local thumb = SolidTex(bar, "OVERLAY", 1, 1, 1, 0.27)
         PanelPP.Width(thumb, 3)
-        local legend = MakeFont(dropList, 10, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        local legend = MakeFont(dropList, 10, nil, DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a)
         legend:SetText(CUI.L("Up/Down: select   Tab/Enter: insert   Esc: close"))
         local legendDiv = SolidTex(dropList, "ARTWORK", 1, 1, 1, 0.1)
         legendDiv:SetHeight(1)

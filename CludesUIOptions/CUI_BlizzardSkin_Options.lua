@@ -366,7 +366,7 @@ CludesUI.AtOptionsLogin(function()
         if not CludesUIDB then
             CludesUIDB = {}
         end
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local cursorY = yOffset
         local _, height
         -- The border row helpers (BorderSizeSlider, BorderOffsetCfgs, AttachBorderControls) sit
@@ -376,7 +376,7 @@ CludesUI.AtOptionsLogin(function()
         local function BorderOffsetRow(prefixText, disabledFn, apply)
             local ocfgL, ocfgR = BorderOffsetCfgs(prefixText, disabledFn, apply)
             if ocfgL then
-                _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+                _, height = Widg:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
                 cursorY = cursorY - height
             end
         end
@@ -389,16 +389,16 @@ CludesUI.AtOptionsLogin(function()
         end
         hostFrame._showRowDivider = true
 
-        _, height = W:Spacer(hostFrame, cursorY, 20)
+        _, height = Widg:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
 
-        _, height = W:SectionHeader(hostFrame, "BLIZZARD POPUPS & GAME MENU", cursorY)
+        _, height = Widg:SectionHeader(hostFrame, "BLIZZARD POPUPS & GAME MENU", cursorY)
         cursorY = cursorY - height
 
         local function popupOff()
             return CludesUIDB.reskinPopupsMenus == false
         end
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Reskin Popups and Menus",
             tooltip = "Reskins Blizzard's right-click context menus and pop-ups.",
@@ -443,7 +443,7 @@ CludesUI.AtOptionsLogin(function()
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local outer
-            outer, height = W:DualRow(hostFrame, cursorY, {
+            outer, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Border Style",
                 disabled = popupOff,
@@ -469,7 +469,7 @@ CludesUI.AtOptionsLogin(function()
             AttachBorderControls(outer, "popupMenu", popupOff, true, { apply = RepaintPopupPreview })
             BorderOffsetRow("popupMenu", popupOff, RepaintPopupPreview)
             local buttons
-            buttons, height = W:DualRow(hostFrame, cursorY, {
+            buttons, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Button Border Style",
                 disabled = popupOff,
@@ -502,7 +502,7 @@ CludesUI.AtOptionsLogin(function()
             BorderOffsetRow("popupMenuButton", popupOff, RepaintPopupPreview)
         end
 
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "colorpicker",
             text = "Button Background",
             hasAlpha = true,
@@ -613,7 +613,7 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
 
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Font Size Scale",
             tooltip = "Scales the font size of reskinned Blizzard tooltips, menus, and popups.",
@@ -650,11 +650,11 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
 
-        _, height = W:Spacer(hostFrame, cursorY, 20)
+        _, height = Widg:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
 
         local heading
-        heading, height = W:SectionHeader(hostFrame, "BLIZZARD TOOLTIP", cursorY)
+        heading, height = Widg:SectionHeader(hostFrame, "BLIZZARD TOOLTIP", cursorY)
         cursorY = cursorY - height
 
         -- "Reskin Tooltip" (customTooltips) is the master for this section: its
@@ -691,7 +691,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Reskin Tooltip | Show Tooltips
         local ttShowRow
-        ttShowRow, height = W:DualRow(hostFrame, cursorY, {
+        ttShowRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Reskin Tooltip",
             getValue = function()
@@ -770,7 +770,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Anchor to Cursor | Growth Direction
         local ttAnchorRow
-        ttAnchorRow, height = W:DualRow(
+        ttAnchorRow, height = Widg:DualRow(
             hostFrame,
             cursorY,
             {
@@ -895,7 +895,7 @@ CludesUI.AtOptionsLogin(function()
         -- reskin off because Detailed Tooltips (the UberTooltips CVar) works with
         -- the default Blizzard tooltip too; the reskin-driven entries lock instead.
         local ttExtrasRow
-        ttExtrasRow, height = W:DualRow(
+        ttExtrasRow, height = Widg:DualRow(
             hostFrame,
             cursorY,
             {
@@ -1121,7 +1121,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Show Max Stack for Items | Show Player Buffs
         local ttStackRow
-        ttStackRow, height = W:DualRow(
+        ttStackRow, height = Widg:DualRow(
             hostFrame,
             cursorY,
             -- Independent of the reskin, so it is NOT gated by "Reskin
@@ -1280,7 +1280,7 @@ CludesUI.AtOptionsLogin(function()
         -- setting, like Global Settings > Colors' Dark Mode Background: the opacity
         -- slider with its color as an inline swatch.
         local ttStripRow
-        ttStripRow, height = W:DualRow(hostFrame, cursorY, {
+        ttStripRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Health Strip",
             tooltip = "Shows the health bar on the bottom of unit tooltips.",
@@ -1416,7 +1416,7 @@ CludesUI.AtOptionsLogin(function()
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local tooltipBorder
-            tooltipBorder, height = W:DualRow(
+            tooltipBorder, height = Widg:DualRow(
                 hostFrame,
                 cursorY,
                 {
@@ -1472,7 +1472,7 @@ CludesUI.AtOptionsLogin(function()
         --  a right and SILENTLY DROPS a third -- a row shipped with three once
         --  rendered only two toggles and nothing errored.
         -----------------------------------------------------------------------
-        _, height = W:SectionHeader(hostFrame, "BLIZZARD BARS, POPUPS & BUTTONS", cursorY)
+        _, height = Widg:SectionHeader(hostFrame, "BLIZZARD BARS, POPUPS & BUTTONS", cursorY)
         cursorY = cursorY - height
 
         -- The slot configs, laid out per client below: WoW Forever has no
@@ -1549,17 +1549,17 @@ CludesUI.AtOptionsLogin(function()
         -- toggle took.
         local hudRow, queueRow, widgetRgn, queueRgn, timerRgn
         if extraCfg then
-            hudRow, height = W:DualRow(hostFrame, cursorY, widgetCfg, extraCfg)
+            hudRow, height = Widg:DualRow(hostFrame, cursorY, widgetCfg, extraCfg)
             cursorY = cursorY - height
-            queueRow, height = W:DualRow(hostFrame, cursorY, queueCfg, timerCfg)
+            queueRow, height = Widg:DualRow(hostFrame, cursorY, queueCfg, timerCfg)
             cursorY = cursorY - height
             widgetRgn = hudRow and hudRow._leftRegion
             queueRgn = queueRow and queueRow._leftRegion
             timerRgn = queueRow and queueRow._rightRegion
         else
-            hudRow, height = W:DualRow(hostFrame, cursorY, widgetCfg, queueCfg)
+            hudRow, height = Widg:DualRow(hostFrame, cursorY, widgetCfg, queueCfg)
             cursorY = cursorY - height
-            queueRow, height = W:DualRow(hostFrame, cursorY, timerCfg, CludesUI.BlankRowCfg())
+            queueRow, height = Widg:DualRow(hostFrame, cursorY, timerCfg, CludesUI.BlankRowCfg())
             cursorY = cursorY - height
             widgetRgn = hudRow and hudRow._leftRegion
             queueRgn = hudRow and hudRow._rightRegion
@@ -1751,8 +1751,8 @@ CludesUI.AtOptionsLogin(function()
     -- Section headers inside window-skin cards: title indented 5px to sit
     -- with the card chrome (the divider stays full width).
     local function WSCardSection(hostFrame, textValue, cursorY)
-        local W = CludesUI.Widgets
-        local hf, height = W:SectionHeader(hostFrame, textValue, cursorY)
+        local Widg = CludesUI.Widgets
+        local hf, height = Widg:SectionHeader(hostFrame, textValue, cursorY)
         if hf and hf._label then
             CludesUI.PanelPP.Point(hf._label, "BOTTOMLEFT", hf, "BOTTOMLEFT", 5, 8)
         end
@@ -1760,7 +1760,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildCharacterSheetContent(hostFrame, cursorY)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local _, height
         local Pix = CludesUI.PanelPP
 
@@ -1886,7 +1886,7 @@ CludesUI.AtOptionsLogin(function()
                     { key = "showGems", label = "Gems", refresh = "_refreshGemsVisibility" }
             end
             local coreRow1
-            coreRow1, height = W:DualRow(hostFrame, cursorY, {
+            coreRow1, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Mythic+ Rating",
                 tooltip = "Display your Mythic+ rating above the item level on the character sheet.",
@@ -1944,7 +1944,7 @@ CludesUI.AtOptionsLogin(function()
             -- Blizzard's sheet in its tab art
             -- (CludesUIBlizzardSkin_SocketPanel.lua).
             local socketRow
-            socketRow, height = W:DualRow(hostFrame, cursorY, {
+            socketRow, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Socket Panel",
                 tooltip = "Show a panel of equipped-gear sockets on the character sheet; click a socket to gem it.",
@@ -1995,7 +1995,7 @@ CludesUI.AtOptionsLogin(function()
             -- (or its armor when it has none) and each weapon's damage per
             -- second there. Icon Zoom greys out under Blizz Default.
             local statsRow
-            statsRow, height = W:DualRow(hostFrame, cursorY, {
+            statsRow, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Item Stats",
                 tooltip = "Show each item's main and secondary stat (or its armor) and each weapon's damage per second beside its slot.",
@@ -2045,7 +2045,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local enchGemRow
-        enchGemRow, height = W:DualRow(hostFrame, cursorY, {
+        enchGemRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Enchants",
             tooltip = "How enchants show beside each item.",
@@ -2134,7 +2134,7 @@ CludesUI.AtOptionsLogin(function()
             }
         end
         local durSeasonRow
-        durSeasonRow, height = W:DualRow(hostFrame, cursorY, {
+        durSeasonRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Item Durability",
             tooltip = "Show total equipped durability above the character model, colored from green to red.",
@@ -2235,7 +2235,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        _, height = W:Spacer(hostFrame, cursorY, 10)
+        _, height = Widg:Spacer(hostFrame, cursorY, 10)
         cursorY = cursorY - height
 
         ---------------------------------------------------------------------------
@@ -2264,7 +2264,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         end
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Item Levels",
             tooltip = "Shows the item level on each item in the character sheet gear flyout (the popup of same-slot bag items that appears when hovering an equipped slot), coloured by quality.",
@@ -2276,7 +2276,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         if not CludesUI.IS_FOREVER then
-            _, height = W:DualRow(hostFrame, cursorY, {
+            _, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Tertiary Stat Letters",
                 tooltip = "Adds Leech, Avoidance and Speed (L, A, S) in smaller letters behind the secondary stats in the gear flyout.",
@@ -2307,7 +2307,7 @@ CludesUI.AtOptionsLogin(function()
             cursorY = cursorY - height
         end
 
-        _, height = W:Spacer(hostFrame, cursorY, 10)
+        _, height = Widg:Spacer(hostFrame, cursorY, 10)
         cursorY = cursorY - height
 
         ---------------------------------------------------------------------------
@@ -2375,7 +2375,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Stat Sections (checkbox dropdown + cog) | Show Diminishing Returns
         local sectionsRow
-        sectionsRow, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Stat Sections" }, {
+        sectionsRow, height = Widg:DualRow(hostFrame, cursorY, { type = "label", text = "Stat Sections" }, {
             type = "toggle",
             text = "Show Diminishing Returns",
             tooltip = "Adds diminishing returns info to Secondary and Tertiary stat tooltips.",
@@ -2537,7 +2537,7 @@ CludesUI.AtOptionsLogin(function()
         -- Secondary/Tertiary Text | Secondary/Tertiary Highlights (both write
         -- the Secondary and the Tertiary keys; the Secondary pair is shown)
         local stRow
-        stRow, height = W:DualRow(hostFrame, cursorY, {
+        stRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Secondary/Tertiary Text",
             tooltip = "How Secondary and Tertiary stat values are shown.",
@@ -2596,7 +2596,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         local themedInspectSheetRow
-        themedInspectSheetRow, height = W:DualRow(hostFrame, cursorY, {
+        themedInspectSheetRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Inspect Sheet",
             tooltip = "Applies CludesUI theme styling to the inspect sheet window.",
@@ -2677,7 +2677,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local inspectRow
-        inspectRow, height = W:DualRow(hostFrame, cursorY, {
+        inspectRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Item Level",
             tooltip = "Toggle visibility of item level text on the inspect sheet.",
@@ -2749,13 +2749,13 @@ CludesUI.AtOptionsLogin(function()
     --  LFG Menu card content
     ---------------------------------------------------------------------------
     local function BuildLFGMenuContent(hostFrame, cursorY)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local _, height
 
         _, height = WSCardSection(hostFrame, "QUALITY OF LIFE", cursorY)
         cursorY = cursorY - height
 
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Remember Sign-Up Roles",
             tooltip = "Remembers the Tank/Healer/DPS roles you last applied with and restores them the next time you sign up to a premade group (limited to roles your current spec can fill). Works with or without the reskin.",
@@ -2787,7 +2787,7 @@ CludesUI.AtOptionsLogin(function()
     --  the skin.
     ---------------------------------------------------------------------------
     local function BuildFriendsCardContent(hostFrame, cursorY)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local _, row, height
         local Kit = CludesUI.FriendsKit
 
@@ -2811,7 +2811,7 @@ CludesUI.AtOptionsLogin(function()
         -- Custom Friends List Tiles | Tile Height: the custom friends list
         -- (CludesUI_FriendsList.lua) and its own height
         local tileMin, tileMax = CludesUI.FriendsList.TileRange()
-        row, height = W:DualRow(
+        row, height = Widg:DualRow(
             hostFrame,
             cursorY,
             {
@@ -2844,7 +2844,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         -- Tile Features | Class Icon Theme
-        row, height = W:DualRow(
+        row, height = Widg:DualRow(
             hostFrame,
             cursorY,
             tileGate({
@@ -2912,7 +2912,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Auto-Accept Friend Invites
-        row, height = W:DualRow(hostFrame, cursorY, {
+        row, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Auto-Accept Friend Invites",
             tooltip = "Auto-accepts all group invites from people on your friends list",
@@ -2954,7 +2954,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildMerchantContent(hostFrame, cursorY)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local _, height
 
         local function themeOff()
@@ -2995,7 +2995,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local row
-        row, height = W:DualRow(hostFrame, cursorY, {
+        row, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show As List",
             tooltip = "Shows the items as a list instead of pages.",
@@ -3043,7 +3043,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
         AddDisabledCover(row)
 
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Item Level",
             tooltip = "Shows the item level on weapons and armor a vendor sells.",
@@ -3135,7 +3135,7 @@ CludesUI.AtOptionsLogin(function()
             })
         end
 
-        row, height = W:DualRow(hostFrame, cursorY, {
+        row, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Expand Vendor UI",
             tooltip = "Shows more vendor items at once, in the columns and rows set in the cog.",
@@ -3170,7 +3170,7 @@ CludesUI.AtOptionsLogin(function()
         if not CludesUIDB then
             CludesUIDB = {}
         end
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local _, height
         local prefixText = "lootWindow"
         local iconPrefix = "lootIcon"
@@ -3195,7 +3195,7 @@ CludesUI.AtOptionsLogin(function()
         table.insert(texOrder, 1, "default")
 
         local row
-        row, height = W:DualRow(hostFrame, cursorY, {
+        row, height = Widg:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Border Style",
             tooltip = "Replaces the loot window's border. Default keeps the standard window border.",
@@ -3248,7 +3248,7 @@ CludesUI.AtOptionsLogin(function()
         -- Width | Height Offset, only for a textured style (art with built-in padding needs fitting).
         local ocfgL, ocfgR = BorderOffsetCfgs(prefixText, lootOff, refreshFn, "Loot Window")
         if ocfgL then
-            _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+            _, height = Widg:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
             cursorY = cursorY - height
         end
 
@@ -3257,7 +3257,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         local iconValues, iconOrder = CludesUI.GetBorderTextureDropdown()
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Icon Borders",
             tooltip = "Draws the item icons' quality border in the style and size below.",
@@ -3300,12 +3300,12 @@ CludesUI.AtOptionsLogin(function()
         -- Textured styles add the two offsets: Size | Width Offset, then Height Offset | blank.
         local icL, icR = BorderOffsetCfgs(iconPrefix, iconOff, refreshFn, "Icon Borders")
         if icL then
-            _, height = W:DualRow(hostFrame, cursorY, iconSize, icL)
+            _, height = Widg:DualRow(hostFrame, cursorY, iconSize, icL)
             cursorY = cursorY - height
-            _, height = W:DualRow(hostFrame, cursorY, icR, CludesUI.BlankRowCfg())
+            _, height = Widg:DualRow(hostFrame, cursorY, icR, CludesUI.BlankRowCfg())
             cursorY = cursorY - height
         else
-            _, height = W:DualRow(hostFrame, cursorY, iconSize, CludesUI.BlankRowCfg())
+            _, height = Widg:DualRow(hostFrame, cursorY, iconSize, CludesUI.BlankRowCfg())
             cursorY = cursorY - height
         end
 
@@ -3313,13 +3313,13 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildLootToastContent(hostFrame, cursorY)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local _, height
 
         _, height = WSCardSection(hostFrame, "QUALITY OF LIFE", cursorY)
         cursorY = cursorY - height
 
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Quality Strip",
             tooltip = "Adds a strip down the left edge of a loot toast in the item's quality color. The flat skin drops Blizzard's quality ring around the icon, so this puts that rarity cue back.",
@@ -3338,7 +3338,7 @@ CludesUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
 
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Toast Scale",
             tooltip = "Scales the loot and gold toasts.",
@@ -3368,7 +3368,7 @@ CludesUI.AtOptionsLogin(function()
         if not MA then
             return cursorY
         end
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local _, row, height
         local REQ = "Show Alt List"
         local function On()
@@ -3409,7 +3409,7 @@ CludesUI.AtOptionsLogin(function()
         _, height = WSCardSection(hostFrame, "ALT LIST", cursorY)
         cursorY = cursorY - height
 
-        row, height = W:DualRow(hostFrame, cursorY, {
+        row, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Alt List",
             tooltip = "Lists your alts beside Send Mail.",
@@ -4673,16 +4673,16 @@ CludesUI.AtOptionsLogin(function()
     --  applies live when possible, turning OFF is reload-bound.
     ---------------------------------------------------------------------------
     local function BuildThirdPartySection(hostFrame, cursorY)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local entries = mod.GetThirdPartySkinList and mod.GetThirdPartySkinList()
         if not entries or #entries == 0 then
             return cursorY
         end
 
         local _, height
-        _, height = W:Spacer(hostFrame, cursorY, 10)
+        _, height = Widg:Spacer(hostFrame, cursorY, 10)
         cursorY = cursorY - height
-        _, height = W:SectionHeader(hostFrame, "THIRD-PARTY ADDONS", cursorY)
+        _, height = Widg:SectionHeader(hostFrame, "THIRD-PARTY ADDONS", cursorY)
         cursorY = cursorY - height
 
         local function MasterOff()
@@ -4753,14 +4753,14 @@ CludesUI.AtOptionsLogin(function()
         local h2
         for idx = 1, #itemList, 2 do
             _, h2 =
-                W:DualRow(hostFrame, cursorY, itemList[idx], itemList[idx + 1] or { type = "label", text = "" })
+                Widg:DualRow(hostFrame, cursorY, itemList[idx], itemList[idx + 1] or { type = "label", text = "" })
             cursorY = cursorY - h2
         end
         return cursorY
     end
 
     local function BuildWindowSkinsPage(pageTitle, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local Pix = CludesUI.PanelPP
         local L = CludesUI.L
         local cursorY = yOffset
@@ -4778,7 +4778,7 @@ CludesUI.AtOptionsLogin(function()
             return math.abs(y2)
         end
 
-        _, height = W:Spacer(hostFrame, cursorY, 14)
+        _, height = Widg:Spacer(hostFrame, cursorY, 14)
         cursorY = cursorY - height
 
         -- Hosted on a sized frame (not a raw region on the wrapper) so the
@@ -4856,11 +4856,11 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - 30 - 26
 
         -- GLOBAL OPTIONS: look settings shared by every reskinned window.
-        _, height = W:SectionHeader(hostFrame, "GLOBAL OPTIONS", cursorY)
+        _, height = Widg:SectionHeader(hostFrame, "GLOBAL OPTIONS", cursorY)
         cursorY = cursorY - height
 
         local gRow1
-        gRow1, height = W:DualRow(hostFrame, cursorY, {
+        gRow1, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Accent Bar",
             tooltip = "Accent bar on the active tab of reskinned windows.",
@@ -4891,7 +4891,7 @@ CludesUI.AtOptionsLogin(function()
         end
         cursorY = cursorY - height
 
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Link Color",
             swatches = {
@@ -4969,7 +4969,7 @@ CludesUI.AtOptionsLogin(function()
 
         cursorY = BuildThirdPartySection(hostFrame, cursorY)
 
-        _, height = W:Spacer(hostFrame, cursorY, 20)
+        _, height = Widg:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         return math.abs(cursorY)
     end
@@ -5055,7 +5055,7 @@ CludesUI.AtOptionsLogin(function()
     })
 
     local function BuildChatBubblesPage(pageTitle, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local Pix = CludesUI.PP
         local cursorY = yOffset
         local _, height
@@ -5147,11 +5147,11 @@ CludesUI.AtOptionsLogin(function()
         end
         cursorY = cursorY - 30
 
-        _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+        _, height = Widg:SectionHeader(hostFrame, "DISPLAY", cursorY)
         cursorY = cursorY - height
 
         local channelsRow
-        channelsRow, height = W:DualRow(hostFrame, cursorY, {
+        channelsRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = GATE,
             getValue = function()
@@ -5234,7 +5234,7 @@ CludesUI.AtOptionsLogin(function()
         -- Structural, not appearance: it decides which of Blizzard's switches we hold and at
         -- what value, so it takes the full pass. Half-empty right slot is allowed here because
         -- this is the last row of its section.
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Hide Chat Bubbles in Instances",
             getValue = function()
@@ -5248,10 +5248,10 @@ CludesUI.AtOptionsLogin(function()
         }, { type = "label", text = "" })
         cursorY = cursorY - height
 
-        _, height = W:SectionHeader(hostFrame, "APPEARANCE", cursorY)
+        _, height = Widg:SectionHeader(hostFrame, "APPEARANCE", cursorY)
         cursorY = cursorY - height
 
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Padding",
             min = 2,
@@ -5277,7 +5277,7 @@ CludesUI.AtOptionsLogin(function()
 
         local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
         local fontBorderRow
-        fontBorderRow, height = W:DualRow(hostFrame, cursorY, {
+        fontBorderRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Font",
             values = fontValues,
@@ -5383,7 +5383,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local nameRow
-        nameRow, height = W:DualRow(hostFrame, cursorY, {
+        nameRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Show Speaker Name",
             tooltip = "Choose which channels show the speaker.",
@@ -5507,7 +5507,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Last row of the section, so the empty right slot is allowed.
         local bgRow
-        bgRow, height = W:DualRow(hostFrame, cursorY, {
+        bgRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Background",
             getValue = function()
@@ -5555,7 +5555,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildDragonRidingPage(pageTitle, hostFrame, yOffset)
-        local W = CludesUI.Widgets
+        local Widg = CludesUI.Widgets
         local cursorY = yOffset
         local _, height
 
@@ -5603,7 +5603,7 @@ CludesUI.AtOptionsLogin(function()
         -- The Move in Unlock Mode button on the bar's first section, built
         -- whatever Enable Skyriding Bar says: its disabled state explains itself.
         local heading
-        heading, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
+        heading, height = Widg:SectionHeader(hostFrame, "GENERAL", cursorY)
         cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "EDR_Cluster",
@@ -5613,7 +5613,7 @@ CludesUI.AtOptionsLogin(function()
             disabledTooltip = "Skyriding Bar",
         })
         cursorY = BS.Note(hostFrame, cursorY, "dragonriding")
-        _, height = W:DualRow(hostFrame, cursorY, {
+        _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Skyriding Bar",
             getValue = function()
@@ -5664,7 +5664,7 @@ CludesUI.AtOptionsLogin(function()
 
             -- The parts the HUD shows. The speed bar's and Second Wind's own
             -- rows exist only while they are shown, so those two rebuild the page.
-            _, height = W:DualRow(hostFrame, cursorY, {
+            _, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Speed Bar",
                 getValue = EDR_ShowSpeed,
@@ -5683,7 +5683,7 @@ CludesUI.AtOptionsLogin(function()
             })
             cursorY = cursorY - height
             local wsRow
-            wsRow, height = W:DualRow(hostFrame, cursorY, {
+            wsRow, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Whirling Surge",
                 getValue = function()
@@ -5751,7 +5751,7 @@ CludesUI.AtOptionsLogin(function()
             -- (the page rebuilds: the Charge row and the gem scale follow it).
             -- The cog holds the full-charge chime and, for the gems, their scale.
             local vigorRow
-            vigorRow, height = W:DualRow(hostFrame, cursorY, {
+            vigorRow, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "segmented",
                 text = "Vigor Style",
                 values = { bars = "Bars", gems = "Classic Gems" },
@@ -5809,7 +5809,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 CludesUI.BuildInlineCog(vigorRow._leftRegion, { title = "Vigor", rows = vigorRows })
             end
-            _, height = W:DualRow(hostFrame, cursorY, {
+            _, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Width",
                 min = 80,
@@ -5862,7 +5862,7 @@ CludesUI.AtOptionsLogin(function()
                 })
             end
             local borderRow
-            borderRow, height = W:DualRow(hostFrame, cursorY, borderCfg, {
+            borderRow, height = Widg:DualRow(hostFrame, cursorY, borderCfg, {
                 type = "dropdown",
                 text = "Bar Texture",
                 values = edrTexValues,
@@ -5922,17 +5922,17 @@ CludesUI.AtOptionsLogin(function()
                 end)
                 UpdateSwatchState()
             end
-            _, height = W:Spacer(hostFrame, cursorY, 20)
+            _, height = Widg:Spacer(hostFrame, cursorY, 20)
             cursorY = cursorY - height
 
             -- Charge and Second Wind rows, each only while its part is shown
             -- (Classic Gems replaces the charge row); no section without either.
             local showCharges, showSW = not EDR_IsGems(), EDR_ShowSW()
             if showCharges or showSW then
-                _, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+                _, height = Widg:SectionHeader(hostFrame, "LAYOUT", cursorY)
                 cursorY = cursorY - height
                 if showCharges then
-                    _, height = W:DualRow(hostFrame, cursorY, {
+                    _, height = Widg:DualRow(hostFrame, cursorY, {
                         type = "slider",
                         text = "Charge Height",
                         min = 2,
@@ -5979,7 +5979,7 @@ CludesUI.AtOptionsLogin(function()
                     cursorY = cursorY - height
                 end
                 if showSW then
-                    _, height = W:DualRow(hostFrame, cursorY, {
+                    _, height = Widg:DualRow(hostFrame, cursorY, {
                         type = "slider",
                         text = "Second Wind Height",
                         min = 2,
@@ -6025,15 +6025,15 @@ CludesUI.AtOptionsLogin(function()
                     })
                     cursorY = cursorY - height
                 end
-                _, height = W:Spacer(hostFrame, cursorY, 20)
+                _, height = Widg:Spacer(hostFrame, cursorY, 20)
                 cursorY = cursorY - height
             end
 
             -- The speed bar's own section only while the bar is shown.
             if EDR_ShowSpeed() then
-                _, height = W:SectionHeader(hostFrame, "SPEED BAR", cursorY)
+                _, height = Widg:SectionHeader(hostFrame, "SPEED BAR", cursorY)
                 cursorY = cursorY - height
-                _, height = W:DualRow(hostFrame, cursorY, {
+                _, height = Widg:DualRow(hostFrame, cursorY, {
                     type = "slider",
                     text = "Height",
                     min = 4,
@@ -6055,7 +6055,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 })
                 cursorY = cursorY - height
-                _, height = W:DualRow(hostFrame, cursorY, {
+                _, height = Widg:DualRow(hostFrame, cursorY, {
                     type = "multiSwatch",
                     text = "Speed Color",
                     swatches = {
@@ -6124,7 +6124,7 @@ CludesUI.AtOptionsLogin(function()
                 })
                 cursorY = cursorY - height
                 local speedTextRow
-                speedTextRow, height = W:DualRow(hostFrame, cursorY, {
+                speedTextRow, height = Widg:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Show Speed Text",
                     getValue = function()
@@ -6197,7 +6197,7 @@ CludesUI.AtOptionsLogin(function()
                     })
                 end
                 cursorY = cursorY - height
-                _, height = W:Spacer(hostFrame, cursorY, 20)
+                _, height = Widg:Spacer(hostFrame, cursorY, 20)
                 cursorY = cursorY - height
             end -- Show Speed Bar
         end -- close Dragon Riding hidden-while-disabled gate

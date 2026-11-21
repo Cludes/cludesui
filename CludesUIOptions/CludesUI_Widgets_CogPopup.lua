@@ -135,7 +135,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local TITLE_H = 11
         local TITLE_GAP = 10
         local GAP = 10
-        local ROW_H = 24
+        local ROW_HEIGHT = 24
         local DROPDOWN_ROW_H = 30
         local TOGGLE_ROW_H = 28
         local INPUT_W = 34
@@ -409,9 +409,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 elseif row.type == "dropdown" or row.type == "reorder" or row.type == "reordercheck" then
                     return DROPDOWN_ROW_H
                 elseif row.type == "button" then
-                    return ROW_H + 4
+                    return ROW_HEIGHT + 4
                 end
-                return ROW_H
+                return ROW_HEIGHT
             end
             -- Column titles: their height and the gap under them; the gap between bands.
             local HDR_H, HDR_GAP, BAND_GAP = 12, 6, GAP * 2
@@ -626,7 +626,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
                 if row.type == "slider" then
                     local srow = PixelizeSliderCfg(row)
-                    local labelFS = RowLabel(row, ROW_H)
+                    local labelFS = RowLabel(row, ROW_HEIGHT)
 
                     local track, valBox, updateVisual = BuildSliderCore(
                         popFrame,
@@ -634,7 +634,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         4,
                         12,
                         INPUT_W,
-                        ROW_H,
+                        ROW_HEIGHT,
                         11,
                         POPUP_INPUT_A,
                         srow.min,
@@ -644,16 +644,16 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         srow.set,
                         true
                     )
-                    track:SetPoint("LEFT", ca, "TOPLEFT", SLIDER_LEFT, curY - ROW_H / 2)
+                    track:SetPoint("LEFT", ca, "TOPLEFT", SLIDER_LEFT, curY - ROW_HEIGHT / 2)
                     valBox:ClearAllPoints()
-                    valBox:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
+                    valBox:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_HEIGHT / 2)
 
                     local sliderDis
                     if row.disabled then
                         sliderDis = CreateFrame("Frame", nil, popFrame)
                         sliderDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         sliderDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
-                        sliderDis:SetHeight(ROW_H)
+                        sliderDis:SetHeight(ROW_HEIGHT)
                         sliderDis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         sliderDis:EnableMouse(true)
                         local disTex = SolidTex(sliderDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
@@ -676,7 +676,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         disOverlay = sliderDis,
                         disCheck = row.disabled,
                     }
-                    curY = curY - ROW_H
+                    curY = curY - ROW_HEIGHT
                 elseif row.type == "toggle" then
                     local labelFS = RowLabel(row, TOGGLE_ROW_H)
 
@@ -917,7 +917,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     }
                     curY = curY - TOGGLE_ROW_H
                 elseif row.type == "colorpicker" then
-                    local labelFS = RowLabel(row, ROW_H)
+                    local labelFS = RowLabel(row, ROW_HEIGHT)
 
                     local cpSwatch, cpUpdate = BuildColorSwatch(
                         popFrame,
@@ -935,7 +935,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         20
                     )
                     cpSwatch:ClearAllPoints()
-                    cpSwatch:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
+                    cpSwatch:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_HEIGHT / 2)
 
                     -- Disabled: blocking overlays on label + swatch (inline swatch pattern)
                     local cpSwBlock, cpLblBlock
@@ -1002,13 +1002,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         end
                     end
 
-                    curY = curY - ROW_H
+                    curY = curY - ROW_HEIGHT
                 elseif row.type == "multiswatch" then
                     -- Cog-row form of the main-page multiSwatch slot: label + N swatches right-to-left from the right edge; click one or the other, the inactive one dims. Same swatch spec: getValue/setValue/hasAlpha/tooltip/onClick (original picker click stashed on _eabOrigClick)/refreshAlpha.
                     local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
                     labelFS:SetAlpha(0.6)
                     labelFS:SetText(CUI.L(row.label))
-                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_HEIGHT / 2 - 1)
 
                     local MSW_GAP = 8
                     local mswX = -SIDE_PAD
@@ -1035,7 +1035,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             20
                         )
                         colorSwatch:ClearAllPoints()
-                        colorSwatch:SetPoint("RIGHT", ca, "TOPRIGHT", mswX, curY - ROW_H / 2)
+                        colorSwatch:SetPoint("RIGHT", ca, "TOPRIGHT", mswX, curY - ROW_HEIGHT / 2)
                         mswX = mswX - 20 - MSW_GAP
                         if sc.onClick then
                             colorSwatch._eabOrigClick = colorSwatch:GetScript("OnClick")
@@ -1070,7 +1070,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         mswDis = CreateFrame("Frame", nil, popFrame)
                         mswDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         mswDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
-                        mswDis:SetHeight(ROW_H)
+                        mswDis:SetHeight(ROW_HEIGHT)
                         mswDis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         mswDis:EnableMouse(true)
                         local disTex = SolidTex(mswDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
@@ -1099,9 +1099,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         disOverlay = mswDis,
                         disCheck = row.disabled,
                     }
-                    curY = curY - ROW_H
+                    curY = curY - ROW_HEIGHT
                 elseif row.type == "input" then
-                    local labelFS = RowLabel(row, ROW_H)
+                    local labelFS = RowLabel(row, ROW_HEIGHT)
 
                     local inputW = row.inputWidth or 80
                     local SAVE_W = 34
@@ -1113,8 +1113,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     local saveBtn, saveBg, saveLbl
                     if not commitOnBlur then
                         saveBtn = CreateFrame("Button", nil, popFrame)
-                        saveBtn:SetSize(SAVE_W, ROW_H - 4)
-                        saveBtn:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
+                        saveBtn:SetSize(SAVE_W, ROW_HEIGHT - 4)
+                        saveBtn:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_HEIGHT / 2)
                         saveBtn:SetFrameLevel(popFrame:GetFrameLevel() + 3)
                         saveBg = SolidTex(saveBtn, "BACKGROUND", ACC.r, ACC.g, ACC.b, 0.85)
                         saveBg:SetAllPoints()
@@ -1139,9 +1139,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     end
 
                     local boxFrame = CreateFrame("EditBox", nil, popFrame)
-                    boxFrame:SetSize(inputW, ROW_H - 4)
+                    boxFrame:SetSize(inputW, ROW_HEIGHT - 4)
                     if commitOnBlur then
-                        boxFrame:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
+                        boxFrame:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_HEIGHT / 2)
                     else
                         boxFrame:SetPoint("RIGHT", saveBtn, "LEFT", -SAVE_GAP, 0)
                     end
@@ -1218,7 +1218,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         inputDis = CreateFrame("Frame", nil, popFrame)
                         inputDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         inputDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
-                        inputDis:SetHeight(ROW_H)
+                        inputDis:SetHeight(ROW_HEIGHT)
                         inputDis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         inputDis:EnableMouse(true)
                         local disTex = SolidTex(inputDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
@@ -1243,9 +1243,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         saveBg = saveBg,
                         leftJustify = row.inputJustify == "LEFT",
                     }
-                    curY = curY - ROW_H
+                    curY = curY - ROW_HEIGHT
                 elseif row.type == "button" then
-                    local BTN_ROW_H = ROW_H + 4
+                    local BTN_ROW_H = ROW_HEIGHT + 4
                     local button = CreateFrame("Button", nil, popFrame)
                     Pix.Size(button, COL_W - SIDE_PAD * 2, BTN_ROW_H)
                     Pix.Point(button, "TOP", ca, "TOPLEFT", COL_W / 2, curY)

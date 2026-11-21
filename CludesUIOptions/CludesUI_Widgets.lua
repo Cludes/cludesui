@@ -117,35 +117,35 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- Toggle: the track's width and height, the knob's pad and size (two pads
     -- off the height keep its parity, so the knob sits centred on a whole
     -- pixel); L.apply re-places the knob.
-    function PX.ToggleFit(L, keyName)
-        local wid, height = L.parent:GetSize()
-        local hp, wp = math.floor(height * keyName + 0.5), math.floor(wid * keyName + 0.5)
-        local pad = math.max(1, math.floor(L.pad * keyName + 0.5))
-        if hp == L.hp and wp == L.wp and pad == L.padPx then
+    function PX.ToggleFit(Lay, scale)
+        local wid, height = Lay.parent:GetSize()
+        local hp, wp = math.floor(height * scale + 0.5), math.floor(wid * scale + 0.5)
+        local pad = math.max(1, math.floor(Lay.pad * scale + 0.5))
+        if hp == Lay.hp and wp == Lay.wp and pad == Lay.padPx then
             return
         end
-        L.hp, L.wp, L.padPx = hp, wp, pad
+        Lay.hp, Lay.wp, Lay.padPx = hp, wp, pad
         local d = math.max(2, hp - 2 * pad)
-        L.d = d
-        PX.Pill(L.track, hp)
-        PX.Circle(L.knob, d)
-        L.knob:SetSize(d, d)
-        L.apply()
+        Lay.d = d
+        PX.Pill(Lay.track, hp)
+        PX.Circle(Lay.knob, d)
+        Lay.knob:SetSize(d, d)
+        Lay.apply()
     end
     -- Slider: the track and fill pills' height and the thumb's circle (its
     -- texture and the blocker behind it, on the thumb in the track's units).
-    function PX.SliderFit(L, keyName)
-        local height = math.floor(L.trackRef:GetHeight() * keyName + 0.5)
-        if height ~= L.hp then
-            L.hp = height
-            PX.Pill(L.track, height)
-            PX.Pill(L.fill, height)
+    function PX.SliderFit(Lay, scale)
+        local height = math.floor(Lay.trackRef:GetHeight() * scale + 0.5)
+        if height ~= Lay.hp then
+            Lay.hp = height
+            PX.Pill(Lay.track, height)
+            PX.Pill(Lay.fill, height)
         end
-        local d = math.floor(L.thumbRef:GetWidth() * keyName + 0.5)
-        if d ~= L.d then
-            L.d = d
-            PX.Circle(L.thumb, d)
-            PX.Circle(L.blocker, d)
+        local d = math.floor(Lay.thumbRef:GetWidth() * scale + 0.5)
+        if d ~= Lay.d then
+            Lay.d = d
+            PX.Circle(Lay.thumb, d)
+            PX.Circle(Lay.blocker, d)
         end
     end
 
@@ -210,12 +210,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         -- The track (a pill) and the knob (a circle) are white art on a pixel
         -- layer, coloured through their vertex colour: round edges crisp at every
         -- Window Scale, the knob placed in whole pixels (PX.ToggleFit sizes them).
-        local L = PX.Layer(toggle, PX.ToggleFit)
-        local layer = L._frame
+        local Lay = PX.Layer(toggle, PX.ToggleFit)
+        local layer = Lay._frame
         local tBg = layer:CreateTexture(nil, "BACKGROUND")
         tBg:SetAllPoints(layer)
         local knob = layer:CreateTexture(nil, "ARTWORK")
-        L.track, L.knob, L.pad = tBg, knob, KNOB_PAD
+        Lay.track, Lay.knob, Lay.pad = tBg, knob, KNOB_PAD
 
         local animFrac = getValue() and 1 or 0
         local animTarget = animFrac
@@ -224,14 +224,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         -- OFF = the knob one pad in from the left edge, ON = one pad in from the
         -- right, in whole pixels between them.
         local function PlaceKnob(p)
-            local pad = L.padPx
+            local pad = Lay.padPx
             if pad then
                 knob:ClearAllPoints()
                 knob:SetPoint(
                     "TOPLEFT",
                     layer,
                     "TOPLEFT",
-                    math.floor(lerp(pad, L.wp - pad - L.d, p) + 0.5),
+                    math.floor(lerp(pad, Lay.wp - pad - Lay.d, p) + 0.5),
                     -pad
                 )
             end
@@ -248,10 +248,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 lerp(offKA, onKA, p)
             )
         end
-        L.apply = function()
+        Lay.apply = function()
             PlaceKnob(animFrac)
         end
-        L:Fit()
+        Lay:Fit()
         PlaceKnob(animFrac)
 
         -- The click handlers stand down after the setter when it rebuilt the page and
@@ -2014,11 +2014,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         Pix.Height(trackFill, trackH)
         Pix.Point(trackFill, "LEFT", trackDark, "LEFT", 0, 0)
 
-        local L = PX.Layer(trackBar, PX.SliderFit)
-        local trackPill = L._frame:CreateTexture(nil, "BACKGROUND")
+        local Lay = PX.Layer(trackBar, PX.SliderFit)
+        local trackPill = Lay._frame:CreateTexture(nil, "BACKGROUND")
         trackPill:SetAllPoints(trackDark)
         trackPill:SetVertexColor(trkR, trkG, trkB, trkA)
-        local fillPill = L._frame:CreateTexture(nil, "BORDER")
+        local fillPill = Lay._frame:CreateTexture(nil, "BORDER")
         fillPill:SetPoint("TOPLEFT", trackDark, "TOPLEFT", 0, 0)
         fillPill:SetPoint("BOTTOMRIGHT", trackFill, "BOTTOMRIGHT", 0, 0)
         fillPill:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, SL.FILL_A)
@@ -2040,9 +2040,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local thumbTex = knob:CreateTexture(nil, "ARTWORK")
         thumbTex:SetAllPoints()
         thumbTex:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-        L.track, L.fill, L.thumb, L.blocker = trackPill, fillPill, thumbTex, thumbBlocker
-        L.trackRef, L.thumbRef = trackDark, knob
-        L:Fit()
+        Lay.track, Lay.fill, Lay.thumb, Lay.blocker = trackPill, fillPill, thumbTex, thumbBlocker
+        Lay.trackRef, Lay.thumbRef = trackDark, knob
+        Lay:Fit()
 
         local valueBox = CreateFrame("EditBox", nil, hostFrame)
         Pix.Size(valueBox, inputW, inputH)

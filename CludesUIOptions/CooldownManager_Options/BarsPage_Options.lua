@@ -97,10 +97,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local ROW_H = 30
         local MAX_VISIBLE = 10 -- rows shown before the list scrolls
         local MAX_LIST_H = MAX_VISIBLE * ROW_H
-        local P = mod._rptSrcPopup
-        if not P then
-            P = { rows = {} }
-            mod._rptSrcPopup = P
+        local SrcPopup = mod._rptSrcPopup
+        if not SrcPopup then
+            SrcPopup = { rows = {} }
+            mod._rptSrcPopup = SrcPopup
             local scale = (CludesUI.GetPopupScale()) or 1
             local shade = CreateFrame("Frame", nil, UIParent)
             shade:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -120,7 +120,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(0.062, 0.070, 0.082, 1)
-            P.brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
+            SrcPopup.brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
             local titleFs = CludesUI.MakeFont(dialog, 15, nil, 1, 1, 1, 1)
             titleFs:SetPoint("TOP", dialog, "TOP", 0, -14)
             titleFs:SetText("Sync From")
@@ -200,25 +200,25 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 shade:Hide()
             end)
             dialog:SetScript("OnMouseDown", function() end)
-            P.dimmer, P.popup, P.search, P.ph, P.list, P.DDW = shade, dialog, search, ph, listF, DDW
-            P.scroll, P.updateThumb = scroller, UpdateThumb
+            SrcPopup.dimmer, SrcPopup.popup, SrcPopup.search, SrcPopup.ph, SrcPopup.list, SrcPopup.DDW = shade, dialog, search, ph, listF, DDW
+            SrcPopup.scroll, SrcPopup.updateThumb = scroller, UpdateThumb
         end
 
         local function Rebuild()
-            local filter = (P.search:GetText() or ""):lower()
+            local filter = (SrcPopup.search:GetText() or ""):lower()
             local isShown = 0
-            for _, row in ipairs(P.rows) do
+            for _, row in ipairs(SrcPopup.rows) do
                 row:Hide()
             end
             for _, s in ipairs(details) do
                 local nm = s.name or ""
                 if filter == "" or nm:lower():find(filter, 1, true) then
                     isShown = isShown + 1
-                    local r = P.rows[isShown]
+                    local r = SrcPopup.rows[isShown]
                     if not r then
-                        r = CreateFrame("Button", nil, P.list)
-                        Pix.Size(r, P.DDW, ROW_H)
-                        r:SetFrameLevel(P.list:GetFrameLevel() + 1)
+                        r = CreateFrame("Button", nil, SrcPopup.list)
+                        Pix.Size(r, SrcPopup.DDW, ROW_H)
+                        r:SetFrameLevel(SrcPopup.list:GetFrameLevel() + 1)
                         local highlight = r:CreateTexture(nil, "ARTWORK")
                         highlight:SetAllPoints()
                         highlight:SetColorTexture(1, 1, 1, 0.06)
@@ -239,10 +239,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 self._hl:Hide()
                             end
                         end)
-                        P.rows[isShown] = r
+                        SrcPopup.rows[isShown] = r
                     end
                     r:ClearAllPoints()
-                    r:SetPoint("TOPLEFT", P.list, "TOPLEFT", 0, -((isShown - 1) * ROW_H))
+                    r:SetPoint("TOPLEFT", SrcPopup.list, "TOPLEFT", 0, -((isShown - 1) * ROW_H))
                     if s.icon then
                         r._ic:SetTexture(s.icon)
                         r._ic:Show()
@@ -254,7 +254,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     r._hl:SetShown(r._isDefault)
                     local barKey = s.key
                     r:SetScript("OnClick", function()
-                        P.dimmer:Hide()
+                        SrcPopup.dimmer:Hide()
                         if onSelect then
                             onSelect(barKey)
                         end
@@ -263,27 +263,27 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end
             end
             local listH = math.max(ROW_H, isShown * ROW_H)
-            P.list:SetHeight(listH)
+            SrcPopup.list:SetHeight(listH)
             local visibleH = math.min(listH, MAX_LIST_H)
-            P.scroll:SetHeight(visibleH)
-            P.popup:SetHeight(110 + visibleH)
+            SrcPopup.scroll:SetHeight(visibleH)
+            SrcPopup.popup:SetHeight(110 + visibleH)
             -- Rebuilt while shown (search typing): refit the outline's bottom edge.
-            P.brd:Fit()
-            P.scroll:SetVerticalScroll(0)
-            if P.updateThumb then
-                P.updateThumb()
+            SrcPopup.brd:Fit()
+            SrcPopup.scroll:SetVerticalScroll(0)
+            if SrcPopup.updateThumb then
+                SrcPopup.updateThumb()
             end
         end
-        P.search:SetScript("OnTextChanged", function(self)
-            P.ph:SetShown((self:GetText() or "") == "")
+        SrcPopup.search:SetScript("OnTextChanged", function(self)
+            SrcPopup.ph:SetShown((self:GetText() or "") == "")
             Rebuild()
         end)
-        P.search:SetText("")
-        P.ph:Show()
+        SrcPopup.search:SetText("")
+        SrcPopup.ph:Show()
         Rebuild()
-        P.dimmer:Show()
+        SrcPopup.dimmer:Show()
         C_Timer.After(0.05, function()
-            P.search:SetFocus()
+            SrcPopup.search:SetFocus()
         end)
     end
 

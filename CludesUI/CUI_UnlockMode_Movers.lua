@@ -1661,8 +1661,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                 return
             end
             local barKey = self._barKey
-            local PPi = CludesUI and CludesUI.PP
-            local toPx = (PPi and PPi.ToPixels) or round
+            local PixKit = CludesUI and CludesUI.PP
+            local toPx = (PixKit and PixKit.ToPixels) or round
             -- STORED value first for unanchored CENTER/CENTER elements when not
             -- mid-drag: an odd-pixel-dimension frame's physical center legitimately
             -- sits on a half pixel (whole-pixel edges force it), so a live-derived
@@ -1689,7 +1689,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     then
                         -- Parity-aware like the live branch below (odd dims store a half-pixel center).
                         local scrollBar = LM.GetBarFrame(barKey)
-                        local c2pS = PPi and PPi.CenterToPixels
+                        local c2pS = PixKit and PixKit.CenterToPixels
                         local px, py
                         if c2pS and scrollBar then
                             px = c2pS(place.x, scrollBar:GetWidth(), scrollBar:GetEffectiveScale())
@@ -1718,7 +1718,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local sh = UIParent:GetHeight()
                     local liveCX = ((boxLeft + bR) * 0.5 * scaleRatio) - sw * 0.5
                     local liveCY = ((bT + bB) * 0.5 * scaleRatio) - sh * 0.5
-                    local c2p = PPi and PPi.CenterToPixels
+                    local c2p = PixKit and PixKit.CenterToPixels
                     fontStr:SetText(
                         format(
                             "%.0f, %.0f",
@@ -4215,8 +4215,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                     -- units) makes +1 in the box equal exactly one physical pixel, i.e.
                     -- one arrow-key nudge; PP.mult is only 1 at pixel-perfect UI scale.
                     local function AxisToPx(ax)
-                        local PPi = CludesUI and CludesUI.PP
-                        if not PPi or not PPi.ToPixels then
+                        local PixKit = CludesUI and CludesUI.PP
+                        if not PixKit or not PixKit.ToPixels then
                             return nil
                         end
                         -- STORED value first for unanchored CENTER/CENTER elements (same
@@ -4241,7 +4241,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                             then
                                 -- Parity-aware like the live conversion below (odd dims store a half-pixel center).
                                 local scrollBar = LM.GetBarFrame(barId)
-                                local c2pS = PPi.CenterToPixels
+                                local c2pS = PixKit.CenterToPixels
                                 if ax == "X" then
                                     if c2pS and scrollBar then
                                         return c2pS(
@@ -4250,12 +4250,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                                             scrollBar:GetEffectiveScale()
                                         )
                                     end
-                                    return PPi.ToPixels(place.x)
+                                    return PixKit.ToPixels(place.x)
                                 end
                                 if c2pS and scrollBar then
                                     return c2pS(place.y, scrollBar:GetHeight(), scrollBar:GetEffectiveScale())
                                 end
-                                return PPi.ToPixels(place.y)
+                                return PixKit.ToPixels(place.y)
                             end
                         end
                         local widget = LM.GetBarFrame(barId)
@@ -4272,19 +4272,19 @@ CUI_NS.unlockParts.Movers = function(LM)
                         -- center on a half pixel; plain ToPixels reads that back
                         -- one high, so deltas computed from it move the frame to
                         -- the -0.5 side (1px off the stored-value convention).
-                        local c2p = PPi.CenterToPixels
+                        local c2p = PixKit.CenterToPixels
                         if ax == "X" then
                             local liveCX = ((boxLeft + bR) * 0.5 * scaleRatio) - sw * 0.5
                             if c2p then
                                 return c2p(liveCX, widget:GetWidth(), widget:GetEffectiveScale())
                             end
-                            return PPi.ToPixels(liveCX)
+                            return PixKit.ToPixels(liveCX)
                         end
                         local liveCY = ((bT + bB) * 0.5 * scaleRatio) - sh * 0.5
                         if c2p then
                             return c2p(liveCY, widget:GetHeight(), widget:GetEffectiveScale())
                         end
-                        return PPi.ToPixels(liveCY)
+                        return PixKit.ToPixels(liveCY)
                     end
 
                     local function MakePosRow(dim, initVal)
@@ -4301,8 +4301,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                             if not value then
                                 return
                             end
-                            local PPi = CludesUI and CludesUI.PP
-                            if InCombatLockdown() or not PPi then
+                            local PixKit = CludesUI and CludesUI.PP
+                            if InCombatLockdown() or not PixKit then
                                 return
                             end
                             -- Current value from LIVE geometry (never the stale moverCX).
@@ -4317,7 +4317,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                                 -- arrow keys use, so anchored/unanchored handling, the
                                 -- pending-save capture, and the mover-center re-sync all
                                 -- match the proven path: no second snap, no lost move.
-                                local stepUnits = PPi.FromPixels(deltaPx)
+                                local stepUnits = PixKit.FromPixels(deltaPx)
                                 if dim == "X" then
                                     CludesUI._unlockNudge(stepUnits, 0, handle, true)
                                 else

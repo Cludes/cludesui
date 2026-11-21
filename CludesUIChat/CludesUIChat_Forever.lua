@@ -38,7 +38,7 @@ local CFD = CUI._chatCFD
 local BORDER = CUI.FOREVER_BORDER
 local HEAVY = CUI.FOREVER_HEAVY
 
-local FV = {
+local ForeverChat = {
     lift = { 1, 0.75, 0.45, 0.6 }, -- the additive copy: tint, alpha
     -- Heavy Bronze: the art scale per piece (its rim and dark line are
     -- HEAVY.band art units; the panel at the window scale) and each tab's
@@ -76,7 +76,7 @@ local FV = {
     -- The last fill ApplyBackground painted (panels built later take it).
     _fill = { r = 0.03, g = 0.045, b = 0.05, a = 0.65 },
 }
-CHAT.FV = FV
+CHAT.FV = ForeverChat
 
 -------------------------------------------------------------------------------
 --  Framed box: the line and the body fill under it, on an art host of ours.
@@ -150,7 +150,7 @@ local function ShowLift(box, isShown)
         if not isShown then
             return
         end
-        local l, s = FV.lift, box.seat
+        local l, s = ForeverChat.lift, box.seat
         lift = CUI.ForeverBorder(box.host, "ARTWORK", 0, true, mod.ChatFvKind())
         CUI.ForeverBorderPaint(lift, l[1], l[2], l[3], l[4])
         CUI.ForeverBorderSeat(lift, box.host, s[1], s[2], s[3], s[4], s[5])
@@ -175,16 +175,16 @@ end
 -------------------------------------------------------------------------------
 -- How far the panel reaches under the chat frame's rect.
 function CHAT.FV_PanelDrop(inputH)
-    return FV.MSG_B + FV.GAP + 2 * FV.IN_PAD + inputH
+    return ForeverChat.MSG_B + ForeverChat.GAP + 2 * ForeverChat.IN_PAD + inputH
 end
 
 -- The edit box in the input frame: the same plain setters the CludesUI
 -- look uses (every window, temporary ones included; no hooks here).
 function CHAT.FV_PlaceEditBox(castFrame, eb, inputH)
-    local posY = -(FV.MSG_B + FV.GAP + FV.IN_PAD)
+    local posY = -(ForeverChat.MSG_B + ForeverChat.GAP + ForeverChat.IN_PAD)
     eb:ClearAllPoints()
-    eb:SetPoint("TOPLEFT", castFrame, "BOTTOMLEFT", -FV.EB_X, posY)
-    eb:SetPoint("TOPRIGHT", castFrame, "BOTTOMRIGHT", FV.EB_X, posY)
+    eb:SetPoint("TOPLEFT", castFrame, "BOTTOMLEFT", -ForeverChat.EB_X, posY)
+    eb:SetPoint("TOPRIGHT", castFrame, "BOTTOMRIGHT", ForeverChat.EB_X, posY)
     eb:SetHeight(inputH)
 end
 
@@ -200,8 +200,8 @@ function CHAT.FV_SeatInput(castFrame, eb, inputH)
         ins = {}
         skinData._bgIns = ins
     end
-    ins.l, ins.r = -FV.X, FV.X
-    ins.t = FV.TOP + ((castFrame == _G.ChatFrame2) and FV.CL_BAR or 0)
+    ins.l, ins.r = -ForeverChat.X, ForeverChat.X
+    ins.t = ForeverChat.TOP + ((castFrame == _G.ChatFrame2) and ForeverChat.CL_BAR or 0)
     ins.b = -CHAT.FV_PanelDrop(inputH)
     CHAT.FV_LayoutPanel(castFrame, inputH)
 end
@@ -215,13 +215,13 @@ function CHAT.FV_LayoutPanel(castFrame, inputH)
         return
     end
     skinData.fvInputH = inputH
-    local inTall = inputH + 2 * FV.IN_PAD
+    local inTall = inputH + 2 * ForeverChat.IN_PAD
     if skinData.fvMsg.heavy then
-        SeatHeavyBox(skinData.fvMsg, owner, "TOPLEFT", 0, inTall + FV.GAP)
+        SeatHeavyBox(skinData.fvMsg, owner, "TOPLEFT", 0, inTall + ForeverChat.GAP)
         SeatHeavyBox(skinData.fvIn, owner, "BOTTOMLEFT", inTall, 0)
         return
     end
-    SeatBox(skinData.fvMsg, owner, "TOPLEFT", 0, inTall + FV.GAP)
+    SeatBox(skinData.fvMsg, owner, "TOPLEFT", 0, inTall + ForeverChat.GAP)
     SeatBox(skinData.fvIn, owner, "BOTTOMLEFT", inTall, 0)
 end
 
@@ -236,21 +236,21 @@ function CHAT.FV_BuildPanel(castFrame, backdrop, inputH)
     local owner = CreateFrame("Frame", nil, backdrop)
     local New = NewBox
     if mod.ChatFvHeavy() then
-        owner:SetScale(FV.panelK)
+        owner:SetScale(ForeverChat.panelK)
         New = NewHeavyBox
     end
     owner:SetAllPoints(backdrop)
     skinData.fvHost = owner
     skinData.fvMsg, skinData.fvIn = New(owner), New(owner)
     CHAT.FV_LayoutPanel(castFrame, inputH)
-    local p = FV._fill
+    local p = ForeverChat._fill
     PaintFill(skinData.fvMsg.fill, p.tex, p.r, p.g, p.b, p.a)
     PaintFill(skinData.fvIn.fill, p.tex, p.r, p.g, p.b, p.a)
 end
 
 -- The chat background colour/texture (Chat page) fills both boxes.
 function CHAT.FV_PaintFills(texture, red, green, blue, a)
-    local p = FV._fill
+    local p = ForeverChat._fill
     p.tex, p.r, p.g, p.b, p.a = texture, red, green, blue, a
     for index = 1, 20 do
         local castFrame = _G["ChatFrame" .. index]
@@ -271,7 +271,7 @@ end
 -------------------------------------------------------------------------------
 local tabCol -- colour objects (selected bottom, top, idle bottom, top)
 local function TabColours()
-    local s, index = FV.tabSel, FV.tabIdle
+    local s, index = ForeverChat.tabSel, ForeverChat.tabIdle
     tabCol = {
         CreateColor(s[1], s[2], s[3], s[4]),
         CreateColor(s[5], s[6], s[7], s[8]),
@@ -289,7 +289,7 @@ function CHAT.FV_StyleGhost(g, isActive)
         art = CreateFrame("Frame", nil, clip)
         local heavy = mod.ChatFvHeavy()
         if heavy then
-            art:SetScale(FV.tabK)
+            art:SetScale(ForeverChat.tabK)
         end
         art:SetAllPoints(clip)
         -- Label and alert glow over the art (they are the ghost's regions).
@@ -305,7 +305,7 @@ function CHAT.FV_StyleGhost(g, isActive)
             box.fill:SetTexture("Interface\\Buttons\\WHITE8X8")
             -- The bottom rim and its inner shadow run under the ghost, where
             -- the clip takes them.
-            SeatHeavyBox(box, art, "TOPLEFT", 0, -HEAVY.shade * FV.tabK, FV.hvTabInset)
+            SeatHeavyBox(box, art, "TOPLEFT", 0, -HEAVY.shade * ForeverChat.tabK, ForeverChat.hvTabInset)
         else
             -- The selected tab's line reads warmer than the panel's (the
             -- lift, shown only while selected).
@@ -314,7 +314,7 @@ function CHAT.FV_StyleGhost(g, isActive)
             -- The bottom line sits the corners' reach under the ghost, so the
             -- clip takes it and both lower chamfers: the sides run straight
             -- down to the ghost's bottom edge.
-            SeatBox(box, art, "TOPLEFT", -FV.tabInset, -BORDER.corner, FV.tabInset)
+            SeatBox(box, art, "TOPLEFT", -ForeverChat.tabInset, -BORDER.corner, ForeverChat.tabInset)
         end
         g._fvClip, g._fvArt, g._fvTop, g._fvBox = clip, art, topY, box
         g._bg:Hide()
@@ -397,11 +397,11 @@ function CHAT.FV_Plate(button, enabled)
         local owner = CreateFrame("Frame", nil, button)
         local heavy = mod.ChatFvHeavy()
         if heavy then
-            owner:SetScale(FV.btnK)
+            owner:SetScale(ForeverChat.btnK)
         end
         owner:SetAllPoints(button)
         p = heavy and NewHeavyBox(owner, true) or NewBox(owner)
-        local c = FV.plateFill
+        local c = ForeverChat.plateFill
         p.fill:SetColorTexture(c[1], c[2], c[3], c[4])
         if heavy then
             SeatHeavyBox(p, owner, "TOPLEFT", 0, 0)
@@ -433,7 +433,7 @@ end
 local Entry = CHAT.SB_Entry
 if CUI.IS_FOREVER and Entry and CHAT.SB_KITS then
     local MEDIA = "Interface\\AddOns\\CludesUIChat\\Media\\"
-    local TAN = FV.tan
+    local TAN = ForeverChat.tan
     -- Blizzard's atlas glyphs desaturate darker than our white PNG ink: a
     -- brighter tint (tan / 0.83) lands them on the same tan.
     local ATL_TINT = { 1, 0.86, 0.63 }
@@ -446,7 +446,7 @@ if CUI.IS_FOREVER and Entry and CHAT.SB_KITS then
     end
     local blizz = CHAT.SB_KITS.blizzard
     CHAT.SB_KITS.forever = {
-        col = { dx = -FV.GAP, top = 0, bot = 0 },
+        col = { dx = -ForeverChat.GAP, top = 0, bot = 0 },
         colW = 34,
         gap = 8,
         voiceState = true,

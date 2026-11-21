@@ -86,10 +86,10 @@ local RS_INACTIVE = Enum.AddOnRestrictionState and Enum.AddOnRestrictionState.In
 local INSPECT_CFG = Constants and Constants.TraitConsts and Constants.TraitConsts.INSPECT_TRAIT_CONFIG_ID
     or -1
 
-local GROUP_UNITS = { "player", "party1", "party2", "party3", "party4" }
+local PARTY_UNITS = { "player", "party1", "party2", "party3", "party4" }
 local PET_UNIT =
     { player = "pet", party1 = "partypet1", party2 = "partypet2", party3 = "partypet3", party4 = "partypet4" }
-KE.GROUP_UNITS = GROUP_UNITS
+KE.GROUP_UNITS = PARTY_UNITS
 
 -- Only nameplate tokens: a kick stops the same mob on every token that names
 -- it, and a plate is the one the displays can use.
@@ -274,10 +274,10 @@ local function UnitOfGUID(g)
     if type(g) ~= "string" or Secret(g) then
         return nil
     end
-    for i = 1, #GROUP_UNITS do
-        local member = rosterMap[GROUP_UNITS[i]]
+    for i = 1, #PARTY_UNITS do
+        local member = rosterMap[PARTY_UNITS[i]]
         if member and member.guid == g then
-            return GROUP_UNITS[i]
+            return PARTY_UNITS[i]
         end
     end
     return nil
@@ -317,8 +317,8 @@ end
 local function ReadRoster()
     local nowTime = GetTime()
     local didChange = false
-    for i = 1, #GROUP_UNITS do
-        local unitToken = GROUP_UNITS[i]
+    for i = 1, #PARTY_UNITS do
+        local unitToken = PARTY_UNITS[i]
         local member = rosterMap[unitToken] or NewMember(unitToken)
         -- Players only: a delve companion or a follower NPC in the slot is an
         -- empty slot (no row, no inspect).
@@ -439,8 +439,8 @@ function KE.Listening()
     local me = rosterMap.player
     local units = (me and me.class == "WARLOCK") and "player pet" or "player"
     local members = {}
-    for i = 1, #GROUP_UNITS do
-        local member = rosterMap[GROUP_UNITS[i]]
+    for i = 1, #PARTY_UNITS do
+        local member = rosterMap[PARTY_UNITS[i]]
         if member and member.guid then
             members[#members + 1] = member.unit
                 .. " "
@@ -654,10 +654,10 @@ local function RefreshStale()
         return
     end
     local nowTime = GetTime()
-    for i = 2, #GROUP_UNITS do
-        local member = rosterMap[GROUP_UNITS[i]]
+    for i = 2, #PARTY_UNITS do
+        local member = rosterMap[PARTY_UNITS[i]]
         if member and member.guid and (not member.readAt or nowTime - member.readAt >= INSPECT_FRESH) then
-            AskRead(GROUP_UNITS[i])
+            AskRead(PARTY_UNITS[i])
         end
     end
 end
@@ -769,8 +769,8 @@ local function ReadRows(keyList, nmap, auraMap, guidMap)
         end
     end
     local demonUnit, demons = nil, 0
-    for i = 1, #GROUP_UNITS do
-        local unit = GROUP_UNITS[i]
+    for i = 1, #PARTY_UNITS do
+        local unit = PARTY_UNITS[i]
         local member = rosterMap[unit]
         local g = member and member.guid
         if g then
@@ -813,8 +813,8 @@ end
 -- (`lo`, `hi`) start there too: nothing seen yet, and no ceiling while
 -- entries the engine never saw land are already there (Bound keeps them).
 local function SyncLists(nmap, prevN)
-    for i = 1, #GROUP_UNITS do
-        local unit = GROUP_UNITS[i]
+    for i = 1, #PARTY_UNITS do
+        local unit = PARTY_UNITS[i]
         local member = rosterMap[unit]
         if member then
             local num = nmap[unit] or 0
@@ -849,8 +849,8 @@ end
 -- failed read is neither a shrink nor, when it reads again, a growth (nor,
 -- for the gate source, a rise the read before it would then miss).
 local function CarryCounts(nmap, auraMap, guidMap)
-    for i = 1, #GROUP_UNITS do
-        local unit = GROUP_UNITS[i]
+    for i = 1, #PARTY_UNITS do
+        local unit = PARTY_UNITS[i]
         if nmap[unit] == nil then
             nmap[unit] = cache.n[unit]
         end
@@ -864,8 +864,8 @@ end
 -- and whether it rose (a row or a count more) against a baseline.
 local function ListsMoved(keyList, nmap, prevKeys, prevN)
     local shrank, rose = #keyList < #prevKeys, #keyList > #prevKeys
-    for i = 1, #GROUP_UNITS do
-        local unit = GROUP_UNITS[i]
+    for i = 1, #PARTY_UNITS do
+        local unit = PARTY_UNITS[i]
         local num, previous = nmap[unit] or 0, prevN[unit] or 0
         if num < previous then
             shrank = true
@@ -978,8 +978,8 @@ local function KeyUnits(key, result)
     end
     local cls, iconTex = key:match("^([^:]+):([^:%*]+)")
     iconTex = tonumber(iconTex)
-    for i = 2, #GROUP_UNITS do
-        local member = rosterMap[GROUP_UNITS[i]]
+    for i = 2, #PARTY_UNITS do
+        local member = rosterMap[PARTY_UNITS[i]]
         if
             member
             and member.guid
@@ -987,7 +987,7 @@ local function KeyUnits(key, result)
             and member.class == cls
             and (iconTex == nil or member.specIcon == nil or member.specIcon == iconTex)
         then
-            result[#result + 1] = GROUP_UNITS[i]
+            result[#result + 1] = PARTY_UNITS[i]
         end
     end
     return result
@@ -1021,10 +1021,10 @@ local kept = {}
 -- Every member but you who has an interrupt.
 local function AllOthers(result)
     wipe(result)
-    for i = 2, #GROUP_UNITS do
-        local member = rosterMap[GROUP_UNITS[i]]
+    for i = 2, #PARTY_UNITS do
+        local member = rosterMap[PARTY_UNITS[i]]
         if member and member.guid and member.kick then
-            result[#result + 1] = GROUP_UNITS[i]
+            result[#result + 1] = PARTY_UNITS[i]
         end
     end
     return result
@@ -1091,8 +1091,8 @@ end
 
 -- A kick any member with entries may have landed, none of it visible.
 local function LoosenAll()
-    for i = 1, #GROUP_UNITS do
-        local unit = GROUP_UNITS[i]
+    for i = 1, #PARTY_UNITS do
+        local unit = PARTY_UNITS[i]
         local member = rosterMap[unit]
         if member and member.hi and (cache.n[unit] or 0) > 0 then
             member.hi = member.hi + 1
@@ -1280,8 +1280,8 @@ local function BuildGate(Now)
     wipe(gateCur)
     gateT = Now
     local pa, pg, ca, cg = readPrevA, readPrevG, cache.a, cache.g
-    for i = 2, #GROUP_UNITS do
-        local unit = GROUP_UNITS[i]
+    for i = 2, #PARTY_UNITS do
+        local unit = PARTY_UNITS[i]
         local member = rosterMap[unit]
         if member and member.guid and member.kick and not StillDown(member, Now) then
             local before, after = pa[unit], ca[unit]
@@ -1509,8 +1509,8 @@ local function Attribute()
     -- member with entries (so their count is one at least), never you.
     -- Handed on as read, hidden in combat; read at once, never kept.
     wipe(countList)
-    for i = 2, #GROUP_UNITS do
-        local unit = GROUP_UNITS[i]
+    for i = 2, #PARTY_UNITS do
+        local unit = PARTY_UNITS[i]
         if (guidMap[unit] or 0) >= 1 and auraMap[unit] ~= nil then
             countList[#countList + 1] = unit
         end
