@@ -1221,9 +1221,9 @@ local function FreezeTo(frame, ref)
         local rl, rebuild, rw, rh = ref:GetRect()
         if not (isv and (isv(rl) or isv(rebuild) or isv(rw) or isv(rh))) and rl and rebuild and rw and rh then
             -- ref's corner in f's own units (each scales its own offsets)
-            local keyName = ref:GetEffectiveScale() / frame:GetEffectiveScale()
+            local scale = ref:GetEffectiveScale() / frame:GetEffectiveScale()
             frame:ClearAllPoints()
-            if pcall(frame.SetPoint, frame, "TOPLEFT", ref, "TOPLEFT", l - rl * keyName, b + height - (rebuild + rh) * keyName) then
+            if pcall(frame.SetPoint, frame, "TOPLEFT", ref, "TOPLEFT", l - rl * scale, b + height - (rebuild + rh) * scale) then
                 frame:SetSize(wid, height)
                 return
             end

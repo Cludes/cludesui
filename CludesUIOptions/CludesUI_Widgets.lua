@@ -1680,10 +1680,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             posX, cursorY = dropMenu._seatX, dropMenu._seatY
             dropMenu:SetPoint(pt, relTo, rpt, posX, cursorY)
             local l, t = dropMenu:GetLeft(), dropMenu:GetTop()
-            local keyName = dropMenu:GetEffectiveScale() / CUI.PP.perfect
-            if l and t and keyName > 0 and not (issecretvalue(l) or issecretvalue(t)) then
-                l, t = l * keyName, t * keyName
-                posX, cursorY = posX + (floor(l + 0.5) - l) / keyName, cursorY + (floor(t + 0.5) - t) / keyName
+            local scale = dropMenu:GetEffectiveScale() / CUI.PP.perfect
+            if l and t and scale > 0 and not (issecretvalue(l) or issecretvalue(t)) then
+                l, t = l * scale, t * scale
+                posX, cursorY = posX + (floor(l + 0.5) - l) / scale, cursorY + (floor(t + 0.5) - t) / scale
                 dropMenu:SetPoint(pt, relTo, rpt, posX, cursorY)
             end
             dropMenu._seatedX, dropMenu._seatedY = posX, cursorY

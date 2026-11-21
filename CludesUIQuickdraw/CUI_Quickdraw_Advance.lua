@@ -527,8 +527,8 @@ function PaletteView:ScreenOffset()
         return 0, 0
     end
 
-    local key = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    return cx * key - ux, cy * key - uy
+    local scale = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    return cx * scale - ux, cy * scale - uy
 end
 
 -- Hang the caption on the side that faces the middle of the screen, so a strip

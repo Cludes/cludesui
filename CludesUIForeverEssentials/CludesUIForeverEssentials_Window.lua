@@ -538,9 +538,9 @@ local function Plate(button, isHovered)
     end
 end
 
-local function Tan(iconTex, key)
+local function Tan(iconTex, scale)
     local c = FV.glyph
-    iconTex:SetVertexColor(c[1] * key, c[2] * key, c[3] * key, 1)
+    iconTex:SetVertexColor(c[1] * scale, c[2] * scale, c[3] * scale, 1)
 end
 
 -- A glyph file from this addon's media, desaturated and tan on its plate.

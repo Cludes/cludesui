@@ -546,9 +546,9 @@ function PaletteView:ChildGeom(isShown, slots)
     -- size would not, and the options preview would then draw its nests at
     -- full distance around a palette fitted to two-thirds.
     local base = profile.iconSize or 40
-    local key = (base > 0) and (iconSize / base) or 1
-    local band = max(0, profile.nestBand or NEST_BAND_DEFAULT) * key
-    local gap = ((profile and profile.fanGap) or 10) * key
+    local scale = (base > 0) and (iconSize / base) or 1
+    local band = max(0, profile.nestBand or NEST_BAND_DEFAULT) * scale
+    local gap = ((profile and profile.fanGap) or 10) * scale
     -- Nested entries are drawn smaller than the palette's own, so a nest reads
     -- as subordinate to the entry it hangs off rather than as a second ring of
     -- equals. It costs nothing in the hit test: the sectors are angular, and an
@@ -879,25 +879,25 @@ local function FalloffK(key)
     return (key - 0.5) * 2
 end
 
-local function FanOffset(key, size, gap, decay, minScale)
+local function FanOffset(scale, size, gap, decay, minScale)
     -- decay ~= 1 makes the integral degenerate (and 1 means "no falloff", so
     -- even spacing is the right answer anyway).
     if decay >= 0.999 then
-        return (size + gap) * key
+        return (size + gap) * scale
     end
     local lnd = -log(decay)
 
     minScale = minScale or 0
     if minScale <= 0 then
-        return size * (1 - decay ^ key) / lnd + gap * key
+        return size * (1 - decay ^ scale) / lnd + gap * scale
     end
 
     -- decay ^ knee == minScale, which is what makes the two branches meet.
     local knee = log(minScale) / log(decay)
-    if key <= knee then
-        return size * (1 - decay ^ key) / lnd + gap * key
+    if scale <= knee then
+        return size * (1 - decay ^ scale) / lnd + gap * scale
     end
-    return size * (1 - minScale) / lnd + gap * knee + (size * minScale + gap) * (key - knee)
+    return size * (1 - minScale) / lnd + gap * knee + (size * minScale + gap) * (scale - knee)
 end
 
 -- Half-length of the editor's strip: centre to the outer edge of the last

@@ -104,11 +104,11 @@ end
 -- Masks by radius * 16 + round corners, built on first use.
 local function MaskPaths(prefixText)
     return setmetatable({}, {
-        __index = function(tbl, key)
-            local num, c = floor(key / 16), key % 16
+        __index = function(tbl, code)
+            local num, c = floor(code / 16), code % 16
             local val = c == ALL_CORNERS and ("%s%s-%d.tga"):format(MEDIA, prefixText, num)
                 or ("%s%s-%d-%d.tga"):format(MEDIA, prefixText, num, c)
-            tbl[key] = val
+            tbl[code] = val
             return val
         end,
     })
@@ -907,7 +907,7 @@ end
 -- The layer's edges on whole pixels: a parent centred on its row or header
 -- can sit half a pixel off the grid, which spread a 1 px outline over two.
 -- Each edge moves to its nearest pixel (offsets in layer units = pixels).
-local function SeatLayer(Lay, drawLayer, key)
+local function SeatLayer(Lay, drawLayer, scale)
     local p = Lay.parent
     local l, t, r, b = p:GetLeft(), p:GetTop(), p:GetRight(), p:GetBottom()
     if
@@ -919,7 +919,7 @@ local function SeatLayer(Lay, drawLayer, key)
     then
         return
     end
-    l, t, r, b = l * key, t * key, r * key, b * key
+    l, t, r, b = l * scale, t * scale, r * scale, b * scale
     l, t, r, b = floor(l + 0.5) - l, floor(t + 0.5) - t, floor(r + 0.5) - r, floor(b + 0.5) - b
     if Lay.sl == l and Lay.st == t and Lay.sr == r and Lay.sb == b then
         return
@@ -1051,7 +1051,7 @@ end
 
 -- The radius in whole pixels from the parent's scale (at most what the height
 -- holds) and the body's radius in the parent's units.
-local function FitOutline(o, key)
+local function FitOutline(o, scale)
     local hostFrame = o.parent
     local halfSize = HalfSide(hostFrame)
     -- No radius named: the house corner for this size, read at each fit (the
@@ -1059,9 +1059,9 @@ local function FitOutline(o, key)
     if o.autoRadius then
         o.radius = HouseRadius(halfSize)
     end
-    local r = floor(o.radius * key + 0.5)
+    local r = floor(o.radius * scale + 0.5)
     if halfSize then
-        local cap = floor(halfSize * key - 0.5)
+        local cap = floor(halfSize * scale - 0.5)
         if r > cap then
             r = cap
         end
@@ -1346,8 +1346,8 @@ end
 -- inside of the outline (a side strip, a hover fill).
 local CARD_R, CARD_G, CARD_B = 0.062, 0.070, 0.082
 
-local function FitCard(o, key)
-    FitOutline(o, key)
+local function FitCard(o, scale)
+    FitOutline(o, scale)
     local accent, alphaMask = o.accent, o.accentMask
     if o.r and o.ar ~= o.r then
         if o.ar then
@@ -1357,7 +1357,7 @@ local function FitCard(o, key)
         SetRounded(alphaMask, o.r - 1, ALL_CORNERS, "CLAMPTOBLACKADDITIVE")
         MaskWhenLoaded(accent, alphaMask)
     end
-    local hgt = floor(o.accentH * key + 0.5)
+    local hgt = floor(o.accentH * scale + 0.5)
     accent:SetWidth(hgt < 1 and 1 or hgt)
 end
 

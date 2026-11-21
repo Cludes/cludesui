@@ -3439,21 +3439,21 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     -- The rows' pill and knob, drawn texel to pixel as the settings toggle's
     -- are (CludesUI.MakePixelLayer): a stadium and a circle sized for the
     -- layer's scale, the knob one pad in from the side its state sits on.
-    local function OptionPillFit(Loc, keyName)
-        local wid, height = Loc.parent:GetSize()
-        local hp, wp = math.floor(height * keyName + 0.5), math.floor(wid * keyName + 0.5)
-        if hp == Loc.hp and wp == Loc.wp then
+    local function OptionPillFit(Lay, scale)
+        local wid, height = Lay.parent:GetSize()
+        local hp, wp = math.floor(height * scale + 0.5), math.floor(wid * scale + 0.5)
+        if hp == Lay.hp and wp == Lay.wp then
             return
         end
-        Loc.hp, Loc.wp = hp, wp
-        local pad = math.max(1, math.floor(2 * keyName + 0.5))
+        Lay.hp, Lay.wp = hp, wp
+        local pad = math.max(1, math.floor(2 * scale + 0.5))
         local d = math.max(2, hp - 2 * pad)
         -- Square, as the settings toggle is (CludesUI_Widgets.lua PX).
-        Loc.track:SetColorTexture(1, 1, 1, 1)
-        Loc.knob:SetColorTexture(1, 1, 1, 1)
-        Loc.knob:SetSize(d, d)
-        Loc.knob:ClearAllPoints()
-        Loc.knob:SetPoint("TOPLEFT", Loc._frame, "TOPLEFT", Loc.on and (wp - pad - d) or pad, -pad)
+        Lay.track:SetColorTexture(1, 1, 1, 1)
+        Lay.knob:SetColorTexture(1, 1, 1, 1)
+        Lay.knob:SetSize(d, d)
+        Lay.knob:ClearAllPoints()
+        Lay.knob:SetPoint("TOPLEFT", Lay._frame, "TOPLEFT", Lay.on and (wp - pad - d) or pad, -pad)
     end
 
     -- Toggle row helper (label left, tile-style pill right).

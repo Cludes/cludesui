@@ -3765,8 +3765,8 @@ local function CreateDMWindow(winIdx)
             else
                 cardFrame._accent:Hide()
                 if fvG then
-                    local key = mod.DM_HDR_IDLE
-                    cardFrame._icon:SetVertexColor(fvG[1] * key, fvG[2] * key, fvG[3] * key, 1)
+                    local scale = mod.DM_HDR_IDLE
+                    cardFrame._icon:SetVertexColor(fvG[1] * scale, fvG[2] * scale, fvG[3] * scale, 1)
                 else
                     cardFrame._icon:SetVertexColor(acR, acG, acB, 0.6)
                 end

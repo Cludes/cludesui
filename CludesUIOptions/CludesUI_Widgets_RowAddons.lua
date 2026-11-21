@@ -191,9 +191,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- The dots in whole pixels on the cog's pixel layer: the middle one centred,
     -- the others a step above and below, the notification dot (and the pulse ring
     -- under it) up and left of the top one.
-    function CogDot.Fit(L, keyName)
+    function CogDot.Fit(L, scale)
         local wid, height = L.parent:GetSize()
-        local wp, hp = math.floor(wid * keyName + 0.5), math.floor(height * keyName + 0.5)
+        local wp, hp = math.floor(wid * scale + 0.5), math.floor(height * scale + 0.5)
         if wp == L.wp and hp == L.hp then
             return
         end

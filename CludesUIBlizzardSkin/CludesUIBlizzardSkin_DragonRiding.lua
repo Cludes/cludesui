@@ -1906,9 +1906,9 @@ function RegisterUnlockElements()
                 end
                 local newTotalH = SnapPx(hgt)
                 local classicPart = Lay.classic and (Lay.classicH + profile.gap) or 0
-                local keyName = max(8, newTotalH - classicPart) / Lay.clusterH
+                local scale = max(8, newTotalH - classicPart) / Lay.clusterH
                 if Lay.icon and profile.iconSize then
-                    profile.iconSize = max(16, min(80, floor(Lay.iconSize * keyName + 0.5)))
+                    profile.iconSize = max(16, min(80, floor(Lay.iconSize * scale + 0.5)))
                 end
                 local rowList = Lay.rows
                 if #rowList == 0 then
@@ -1930,7 +1930,7 @@ function RegisterUnlockElements()
                 -- the bar. The CludesUI bars filling the whole cluster take
                 -- the exact pixel-snapped height, as they always have.
                 local whole = Lay.colH == Lay.clusterH
-                local colTarget = whole and (newTotalH - classicPart) or Lay.colH * keyName
+                local colTarget = whole and (newTotalH - classicPart) or Lay.colH * scale
                 local targetSum = colTarget - (#rowList - 1) * profile.gap - 2 * Lay.ov
                 if Lay.chrome or Lay.classic or not whole then
                     targetSum = floor(targetSum + 0.5)

@@ -203,8 +203,8 @@ local POINT_FRAC = {
 -- The screen's size in ChatFrame1's units, the units of its anchor offsets
 -- and rect reads.
 local function ChatScreenSize(cf1)
-    local key = UIParent:GetEffectiveScale() / cf1:GetEffectiveScale()
-    return UIParent:GetWidth() * key, UIParent:GetHeight() * key
+    local scale = UIParent:GetEffectiveScale() / cf1:GetEffectiveScale()
+    return UIParent:GetWidth() * scale, UIParent:GetHeight() * scale
 end
 
 -- The screen point the player picked for chat's saved spot (Unlock Mode's

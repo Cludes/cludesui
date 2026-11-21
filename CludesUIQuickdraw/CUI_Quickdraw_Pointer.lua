@@ -79,8 +79,8 @@ function PaletteView:ShowNeedle(index)
     local profile = self:P()
     local _, viewIcon = self:Geom()
     local base = (profile and profile.iconSize) or 40
-    local key = (base > 0) and (viewIcon / base) or 1
-    local logo = max(8, 40 * key) -- the hub logo's hardcoded height
+    local scale = (base > 0) and (viewIcon / base) or 1
+    local logo = max(8, 40 * scale) -- the hub logo's hardcoded height
     self._needleTrimS = logo * (2 / 3)
     self._needleTrimE = logo * (1 / 3)
     -- A NEW target grows in from the hub again; the same target keeps its

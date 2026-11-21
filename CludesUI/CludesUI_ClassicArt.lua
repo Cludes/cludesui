@@ -69,12 +69,12 @@ local RIM_L, RIM_R, RIM_T, RIM_B = 3.5, 3.5, 6, 5
 -- The frame's visible rim beyond a bar's rect at scale k, for size matching
 -- (a matched element lines up with the rim, not the art's margin): extra
 -- width, extra height.
-function CF.Pad(key, vertical)
-    key = key or 1
+function CF.Pad(scale, vertical)
+    scale = scale or 1
     if vertical then
-        return (RIM_T + RIM_B) * key, (RIM_L + RIM_R) * key
+        return (RIM_T + RIM_B) * scale, (RIM_L + RIM_R) * scale
     end
-    return (RIM_L + RIM_R) * key, (RIM_T + RIM_B) * key
+    return (RIM_L + RIM_R) * scale, (RIM_T + RIM_B) * scale
 end
 
 -- Piece indices.
@@ -115,87 +115,87 @@ end
 
 -- Lays the frame round `rect` at scale k (1 = the sheet's pixels). Memoized
 -- on rect, k and orientation; every layout pass may call it.
-function CF.Seat(profile, rect, key, vertical)
-    if not (profile and rect) then
+function CF.Seat(pieces, rect, scale, vertical)
+    if not (pieces and rect) then
         return
     end
-    key = key or 1
+    scale = scale or 1
     vertical = vertical and true or false
-    if profile._rect == rect and profile._k == key and profile._vert == vertical then
+    if pieces._rect == rect and pieces._k == scale and pieces._vert == vertical then
         return
     end
-    profile._rect, profile._k, profile._vert = rect, key, vertical
+    pieces._rect, pieces._k, pieces._vert = rect, scale, vertical
     for idx = 1, N do
-        profile[idx]:ClearAllPoints()
+        pieces[idx]:ClearAllPoints()
     end
-    local cap, topY, bot = CAP * key, TOP * key, BOT * key
+    local cap, topY, bot = CAP * scale, TOP * scale, BOT * scale
     if not vertical then
-        Coords(profile[TL], X0, X1, Y0, Y1)
-        profile[TL]:SetSize(cap, topY)
-        profile[TL]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_L * key, OVER_T * key)
-        Coords(profile[TR], X2, X3, Y0, Y1)
-        profile[TR]:SetSize(cap, topY)
-        profile[TR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_R * key, OVER_T * key)
-        Coords(profile[T], X1, X2, Y0, Y1)
-        profile[T]:SetHeight(topY)
-        profile[T]:SetPoint("TOPLEFT", profile[TL], "TOPRIGHT", 0, 0)
-        profile[T]:SetPoint("TOPRIGHT", profile[TR], "TOPLEFT", 0, 0)
-        Coords(profile[BL], X0, X1, Y2, Y3)
-        profile[BL]:SetSize(cap, bot)
-        profile[BL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_L * key, -OVER_B * key)
-        Coords(profile[BR], X2, X3, Y2, Y3)
-        profile[BR]:SetSize(cap, bot)
-        profile[BR]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_R * key, -OVER_B * key)
-        Coords(profile[B], X1, X2, Y2, Y3)
-        profile[B]:SetHeight(bot)
-        profile[B]:SetPoint("BOTTOMLEFT", profile[BL], "BOTTOMRIGHT", 0, 0)
-        profile[B]:SetPoint("BOTTOMRIGHT", profile[BR], "BOTTOMLEFT", 0, 0)
+        Coords(pieces[TL], X0, X1, Y0, Y1)
+        pieces[TL]:SetSize(cap, topY)
+        pieces[TL]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_L * scale, OVER_T * scale)
+        Coords(pieces[TR], X2, X3, Y0, Y1)
+        pieces[TR]:SetSize(cap, topY)
+        pieces[TR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_R * scale, OVER_T * scale)
+        Coords(pieces[T], X1, X2, Y0, Y1)
+        pieces[T]:SetHeight(topY)
+        pieces[T]:SetPoint("TOPLEFT", pieces[TL], "TOPRIGHT", 0, 0)
+        pieces[T]:SetPoint("TOPRIGHT", pieces[TR], "TOPLEFT", 0, 0)
+        Coords(pieces[BL], X0, X1, Y2, Y3)
+        pieces[BL]:SetSize(cap, bot)
+        pieces[BL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_L * scale, -OVER_B * scale)
+        Coords(pieces[BR], X2, X3, Y2, Y3)
+        pieces[BR]:SetSize(cap, bot)
+        pieces[BR]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_R * scale, -OVER_B * scale)
+        Coords(pieces[B], X1, X2, Y2, Y3)
+        pieces[B]:SetHeight(bot)
+        pieces[B]:SetPoint("BOTTOMLEFT", pieces[BL], "BOTTOMRIGHT", 0, 0)
+        pieces[B]:SetPoint("BOTTOMRIGHT", pieces[BR], "BOTTOMLEFT", 0, 0)
         -- The window band stretches to the bar's height between the rims.
-        Coords(profile[L], X0, X1, Y1, Y2)
-        profile[L]:SetPoint("TOPLEFT", profile[TL], "BOTTOMLEFT", 0, 0)
-        profile[L]:SetPoint("BOTTOMRIGHT", profile[BL], "TOPRIGHT", 0, 0)
-        Coords(profile[R], X2, X3, Y1, Y2)
-        profile[R]:SetPoint("TOPLEFT", profile[TR], "BOTTOMLEFT", 0, 0)
-        profile[R]:SetPoint("BOTTOMRIGHT", profile[BR], "TOPRIGHT", 0, 0)
-        Coords(profile[C], X1, X2, Y1, Y2)
-        profile[C]:SetPoint("TOPLEFT", profile[L], "TOPRIGHT", 0, 0)
-        profile[C]:SetPoint("BOTTOMRIGHT", profile[R], "BOTTOMLEFT", 0, 0)
+        Coords(pieces[L], X0, X1, Y1, Y2)
+        pieces[L]:SetPoint("TOPLEFT", pieces[TL], "BOTTOMLEFT", 0, 0)
+        pieces[L]:SetPoint("BOTTOMRIGHT", pieces[BL], "TOPRIGHT", 0, 0)
+        Coords(pieces[R], X2, X3, Y1, Y2)
+        pieces[R]:SetPoint("TOPLEFT", pieces[TR], "BOTTOMLEFT", 0, 0)
+        pieces[R]:SetPoint("BOTTOMRIGHT", pieces[BR], "TOPRIGHT", 0, 0)
+        Coords(pieces[C], X1, X2, Y1, Y2)
+        pieces[C]:SetPoint("TOPLEFT", pieces[L], "TOPRIGHT", 0, 0)
+        pieces[C]:SetPoint("BOTTOMRIGHT", pieces[R], "BOTTOMLEFT", 0, 0)
     else
         -- Turned: the art's top band runs along the bar's left (width top),
         -- its bottom band along the right (width bot), its right cap sits at
         -- the bar's top and its left cap at the bottom (height cap).
-        Coords(profile[TR], X2, X3, Y0, Y1, true)
-        profile[TR]:SetSize(topY, cap)
-        profile[TR]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_T * key, OVER_R * key)
-        Coords(profile[TL], X0, X1, Y0, Y1, true)
-        profile[TL]:SetSize(topY, cap)
-        profile[TL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_T * key, -OVER_L * key)
-        Coords(profile[T], X1, X2, Y0, Y1, true)
-        profile[T]:SetWidth(topY)
-        profile[T]:SetPoint("TOPLEFT", profile[TR], "BOTTOMLEFT", 0, 0)
-        profile[T]:SetPoint("BOTTOMLEFT", profile[TL], "TOPLEFT", 0, 0)
-        Coords(profile[BR], X2, X3, Y2, Y3, true)
-        profile[BR]:SetSize(bot, cap)
-        profile[BR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_B * key, OVER_R * key)
-        Coords(profile[BL], X0, X1, Y2, Y3, true)
-        profile[BL]:SetSize(bot, cap)
-        profile[BL]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_B * key, -OVER_L * key)
-        Coords(profile[B], X1, X2, Y2, Y3, true)
-        profile[B]:SetWidth(bot)
-        profile[B]:SetPoint("TOPRIGHT", profile[BR], "BOTTOMRIGHT", 0, 0)
-        profile[B]:SetPoint("BOTTOMRIGHT", profile[BL], "TOPRIGHT", 0, 0)
+        Coords(pieces[TR], X2, X3, Y0, Y1, true)
+        pieces[TR]:SetSize(topY, cap)
+        pieces[TR]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_T * scale, OVER_R * scale)
+        Coords(pieces[TL], X0, X1, Y0, Y1, true)
+        pieces[TL]:SetSize(topY, cap)
+        pieces[TL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_T * scale, -OVER_L * scale)
+        Coords(pieces[T], X1, X2, Y0, Y1, true)
+        pieces[T]:SetWidth(topY)
+        pieces[T]:SetPoint("TOPLEFT", pieces[TR], "BOTTOMLEFT", 0, 0)
+        pieces[T]:SetPoint("BOTTOMLEFT", pieces[TL], "TOPLEFT", 0, 0)
+        Coords(pieces[BR], X2, X3, Y2, Y3, true)
+        pieces[BR]:SetSize(bot, cap)
+        pieces[BR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_B * scale, OVER_R * scale)
+        Coords(pieces[BL], X0, X1, Y2, Y3, true)
+        pieces[BL]:SetSize(bot, cap)
+        pieces[BL]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_B * scale, -OVER_L * scale)
+        Coords(pieces[B], X1, X2, Y2, Y3, true)
+        pieces[B]:SetWidth(bot)
+        pieces[B]:SetPoint("TOPRIGHT", pieces[BR], "BOTTOMRIGHT", 0, 0)
+        pieces[B]:SetPoint("BOTTOMRIGHT", pieces[BL], "TOPRIGHT", 0, 0)
         -- The window band stretches to the bar's width between the rims.
-        Coords(profile[R], X2, X3, Y1, Y2, true)
-        profile[R]:SetPoint("TOPLEFT", profile[TR], "TOPRIGHT", 0, 0)
-        profile[R]:SetPoint("BOTTOMRIGHT", profile[BR], "BOTTOMLEFT", 0, 0)
-        Coords(profile[L], X0, X1, Y1, Y2, true)
-        profile[L]:SetPoint("TOPLEFT", profile[TL], "TOPRIGHT", 0, 0)
-        profile[L]:SetPoint("BOTTOMRIGHT", profile[BL], "BOTTOMLEFT", 0, 0)
-        Coords(profile[C], X1, X2, Y1, Y2, true)
-        profile[C]:SetPoint("TOPLEFT", profile[R], "BOTTOMLEFT", 0, 0)
-        profile[C]:SetPoint("BOTTOMRIGHT", profile[L], "TOPRIGHT", 0, 0)
+        Coords(pieces[R], X2, X3, Y1, Y2, true)
+        pieces[R]:SetPoint("TOPLEFT", pieces[TR], "TOPRIGHT", 0, 0)
+        pieces[R]:SetPoint("BOTTOMRIGHT", pieces[BR], "BOTTOMLEFT", 0, 0)
+        Coords(pieces[L], X0, X1, Y1, Y2, true)
+        pieces[L]:SetPoint("TOPLEFT", pieces[TL], "TOPRIGHT", 0, 0)
+        pieces[L]:SetPoint("BOTTOMRIGHT", pieces[BL], "BOTTOMLEFT", 0, 0)
+        Coords(pieces[C], X1, X2, Y1, Y2, true)
+        pieces[C]:SetPoint("TOPLEFT", pieces[R], "BOTTOMLEFT", 0, 0)
+        pieces[C]:SetPoint("BOTTOMRIGHT", pieces[L], "TOPRIGHT", 0, 0)
     end
     for idx = 1, N do
-        profile[idx]:Show()
+        pieces[idx]:Show()
     end
 end

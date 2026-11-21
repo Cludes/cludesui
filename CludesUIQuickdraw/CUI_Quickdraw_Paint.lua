@@ -543,8 +543,8 @@ function PaletteView:Layout(paletteIndex)
     if drawHub then
         local _, viewIcon = self:Geom()
         local base = p.iconSize or 40
-        local key = (base > 0) and (viewIcon / base) or 1
-        local sz = max(8, 40 * key)
+        local scale = (base > 0) and (viewIcon / base) or 1
+        local sz = max(8, 40 * scale)
         -- Snapped to a WHOLE number of physical pixels: an addon PNG has no
         -- mipmaps, so WoW pure-bilinear-resamples it, and a fractional
         -- physical size guarantees off-grid sampling that turns the thin

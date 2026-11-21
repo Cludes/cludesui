@@ -478,38 +478,38 @@ local function ScaleRect(source, k)
     end
     return region
 end
-function mod.RF_KitGeom(key)
+function mod.RF_KitGeom(scale)
     local kit = mod.RF_PartyKit()
     local K = kit and mod.RF_KITS[kit]
     if not K then
         return nil
     end
-    key = tonumber(key) or mod.RF_KIT_SCALE
-    if key < 0.5 then
-        key = 0.5
-    elseif key > 2 then
-        key = 2
+    scale = tonumber(scale) or mod.RF_KIT_SCALE
+    if scale < 0.5 then
+        scale = 0.5
+    elseif scale > 2 then
+        scale = 2
     end
-    local g = _kitGeom[key]
+    local g = _kitGeom[scale]
     if g then
         return g
     end
     g = {
         key = kit,
-        k = key,
-        boxW = K.boxW * key,
-        boxH = K.boxH * key,
+        k = scale,
+        boxW = K.boxW * scale,
+        boxH = K.boxH * scale,
         bevel = K.bevel,
         artAbove = K.artAbove,
     }
     g.host, g.art, g.flash, g.glow =
-        ScaleRect(K.host, key), ScaleRect(K.art, key), ScaleRect(K.flash, key), ScaleRect(K.glow, key)
-    g.back, g.portrait = ScaleRect(K.back, key), ScaleRect(K.portrait, key)
-    g.health, g.power = ScaleRect(K.health, key), ScaleRect(K.power, key)
+        ScaleRect(K.host, scale), ScaleRect(K.art, scale), ScaleRect(K.flash, scale), ScaleRect(K.glow, scale)
+    g.back, g.portrait = ScaleRect(K.back, scale), ScaleRect(K.portrait, scale)
+    g.health, g.power = ScaleRect(K.health, scale), ScaleRect(K.power, scale)
     g.name, g.role, g.lead, g.rc =
-        ScaleRect(K.name, key), ScaleRect(K.role, key), ScaleRect(K.lead, key), ScaleRect(K.rc, key)
-    g.auraRow = ScaleRect(K.auraRow, key)
-    _kitGeom[key] = g
+        ScaleRect(K.name, scale), ScaleRect(K.role, scale), ScaleRect(K.lead, scale), ScaleRect(K.rc, scale)
+    g.auraRow = ScaleRect(K.auraRow, scale)
+    _kitGeom[scale] = g
     return g
 end
 

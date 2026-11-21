@@ -156,12 +156,12 @@ local function BlockW(g, cols, last)
 end
 
 -- Icon columns of a block held to k rows
-local function BandCols(g, key)
+local function BandCols(g, scale)
     local s = pSize[g]
-    if s <= key then
+    if s <= scale then
         return 1
     end
-    return ceil(s / key)
+    return ceil(s / scale)
 end
 
 local function Rows(g, cols)

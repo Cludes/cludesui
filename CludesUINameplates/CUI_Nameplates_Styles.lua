@@ -143,31 +143,31 @@ mod.NP_CLASSIC = {
 -- The cast icon's centre from the cast bar's LEFT, and the level's centre
 -- from the health bar's RIGHT (both plates are centred on the bar's own
 -- middle line).
-function mod.NP_ClassicIconOffset(key)
-    return -mod.NP_CLASSIC.plateOffL * key, 0
+function mod.NP_ClassicIconOffset(scale)
+    return -mod.NP_CLASSIC.plateOffL * scale, 0
 end
 -- The level's and the elite icon's seat in the health border's plate: the
 -- plate's own centre plus the user's own offsets. Their size scales with the
 -- bar until the user sets one (0 = follow the bar).
-function mod.NP_ClassicLevelOffset(key)
-    return mod.NP_CLASSIC.plateOffR * key + ((p and p.classicLevelX) or 0), ((p and p.classicLevelY) or 0)
+function mod.NP_ClassicLevelOffset(scale)
+    return mod.NP_CLASSIC.plateOffR * scale + ((p and p.classicLevelX) or 0), ((p and p.classicLevelY) or 0)
 end
-function mod.NP_ClassicSkullOffset(key)
-    return mod.NP_CLASSIC.plateOffR * key + ((p and p.classicSkullX) or 0), ((p and p.classicSkullY) or 0)
+function mod.NP_ClassicSkullOffset(scale)
+    return mod.NP_CLASSIC.plateOffR * scale + ((p and p.classicSkullX) or 0), ((p and p.classicSkullY) or 0)
 end
-function mod.NP_ClassicLevelSize(key)
+function mod.NP_ClassicLevelSize(scale)
     local val = p and p.classicLevelSize
     if val and val > 0 then
         return val
     end
-    return math.max(6, mod.NP_CLASSIC.levelFont * key)
+    return math.max(6, mod.NP_CLASSIC.levelFont * scale)
 end
-function mod.NP_ClassicSkullSize(key)
+function mod.NP_ClassicSkullSize(scale)
     local val = p and p.classicSkullSize
     if val and val > 0 then
         return val
     end
-    return mod.NP_CLASSIC.levelIcon * key
+    return mod.NP_CLASSIC.levelIcon * scale
 end
 -- The Classic WoW UI border's reach past the health bar's two ends, 0 on
 -- every other style. The border is part of the bar as far as anything beside
@@ -177,13 +177,13 @@ end
 -- The WoW Forever variant's level box (right of the bar) is part of it the
 -- same way, so its room comes back here too (ns.NP_Classic has just latched
 -- the variant flag read here).
-function mod.NP_ClassicBarReserve(key)
+function mod.NP_ClassicBarReserve(scale)
     if not mod.NP_Classic() then
         return 0, mod._npForever and mod.NP_ForeverSide() or 0
     end
     local C = mod.NP_CLASSIC
-    key = key or (mod.GetHealthBarHeight and mod.GetHealthBarHeight()) or 0
-    return C.health.reachL * key, C.health.reachR * key
+    scale = scale or (mod.GetHealthBarHeight and mod.GetHealthBarHeight()) or 0
+    return C.health.reachL * scale, C.health.reachR * scale
 end
 -- WoW Forever's level box: 28 wide and 5 right of the bar (Blizzard's own
 -- nameplate constants), 5 taller than it; its target and focus border
@@ -243,26 +243,26 @@ end
 -- Seats the pieces round `bar` at k (the bar's height): both plates keep
 -- the art's own proportion, the window stretches between them. Memoized;
 -- every layout pass may call it.
-function mod.NP_SeatClassicBorder(profile, barFrame, key)
-    if profile._k == key and profile._bar == barFrame then
+function mod.NP_SeatClassicBorder(border, barFrame, scale)
+    if border._k == scale and border._bar == barFrame then
         return
     end
-    profile._k, profile._bar = key, barFrame
+    border._k, border._bar = scale, barFrame
     local C = mod.NP_CLASSIC
-    local sheet = profile.sheet
-    local left, right = sheet.reachL * key, sheet.reachR * key
-    local t, b = C.top * key, C.bottom * key
+    local sheet = border.sheet
+    local left, right = sheet.reachL * scale, sheet.reachR * scale
+    local t, b = C.top * scale, C.bottom * scale
     for index = 1, 3 do
-        profile[index]:ClearAllPoints()
+        border[index]:ClearAllPoints()
     end
-    profile[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", -left, t)
-    profile[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", -left, -b)
-    profile[1]:SetWidth(sheet.capL * key)
-    profile[3]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", right, t)
-    profile[3]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", right, -b)
-    profile[3]:SetWidth(sheet.capR * key)
-    profile[2]:SetPoint("TOPLEFT", profile[1], "TOPRIGHT", 0, 0)
-    profile[2]:SetPoint("BOTTOMRIGHT", profile[3], "BOTTOMLEFT", 0, 0)
+    border[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", -left, t)
+    border[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", -left, -b)
+    border[1]:SetWidth(sheet.capL * scale)
+    border[3]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", right, t)
+    border[3]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", right, -b)
+    border[3]:SetWidth(sheet.capR * scale)
+    border[2]:SetPoint("TOPLEFT", border[1], "TOPRIGHT", 0, 0)
+    border[2]:SetPoint("BOTTOMRIGHT", border[3], "BOTTOMLEFT", 0, 0)
 end
 -- The vanilla health border round a plate's health bar (enemy and friendly
 -- plates alike) and, where the plate has a text frame, the unit's level in
@@ -423,16 +423,16 @@ end
 -- The vanilla spark: a square on the fill's leading edge, not a bar-tall
 -- sliver. Every caller that sizes the spark for the CUI look routes here
 -- under Classic WoW UI instead, so none of them can squash it back.
-function mod.NP_ClassicSpark(backing, key)
+function mod.NP_ClassicSpark(backing, scale)
     local cast, spark = backing and backing.cast, backing and backing.castSpark
     if not (cast and spark) then
         return
     end
     local C = mod.NP_CLASSIC
     spark:SetTexture(C.spark)
-    spark:SetSize(C.sparkSize * key, C.sparkSize * key)
+    spark:SetSize(C.sparkSize * scale, C.sparkSize * scale)
     spark:ClearAllPoints()
-    spark:SetPoint("CENTER", cast:GetStatusBarTexture(), "RIGHT", 0, C.sparkY * key)
+    spark:SetPoint("CENTER", cast:GetStatusBarTexture(), "RIGHT", 0, C.sparkY * scale)
 end
 -- One chokepoint for "size the spark to this cast height": the square under
 -- Classic WoW UI, the bar-tall sliver otherwise.

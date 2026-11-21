@@ -142,9 +142,9 @@ end
 -- Character Size: a scaled model renders on a canvas the box's size times
 -- k, bottom-centred on the Inside box, which clips it; the box never
 -- changes. At k = 1 the model fills the box.
-local function ModelCanvas(edge, key, wid, hgt)
+local function ModelCanvas(edge, scale, wid, hgt)
     local m = edge._3d
-    if key == 1 or not (wid and hgt and wid > 0 and hgt > 0) then
+    if scale == 1 or not (wid and hgt and wid > 0 and hgt > 0) then
         -- Back from a canvas: drop its BOTTOM anchor first.
         if edge._charCanvas then
             m:ClearAllPoints()
@@ -154,7 +154,7 @@ local function ModelCanvas(edge, key, wid, hgt)
         return
     end
     m:ClearAllPoints()
-    m:SetSize(wid * key, hgt * key)
+    m:SetSize(wid * scale, hgt * scale)
     m:SetPoint("BOTTOM", edge, "BOTTOM", 0, 0)
     edge._charCanvas = true
 end

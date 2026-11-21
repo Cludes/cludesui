@@ -124,14 +124,14 @@ function mod.RF_DockPreviewWindow(oc)
         return
     end
     -- The panel has its own scale (Window Scale): its edges in UIParent units.
-    local key = scrollFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    local scale = scrollFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
     local wid = oc:GetWidth() or 0
-    local rightX = (right + 34) * key -- clear of the panel's right border
-    local leftX = (left - 310) * key -- clear of the sidebar's left border
+    local rightX = (right + 34) * scale -- clear of the panel's right border
+    local leftX = (left - 310) * scale -- clear of the sidebar's left border
     if rightX + wid <= UIParent:GetWidth() then
-        oc:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", rightX, t * key)
+        oc:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", rightX, t * scale)
     elseif leftX - wid >= 0 then
-        oc:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", leftX, t * key)
+        oc:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", leftX, t * scale)
     else
         oc:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMLEFT", 0, 0)
     end

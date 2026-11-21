@@ -2086,8 +2086,8 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             max = 200,
             step = 5,
             getValue = function()
-                local keyName = db.profile.partyKitScale
-                return keyName and math.floor(keyName * 100 + 0.5) or scaleDef
+                local scale = db.profile.partyKitScale
+                return scale and math.floor(scale * 100 + 0.5) or scaleDef
             end,
             setValue = function(value)
                 PSSet("partyKitScale", (value ~= scaleDef) and (value / 100) or nil)
