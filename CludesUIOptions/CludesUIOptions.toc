@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: CludesUI settings panel. Loads on demand when you open CludesUI options.
 ## Author: Cludes
-## Version: 1.1.3
+## Version: 1.2.0
 ## Dependencies: CludesUI
 ## LoadOnDemand: 1
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
