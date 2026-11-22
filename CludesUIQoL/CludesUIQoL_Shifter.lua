@@ -1287,7 +1287,7 @@ local function PlaceTopBar()
     end
 end
 
-local function HookTopBar()
+local function HookTopBarFrame()
     if topBarHooked then return end
     local widget = TopBarFrame()
     if not widget then return end
@@ -1351,7 +1351,7 @@ local function RegisterTopBarUnlockElement()
                 local proxyFrame = EnsureTopBarProxy()
                 proxyFrame:ClearAllPoints()
                 proxyFrame:SetPoint(anchorPoint, UIParent, relPoint, posX, posY)
-                HookTopBar()
+                HookTopBarFrame()
                 PlaceTopBar()
             end,
             loadPos = function()
@@ -1387,7 +1387,7 @@ end
 
 -- Exposed for the options toggle (mid-session enable without /reload)
 function CUI._InitShifterTopBar()
-    HookTopBar()
+    HookTopBarFrame()
     PlaceTopBar()
 end
 

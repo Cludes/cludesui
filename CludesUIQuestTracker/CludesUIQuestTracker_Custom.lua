@@ -356,7 +356,7 @@ end
 -------------------------------------------------------------------------------
 local contentH, viewH = 0, 0
 
-local function MaxScroll() return math.max(0, contentH - viewH) end
+local function MaxScrollRange() return math.max(0, contentH - viewH) end
 
 -- Scrollbar mode; the wheel scrolls in every mode. A drag in progress
 -- keeps a hover-mode bar up.
@@ -403,12 +403,12 @@ end
 
 local function SyncHover()
     if not HoverWanted() then return end
-    if BarMode() == "hover" and MaxScroll() > 0 then rail:SetShown(BarVisible()) end
+    if BarMode() == "hover" and MaxScrollRange() > 0 then rail:SetShown(BarVisible()) end
     if TrackerCfg("customBgHover") then ShowBackground() end
 end
 
-local function UpdateThumb()
-    local range = MaxScroll()
+local function SyncScrollThumb()
+    local range = MaxScrollRange()
     if range <= 0 then
         rail:Hide()
         scroller:SetVerticalScroll(0)
@@ -424,9 +424,9 @@ local function UpdateThumb()
 end
 
 local function ScrollTo(val)
-    scroller:SetVerticalScroll(math.max(0, math.min(val, MaxScroll())))
+    scroller:SetVerticalScroll(math.max(0, math.min(val, MaxScrollRange())))
     HideOverlay()
-    UpdateThumb()
+    SyncScrollThumb()
     SyncItems()
 end
 
@@ -1079,7 +1079,7 @@ local function Draw()
         widget.renderH = hgt
         if not CUI._unlockActive then CUI.ReapplyOwnAnchor(UNLOCK_KEY) end
     end
-    UpdateThumb()
+    SyncScrollThumb()
     if (itemSize and true or false) ~= cdRegistered then
         cdRegistered = not cdRegistered
         if cdRegistered then
@@ -1322,7 +1322,7 @@ function HideOverlay()
 end
 
 -- Covers the part of the line inside the scroll view.
-local function ShowOverlay(l)
+local function ShowLineOverlay(l)
     if InCombatLockdown() then return end
     local recipe = l.kind == "recipe"
     local headerFrame
@@ -1412,11 +1412,11 @@ function OnLineEnter(self)
     SyncHover()
     -- A recipe: only the overlay that takes its clicks to Blizzard's block.
     if self.kind == "recipe" then
-        ShowOverlay(self)
+        ShowLineOverlay(self)
         return
     end
     if self.kind ~= "quest" then return end
-    ShowOverlay(self)
+    ShowLineOverlay(self)
     GameTooltip:SetOwner(self, TooltipAnchorSide())
     if IsInGroup() then
         GameTooltip:SetQuestPartyProgress(self.id)
@@ -1440,7 +1440,7 @@ end
 -------------------------------------------------------------------------------
 -- Frame
 -------------------------------------------------------------------------------
-local function ApplyBackground()
+local function PaintBackground()
     if not widget then return end
     local cfg = TrackerNS.DB()
     widget.bg:SetColorTexture(cfg.bgR or 0, cfg.bgG or 0, cfg.bgB or 0, cfg.bgAlpha or 0.5)
@@ -1451,7 +1451,7 @@ local function ApplyBackground()
     headerFrame.toggle:SetTextColor(hr, hg, hb)
 end
 
-local function RefreshFonts()
+local function RestyleFonts()
     if not widget then return end
     fontGen = fontGen + 1
     local px = TrackerCfg("headerFontSize") or 13
@@ -1563,7 +1563,7 @@ local worldReady = false -- the first PLAYER_ENTERING_WORLD has come
 -- Blizzard's tracker stands where it will stay: the world has loaded (at
 -- login the right-side frames are still settling before that) and Edit Mode
 -- has placed its systems.
-local function BlizzardPlaced()
+local function BlizzardTrackerReady()
     local objectiveTracker = _G.ObjectiveTrackerFrame
     return worldReady
         and objectiveTracker ~= nil
@@ -1573,7 +1573,7 @@ end
 -- Left, top, width and height of that panel in UIParent units; nothing until
 -- Edit Mode has placed Blizzard's tracker, or while its rect cannot be read.
 local function BlizzardPanel()
-    if not BlizzardPlaced() then return end
+    if not BlizzardTrackerReady() then return end
     local objectiveTracker = _G.ObjectiveTrackerFrame
     local leftX, topY, wid, hgt =
         objectiveTracker:GetLeft(),
@@ -1649,14 +1649,14 @@ end
 -- one more try a frame later, once every handler of that event has run. A
 -- placed tracker whose rect still cannot be read stops the tries after a
 -- few; the fallback spot then stands until the next login.
-local function SeedSoon()
+local function QueueSeed()
     if not seedWait or seedQueued then return end
     seedQueued = true
     C_Timer.After(0, function()
         seedQueued = false
         if not seedWait then return end
         PlaceAtSpot()
-        if seedWait and BlizzardPlaced() then
+        if seedWait and BlizzardTrackerReady() then
             seedTries = seedTries + 1
             if seedTries >= SEED_TRIES then
                 seedWait = false
@@ -1757,7 +1757,7 @@ local function BuildFrame()
         local _, curY = GetCursorPosition()
         local dy = (self.startY - curY) / self:GetEffectiveScale()
         local free = viewH - self:GetHeight()
-        if free > 0 then ScrollTo(self.startScroll + dy * MaxScroll() / free) end
+        if free > 0 then ScrollTo(self.startScroll + dy * MaxScrollRange() / free) end
     end
     knob:SetScript("OnMouseDown", function(self)
         local _, curY = GetCursorPosition()
@@ -1770,8 +1770,8 @@ local function BuildFrame()
     end)
 
     PlaceAtSpot()
-    ApplyBackground()
-    RefreshFonts()
+    PaintBackground()
+    RestyleFonts()
 end
 
 -------------------------------------------------------------------------------
@@ -1866,7 +1866,7 @@ eventTag:SetScript("OnEvent", function(_, eventName, questId, added)
         end
         return
     elseif eventName == "EDIT_MODE_LAYOUTS_UPDATED" then
-        SeedSoon()
+        QueueSeed()
         return
     elseif eventName == "ITEM_DATA_LOAD_RESULT" then
         -- A reagent name the recipe list asked for (questID is the item here,
@@ -1894,7 +1894,7 @@ eventTag:SetScript("OnEvent", function(_, eventName, questId, added)
         inEncounter = eventName == "ENCOUNTER_START"
         SyncShown()
     end
-    if seedWait then SeedSoon() end
+    if seedWait then QueueSeed() end
     Queue()
 end)
 
@@ -1911,11 +1911,11 @@ function TrackerNS.InitCustom()
 
     TrackerNS.UpdateVisibility = SyncShown
     TrackerNS.RefreshStateDriver = SyncShown
-    TrackerNS.ApplyBackground = ApplyBackground
-    TrackerNS.RefreshFonts = RefreshFonts
+    TrackerNS.ApplyBackground = PaintBackground
+    TrackerNS.RefreshFonts = RestyleFonts
     TrackerNS.RestyleAll = function()
-        ApplyBackground()
-        RefreshFonts()
+        PaintBackground()
+        RestyleFonts()
     end
     TrackerNS.ApplyForceOnScreen = function() widget:SetClampedToScreen(TrackerCfg("forceOnScreen") == true) end
     TrackerNS.ApplyMasterHeaderVisibility = Noop

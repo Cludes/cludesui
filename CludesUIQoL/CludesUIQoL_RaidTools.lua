@@ -529,7 +529,7 @@ end
 
 -- The Show as choice, normalized: any unset/unknown value preserves the
 -- original One Window behavior. Compact Band is selected explicitly.
-local function ShowAs()
+local function ShowAsMode()
     local profile = P()
     local val = profile and profile.showAs
     if val ~= "compact" and val ~= "one" and val ~= "two" and val ~= "group" and val ~= "markers" then
@@ -537,7 +537,7 @@ local function ShowAs()
     end
     return val
 end
-mod.ShowAs = ShowAs
+mod.ShowAs = ShowAsMode
 
 local function CompactWidth()
     local profile = P()
@@ -821,7 +821,7 @@ end
 -- handful of times a night. Memo the three inputs and bail when none moved.
 -- `force` is for callers that have just built or rebuilt the buttons.
 local lastAssist, lastLeader, lastRaid
-local function RefreshPermissions(force)
+local function SyncPermissions(force)
     local hasAssist, leader, raid = CanMark(), IsLeader(), IsInRaid()
     if not force and hasAssist == lastAssist and leader == lastLeader and raid == lastRaid then return end
     lastAssist, lastLeader, lastRaid = hasAssist, leader, raid
@@ -1343,7 +1343,7 @@ local function LayoutCompactMarkers()
     end
 end
 
-local function RefreshCompactPullState()
+local function SyncCompactPullButton()
     if not compactPullButton then return end
     local seconds = PullTimeFor(3) or PullTimeFor(2) or PullTimeFor(1)
     compactPullButton:SetShown(seconds ~= nil)
@@ -1378,7 +1378,7 @@ end
 local function SyncCompactMarkers()
     -- Hidden buttons are left alone: switching back to the band runs
     -- ApplyLayout, which ends by calling this.
-    if ShowAs() ~= "compact" then return end
+    if ShowAsMode() ~= "compact" then return end
     for _, b in ipairs(compactMarkers) do
         -- The clear button carries no world marker and never greys out.
         local ident = b._worldID
@@ -1458,7 +1458,7 @@ local function BuildCompactContent()
     compactDivider:SetPoint("TOP", compactPullButton, "TOPLEFT", -COMPACT_DIVIDER_OFFSET, -2)
     compactDivider:SetPoint("BOTTOM", compactPullButton, "BOTTOMLEFT", -COMPACT_DIVIDER_OFFSET, 2)
 
-    RefreshCompactPullState()
+    SyncCompactPullButton()
     SyncCompactMarkers()
 end
 
@@ -1589,7 +1589,7 @@ end
 -- so the re-parent is an ordinary SetParent.
 local function LayoutTools()
     local profile = P()
-    local displayAs = ShowAs()
+    local displayAs = ShowAsMode()
     local windowGroup, windowMarkers = sectionList.Group, sectionList.Markers
 
     local isCompact = displayAs == "compact"
@@ -1666,7 +1666,7 @@ local function LayoutTools()
     -- change right here, so a direct call is the whole hook).
     if windowGroup._bgFit then windowGroup._bgFit() end
     if windowMarkers._bgFit then windowMarkers._bgFit() end
-    RefreshCompactPullState()
+    SyncCompactPullButton()
     SyncCompactMarkers()
 end
 
@@ -1732,7 +1732,7 @@ local function ApplyPositions()
 
     -- Each shell is positioned only when the Show as choice can put it on screen; One
     -- Window and Only Group & Pull ride pos.Group, Only Markers rides pos.Markers.
-    local displayAs = ShowAs()
+    local displayAs = ShowAsMode()
     if displayAs == "compact" then
         PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact")
     elseif displayAs ~= "markers" then
@@ -1771,7 +1771,7 @@ local function ApplyVisibility()
     --
     -- The assist gate rides on top of that and takes ALL of them, icon
     -- included -- a raid without assist is a raid where nothing here works.
-    local displayAs = ShowAs()
+    local displayAs = ShowAsMode()
     local isCompact = displayAs == "compact"
     local suppressed = AssistHidden()
     local shellOn = {
@@ -2113,7 +2113,7 @@ local function EnsureEvents()
             if ShowMode() == "never" then return end
             -- A zone change repaints the band too: the markers it showed belong
             -- to the ground just left.
-            if (evt == "RAID_TARGET_UPDATE" or evt == "PLAYER_ENTERING_WORLD") and ShowAs() == "compact" then
+            if (evt == "RAID_TARGET_UPDATE" or evt == "PLAYER_ENTERING_WORLD") and ShowAsMode() == "compact" then
                 SyncCompactMarkers()
             end
             -- Both features share these events, but each only does work while
@@ -2137,7 +2137,7 @@ local function EnsureEvents()
                     PrimeQuickFire(runState.qfPlace)
                 end
             end
-            RefreshPermissions()
+            SyncPermissions()
             RefreshAssistGate()
         end)
     end
@@ -2146,7 +2146,7 @@ local function EnsureEvents()
     eventName:RegisterEvent("PLAYER_ENTERING_WORLD")
     eventName:RegisterEvent("PLAYER_REGEN_ENABLED")
     local profile = P()
-    if ShowMode() ~= "never" and (ShowAs() == "compact" or (profile and profile.quickFire == true)) then
+    if ShowMode() ~= "never" and (ShowAsMode() == "compact" or (profile and profile.quickFire == true)) then
         eventName:RegisterEvent("RAID_TARGET_UPDATE")
     else
         eventName:UnregisterEvent("RAID_TARGET_UPDATE")
@@ -2184,7 +2184,7 @@ local function RegisterUnlock()
                 -- Offer exactly the shells the Show as choice puts on screen:
                 -- One Window / Only Group & Pull = the Group element alone,
                 -- Two Windows = both, Only Markers = the Markers element alone.
-                local displayAs = ShowAs()
+                local displayAs = ShowAsMode()
                 if toolKey == "Group" and (displayAs == "compact" or displayAs == "markers") then
                     return nil
                 end
@@ -2233,7 +2233,7 @@ local function RegisterUnlock()
                 -- and saved position. The global login pass visits every
                 -- registered element, including this inactive legacy entry; do
                 -- not let its stale Group position overwrite Compact's position.
-                if toolKey == "Group" and ShowAs() == "compact" then return end
+                if toolKey == "Group" and ShowAsMode() == "compact" then return end
                 PlaceSection(toolKey)
             end,
         })
@@ -2245,7 +2245,7 @@ local function RegisterUnlock()
         group = "Raid Tools",
         order = 540,
         getFrame = function()
-            if ShowMode() == "never" or AssistHidden() or ShowAs() ~= "compact" then return nil end
+            if ShowMode() == "never" or AssistHidden() or ShowAsMode() ~= "compact" then return nil end
             BuildSections()
             return sectionList.Group
         end,
@@ -2285,7 +2285,7 @@ local function RegisterUnlock()
             if profile and profile.pos then profile.pos.Compact = nil end
         end,
         applyPos = function()
-            if ShowAs() ~= "compact" then return end
+            if ShowAsMode() ~= "compact" then return end
             PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact")
         end,
     })
@@ -2349,7 +2349,7 @@ function Apply()
     ApplyToggleKeybind()
     ApplyQuickFireBindings()
     ApplyFonts()
-    RefreshPermissions(true)
+    SyncPermissions(true)
 end
 _G._CUI_RaidTools_Apply = Apply
 

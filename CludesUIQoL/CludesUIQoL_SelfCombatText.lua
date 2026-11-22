@@ -103,7 +103,7 @@ local function Wanted() return SctGet("enabled") == true end
 
 -- The font follows these settings only (a global or QoL font change asks
 -- for a reload).
-local function ReadSettings()
+local function LoadSctSettings()
     local font = SctGet("font")
     if font == "__global" then
         S.font = CUI.GetFontPath("extras")
@@ -383,7 +383,7 @@ local function Refresh()
     local want = Wanted()
     if want == on then
         if want then
-            ReadSettings()
+            LoadSctSettings()
             Tune()
             Listen()
         end
@@ -392,7 +392,7 @@ local function Refresh()
     on = want
     if want then
         if not box then Build() end
-        ReadSettings()
+        LoadSctSettings()
         Tune()
         box:Show()
         listener:SetScript("OnEvent", OnEvent)

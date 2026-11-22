@@ -122,7 +122,7 @@ function EQT.Cfg(key) return EQT.DB()[key] end
 function EQT.Set(key, value) EQT.DB()[key] = value end
 
 -- The style a profile's saved flags ask for: "cui" | "blizzard" | "classic".
-local function StyleOf(qt)
+local function StyleNameOf(qt)
     return (qt.useClassicStyle and "classic") or (qt.useBlizzardStyle and "blizzard") or "cui"
 end
 
@@ -134,7 +134,7 @@ function mod.QT_Style()
     if mod._qtStyle == nil then
         local qt = SavedSettings()
         if not qt then return "cui" end
-        mod._qtStyle = StyleOf(qt)
+        mod._qtStyle = StyleNameOf(qt)
     end
     return mod._qtStyle
 end
@@ -149,14 +149,14 @@ function mod.CustomTrackerWanted(qt)
     local pick = qt.customTrackerPick
     if pick == nil and qt.customTracker == false then pick = false end
     if pick ~= nil then return pick end
-    return StyleOf(qt) == "cui"
+    return StyleNameOf(qt) == "cui"
 end
 
 -- The options toggle (the tracker in use stays the same until a reload).
 function mod.SetCustomTrackerWanted(qt, on)
     on = on and true or false
     qt.customTracker = nil
-    if on == (StyleOf(qt) == "cui") then
+    if on == (StyleNameOf(qt) == "cui") then
         qt.customTrackerPick = nil
     else
         qt.customTrackerPick = on

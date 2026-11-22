@@ -28,14 +28,14 @@ local Pix = CUI and CUI.PP
 local issecretvalue = issecretvalue or function() return false end
 
 -- Settings live on the shared CludesUIDB (lazy-init, never re-init at scope).
-local function TeleCfg()
+local function TeleportSettings()
     if not CludesUIDB then return {} end
     CludesUIDB.teleportPrompt = CludesUIDB.teleportPrompt or {}
     return CludesUIDB.teleportPrompt
 end
 
 local function PromptOn()
-    return TeleCfg().enabled ~= false -- default ON
+    return TeleportSettings().enabled ~= false -- default ON
 end
 
 -------------------------------------------------------------------------------
@@ -89,13 +89,13 @@ end
 SavePosition = function()
     if not dialog then return end
     local point, _, relPoint, posX, yo = dialog:GetPoint()
-    if point then TeleCfg().pos = { p = point, rp = relPoint, x = posX, y = yo } end
+    if point then TeleportSettings().pos = { p = point, rp = relPoint, x = posX, y = yo } end
 end
 
 ApplySavedPosition = function()
     if not dialog then return end
     dialog:ClearAllPoints()
-    local place = TeleCfg().pos
+    local place = TeleportSettings().pos
     if place and place.p then
         dialog:SetPoint(place.p, UIParent, place.rp or place.p, place.x or 0, place.y or 0)
     else
@@ -107,7 +107,7 @@ end
 -- it is hidden. Driven by CludesUIDB.teleportPrompt.showDisable (default ON).
 ApplyDisableVisibility = function()
     if not dialog then return end
-    local show = TeleCfg().showDisable ~= false
+    local show = TeleportSettings().showDisable ~= false
     if dialog._disableBtn then dialog._disableBtn:SetShown(show) end
     dialog:SetHeight(show and POPUP_H or (POPUP_H - 20))
 end
@@ -248,7 +248,7 @@ BuildPopup = function()
     disableBtn:SetScript("OnEnter", function() disableLbl:SetTextColor(1, 0.3, 0.3, 1) end)
     disableBtn:SetScript("OnLeave", function() disableLbl:SetTextColor(0.6, 0.6, 0.6, 1) end)
     disableBtn:SetScript("OnClick", function()
-        TeleCfg().enabled = false
+        TeleportSettings().enabled = false
         ApplyTeleportPrompt()
     end)
     dialog._disableBtn = disableBtn
@@ -256,7 +256,7 @@ BuildPopup = function()
     -- Intentionally NOT registered for Escape-close: the popup should stay until
     -- the player teleports, enters the dungeon, leaves the group, or disables it.
 
-    dialog:SetScale(TeleCfg().scale or 1.05)
+    dialog:SetScale(TeleportSettings().scale or 1.05)
     ApplySavedPosition()
     ApplyDisableVisibility()
     dialog:Hide()
@@ -391,7 +391,7 @@ end
 -- Live update hook for the options slider/toggles (scale + disable-text row).
 _G._CUI_RefreshTeleportPrompt = function()
     if not dialog then return end
-    dialog:SetScale(TeleCfg().scale or 1.05)
+    dialog:SetScale(TeleportSettings().scale or 1.05)
     ApplyDisableVisibility()
 end
 
@@ -433,7 +433,7 @@ local pendingBuild
 -- Records the group's current listing as already shown, without showing it: a
 -- /reload or re-enable starts with an empty memory, and the next edit of a listing
 -- the player already saw must not pop the prompt again.
-local function SeedShownFromListing()
+local function SeedShownFromQueue()
     ClearPending()
     ResolveActiveEntry()
     shownSpellID = pendingSpellID
@@ -442,7 +442,7 @@ end
 
 ApplyTeleportPrompt = function()
     if PromptOn() then
-        SeedShownFromListing()
+        SeedShownFromQueue()
         if not dialog and InCombatLockdown() then
             pendingBuild = true
             eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -467,7 +467,7 @@ eventFrame:SetScript("OnEvent", function(self, evt, arg1, arg2)
         if PromptOn() then
             BuildPopup()
             SyncPromptEvents()
-            SeedShownFromListing()
+            SeedShownFromQueue()
         end
         return
     elseif evt == "PLAYER_REGEN_ENABLED" then
