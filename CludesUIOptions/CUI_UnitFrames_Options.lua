@@ -600,7 +600,7 @@ end
 function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
     local BS = CludesUI.BlizzStyle
     local y0 = cursorY
-    local function Inheriting() return B.borderCustom ~= true end
+    local function UsesDefaultBorder() return B.borderCustom ~= true end
     -- What the live frames draw: the donor's border while inheriting.
     local function Src() return mod.UF_BossBorderSettings() end
     local NEEDS_STYLE = "This option requires a Border Style other than Inherit (Main Frames)."
@@ -617,7 +617,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
             values = texValues,
             order = texOrder,
             getValue = function()
-                if Inheriting() then return "inherit" end
+                if UsesDefaultBorder() then return "inherit" end
                 return B.borderTexture or "solid"
             end,
             setValue = function(value)
@@ -650,7 +650,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
             CludesUI.BorderPxSliderCfg({
                 text = "Border Size",
                 trackWidth = 120,
-                disabled = Inheriting,
+                disabled = UsesDefaultBorder,
                 disabledTooltip = NEEDS_STYLE,
                 rawTooltip = true,
                 getStep = function() return Src().borderSize or 1 end,
@@ -670,7 +670,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
     -- Width Offset | Height Offset: a textured style's outward offsets.
     do
         local texture = B.borderTexture or "solid"
-        if not Inheriting() and texture ~= "solid" and texture ~= "" then
+        if not UsesDefaultBorder() and texture ~= "solid" and texture ~= "" then
             local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                 addonKey = "unitframes",
                 getTex = function() return B.borderTexture or "solid" end,
@@ -762,7 +762,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
         })
         local function SyncCastBorderCog()
             local texture = B.borderTexture or "solid"
-            if Inheriting() or texture == "solid" or texture == "" or BS.Get("unitframes") then
+            if UsesDefaultBorder() or texture == "solid" or texture == "" or BS.Get("unitframes") then
                 cogBtn:Hide()
             else
                 cogBtn:Show()
@@ -782,9 +782,9 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
         CludesUI.BuildInlineCog(region, {
             title = "Corner Radius",
             tip = "Corner Radius",
-            disabled = function() return Inheriting() or not CludesUI.RoundedStyleOK(B.borderTexture) end,
+            disabled = function() return UsesDefaultBorder() or not CludesUI.RoundedStyleOK(B.borderTexture) end,
             disabledTooltip = function()
-                if Inheriting() then return NEEDS_STYLE end
+                if UsesDefaultBorder() then return NEEDS_STYLE end
                 return "This option requires the Solid, Glow or Shadow border style."
             end,
             rows = CludesUI.RoundedJoinRow(
@@ -836,13 +836,13 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
         region._lastInline = sw
         local block = CludesUI.NewSwatchBlocker(sw)
         block:SetScript("OnEnter", function()
-            local req = Inheriting() and NEEDS_STYLE or "This option requires a Border Size above 0."
+            local req = UsesDefaultBorder() and NEEDS_STYLE or "This option requires a Border Size above 0."
             CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(req))
         end)
         block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         local function SyncCastSwatch()
             updateSw()
-            if Inheriting() or (B.borderSize or 1) == 0 then
+            if UsesDefaultBorder() or (B.borderSize or 1) == 0 then
                 sw:SetAlpha(0.3)
                 block:Show()
             else
@@ -3781,7 +3781,7 @@ CludesUI.AtLogin(function()
                     end,
                 }
             end
-            local function Inheriting(cfg)
+            local function UsesDefaultBorder(cfg)
                 local value = mini and cfg.healthBarTexture
                 return mini and (value == nil or value == "inherit")
             end
@@ -3792,13 +3792,13 @@ CludesUI.AtLogin(function()
                 tooltip = "Draws the bar texture on the health and power backgrounds too.",
                 disabled = function()
                     local s = unitFn()
-                    if not s or Inheriting(s) then return true end
+                    if not s or UsesDefaultBorder(s) then return true end
                     return Tex(s) == "none" or not mod.UF_HealthOpaque(s)
                 end,
                 disabledTooltip = function()
                     local s = unitFn()
                     if not s then return nil end
-                    if Inheriting(s) then
+                    if UsesDefaultBorder(s) then
                         return "This option requires a Bar Texture other than Inherit (Main Frames)."
                     end
                     if Tex(s) == "none" then return "This option requires a Bar Texture other than None." end
@@ -3811,7 +3811,7 @@ CludesUI.AtLogin(function()
                 get = function()
                     local cfg = unitFn()
                     if not cfg then return false end
-                    if Inheriting(cfg) then return mod.UF_TexBgOn(mini) end
+                    if UsesDefaultBorder(cfg) then return mod.UF_TexBgOn(mini) end
                     return cfg.textureBg == true
                 end,
                 set = function(value)

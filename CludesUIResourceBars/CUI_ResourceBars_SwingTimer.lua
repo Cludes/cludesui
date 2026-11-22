@@ -222,7 +222,7 @@ local function RowGap(conf) return (conf.rowSpacing or 0) + StockGap(conf) end
 -- restricted answer is treated as "no information" (no swing, no range
 -- verdict, and a row keeps what was last known about it). Never infer an
 -- interval from restricted data.
-local function Plain(val) return not (issecretvalue and issecretvalue(val)) end
+local function IsPlainVal(val) return not (issecretvalue and issecretvalue(val)) end
 
 -- Blizzard's CanSwing: Main Hand always applies; Off Hand / Ranged only while
 -- UnitAttackSpeed reports a positive speed for the slot. Those speeds are
@@ -240,7 +240,7 @@ local function CanSwing(swingType)
     else
         return false
     end
-    if not Plain(swingSpeed) then return nil end
+    if not IsPlainVal(swingSpeed) then return nil end
     return type(swingSpeed) == "number" and swingSpeed > 0
 end
 
@@ -248,9 +248,9 @@ end
 local OFFHAND_SLOT = 17
 local function OffHandIsShield()
     local ident = GetInventoryItemID("player", OFFHAND_SLOT)
-    if not (ident and Plain(ident)) then return false end
+    if not (ident and IsPlainVal(ident)) then return false end
     local _, _, _, loc = C_Item.GetItemInfoInstant(ident)
-    return Plain(loc) and loc == "INVTYPE_SHIELD"
+    return IsPlainVal(loc) and loc == "INVTYPE_SHIELD"
 end
 
 -- Shield handling (and its event) is active only with Show Shield As Off Hand
@@ -517,7 +517,7 @@ local function UpdateRangeRow(swingRow)
     end
     -- nil = no check could be made (no target, untargetable, no weapon): NOT out of range.
     local inRange = C_SwingTimer.IsTargetWithinSwingRange(swingRow._def.type)
-    SetOutOfRange(swingRow, Plain(inRange) and inRange == false)
+    SetOutOfRange(swingRow, IsPlainVal(inRange) and inRange == false)
 end
 
 local function UpdateRangeAll()
@@ -1134,7 +1134,7 @@ local function QueuedSpell()
     if #entries == 0 or not (C_Spell and C_Spell.IsCurrentSpell) then return false end
     for i = 1, #entries do
         local current = C_Spell.IsCurrentSpell(entries[i].name)
-        if Plain(current) and current then return entries[i] end
+        if IsPlainVal(current) and current then return entries[i] end
     end
     return false
 end
@@ -1165,7 +1165,7 @@ local function SeedActive()
     if isRep then
         for slot = 1, MAX_ACTION_SLOT do
             local val = isRep(slot)
-            if Plain(val) and val then
+            if IsPlainVal(val) and val then
                 rep = true
                 break
             end
@@ -1173,7 +1173,7 @@ local function SeedActive()
     end
     SwingState.repeatOn = rep
     local current = C_Spell and C_Spell.IsCurrentSpell and C_Spell.IsCurrentSpell(AUTO_ATTACK)
-    SwingState.meleeOn = (Plain(current) and current) and true or false
+    SwingState.meleeOn = (IsPlainVal(current) and current) and true or false
 end
 
 -- Delta paint: touches only the rows whose active state flipped.
@@ -1525,7 +1525,7 @@ local function ApplyMoveEvents(conf)
             shellFrame:RegisterEvent("PLAYER_STARTED_MOVING")
             shellFrame:RegisterEvent("PLAYER_STOPPED_MOVING")
             local swingSpeed = GetUnitSpeed("player")
-            SwingState.moving = (Plain(swingSpeed) and swingSpeed > 0) and true or false
+            SwingState.moving = (IsPlainVal(swingSpeed) and swingSpeed > 0) and true or false
         end
     elseif SwingState.moveEvents then
         SwingState.moveEvents = nil
@@ -1540,7 +1540,7 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
     if not (conf and conf.enabled and SwingState.built) then return end
     if evt == "PLAYER_SWING" then
         -- a1 = swingDuration, a2 = swingType
-        if not (Plain(a1) and Plain(a2)) then return end
+        if not (IsPlainVal(a1) and IsPlainVal(a2)) then return end
         local swingRow = SwingState.byType[a2]
         if swingRow then
             -- A swing proves its slot can swing: a row hidden only because its
@@ -1599,7 +1599,7 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         PaintActive(conf)
     elseif evt == "PLAYER_SWING_RANGE_UPDATE" then
         -- a1 = swingType, a2 = isInRange, a3 = checksRange
-        if not (Plain(a1) and Plain(a2) and Plain(a3)) then return end
+        if not (IsPlainVal(a1) and IsPlainVal(a2) and IsPlainVal(a3)) then return end
         local swingRow = SwingState.byType[a1]
         if swingRow then SetOutOfRange(swingRow, a3 == true and a2 == false) end
     elseif evt == "PLAYER_TARGET_CHANGED" then
@@ -1705,7 +1705,7 @@ local function EnsureBuilt()
     if ids and C_Spell and C_Spell.GetSpellName then
         for i = 1, #ids do
             local name = C_Spell.GetSpellName(ids[i])
-            if Plain(name) and name then
+            if IsPlainVal(name) and name then
                 local color = QUEUE_COLORS[ids[i]] or QUEUE_COLOR
                 SwingState.queueSpells[#SwingState.queueSpells + 1] = {
                     id = ids[i],

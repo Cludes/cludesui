@@ -831,7 +831,7 @@ CUI.AtOptionsLogin(function()
             end
         end
 
-        local function NavigateToSetting(key)
+        local function JumpToSetting(key)
             local m = clickMappings[key]
             -- Check dynamic mappings (icon/text elements assigned to Core Positions)
             if not m then
@@ -876,7 +876,7 @@ CUI.AtOptionsLogin(function()
         local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
             local button = CUI.CreatePreviewHitOverlay(
                 element,
-                NavigateToSetting,
+                JumpToSetting,
                 mappingKey,
                 isText,
                 frameLevelOverride,
@@ -977,7 +977,7 @@ CUI.AtOptionsLogin(function()
                     ioBrd:Hide()
                     iconOv:SetScript("OnEnter", function() ioBrd:Show() end)
                     iconOv:SetScript("OnLeave", function() ioBrd:Hide() end)
-                    iconOv:SetScript("OnMouseDown", function() NavigateToSetting("castIcon") end)
+                    iconOv:SetScript("OnMouseDown", function() JumpToSetting("castIcon") end)
                 end
                 -- Cast bar overlay (bar only, not icon)
                 local castOverlay = CreateFrame("Button", nil, preview._cast:GetParent())
@@ -997,7 +997,7 @@ CUI.AtOptionsLogin(function()
                 coBrd:Hide()
                 castOverlay:SetScript("OnEnter", function() coBrd:Show() end)
                 castOverlay:SetScript("OnLeave", function() coBrd:Hide() end)
-                castOverlay:SetScript("OnMouseDown", function() NavigateToSetting("castBar") end)
+                castOverlay:SetScript("OnMouseDown", function() JumpToSetting("castBar") end)
             end
             -- Cast spell name and target text (above the cast bar overlay)
             local castTextLevel = (castOverlayLevel or 30) + 5
@@ -1137,7 +1137,7 @@ CUI.AtOptionsLogin(function()
                     HideCPHL()
                     cpBtn:SetScript("OnEnter", function() ShowCPHL() end)
                     cpBtn:SetScript("OnLeave", function() HideCPHL() end)
-                    cpBtn:SetScript("OnMouseDown", function() NavigateToSetting("classResource") end)
+                    cpBtn:SetScript("OnMouseDown", function() JumpToSetting("classResource") end)
                     cpOverlay = cpBtn
                     -- Disable hover/click when class resource setting is off
                     local function UpdateCPOverlay()
@@ -1219,7 +1219,7 @@ CUI.AtOptionsLogin(function()
                 HideAHL()
                 arrowBtn:SetScript("OnEnter", function() ShowAHL() end)
                 arrowBtn:SetScript("OnLeave", function() HideAHL() end)
-                arrowBtn:SetScript("OnMouseDown", function() NavigateToSetting("targetArrows") end)
+                arrowBtn:SetScript("OnMouseDown", function() JumpToSetting("targetArrows") end)
                 -- Only show when arrows are visible
                 if not preview._arrows.left:IsShown() then arrowBtn:Hide() end
                 arrowOverlay = arrowBtn

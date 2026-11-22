@@ -44,7 +44,7 @@ local SolidTex, FadeRegions = Skin.SolidTex, Skin.FadeRegions
 -------------------------------------------------------------------------------
 --  Enable gate. Independent toggle, default on (not tied to any master reskin).
 -------------------------------------------------------------------------------
-local function SkinEnabled()
+local function LfgSkinOn()
     return (not CludesUIDB or CludesUIDB.reskinLFGMenu ~= false)
         and not (CludesUI.BlizzWindowSkinsKilled and CludesUI.BlizzWindowSkinsKilled())
 end
@@ -206,7 +206,7 @@ end
 
 -- Strip an InsetFrameTemplate child (its Bg + rounded box) so it blends into the
 -- panel backdrop instead of showing a nested box.
-local function FadeInset(insetPx)
+local function HideInset(insetPx)
     if not insetPx or insetPx:IsForbidden() then return end
     FadeRegions(insetPx)
     if insetPx.Bg then insetPx.Bg:SetAlpha(0) end
@@ -216,7 +216,7 @@ end
 
 -- Generic action button -> flat dark block with hover. keepKeys preserves named
 -- regions (e.g. {"Icon"}); never reads any data.
-local function SkinButton(button, keepKeys)
+local function StyleButton(button, keepKeys)
     if not button or button:IsForbidden() then return end
     local skinData = GetFFD(button)
     if skinData.skinned then return end
@@ -728,7 +728,7 @@ local function ResolveRailSelection(getBtn, captured, holderFrame)
     return holderFrame and (holderFrame.selection or holderFrame.selectionIndex) or nil
 end
 
-local function UpdateCategorySelection()
+local function SyncCategorySelection()
     local sel = ResolveRailSelection(CategoryButton, _gfSelIndex, _G.GroupFinderFrame)
     for idx = 1, 4 do
         local button = CategoryButton(idx)
@@ -809,19 +809,19 @@ end
 local function Skin_GroupFinder()
     for idx = 1, 4 do
         local gb = CategoryButton(idx)
-        if gb then SkinCategoryButton(gb, { keepRing = true, onSelect = UpdateCategorySelection }) end
+        if gb then SkinCategoryButton(gb, { keepRing = true, onSelect = SyncCategorySelection }) end
     end
-    UpdateCategorySelection()
+    SyncCategorySelection()
 
     -- Dungeon Finder (LFD)
     if LFDParentFrame then SkinFinderPanel(LFDParentFrame, { noBg = true, noBorder = true }) end
-    if _G.LFDParentFrameInset then FadeInset(_G.LFDParentFrameInset) end
+    if _G.LFDParentFrameInset then HideInset(_G.LFDParentFrameInset) end
     if LFDQueueFrame then SkinFinderPanel(LFDQueueFrame, { noBg = true, noBorder = true }) end
     if LFDQueueFrameRandomScrollFrame then
         SkinFinderPanel(LFDQueueFrameRandomScrollFrame, { noBg = true, noBorder = true })
     end
     if LFDQueueFrameFindGroupButton then
-        SkinButton(LFDQueueFrameFindGroupButton)
+        StyleButton(LFDQueueFrameFindGroupButton)
         LiftButton(LFDQueueFrameFindGroupButton)
     end
     if _G.LFDQueueFrameTypeDropdown then SkinDropdown(_G.LFDQueueFrameTypeDropdown) end
@@ -838,7 +838,7 @@ end
 -- active pick, matching the left sidebar rail's active state.
 local function SkinLFGCategoryButton(button)
     if not button or button:IsForbidden() then return end
-    SkinButton(button)
+    StyleButton(button)
     local skinData = GetFFD(button)
     if not skinData.selWash then
         -- ARTWORK below the button label (sublevel -1) and above the fill.
@@ -880,7 +880,7 @@ local function Skin_LFGList()
     local CS = LFGListFrame.CategorySelection
     if CS then
         SkinFinderPanel(CS, { noBg = true, noBorder = true })
-        if CS.Inset then FadeInset(CS.Inset) end
+        if CS.Inset then HideInset(CS.Inset) end
         if CS.CategoryButtons then
             for _, btn in ipairs(CS.CategoryButtons) do
                 SkinLFGCategoryButton(btn)
@@ -911,11 +911,11 @@ local function Skin_LFGList()
             )
         end
         if CS.FindGroupButton then
-            SkinButton(CS.FindGroupButton)
+            StyleButton(CS.FindGroupButton)
             LiftButton(CS.FindGroupButton)
         end
         if CS.StartGroupButton then
-            SkinButton(CS.StartGroupButton)
+            StyleButton(CS.StartGroupButton)
             LiftButton(CS.StartGroupButton)
         end
     end
@@ -923,13 +923,13 @@ local function Skin_LFGList()
     local SP = LFGListFrame.SearchPanel
     if SP then
         SkinFinderPanel(SP, { noBg = true, noBorder = true })
-        if SP.ResultsInset then FadeInset(SP.ResultsInset) end
+        if SP.ResultsInset then HideInset(SP.ResultsInset) end
         if SP.SearchBox then SkinEditBox(SP.SearchBox) end
-        if SP.FilterButton then SkinButton(SP.FilterButton) end
+        if SP.FilterButton then StyleButton(SP.FilterButton) end
         if SP.RefreshButton then Skin.RefreshGlyph(SP.RefreshButton) end
-        if SP.BackButton then SkinButton(SP.BackButton) end
-        if SP.BackToGroupButton then SkinButton(SP.BackToGroupButton) end
-        if SP.SignUpButton then SkinButton(SP.SignUpButton) end
+        if SP.BackButton then StyleButton(SP.BackButton) end
+        if SP.BackToGroupButton then StyleButton(SP.BackToGroupButton) end
+        if SP.SignUpButton then StyleButton(SP.SignUpButton) end
         if SP.ScrollBar then SkinScrollBar(SP.ScrollBar) end
         -- The active-filter X, as on every other filter dropdown: it straddles
         -- the filter button's top edge, above the button's border.
@@ -940,9 +940,9 @@ local function Skin_LFGList()
     local EC = LFGListFrame.EntryCreation
     if EC then
         SkinFinderPanel(EC, { noBg = true, noBorder = true })
-        if EC.Inset then FadeInset(EC.Inset) end
-        if EC.CancelButton then SkinButton(EC.CancelButton) end
-        if EC.ListGroupButton then SkinButton(EC.ListGroupButton) end
+        if EC.Inset then HideInset(EC.Inset) end
+        if EC.CancelButton then StyleButton(EC.CancelButton) end
+        if EC.ListGroupButton then StyleButton(EC.ListGroupButton) end
         if EC.Name then SkinEditBox(EC.Name) end
         if EC.Description then SkinEditBox(EC.Description) end
         for _, keyName in ipairs({ "GroupDropdown", "ActivityDropdown", "PlayStyleDropdown" }) do
@@ -969,11 +969,11 @@ local function Skin_LFGList()
     local AV = LFGListFrame.ApplicationViewer
     if AV and not AV:IsProtected() then
         SkinFinderPanel(AV, { noBg = true, noBorder = true })
-        if AV.Inset then FadeInset(AV.Inset) end
+        if AV.Inset then HideInset(AV.Inset) end
         if AV.RefreshButton then Skin.RefreshGlyph(AV.RefreshButton) end
-        if AV.RemoveEntryButton then SkinButton(AV.RemoveEntryButton) end
-        if AV.EditButton then SkinButton(AV.EditButton) end
-        if AV.BrowseGroupsButton then SkinButton(AV.BrowseGroupsButton) end
+        if AV.RemoveEntryButton then StyleButton(AV.RemoveEntryButton) end
+        if AV.EditButton then StyleButton(AV.EditButton) end
+        if AV.BrowseGroupsButton then StyleButton(AV.BrowseGroupsButton) end
         if AV.AutoAcceptButton then SkinCheckbox(AV.AutoAcceptButton) end
         for _, keyName in ipairs({
             "NameColumnHeader",
@@ -981,7 +981,7 @@ local function Skin_LFGList()
             "ItemLevelColumnHeader",
             "RatingColumnHeader",
         }) do
-            if AV[keyName] then SkinButton(AV[keyName]) end
+            if AV[keyName] then StyleButton(AV[keyName]) end
         end
         if AV.ScrollBar then SkinScrollBar(AV.ScrollBar) end
         if AV.InfoBackground then AV.InfoBackground:SetAlpha(0) end
@@ -1000,12 +1000,12 @@ local _rbGuard = false
 local function FadeRaidFinderArt()
     local ri = _G.RaidFinderFrameRoleInset
     if ri then
-        FadeInset(ri)
+        HideInset(ri)
         -- Explicit by key too: survives the case where Bg is not a direct
         -- region the sweep reaches.
         if ri.Bg and ri.Bg.SetAlpha then ri.Bg:SetAlpha(0) end
     end
-    if _G.RaidFinderFrameBottomInset then FadeInset(_G.RaidFinderFrameBottomInset) end
+    if _G.RaidFinderFrameBottomInset then HideInset(_G.RaidFinderFrameBottomInset) end
     -- Role background (orange gradient behind the role buttons): Blizzard's
     -- rewards updaters (RaidFinderQueueFrameRewards_UpdateFrame and the shared
     -- LFGRewardsFrame_UpdateFrame) re-raise this art on every rewards/role/raid
@@ -1045,7 +1045,7 @@ local function Skin_RaidFinder()
     end
     if RaidFinderQueueFrame then SkinFinderPanel(RaidFinderQueueFrame, { noBg = true, noBorder = true }) end
     if RaidFinderFrameFindRaidButton then
-        SkinButton(RaidFinderFrameFindRaidButton)
+        StyleButton(RaidFinderFrameFindRaidButton)
         LiftButton(RaidFinderFrameFindRaidButton)
     end
     if _G.RaidFinderQueueFrameSelectionDropdown then
@@ -1202,7 +1202,7 @@ local function Skin_Challenges()
     if not _challengesHooked and type(castFrame.Update) == "function" then
         _challengesHooked = true
         hooksecurefunc(castFrame, "Update", function()
-            if SkinEnabled() then SquareDungeonIcons() end
+            if LfgSkinOn() then SquareDungeonIcons() end
         end)
     end
     SkinFinderPanel(castFrame, { noBg = true, noBorder = true })
@@ -1213,11 +1213,11 @@ local function Skin_Challenges()
     -- re-ENABLE the layer to bring them back, which it doesn't). Re-asserted
     -- each pass as a belt-and-braces against a future re-enable.
     if castFrame.DisableDrawLayer then castFrame:DisableDrawLayer("BACKGROUND") end
-    if _G.ChallengesFrameInset then FadeInset(_G.ChallengesFrameInset) end
+    if _G.ChallengesFrameInset then HideInset(_G.ChallengesFrameInset) end
     local kf = _G.ChallengesKeystoneFrame
     if kf then
         SkinFinderPanel(kf, { inset = true })
-        if kf.StartButton then SkinButton(kf.StartButton) end
+        if kf.StartButton then StyleButton(kf.StartButton) end
         if kf.CloseButton then SkinCloseButton(kf.CloseButton) end
     end
     SquareDungeonIcons()
@@ -1251,7 +1251,7 @@ local function Skin_PVP()
         GetFFD(pvp).showHook = true
         pvp:HookScript("OnShow", function()
             C_Timer.After(0, function()
-                if pvp:IsShown() and SkinEnabled() then Skin_PVP() end
+                if pvp:IsShown() and LfgSkinOn() then Skin_PVP() end
             end)
         end)
     end
@@ -1270,9 +1270,9 @@ local function Skin_PVP()
     if hf then
         SkinFinderPanel(hf, { noBg = true, noBorder = true })
         local insetPx = hf.Inset or _G.HonorFrameInset
-        if insetPx then FadeInset(insetPx) end
+        if insetPx then HideInset(insetPx) end
         if hf.QueueButton then
-            SkinButton(hf.QueueButton)
+            StyleButton(hf.QueueButton)
             LiftButton(hf.QueueButton)
         end
         if hf.TypeDropdown then SkinDropdown(hf.TypeDropdown) end
@@ -1286,9 +1286,9 @@ local function Skin_PVP()
     if castFrame then
         SkinFinderPanel(castFrame, { noBg = true, noBorder = true })
         local insetPx = castFrame.Inset or _G.ConquestFrameInset
-        if insetPx then FadeInset(insetPx) end
+        if insetPx then HideInset(insetPx) end
         if castFrame.JoinButton then
-            SkinButton(castFrame.JoinButton)
+            StyleButton(castFrame.JoinButton)
             LiftButton(castFrame.JoinButton)
         end
     end
@@ -1297,9 +1297,9 @@ local function Skin_PVP()
     if tg then
         SkinFinderPanel(tg, { noBg = true, noBorder = true })
         local insetPx = tg.Inset or _G.TrainingGroundsFrameInset
-        if insetPx then FadeInset(insetPx) end
+        if insetPx then HideInset(insetPx) end
         if tg.QueueButton then
-            SkinButton(tg.QueueButton)
+            StyleButton(tg.QueueButton)
             LiftButton(tg.QueueButton)
         end
         if tg.TypeDropdown then SkinDropdown(tg.TypeDropdown) end
@@ -1317,7 +1317,7 @@ local function Skin_PVP()
             if bonus.WorldBattlesTexture and bonus.WorldBattlesTexture.SetAlpha then
                 bonus.WorldBattlesTexture:SetAlpha(0)
             end
-            if bonus.RandomTrainingGroundButton then SkinButton(bonus.RandomTrainingGroundButton) end
+            if bonus.RandomTrainingGroundButton then StyleButton(bonus.RandomTrainingGroundButton) end
         end
     end
 end
@@ -1340,8 +1340,8 @@ local function InstallPVPHooks()
 end
 
 -- Full pass + re-strip; safe to call repeatedly (idempotent skinners).
-local function RefreshAll()
-    if not SkinEnabled() then return end
+local function RestyleAll()
+    if not LfgSkinOn() then return end
     Skin_PVEFrame()
     Skin_GroupFinder()
     Skin_LFGList()
@@ -1361,18 +1361,18 @@ local function InstallHooks()
     _hooksInstalled = true
     -- Deferred so this runs on its own tick, after the click that opened the
     -- frame has finished, instead of inside that same execution chain.
-    hooksecurefunc(PVEFrame, "Show", function() C_Timer.After(0, RefreshAll) end)
+    hooksecurefunc(PVEFrame, "Show", function() C_Timer.After(0, RestyleAll) end)
     if PVEFrame_ShowFrame then
         hooksecurefunc("PVEFrame_ShowFrame", function()
             C_Timer.After(0, function()
-                RefreshAll()
+                RestyleAll()
                 UpdateTabVisuals()
             end)
         end)
     end
     if PVEFrame_TabOnClick then
         hooksecurefunc("PVEFrame_TabOnClick", function()
-            RefreshAll()
+            RestyleAll()
             UpdateTabVisuals()
         end)
     end
@@ -1380,13 +1380,13 @@ local function InstallHooks()
         hooksecurefunc("GroupFinderFrame_SelectGroupButton", function(index)
             if type(index) == "number" then _gfSelIndex = index end
             StripAgain()
-            UpdateCategorySelection()
+            SyncCategorySelection()
         end)
     end
     if GroupFinderFrameGroupButton_OnClick then
         hooksecurefunc("GroupFinderFrameGroupButton_OnClick", function()
             StripAgain()
-            UpdateCategorySelection()
+            SyncCategorySelection()
         end)
     end
     if LFGListCategorySelectionButton_OnClick then
@@ -1688,20 +1688,20 @@ end
 -------------------------------------------------------------------------------
 local function DoSkinPass()
     if not Theme.bgR then ResolveTheme() end
-    RefreshAll()
+    RestyleAll()
     InstallHooks()
 end
 
 local ON_ADDON = {
     Blizzard_GroupFinder = function() DoSkinPass() end,
     Blizzard_ChallengesUI = function()
-        if not SkinEnabled() then return end
+        if not LfgSkinOn() then return end
         if not Theme.bgR then ResolveTheme() end
         Skin_Challenges()
         StripAgain()
     end,
     Blizzard_PVPUI = function()
-        if not SkinEnabled() then return end
+        if not LfgSkinOn() then return end
         if not Theme.bgR then ResolveTheme() end
         Skin_PVP()
         InstallPVPHooks()
@@ -1715,11 +1715,11 @@ boot:RegisterEvent("ADDON_LOADED")
 boot:SetScript("OnEvent", function(_, evt, name)
     if evt == "PLAYER_LOGIN" then
         ResolveTheme()
-        if SkinEnabled() then DoSkinPass() end
+        if LfgSkinOn() then DoSkinPass() end
         if CludesUI._GroupFinder_InitQoL then CludesUI._GroupFinder_InitQoL() end
     elseif evt == "ADDON_LOADED" then
         local func = ON_ADDON[name]
-        if func and SkinEnabled() then func() end
+        if func and LfgSkinOn() then func() end
         -- QoL init also needs Blizzard_GroupFinder to exist; (re)try on its load.
         if name == "Blizzard_GroupFinder" and CludesUI._GroupFinder_InitQoL then
             CludesUI._GroupFinder_InitQoL()

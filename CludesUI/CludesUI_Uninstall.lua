@@ -101,7 +101,7 @@ end
 
 -- This character's part of the record (nil while its GUID is unknown, and
 -- with peek while it holds nothing).
-local function CharRecord(peek)
+local function CharEntry(peek)
     local unitGuid = UnitGUID("player")
     if not unitGuid then return nil end
     local r = UninstallRecord()
@@ -166,7 +166,7 @@ local GetCVar, GetCVarBitfield = C_CVar.GetCVar, C_CVar.GetCVarBitfield
 -- per-character one (nil while the character is unknown).
 local function CVarScope(name)
     local _, _, _, perChar = C_CVar.GetCVarInfo(name)
-    if perChar then return CharRecord() end
+    if perChar then return CharEntry() end
     return UninstallRecord()
 end
 
@@ -456,7 +456,7 @@ end
 -- puts back what a module that is off left behind.
 CheckModules = function()
     RevertOffModules(UninstallRecord(), true)
-    local c = CharRecord(true)
+    local c = CharEntry(true)
     if not c then return end
     RevertOffModules(c, false)
     if next(c) == nil then UninstallRecord().chars[UnitGUID("player")] = nil end
@@ -526,7 +526,7 @@ local function EditModeEntry(layout, sysInfo, key, before, fallback)
     local r = UninstallRecord()
     local isChar = layout.layoutType == CHAR_LAYOUT
     local mine
-    if r.fresh or isChar then mine = CharRecord() end
+    if r.fresh or isChar then mine = CharEntry() end
     if r.fresh then ListLayouts(r, mine) end
     local root
     if isChar then
@@ -700,7 +700,7 @@ function CUI.SetChatWindowSize(index, size)
     local _, before = GetChatWindowInfo(index)
     SetChatWindowSize(index, size)
     if _fresh == nil or before == nil then return end
-    local c = CharRecord()
+    local c = CharEntry()
     if not c then return end
     local tbl = Sub(c, "chatFont")
     local e = tbl[index]
@@ -735,7 +735,7 @@ function CUI.NoteBinding(key, before)
     if _fresh == nil or not key then return end
     local root
     if GetCurrentBindingSet() == 2 then
-        root = CharRecord()
+        root = CharEntry()
     else
         root = UninstallRecord()
     end
@@ -809,7 +809,7 @@ function CUI.Uninstall()
     -- writes below wake.
     _uninstalled = true
     local r = UninstallRecord()
-    local mine = CharRecord(true) or {}
+    local mine = CharEntry(true) or {}
     -- Each part in a pcall: one that fails never keeps CludesUI from turning
     -- off. What a part put back is dropped, so the next time CludesUI is
     -- turned on its first writes record the values found then; a part that

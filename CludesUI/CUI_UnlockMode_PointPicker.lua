@@ -19,7 +19,7 @@ mod.unlockParts.PointPicker = function(LM)
         LM.RejectH.ShowTooltip(message)
     end
 
-    local function Eligible(mover, source)
+    local function CanSnapTo(mover, source)
         if not mover or not mover:IsShown() or mover._tempHidden then return false end
         local key = mover._barKey
         local elem = LM.registeredElements[key]
@@ -51,7 +51,7 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     local function CanLink(source, target)
-        if not Eligible(source, true) or not Eligible(target, false) then return false end
+        if not CanSnapTo(source, true) or not CanSnapTo(target, false) then return false end
         local childKey, targetKey = source._barKey, target._barKey
         local childFrame = LM.GetBarFrame(childKey)
         if childKey == targetKey or FrameDependsOn(LM.GetBarFrame(targetKey), childFrame, {}, 0) then
@@ -100,7 +100,7 @@ mod.unlockParts.PointPicker = function(LM)
         if not LM.isUnlocked or InCombatLockdown() or not Enabled() then return end
         local source = LM.pickModeMover
         if set == sourceSet and LM.pickMode == "anchorTo" then
-            if not Eligible(source, true) then
+            if not CanSnapTo(source, true) then
                 LM.CancelPickMode()
                 return
             end
@@ -264,7 +264,7 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     function picker.Begin(mover)
-        if not Enabled() or not Eligible(mover, true) then return end
+        if not Enabled() or not CanSnapTo(mover, true) then return end
         sourceSet = sourceSet or CreateSet()
         sourcePoint = nil
         ShowPicker(sourceSet, mover)
@@ -272,7 +272,7 @@ mod.unlockParts.PointPicker = function(LM)
 
     function picker.Enter(mover)
         if LM.pickMode ~= "pointAnchor" or not sourcePoint or mover == LM.pickModeMover then return end
-        if not Eligible(mover, false) then
+        if not CanSnapTo(mover, false) then
             if targetSet then targetSet:Hide() end
             return
         end

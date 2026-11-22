@@ -222,7 +222,7 @@ local function ResolveSpellSettingsUncached(widget, sid2, sd2, barId)
         ids = fc2.ssIds
     else
         ids = { sid2 }
-        local function addId(id)
+        local function collectId(id)
             if not id or id <= 0 then return end
             for index = 1, #ids do
                 if ids[index] == id then return end
@@ -230,10 +230,10 @@ local function ResolveSpellSettingsUncached(widget, sid2, sd2, barId)
             ids[#ids + 1] = id
         end
         local canon2 = widget and mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(widget)
-        if canon2 then addId(canon2) end
+        if canon2 then collectId(canon2) end
         if fc2 then
-            addId(fc2.resolvedSid)
-            addId(fc2.baseSpellID)
+            collectId(fc2.resolvedSid)
+            collectId(fc2.baseSpellID)
         end
         -- "Proc into a second ability" talent forms (e.g. DH Reap 1226019/1225826)
         -- share a GetBaseSpell base (344862) with the configured spell, but that's
@@ -242,8 +242,8 @@ local function ResolveSpellSettingsUncached(widget, sid2, sd2, barId)
         -- frame's ids is the stable bridge, so a setting stored under the base
         -- form resolves on the proc'd frame.
         if C_Spell and C_Spell.GetBaseSpell then
-            addId(C_Spell.GetBaseSpell(sid2))
-            if canon2 then addId(C_Spell.GetBaseSpell(canon2)) end
+            collectId(C_Spell.GetBaseSpell(sid2))
+            if canon2 then collectId(C_Spell.GetBaseSpell(canon2)) end
         end
         if fc2 then
             fc2.ssIds = ids

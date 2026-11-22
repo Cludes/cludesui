@@ -144,20 +144,20 @@ local function Build()
             local labelFS = CUI.MakeFont(row, 12, "", 0.85, 0.85, 0.85)
             labelFS:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
             labelFS:SetText(CUI.L(s.label))
-            local function Apply() applyVisual(IsShown(s.key), row:IsMouseOver()) end
-            checks[#checks + 1] = Apply
+            local function PaintRow() applyVisual(IsShown(s.key), row:IsMouseOver()) end
+            checks[#checks + 1] = PaintRow
             local one = { s }
             row:SetScript("OnClick", function()
                 SetShown(one, not IsShown(s.key))
-                Apply()
+                PaintRow()
             end)
             row:SetScript("OnEnter", function()
                 labelFS:SetTextColor(1, 1, 1, 1)
-                Apply()
+                PaintRow()
             end)
             row:SetScript("OnLeave", function()
                 labelFS:SetTextColor(0.85, 0.85, 0.85, 1)
-                Apply()
+                PaintRow()
             end)
         end
     end

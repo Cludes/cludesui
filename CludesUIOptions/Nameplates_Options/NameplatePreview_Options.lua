@@ -3382,12 +3382,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local healthFromTop
         do
             local stackExtent, cornerExtent = 0, 0
-            local function isCorner(s) return s == "topleft" or s == "topright" end
+            local function isCornerSlot(s) return s == "topleft" or s == "topright" end
             -- Extents use iconH: a cropped icon is shorter than its size (width).
             local function addAura(slotVal, total, sz, iconH, spacing, yOff)
                 if slotVal == "top" then
                     stackExtent = math.max(stackExtent, iconH + yOff)
-                elseif isCorner(slotVal) then
+                elseif isCornerSlot(slotVal) then
                     -- "up" growth stacks the icons, as PlaceInSlot does
                     local stackH = 0
                     if (DbValue(slotVal .. "SlotGrowth") or defaultSet[slotVal .. "SlotGrowth"]) == "up" then
@@ -3405,14 +3405,14 @@ local function BuildNameplatePreview(hostFrame, parentW)
             if showRM then
                 if rmPos == "top" then
                     cornerExtent = math.max(cornerExtent, debuffY + rmSize + rmYOff)
-                elseif isCorner(rmPos) then
+                elseif isCornerSlot(rmPos) then
                     cornerExtent = math.max(cornerExtent, mod.NP_TopCornerLift(rmPos, DB()) + rmSize + rmYOff)
                 end
             end
             if showCL then
                 if clPos == "top" then
                     cornerExtent = math.max(cornerExtent, debuffY + reIconSz + clYOff)
-                elseif isCorner(clPos) then
+                elseif isCornerSlot(clPos) then
                     cornerExtent =
                         math.max(cornerExtent, 2 + mod.NP_TopCornerLift(clPos, DB()) + reIconSz + clYOff)
                 end
@@ -3422,7 +3422,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             if qt.shown then
                 if qt.pos == "top" then
                     cornerExtent = math.max(cornerExtent, debuffY + qt.h + qt.y)
-                elseif isCorner(qt.pos) then
+                elseif isCornerSlot(qt.pos) then
                     cornerExtent =
                         math.max(cornerExtent, 2 + mod.NP_TopCornerLift(qt.pos, DB()) + qt.h + qt.y)
                 end

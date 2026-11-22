@@ -121,7 +121,7 @@ local IS_FOREVER = CUI.IS_FOREVER == true
 -- The WoW Forever variant is Blizzard Style everywhere a base style is
 -- asked for (module seeds, the whole-UI font slots, Active()); the window
 -- slots are the exception, where it is a look of its own.
-local function BaseKey(styleKey)
+local function StockBase(styleKey)
     if styleKey == "forever" then return "blizzard" end
     return styleKey
 end
@@ -204,7 +204,7 @@ local function Register(key, folder, display, profileFn, flag, classicFlag, acti
         display = display,
         get = get,
         set = set,
-        active = activeFnName and ActiveFn(folder, activeFnName) or function() return BaseKey(get()) end,
+        active = activeFnName and ActiveFn(folder, activeFnName) or function() return StockBase(get()) end,
         profile = profileFn,
         onEnable = onEnable,
         foreverFlag = foreverFlag,
@@ -915,7 +915,7 @@ local function SwitchModuleStyle(m, to)
     -- holds what the user had there. WoW Forever keeps its own slot and runs
     -- Blizzard Style's defaults (told it is the variant), and its own seed
     -- on every visit (its Forever-only slot is never banked).
-    if p and to ~= "cui" and m.onEnable and not loaded then m.onEnable(p, BaseKey(to), to == "forever") end
+    if p and to ~= "cui" and m.onEnable and not loaded then m.onEnable(p, StockBase(to), to == "forever") end
     if p and fv and to == "forever" and not fvLoaded then fv.seed(p) end
     if keep then
         for idx = 1, #keep do
@@ -938,7 +938,7 @@ local function GuessStockStyle()
     for idx = 1, #MODULES do
         local module = MODULES[idx]
         if ModuleNS(module.folder) ~= nil then
-            local keyName = BaseKey(module.get())
+            local keyName = StockBase(module.get())
             if keyName == "blizzard" then
                 b = b + 1
             elseif keyName == "classic" then
@@ -1023,10 +1023,10 @@ local function FontSlots(legacy)
 end
 local function FontPending(styleKey)
     local db, s = FontSlots()
-    return db ~= nil and (s.active or "cui") ~= BaseKey(styleKey)
+    return db ~= nil and (s.active or "cui") ~= StockBase(styleKey)
 end
 local function ApplyWholeUIFont(styleKey, legacy)
-    styleKey = BaseKey(styleKey)
+    styleKey = StockBase(styleKey)
     local db, s = FontSlots(legacy)
     if not db then return end
     local from = s.active or "cui"

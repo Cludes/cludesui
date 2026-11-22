@@ -245,7 +245,7 @@ CUI.AtOptionsLogin(function()
         return get and get() ~= nil
     end
 
-    local function IsPreviewHintDismissed() return CludesUIDB and CludesUIDB.previewHintDismissed end
+    local function PreviewHintGone() return CludesUIDB and CludesUIDB.previewHintDismissed end
 
     -- The preview hint is one font string shared by the bars and cast bar
     -- headers; each build moves it onto its own header. With page reuse each
@@ -259,7 +259,7 @@ CUI.AtOptionsLogin(function()
         local holder = PoolGen(heading) and _previewHintFS and _previewHintFS:GetParent()
         if holder and holder:GetParent() == heading then holder:Hide() end
     end
-    local function RehomeHint(page)
+    local function MoveHint(page)
         local holder = _previewHintFS and _previewHintFS:GetParent()
         local heading = _hintHdr[page]
         if not (holder and heading) then return end
@@ -395,7 +395,7 @@ CUI.AtOptionsLogin(function()
     -- to click, and only once it sits on this preview's header.
     function PreviewBar.HintFor(on, heading)
         -- A dismissed hint is left to its fade (DismissPreviewHint).
-        if not _previewHintFS or IsPreviewHintDismissed() then return end
+        if not _previewHintFS or PreviewHintGone() then return end
         local holder = _previewHintFS:GetParent()
         _previewHintFS:SetShown(on and holder and holder:GetParent() == heading or false)
     end
@@ -1501,7 +1501,7 @@ CUI.AtOptionsLogin(function()
                 _previewHintFS:Hide()
             elseif
                 not _previewBuilding
-                and not IsPreviewHintDismissed()
+                and not PreviewHintGone()
                 and not _previewHintFS:IsShown()
                 and _previewHintFS:GetParent()
                 and _previewHintFS:GetParent():GetParent() == _hintHdr[PAGE_DISPLAY]
@@ -1712,7 +1712,7 @@ CUI.AtOptionsLogin(function()
     -- The "click elements" hint under the preview (kept across builds and
     -- pages: out of its header's pool). Returns the height it adds.
     local function PlaceHint(heading, height)
-        if height <= 0 or IsPreviewHintDismissed() then
+        if height <= 0 or PreviewHintGone() then
             if _previewHintFS then _previewHintFS:Hide() end
             return 0
         end
@@ -4917,7 +4917,7 @@ CUI.AtOptionsLogin(function()
     -- builds and pages (module state), out of its header's pool. Returns
     -- the height it adds.
     local function ToggledHint(heading, on)
-        if IsPreviewHintDismissed() then
+        if PreviewHintGone() then
             if _previewHintFS then _previewHintFS:Hide() end
             return 0
         end
@@ -5486,7 +5486,7 @@ CUI.AtOptionsLogin(function()
         environ.RestoreGCDPreview = function()
             gcdFill = math.random(30, 85) / 100
             -- Header shown again from the cache: take the hint back before the update sizes it.
-            if not IsPreviewHintDismissed() then RehomeHint(PAGE_GCD) end
+            if not PreviewHintGone() then MoveHint(PAGE_GCD) end
             UpdateGCDPreview()
         end
 
@@ -5757,7 +5757,7 @@ CUI.AtOptionsLogin(function()
 
         environ.RestoreTotemPreview = function()
             -- Header shown again from the cache: take the hint back before the update sizes it.
-            if not IsPreviewHintDismissed() then RehomeHint(PAGE_TOTEM) end
+            if not PreviewHintGone() then MoveHint(PAGE_TOTEM) end
             UpdateTotemPreview()
         end
     end
@@ -5778,12 +5778,12 @@ CUI.AtOptionsLogin(function()
         _previewBarFillPct = math.random(30, 80)
         UpdatePreviewHeader()
         -- The hint is only shown or hidden here, never made.
-        local dismissed = IsPreviewHintDismissed()
+        local dismissed = PreviewHintGone()
         if _previewHintFS then
             if dismissed then
                 _previewHintFS:Hide()
             else
-                RehomeHint(PAGE_DISPLAY)
+                MoveHint(PAGE_DISPLAY)
                 _previewHintFS:SetAlpha(0.45)
                 _previewHintFS:Show()
                 local host = _previewHintFS:GetParent()
@@ -5799,7 +5799,7 @@ CUI.AtOptionsLogin(function()
     local function RestoreCastPage()
         _castBarPreviewFill = math.random(30, 85) / 100
         -- Before the preview update, which sizes the header for the hint.
-        if not IsPreviewHintDismissed() then RehomeHint(PAGE_CASTBAR) end
+        if not PreviewHintGone() then MoveHint(PAGE_CASTBAR) end
         UpdateCastBarPreview()
     end
 

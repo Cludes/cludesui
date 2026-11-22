@@ -3518,7 +3518,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
         -- Stops capturing: disables keyboard + wheel so the page scrolls
         -- normally again.
-        local function StopListening()
+        local function EndKeyCapture()
             listening = false
             keybindBtn:EnableKeyboard(false)
             keybindBtn:EnableMouseWheel(false)
@@ -3549,7 +3549,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             -- While listening, any click is a binding (including bare left-click).
             local mods = mod.CC_GetModifierPrefix()
             local normalized = MOUSE_BUTTON_MAP[btnFrame] or ("BUTTON" .. (btnFrame:match("%d+") or btnFrame))
-            if SetKey(onKeySet, mods .. normalized) then StopListening() end
+            if SetKey(onKeySet, mods .. normalized) then EndKeyCapture() end
         end)
 
         keybindBtn:SetScript("OnKeyDown", function(self, bindKey)
@@ -3567,12 +3567,12 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             end
             self:SetPropagateKeyboardInput(false)
             if bindKey == "ESCAPE" then
-                StopListening()
+                EndKeyCapture()
                 return
             end
             local captured = mod.CC_CaptureKey(bindKey)
             if not captured then return end
-            if SetKey(onKeySet, captured) then StopListening() end
+            if SetKey(onKeySet, captured) then EndKeyCapture() end
         end)
 
         -- Scroll-wheel binding only via this capture button (never Quickbind);
@@ -3582,7 +3582,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             if not listening then return end
             local mods = mod.CC_GetModifierPrefix()
             local wheel = change > 0 and "MOUSEWHEELUP" or "MOUSEWHEELDOWN"
-            if SetKey(onKeySet, mods .. wheel) then StopListening() end
+            if SetKey(onKeySet, mods .. wheel) then EndKeyCapture() end
         end)
 
         keybindBtn:SetScript("OnEnter", function(self)
@@ -3602,7 +3602,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         end)
 
         parentFrame:SetScript("OnHide", function()
-            if listening then StopListening() end
+            if listening then EndKeyCapture() end
         end)
 
         keybindBtn._refresh = SyncKeyLabel

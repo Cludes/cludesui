@@ -90,13 +90,13 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     if not DC then return cursorY end
     local W = CUI.Widgets
     local Pix = CUI.PanelPP
-    local function Get(colorKey)
+    local function ColorVal(colorKey)
         local saved = mod.db and mod.db.profile
         if saved and saved[colorKey] ~= nil then return saved[colorKey] end
         return mod.defaults[colorKey]
     end
-    local function Off() return Get("debuffColorsEnabled") ~= true end
-    local function Read(classFile) return DC.Read(classFile, Get) end
+    local function Off() return ColorVal("debuffColorsEnabled") ~= true end
+    local function Read(classFile) return DC.Read(classFile, ColorVal) end
     -- Every edit applies at once. The color picker writes on every frame of a
     -- drag, so while it is open the refresh waits for it to close.
     local function ApplyColors()
@@ -335,26 +335,26 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     -- is. Both checks follow the runtime's border reading (BorderSpec in the module).
     local function Mode()
         if Off() then return "none" end
-        return DC.Mode(Get)
+        return DC.Mode(ColorVal)
     end
     local function NoBorder()
         if CUI.BlizzStyle.Get("nameplates") then return true end
-        if Get("customBorderEnabled") then
-            if (Get("customBorderSize") or 0) <= 0 then return true end
+        if ColorVal("customBorderEnabled") then
+            if (ColorVal("customBorderSize") or 0) <= 0 then return true end
             -- A textured border whose art no longer resolves (its media pack
             -- removed) draws nothing.
-            local texture = Get("customBorderTexture")
+            local texture = ColorVal("customBorderTexture")
             return texture ~= nil
                 and texture ~= ""
                 and texture ~= "solid"
                 and not CUI.ResolveBorderTexture(texture)
         end
-        return Get("showBorder") == false
+        return ColorVal("showBorder") == false
     end
     local function StripBorder()
         if NoBorder() then return false end
-        if Get("customBorderEnabled") then
-            local texture = Get("customBorderTexture")
+        if ColorVal("customBorderEnabled") then
+            local texture = ColorVal("customBorderTexture")
             return not texture or texture == "" or texture == "solid"
         end
         return true
@@ -396,7 +396,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     }, {
         type = "toggle",
         text = "Only My Debuffs",
-        getValue = function() return Get("debuffColorsPlayerOnly") ~= false end,
+        getValue = function() return ColorVal("debuffColorsPlayerOnly") ~= false end,
         setValue = function(val)
             mod.db.profile.debuffColorsPlayerOnly = val
             ApplyColors()
@@ -421,7 +421,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
                     max = 4,
                     step = 1,
                     tooltip = "Thickens the border by this many pixels while it shows a debuff color.",
-                    get = function() return Get("debuffColorsBorderExtra") or 0 end,
+                    get = function() return ColorVal("debuffColorsBorderExtra") or 0 end,
                     set = function(val)
                         mod.db.profile.debuffColorsBorderExtra = val
                         ApplyColors()
@@ -444,7 +444,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
             values = environ.hbtValues,
             order = environ.hbtOrder,
             tooltip = "The texture the debuff color is drawn in.",
-            getValue = function() return Get("debuffColorsTexture") or Get("healthBarTexture") or "none" end,
+            getValue = function() return ColorVal("debuffColorsTexture") or ColorVal("healthBarTexture") or "none" end,
             setValue = function(val)
                 mod.db.profile.debuffColorsTexture = val
                 ApplyColors()

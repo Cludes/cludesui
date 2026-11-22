@@ -69,8 +69,8 @@ local function DataBarKit(hostFrame)
     local K = { AfterSwitch = AfterDataBarSwitch }
 
     local BLIZZ_DIS_TIP = "This option does not work with Blizzard Bars. Please use Blizzard Edit Mode."
-    local function _blizzDis() return ABAR.db.profile.useBlizzardDataBars end
-    K.BLIZZ_DIS_TIP, K.BlizzDis = BLIZZ_DIS_TIP, _blizzDis
+    local function _blizzDataBarsOn() return ABAR.db.profile.useBlizzardDataBars end
+    K.BLIZZ_DIS_TIP, K.BlizzDis = BLIZZ_DIS_TIP, _blizzDataBarsOn
 
     -- Shared visibility row: left vis dropdown + right "Visibility Options" CB dropdown.
     -- trackNeverFlip: data-bar sections hide dependent rows while visibility is Never, so a
@@ -144,7 +144,7 @@ local function DataBarKit(hostFrame)
     -- A data bar's Visibility row with rightCfg in its right slot (nil =
     -- blank), locked under Blizzard's bars; a Never flip rebuilds the page.
     function K.VisRow(cursorY, barId, visLabel, rightCfg)
-        return BuildVisRow(cursorY, barId, visLabel, _blizzDis, BLIZZ_DIS_TIP, true, rightCfg)
+        return BuildVisRow(cursorY, barId, visLabel, _blizzDataBarsOn, BLIZZ_DIS_TIP, true, rightCfg)
     end
 
     -- Orientation for `keys`, the data bars it flips together (the first
@@ -171,9 +171,9 @@ local function DataBarKit(hostFrame)
             text = "Orientation",
             values = ORIENT_VALUES,
             order = ORIENT_ORDER,
-            disabled = function() return _blizzDis() or OutsideSizeMatch() ~= nil end,
+            disabled = function() return _blizzDataBarsOn() or OutsideSizeMatch() ~= nil end,
             disabledTooltip = function()
-                if _blizzDis() then return BLIZZ_DIS_TIP end
+                if _blizzDataBarsOn() then return BLIZZ_DIS_TIP end
                 local keyName, t = OutsideSizeMatch()
                 if not keyName then return nil end
                 return CUI.GetBarLabel(keyName)
@@ -272,12 +272,12 @@ local function DataBarKit(hostFrame)
             title = "Vertical Text",
             anchorTo = regionFrame._control,
             disabled = function()
-                if _blizzDis() then return true end
+                if _blizzDataBarsOn() then return true end
                 local b = ABAR.db.profile.bars[lead]
                 return not (b and b.orientation == "VERTICAL")
             end,
             disabledTooltip = function()
-                if _blizzDis() then return BLIZZ_DIS_TIP end
+                if _blizzDataBarsOn() then return BLIZZ_DIS_TIP end
                 return "This option requires the Vertical orientation."
             end,
             rawTooltip = true,
@@ -461,7 +461,7 @@ local function DataBarKit(hostFrame)
             {
                 type = "dropdown",
                 text = "Border Style",
-                disabled = _blizzDis,
+                disabled = _blizzDataBarsOn,
                 disabledTooltip = BLIZZ_DIS_TIP,
                 rawTooltip = true,
                 values = texValues,
@@ -488,7 +488,7 @@ local function DataBarKit(hostFrame)
             },
             CUI.BorderPxSliderCfg({
                 text = "Border Size",
-                disabled = _blizzDis,
+                disabled = _blizzDataBarsOn,
                 disabledTooltip = BLIZZ_DIS_TIP,
                 rawTooltip = true,
                 -- The step the bar renders with (ResolveBorderThickness): an
@@ -515,7 +515,7 @@ local function DataBarKit(hostFrame)
             local ocfgL, ocfgR = CUI.BorderOffsetRowCfgs({
                 addonKey = "actionbars",
                 tooltip = "How far the border reaches past the bar.",
-                disabled = _blizzDis,
+                disabled = _blizzDataBarsOn,
                 disabledTooltip = BLIZZ_DIS_TIP,
                 rawTooltip = true,
                 getTex = function() return V().borderTexture or "solid" end,
@@ -606,7 +606,7 @@ local function DataBarKit(hostFrame)
                 },
             })
             if cogBtn then
-                local function UpdateCogVis() cogBtn:SetShown(Textured() and not _blizzDis()) end
+                local function UpdateCogVis() cogBtn:SetShown(Textured() and not _blizzDataBarsOn()) end
                 CUI.RegisterWidgetRefresh(UpdateCogVis)
                 UpdateCogVis()
             end
@@ -628,9 +628,9 @@ local function DataBarKit(hostFrame)
                 },
             }, {
                 size = 20,
-                disabled = function() return _blizzDis() or BorderOff() end,
+                disabled = function() return _blizzDataBarsOn() or BorderOff() end,
                 disabledTooltip = function()
-                    if _blizzDis() then return BLIZZ_DIS_TIP end
+                    if _blizzDataBarsOn() then return BLIZZ_DIS_TIP end
                     return "This option requires a Border Size above 0."
                 end,
                 rawTooltip = true,
@@ -664,8 +664,8 @@ local function DataBarKit(hostFrame)
     function K.SizeRow(cursorY, barId)
         local _, height
         local function BarCfg() return ABAR.db.profile.bars[barId] end
-        local wDis, wTip, wRaw = CUI.MatchGuard(barId, "Width", _blizzDis, BLIZZ_DIS_TIP)
-        local hDis, hTip, hRaw = CUI.MatchGuard(barId, "Height", _blizzDis, BLIZZ_DIS_TIP)
+        local wDis, wTip, wRaw = CUI.MatchGuard(barId, "Width", _blizzDataBarsOn, BLIZZ_DIS_TIP)
+        local hDis, hTip, hRaw = CUI.MatchGuard(barId, "Height", _blizzDataBarsOn, BLIZZ_DIS_TIP)
         local _dbVert = (BarCfg().orientation == "VERTICAL")
         local _dbLenMax = math.floor(_dbVert and UIParent:GetHeight() or UIParent:GetWidth())
         local _dbWMin, _dbWMax = (_dbVert and 4 or 50), (_dbVert and 100 or _dbLenMax)
@@ -771,7 +771,7 @@ local function DataBarKit(hostFrame)
             text = "Bar Texture",
             values = dbTexValues,
             order = dbTexOrder,
-            disabled = _blizzDis,
+            disabled = _blizzDataBarsOn,
             disabledTooltip = BLIZZ_DIS_TIP,
             rawTooltip = true,
             getValue = function() return BarCfg().barTexture or "none" end,
@@ -808,7 +808,7 @@ local function DataBarKit(hostFrame)
             min = 6,
             max = 24,
             step = 1,
-            disabled = _blizzDis,
+            disabled = _blizzDataBarsOn,
             disabledTooltip = BLIZZ_DIS_TIP,
             rawTooltip = true,
             getValue = function() return BarCfg().textSize or 9 end,
@@ -870,7 +870,7 @@ local function DataBarKit(hostFrame)
         CUI.BuildInlineCog(regionFrame, {
             anchorTo = regionFrame._control,
             title = "Bar Text Offsets",
-            disabled = _blizzDis,
+            disabled = _blizzDataBarsOn,
             disabledTooltip = BLIZZ_DIS_TIP,
             rawTooltip = true,
             rows = textRows,
@@ -892,7 +892,7 @@ local function DataBarKit(hostFrame)
         -- Blizzard's bars are in use, since our bar (and its mover) is not built then.
         CUI.BuildSectionUnlockJump(
             heading,
-            { key = barId, disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
+            { key = barId, disabled = _blizzDataBarsOn, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
         )
         if lead then cursorY = lead(cursorY) end
         -- Custom Border, the opt-in for this bar's own border style, size and
@@ -905,7 +905,7 @@ local function DataBarKit(hostFrame)
                 type = "toggle",
                 text = "Custom Border",
                 tooltip = "Draws this bar's border in your own border style, size and color instead of the thin black line.",
-                disabled = _blizzDis,
+                disabled = _blizzDataBarsOn,
                 disabledTooltip = BLIZZ_DIS_TIP,
                 rawTooltip = true,
                 getValue = function() return BarCfg().customBorder or false end,

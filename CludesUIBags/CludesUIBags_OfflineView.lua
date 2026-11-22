@@ -24,7 +24,7 @@ if not (Offline and Inner) then return end -- a bags file didn't load
 
 local GetItemInfo, GetItemInfoInstant = C_Item.GetItemInfo, C_Item.GetItemInfoInstant
 local _emptyP = {}
-local function BP() return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP end
+local function BagsProfile() return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP end
 
 -- the bags' slot size and spacing (their sliders; OnSlotMetrics below)
 local SLOT_SIZE, SPACING = Inner.SLOT_SIZE, Inner.SPACING
@@ -552,7 +552,7 @@ end
 -- the settings classifying reads (disabled categories, split set gear) as one
 -- string, for the memo and the signature
 local function DisabledKey()
-    local profile = BP()
+    local profile = BagsProfile()
     local dis = profile.bagSplitSetGearBySet and "split|" or ""
     for key in pairs(profile.bagDisabledCategories or _emptyP) do
         dis = dis .. key .. ","
@@ -613,7 +613,7 @@ local function Classified(list, bags, source)
         if category.isCatchAll then catchAll = i end
         if category.isReagentBag then reagent = i end
     end
-    local disabled = BP().bagDisabledCategories or _emptyP
+    local disabled = BagsProfile().bagDisabledCategories or _emptyP
     for place, t in ipairs(type(list) == "table" and list or {}) do
         if type(t) == "table" then
             sum = sum + (t.size or 0)
@@ -741,14 +741,14 @@ local function Group(itemList)
 end
 
 local function PaintSlot(widget, item)
-    local zoom = BP().bagItemIconZoom or 0.08
+    local zoom = BagsProfile().bagItemIconZoom or 0.08
     widget.str = item.str
     widget.icon:SetTexture(item.icon or 134400)
     widget.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
-    CUI.ApplyIconTextFont(widget.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
+    CUI.ApplyIconTextFont(widget.Count, GetFont(), BagsProfile().bagCountFontSize or 11, "bags")
     widget.Count:SetText(item.n > 1 and item.n or "")
-    widget.Level:SetFont(GetFont(), BP().itemlevelFontSize or 12, CUI.SlugFlag("OUTLINE, SLUG"))
-    local lvl = item.gear and BP().showItemlevelInBags ~= false and C_Item.GetDetailedItemLevelInfo(item.str)
+    widget.Level:SetFont(GetFont(), BagsProfile().itemlevelFontSize or 12, CUI.SlugFlag("OUTLINE, SLUG"))
+    local lvl = item.gear and BagsProfile().showItemlevelInBags ~= false and C_Item.GetDetailedItemLevelInfo(item.str)
     if lvl and lvl > 1 then
         widget.Level:SetText(lvl)
         widget.Level:SetTextColor(1, 1, 1)
@@ -756,7 +756,7 @@ local function PaintSlot(widget, item)
         widget.Level:SetText("")
     end
     widget._r, widget._g, widget._b = mod.QualityBorderColor(item.q)
-    if not widget._fvSlotBorder and item.q <= 1 and BP().bagQualityBorder ~= false then
+    if not widget._fvSlotBorder and item.q <= 1 and BagsProfile().bagQualityBorder ~= false then
         widget._r, widget._g, widget._b = 0.25, 0.25, 0.25
     end
     mod.SetInsetBorderColor(widget, widget._r, widget._g, widget._b, 1)
@@ -807,7 +807,7 @@ end
 -- everything the grid draws from; the same signature twice means nothing moved.
 -- gold and the saved time are painted on their own, outside it
 local function Signature(val, list, source, query)
-    local profile = BP()
+    local profile = BagsProfile()
     local sel, set = mod.GetSelection()
     local red, green, blue = CUI.GetAccentColor()
     local dis = DisabledKey()
@@ -875,7 +875,7 @@ Paint = function(val, force)
     local cols = math.max(math.floor((width - PAD * 2 - 10) / (SLOT_SIZE + SPACING)), 1)
     local gridW = cols * (SLOT_SIZE + SPACING)
     val.child:SetWidth(math.max(width, 1))
-    local titleSize = BP().bagCatTitleSize or 11
+    local titleSize = BagsProfile().bagCatTitleSize or 11
 
     local itemList, used, sum = Collect(list, val.mode == "bags", query, filter, source)
     local posY, isShown, nh = -6, 0, 0
@@ -1121,7 +1121,7 @@ if CUI_Bank then
         end)
         widget:SetScript("OnEnter", function(self)
             if not self.on then self.bg:SetColorTexture(1, 1, 1, 0.06) end
-            if BP().bankSidebarCollapsed then
+            if BagsProfile().bankSidebarCollapsed then
                 CUI.ShowWidgetTooltip(self, self.name .. " (" .. self.n .. ")")
             end
         end)
@@ -1154,7 +1154,7 @@ if CUI_Bank then
             end
             local function All()
                 entries[#entries + 1] = { key = kind, name = all, icon = iconTex, n = sum }
-                if BP().bankHideTabsInSidebar and BP().bankCategorySidebar then return end
+                if BagsProfile().bankHideTabsInSidebar and BagsProfile().bankCategorySidebar then return end
                 for i, tab in ipairs(tabs or {}) do
                     if type(tab) == "table" then
                         local bagID = Enum.BagIndex[bagKey .. i]
@@ -1203,7 +1203,7 @@ if CUI_Bank then
             )
         end
 
-        local collapsed = BP().bankSidebarCollapsed
+        local collapsed = BagsProfile().bankSidebarCollapsed
         local wid = sidePane:GetWidth()
         local red, green, blue = CUI.GetAccentColor()
         local posY = 0

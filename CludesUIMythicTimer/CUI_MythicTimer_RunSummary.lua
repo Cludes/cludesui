@@ -1598,7 +1598,7 @@ local function ScoreText(m)
 end
 
 -- Zero and missing both read as a dash in the combat columns.
-local function NonZero(v)
+local function PositiveOr(v)
     if type(v) == "number" and floor(v) > 0 then return v end
     return nil
 end
@@ -1607,10 +1607,10 @@ local function CellText(colour, m, c)
     local k = colour.key
     if k == "name" then return format("|cff%s%s|r", ClassHex(m.class), ShortName(m.name)) end
     if k == "score" then return ScoreText(m) end
-    if k == "dps" then return Abbrev(NonZero(m.dps)) or "-" end
-    if k == "damageTaken" then return Abbrev(NonZero(m.damageTaken)) or "-" end
-    if k == "interrupts" then return NonZero(m.interrupts) and format("%d", floor(m.interrupts)) or "-" end
-    if k == "deaths" then return NonZero(m.deaths) and format("%d", floor(m.deaths)) or "-" end
+    if k == "dps" then return Abbrev(PositiveOr(m.dps)) or "-" end
+    if k == "damageTaken" then return Abbrev(PositiveOr(m.damageTaken)) or "-" end
+    if k == "interrupts" then return PositiveOr(m.interrupts) and format("%d", floor(m.interrupts)) or "-" end
+    if k == "deaths" then return PositiveOr(m.deaths) and format("%d", floor(m.deaths)) or "-" end
     return ""
 end
 

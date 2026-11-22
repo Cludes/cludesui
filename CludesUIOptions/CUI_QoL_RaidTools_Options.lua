@@ -38,7 +38,7 @@ CUI.AtLogin(function()
         return root and root.profile and root.profile.raidTools
     end
 
-    local function Cfg(key)
+    local function RaidToolsCfg(key)
         local profile = DB()
         return profile and profile[key]
     end
@@ -52,14 +52,14 @@ CUI.AtLogin(function()
         if _G._CUI_RaidTools_Apply then _G._CUI_RaidTools_Apply() end
     end
 
-    local function ModeNever() return (Cfg("mode") or "never") == "never" end
+    local function ModeNever() return (RaidToolsCfg("mode") or "never") == "never" end
 
-    local function QuickFireDisabled() return ModeNever() or Cfg("quickFire") ~= true end
+    local function QuickFireDisabled() return ModeNever() or RaidToolsCfg("quickFire") ~= true end
 
     -- The runtime owns the normalize (unknown values retain One Window).
     local function ShowAsVal()
         if mod.ShowAs then return mod.ShowAs() end
-        return Cfg("showAs") or "one"
+        return RaidToolsCfg("showAs") or "one"
     end
 
     local function LegacyDisabled() return ModeNever() or ShowAsVal() == "compact" end
@@ -69,17 +69,17 @@ CUI.AtLogin(function()
         return ModeNever() or mode == "compact" or mode == "markers"
     end
     -- Raid Buff Check is retail only: its rows are not built on WoW Forever.
-    local function BuffCheckOff() return Cfg("buffCheck") ~= true end
+    local function BuffCheckOff() return RaidToolsCfg("buffCheck") ~= true end
     local function PullDisabled() return ModeNever() or ShowAsVal() == "markers" end
 
     -- Pull durations live in a fixed 3-slot array; each slider owns one slot.
     local function PullGet(idx)
-        local tbl = Cfg("pullTimes")
+        local tbl = RaidToolsCfg("pullTimes")
         return (tbl and tbl[idx]) or mod.PULL_DEFAULTS[idx]
     end
 
     local function PullSet(idx, value)
-        local tbl = Cfg("pullTimes")
+        local tbl = RaidToolsCfg("pullTimes")
         if not tbl then return end
         tbl[idx] = value
         ApplyRaidTools()
@@ -131,7 +131,7 @@ CUI.AtLogin(function()
                 always = "Always",
             },
             order = { "never", "raid", "group", "always" },
-            getValue = function() return Cfg("mode") or "never" end,
+            getValue = function() return RaidToolsCfg("mode") or "never" end,
             setValue = function(value)
                 Set("mode", value)
                 ApplyRaidTools()
@@ -151,7 +151,7 @@ CUI.AtLogin(function()
                 w = 126,
                 h = 29,
                 level = 4,
-                get = function() return Cfg("toggleKey") end,
+                get = function() return RaidToolsCfg("toggleKey") end,
                 -- Spec Overrides: the slot is read before the write (a write
                 -- that rebuilds the page dresses this region again).
                 set = function(value)
@@ -172,7 +172,7 @@ CUI.AtLogin(function()
             CUI.AddCaptureAccessor(region, {
                 type = "keybind",
                 text = "Toggle Raid Tools",
-                getValue = function() return Cfg("toggleKey") end,
+                getValue = function() return RaidToolsCfg("toggleKey") end,
                 setValue = function(value)
                     Set("toggleKey", value)
                     ApplyRaidTools()
@@ -187,7 +187,7 @@ CUI.AtLogin(function()
             text = "Default to Collapsed When Shown",
             tooltip = "Full-window modes only. Shows start as a small icon, and the keybind switches between the icon and the full windows.",
             disabled = LegacyDisabled,
-            getValue = function() return Cfg("collapsedIcon") ~= false end,
+            getValue = function() return RaidToolsCfg("collapsedIcon") ~= false end,
             setValue = function(value)
                 Set("collapsedIcon", value)
                 ApplyRaidTools()
@@ -222,7 +222,7 @@ CUI.AtLogin(function()
             max = 2.0,
             step = 0.05,
             disabled = ModeNever,
-            getValue = function() return Cfg("scale") or 1 end,
+            getValue = function() return RaidToolsCfg("scale") or 1 end,
             setValue = function(value)
                 Set("scale", value)
                 ApplyRaidTools()
@@ -239,7 +239,7 @@ CUI.AtLogin(function()
                 upleft = "Up Left",
             },
             order = { "downright", "upright", "downleft", "upleft" },
-            getValue = function() return Cfg("growDir") or "downright" end,
+            getValue = function() return RaidToolsCfg("growDir") or "downright" end,
             setValue = function(value)
                 Set("growDir", value)
                 ApplyRaidTools()
@@ -258,7 +258,7 @@ CUI.AtLogin(function()
             text = "Enable Quick Fire",
             tooltip = "Adds three optional world-marker keybinds that remain usable in combat. Place drops the first free marker at the cursor in Star to Skull order; Undo removes the last marker placed through Quick Fire; Clear removes all world markers. Every binding starts empty. Marker changes made elsewhere during combat are picked up afterward.",
             disabled = ModeNever,
-            getValue = function() return Cfg("quickFire") == true end,
+            getValue = function() return RaidToolsCfg("quickFire") == true end,
             setValue = function(value)
                 Set("quickFire", value)
                 ApplyRaidTools()
@@ -285,7 +285,7 @@ CUI.AtLogin(function()
                     h = 29,
                     level = 4,
                     mouse = true,
-                    get = function() return Cfg(key) end,
+                    get = function() return RaidToolsCfg(key) end,
                     set = function(value)
                         local snap = CUI._SOAttribution(regionFrame)
                         Set(key, value or false)
@@ -300,7 +300,7 @@ CUI.AtLogin(function()
                 CUI.AddCaptureAccessor(regionFrame, {
                     type = "keybind",
                     text = regionFrame._label and regionFrame._label:GetText() or key,
-                    getValue = function() return Cfg(key) end,
+                    getValue = function() return RaidToolsCfg(key) end,
                     setValue = function(value)
                         Set(key, value)
                         ApplyRaidTools()
@@ -328,7 +328,7 @@ CUI.AtLogin(function()
                 text = textValue,
                 tooltip = tooltip,
                 disabled = disabled or ModeNever,
-                getValue = function() return Cfg(key) ~= false end,
+                getValue = function() return RaidToolsCfg(key) ~= false end,
                 setValue = function(value)
                     Set(key, value)
                     ApplyRaidTools()
@@ -373,7 +373,7 @@ CUI.AtLogin(function()
                         if ModeNever() then return "Show Raid Tools" end
                         return "This option requires a Show as layout with the group buttons."
                     end,
-                    getValue = function() return Cfg("showBuffCheck") == true end,
+                    getValue = function() return RaidToolsCfg("showBuffCheck") == true end,
                     setValue = function(value)
                         Set("showBuffCheck", value)
                         ApplyRaidTools()
@@ -391,7 +391,7 @@ CUI.AtLogin(function()
                 type = "toggle",
                 text = "Raid Buff Check",
                 tooltip = "A window of each group member's flask, food, augment and vantus runes and missing raid buffs.",
-                getValue = function() return Cfg("buffCheck") == true end,
+                getValue = function() return RaidToolsCfg("buffCheck") == true end,
                 setValue = function(value)
                     Set("buffCheck", value)
                     ApplyRaidTools()
@@ -403,7 +403,7 @@ CUI.AtLogin(function()
                 tooltip = "Opens the window on ready checks while you lead the group or assist.",
                 disabled = BuffCheckOff,
                 disabledTooltip = "Raid Buff Check",
-                getValue = function() return Cfg("buffCheckOnReady") ~= false end,
+                getValue = function() return RaidToolsCfg("buffCheckOnReady") ~= false end,
                 setValue = function(value)
                     Set("buffCheckOnReady", value)
                     ApplyRaidTools()

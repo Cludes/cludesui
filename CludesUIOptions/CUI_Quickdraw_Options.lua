@@ -2899,7 +2899,7 @@ CUI.AtOptionsLogin(function()
         -- scope here, the same reason BuildMenuSelector reads ProfileGet directly.
         -- A spec may widen the gate and name the requirement for the disabled
         -- tooltip.
-        local Disabled = (specInfo and specInfo.disabled)
+        local DrawOff = (specInfo and specInfo.disabled)
             or function() return ProfileGet("enabled") ~= true end
 
         -- Right-click means two different things on a plainMouse picker
@@ -2936,7 +2936,7 @@ CUI.AtOptionsLogin(function()
             mouse = true,
             plainMouse = plainMouse,
             tooltip = tipText,
-            disabled = Disabled,
+            disabled = DrawOff,
             disabledTip = (specInfo and specInfo.disabledReason) or "the module",
             -- A menu sharing a key shows the key it shares.
             get = (specInfo and specInfo.read) or function()
@@ -3497,7 +3497,7 @@ CUI.AtOptionsLogin(function()
 
         -- Not `== false`: the master switch is opt-in, so an absent key counts
         -- as off. The appearance sub-settings below stay nil-means-on.
-        local function Disabled() return ProfileGet("enabled") ~= true end
+        local function DrawOff() return ProfileGet("enabled") ~= true end
 
         -- What this build assumed about nest presence; Refresh compares
         -- against it and escalates to a rebuild when it flips.
@@ -3547,7 +3547,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "labeledButton",
                 text = "Add Action Menu",
-                disabled = function() return Disabled() or MenuCount() >= MAX_PALETTES end,
+                disabled = function() return DrawOff() or MenuCount() >= MAX_PALETTES end,
                 disabledTooltip = function()
                     if MenuCount() >= MAX_PALETTES then
                         return "This profile already holds " .. MAX_PALETTES .. " action menus"
@@ -3614,7 +3614,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Toggle Menu Open",
-                disabled = function() return Disabled() or not HasSelectKey() end,
+                disabled = function() return DrawOff() or not HasSelectKey() end,
                 disabledTooltip = "a Toggled Menu Select Action keybind",
                 tooltip = "Keep this menu open when you let go of its keybind.\n"
                     .. "Point at an entry and press the Select Action key to use it.\n"
@@ -3727,7 +3727,7 @@ CUI.AtOptionsLogin(function()
             return spec
         end
         local function Gated(spec, key, read)
-            spec.disabled = spec.disabled or Disabled
+            spec.disabled = spec.disabled or DrawOff
             spec.disabledTooltip = spec.disabledTooltip or "the module"
             return PerMenu(spec, key, read)
         end
@@ -3762,7 +3762,7 @@ CUI.AtOptionsLogin(function()
         -- (the only way to place it: there is no drag editor and no Unlock
         -- Mode entry) sit dead until Fixed Position is picked. Their cog
         -- dims with them, so the row still says they exist.
-        local function fixedOnly() return Disabled() or (MenuGet("centerMode") or "CURSOR") ~= "SCREEN" end
+        local function fixedOnly() return DrawOff() or (MenuGet("centerMode") or "CURSOR") ~= "SCREEN" end
         local function Offset(caption, key, reach)
             return Gated({
                 type = "slider",
@@ -3781,7 +3781,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "dropdown",
                 text = "Layout",
-                disabled = Disabled,
+                disabled = DrawOff,
                 disabledTooltip = "the module",
                 values = layoutValues,
                 order = layoutOrder,
@@ -3812,7 +3812,7 @@ CUI.AtOptionsLogin(function()
         CUI.BuildInlineCog(row._rightRegion, {
             title = "Fixed Position",
             disabled = fixedOnly,
-            disabledTooltip = function() return Disabled() and "the module" or "Fixed Position mode" end,
+            disabledTooltip = function() return DrawOff() and "the module" or "Fixed Position mode" end,
             rows = {
                 Offset("X Offset", "posX", 800),
                 Offset("Y Offset", "posY", 600),
@@ -3835,7 +3835,7 @@ CUI.AtOptionsLogin(function()
                     min = 1,
                     max = MAX_SLOTS,
                     step = 1,
-                    disabled = function() return Disabled() or MenuGet("gridAutoColumns") ~= false end,
+                    disabled = function() return DrawOff() or MenuGet("gridAutoColumns") ~= false end,
                     requireState = "disabled",
                     disabledTooltip = "Auto Columns",
                     tooltip = CUI.Lf(
@@ -3871,7 +3871,7 @@ CUI.AtOptionsLogin(function()
                         min = -180,
                         max = 180,
                         step = 5,
-                        disabled = function() return Disabled() or (MenuGet("arcSpan") or 360) >= 360 end,
+                        disabled = function() return DrawOff() or (MenuGet("arcSpan") or 360) >= 360 end,
                         disabledTooltip = "an Arc Span below 360",
                     }, "arcRotation", Or(0)),
                 },
@@ -3894,7 +3894,7 @@ CUI.AtOptionsLogin(function()
                     min = 1,
                     max = 9,
                     step = 2,
-                    disabled = Disabled,
+                    disabled = DrawOff,
                     disabledTooltip = "the module",
                     getValue = function() return ((MenuGet("fanVisible") or 2) * 2) + 1 end,
                     setValue = function(value)
@@ -4053,7 +4053,7 @@ CUI.AtOptionsLogin(function()
             end
             local function guarded(pick)
                 return function()
-                    if not Disabled() then pick() end
+                    if not DrawOff() then pick() end
                 end
             end
 
@@ -4071,7 +4071,7 @@ CUI.AtOptionsLogin(function()
             -- next click opens the picker, as the window-skin pairs do.
             local openPicker = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self2, ...)
-                if Disabled() then return end
+                if DrawOff() then return end
                 if MenuGet("selectColorCustom") == true and MenuGet("useClassColor") ~= true then
                     if openPicker then openPicker(self2, ...) end
                     return
@@ -4106,7 +4106,7 @@ CUI.AtOptionsLogin(function()
                 updateAccent()
                 updateClass()
                 local lit
-                if not Disabled() then
+                if not DrawOff() then
                     if MenuGet("useClassColor") == true then
                         lit = classSwatch
                     elseif MenuGet("selectColorCustom") == true then

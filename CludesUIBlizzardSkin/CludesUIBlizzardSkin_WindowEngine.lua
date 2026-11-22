@@ -150,12 +150,12 @@ local function FadeTextures(keep, ...)
         end
     end
 end
-local function FadeRegions(widget, keep)
+local function DimRegions(widget, keep)
     if not widget or widget:IsForbidden() then return end
     FadeTextures(keep, widget:GetRegions())
-    if widget.NineSlice then FadeRegions(widget.NineSlice, keep) end
+    if widget.NineSlice then DimRegions(widget.NineSlice, keep) end
 end
-Skin.FadeRegions = FadeRegions
+Skin.FadeRegions = DimRegions
 
 -- NineSlice pieces get re-shown/re-laid-out by Blizzard on some updates; alpha
 -- each named piece as well as the container so a relayout cannot resurrect it.
@@ -172,7 +172,7 @@ local NINESLICE_PIECES = {
 }
 local function FadeNineSlice(nsl)
     if not nsl then return end
-    FadeRegions(nsl)
+    DimRegions(nsl)
     for _, keyName in ipairs(NINESLICE_PIECES) do
         local p = nsl[keyName]
         if p and p.SetAlpha then p:SetAlpha(0) end
@@ -244,7 +244,7 @@ local function Restrip(winKey)
                     if skinData[key] then keyName[skinData[key]] = true end
                 end
             end
-            FadeRegions(widget, keyName)
+            DimRegions(widget, keyName)
         end
     end
 end
@@ -379,7 +379,7 @@ function Skin.Shell(winKey, widget, options)
     for _, key in ipairs(PROTECT_KEYS) do
         if skinData[key] then keep[skinData[key]] = true end
     end
-    FadeRegions(widget, keep)
+    DimRegions(widget, keep)
     Register(widget, true)
     if not skinData.bg then
         local backdrop = widget:CreateTexture(nil, "BACKGROUND", nil, -8)
@@ -467,7 +467,7 @@ function Skin.Panel(widget, options)
     local skinData = GetFFD(widget)
     local keep = {}
     if skinData.bg then keep[skinData.bg] = true end
-    FadeRegions(widget, keep)
+    DimRegions(widget, keep)
     Register(widget, true)
     if not skinData.bg and not options.noBg then
         local red, green, blue, a = Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA
@@ -489,7 +489,7 @@ end
 -- into the shell instead of showing a nested box.
 function Skin.Inset(inset)
     if not inset or inset:IsForbidden() then return end
-    FadeRegions(inset)
+    DimRegions(inset)
     if inset.Bg then inset.Bg:SetAlpha(0) end
     if inset.NineSlice then FadeNineSlice(inset.NineSlice) end
     Register(inset, true)
@@ -540,7 +540,7 @@ local function ApplyButton(button, skinData, keepKeys)
             if region then keep[region] = true end
         end
     end
-    FadeRegions(button, keep)
+    DimRegions(button, keep)
     for _, getter in ipairs({
         "GetNormalTexture",
         "GetPushedTexture",
@@ -628,7 +628,7 @@ function Skin.EditBox(editField, options)
     if not editField or editField:IsForbidden() then return end
     local skinData = GetFFD(editField)
     if skinData.bg then return end
-    FadeRegions(editField)
+    DimRegions(editField)
     for _, keyName in ipairs({ "Left", "Right", "Middle", "Mid" }) do
         local region = editField[keyName]
         if region and region.SetAlpha then region:SetAlpha(0) end
@@ -707,7 +707,7 @@ function Skin.Dropdown(dropdown)
     local skinData = GetFFD(dropdown)
     if skinData.skinned then return end
     skinData.skinned = true
-    FadeRegions(dropdown)
+    DimRegions(dropdown)
     local name = dropdown.GetName and dropdown:GetName()
     if name then
         for _, suffix in ipairs({ "Left", "Middle", "Right" }) do
@@ -810,16 +810,16 @@ function Skin.ScrollBar(scrollBar, keepSteppers)
         for _, keyName in ipairs({ "Back", "Forward" }) do
             local button = scrollBar[keyName]
             if button then
-                FadeRegions(button)
+                DimRegions(button)
                 if button.Texture then button.Texture:SetAlpha(0) end
             end
         end
     end
     local track = scrollBar.Track
-    if track then FadeRegions(track) end
+    if track then DimRegions(track) end
     local thumb = (track and track.Thumb) or (scrollBar.GetThumb and scrollBar:GetThumb())
     if thumb and not GetFFD(thumb).bg then
-        FadeRegions(thumb)
+        DimRegions(thumb)
         local t = SolidTex(thumb, "ARTWORK", 1, 1, 1, 0.3)
         t:SetPoint("TOP", thumb, "TOP", 0, 0)
         t:SetPoint("BOTTOM", thumb, "BOTTOM", 0, 0)
@@ -854,7 +854,7 @@ function Skin.CloseButton(button)
     if button.SetPushedTexture then button:SetPushedTexture("") end
     if button.SetHighlightTexture then button:SetHighlightTexture("") end
     if button.SetDisabledTexture then button:SetDisabledTexture("") end
-    FadeRegions(button)
+    DimRegions(button)
     local posX = button:CreateTexture(nil, "OVERLAY")
     posX:SetAtlas("uitools-icon-close")
     posX:SetSize(14, 14)
@@ -1404,7 +1404,7 @@ function Skin.RemovePortrait(widget)
     if not widget then return end
     local pc = widget.PortraitContainer
     if pc then
-        FadeRegions(pc)
+        DimRegions(pc)
         Register(pc, true)
         if pc.portrait and pc.portrait.SetAlpha then pc.portrait:SetAlpha(0) end
     end
@@ -1455,12 +1455,12 @@ local function UpdateTabVisual(tabBtn)
     end
 end
 
-local function UpdateAllTabs()
+local function RestyleTabs()
     for tabBtn in pairs(_skinnedTabs) do
         if not tabBtn:IsForbidden() then UpdateTabVisual(tabBtn) end
     end
 end
-Skin.UpdateAllTabs = UpdateAllTabs
+Skin.UpdateAllTabs = RestyleTabs
 
 -- Visual selection only; nil returns to the native tab system's selection.
 -- Keep the override outside the frame so Blizzard's tab state stays untouched.
@@ -1474,8 +1474,8 @@ local _tabHooked = false
 local function EnsureTabHooks()
     if _tabHooked then return end
     _tabHooked = true
-    if PanelTemplates_SetTab then hooksecurefunc("PanelTemplates_SetTab", UpdateAllTabs) end
-    if PanelTemplates_UpdateTabs then hooksecurefunc("PanelTemplates_UpdateTabs", UpdateAllTabs) end
+    if PanelTemplates_SetTab then hooksecurefunc("PanelTemplates_SetTab", RestyleTabs) end
+    if PanelTemplates_UpdateTabs then hooksecurefunc("PanelTemplates_UpdateTabs", RestyleTabs) end
 end
 
 -- Tab -> the dungeons-and-raids tab pattern, copied exactly: native art
@@ -1506,7 +1506,7 @@ function Skin.Tab(tabBtn, options)
         local partData = GetFFD(sys)
         if not partData.visSelHooked then
             partData.visSelHooked = true
-            hooksecurefunc(sys, "SetTabVisuallySelected", UpdateAllTabs)
+            hooksecurefunc(sys, "SetTabVisuallySelected", RestyleTabs)
         end
     end
     -- Icon tabs carry their label in Icon; retain its clipping mask as well.
@@ -1587,9 +1587,9 @@ function Skin.Tab(tabBtn, options)
     -- skinned tabs one frame after any tab click.
     tabBtn:HookScript("OnClick", function()
         if C_Timer then
-            C_Timer.After(0, UpdateAllTabs)
+            C_Timer.After(0, RestyleTabs)
         else
-            UpdateAllTabs()
+            RestyleTabs()
         end
     end)
     UpdateTabVisual(tabBtn)
@@ -1648,7 +1648,7 @@ function Skin.TabSystem(tsys, options)
     local skinData = GetFFD(tsys)
     if tsys.SetTab and not skinData.setTabHook then
         skinData.setTabHook = true
-        hooksecurefunc(tsys, "SetTab", UpdateAllTabs)
+        hooksecurefunc(tsys, "SetTab", RestyleTabs)
     end
     local children = { tsys:GetChildren() }
     for idx = 1, #children do

@@ -4576,7 +4576,7 @@ do
     -- Lock a fontstring to the house font + a color, re-applied whenever Blizzard
     -- swaps its font object or recolors it (the achievement list reverts BOTH on
     -- expand/select). colorFn(fs) applies the color, nil = white. One-time hooks per string.
-    local function LockAchText(fontStr, colorFn)
+    local function PinAchText(fontStr, colorFn)
         if not fontStr or not fontStr.SetFont then return end
         local fieldData = FrameDataOf(fontStr)
         fieldData.colorFn = colorFn
@@ -4642,11 +4642,11 @@ do
             -- Text locks: Label keeps its per-state color, the rest go white.
             -- HiddenDescription is the FULL description swapped in on expand
             -- (collapsed row shows truncated Description) and must be locked too, or it reverts on click.
-            LockAchText(row.Label, function() AchTitleColor(row) end)
-            LockAchText(row.Description, nil)
-            LockAchText(row.HiddenDescription, nil)
-            LockAchText(row.DateCompleted, nil)
-            if row.Shield and row.Shield.Points then LockAchText(row.Shield.Points, nil) end
+            PinAchText(row.Label, function() AchTitleColor(row) end)
+            PinAchText(row.Description, nil)
+            PinAchText(row.HiddenDescription, nil)
+            PinAchText(row.DateCompleted, nil)
+            if row.Shield and row.Shield.Points then PinAchText(row.Shield.Points, nil) end
             if row.DisplayObjectives then
                 hooksecurefunc(row, "DisplayObjectives", function(objectiveRow)
                     -- Expand rebuilds the row art: re-kill it and re-color the title
@@ -6156,7 +6156,7 @@ do
                     if a:find("plus", 1, true) or a:find("expand", 1, true) then return false end
                     return nil
                 end
-                local function repaint()
+                local function repaintRow()
                     local expanded
                     local collapsed = RCRowCollapsed(childFrame)
                     if collapsed ~= nil then expanded = not collapsed end
@@ -6196,12 +6196,12 @@ do
                     glyphTex:SetDesaturated(true)
                     glyphTex:SetVertexColor(1, 1, 1, tcb:IsMouseOver() and 1 or 0.75)
                 end
-                buttonData.repaint = repaint
-                if tcb.RefreshIcon then hooksecurefunc(tcb, "RefreshIcon", repaint) end
-                tcb:HookScript("OnClick", repaint)
+                buttonData.repaint = repaintRow
+                if tcb.RefreshIcon then hooksecurefunc(tcb, "RefreshIcon", repaintRow) end
+                tcb:HookScript("OnClick", repaintRow)
                 tcb:HookScript("OnEnter", function() glyphTex:SetVertexColor(1, 1, 1, 1) end)
                 tcb:HookScript("OnLeave", function() glyphTex:SetVertexColor(1, 1, 1, 0.75) end)
-                repaint()
+                repaintRow()
             else
                 buttonData.repaint()
             end
@@ -8086,13 +8086,13 @@ do
             _microHook = true
             -- UpdateMicroButtons fires several times per frame on routine events:
             -- debounce collapses each burst into ONE repaint instead of re-trimming all 13 buttons per fire.
-            local repaint = Skin.Debounce(function()
+            local repaintRow = Skin.Debounce(function()
                 if InCombatLockdown() then return end
                 for _, label in ipairs(MICRO_BUTTONS) do
                     SkinMicroButton(_G[label])
                 end
             end)
-            hooksecurefunc("UpdateMicroButtons", repaint)
+            hooksecurefunc("UpdateMicroButtons", repaintRow)
         end
     end
 

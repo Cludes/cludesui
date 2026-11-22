@@ -748,7 +748,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         --  The hook and its deferred checks act only while this link's frames are still in the dress they made
         --  (options page pool: a rebuild in between resets them and may dress them for another row).
         -- ----------------------------------------------------------------
-        local function Redressed() return PoolGen(applyBtn) ~= dressGen or PoolIsIdle(applyBtn) end
+        local function PoolStale() return PoolGen(applyBtn) ~= dressGen or PoolIsIdle(applyBtn) end
 
         -- ----------------------------------------------------------------
         --  Hover gate: on top of the sync state, which still decides whether the
@@ -786,19 +786,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             local hovered, foreign, holding, lingering = false, nil, false, false
             local function Release()
                 holding = false
-                if Redressed() or hovered or lingering then return end
+                if PoolStale() or hovered or lingering then return end
                 -- Closing a list under the cursor: the slot's enter is on its way.
                 if hit:IsMouseOver() then return end
                 FadeHoverTo(0)
             end
             hit:SetScript("OnEnter", function()
-                if Redressed() then return end
+                if PoolStale() then return end
                 hovered = true
                 if not holding then foreign = OpenList() end
                 FadeHoverTo(1)
             end)
             hit:SetScript("OnLeave", function()
-                if Redressed() then return end
+                if PoolStale() then return end
                 hovered = false
                 local list = OpenList()
                 if list and list ~= foreign then
@@ -812,7 +812,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             hit:SetPropagateMouseClicks(true)
             hit:SetPropagateMouseMotion(true)
             local function SetLinger(on)
-                if Redressed() then return end
+                if PoolStale() then return end
                 lingering = on
                 if on then
                     FadeHoverTo(1)
@@ -831,7 +831,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
         end
         CUI.RegisterWidgetRefresh(function()
-            if Redressed() then return end
+            if PoolStale() then return end
             -- Re-color accent in case it changed
             local red, green, blue = CUI.GetAccentColor()
             prefixText:SetTextColor(1, 1, 1, 0.65)
@@ -851,7 +851,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     -- Values re-converged mid-drag: don't hide yet, defer to drag end
                     if not CUI._deferredDriftChecks then CUI._deferredDriftChecks = {} end
                     CUI._deferredDriftChecks[function()
-                        if Redressed() then return end
+                        if PoolStale() then return end
                         local r2, g2, b2 = CUI.GetAccentColor()
                         prefixText:SetTextColor(1, 1, 1, 0.65)
                         allText:SetTextColor(r2, g2, b2, 0.65)
@@ -868,7 +868,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             if CUI._colorPickerOpen then
                 if not CUI._deferredDriftChecks then CUI._deferredDriftChecks = {} end
                 CUI._deferredDriftChecks[function()
-                    if Redressed() then return end
+                    if PoolStale() then return end
                     local r2, g2, b2 = CUI.GetAccentColor()
                     prefixText:SetTextColor(1, 1, 1, 0.65)
                     allText:SetTextColor(r2, g2, b2, 0.65)

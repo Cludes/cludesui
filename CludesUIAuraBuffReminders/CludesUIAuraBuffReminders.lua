@@ -445,7 +445,7 @@ local function InRealInstancedContent()
     return false
 end
 
-local function InMythicPlusKey()
+local function InKeystone()
     if REMIND.FOREVER then return false end -- no keystones on WoW Forever
     return C_ChallengeMode
         and C_ChallengeMode.IsChallengeModeActive
@@ -458,7 +458,7 @@ local function IsMythicRaidDiff(skinData) return skinData == 16 or skinData == 2
 -- Mythic 0 dungeon (difficulty 23). A keyed M+ run is not M0.
 -- Hung on EABR.
 function REMIND.InMythicZeroDungeon()
-    if InMythicPlusKey() then return false end
+    if InKeystone() then return false end
     return _cachedIType == "party" and _cachedDiffID == 23
 end
 
@@ -467,7 +467,7 @@ end
 -- inserted and started) this goes false; that run is governed by
 -- ShowUnderThresholdApplies() instead (thresholds ignored, buff-gone only).
 local function InPreKeyDungeon()
-    if InMythicPlusKey() then return false end
+    if InKeystone() then return false end
     return _cachedIType == "party" and _cachedDiffID == 8
 end
 
@@ -480,7 +480,7 @@ local function InPvPInstance() return _cachedIType == "pvp" or _cachedIType == "
 -------------------------------------------------------------------------------
 -- Fine-grained instanced difficulty category, or nil outside mapped content.
 function REMIND.CurrentDifficultyCat()
-    if InMythicPlusKey() then return "d_mplus" end
+    if InKeystone() then return "d_mplus" end
     local it, skinData = _cachedIType, _cachedDiffID
     if it == "party" then
         if skinData == 23 or skinData == 8 then return "d_mythic" end
@@ -579,7 +579,7 @@ end
 -- Thresholds apply everywhere except combat and active Mythic+ keys (there a
 -- reminder means the buff is fully gone).
 function REMIND.ShowUnderThresholdApplies()
-    if InCombat() or InMythicPlusKey() then return false end
+    if InCombat() or InKeystone() then return false end
     return true
 end
 
@@ -738,7 +738,7 @@ CUI.NewInternals(mod, "_abrInternals", {
     GetSpecID = GetSpecID,
     GetTextAnchorPoints = GetTextAnchorPoints,
     InCombat = InCombat,
-    InMythicPlusKey = InMythicPlusKey,
+    InMythicPlusKey = InKeystone,
     InPvPInstance = InPvPInstance,
     InRealInstancedContent = InRealInstancedContent,
     isSecret = isSecret,

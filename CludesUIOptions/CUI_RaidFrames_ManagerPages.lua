@@ -1489,7 +1489,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         -- (nil = inherit; getters show the effective value).
         local profile = DmProfile() or {}
         local dmConf = DmTable() or {}
-        local function TEff(filterKey, baseKey, default)
+        local function TileEffective(filterKey, baseKey, default)
             local val = tbl[filterKey]
             if
                 filterKey == "borderSizePx"
@@ -1571,7 +1571,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = 0,
                         max = 0.20,
                         step = 0.01,
-                        get = function() return TEff("iconZoom", "debuffIconZoom", 0.08) end,
+                        get = function() return TileEffective("iconZoom", "debuffIconZoom", 0.08) end,
                         set = TSetRow("iconZoom"),
                     },
                 },
@@ -1661,7 +1661,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             widget,
             sy,
             W,
-            function(keyName) return TEff("border" .. keyName, "debuffBorder" .. keyName) end,
+            function(keyName) return TileEffective("border" .. keyName, "debuffBorder" .. keyName) end,
             function(keyName, val) tbl["border" .. keyName] = val end,
             ApplyDebuffManager,
             nil,
@@ -1693,7 +1693,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = 6,
                         max = 26,
                         step = 1,
-                        get = function() return TEff("durTextSize", "debuffDurTextSize", 10) end,
+                        get = function() return TileEffective("durTextSize", "debuffDurTextSize", 10) end,
                         set = TSetRow("durTextSize"),
                     },
                     {
@@ -1702,7 +1702,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function() return TEff("durTextOffsetX", "debuffDurTextOffsetX", 0) end,
+                        get = function() return TileEffective("durTextOffsetX", "debuffDurTextOffsetX", 0) end,
                         set = TSetRow("durTextOffsetX"),
                     },
                     {
@@ -1711,7 +1711,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function() return TEff("durTextOffsetY", "debuffDurTextOffsetY", 0) end,
+                        get = function() return TileEffective("durTextOffsetY", "debuffDurTextOffsetY", 0) end,
                         set = TSetRow("durTextOffsetY"),
                     },
                 },
@@ -1738,7 +1738,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = 6,
                         max = 26,
                         step = 1,
-                        get = function() return TEff("stacksTextSize", "debuffStacksTextSize", 11) end,
+                        get = function() return TileEffective("stacksTextSize", "debuffStacksTextSize", 11) end,
                         set = TSetRow("stacksTextSize"),
                     },
                     {
@@ -1747,7 +1747,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function() return TEff("stacksOffsetX", "debuffStacksOffsetX", 0) end,
+                        get = function() return TileEffective("stacksOffsetX", "debuffStacksOffsetX", 0) end,
                         set = TSetRow("stacksOffsetX"),
                     },
                     {
@@ -1756,7 +1756,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function() return TEff("stacksOffsetY", "debuffStacksOffsetY", 0) end,
+                        get = function() return TileEffective("stacksOffsetY", "debuffStacksOffsetY", 0) end,
                         set = TSetRow("stacksOffsetY"),
                     },
                 },

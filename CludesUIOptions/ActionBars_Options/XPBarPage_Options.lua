@@ -714,7 +714,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         return e.rank > 1 and (base .. " " .. e.rank) or base
     end
     -- Every text but the bar text draws on a horizontal bar only.
-    local function EntryLocked(e) return _blizzDis() or (not IsBarText(e.pos.stem, e.i) and IsVertical()) end
+    local function EntryOff(e) return _blizzDis() or (not IsBarText(e.pos.stem, e.i) and IsVertical()) end
     local function SlotLockTip()
         if _blizzDis() then return BLIZZ_DIS_TIP end
         return "Horizontal Orientation"
@@ -752,7 +752,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             text = EntryLabel(e),
             values = PH_VALUES,
             order = PH_ORDER,
-            disabled = function() return EntryLocked(e) end,
+            disabled = function() return EntryOff(e) end,
             disabledTooltip = SlotLockTip,
             rawTooltip = _blizzDis,
             getValue = function() return SlotRaw(stem, i) or "none" end,
@@ -926,7 +926,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         -- The list has no disabled state of its own: grey it and block clicks;
         -- the row's disabled overlay explains the lock.
         local function SyncLockedLook()
-            local off = EntryLocked(e)
+            local off = EntryOff(e)
             checkDrop:SetAlpha(off and 0.3 or 1)
             checkDrop:EnableMouse(not off)
         end
@@ -981,7 +981,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             title = EntryLabel(e),
             anchorTo = region._control,
             captureRegion = region,
-            disabled = function() return EntryLocked(e) end,
+            disabled = function() return EntryOff(e) end,
             disabledTooltip = SlotLockTip,
             rawTooltip = _blizzDis,
             rows = rowList,
@@ -1027,7 +1027,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end
         PaintChevron(false)
         local function OnEnter()
-            if EntryLocked(e) then
+            if EntryOff(e) then
                 local tipText = SlotLockTip()
                 CUI.ShowWidgetTooltip(
                     button,
@@ -1087,7 +1087,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             return dropMenu
         end
         button:SetScript("OnClick", function()
-            if EntryLocked(e) then return end
+            if EntryOff(e) then return end
             CUI.HideWidgetTooltip()
             local m = EnsureMenu()
             if m:IsShown() then
@@ -1099,7 +1099,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         button:HookScript("OnHide", function()
             if dropMenu then dropMenu:Hide() end
         end)
-        local function SyncLockedLook() arrow:SetShown(not EntryLocked(e)) end
+        local function SyncLockedLook() arrow:SetShown(not EntryOff(e)) end
         CUI.RegisterWidgetRefresh(SyncLockedLook)
         SyncLockedLook()
     end

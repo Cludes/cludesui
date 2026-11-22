@@ -727,7 +727,7 @@ local function BuildStyle()
     }
 end
 
-local function RegisterStyle()
+local function RegisterPlateStyle()
     AK = AK or CludesUI.AuraKit
     if not AK then return false end
     AK.styles[STYLE] = BuildStyle()
@@ -1606,7 +1606,7 @@ end
 local function Ready()
     EnsurePool()
     if MatchScale() then
-        RegisterStyle()
+        RegisterPlateStyle()
         AK.Restyle(STYLE)
     end
 end
@@ -3578,7 +3578,7 @@ function mod.KT_Refresh()
         return
     end
     ReadSettings(conf)
-    if not RegisterStyle() then return end
+    if not RegisterPlateStyle() then return end
     RegisterGuest()
     -- New settings: the icon size and every icon's style are rebuilt.
     MatchScale(true)
@@ -3752,7 +3752,7 @@ function mod.KT_PaintSampleIcon(owner)
     if not Enabled(conf) then
         -- Off: KT_Refresh left the snapshot and the style stale.
         ReadSettings(conf)
-        if not RegisterStyle() then return nil end
+        if not RegisterPlateStyle() then return nil end
         EnsurePool()
         MatchScale(true)
         AK.Restyle(STYLE)
@@ -3762,7 +3762,7 @@ function mod.KT_PaintSampleIcon(owner)
         if not AK then return nil end
         EnsurePool()
         if MatchScale() then
-            RegisterStyle()
+            RegisterPlateStyle()
             AK.Restyle(STYLE)
         end
     end

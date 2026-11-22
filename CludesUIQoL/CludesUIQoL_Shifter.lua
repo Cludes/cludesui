@@ -167,7 +167,7 @@ local function Secured(widget) return widget:IsProtected() or GetFFD(widget)._sh
 -------------------------------------------------------------------------------
 --  Position helpers
 -------------------------------------------------------------------------------
-local function IsEnabled() return CludesUIDB and CludesUIDB.shifterEnabled or false end
+local function ShifterOn() return CludesUIDB and CludesUIDB.shifterEnabled or false end
 
 local function GetSavedPos(frameName)
     local store = CludesUIDB
@@ -459,7 +459,7 @@ local function FindWheelTarget()
 end
 
 local function SyncWheelOverlay()
-    if WheelArm.shown == 0 or not (IsEnabled() and (IsShiftKeyDown() or IsControlKeyDown())) then
+    if WheelArm.shown == 0 or not (ShifterOn() and (IsShiftKeyDown() or IsControlKeyDown())) then
         wheelTarget, wheelTargetName = nil, nil
         wheelCatcher:Hide()
         return
@@ -492,7 +492,7 @@ end
 
 wheelCatcher:SetScript("OnMouseWheel", function(_, delta)
     local widget, frameName = wheelTarget, wheelTargetName
-    if not widget or not IsEnabled() then return end
+    if not widget or not ShifterOn() then return end
     if IsShiftKeyDown() then
         ApplyScaleStep(widget, frameName, delta, "save")
     elseif IsControlKeyDown() then
@@ -508,7 +508,7 @@ end)
 -- gate parks the overlay.
 function WheelArm.Sync()
     if not watcher then return end
-    if WheelArm.shown > 0 and IsEnabled() then
+    if WheelArm.shown > 0 and ShifterOn() then
         watcher:RegisterEvent("MODIFIER_STATE_CHANGED")
     else
         watcher:UnregisterEvent("MODIFIER_STATE_CHANGED")
@@ -664,7 +664,7 @@ local function HookFrame(widget, frameName)
     local function AttachDrag(dragTarget)
         if not dragTarget or not dragTarget.HookScript then return end
         dragTarget:HookScript("OnMouseDown", function(_, btnFrame)
-            if not IsEnabled() then return end
+            if not ShifterOn() then return end
             if btnFrame ~= "LeftButton" then return end
             if InCombatLockdown() and Secured(widget) then return end
             local noShift = CludesUIDB and CludesUIDB.shifterNoShift
@@ -729,7 +729,7 @@ local function HookFrame(widget, frameName)
     end
 
     widget:HookScript("OnShow", function()
-        if not IsEnabled() then return end
+        if not ShifterOn() then return end
         -- Scale first: stored position offsets are frame-local units, so the
         -- pin only lands right once the final scale is in effect.
         ApplyScale(widget, frameName)
@@ -737,7 +737,7 @@ local function HookFrame(widget, frameName)
     end)
 
     widget:HookScript("OnHide", function()
-        if not IsEnabled() then return end
+        if not ShifterOn() then return end
         if dragHandle.frame == widget then StopSecureDrag() end
         tempPos[widget] = nil
         tempScale[widget] = nil
@@ -834,7 +834,7 @@ local function HookFrame(widget, frameName)
             if liftStrata and not Secured(widget) then widget:SetFrameStrata(defaultStrata) end
         end)
         widget:HookScript("OnShow", function()
-            if not IsEnabled() then return end
+            if not ShifterOn() then return end
             if ShouldDock() then
                 -- The strata raise only matters when the companion OVERLAPS
                 -- CharacterFrame -- a docked frame no longer does. Protected
@@ -856,10 +856,10 @@ local function HookFrame(widget, frameName)
         -- is relative to IT -- so a scale or position change here is exactly
         -- what leaves already-open companions stale (see RedockCompanions).
         hooksecurefunc(widget, "SetPoint", function()
-            if IsEnabled() then RedockCompanions() end
+            if ShifterOn() then RedockCompanions() end
         end)
         hooksecurefunc(widget, "SetScale", function()
-            if IsEnabled() then RedockCompanions() end
+            if ShifterOn() then RedockCompanions() end
         end)
     else
         -- Any other Shifter-managed window can end up rendered underneath a
@@ -876,7 +876,7 @@ local function HookFrame(widget, frameName)
             if liftStrata and not Secured(widget) then widget:SetFrameStrata(defaultStrata) end
         end)
         widget:HookScript("OnShow", function()
-            if not IsEnabled() then return end
+            if not ShifterOn() then return end
             if Secured(widget) then return end
             local castFrame = _G.CharacterFrame
             if
@@ -891,7 +891,7 @@ local function HookFrame(widget, frameName)
     end
 
     hooksecurefunc(widget, "SetPoint", function()
-        if not IsEnabled() then return end
+        if not ShifterOn() then return end
         if frameData._shIgnoreSP then return end
         if dragHandle.frame == widget then return end -- don't fight an active drag
         if InCombatLockdown() and Secured(widget) then return end
@@ -908,7 +908,7 @@ local function HookFrame(widget, frameName)
     -- an order, so a scaled window snapped back. Only re-assert for frames the user has
     -- actually scaled; guarded so our own re-scale can't recurse.
     hooksecurefunc(widget, "SetScale", function()
-        if not IsEnabled() then return end
+        if not ShifterOn() then return end
         if frameData._shIgnoreSS then return end
         if InCombatLockdown() and Secured(widget) then return end
         if tempScale[widget] or GetSavedScale(frameName) then ApplyScale(widget, frameName) end
@@ -949,7 +949,7 @@ end
 function CUI._ShifterAdopt(frameName)
     if adopted[frameName] then return end
     adopted[frameName] = true
-    if IsEnabled() then HookAdopted(frameName) end
+    if ShifterOn() then HookAdopted(frameName) end
 end
 
 -------------------------------------------------------------------------------
@@ -1568,7 +1568,7 @@ watcher:RegisterEvent("PLAYER_LOGIN")
 watcher:SetScript("OnEvent", function(self, evt, arg1)
     if evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
-        if IsEnabled() then InitShifter() end
+        if ShifterOn() then InitShifter() end
         RegisterLootUnlockElements()
         SetupLootWindows()
         RegisterTopBarUnlockElement()

@@ -18,7 +18,7 @@ local X_TEX = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
 local CANCEL_H = 18 -- smallest cancel square
 local GAP = 2
 local Secret = CludesUI.IsSecret
-local function Readable(t)
+local function IsReadableTable(t)
     return type(t) == "table" and not Secret(t) and not (canaccesstable and not canaccesstable(t))
 end
 -- cui's group finder skin is on; off, our rows and buttons take blizzard's look (a reload swaps, like the skin)
@@ -111,7 +111,7 @@ local function AppStatus(ident)
     if Secret(status) or Secret(pending) then return nil, nil end
     if status == "declined_delisted" then
         local details = C_LFGList.GetSearchResultInfo(ident)
-        local delisted = Readable(details) and details.isDelisted
+        local delisted = IsReadableTable(details) and details.isDelisted
         if delisted == false then status = "none" end
     end
     return status, pending
@@ -153,7 +153,7 @@ local function Selectable(ident)
     local status, pending = AppStatus(ident)
     if status ~= "none" or pending then return false end
     local details = C_LFGList.GetSearchResultInfo(ident)
-    if not Readable(details) then return false end
+    if not IsReadableTable(details) then return false end
     local delisted = details.isDelisted
     return not Secret(delisted) and not delisted
 end
@@ -245,7 +245,7 @@ local noteOf, tops = {}, {} -- shown groups with a note, each shown row's top
 
 -- the group's note when notes are on and it has one
 local function NoteText(details)
-    if not mod.OwnListGet("groupNotes") or not Readable(details) then return nil end
+    if not mod.OwnListGet("groupNotes") or not IsReadableTable(details) then return nil end
     local c = details.comment
     if type(c) ~= "string" or Secret(c) or c == "" then return nil end
     return c
@@ -320,7 +320,7 @@ local function Collect()
         wipe(sortVal)
         for _, ident in ipairs(isShown) do
             local details = C_LFGList.GetSearchResultInfo(ident)
-            local val = Readable(details) and details[field]
+            local val = IsReadableTable(details) and details[field]
             sortVal[ident] = (type(val) == "number" and not Secret(val)) and val or 0
         end
         table.sort(isShown, BySortVal)
@@ -392,7 +392,7 @@ end
 
 function mod.OwnListMenu(anchor, ident)
     local details = C_LFGList.GetSearchResultInfo(ident)
-    if not Readable(details) then return end
+    if not IsReadableTable(details) then return end
     local leader = details.leaderName
     if Secret(leader) then leader = nil end
     TaggedMenu(anchor, ident, details, leader)
@@ -974,7 +974,7 @@ local function Fill(region, ident, source)
     source = source or LIVE
     region.resultID = ident
     local details = source.info(ident)
-    if not Readable(details) then
+    if not IsReadableTable(details) then
         region:Hide()
         return
     end
@@ -983,7 +983,7 @@ local function Fill(region, ident, source)
     local acts = details.activityIDs
     local act = type(acts) == "table" and not Secret(acts) and acts[1]
     local ai = act and not Secret(act) and source.activity(act)
-    if not Readable(ai) then ai = nil end
+    if not IsReadableTable(ai) then ai = nil end
     -- colored group names
     local nr, ng, nb
     nr, ng, nb = source.nameColor(ident, details, ai) -- "and" would drop g and b
@@ -1108,7 +1108,7 @@ local function Fill(region, ident, source)
     if type(n) == "number" and not Secret(n) then
         for k = 1, n do
             local p = source.player(ident, k)
-            if Readable(p) and p.classFilename and not Secret(p.classFilename) then
+            if IsReadableTable(p) and p.classFilename and not Secret(p.classFilename) then
                 local specInfo = p.specName
                 if Secret(specInfo) then specInfo = nil end
                 local lead = p.isLeader
@@ -1133,7 +1133,7 @@ local function Fill(region, ident, source)
     wipe(needs)
     if mod.OwnListGet("missingIcons") ~= "none" and mode == "icons" and cap == 5 then
         local counts = source.counts(ident)
-        if Readable(counts) then
+        if IsReadableTable(counts) then
             for i = 1, #RR_ROLES do
                 local role = RR_ROLES[i]
                 local leftX = counts[REMAINING[role]]
@@ -1253,7 +1253,7 @@ local function Fill(region, ident, source)
     end
     -- raid role counts, rating to their left
     local counts = mode == "counts" and source.counts(ident)
-    if not Readable(counts) then counts = nil end
+    if not IsReadableTable(counts) then counts = nil end
     local ellIcons = mod.OwnListGet("missingIcons") == "cludes"
     local round = mod.OwnListGet("iconShape") ~= "square"
     -- round rings sit outside the circle, so the first one steps in like the member icons
@@ -1482,10 +1482,10 @@ local function PvDungeon(i)
     if not name then return { full = CludesUI.L("Dungeon") } end
     local full
     local acts = mapID and C_LFGList.GetAvailableActivities and C_LFGList.GetAvailableActivities(DUNGEONS)
-    for _, act in ipairs(Readable(acts) and acts or {}) do
+    for _, act in ipairs(IsReadableTable(acts) and acts or {}) do
         local ai = not Secret(act) and C_LFGList.GetActivityInfoTable(act)
         if
-            Readable(ai)
+            IsReadableTable(ai)
             and ai.isMythicPlusActivity
             and ai.mapID == mapID
             and type(ai.fullName) == "string"
@@ -1962,7 +1962,7 @@ local function ResultSecret(ident)
     if Secret(ident) or AppSecret(ident) then return true end
     local details = C_LFGList.GetSearchResultInfo(ident)
     return details ~= nil
-        and (not Readable(details) or Secret(details.activityIDs) or Secret(details.isDelisted))
+        and (not IsReadableTable(details) or Secret(details.activityIDs) or Secret(details.isDelisted))
 end
 
 local function RowFor(ident)
@@ -2151,7 +2151,7 @@ function AnySecret()
         if Secret(ident) or AppSecret(ident) then return true end
         local details = C_LFGList.GetSearchResultInfo(ident)
         if
-            details and (not Readable(details) or Secret(details.activityIDs) or Secret(details.isDelisted))
+            details and (not IsReadableTable(details) or Secret(details.activityIDs) or Secret(details.isDelisted))
         then
             return true
         end

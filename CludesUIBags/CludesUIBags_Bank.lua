@@ -3506,7 +3506,7 @@ function BuildBankSidebar()
     -- >0 = individual tab index in _allTabs
 
     -- Divider
-    local function ShowDivider(sortKey)
+    local function ShowSortDivider(sortKey)
         if not sideChild[sortKey] then
             local Pix = CUI and CUI.PP
             local px = (Pix and Pix.mult) or 1
@@ -3587,7 +3587,7 @@ function BuildBankSidebar()
         end
         if hasWarbandTab then
             -- keeps the bank and warbank views apart
-            if not _warbandOnly then ShowDivider("_warbandViewDivider") end
+            if not _warbandOnly then ShowSortDivider("_warbandViewDivider") end
             local function All()
                 RenderSidebarEntry(-2, CludesUI.L("All Warbank Tabs"), 1542854, warbUsed, selectedView == -2)
                 NestTabs(true)
@@ -3685,7 +3685,7 @@ function BuildBankSidebar()
                         if sum > 0 then
                             if not anyCat then
                                 anyCat = true
-                                ShowDivider("_catDivider")
+                                ShowSortDivider("_catDivider")
                             end
                             RenderSidebarEntry(
                                 nil,
@@ -3721,7 +3721,7 @@ function BuildBankSidebar()
                     if num > 0 then
                         if not anyCat then
                             anyCat = true
-                            ShowDivider("_catDivider")
+                            ShowSortDivider("_catDivider")
                         end
                         RenderSidebarEntry(
                             nil,
@@ -3756,12 +3756,12 @@ function BuildBankSidebar()
             and C_Bank.HasMaxBankTabs
             and C_Bank.CanPurchaseBankTab(Enum.BankType.Account)
             and not C_Bank.HasMaxBankTabs(Enum.BankType.Account)
-        if canBuyChar or canBuyWarband then ShowDivider("_buyDivider") end
+        if canBuyChar or canBuyWarband then ShowSortDivider("_buyDivider") end
         if canBuyChar then RenderPurchaseEntry(Enum.BankType.Character, "Buy Bank Tab") end
         if canBuyWarband then RenderPurchaseEntry(Enum.BankType.Account, "Buy Warbank Tab") end
     else
         if not _warbandOnly and showTabs then
-            ShowDivider("_bankTabDivider")
+            ShowSortDivider("_bankTabDivider")
 
             -- Character bank tabs
             for ti, tabBtn in ipairs(_allTabs) do
@@ -3789,13 +3789,13 @@ function BuildBankSidebar()
             and C_Bank.CanPurchaseBankTab(Enum.BankType.Character)
             and not C_Bank.HasMaxBankTabs(Enum.BankType.Character)
         then
-            if not showTabs then ShowDivider("_bankTabDivider") end
+            if not showTabs then ShowSortDivider("_bankTabDivider") end
             RenderPurchaseEntry(Enum.BankType.Character, "Buy Bank Tab")
         end
 
         -- Warband individual tabs
         if hasWarbandTab and showTabs then
-            ShowDivider("_warbandDivider")
+            ShowSortDivider("_warbandDivider")
 
             for ti, tabBtn in ipairs(_allTabs) do
                 if tabBtn.isWarband then
@@ -3820,7 +3820,7 @@ function BuildBankSidebar()
             and C_Bank.CanPurchaseBankTab(Enum.BankType.Account)
             and not C_Bank.HasMaxBankTabs(Enum.BankType.Account)
         then
-            if not hasWarbandTab then ShowDivider("_warbandDivider") end
+            if not hasWarbandTab then ShowSortDivider("_warbandDivider") end
             RenderPurchaseEntry(Enum.BankType.Account, "Buy Warbank Tab")
         end
     end

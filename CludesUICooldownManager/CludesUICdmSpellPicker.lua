@@ -30,28 +30,28 @@ local ComputeTopRowStride = mod.ComputeTopRowStride
 -- Reject secret-tainted numbers before comparing: frame:GetSpellID() on active
 -- viewer frames can return a secret, and `id > 0` on it taints us.
 -- issecretvalue/type() read safely without touching the value.
-local function _IsUsableSID(ident)
+local function _IsUsableSpellId(ident)
     if type(ident) ~= "number" then return false end
     if issecretvalue and issecretvalue(ident) then return false end
     return ident > 0 and ident == math.floor(ident)
 end
 
-local function _GetBase(spellRef)
-    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then return nil end
+local function _BaseSpell(spellRef)
+    if not _IsUsableSpellId(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then return nil end
     local b = C_Spell.GetBaseSpell(spellRef)
-    if _IsUsableSID(b) and b ~= spellRef then return b end
+    if _IsUsableSpellId(b) and b ~= spellRef then return b end
     return nil
 end
 
 local function _GetOverride(spellRef)
-    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetOverrideSpell then return nil end
+    if not _IsUsableSpellId(spellRef) or not C_Spell or not C_Spell.GetOverrideSpell then return nil end
     local o = C_Spell.GetOverrideSpell(spellRef)
-    if _IsUsableSID(o) and o ~= spellRef then return o end
+    if _IsUsableSpellId(o) and o ~= spellRef then return o end
     return nil
 end
 
 local function _StoreIfValid(target, ident, value, preserveExisting)
-    if not _IsUsableSID(ident) then return end
+    if not _IsUsableSpellId(ident) then return end
     if preserveExisting and target[ident] ~= nil then return end
     target[ident] = value
 end
@@ -60,11 +60,11 @@ end
 -- base, so without it the winner would depend on collection order and the
 -- slot could change bars as the spell transforms. Derived keys fill gaps only.
 local function StoreVariantValue(target, spellId, value, preserveExisting, directSet)
-    if type(target) ~= "table" or not _IsUsableSID(spellId) then return end
+    if type(target) ~= "table" or not _IsUsableSpellId(spellId) then return end
     _StoreIfValid(target, spellId, value, preserveExisting)
     if type(directSet) == "table" then directSet[spellId] = value end
     _StoreIfValid(target, _GetOverride(spellId), value, true)
-    local baseId = _GetBase(spellId)
+    local baseId = _BaseSpell(spellId)
     if baseId then
         _StoreIfValid(target, baseId, value, true)
         _StoreIfValid(target, _GetOverride(baseId), value, true)
@@ -72,10 +72,10 @@ local function StoreVariantValue(target, spellId, value, preserveExisting, direc
 end
 
 local function ResolveVariantValue(sourceMap, spellId)
-    if type(sourceMap) ~= "table" or not _IsUsableSID(spellId) then return nil end
+    if type(sourceMap) ~= "table" or not _IsUsableSpellId(spellId) then return nil end
     local direct = sourceMap[spellId]
     if direct ~= nil then return direct end
-    local baseId = _GetBase(spellId)
+    local baseId = _BaseSpell(spellId)
     if baseId then
         local v = sourceMap[baseId]
         if v ~= nil then return v end
@@ -96,7 +96,7 @@ local function ResolveVariantValue(sourceMap, spellId)
 end
 
 local function IsVariantOf(spellIDA, spellIDB)
-    if not _IsUsableSID(spellIDA) or not _IsUsableSID(spellIDB) then return false end
+    if not _IsUsableSpellId(spellIDA) or not _IsUsableSpellId(spellIDB) then return false end
     if spellIDA == spellIDB then return true end
     -- Some rotating viewer spells expose no reversible relationship through
     -- GetBaseSpell/GetOverrideSpell in one of their live states.  The hook
@@ -104,10 +104,10 @@ local function IsVariantOf(spellIDA, spellIDB)
     -- it; consult that ledger so moving/re-adding Sacred Weapon also removes a
     -- stale Holy Bulwark/base entry from the old bar or ghost list.
     if mod.IsLearnedVariantOf and mod.IsLearnedVariantOf(spellIDA, spellIDB) then return true end
-    if _GetBase(spellIDA) == spellIDB or _GetBase(spellIDB) == spellIDA then return true end
+    if _BaseSpell(spellIDA) == spellIDB or _BaseSpell(spellIDB) == spellIDA then return true end
     if _GetOverride(spellIDA) == spellIDB or _GetOverride(spellIDB) == spellIDA then return true end
-    local baseA = _GetBase(spellIDA)
-    local baseB = _GetBase(spellIDB)
+    local baseA = _BaseSpell(spellIDA)
+    local baseB = _BaseSpell(spellIDB)
     if baseA and baseB and baseA == baseB then return true end
     return false
 end
@@ -127,7 +127,7 @@ local RankName
 if CUI.IS_FOREVER then
     local nameList = {}
     RankName = function(ident)
-        if not _IsUsableSID(ident) then return nil end
+        if not _IsUsableSpellId(ident) then return nil end
         local n = nameList[ident]
         if n == nil then
             n = C_Spell.GetSpellName(ident)
@@ -171,9 +171,9 @@ end
 -- gate. Degrades to identity on any invalid/secret id or missing API so
 -- callers can key tables on the result without a separate validity check.
 function mod.NormalizeToBase(spellRef)
-    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then return spellRef end
+    if not _IsUsableSpellId(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then return spellRef end
     local base = C_Spell.GetBaseSpell(spellRef)
-    if _IsUsableSID(base) then return base end
+    if _IsUsableSpellId(base) then return base end
     return spellRef
 end
 
@@ -183,11 +183,11 @@ end
 -- is C_Spell.GetOverrideSpell -- a different API with different semantics)
 -- so catalog/live-icon membership tests agree with the rest of the resident code.
 function mod.ResolveToLive(spellRef)
-    if not _IsUsableSID(spellRef) or not C_SpellBook or not C_SpellBook.FindSpellOverrideByID then
+    if not _IsUsableSpellId(spellRef) or not C_SpellBook or not C_SpellBook.FindSpellOverrideByID then
         return spellRef
     end
     local ovr = C_SpellBook.FindSpellOverrideByID(spellRef)
-    if _IsUsableSID(ovr) then return ovr end
+    if _IsUsableSpellId(ovr) then return ovr end
     return spellRef
 end
 
@@ -217,10 +217,10 @@ local _buffAliasSeen = {}
 function mod.LearnBuffVariantAlias(displaySID, linkedList)
     if type(linkedList) ~= "table" or #linkedList == 0 then return end
     local idList
-    if _IsUsableSID(displaySID) then idList = { displaySID } end
+    if _IsUsableSpellId(displaySID) then idList = { displaySID } end
     for i = 1, #linkedList do
         local lid = linkedList[i]
-        if _IsUsableSID(lid) then
+        if _IsUsableSpellId(lid) then
             idList = idList or {}
             idList[#idList + 1] = lid
         end
@@ -290,7 +290,7 @@ local function GetCanonicalSpellIDForFrame(widget)
     local fnGetSpellID = widget.GetSpellID
     if type(fnGetSpellID) == "function" then
         local spellRef = fnGetSpellID(widget)
-        if _IsUsableSID(spellRef) then
+        if _IsUsableSpellId(spellRef) then
             -- Clean read: cache by cooldownID so a later secret read still resolves.
             local cdid = widget.cooldownID
             if type(cdid) == "number" then _cleanSidByCDID[cdid] = spellRef end
@@ -303,7 +303,7 @@ local function GetCanonicalSpellIDForFrame(widget)
     local fnGetAura = widget.GetAuraSpellID
     if type(fnGetAura) == "function" then
         local spellRef = fnGetAura(widget)
-        if _IsUsableSID(spellRef) then
+        if _IsUsableSpellId(spellRef) then
             -- Clean read: prime the cooldownID cache here too, so buff frames
             -- (no GetSpellID) still resolve while their aura is up.
             local cdid = widget.cooldownID
@@ -328,8 +328,8 @@ local function GetCanonicalSpellIDForFrame(widget)
     end
 
     if details then
-        if _IsUsableSID(details.overrideSpellID) then return details.overrideSpellID end
-        if _IsUsableSID(details.spellID) then return details.spellID end
+        if _IsUsableSpellId(details.overrideSpellID) then return details.overrideSpellID end
+        if _IsUsableSpellId(details.spellID) then return details.spellID end
         -- Deliberately NOT falling back to linkedSpellIDs[1] here: the frame's
         -- own info is the MERGED provider table (Blizzard caches
         -- GetCooldownInfoForID at SetCooldownID), where linked lists are
@@ -366,7 +366,7 @@ local function GetCanonicalSpellIDForFrame(widget)
             local linked = raw.linkedSpellIDs
             if type(linked) == "table" then
                 local lid = linked[1]
-                if _IsUsableSID(lid) then
+                if _IsUsableSpellId(lid) then
                     _cleanSidByCDID[cdid] = lid
                     return lid
                 end
@@ -377,8 +377,8 @@ local function GetCanonicalSpellIDForFrame(widget)
     -- Last resort: base of frame:GetSpellID()
     if type(fnGetSpellID) == "function" then
         local raw = fnGetSpellID(widget)
-        if _IsUsableSID(raw) then
-            local base = _GetBase(raw)
+        if _IsUsableSpellId(raw) then
+            local base = _BaseSpell(raw)
             if base then return base end
             return raw
         end
@@ -418,7 +418,7 @@ local function EnumerateCDMViewerSpells(includeBuffViewer)
                     -- are unaffected: a unique sid there implies a unique cooldownID.
                     local cd = widget.cooldownID
                     local dkey = (includeBuffViewer and type(cd) == "number") and ("c" .. cd) or spellRef
-                    if _IsUsableSID(spellRef) and dkey ~= nil and not seenSet[dkey] then
+                    if _IsUsableSpellId(spellRef) and dkey ~= nil and not seenSet[dkey] then
                         seenSet[dkey] = true
                         entryList[#entryList + 1] = {
                             sid = spellRef,
@@ -462,7 +462,7 @@ local function FindVariantIndex(spellArray, spellId)
     if spellId > 0 then
         for i = 1, #spellArray do
             local existing = spellArray[i]
-            if _IsUsableSID(existing) and IsVariantOf(existing, spellId) then return i end
+            if _IsUsableSpellId(existing) and IsVariantOf(existing, spellId) then return i end
         end
         local label = RankName and RankName(spellId)
         if label then
@@ -482,7 +482,7 @@ mod.FindVariantIndexInList = FindVariantIndex
 --- Add a spellID to a bar's assignedSpells list. Idempotent under variant
 --- equivalence (no-op if any family member is present). True on add, else false.
 function mod.AddSpellToBar(barId, spellId)
-    if not _IsUsableSID(spellId) then return false end
+    if not _IsUsableSpellId(spellId) then return false end
     local barSpells = mod.GetBarSpellData(barId)
     if not barSpells then return false end
     if not barSpells.assignedSpells then barSpells.assignedSpells = {} end
@@ -615,7 +615,7 @@ function mod.EnumerateCDMSettingsCatalog(wantSet)
 
     local result = {}
     for _, cooldownId in ipairs(ordered) do
-        local pInfo = _IsUsableSID(cooldownId) and infoByID[cooldownId]
+        local pInfo = _IsUsableSpellId(cooldownId) and infoByID[cooldownId]
         local category
         if type(pInfo) == "table" then category = pInfo.category end
         if category ~= nil and wantSet[category] then
@@ -632,7 +632,7 @@ function mod.EnumerateCDMSettingsCatalog(wantSet)
                     spellRef = details.spellID
                 end
             end
-            if _IsUsableSID(spellRef) then
+            if _IsUsableSpellId(spellRef) then
                 result[#result + 1] = { cdID = cooldownId, sid = spellRef, category = category }
             end
         end
@@ -648,15 +648,15 @@ end
 -- left out, as the list leaves it out: it has no Blizzard frame, so CUI draws
 -- its own and those settings work. Built per call (Add Custom Spell only).
 function mod.IsCDMTrackedCooldown(spellId)
-    if not _IsUsableSID(spellId) then return false end
+    if not _IsUsableSpellId(spellId) then return false end
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     local set = {}
     local function Add(cooldownId, spellRef)
-        if _IsUsableSID(spellRef) then set[spellRef] = true end
-        local details = getCdInfo and _IsUsableSID(cooldownId) and getCdInfo(cooldownId)
+        if _IsUsableSpellId(spellRef) then set[spellRef] = true end
+        local details = getCdInfo and _IsUsableSpellId(cooldownId) and getCdInfo(cooldownId)
         if details then
-            if _IsUsableSID(details.spellID) then set[details.spellID] = true end
-            if _IsUsableSID(details.overrideSpellID) then set[details.overrideSpellID] = true end
+            if _IsUsableSpellId(details.spellID) then set[details.spellID] = true end
+            if _IsUsableSpellId(details.overrideSpellID) then set[details.overrideSpellID] = true end
         end
     end
     for _, entry in ipairs(EnumerateCDMViewerSpells(false)) do
@@ -946,7 +946,7 @@ function mod.MigrateSpecToBarFilterModelV6()
 
     local entryList = EnumerateCDMViewerSpells(false)
     for _, entry in ipairs(entryList) do
-        if _IsUsableSID(entry.sid) then sidUnion[entry.sid] = true end
+        if _IsUsableSpellId(entry.sid) then sidUnion[entry.sid] = true end
     end
 
     local gcs = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCategorySet
@@ -962,7 +962,7 @@ function mod.MigrateSpecToBarFilterModelV6()
                     local details = getCdInfo(cooldownId)
                     if details then
                         local spellRef = details.overrideSpellID or details.spellID
-                        if _IsUsableSID(spellRef) then sidUnion[spellRef] = true end
+                        if _IsUsableSpellId(spellRef) then sidUnion[spellRef] = true end
                     end
                 end
             end
@@ -1147,8 +1147,8 @@ local function SpellIdsForBuffOrderKey(barKey)
     if pfx == "c" and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
         local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(num)
         if not details then return nil end
-        if _IsUsableSID(details.overrideSpellID) then return details.overrideSpellID end
-        if _IsUsableSID(details.spellID) then return details.spellID end
+        if _IsUsableSpellId(details.overrideSpellID) then return details.overrideSpellID end
+        if _IsUsableSpellId(details.spellID) then return details.spellID end
     end
     return nil
 end

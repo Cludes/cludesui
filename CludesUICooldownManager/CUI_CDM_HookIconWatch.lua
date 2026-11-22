@@ -745,7 +745,7 @@ do
     local blindBy = {} -- [caller] -> its icons already show the answer for unreadable auras
 
     -- Tooltip data can come back as secret tables, and indexing one throws
-    local function Readable(t)
+    local function IsReadableTable(t)
         return not issecretvalue(t) and type(t) == "table" and (not canaccesstable or canaccesstable(t))
     end
 
@@ -911,7 +911,7 @@ do
             if success and not issecretvalue(payload) then
                 if payload == nil then
                     val = false
-                elseif Readable(payload) then
+                elseif IsReadableTable(payload) then
                     val = true
                     -- Recorded so the probe sees it go
                     local iid = payload.auraInstanceID
@@ -965,7 +965,7 @@ do
             blindBy[who] = nil
             return true
         end
-        if not Readable(updateInfo) then
+        if not IsReadableTable(updateInfo) then
             wipe(auraState)
             return true
         end
@@ -977,10 +977,10 @@ do
         end
         local hit = false
         local added = updateInfo.addedAuras
-        if Readable(added) then
+        if IsReadableTable(added) then
             for index = 1, #added do
                 local auraInfo = added[index]
-                if Readable(auraInfo) then
+                if IsReadableTable(auraInfo) then
                     local ident = auraInfo.spellId
                     if not issecretvalue(ident) and procAuras[ident] then
                         auraState[ident] = nil
@@ -992,7 +992,7 @@ do
             end
         end
         local removed = updateInfo.removedAuraInstanceIDs
-        if Readable(removed) then
+        if IsReadableTable(removed) then
             for index = 1, #removed do
                 local iid = removed[index]
                 local ident = not issecretvalue(iid) and procIIDs[iid]
@@ -1110,13 +1110,13 @@ do
     -- one was unreadable is the answer unknown.
     local function Read(spellRef)
         local payload = C_TooltipInfo.GetSpellByID(spellRef)
-        if not Readable(payload) then return nil end
+        if not IsReadableTable(payload) then return nil end
         local lines = payload.lines
-        if not Readable(lines) or #lines == 0 then return nil end
+        if not IsReadableTable(lines) or #lines == 0 then return nil end
         local unread = false
         for index = 1, #lines do
             local line = lines[index]
-            local success, t, req = Readable(line)
+            local success, t, req = IsReadableTable(line)
             if success then
                 t, req = line.type, line.requirementType
             end
@@ -1135,7 +1135,7 @@ do
                 end
                 if isForm then
                     local color = line.leftColor
-                    if not Readable(color) then return nil end
+                    if not IsReadableTable(color) then return nil end
                     local red, green, blue = color.r, color.g, color.b
                     if
                         issecretvalue(red)

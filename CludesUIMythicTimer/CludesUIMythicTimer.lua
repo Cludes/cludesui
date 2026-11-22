@@ -2178,10 +2178,10 @@ local function RenderStandalone()
     end
 
     local _gAlign = (p.alignAllText == "LEFT") and "LEFT" or "RIGHT"
-    local function _ra() return _gAlign end
+    local function _rightAlign() return _gAlign end
 
     local function RenderTitleAffixes()
-        local titleAlign = _ra(p.titleAlign or "CENTER")
+        local titleAlign = _rightAlign(p.titleAlign or "CENTER")
         local tR, tG, tB
         if p.titleUseAccent ~= false then
             tR, tG, tB = aR, aG, aB
@@ -2273,7 +2273,7 @@ local function RenderStandalone()
 
     -- Deaths (toggle removed; always on when there are deaths)
     if runRec.deaths > 0 and not p.deathsInTitle then
-        local deathAlign = _ra(p.deathAlign or "LEFT")
+        local deathAlign = _rightAlign(p.deathAlign or "LEFT")
         local dPad = ContentPad(deathAlign)
         SetFS(frame._deathFS, 12)
         ApplyShadow(frame._deathFS)
@@ -2657,7 +2657,7 @@ local function RenderStandalone()
             return
         end
 
-        local lineAlign = _ra(p.objectiveAlign or "LEFT")
+        local lineAlign = _rightAlign(p.objectiveAlign or "LEFT")
         local ePad = ContentPad(lineAlign)
         local pctRaw = min(100, max(0, enemyLine.quantity))
         local pctPos = p.enemyForcesPctPos or "LABEL"
@@ -2799,7 +2799,7 @@ local function RenderStandalone()
 
     -- Timer text (with optional inline detail rendered as one combined block)
     if not timerInBar then
-        local timerAlign = _ra(p.timerAlign or "CENTER")
+        local timerAlign = _rightAlign(p.timerAlign or "CENTER")
         SetTimerFS(frame._timerFS, p.timerTextSize or 20)
         ApplyShadow(frame._timerFS)
         frame._timerFS:SetTextColor(tR, tG, tB)
@@ -3004,7 +3004,7 @@ local function RenderStandalone()
         EnsureShellTextures(barClip, frame, "_barBg", "_barFill")
         local barInset = GetBarBleedInset(p, false)
         barHost:ClearAllPoints()
-        local _barAlign = _ra(p.timerAlign or "CENTER")
+        local _barAlign = _rightAlign(p.timerAlign or "CENTER")
         if _barAlign == "RIGHT" then
             barHost:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(PAD + TBAR_PAD), posY)
         elseif _barAlign == "LEFT" then
@@ -3251,7 +3251,7 @@ local function RenderStandalone()
     -- Objectives
     local objIdx = 0
     if p.showObjectives then
-        local lineAlign = _ra(p.objectiveAlign or "LEFT")
+        local lineAlign = _rightAlign(p.objectiveAlign or "LEFT")
         local oPad = ContentPad(lineAlign)
         for i, object in ipairs(runRec.objectives) do
             if not object.isWeighted then

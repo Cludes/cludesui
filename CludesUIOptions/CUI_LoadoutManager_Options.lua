@@ -15,7 +15,7 @@ if not mod then return end -- module disabled: no options page
 local PAGE_DISPLAY = "Loadout Manager"
 
 CUI.AtOptionsLogin(function()
-    local function DB() return mod.DB() end
+    local function LoadoutDB() return mod.DB() end
 
     local function ApplyLoadouts(force) CUI:RefreshPage(force and true or nil) end
 
@@ -25,7 +25,7 @@ CUI.AtOptionsLogin(function()
         ApplyLoadouts()
     end
 
-    local function NotEnabled() return not DB().enabled end
+    local function NotEnabled() return not LoadoutDB().enabled end
 
     -- Why a control is locked, shown as written (rawTooltip).
     local PICK_FIRST = "Pick a gear set or talent loadout first."
@@ -383,7 +383,7 @@ CUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Enable Loadout Manager",
                 tooltip = "Swaps gear and talents as you change content.",
-                getValue = function() return DB().enabled end,
+                getValue = function() return LoadoutDB().enabled end,
                 setValue = function(val)
                     mod.SetEnabled(val)
                     ApplyLoadouts()
@@ -421,7 +421,7 @@ CUI.AtOptionsLogin(function()
                     },
                 },
                 function(keyName)
-                    return DB()[keyName == "gear" and "gearEnabled" or "talentEnabled"] and true or false
+                    return LoadoutDB()[keyName == "gear" and "gearEnabled" or "talentEnabled"] and true or false
                 end,
                 function(keyName, val) mod.SetChannelEnabled(keyName, val) end,
                 nil,
@@ -446,15 +446,15 @@ CUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Queue In Combat",
                         tooltip = "Apply a swap due in combat once it ends.",
-                        get = function() return DB().queueInCombat and true or false end,
+                        get = function() return LoadoutDB().queueInCombat and true or false end,
                         set = function(val) mod.SetQueueInCombat(val) end,
                     },
                     {
                         type = "toggle",
                         label = "Re-Swap On Spec Change",
                         tooltip = "Swap again on a spec change in an instance.",
-                        get = function() return DB().specSwap and true or false end,
-                        set = function(val) DB().specSwap = val and true or false end,
+                        get = function() return LoadoutDB().specSwap and true or false end,
+                        set = function(val) LoadoutDB().specSwap = val and true or false end,
                     },
                 },
                 disabled = NotEnabled,
@@ -466,13 +466,13 @@ CUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Talent-Change Warning",
             tooltip = "Show DON'T MOVE while talents change.",
-            getValue = function() return DB().specWarning and true or false end,
+            getValue = function() return LoadoutDB().specWarning and true or false end,
             setValue = function(val) mod.SetSpecWarning(val) end,
         }, {
             type = "toggle",
             text = "Announce Swaps In Chat",
-            getValue = function() return DB().announce and true or false end,
-            setValue = function(val) DB().announce = val and true or false end,
+            getValue = function() return LoadoutDB().announce and true or false end,
+            setValue = function(val) LoadoutDB().announce = val and true or false end,
         })
         cursorY = cursorY - height
 

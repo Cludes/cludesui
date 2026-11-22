@@ -3993,7 +3993,7 @@ do
         profileTbl.specOverrides = profileTbl.specOverrides or {}
         profileTbl.specOverrideGroups = profileTbl.specOverrideGroups or {}
         local storage, groups = profileTbl.specOverrides, profileTbl.specOverrideGroups
-        local function nextId()
+        local function nextOverrideId()
             local ident = (profileTbl.specOverrideNextId or 0) + 1
             profileTbl.specOverrideNextId = ident
             return ident
@@ -4014,7 +4014,7 @@ do
                     label = "Spec " .. tostring(specId)
                 end
                 g = {
-                    id = nextId(),
+                    id = nextOverrideId(),
                     name = label,
                     icon = details and { kind = "class", key = details[2] } or nil,
                     specs = { specId },
@@ -4124,7 +4124,7 @@ do
                     -- 4) Enable card for Simple disabledSpecs specs.
                     if #dsSpecs > 0 then
                         local g = {
-                            id = nextId(),
+                            id = nextOverrideId(),
                             name = section.label,
                             icon = { kind = "multi" },
                             specs = dsSpecs,

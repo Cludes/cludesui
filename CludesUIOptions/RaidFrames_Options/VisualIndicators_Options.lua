@@ -1915,7 +1915,7 @@ local function BuildVisualIndicators(
         _, height = W:SectionHeader(hostFrame, "FRIENDLY BOSS FRAMES", cursorY)
         cursorY = cursorY - height
 
-        local function FBSet()
+        local function FriendlyBossCfg()
             local profile = saved.profile
             if not profile.friendlyBoss then
                 profile.friendlyBoss = { display = "never", position = "right" }
@@ -1923,7 +1923,7 @@ local function BuildVisualIndicators(
             return profile.friendlyBoss
         end
         -- Everything below the display dropdown is inert while "Never".
-        local function FBEnabled() return (FBSet().display or "never") ~= "never" end
+        local function FBEnabled() return (FriendlyBossCfg().display or "never") ~= "never" end
         local FB_DISABLED_TIP = "This option requires Add Friendly Boss Group to be set to Healers or Always."
 
         row, height = W:DualRow(hostFrame, cursorY, {
@@ -1931,10 +1931,10 @@ local function BuildVisualIndicators(
             text = "Add Friendly Boss Group",
             values = { never = "Never", healers = "Healers", always = "Always" },
             order = { "never", "healers", "always" },
-            getValue = function() return FBSet().display or "never" end,
+            getValue = function() return FriendlyBossCfg().display or "never" end,
             -- Rows below are HIDDEN while Never; only the Never <-> enabled flip forces the full rebuild.
             setValue = CUI.DependentSetValue(FBEnabled, function(val)
-                FBSet().display = val
+                FriendlyBossCfg().display = val
                 mod.FB_Apply()
                 CUI:RefreshPage()
             end),
@@ -1943,9 +1943,9 @@ local function BuildVisualIndicators(
             text = "Position",
             values = { left = "Before First Group", right = "After Last Group", free = "Free Move" },
             order = { "left", "right", "free" },
-            getValue = function() return FBSet().position or "right" end,
+            getValue = function() return FriendlyBossCfg().position or "right" end,
             setValue = function(val)
-                FBSet().position = val
+                FriendlyBossCfg().position = val
                 if val ~= "free" then mod.FB_SetMoverShown(false) end
                 mod.FB_Apply()
                 CUI:RefreshPage()
@@ -1965,11 +1965,11 @@ local function BuildVisualIndicators(
                     {
                         type = "toggle",
                         label = "Show in Dungeons",
-                        get = function() return FBSet().showInDungeons == true end,
+                        get = function() return FriendlyBossCfg().showInDungeons == true end,
                         set = function(val)
                             -- Absent = off (additive key); FB_Apply re-registers
                             -- the secure group driver, so the flip is live.
-                            FBSet().showInDungeons = val and true or nil
+                            FriendlyBossCfg().showInDungeons = val and true or nil
                             mod.FB_Apply()
                         end,
                     },
@@ -1990,7 +1990,7 @@ local function BuildVisualIndicators(
                     isShown = mod.FB_IsMoverShown,
                     setShown = mod.FB_SetMoverShown,
                     allowed = function()
-                        return FBEnabled() and (FBSet().position == "free") and not InCombatLockdown()
+                        return FBEnabled() and (FriendlyBossCfg().position == "free") and not InCombatLockdown()
                     end,
                     enabled = FBEnabled,
                     enabledTip = FB_DISABLED_TIP,
@@ -1998,16 +1998,16 @@ local function BuildVisualIndicators(
                 CUI.BuildInlineCog(row, {
                     anchorTo = button,
                     chain = false,
-                    disabled = function() return not (FBEnabled() and FBSet().position == "free") end,
+                    disabled = function() return not (FBEnabled() and FriendlyBossCfg().position == "free") end,
                     disabledTooltip = "This option requires Position to be set to Free Move",
                     title = "Free Move Options",
                     rows = {
                         {
                             type = "toggle",
                             label = "Horizontal Frames",
-                            get = function() return FBSet().freeHorizontal == true end,
+                            get = function() return FriendlyBossCfg().freeHorizontal == true end,
                             set = function(val)
-                                FBSet().freeHorizontal = val
+                                FriendlyBossCfg().freeHorizontal = val
                                 mod.FB_Apply()
                                 -- Resize/reposition the drag overlay if it is up.
                                 if mod.FB_IsMoverShown() then mod.FB_SetMoverShown(true) end
@@ -2019,11 +2019,11 @@ local function BuildVisualIndicators(
             if not CUI._prebuilding then
                 local region = row._rightRegion
                 local colorSwatch = CUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-                    local color = FBSet().healthColor
+                    local color = FriendlyBossCfg().healthColor
                     if color then return color.r, color.g, color.b, 1 end
                     return 23 / 255, 172 / 255, 49 / 255, 1
                 end, function(red, green, blue)
-                    FBSet().healthColor = { r = red, g = green, b = blue }
+                    FriendlyBossCfg().healthColor = { r = red, g = green, b = blue }
                     mod.FB_Apply()
                 end, false, 20)
                 colorSwatch:SetPoint("RIGHT", region, "RIGHT", -20, 0)
@@ -2053,9 +2053,9 @@ local function BuildVisualIndicators(
                 max = 100,
                 step = 1,
                 tooltip = "Widens or narrows the boss frames relative to the raid frame size.",
-                getValue = function() return FBSet().extraWidth or 0 end,
+                getValue = function() return FriendlyBossCfg().extraWidth or 0 end,
                 setValue = function(val)
-                    FBSet().extraWidth = val
+                    FriendlyBossCfg().extraWidth = val
                     mod.FB_Apply()
                     if mod.FB_IsMoverShown() then mod.FB_SetMoverShown(true) end
                 end,
@@ -2066,9 +2066,9 @@ local function BuildVisualIndicators(
                 max = 100,
                 step = 1,
                 tooltip = "Makes the boss frames taller or shorter relative to the raid frame size.",
-                getValue = function() return FBSet().extraHeight or 0 end,
+                getValue = function() return FriendlyBossCfg().extraHeight or 0 end,
                 setValue = function(val)
-                    FBSet().extraHeight = val
+                    FriendlyBossCfg().extraHeight = val
                     mod.FB_Apply()
                     if mod.FB_IsMoverShown() then mod.FB_SetMoverShown(true) end
                 end,
@@ -2339,7 +2339,7 @@ local function BuildVisualIndicators(
         local onParty = tabKey == "party"
         -- This tab's Position, Extra Width/Height and Free Move spot (it reads the shared ones
         -- until it sets its own).
-        local function PFTab()
+        local function PetTabView()
             PFSet()
             return mod.PF_View(tabKey)
         end
@@ -2353,7 +2353,7 @@ local function BuildVisualIndicators(
         -- The last row holds what the chosen position needs: the Move Frames button (Free Move)
         -- or Pet Side (Beside Owner). The other positions have none.
         local function PFPlacement()
-            local p = PFTab().position
+            local p = PetTabView().position
             if p == "free" or (p == "owner" and onParty) then return p end
         end
         local BLANK = CUI.BlankRowCfg
@@ -2383,10 +2383,10 @@ local function BuildVisualIndicators(
                 owner = "Beside Owner",
             } or { left = "Before First Group", right = "After Last Group", free = "Free Move" },
             order = onParty and { "left", "right", "free", "owner" } or { "left", "right", "free" },
-            getValue = function() return PFTab().position or "right" end,
+            getValue = function() return PetTabView().position or "right" end,
             setValue = function(val)
                 local before = PFPlacement()
-                PFTab().position = val
+                PetTabView().position = val
                 if val ~= "free" and mod.PF_IsMoverShown(tabKey) then mod.PF_SetMoverShown(false) end
                 mod.PF_Apply()
                 RedrawPetPreview()
@@ -2404,9 +2404,9 @@ local function BuildVisualIndicators(
                 max = 100,
                 step = 1,
                 tooltip = "Widens or narrows the pet frames relative to the frame size.",
-                getValue = function() return PFTab().extraWidth or 0 end,
+                getValue = function() return PetTabView().extraWidth or 0 end,
                 setValue = function(val)
-                    PFTab().extraWidth = val
+                    PetTabView().extraWidth = val
                     mod.PF_Apply()
                     mod.PF_PlaceMover(tabKey)
                     RedrawPetPreview()
@@ -2418,9 +2418,9 @@ local function BuildVisualIndicators(
                 max = 100,
                 step = 1,
                 tooltip = "Makes the pet frames taller or shorter relative to the frame size.",
-                getValue = function() return PFTab().extraHeight or 0 end,
+                getValue = function() return PetTabView().extraHeight or 0 end,
                 setValue = function(val)
-                    PFTab().extraHeight = val
+                    PetTabView().extraHeight = val
                     mod.PF_Apply()
                     mod.PF_PlaceMover(tabKey)
                     RedrawPetPreview()
@@ -2442,9 +2442,9 @@ local function BuildVisualIndicators(
                         LEFT = "Left",
                     },
                     order = { "frames", "DOWN", "UP", "RIGHT", "LEFT" },
-                    getValue = function() return PFTab().freeGrowth or "frames" end,
+                    getValue = function() return PetTabView().freeGrowth or "frames" end,
                     setValue = function(val)
-                        PFTab().freeGrowth = (val ~= "frames") and val or nil
+                        PetTabView().freeGrowth = (val ~= "frames") and val or nil
                         mod.PF_Apply()
                         mod.PF_PlaceMover(tabKey)
                     end,
@@ -2453,7 +2453,7 @@ local function BuildVisualIndicators(
                 mod.RF_OptMoveFramesButton(row, row._leftRegion, {
                     isShown = function() return mod.PF_IsMoverShown(tabKey) end,
                     setShown = function(show) mod.PF_SetMoverShown(show, tabKey) end,
-                    allowed = function() return PFTab().position == "free" and not InCombatLockdown() end,
+                    allowed = function() return PetTabView().position == "free" and not InCombatLockdown() end,
                 })
             elseif placement == "owner" then
                 -- Across the party frames' stack only: beside stacked frames, above or below

@@ -4376,7 +4376,7 @@ do
         queued = false
         mod.UF_ReloadAllAuraContainers()
     end
-    local function Queue()
+    local function QueueRefresh()
         if queued then return end
         queued = true
         C_Timer.After(0, Settle)
@@ -4389,11 +4389,11 @@ do
         -- (~1.5s after this event), the second covers a CDM-owned run of it,
         -- which waits for async icon population and can land later. Whichever
         -- lands second is a no-op unless the reserve actually changed.
-        C_Timer.After(2, Queue)
-        C_Timer.After(5, Queue)
+        C_Timer.After(2, QueueRefresh)
+        C_Timer.After(5, QueueRefresh)
     end)
     CludesUI:RegisterUnlockModeListener("EUF_AuraContainers", function(unlockActive)
-        if not unlockActive then Queue() end
+        if not unlockActive then QueueRefresh() end
     end)
 end
 

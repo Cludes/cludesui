@@ -672,7 +672,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     -- the Non-Player handoff for the links that outrank Non-Player (see npFlip);
     -- noBools drops the Boss / Role / Can Apply carry (a link that matches
     -- nothing keeps its payload and key).
-    local function ExtraCand(skipNp, noBools)
+    local function ExtraCandidates(skipNp, noBools)
         local withSub = addMode and subCand or nil
         local np = npOwned and not skipNp
         local bo = (not noBools) and boolOwned or nil
@@ -713,8 +713,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 end
             end
         end
-        if not npFlip then return ExtraCand(nil, dead) end
-        local ex = ExtraCand(
+        if not npFlip then return ExtraCandidates(nil, dead) end
+        local ex = ExtraCandidates(
             cc.isPriorityAura == true
                 or OwnFlagOf(cc) ~= nil
                 or (cc.includeDispelTypes ~= nil and not prOwned),
@@ -756,7 +756,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 chain[#chain + 1] = {
                     key = class.key,
                     tokens = tokens,
-                    excludeCand = ExtraCand(),
+                    excludeCand = ExtraCandidates(),
                     hidden = true,
                 }
                 negations[#negations + 1] = class.neg or ("!" .. class.token)
@@ -780,7 +780,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                         key = class.key,
                         tokens = tokens,
                         cand = cc,
-                        excludeCand = ExtraCand(),
+                        excludeCand = ExtraCandidates(),
                         hidden = true,
                     }
                     if cc.includeDispelTypes then
@@ -804,7 +804,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 for num = 1, #negations do
                     tokens[#tokens + 1] = negations[num]
                 end
-                chain[#chain + 1] = { key = class.key, tokens = tokens, excludeCand = ExtraCand() }
+                chain[#chain + 1] = { key = class.key, tokens = tokens, excludeCand = ExtraCandidates() }
                 negations[#negations + 1] = class.neg or ("!" .. class.token)
             end
         end
@@ -856,7 +856,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
             chain[#chain + 1] = {
                 key = class.key,
                 tokens = tokens,
-                excludeCand = ExtraCand(),
+                excludeCand = ExtraCandidates(),
                 hidden = (sub and not en) or nil,
             }
             negations[#negations + 1] = class.neg or ("!" .. class.token)
@@ -886,7 +886,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 if en then
                     ex = ShownCand(cc)
                 else
-                    ex = ExtraCand()
+                    ex = ExtraCandidates()
                 end
                 chain[#chain + 1] = {
                     key = class.key,
@@ -923,7 +923,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         for num = 1, #negations do
             allTokens[#allTokens + 1] = negations[num]
         end
-        local ex = ExtraCand()
+        local ex = ExtraCandidates()
         if subCand then
             ex = ex or {}
             for key, val in pairs(subCand) do

@@ -512,7 +512,7 @@ CludesUI.AtLogin(function()
             end,
         })
         cursorY = cursorY - height
-        local function Shown(key, default)
+        local function ShownOr(key, default)
             local value = mod.Cfg()[key]
             if value == nil then value = mod.DEFAULTS[key] end
             if value == nil then value = default end
@@ -526,13 +526,13 @@ CludesUI.AtLogin(function()
             type = "toggle",
             text = "Show Specialization",
             tooltip = "Shows each member's specialization icon in place of the game's class and role icons. Off, the game's own icons stay.",
-            getValue = function() return Shown("specIcons") end,
+            getValue = function() return ShownOr("specIcons") end,
             setValue = function(value) SetShown("specIcons", value) end,
         }, {
             type = "toggle",
             text = "Show Group Leader",
             tooltip = "Puts a small crown above the group leader's icon.",
-            getValue = function() return Shown("leaderCrown") end,
+            getValue = function() return ShownOr("leaderCrown") end,
             setValue = function(value) SetShown("leaderCrown", value) end,
         })
         cursorY = cursorY - height
@@ -550,7 +550,7 @@ CludesUI.AtLogin(function()
                 tooltip = mod.RegionIsLanguage()
                         and "Shows the leader's realm language (EN, DE, FR, ES, IT, PT, RU) after each group's playstyle."
                     or "Shows OCE, NA, MEX or BRA after each group's playstyle, from the leader's realm.",
-                getValue = function() return Shown("extraRegionTags", true) end,
+                getValue = function() return ShownOr("extraRegionTags", true) end,
                 setValue = function(value) SetLine("extraRegionTags", value) end,
             }
         end
@@ -558,13 +558,13 @@ CludesUI.AtLogin(function()
             type = "toggle",
             text = "Leader Rating",
             tooltip = "Shows the group leader's Mythic+ rating next to the role icons.",
-            getValue = function() return Shown("leaderRating") end,
+            getValue = function() return ShownOr("leaderRating") end,
             setValue = function(value) SetShown("leaderRating", value) end,
         }, {
             type = "toggle",
             text = "Show Playstyle",
             tooltip = "Each group's playstyle (Learning, Relaxed, Competitive, Carry Offered) on its third line.",
-            getValue = function() return Shown("extraShowPlaystyle", true) end,
+            getValue = function() return ShownOr("extraShowPlaystyle", true) end,
             setValue = function(value) SetLine("extraShowPlaystyle", value) end,
         })
         cursorY = cursorY - height

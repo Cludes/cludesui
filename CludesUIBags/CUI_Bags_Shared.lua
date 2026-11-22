@@ -854,7 +854,7 @@ do
     end
 
     -- Closing the window a dialog or job belongs to ends it; other windows are unaffected.
-    local function WindowHidden(win)
+    local function OnWindowHidden(win)
         if dialogFrame and dialogFrame._window == win then dialogFrame:Hide() end
         if task and task.window == win then CancelJob() end
         -- Closing the bags ends every session unmerge; the next open merges again.
@@ -1012,13 +1012,13 @@ do
         })
 
         hooksecurefunc(CUI_Bags, "RefreshInventory", CheckInput)
-        CUI_Bags:HookScript("OnHide", function() WindowHidden(CUI_Bags) end)
+        CUI_Bags:HookScript("OnHide", function() OnWindowHidden(CUI_Bags) end)
         hooksecurefunc(CUI_BagsReagent, "RefreshInventory", CheckInput)
-        CUI_BagsReagent:HookScript("OnHide", function() WindowHidden(CUI_BagsReagent) end)
+        CUI_BagsReagent:HookScript("OnHide", function() OnWindowHidden(CUI_BagsReagent) end)
         local bankFrame = _G.CUI_BankFrame
         if bankFrame then
             hooksecurefunc(bankFrame, "RefreshBank", CheckInput)
-            bankFrame:HookScript("OnHide", function() WindowHidden(bankFrame) end)
+            bankFrame:HookScript("OnHide", function() OnWindowHidden(bankFrame) end)
         end
         return skinData
     end
@@ -1070,7 +1070,7 @@ do
             end
         end
         hooksecurefunc(gb, "Update", CheckInput)
-        gb:HookScript("OnHide", function() WindowHidden(gb) end)
+        gb:HookScript("OnHide", function() OnWindowHidden(gb) end)
     end
     if EventUtil and EventUtil.ContinueOnAddOnLoaded then
         EventUtil.ContinueOnAddOnLoaded("Blizzard_GuildBankUI", HookGuildBank)

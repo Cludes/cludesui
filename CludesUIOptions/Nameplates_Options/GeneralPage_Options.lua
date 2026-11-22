@@ -63,13 +63,13 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     _, height = W:SectionHeader(hostFrame, SECTION_FRIENDLY, cursorY)
     cursorY = cursorY - height
 
-    local function friendlyPlayersOff() return DbValue("showFriendlyPlayers") == false end
-    local function friendlyPlateOff() return friendlyPlayersOff() or DbValue("friendlyNameOnly") ~= false end
-    local function nameOnlyOff() return friendlyPlayersOff() or DbValue("friendlyNameOnly") == false end
+    local function friendlyOff() return DbValue("showFriendlyPlayers") == false end
+    local function friendlyPlateOff() return friendlyOff() or DbValue("friendlyNameOnly") ~= false end
+    local function nameOnlyHidden() return friendlyOff() or DbValue("friendlyNameOnly") == false end
     -- Title renders INLINE with the name (one string, takes the name's own font/size/color); only the guild line below is styled by the size/color/bracket controls, so those gate on a mode that includes guild.
-    local function subtitleGuildOff()
+    local function guildSubtitleOff()
         local m = DbValue("friendlyBelowName") or "none"
-        return friendlyPlayersOff() or (m ~= "guild" and m ~= "both")
+        return friendlyOff() or (m ~= "guild" and m ~= "both")
     end
 
     local friendlyRow
@@ -144,7 +144,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             if mod.UpdateFriendlyNameplateSystem then mod.UpdateFriendlyNameplateSystem() end
             CludesUI:RefreshPage()
         end,
-        disabled = friendlyPlayersOff,
+        disabled = friendlyOff,
         disabledTooltip = "Show CUI Friendly Player Nameplates",
     })
     friendlyRow = _
@@ -316,7 +316,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         local function refreshNameSwatches()
             if updateWhite then updateWhite() end
             if updateClass then updateClass() end
-            local off = nameOnlyOff()
+            local off = nameOnlyHidden()
             local useClass = DbValue("classColorFriendly") ~= false
             whiteSwatch:SetAlpha(off and 0.15 or (useClass and 0.3 or 1))
             classSwatch:SetAlpha(off and 0.15 or (useClass and 1 or 0.3))
@@ -351,7 +351,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         )
         Pix.Point(whiteSwatch, "RIGHT", rightRegion._control, "LEFT", -8, 0)
         whiteSwatch:SetScript("OnClick", function()
-            if nameOnlyOff() then return end
+            if nameOnlyHidden() then return end
             ApplyClassColored(false)
         end)
         CludesUI.HoverTip(whiteSwatch, "White")
@@ -372,7 +372,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         Pix.Point(classSwatch, "RIGHT", whiteSwatch, "LEFT", -8, 0)
         rightRegion._lastInline = classSwatch
         classSwatch:SetScript("OnClick", function()
-            if nameOnlyOff() then return end
+            if nameOnlyHidden() then return end
             ApplyClassColored(true)
         end)
         CludesUI.HoverTip(classSwatch, "Class Color")
@@ -407,7 +407,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     if self._eabOrigClick then self._eabOrigClick(self) end
                 end,
                 refreshAlpha = function()
-                    if subtitleGuildOff() then return 0.15 end
+                    if guildSubtitleOff() then return 0.15 end
                     return (DbValue("friendlyBelowNameClassColor") == true) and 0.3 or 1
                 end,
             },
@@ -427,7 +427,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    if subtitleGuildOff() then return 0.15 end
+                    if guildSubtitleOff() then return 0.15 end
                     return (DbValue("friendlyBelowNameClassColor") == true) and 1 or 0.3
                 end,
             },
@@ -439,7 +439,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "dropdown",
         text = "Subtitle Text",
         tooltip = "Show the player's title inline with their name, and/or their guild on a line below it, on friendly nameplates.",
-        disabled = friendlyPlayersOff,
+        disabled = friendlyOff,
         disabledTooltip = "Show CUI Friendly Player Nameplates",
         values = { none = "None", title = "Player Title", guild = "Guild Name", both = "Title & Guild" },
         order = { "none", "title", "guild", "both" },
@@ -452,12 +452,12 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     }, {
         type = "multiSwatch",
         text = "Guild Text Color",
-        disabled = subtitleGuildOff,
+        disabled = guildSubtitleOff,
         disabledTooltip = function()
-            if friendlyPlayersOff() then return "Show CUI Friendly Player Nameplates" end
+            if friendlyOff() then return "Show CUI Friendly Player Nameplates" end
             return "This option requires Subtitle Text to include the Guild Name"
         end,
-        rawTooltip = function() return not friendlyPlayersOff() end,
+        rawTooltip = function() return not friendlyOff() end,
         swatches = MakeGuildColorSwatches(),
     })
     cursorY = cursorY - height
@@ -469,7 +469,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(subtitleRow._leftRegion, {
             chain = false,
-            disabled = friendlyPlayersOff,
+            disabled = friendlyOff,
             disabledTooltip = "Show CUI Friendly Player Nameplates",
             title = "Name Text Settings",
             rows = {
@@ -506,7 +506,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Show <> Around Guild",
-                    disabled = subtitleGuildOff,
+                    disabled = guildSubtitleOff,
                     disabledTooltip = "This option requires Subtitle Text to include the Guild Name",
                     rawTooltip = true,
                     get = function() return DbValue("friendlyBelowNameGuildBrackets") ~= false end,
@@ -538,7 +538,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         min = 8,
         max = 30,
         step = 1,
-        disabled = nameOnlyOff,
+        disabled = nameOnlyHidden,
         disabledTooltip = "Make Friendly Nameplates Name Only",
         getValue = function() return DbValue("friendlyNameSize") or defaultSet.friendlyNameSize end,
         setValue = function(val)
@@ -554,7 +554,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         local function npcOff() return DbValue("showFriendlyNPCs") ~= true end
         -- Every row here styles the name-only overlay, so the mode gate lives
         -- on the cog button; only the title rows need a gate of their own.
-        local function npcCogOff() return npcOff() or nameOnlyOff() end
+        local function npcCogOff() return npcOff() or nameOnlyHidden() end
         local function titleOff() return DbValue("showNPCTitles") == false end
         -- The overlay's marker follows the Raid Marker element, as the friendly plates' does.
         local function markerOff() return (DbValue("raidMarkerPos") or defaultSet.raidMarkerPos) == "none" end
@@ -712,7 +712,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     -- Inline DIRECTIONS cog on Friendly Name Size: name-only vertical distance
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(npcRow._rightRegion, {
-            disabled = nameOnlyOff,
+            disabled = nameOnlyHidden,
             title = "Name Distance",
             rows = {
                 {

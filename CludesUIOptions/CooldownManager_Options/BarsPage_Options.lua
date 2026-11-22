@@ -1319,14 +1319,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local edge = BarList()
                 return not edge or not edge.customTopRowEnabled
             end
-            local function rowsNotTwo() return (BarList().numRows or 1) ~= 2 end
+            local function notTwoRows() return (BarList().numRows or 1) ~= 2 end
             -- Row-size options are locked while the bar is width/height matched,
             -- exactly like Icon Scale (a per-row size offset can't honor a match).
             local rsMatchKey = "CDM_" .. BarList().key
             local rsWDis, rsWTip = CUI.MatchGuard(rsMatchKey, "Width")
             local rsHDis, rsHTip = CUI.MatchGuard(rsMatchKey, "Height")
-            local function rowSizeMatched() return rsWDis() or rsHDis() end
-            local function rowSizeMatchTip()
+            local function rowSizeLocked() return rsWDis() or rsHDis() end
+            local function rowSizeLockTip()
                 if rsWDis() then return rsWTip() end
                 return rsHTip()
             end
@@ -1361,7 +1361,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- bars are positioned by their anchor system, which
                         -- ignores the pin entirely.
                         disabled = function()
-                            if rowsNotTwo() then return true end
+                            if notTwoRows() then return true end
                             local barData = BarList()
                             if barData.anchorTo and barData.anchorTo ~= "none" then return true end
                             if
@@ -1372,7 +1372,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             return false
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
+                            if notTwoRows() then return "This option requires exactly 2 rows" end
                             return "Not available while this bar is anchored to another element"
                         end,
                         rawTooltip = true,
@@ -1395,7 +1395,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- keys; the legacy bottom-count fields are still honored at
                         -- runtime for old profiles but no longer have UI. Enabling this
                         -- clears the legacy bottom flag so the base count takes effect.
-                        disabled = rowsNotTwo,
+                        disabled = notTwoRows,
                         disabledTooltip = "This option requires exactly 2 rows",
                         rawTooltip = true,
                         get = BDFieldGet("customTopRowEnabled"),
@@ -1412,9 +1412,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         max = 15,
                         step = 1,
                         tooltip = "How many icons to show on the base row (the row that fills first and that Row Growth keeps in place). The rest go on the second row.",
-                        disabled = function() return rowsNotTwo() or customTopOff() end,
+                        disabled = function() return notTwoRows() or customTopOff() end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
+                            if notTwoRows() then return "This option requires exactly 2 rows" end
                             return "Custom Base Row Count"
                         end,
                         get = function()
@@ -1443,13 +1443,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- in the legacy customBottomRowSize* keys); also locked
                         -- while the bar is width/height matched (same as Icon Scale).
                         disabled = function()
-                            return rowsNotTwo()
-                                or rowSizeMatched()
+                            return notTwoRows()
+                                or rowSizeLocked()
                                 or BarList().customBottomRowSizeEnabled == true
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
-                            if rowSizeMatched() then return rowSizeMatchTip() end
+                            if notTwoRows() then return "This option requires exactly 2 rows" end
+                            if rowSizeLocked() then return rowSizeLockTip() end
                             return "Disabled while Custom Second Row Size is enabled"
                         end,
                         rawTooltip = true,
@@ -1468,14 +1468,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         step = 1,
                         tooltip = "Offsets the base row's icon size in pixels from Icon Scale. The second row keeps the base size.",
                         disabled = function()
-                            return rowsNotTwo() or rowSizeMatched() or not BarList().customTopRowSizeEnabled
+                            return notTwoRows() or rowSizeLocked() or not BarList().customTopRowSizeEnabled
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
-                            if rowSizeMatched() then return rowSizeMatchTip() end
+                            if notTwoRows() then return "This option requires exactly 2 rows" end
+                            if rowSizeLocked() then return rowSizeLockTip() end
                             return "Custom Base Row Size"
                         end,
-                        rawTooltip = function() return rowSizeMatched() end,
+                        rawTooltip = function() return rowSizeLocked() end,
                         get = BDFieldOr("topRowSizeOffset", 0),
                         set = function(value)
                             if value == 0 then value = nil end
@@ -1488,13 +1488,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         label = "Custom Second Row Size",
                         -- Flip of Custom Base Row Size; mutually exclusive with it.
                         disabled = function()
-                            return rowsNotTwo()
-                                or rowSizeMatched()
+                            return notTwoRows()
+                                or rowSizeLocked()
                                 or BarList().customTopRowSizeEnabled == true
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
-                            if rowSizeMatched() then return rowSizeMatchTip() end
+                            if notTwoRows() then return "This option requires exactly 2 rows" end
+                            if rowSizeLocked() then return rowSizeLockTip() end
                             return "Disabled while Custom Base Row Size is enabled"
                         end,
                         rawTooltip = true,
@@ -1513,16 +1513,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         step = 1,
                         tooltip = "Offsets the second row's icon size in pixels from Icon Scale. The base row keeps the base size.",
                         disabled = function()
-                            return rowsNotTwo()
-                                or rowSizeMatched()
+                            return notTwoRows()
+                                or rowSizeLocked()
                                 or not BarList().customBottomRowSizeEnabled
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
-                            if rowSizeMatched() then return rowSizeMatchTip() end
+                            if notTwoRows() then return "This option requires exactly 2 rows" end
+                            if rowSizeLocked() then return rowSizeLockTip() end
                             return "Custom Second Row Size"
                         end,
-                        rawTooltip = function() return rowSizeMatched() end,
+                        rawTooltip = function() return rowSizeLocked() end,
                         get = BDFieldOr("bottomRowSizeOffset", 0),
                         set = function(value)
                             if value == 0 then value = nil end

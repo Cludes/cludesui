@@ -244,14 +244,14 @@ end
 -- while only the style is locked).
 local function StyleLock(desc)
     if not desc.styleDisabled then return desc.disabled, desc.disabledTooltip, desc.rawTooltip end
-    local function siteOff() return desc.disabled and desc.disabled() end
+    local function optionOff() return desc.disabled and desc.disabled() end
     return function() return GlowOpts.StyleLocked(desc) end, function()
-        if not siteOff() then return desc.styleDisabledTooltip end
+        if not optionOff() then return desc.styleDisabledTooltip end
         local tt = desc.disabledTooltip
         if type(tt) == "function" then tt = tt() end
         return tt
     end, function()
-        if not siteOff() then return true end
+        if not optionOff() then return true end
         local raw = desc.rawTooltip
         if type(raw) == "function" then raw = raw() end
         return raw
@@ -510,16 +510,16 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
     if CUI._prebuilding or not region then return end
     local Pix = CUI.PanelPP
     local caps = desc.caps or {}
-    local function siteOff() return desc.disabled and desc.disabled() end
+    local function optionOff() return desc.disabled and desc.disabled() end
     local function off()
-        if siteOff() then return true end
+        if optionOff() then return true end
         return not GlowOpts.Renders(desc)
     end
     -- colorDisabled: the site's color comes from elsewhere (NP Color by Type).
     -- A colored extra (Solid Border) draws nothing to style but takes the color;
     -- a noColor extra (Blizzard Pandemic Border) draws but never takes one.
     local function colorOff()
-        if siteOff() then return true end
+        if optionOff() then return true end
         if not GlowOpts.Renders(desc) then
             local posX = CurrentExtra(desc)
             if not (posX and posX.colored) then return true end
@@ -531,7 +531,7 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
     -- requirement (resolved like its dropdown's), no glow to color, a style
     -- that takes no color, or a color that comes from elsewhere.
     local function colorLockTip()
-        if siteOff() then return CUI.ResolveDisabledTip(desc) end
+        if optionOff() then return CUI.ResolveDisabledTip(desc) end
         if not GlowOpts.Renders(desc) then return CUI.DisabledTooltip(NO_STYLE_TIP) end
         if NoColor(desc) then return CUI.DisabledTooltip(NO_COLOR_TIP) end
         if desc.colorDisabledTooltip then
@@ -574,7 +574,7 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
             -- Whichever lock holds, as the sentence shown: the site's own
             -- requirement, else a glow to set (rows beyond Pixel's), else Pixel Glow.
             disabledTooltip = function()
-                if siteOff() then return CUI.ResolveDisabledTip(desc) end
+                if optionOff() then return CUI.ResolveDisabledTip(desc) end
                 if hasExtra then return CUI.DisabledTooltip(NO_STYLE_TIP) end
                 return CUI.DisabledTooltip("Pixel Glow")
             end,

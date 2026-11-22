@@ -135,7 +135,7 @@ function Offline.Rev() return rev end
 
 -- something changed, so the viewer and tooltip index catch up. patched: the
 -- index was already fixed up in place for this write
-local function Changed(what, patched)
+local function IndexChanged(what, patched)
     local current = patched and index and indexRev == rev
     rev = rev + 1
     if current then indexRev = rev end
@@ -155,7 +155,7 @@ function Offline.Forget(key)
         if type(c.bank) == "table" then Bump(c.bank) end
     end
     Offline.Store().chars[key] = nil
-    Changed("forget")
+    IndexChanged("forget")
 end
 
 -- characters for the picker, by realm then name, current one flagged
@@ -216,7 +216,7 @@ local function MyEntry()
                 moved = true
             end
         end
-        if moved then Changed("forget") end
+        if moved then IndexChanged("forget") end
     end
     return c
 end
@@ -324,7 +324,7 @@ local function SaveBags()
     c.bagsTime = time()
     if type(c.bags) ~= "table" then c.bags = {} end
     -- most bag updates move nothing we keep (cooldowns, locks): no change then
-    if SaveList(c.bags, BAGS, BAG_POS, "bags", OwnKey()) then Changed("bags", true) end
+    if SaveList(c.bags, BAGS, BAG_POS, "bags", OwnKey()) then IndexChanged("bags", true) end
 end
 
 local function Meta(bankType)
@@ -355,7 +355,7 @@ local function SaveBanks()
             changed = true
         end
     end
-    if changed then Changed("bank", true) end
+    if changed then IndexChanged("bank", true) end
 end
 
 -- a burst of updates only saves once
@@ -477,7 +477,7 @@ function Offline.Wipe()
     index = nil
     wipe(listRev)
     listGen = listGen + 1
-    Changed("forget")
+    IndexChanged("forget")
     -- this character saves again right away
     MarkDirty(BAGS)
     if listening then QueueSave(true, false) end

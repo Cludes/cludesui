@@ -18,7 +18,7 @@ local DEFAULT_SIZE = 22
 local DEFAULT_POS = { point = "CENTER", relPoint = "CENTER", x = 0, y = 169 }
 local GAP = 4
 
-local function DB(key) return CludesUIDB and CludesUIDB[key] end
+local function AlertDB(key) return CludesUIDB and CludesUIDB[key] end
 
 -------------------------------------------------------------------------------
 --  Core: anchor + stacked lines
@@ -41,11 +41,11 @@ Alerts.DEFAULTS = {
     talentAlert = { text = "Unspent talent points", color = { r = 1, g = 0.82, b = 0 } },
 }
 
-local function SizeOf(def) return DB(def.sizeKey) or DEFAULT_SIZE end
+local function SizeOf(def) return AlertDB(def.sizeKey) or DEFAULT_SIZE end
 
 local function AnyEnabled()
     for _, def in ipairs(DEFS) do
-        if DB(def.enabledKey) then return true end
+        if AlertDB(def.enabledKey) then return true end
     end
     return false
 end
@@ -53,16 +53,16 @@ end
 local function MaxSize()
     local m = DEFAULT_SIZE
     for _, def in ipairs(DEFS) do
-        if DB(def.enabledKey) then m = math.max(m, SizeOf(def)) end
+        if AlertDB(def.enabledKey) then m = math.max(m, SizeOf(def)) end
     end
     return m
 end
 
 -- The old Combat Alert position carries over until the anchor is moved.
 local function AnchorPos()
-    local p = DB("alertsPos")
+    local p = AlertDB("alertsPos")
     if p and p.point then return p end
-    p = DB("combatAlertPos")
+    p = AlertDB("combatAlertPos")
     if p and p.point then return p end
     return DEFAULT_POS
 end
@@ -215,14 +215,14 @@ end
 
 -- Custom color, or the player's class color when that toggle is on.
 function Alerts.Color(prefixText, dr, dg, saved)
-    if DB(prefixText .. "UseClassColor") then
+    if AlertDB(prefixText .. "UseClassColor") then
         local _, token = UnitClass("player")
         if token then
             local color = CUI.GetClassColor(token)
             return color.r, color.g, color.b
         end
     end
-    local color = DB(prefixText .. "Color")
+    local color = AlertDB(prefixText .. "Color")
     if color then return color.r, color.g, color.b end
     return dr, dg, saved
 end
@@ -310,7 +310,7 @@ do
     local function FlashAlert(preview)
         local D = Alerts.DEFAULTS.potionAlert
         local red, green, blue = Alerts.Color("potionAlert", D.color.r, D.color.g, D.color.b)
-        Alerts.Line("potion").Show(DB("potionAlertText") or D.text, red, green, blue, preview)
+        Alerts.Line("potion").Show(AlertDB("potionAlertText") or D.text, red, green, blue, preview)
     end
 
     -- start, duration; nil if the item has no cooldown data.
@@ -461,7 +461,7 @@ do
     end
 
     local function ApplyPotionAlert()
-        local enabled = DB("potionAlertEnabled")
+        local enabled = AlertDB("potionAlertEnabled")
         if enabled and not installed then
             watcher:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
             watcher:RegisterEvent("BAG_UPDATE")
@@ -535,7 +535,7 @@ do
     local function FlashAlert(preview)
         local D = Alerts.DEFAULTS.talentAlert
         local red, green, blue = Alerts.Color("talentAlert", D.color.r, D.color.g, D.color.b)
-        Line().Show(DB("talentAlertText") or D.text, red, green, blue, preview)
+        Line().Show(AlertDB("talentAlertText") or D.text, red, green, blue, preview)
     end
 
     local function Evaluate()
@@ -564,7 +564,7 @@ do
 
     local listening = false
     local function ApplyPotionAlert()
-        local enabled = DB("talentAlertEnabled")
+        local enabled = AlertDB("talentAlertEnabled")
         if enabled and not installed then
             for _, event in ipairs(EVENTS) do
                 watcher:RegisterEvent(event)

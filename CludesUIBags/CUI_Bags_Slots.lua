@@ -693,12 +693,12 @@ do
         return match and true or false
     end
 
-    local function Eval(n)
+    local function EvalNode(n)
         local t = n.t
         if t == "term" then return TermMatches(n) end
-        if t == "not" then return not Eval(n.a) end
-        if t == "and" then return Eval(n.a) and Eval(n.b) end
-        return Eval(n.a) or Eval(n.b)
+        if t == "not" then return not EvalNode(n.a) end
+        if t == "and" then return EvalNode(n.a) and EvalNode(n.b) end
+        return EvalNode(n.a) or EvalNode(n.b)
     end
 
     -- The game applies a search after SetItemSearch returns and reports the
@@ -784,7 +784,7 @@ do
             curIsAccount = curBindType == Enum.ItemBind.ToWoWAccount
                 or curBindType == Enum.ItemBind.ToBnetAccount
             curWue, curIlvl = nil, nil
-            match = Eval(q)
+            match = EvalNode(q)
         end
         details.isFiltered = not match
     end

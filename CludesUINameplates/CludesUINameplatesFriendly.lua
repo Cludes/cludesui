@@ -51,7 +51,7 @@ local function IsFriendlyEnabled()
     return (plate.friendlyNameOnly == false)
 end
 
-local function IsNameOnlyMode()
+local function NameOnlyOn()
     if IsInFollowerDungeon() then return false end
     local plate = FP()
     if not plate then return false end
@@ -324,7 +324,7 @@ end
 -- Blizzard's own anchor pass re-enters UpdateAnchors.
 local function _OnNameWidthChanged(self)
     if _nameFixGuard then return end
-    if not IsNameOnlyMode() then return end
+    if not NameOnlyOn() then return end
     _nameFixGuard = true
     self:SetWidth(0)
     self:SetHeight(0)
@@ -340,7 +340,7 @@ local _nameHeightGuard = false
 local function ApplyNameTextHeight(nameText)
     if _nameHeightGuard then return end
     if not (nameText and nameText.SetTextHeight) then return end
-    if not IsNameOnlyMode() then return end
+    if not NameOnlyOn() then return end
     _nameHeightGuard = true
     pcall(nameText.SetTextHeight, nameText, GetFriendlyNameSize())
     _nameHeightGuard = false
@@ -361,7 +361,7 @@ end
 -- Re-running the override re-reads GetFriendlyNameSize and resizes the shared
 -- font object; the name FontStrings inherit it on the next render.
 function mod.RefreshFriendlyNameSize()
-    if IsNameOnlyMode() then
+    if NameOnlyOn() then
         ApplyFriendlyFontOverride()
         -- Blizzard's per-instance name height overrides the font object, so the
         -- visible plates need the new size stamped on directly.
@@ -384,13 +384,13 @@ local _nameSizeReapplyPending = false
 local _nameSizeReapplyForce = false
 local function ScheduleNameSizeReapply(force)
     if force then _nameSizeReapplyForce = true end
-    if _nameSizeReapplyPending or not IsNameOnlyMode() then return end
+    if _nameSizeReapplyPending or not NameOnlyOn() then return end
     _nameSizeReapplyPending = true
     C_Timer.After(0, function()
         _nameSizeReapplyPending = false
         local forced = _nameSizeReapplyForce
         _nameSizeReapplyForce = false
-        if not IsNameOnlyMode() then return end
+        if not NameOnlyOn() then return end
         ApplyFriendlyFontOverride(forced)
         -- Blizzard's own ApplyFrameOptions pass re-anchors the name (that is
         -- what fires this), so re-collapse it here rather than from a
@@ -974,7 +974,7 @@ end
 -- same way). C_NamePlate.GetNamePlates does not return friendly player plates, so it
 -- cannot drive this sweep.
 local function SweepPlayerSubText()
-    if not IsNameOnlyMode() then return end
+    if not NameOnlyOn() then return end
     local pending = mod.pendingUnits
     if not pending then return end
     for unitToken, plateFrame in pairs(pending) do
@@ -1160,14 +1160,14 @@ hooksecurefunc(NamePlateDriverFrame, "OnNamePlateAdded", function(_, unitToken)
     end
 
     -- Name-only mode: suppress Blizzard UF and show our own name overlay for NPCs
-    if IsNameOnlyMode() and not UnitIsPlayer(unitToken) and IsFriendlyNPCEnabled() then
+    if NameOnlyOn() and not UnitIsPlayer(unitToken) and IsFriendlyNPCEnabled() then
         local plateFrame = C_NamePlate.GetNamePlateForUnit(unitToken)
         if plateFrame then SuppressNPCNameplate(plateFrame, unitToken) end
     end
 
     -- Name-only mode (players): remove Blizzard's width constraint on the
     -- name FontString so long names are never truncated with "...".
-    if IsNameOnlyMode() and UnitIsPlayer(unitToken) then
+    if NameOnlyOn() and UnitIsPlayer(unitToken) then
         local plateFrame = C_NamePlate.GetNamePlateForUnit(unitToken)
         if plateFrame and plateFrame.UnitFrame and plateFrame.UnitFrame.name then
             -- Name-only player plates render ONLY the name, but Blizzard's
@@ -2098,7 +2098,7 @@ end
 -------------------------------------------------------------------------------
 function mod.UpdateFriendlyNameplateSystem()
     local shouldEnable = IsFriendlyEnabled() -- health-bar mode
-    local nameOnly = IsNameOnlyMode() -- name-only mode
+    local nameOnly = NameOnlyOn() -- name-only mode
 
     -- Re-derive the subtitle font (login profile load, profile switches,
     -- slug toggles). Value-memoized, near-free when unchanged.
@@ -2368,7 +2368,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             end
             -- Name-only NPC sweep: suppress health bars and color names. Per-unit
             -- gate respects Blizzard's "NPC Names" filter (skip widgets-only NPCs).
-            if IsNameOnlyMode() and IsFriendlyNPCEnabled() then
+            if NameOnlyOn() and IsFriendlyNPCEnabled() then
                 local allPlates = C_NamePlate.GetNamePlates()
                 if allPlates then
                     for _, plateFrame in ipairs(allPlates) do

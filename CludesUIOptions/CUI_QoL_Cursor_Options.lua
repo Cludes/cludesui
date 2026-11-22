@@ -40,14 +40,14 @@ CUI.AtOptionsLogin(function()
         return saved and saved.profile
     end
 
-    local function GCD_DB()
+    local function GcdCfg()
         local profile = DB()
         if not profile then return {} end
         if not profile.gcd then profile.gcd = {} end
         return profile.gcd
     end
 
-    local function Cast_DB()
+    local function CastCfg()
         local profile = DB()
         if not profile then return {} end
         if not profile.castCircle then profile.castCircle = {} end
@@ -412,24 +412,24 @@ CUI.AtOptionsLogin(function()
         CUI.BuildSectionUnlockJump(heading, {
             key = "ECL_GCD",
             disabled = function()
-                local gcdCfg = GCD_DB()
+                local gcdCfg = GcdCfg()
                 return not (gcdCfg.enabled and gcdCfg.attached == false)
             end,
-            disabledTooltip = function() return GCD_DB().enabled and "Attach to Cursor" or "GCD Circle" end,
-            requireState = function() return GCD_DB().enabled and "disabled" or "enabled" end,
+            disabledTooltip = function() return GcdCfg().enabled and "Attach to Cursor" or "GCD Circle" end,
+            requireState = function() return GcdCfg().enabled and "disabled" or "enabled" end,
         })
 
         -- Enable GCD Circle ---- Color (multiSwatch: custom left, class colored right)
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable GCD Circle",
-            getValue = function() return GCD_DB().enabled or false end,
+            getValue = function() return GcdCfg().enabled or false end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
             setValue = CUI.DependentSetValue(
-                function() return GCD_DB().enabled or false end,
+                function() return GcdCfg().enabled or false end,
                 function(val)
-                    GCD_DB().enabled = val
+                    GcdCfg().enabled = val
                     ApplyGcdCircle()
                     CUI:RefreshPage()
                 end
@@ -442,17 +442,17 @@ CUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local gcdCfg = GCD_DB()
+                        local gcdCfg = GcdCfg()
                         local r, ng, b = HexToRGB(gcdCfg.hex)
                         return r, ng, b
                     end,
                     setValue = function(red, green, blue)
-                        local gd = GCD_DB()
+                        local gd = GcdCfg()
                         gd.hex = RGBToHex(red, green, blue)
                         ApplyGcdCircle()
                     end,
                     onClick = function(self)
-                        local gcdCfg = GCD_DB()
+                        local gcdCfg = GcdCfg()
                         if gcdCfg.useClassColor or gcdCfg.useAccentColor then
                             gcdCfg.useClassColor = false
                             gcdCfg.useAccentColor = false
@@ -463,7 +463,7 @@ CUI.AtOptionsLogin(function()
                         if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
-                        local gcdCfg = GCD_DB()
+                        local gcdCfg = GcdCfg()
                         if not gcdCfg.enabled then return 0.15 end
                         return (gcdCfg.useClassColor or gcdCfg.useAccentColor) and 0.3 or 1
                     end,
@@ -479,14 +479,14 @@ CUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local gcdCfg = GCD_DB()
+                        local gcdCfg = GcdCfg()
                         gcdCfg.useClassColor = true
                         gcdCfg.useAccentColor = false
                         ApplyGcdCircle()
                         CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local gcdCfg = GCD_DB()
+                        local gcdCfg = GcdCfg()
                         if not gcdCfg.enabled then return 0.15 end
                         return gcdCfg.useClassColor and 1 or 0.3
                     end,
@@ -500,14 +500,14 @@ CUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local gcdCfg = GCD_DB()
+                        local gcdCfg = GcdCfg()
                         gcdCfg.useAccentColor = true
                         gcdCfg.useClassColor = false
                         ApplyGcdCircle()
                         CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local gcdCfg = GCD_DB()
+                        local gcdCfg = GcdCfg()
                         if not gcdCfg.enabled then return 0.15 end
                         return gcdCfg.useAccentColor and 1 or 0.3
                     end,
@@ -528,7 +528,7 @@ CUI.AtOptionsLogin(function()
             )
             gcdBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function UpdateGCDBlock()
-                local off = not GCD_DB().enabled
+                local off = not GcdCfg().enabled
                 gcdBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
                 if rightRegion._label then rightRegion._label:SetAlpha(off and 0.3 or 1) end
@@ -539,16 +539,16 @@ CUI.AtOptionsLogin(function()
 
         -- Rows below are HIDDEN entirely while the GCD Circle is off (the
         -- toggle's DependentSetValue forces the rebuild on flips).
-        if GCD_DB().enabled then
+        if GcdCfg().enabled then
             -- Ring Texture ---- Scale
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Ring Texture",
                 values = ringTexValues,
                 order = ringTexOrder,
-                getValue = function() return GCD_DB().ringTex or "light" end,
+                getValue = function() return GcdCfg().ringTex or "light" end,
                 setValue = function(val)
-                    GCD_DB().ringTex = val
+                    GcdCfg().ringTex = val
                     ApplyGcdCircle()
                 end,
             }, {
@@ -557,9 +557,9 @@ CUI.AtOptionsLogin(function()
                 min = 10,
                 max = 100,
                 step = 1,
-                getValue = function() return GCD_DB().radius or 21 end,
+                getValue = function() return GcdCfg().radius or 21 end,
                 setValue = function(val)
-                    GCD_DB().radius = val
+                    GcdCfg().radius = val
                     ApplyGcdCircle()
                 end,
             })
@@ -572,17 +572,17 @@ CUI.AtOptionsLogin(function()
                 min = 0,
                 max = 100,
                 step = 1,
-                getValue = function() return GCD_DB().alpha or 80 end,
+                getValue = function() return GcdCfg().alpha or 80 end,
                 setValue = function(val)
-                    GCD_DB().alpha = val
+                    GcdCfg().alpha = val
                     ApplyGcdCircle()
                 end,
             }, {
                 type = "toggle",
                 text = "Attach to Cursor",
-                getValue = function() return GCD_DB().attached ~= false end,
+                getValue = function() return GcdCfg().attached ~= false end,
                 setValue = function(val)
-                    GCD_DB().attached = val
+                    GcdCfg().attached = val
                     ApplyGcdCircle()
                     CUI:RefreshPage()
                 end,
@@ -593,18 +593,18 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only Show in Instances",
-                getValue = function() return GCD_DB().instanceOnly or false end,
+                getValue = function() return GcdCfg().instanceOnly or false end,
                 setValue = function(val)
-                    GCD_DB().instanceOnly = val
+                    GcdCfg().instanceOnly = val
                     if _G._CUCL_UpdateVisibility then _G._CUCL_UpdateVisibility() end
                 end,
             }, {
                 type = "toggle",
                 text = "Combat Only",
                 tooltip = "Only shows the GCD circle while you are in combat.",
-                getValue = function() return GCD_DB().combatOnly or false end,
+                getValue = function() return GcdCfg().combatOnly or false end,
                 setValue = function(val)
-                    GCD_DB().combatOnly = val
+                    GcdCfg().combatOnly = val
                     if _G._CUCL_ApplyCombatOnlyEvents then _G._CUCL_ApplyCombatOnlyEvents() end
                     if _G._CUCL_UpdateVisibility then _G._CUCL_UpdateVisibility() end
                 end,
@@ -624,24 +624,24 @@ CUI.AtOptionsLogin(function()
         CUI.BuildSectionUnlockJump(heading, {
             key = "ECL_Cast",
             disabled = function()
-                local cfg = Cast_DB()
+                local cfg = CastCfg()
                 return not (cfg.enabled and cfg.attached == false)
             end,
-            disabledTooltip = function() return Cast_DB().enabled and "Attach to Cursor" or "Cast Bar Circle" end,
-            requireState = function() return Cast_DB().enabled and "disabled" or "enabled" end,
+            disabledTooltip = function() return CastCfg().enabled and "Attach to Cursor" or "Cast Bar Circle" end,
+            requireState = function() return CastCfg().enabled and "disabled" or "enabled" end,
         })
 
         -- Enable Cast Bar Circle ---- Color (multiSwatch: custom left, class colored right)
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Cast Bar Circle",
-            getValue = function() return Cast_DB().enabled or false end,
+            getValue = function() return CastCfg().enabled or false end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
             setValue = CUI.DependentSetValue(
-                function() return Cast_DB().enabled or false end,
+                function() return CastCfg().enabled or false end,
                 function(val)
-                    Cast_DB().enabled = val
+                    CastCfg().enabled = val
                     ApplyCastCircle()
                     CUI:RefreshPage()
                 end
@@ -654,17 +654,17 @@ CUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local cfg = Cast_DB()
+                        local cfg = CastCfg()
                         local r, ng, b = HexToRGB(cfg.hex)
                         return r, ng, b
                     end,
                     setValue = function(red, green, blue)
-                        local cd = Cast_DB()
+                        local cd = CastCfg()
                         cd.hex = RGBToHex(red, green, blue)
                         ApplyCastCircle()
                     end,
                     onClick = function(self)
-                        local cfg = Cast_DB()
+                        local cfg = CastCfg()
                         if cfg.useClassColor or cfg.useAccentColor then
                             cfg.useClassColor = false
                             cfg.useAccentColor = false
@@ -675,7 +675,7 @@ CUI.AtOptionsLogin(function()
                         if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
-                        local cfg = Cast_DB()
+                        local cfg = CastCfg()
                         if not cfg.enabled then return 0.15 end
                         return (cfg.useClassColor or cfg.useAccentColor) and 0.3 or 1
                     end,
@@ -691,14 +691,14 @@ CUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local cfg = Cast_DB()
+                        local cfg = CastCfg()
                         cfg.useClassColor = true
                         cfg.useAccentColor = false
                         ApplyCastCircle()
                         CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local cfg = Cast_DB()
+                        local cfg = CastCfg()
                         if not cfg.enabled then return 0.15 end
                         return cfg.useClassColor and 1 or 0.3
                     end,
@@ -712,14 +712,14 @@ CUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local cfg = Cast_DB()
+                        local cfg = CastCfg()
                         cfg.useAccentColor = true
                         cfg.useClassColor = false
                         ApplyCastCircle()
                         CUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local cfg = Cast_DB()
+                        local cfg = CastCfg()
                         if not cfg.enabled then return 0.15 end
                         return cfg.useAccentColor and 1 or 0.3
                     end,
@@ -742,7 +742,7 @@ CUI.AtOptionsLogin(function()
             )
             castBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function UpdateCastBlock()
-                local off = not Cast_DB().enabled
+                local off = not CastCfg().enabled
                 castBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
                 if rightRegion._label then rightRegion._label:SetAlpha(off and 0.3 or 1) end
@@ -754,18 +754,18 @@ CUI.AtOptionsLogin(function()
         -- Inline cog on Enable Cast Bar Circle for "Show Spark"
         CUI.BuildInlineCog(row._leftRegion, {
             title = "Cast Bar Settings",
-            disabled = function() return not Cast_DB().enabled end,
+            disabled = function() return not CastCfg().enabled end,
             disabledTooltip = "Cast Bar Circle",
             rows = {
                 {
                     type = "toggle",
                     label = "Show Spark",
                     get = function()
-                        local cfg = Cast_DB()
+                        local cfg = CastCfg()
                         return cfg.sparkEnabled ~= false
                     end,
                     set = function(val)
-                        Cast_DB().sparkEnabled = val
+                        CastCfg().sparkEnabled = val
                         ApplyCastCircle()
                     end,
                 },
@@ -774,16 +774,16 @@ CUI.AtOptionsLogin(function()
 
         -- Rows below are HIDDEN entirely while the Cast Bar Circle is off
         -- (the toggle's DependentSetValue forces the rebuild on flips).
-        if Cast_DB().enabled then
+        if CastCfg().enabled then
             -- Ring Texture ---- Scale
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Ring Texture",
                 values = ringTexValues,
                 order = ringTexOrder,
-                getValue = function() return Cast_DB().ringTex or "normal" end,
+                getValue = function() return CastCfg().ringTex or "normal" end,
                 setValue = function(val)
-                    Cast_DB().ringTex = val
+                    CastCfg().ringTex = val
                     ApplyCastCircle()
                 end,
             }, {
@@ -792,9 +792,9 @@ CUI.AtOptionsLogin(function()
                 min = 10,
                 max = 100,
                 step = 1,
-                getValue = function() return Cast_DB().radius or 30 end,
+                getValue = function() return CastCfg().radius or 30 end,
                 setValue = function(val)
-                    Cast_DB().radius = val
+                    CastCfg().radius = val
                     ApplyCastCircle()
                 end,
             })
@@ -807,17 +807,17 @@ CUI.AtOptionsLogin(function()
                 min = 0,
                 max = 100,
                 step = 1,
-                getValue = function() return Cast_DB().alpha or 80 end,
+                getValue = function() return CastCfg().alpha or 80 end,
                 setValue = function(val)
-                    Cast_DB().alpha = val
+                    CastCfg().alpha = val
                     ApplyCastCircle()
                 end,
             }, {
                 type = "toggle",
                 text = "Attach to Cursor",
-                getValue = function() return Cast_DB().attached ~= false end,
+                getValue = function() return CastCfg().attached ~= false end,
                 setValue = function(val)
-                    Cast_DB().attached = val
+                    CastCfg().attached = val
                     ApplyCastCircle()
                     CUI:RefreshPage()
                 end,
@@ -828,18 +828,18 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only Show in Instances",
-                getValue = function() return Cast_DB().instanceOnly or false end,
+                getValue = function() return CastCfg().instanceOnly or false end,
                 setValue = function(val)
-                    Cast_DB().instanceOnly = val
+                    CastCfg().instanceOnly = val
                     if _G._CUCL_UpdateVisibility then _G._CUCL_UpdateVisibility() end
                 end,
             }, {
                 type = "toggle",
                 text = "Combat Only",
                 tooltip = "Only shows the cast bar circle while you are in combat.",
-                getValue = function() return Cast_DB().combatOnly or false end,
+                getValue = function() return CastCfg().combatOnly or false end,
                 setValue = function(val)
-                    Cast_DB().combatOnly = val
+                    CastCfg().combatOnly = val
                     if _G._CUCL_ApplyCombatOnlyEvents then _G._CUCL_ApplyCombatOnlyEvents() end
                     if _G._CUCL_UpdateVisibility then _G._CUCL_UpdateVisibility() end
                 end,

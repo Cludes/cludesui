@@ -42,7 +42,7 @@ function PA.Description(details)
     )
 end
 
-local function Number(val)
+local function IsPlainNumber(val)
     return not (issecretvalue and issecretvalue(val))
         and type(val) == "number"
         and val == val
@@ -57,8 +57,8 @@ function PA.Valid(details)
         and type(details.target) == "string"
         and POINTS[details.sourcePoint] ~= nil
         and POINTS[details.targetPoint] ~= nil
-        and Number(details.offsetX)
-        and Number(details.offsetY)
+        and IsPlainNumber(details.offsetX)
+        and IsPlainNumber(details.offsetY)
 end
 
 function CUI.GetUnlockAnchorSide(details)
@@ -99,7 +99,7 @@ local function Insets(key, widget)
         l, r, t, b = l or 0, r or 0, t or 0, b or 0
     end
     local extra = elem and elem.getBottomExtra and elem.getBottomExtra(key) or 0
-    if not (Number(l) and Number(r) and Number(t) and Number(b) and Number(extra)) then return end
+    if not (IsPlainNumber(l) and IsPlainNumber(r) and IsPlainNumber(t) and IsPlainNumber(b) and IsPlainNumber(extra)) then return end
     return l, r, t, b - extra
 end
 
@@ -118,7 +118,7 @@ local function EdgeExtent(key, side, fallback)
     if not success then return end
     if issecretvalue and issecretvalue(value) then return end
     if value == nil then return fallback end
-    if Number(value) then return value end
+    if IsPlainNumber(value) then return value end
 end
 
 function PA.Rect(key, widget, target)
@@ -126,7 +126,7 @@ function PA.Rect(key, widget, target)
     local success, l, r, t, b, scale = pcall(Bounds, widget)
     if
         not success
-        or not (Number(l) and Number(r) and Number(t) and Number(b) and Number(scale) and scale > 0)
+        or not (IsPlainNumber(l) and IsPlainNumber(r) and IsPlainNumber(t) and IsPlainNumber(b) and IsPlainNumber(scale) and scale > 0)
     then
         return
     end
@@ -138,7 +138,7 @@ function PA.Rect(key, widget, target)
         l, r = EdgeExtent(key, "LEFT", l), EdgeExtent(key, "RIGHT", r)
         t, b = EdgeExtent(key, "TOP", t), EdgeExtent(key, "BOTTOM", b)
     end
-    if not (Number(l) and Number(r) and Number(t) and Number(b)) or r <= l or t <= b then return end
+    if not (IsPlainNumber(l) and IsPlainNumber(r) and IsPlainNumber(t) and IsPlainNumber(b)) or r <= l or t <= b then return end
     return l, r, t, b
 end
 
@@ -165,13 +165,13 @@ function PA.Center(childKey, childFrame, details, target, wid, hgt)
     local tx, ty = PA.Point(details.target, target, details.targetPoint, true)
     if not tx then return end
     local success, fw, fh, scale = pcall(Dimensions, childFrame)
-    if not success or not (Number(scale) and scale > 0) then return end
+    if not success or not (IsPlainNumber(scale) and scale > 0) then return end
     local ratio = scale / UIParent:GetEffectiveScale()
     if not wid or not hgt then
-        if not (Number(fw) and Number(fh)) then return end
+        if not (IsPlainNumber(fw) and IsPlainNumber(fh)) then return end
         wid, hgt = fw * ratio, fh * ratio
     end
-    if not (Number(wid) and Number(hgt)) or wid <= 0 or hgt <= 0 then return end
+    if not (IsPlainNumber(wid) and IsPlainNumber(hgt)) or wid <= 0 or hgt <= 0 then return end
     local l, r, t, b = Insets(childKey, childFrame)
     if not l then return end
     l, r, t, b = -wid / 2 + l * ratio, wid / 2 - r * ratio, hgt / 2 - t * ratio, -hgt / 2 + b * ratio
@@ -239,8 +239,8 @@ function PA.Place(childKey, childFrame, details, cx, cy, wid, hgt)
         and pt == details.sourcePoint
         and rt == rel
         and rpt == rp
-        and Number(px)
-        and Number(py)
+        and IsPlainNumber(px)
+        and IsPlainNumber(py)
         and math.abs(px - posX) <= tolerance
         and math.abs(py - posY) <= tolerance
     if not plain and PA.followPins then

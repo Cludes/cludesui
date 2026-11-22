@@ -895,7 +895,7 @@ TrackerNS.GetHeaderRGB, TrackerNS.GetLineRGB = GetHeaderRGB, GetLineRGB
 -- Skip all skinning work when the tracker is force-hidden (M+, raid, arena).
 -- Uses the cached suppression flag only (set by ApplySuppression /
 -- UpdateVisibility). No per-call API queries.
-local function ShouldSkipSkin() return TrackerNS.IsSuppressed and TrackerNS.IsSuppressed() end
+local function SkinSuppressed() return TrackerNS.IsSuppressed and TrackerNS.IsSuppressed() end
 
 -- Hook block line-add APIs once per block instance. Catches every line
 -- Blizzard creates or recycles without walking children.
@@ -1104,7 +1104,7 @@ local function SuppressPOI(questBlock)
 end
 
 OnBlockGetPOIButton = function(questBlock)
-    if STOCK or ShouldSkipSkin() then return end
+    if STOCK or SkinSuppressed() then return end
     SuppressPOI(questBlock)
 end
 
@@ -1242,7 +1242,7 @@ local function SkinBlock(questBlock)
     -- Stock styles: Blizzard's block art, fonts and POI icons stay untouched
     -- (the stock title keeps its right-edge anchor, so the item and group
     -- finder buttons need no raise either).
-    if STOCK or ShouldSkipSkin() then return end
+    if STOCK or SkinSuppressed() then return end
 
     -- Suppress POI on every entry -- Blizzard may assign a new pooled
     -- poiButton to the block between skin passes.
@@ -1465,13 +1465,13 @@ local function HookTracker(trackerFrame)
                     end)
                 end
                 -- Stock styles: no background to resize, no divider.
-                if STOCK or ShouldSkipSkin() then return end
+                if STOCK or SkinSuppressed() then return end
                 if TrackerNS.QueueResize then TrackerNS.QueueResize() end
                 if self.Header and not _dividerDirty then
                     _dividerDirty = true
                     C_Timer.After(0, function()
                         _dividerDirty = false
-                        if ShouldSkipSkin() then return end
+                        if SkinSuppressed() then return end
                         if self.Header then EnsureAccentDivider(self.Header) end
                     end)
                 end
@@ -1487,7 +1487,7 @@ local function HookTracker(trackerFrame)
         -- code enters the collapse chain.
         if trackerFrame.Header.SetCollapsed and not STOCK then
             hooksecurefunc(trackerFrame.Header, "SetCollapsed", function(self)
-                if ShouldSkipSkin() then return end
+                if SkinSuppressed() then return end
                 SkinHeader(self)
             end)
         end
@@ -1498,7 +1498,7 @@ local function HookTracker(trackerFrame)
             -- A block handed out while the tracker is alpha-hidden must not
             -- come out clickable; independent of the skin (runs suppressed too).
             if questBlock and TrackerNS._trackerMouseOff then ApplyBlockMouse(questBlock) end
-            if ShouldSkipSkin() then return end
+            if SkinSuppressed() then return end
             if questBlock then _skinned[questBlock] = nil end
             SkinBlock(questBlock)
         end)
@@ -1514,11 +1514,11 @@ local function HookTracker(trackerFrame)
             if _updateDirty then return end
             -- Suppressed (M+ / raid tools) or a stock style: no skin work, but
             -- a hidden tracker still needs the blocks this pass touched mouse-off.
-            if (STOCK or ShouldSkipSkin()) and not TrackerNS._trackerMouseOff then return end
+            if (STOCK or SkinSuppressed()) and not TrackerNS._trackerMouseOff then return end
             _updateDirty = true
             C_Timer.After(0, function()
                 _updateDirty = false
-                local skip = STOCK or ShouldSkipSkin()
+                local skip = STOCK or SkinSuppressed()
                 local mouseOff = TrackerNS._trackerMouseOff
                 -- WoW Forever's objective colors (nil on retail).
                 local paint = TrackerNS.ColorObjectiveLines
@@ -1754,7 +1754,7 @@ function TrackerNS.InitSkin()
             if mainHeader.SetCollapsed and not _masterHeaderCollapseHooked and not STOCK then
                 _masterHeaderCollapseHooked = true
                 hooksecurefunc(mainHeader, "SetCollapsed", function(self, collapsed)
-                    if ShouldSkipSkin() then return end
+                    if SkinSuppressed() then return end
                     SkinHeader(self, collapsed)
                 end)
             end

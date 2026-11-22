@@ -1377,7 +1377,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     local shade = profile and profile.primary.powerTypeOverride
                     return (shade and shade.foreverDruid) and true or false
                 end
-                local function FdmOff()
+                local function DruidManaOff()
                     if FdmTypeMana() then return true end
                     local druidMana = FdmCfg()
                     return not (druidMana and druidMana.enabled)
@@ -1387,12 +1387,12 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     return "Mana Bar while Shapeshifted"
                 end
                 local function FdmTextDis()
-                    if FdmOff() then return true end
+                    if DruidManaOff() then return true end
                     local druidMana = FdmCfg()
                     return (druidMana and druidMana.textFormat or "none") == "none"
                 end
                 local function FdmTextDisTip()
-                    if FdmOff() then return FdmOffTip() end
+                    if DruidManaOff() then return FdmOffTip() end
                     return "This option requires a Mana Bar Text format other than None"
                 end
                 local function ApplyDruidMana()
@@ -1419,7 +1419,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 }, {
                     type = "dropdown",
                     text = "Mana Bar Text",
-                    disabled = FdmOff,
+                    disabled = DruidManaOff,
                     disabledTooltip = FdmOffTip,
                     values = {
                         none = "None",
@@ -1454,7 +1454,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 if not CludesUI._prebuilding then
                     -- Placement cog: position, gap, height, offsets
                     CludesUI.BuildInlineCog(fdmLine._leftRegion, {
-                        disabled = FdmOff,
+                        disabled = DruidManaOff,
                         disabledTooltip = FdmOffTip,
                         title = "Mana Bar",
                         rows = {

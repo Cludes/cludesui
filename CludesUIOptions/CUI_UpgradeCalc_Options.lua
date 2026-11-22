@@ -13,7 +13,7 @@ if not CUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no optio
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
 local CreateFrame = CUI._Pool.CreateFrame
 
-local function GetAddonDB()
+local function CalcAddonDB()
     -- Always delegate to the main module so we read from the same profile
     -- slice that persists via CludesUIDB (not the wiped CludesUIQoLDB).
     if CUIUpgCalc and CUIUpgCalc.GetOptsDB then return CUIUpgCalc.GetOptsDB() end
@@ -103,17 +103,17 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Open with Character Sheet",
         tooltip = "Automatically opens and closes the Upgrade Calculator when the Character Sheet is opened or closed.",
-        getValue = function() return GetAddonDB().openWithCharSheet or false end,
-        setValue = function(val) GetAddonDB().openWithCharSheet = val end,
+        getValue = function() return CalcAddonDB().openWithCharSheet or false end,
+        setValue = function(val) CalcAddonDB().openWithCharSheet = val end,
     }, {
         type = "slider",
         text = "Window Scale",
         min = 50,
         max = 150,
         step = 5,
-        getValue = function() return GetAddonDB().uiScale or 100 end,
+        getValue = function() return CalcAddonDB().uiScale or 100 end,
         setValue = function(val)
-            GetAddonDB().uiScale = val
+            CalcAddonDB().uiScale = val
             if CUIUpgCalc and CUIUpgCalc.ApplyScale then CUIUpgCalc.ApplyScale() end
         end,
     })
@@ -124,18 +124,18 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Fully-Upgraded Items",
         tooltip = "Show gear tiles for items already at their maximum item level.",
-        getValue = function() return GetAddonDB().showMaxed or false end,
+        getValue = function() return CalcAddonDB().showMaxed or false end,
         setValue = function(val)
-            GetAddonDB().showMaxed = val
+            CalcAddonDB().showMaxed = val
             RefreshOpenCalc()
         end,
     }, {
         type = "toggle",
         text = "Hide Crafted Items",
         tooltip = "Hide crafted items from the gear tile list.\nCrafted items cannot be upgraded at the Upgrade NPC.",
-        getValue = function() return GetAddonDB().hideCrafted or false end,
+        getValue = function() return CalcAddonDB().hideCrafted or false end,
         setValue = function(val)
-            GetAddonDB().hideCrafted = val
+            CalcAddonDB().hideCrafted = val
             RefreshOpenCalc()
         end,
     })
@@ -181,11 +181,11 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             leftRegion:GetFrameLevel() + 2,
             SLOT_GROUP_ITEMS,
             function(keyName)
-                local scrollFrame = GetAddonDB().slotFilter
+                local scrollFrame = CalcAddonDB().slotFilter
                 return scrollFrame == nil or scrollFrame[keyName] ~= false
             end,
             function(keyName, val)
-                local saved = GetAddonDB()
+                local saved = CalcAddonDB()
                 saved.slotFilter = saved.slotFilter or {}
                 saved.slotFilter[keyName] = val
                 RefreshOpenCalc()
@@ -205,11 +205,11 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             rightRegion:GetFrameLevel() + 2,
             CREST_TRACK_ITEMS,
             function(keyName)
-                local castFrame = GetAddonDB().crestFilter
+                local castFrame = CalcAddonDB().crestFilter
                 return castFrame == nil or castFrame[keyName] ~= false
             end,
             function(keyName, val)
-                local saved = GetAddonDB()
+                local saved = CalcAddonDB()
                 saved.crestFilter = saved.crestFilter or {}
                 saved.crestFilter[keyName] = val
                 RefreshOpenCalc()
@@ -227,18 +227,18 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Earned / Cap Column",
         tooltip = "Show the seasonal Earned / Cap column in the crest table.",
-        getValue = function() return GetAddonDB().showEarnedCap or false end,
+        getValue = function() return CalcAddonDB().showEarnedCap or false end,
         setValue = function(val)
-            GetAddonDB().showEarnedCap = val
+            CalcAddonDB().showEarnedCap = val
             RefreshOpenCalc()
         end,
     }, {
         type = "toggle",
         text = "Show Still Available Column",
         tooltip = "Show how many crests you can still earn before hitting the season cap (cap minus earned so far).",
-        getValue = function() return GetAddonDB().showWeeklyRemaining or false end,
+        getValue = function() return CalcAddonDB().showWeeklyRemaining or false end,
         setValue = function(val)
-            GetAddonDB().showWeeklyRemaining = val
+            CalcAddonDB().showWeeklyRemaining = val
             RefreshOpenCalc()
         end,
     })
@@ -251,9 +251,9 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Calc Button on Character Sheet",
         tooltip = "Adds a Calc toggle button to the character sheet that opens and closes the Upgrade Calculator.",
-        getValue = function() return GetAddonDB().showCalcButton or false end,
+        getValue = function() return CalcAddonDB().showCalcButton or false end,
         setValue = function(val)
-            GetAddonDB().showCalcButton = val
+            CalcAddonDB().showCalcButton = val
             if CUI and CUI.ApplyCharSheetCalcTab then CUI.ApplyCharSheetCalcTab() end
         end,
     }
@@ -267,8 +267,8 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Open with Crest Upgrader",
         tooltip = "Automatically opens the Upgrade Calculator when the Crest Upgrade NPC window is opened.",
-        getValue = function() return GetAddonDB().openWithUpgrader or false end,
-        setValue = function(val) GetAddonDB().openWithUpgrader = val end,
+        getValue = function() return CalcAddonDB().openWithUpgrader or false end,
+        setValue = function(val) CalcAddonDB().openWithUpgrader = val end,
     })
     cursorY = cursorY - height
 

@@ -156,13 +156,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 rowConf.tooltipOpts
             )
         end)
-        local function Hide() HideWidgetTooltip() end
-        hit:SetScript("OnLeave", Hide)
+        local function HideTip() HideWidgetTooltip() end
+        hit:SetScript("OnLeave", HideTip)
         hit:SetPropagateMouseClicks(true)
         hit:SetPropagateMouseMotion(true)
-        trackFrame:HookScript("OnMouseDown", Hide)
-        if thumb then thumb:HookScript("OnMouseDown", Hide) end
-        valBox:HookScript("OnMouseDown", Hide)
+        trackFrame:HookScript("OnMouseDown", HideTip)
+        if thumb then thumb:HookScript("OnMouseDown", HideTip) end
+        valBox:HookScript("OnMouseDown", HideTip)
     end
 
     -- Button  (execute action, matches the reset/reload button style)

@@ -1059,12 +1059,12 @@ local function SkinOneScrollbar(scrollList, scrollBar)
 
     local function GetPct() return scrollBar.GetScrollPercentage and scrollBar:GetScrollPercentage() or 0 end
 
-    local function GetExtent()
+    local function ScrollExtent()
         return scrollBar.GetVisibleExtentPercentage and scrollBar:GetVisibleExtentPercentage() or 1
     end
 
     local function StepToPct()
-        local ext = GetExtent()
+        local ext = ScrollExtent()
         if ext >= 1 then return 0 end
         local totalH = scrollList:GetHeight() / ext
         if totalH <= 0 then return 0 end
@@ -1078,7 +1078,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
     end
 
     local function SyncThumb()
-        local ext = GetExtent()
+        local ext = ScrollExtent()
         if ext >= 1 then
             rail:SetAlpha(0)
             return
@@ -1094,7 +1094,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
     end
 
     scrollList:SetScript("OnMouseWheel", function(_, delta)
-        if GetExtent() >= 1 then return end
+        if ScrollExtent() >= 1 then return end
         local step = StepToPct()
         local newPct = math.max(0, math.min(1, GetPct() - delta * step))
         scrollBar:SetScrollPercentage(newPct)
@@ -1132,7 +1132,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
 
     hitbox:SetScript("OnMouseDown", function(_, mouseBtn)
         if mouseBtn ~= "LeftButton" then return end
-        if GetExtent() >= 1 then return end
+        if ScrollExtent() >= 1 then return end
         local _, curY = GetCursorPosition()
         curY = curY / rail:GetEffectiveScale()
         local topY = rail:GetTop() or 0

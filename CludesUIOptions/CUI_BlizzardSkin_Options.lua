@@ -4355,7 +4355,7 @@ CUI.AtOptionsLogin(function()
     --  Dragon Riding page
     ---------------------------------------------------------------------------
     local function EDR_DB() return mod.edrDB and mod.edrDB.profile end
-    local function EDR_Cfg(key)
+    local function DragonRidingCfg(key)
         local p = EDR_DB()
         return p and p[key]
     end
@@ -4364,7 +4364,7 @@ CUI.AtOptionsLogin(function()
         if p then p[key] = val end
     end
     local function EDR_SetField(key, field, val)
-        local tbl = EDR_Cfg(key)
+        local tbl = DragonRidingCfg(key)
         if tbl then tbl[field] = val end
     end
     local function RebuildDragonRiding()
@@ -4897,7 +4897,7 @@ CUI.AtOptionsLogin(function()
 
         -- The sample HUD heads the page while the bar is on; off, the page
         -- hides everything below its first row and shows no header either.
-        if not CUI._prebuilding and EDR_Cfg("enabled") == true then
+        if not CUI._prebuilding and DragonRidingCfg("enabled") == true then
             CUI:SetContentHeader(SkyridingHeaderBuilder)
         elseif CUI.ClearContentHeader then
             CUI:ClearContentHeader()
@@ -4910,18 +4910,18 @@ CUI.AtOptionsLogin(function()
         cursorY = cursorY - height
         CUI.BuildSectionUnlockJump(heading, {
             key = "EDR_Cluster",
-            disabled = function() return EDR_Cfg("enabled") ~= true end,
+            disabled = function() return DragonRidingCfg("enabled") ~= true end,
             disabledTooltip = "Skyriding Bar",
         })
         cursorY = BS.Note(hostFrame, cursorY, "dragonriding")
         _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Skyriding Bar",
-            getValue = function() return EDR_Cfg("enabled") == true end,
+            getValue = function() return DragonRidingCfg("enabled") == true end,
             -- DependentSetValue: everything below Row 1 is hidden while the
             -- bar is off; the flip forces the full rebuild.
             setValue = CUI.DependentSetValue(
-                function() return EDR_Cfg("enabled") == true end,
+                function() return DragonRidingCfg("enabled") == true end,
                 function(val)
                     EDR_Set("enabled", val)
                     RebuildDragonRiding()
@@ -4930,20 +4930,20 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Hide in Combat",
-            disabled = function() return EDR_Cfg("enabled") ~= true end,
+            disabled = function() return DragonRidingCfg("enabled") ~= true end,
             disabledTooltip = "Skyriding Bar",
-            getValue = function() return EDR_Cfg("hideInCombat") == true end,
+            getValue = function() return DragonRidingCfg("hideInCombat") == true end,
             setValue = EDR_SetRowThen("hideInCombat"),
         })
         cursorY = cursorY - height
 
         -- Everything below Row 1 (the rest of GENERAL plus the LAYOUT and
         -- SPEED BAR sections) is HIDDEN entirely while the bar is off.
-        if EDR_Cfg("enabled") == true then
-            local function EDR_IsGems() return EDR_Cfg("vigorStyle") == "gems" end
-            local function EDR_ShowSpeed() return EDR_Cfg("showSpeed") ~= false end
-            local function EDR_ShowSW() return EDR_Cfg("showSecondWind") ~= false end
-            local function EDR_WSOff() return EDR_Cfg("showWhirlingSurge") == false end
+        if DragonRidingCfg("enabled") == true then
+            local function EDR_IsGems() return DragonRidingCfg("vigorStyle") == "gems" end
+            local function EDR_ShowSpeed() return DragonRidingCfg("showSpeed") ~= false end
+            local function EDR_ShowSW() return DragonRidingCfg("showSecondWind") ~= false end
+            local function EDR_WSOff() return DragonRidingCfg("showWhirlingSurge") == false end
             -- The icon's automatic size, in the Icon Size slider's range.
             local function EDR_AutoIconSize()
                 local val = math.floor(((mod.edrIconSize and mod.edrIconSize()) or 34) + 0.5)
@@ -4982,7 +4982,7 @@ CUI.AtOptionsLogin(function()
                 disabled = EDR_WSOff,
                 disabledTooltip = "Show Whirling Surge",
                 getValue = function()
-                    return EDR_Cfg("whirlingSurgeText") and EDR_Cfg("whirlingSurgeText").enabled ~= false
+                    return DragonRidingCfg("whirlingSurgeText") and DragonRidingCfg("whirlingSurgeText").enabled ~= false
                 end,
                 setValue = function(val)
                     EDR_SetField("whirlingSurgeText", "enabled", val)
@@ -5002,7 +5002,7 @@ CUI.AtOptionsLogin(function()
                             type = "toggle",
                             label = "Auto Size",
                             tooltip = "Keeps the icon as tall as the bars.",
-                            get = function() return EDR_Cfg("iconSize") == nil end,
+                            get = function() return DragonRidingCfg("iconSize") == nil end,
                             set = function(val)
                                 if val then
                                     EDR_Set("iconSize", nil)
@@ -5018,10 +5018,10 @@ CUI.AtOptionsLogin(function()
                             min = 16,
                             max = 80,
                             step = 1,
-                            disabled = function() return EDR_Cfg("iconSize") == nil end,
+                            disabled = function() return DragonRidingCfg("iconSize") == nil end,
                             disabledTooltip = "Auto Size",
                             requireState = "disabled",
-                            get = function() return EDR_Cfg("iconSize") or EDR_AutoIconSize() end,
+                            get = function() return DragonRidingCfg("iconSize") or EDR_AutoIconSize() end,
                             set = EDR_SetRowThen("iconSize"),
                         },
                     },
@@ -5037,7 +5037,7 @@ CUI.AtOptionsLogin(function()
                 values = { bars = "Bars", gems = "Classic Gems" },
                 order = { "bars", "gems" },
                 tooltip = "Classic Gems brings back Blizzard's original vigor display above the bars.",
-                getValue = function() return EDR_Cfg("vigorStyle") or "bars" end,
+                getValue = function() return DragonRidingCfg("vigorStyle") or "bars" end,
                 setValue = CUI.DependentSetValue(EDR_IsGems, function(val)
                     EDR_Set("vigorStyle", val)
                     RebuildDragonRiding()
@@ -5052,7 +5052,7 @@ CUI.AtOptionsLogin(function()
                 -- The gap between pips: nothing to space with no pip row shown.
                 disabled = function() return EDR_IsGems() and not EDR_ShowSW() end,
                 disabledTooltip = "This option requires the Bars vigor style or Show Second Wind",
-                getValue = function() return EDR_Cfg("stackSpacing") end,
+                getValue = function() return DragonRidingCfg("stackSpacing") end,
                 setValue = EDR_SetRowThen("stackSpacing"),
             })
             cursorY = cursorY - height
@@ -5062,7 +5062,7 @@ CUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Play Sound on Full Charge",
                         tooltip = "Plays Blizzard's vigor chime each time a skyriding charge fills.",
-                        get = function() return EDR_Cfg("chargeSound") == true end,
+                        get = function() return DragonRidingCfg("chargeSound") == true end,
                         set = EDR_SetRow("chargeSound"),
                     },
                 }
@@ -5073,7 +5073,7 @@ CUI.AtOptionsLogin(function()
                         min = 0.5,
                         max = 2.0,
                         step = 0.05,
-                        get = function() return EDR_Cfg("classicScale") or 1 end,
+                        get = function() return DragonRidingCfg("classicScale") or 1 end,
                         set = EDR_SetRowThen("classicScale"),
                     }
                 end
@@ -5085,7 +5085,7 @@ CUI.AtOptionsLogin(function()
                 min = 80,
                 max = 600,
                 step = 1,
-                getValue = function() return EDR_Cfg("width") end,
+                getValue = function() return DragonRidingCfg("width") end,
                 setValue = EDR_SetRowThen("width"),
             }, {
                 type = "slider",
@@ -5094,7 +5094,7 @@ CUI.AtOptionsLogin(function()
                 min = 0,
                 max = 12,
                 step = 1,
-                getValue = function() return EDR_Cfg("gap") end,
+                getValue = function() return DragonRidingCfg("gap") end,
                 setValue = EDR_SetRowThen("gap"),
             })
             cursorY = cursorY - height
@@ -5105,7 +5105,7 @@ CUI.AtOptionsLogin(function()
             local borderCfg
             if edrStyle == "classic" then
                 borderCfg = BS.ClassicBorderSizeCfg(
-                    function() return EDR_Cfg("classicFrameSize") end,
+                    function() return DragonRidingCfg("classicFrameSize") end,
                     function(val)
                         EDR_Set("classicFrameSize", val)
                         RebuildDragonRiding()
@@ -5118,7 +5118,7 @@ CUI.AtOptionsLogin(function()
                     min = 0,
                     max = 4,
                     step = 1,
-                    getValue = function() return EDR_Cfg("borderThickness") or 0 end,
+                    getValue = function() return DragonRidingCfg("borderThickness") or 0 end,
                     setValue = function(val)
                         EDR_Set("borderThickness", val)
                         EDR_Redraw()
@@ -5132,7 +5132,7 @@ CUI.AtOptionsLogin(function()
                 text = "Bar Texture",
                 values = edrTexValues,
                 order = edrTexOrder,
-                getValue = function() return EDR_Cfg("barTexture") or "none" end,
+                getValue = function() return DragonRidingCfg("barTexture") or "none" end,
                 setValue = function(val)
                     EDR_Set("barTexture", val)
                     EDR_Redraw()
@@ -5146,11 +5146,11 @@ CUI.AtOptionsLogin(function()
                     region,
                     borderRow:GetFrameLevel() + 3,
                     function()
-                        local color = EDR_Cfg("borderColor")
+                        local color = DragonRidingCfg("borderColor")
                         return color.r, color.g, color.b, color.a
                     end,
                     function(red, green, blue, a)
-                        local p = EDR_Cfg("borderColor")
+                        local p = DragonRidingCfg("borderColor")
                         p.r, p.g, p.b, p.a = red, green, blue, a
                         EDR_Redraw()
                     end,
@@ -5172,7 +5172,7 @@ CUI.AtOptionsLogin(function()
                 )
                 cover:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 local function UpdateSwatchState()
-                    if (EDR_Cfg("borderThickness") or 0) == 0 then
+                    if (DragonRidingCfg("borderThickness") or 0) == 0 then
                         colorSwatch:SetAlpha(0.3)
                         cover:Show()
                     else
@@ -5202,7 +5202,7 @@ CUI.AtOptionsLogin(function()
                         min = 2,
                         max = 24,
                         step = 1,
-                        getValue = function() return EDR_Cfg("skyridingHeight") end,
+                        getValue = function() return DragonRidingCfg("skyridingHeight") end,
                         setValue = EDR_SetRowThen("skyridingHeight"),
                     }, {
                         type = "multiSwatch",
@@ -5211,11 +5211,11 @@ CUI.AtOptionsLogin(function()
                             {
                                 text = "Background",
                                 getValue = function()
-                                    local color = EDR_Cfg("skyridingBg")
+                                    local color = DragonRidingCfg("skyridingBg")
                                     return color.r, color.g, color.b, color.a
                                 end,
                                 setValue = function(red, green, blue, a)
-                                    local p = EDR_Cfg("skyridingBg")
+                                    local p = DragonRidingCfg("skyridingBg")
                                     p.r, p.g, p.b, p.a = red, green, blue, a
                                     EDR_Redraw()
                                 end,
@@ -5225,11 +5225,11 @@ CUI.AtOptionsLogin(function()
                             {
                                 text = "Stacks",
                                 getValue = function()
-                                    local color = EDR_Cfg("skyridingFilled")
+                                    local color = DragonRidingCfg("skyridingFilled")
                                     return color.r, color.g, color.b, color.a
                                 end,
                                 setValue = function(red, green, blue, a)
-                                    local p = EDR_Cfg("skyridingFilled")
+                                    local p = DragonRidingCfg("skyridingFilled")
                                     p.r, p.g, p.b, p.a = red, green, blue, a
                                     EDR_Redraw()
                                 end,
@@ -5247,7 +5247,7 @@ CUI.AtOptionsLogin(function()
                         min = 2,
                         max = 24,
                         step = 1,
-                        getValue = function() return EDR_Cfg("secondWindHeight") end,
+                        getValue = function() return DragonRidingCfg("secondWindHeight") end,
                         setValue = EDR_SetRowThen("secondWindHeight"),
                     }, {
                         type = "multiSwatch",
@@ -5256,11 +5256,11 @@ CUI.AtOptionsLogin(function()
                             {
                                 text = "Background",
                                 getValue = function()
-                                    local color = EDR_Cfg("secondWindBg")
+                                    local color = DragonRidingCfg("secondWindBg")
                                     return color.r, color.g, color.b, color.a
                                 end,
                                 setValue = function(red, green, blue, a)
-                                    local p = EDR_Cfg("secondWindBg")
+                                    local p = DragonRidingCfg("secondWindBg")
                                     p.r, p.g, p.b, p.a = red, green, blue, a
                                     EDR_Redraw()
                                 end,
@@ -5270,11 +5270,11 @@ CUI.AtOptionsLogin(function()
                             {
                                 text = "Second Wind",
                                 getValue = function()
-                                    local color = EDR_Cfg("secondWindFilled")
+                                    local color = DragonRidingCfg("secondWindFilled")
                                     return color.r, color.g, color.b, color.a
                                 end,
                                 setValue = function(red, green, blue, a)
-                                    local p = EDR_Cfg("secondWindFilled")
+                                    local p = DragonRidingCfg("secondWindFilled")
                                     p.r, p.g, p.b, p.a = red, green, blue, a
                                     EDR_Redraw()
                                 end,
@@ -5299,12 +5299,12 @@ CUI.AtOptionsLogin(function()
                     min = 4,
                     max = 40,
                     step = 1,
-                    getValue = function() return EDR_Cfg("speedHeight") end,
+                    getValue = function() return DragonRidingCfg("speedHeight") end,
                     setValue = EDR_SetRowThen("speedHeight"),
                 }, {
                     type = "toggle",
                     text = "Thrill Color Change",
-                    getValue = function() return EDR_Cfg("thrillColorToggle") == true end,
+                    getValue = function() return DragonRidingCfg("thrillColorToggle") == true end,
                     setValue = function(val)
                         EDR_Set("thrillColorToggle", val)
                         EDR_Redraw()
@@ -5318,11 +5318,11 @@ CUI.AtOptionsLogin(function()
                         {
                             text = "Background",
                             getValue = function()
-                                local color = EDR_Cfg("speedBarBg")
+                                local color = DragonRidingCfg("speedBarBg")
                                 return color.r, color.g, color.b, color.a
                             end,
                             setValue = function(red, green, blue, a)
-                                local p = EDR_Cfg("speedBarBg")
+                                local p = DragonRidingCfg("speedBarBg")
                                 p.r, p.g, p.b, p.a = red, green, blue, a
                                 EDR_Redraw()
                             end,
@@ -5332,11 +5332,11 @@ CUI.AtOptionsLogin(function()
                         {
                             text = "Speed",
                             getValue = function()
-                                local color = EDR_Cfg("normalColor")
+                                local color = DragonRidingCfg("normalColor")
                                 return color.r, color.g, color.b, color.a
                             end,
                             setValue = function(red, green, blue, a)
-                                local p = EDR_Cfg("normalColor")
+                                local p = DragonRidingCfg("normalColor")
                                 p.r, p.g, p.b, p.a = red, green, blue, a
                                 EDR_Redraw()
                             end,
@@ -5351,11 +5351,11 @@ CUI.AtOptionsLogin(function()
                         {
                             text = "Hash",
                             getValue = function()
-                                local color = EDR_Cfg("tickColor")
+                                local color = DragonRidingCfg("tickColor")
                                 return color.r, color.g, color.b, color.a
                             end,
                             setValue = function(red, green, blue, a)
-                                local p = EDR_Cfg("tickColor")
+                                local p = DragonRidingCfg("tickColor")
                                 p.r, p.g, p.b, p.a = red, green, blue, a
                                 EDR_Redraw()
                             end,
@@ -5365,11 +5365,11 @@ CUI.AtOptionsLogin(function()
                         {
                             text = "Thrill",
                             getValue = function()
-                                local color = EDR_Cfg("thrillColor")
+                                local color = DragonRidingCfg("thrillColor")
                                 return color.r, color.g, color.b, color.a
                             end,
                             setValue = function(red, green, blue, a)
-                                local p = EDR_Cfg("thrillColor")
+                                local p = DragonRidingCfg("thrillColor")
                                 p.r, p.g, p.b, p.a = red, green, blue, a
                                 EDR_Redraw()
                             end,
@@ -5384,7 +5384,7 @@ CUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Show Speed Text",
                     getValue = function()
-                        return EDR_Cfg("speedText") and EDR_Cfg("speedText").enabled ~= false
+                        return DragonRidingCfg("speedText") and DragonRidingCfg("speedText").enabled ~= false
                     end,
                     setValue = function(val)
                         EDR_SetField("speedText", "enabled", val)
@@ -5395,7 +5395,7 @@ CUI.AtOptionsLogin(function()
                     text = "Text Align",
                     values = justifyValues,
                     order = justifyOrder,
-                    getValue = function() return (EDR_Cfg("speedText") or {}).justify or "CENTER" end,
+                    getValue = function() return (DragonRidingCfg("speedText") or {}).justify or "CENTER" end,
                     setValue = function(val)
                         EDR_SetField("speedText", "justify", val)
                         EDR_Redraw()
@@ -5411,7 +5411,7 @@ CUI.AtOptionsLogin(function()
                                 min = 6,
                                 max = 32,
                                 step = 1,
-                                get = function() return (EDR_Cfg("speedText") or {}).size or 12 end,
+                                get = function() return (DragonRidingCfg("speedText") or {}).size or 12 end,
                                 set = function(val)
                                     EDR_SetField("speedText", "size", val)
                                     EDR_Redraw()
@@ -5423,7 +5423,7 @@ CUI.AtOptionsLogin(function()
                                 min = -200,
                                 max = 200,
                                 step = 1,
-                                get = function() return (EDR_Cfg("speedText") or {}).offsetX or 0 end,
+                                get = function() return (DragonRidingCfg("speedText") or {}).offsetX or 0 end,
                                 set = function(val)
                                     EDR_SetField("speedText", "offsetX", val)
                                     EDR_Redraw()
@@ -5435,7 +5435,7 @@ CUI.AtOptionsLogin(function()
                                 min = -200,
                                 max = 200,
                                 step = 1,
-                                get = function() return (EDR_Cfg("speedText") or {}).offsetY or 0 end,
+                                get = function() return (DragonRidingCfg("speedText") or {}).offsetY or 0 end,
                                 set = function(val)
                                     EDR_SetField("speedText", "offsetY", val)
                                     EDR_Redraw()
@@ -5499,7 +5499,7 @@ CUI.AtOptionsLogin(function()
         getHeaderBuilder = function(pageTitle)
             if pageTitle == PAGE_TOOLTIPS then return TooltipHeaderBuilder end
             if pageTitle == PAGE_CHATBUBBLES then return ChatBubblesHeaderBuilder end
-            if pageTitle == PAGE_DRAGONRIDING and EDR_Cfg("enabled") == true then
+            if pageTitle == PAGE_DRAGONRIDING and DragonRidingCfg("enabled") == true then
                 return SkyridingHeaderBuilder
             end
         end,

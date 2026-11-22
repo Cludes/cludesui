@@ -932,17 +932,17 @@ function CUI.BuildVisibilityDriverString(prefixText, visModes)
     if (g1 or g2 or g3) and not (g1 and g2 and g3) then
         local result = prefixText
         local emitted = {}
-        local function emit(tok)
+        local function emitToken(tok)
             if emitted[tok] then return end
             emitted[tok] = true
             result = result .. "[" .. conjunction .. tok .. "] show; "
         end
-        if g1 then emit("group:raid") end
+        if g1 then emitToken("group:raid") end
         -- [group:party] alone is TRUE inside a raid; nogroup:raid narrows the
         -- party disjunct to a real party (a separate group:raid clause, when
         -- In Raid Group is also checked, still shows there).
-        if g2 then emit("group:party,nogroup:raid") end
-        if g3 then emit("nogroup") end
+        if g2 then emitToken("group:party,nogroup:raid") end
+        if g3 then emitToken("nogroup") end
         return result .. "hide"
     end
 
@@ -987,7 +987,7 @@ function CUI.BuildVisibilityDriverStringAny(
         return prefixText .. ((wrap ~= "") and ("[" .. wrap .. "] show; hide") or "show"), 0, gateCount
     end
     local emitted = {}
-    local function emit(tok)
+    local function emitToken(tok)
         if emitted[tok] then return end
         emitted[tok] = true
         result = result .. "[" .. lead .. tok .. "] show; "
@@ -997,36 +997,36 @@ function CUI.BuildVisibilityDriverStringAny(
     local c1, c2 = visModes.in_combat, visModes.out_of_combat
     if c1 and not c2 then
         axisList = axisList + 1
-        emit("combat")
+        emitToken("combat")
     elseif c2 and not c1 then
         axisList = axisList + 1
-        emit("nocombat")
+        emitToken("nocombat")
     end
 
     -- Group axis: three items, ONE axis, already OR'd among themselves.
     local g1, g2, g3 = visModes.in_raid, visModes.in_party, visModes.solo
     if (g1 or g2 or g3) and not (g1 and g2 and g3) then
         axisList = axisList + 1
-        if g1 then emit("group:raid") end
+        if g1 then emitToken("group:raid") end
         -- [group:party] alone is TRUE inside a raid; nogroup:raid narrows the party
         -- disjunct to a real party, same as the all-match tail does.
-        if g2 then emit("group:party,nogroup:raid") end
-        if g3 then emit("nogroup") end
+        if g2 then emitToken("group:party,nogroup:raid") end
+        if g3 then emitToken("nogroup") end
     end
 
     -- Option axes with a macro conditional of their own. SHOW lanes only: their Hide
     -- counterparts are the leading gates above, so no negated disjunct is emitted.
     if options.visOnlyMounted and not options.visHideMounted then
         axisList = axisList + 1
-        emit("mounted")
+        emitToken("mounted")
     end
     if options.visHideNoTarget and not options.visHideWithTarget then
         axisList = axisList + 1
-        emit("exists")
+        emitToken("exists")
     end
     if options.visHideNoEnemy and not options.visHideWithEnemy then
         axisList = axisList + 1
-        emit("harm")
+        emitToken("harm")
     end
 
     -- Dragonriding axis. NOT(advflyable AND flying) has no single bracket form, so the
@@ -1036,7 +1036,7 @@ function CUI.BuildVisibilityDriverStringAny(
     local dragonTail = false
     if d1 and not d2 then
         axisList = axisList + 1
-        emit("advflyable,flying")
+        emitToken("advflyable,flying")
     elseif d2 and not d1 then
         axisList = axisList + 1
         dragonTail = true
