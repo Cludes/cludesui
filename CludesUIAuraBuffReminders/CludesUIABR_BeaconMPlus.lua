@@ -183,7 +183,7 @@ local function PrebuildIcons()
     if level == 2 and tankUnit and C_ChallengeMode.IsChallengeModeActive() then EnsureContainer(tankUnit) end
 end
 
-local function Arm()
+local function ArmBeacon()
     if level ~= 2 or not C_ChallengeMode.IsChallengeModeActive() then return end
     local unitToken = tankUnit
     local btnFrame = unitToken and TankButton(unitToken)
@@ -211,7 +211,7 @@ local function Sync()
         WatchPartyRoster(C_ChallengeMode.IsChallengeModeActive())
         FindTank()
         if IsEncounterInProgress() then
-            Arm()
+            ArmBeacon()
         else
             PrebuildIcons()
         end
@@ -220,7 +220,7 @@ end
 
 eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "ENCOUNTER_START" then
-        Arm()
+        ArmBeacon()
     elseif evt == "CHALLENGE_MODE_START" then
         WatchPartyRoster(true)
         FindTank()
@@ -245,7 +245,7 @@ eventFrame:SetScript("OnEvent", function(_, evt)
         WatchPartyRoster(C_ChallengeMode.IsChallengeModeActive())
         FindTank()
         if IsEncounterInProgress() then
-            Arm()
+            ArmBeacon()
         else
             PrebuildIcons()
         end

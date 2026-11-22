@@ -1066,7 +1066,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local enabled = false
-    local function SyncHouseWatch()
+    local function SyncHouseWatching()
         local deltaTime = D()
         local uses = TravelIsHouseChoice(TravelClickChoice(deltaTime, 1))
             or TravelIsHouseChoice(TravelClickChoice(deltaTime, 2))
@@ -1107,7 +1107,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
     -- show the same; at a held timer width just the new digits; else a pass.
     local function Update()
         if not built then return end
-        SyncHouseWatch()
+        SyncHouseWatching()
         if D().altHearths == true then TravelSaveMyHearth() end
         local location, barTimer, cooldownMask, iconPx = TravelBarText(D(), GetBindLocation() or "?", hovered)
         local state = location .. "|" .. cooldownMask .. "|" .. tostring(iconPx)
@@ -1132,7 +1132,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function instance:Refresh()
-        SyncHouseWatch()
+        SyncHouseWatching()
         if D().altHearths == true then TravelSaveMyHearth() end
         if not built then return end
         K.SetBlockIcon(hearthTex, blockCfg)
@@ -1295,7 +1295,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
 
     function instance:Enable()
         enabled = true
-        SyncHouseWatch()
+        SyncHouseWatching()
         contentFrame:Show()
         RegisterInstEvents(self)
         -- Player-filtered registration; Disable's UnregisterAllEvents drops it,

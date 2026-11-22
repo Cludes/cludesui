@@ -1762,7 +1762,7 @@ function CUI:ShowInputPopup(options)
         dropList:Hide()
         dialog._suggestDD = dropList
 
-        local function Render()
+        local function DrawSuggestRows()
             local suggest, EGC = dialog._suggest, CUI.CLUDES_GREEN
             local n = math.min(#suggest.items, ROWS)
             for i = 1, ROWS do
@@ -1829,7 +1829,7 @@ function CUI:ShowInputPopup(options)
             local off = math.max(0, math.min(#suggest.items - ROWS, suggest.offset - delta))
             if off ~= suggest.offset then
                 suggest.offset = off
-                Render()
+                DrawSuggestRows()
             end
         end)
 
@@ -1846,7 +1846,7 @@ function CUI:ShowInputPopup(options)
             elseif suggest.sel > suggest.offset + ROWS then
                 suggest.offset = suggest.sel - ROWS
             end
-            Render()
+            DrawSuggestRows()
         end
         dialog._acceptSuggest = function()
             local suggest, entry = dialog._suggest, dialog._editBox
@@ -1866,7 +1866,7 @@ function CUI:ShowInputPopup(options)
                 return
             end
             dialog._suggest = { items = items, from = from, to = to, sel = 1, offset = 0 }
-            Render()
+            DrawSuggestRows()
         end
     end
     if dialog._previewValue then

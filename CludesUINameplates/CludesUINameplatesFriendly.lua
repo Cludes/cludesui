@@ -34,7 +34,7 @@ local _cachedFriendlyTargetPlate = nil
 
 local FRIENDLY_PLATE_Y_OFFSET = -18
 
-local function IsInFollowerDungeon()
+local function InFollowerContent()
     if C_LFGInfo and C_LFGInfo.IsInLFGFollowerDungeon and C_LFGInfo.IsInLFGFollowerDungeon() then
         return true
     end
@@ -45,14 +45,14 @@ local function IsInFollowerDungeon()
 end
 
 local function IsFriendlyEnabled()
-    if IsInFollowerDungeon() then return false end
+    if InFollowerContent() then return false end
     local plate = FP()
     if not plate or plate.showFriendlyPlayers == false then return false end
     return (plate.friendlyNameOnly == false)
 end
 
 local function NameOnlyOn()
-    if IsInFollowerDungeon() then return false end
+    if InFollowerContent() then return false end
     local plate = FP()
     if not plate then return false end
     if plate.showFriendlyPlayers == false then return false end
@@ -2125,7 +2125,7 @@ function mod.UpdateFriendlyNameplateSystem()
             or iType == "arena"
             or iType == "pvp"
         )
-        if IsInFollowerDungeon() then
+        if InFollowerContent() then
             -- Only hide them once the pre-change value is safely on file.
             -- Hiding without a capture has no matching restore, so the plates
             -- would never come back.

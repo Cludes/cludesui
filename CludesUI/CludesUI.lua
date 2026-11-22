@@ -1562,9 +1562,9 @@ end
 function CUI.RealmGroupName()
     if not CUI.IS_FOREVER then return GetRealmName() end
     local R = Enum.GameRule
-    local function On(rule) return rule and C_GameRules.IsGameRuleActive(rule) end
-    if On(R.HardcoreRuleset) then return GUILD_PLAYSTYLE_HARDCORE end
-    local pvp, rp = On(R.PvPRuleset), On(R.RPRuleset)
+    local function RuleActive(rule) return rule and C_GameRules.IsGameRuleActive(rule) end
+    if RuleActive(R.HardcoreRuleset) then return GUILD_PLAYSTYLE_HARDCORE end
+    local pvp, rp = RuleActive(R.PvPRuleset), RuleActive(R.RPRuleset)
     if pvp and rp then return GDAPI_REALMTYPE_PVP_RP end
     if pvp then return GDAPI_REALMTYPE_PVP end
     if rp then return GDAPI_REALMTYPE_RP end
@@ -3156,7 +3156,7 @@ function CUI.AttachSmoothScrollbar(scrollFrame, options)
         smoother = CreateFrame("Frame", nil, scrollFrame)
     end
     smoother:Hide()
-    local function Stop()
+    local function StopSmoothing()
         smoothing = false
         smoother:Hide()
     end
@@ -3171,7 +3171,7 @@ function CUI.AttachSmoothScrollbar(scrollFrame, options)
         goal = math.max(0, math.min(scrollMax, goal))
         local diff = goal - cur
         if math.abs(diff) < 0.3 then
-            Stop()
+            StopSmoothing()
             Set(goal)
             return
         end
@@ -3197,7 +3197,7 @@ function CUI.AttachSmoothScrollbar(scrollFrame, options)
     end)
 
     local function ScrollTo(v)
-        Stop()
+        StopSmoothing()
         goal = math.max(0, math.min(MaxScroll(), v))
         Set(goal)
     end
@@ -3274,7 +3274,7 @@ function CUI.AttachSmoothScrollbar(scrollFrame, options)
 
     knob:SetScript("OnMouseDown", function(self, btnFrame)
         if btnFrame ~= "LeftButton" then return end
-        Stop()
+        StopSmoothing()
         local _, curY = GetCursorPosition()
         local startY = curY / self:GetEffectiveScale()
         local startScroll = scrollFrame:GetVerticalScroll()
@@ -3283,7 +3283,7 @@ function CUI.AttachSmoothScrollbar(scrollFrame, options)
                 self2:SetScript("OnUpdate", nil)
                 return
             end
-            Stop()
+            StopSmoothing()
             local _, cy2 = GetCursorPosition()
             local maxTravel = rail:GetHeight() - self2:GetHeight()
             if maxTravel <= 0 then return end

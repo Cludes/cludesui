@@ -1983,7 +1983,7 @@ qolFrame:SetScript("OnEvent", function(self)
     end
 
     if not CUI.IS_FOREVER then
-        local function EndHiddenBanner()
+        local function DismissHiddenBanner()
             if not (CludesUIDB and CludesUIDB.hideBanners) then return end
             local current = TopBannerMgr.currentBanner
             local frame = current and current.frame
@@ -2011,10 +2011,10 @@ qolFrame:SetScript("OnEvent", function(self)
             if not (CludesUIDB and CludesUIDB.hideBanners) then return end
             if not bannerHooks then
                 bannerHooks = true
-                hooksecurefunc("TopBannerManager_Show", EndHiddenBanner)
-                hooksecurefunc("TopBannerManager_BannerFinished", EndHiddenBanner)
+                hooksecurefunc("TopBannerManager_Show", DismissHiddenBanner)
+                hooksecurefunc("TopBannerManager_BannerFinished", DismissHiddenBanner)
             end
-            EndHiddenBanner()
+            DismissHiddenBanner()
         end
 
         local TOAST_KINDS = {
@@ -3657,7 +3657,7 @@ do
     -- because the two secure snippets above also write it -- a private cache
     -- would go stale against them and swallow the next arming push. All reads
     -- are clean out of combat.
-    local function PushRCState()
+    local function SyncRightClickState()
         local match = (
             UnitExists("mouseover")
             and not UnitIsDeadOrGhost("mouseover")
@@ -3676,12 +3676,12 @@ do
     local rightClickHover = CreateFrame("Frame")
     rightClickHover:SetScript("OnEvent", function(self, eventName)
         if eventName == "UPDATE_MOUSEOVER_UNIT" then
-            PushRCState()
+            SyncRightClickState()
         elseif eventName == "PLAYER_REGEN_DISABLED" then
             self:UnregisterEvent("UPDATE_MOUSEOVER_UNIT")
         elseif eventName == "PLAYER_REGEN_ENABLED" then
             self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
-            PushRCState()
+            SyncRightClickState()
         end
     end)
 
@@ -3739,7 +3739,7 @@ do
                 -- Registered with the lane it clears, so the extra driver only
                 -- exists where the Lua lane does.
                 RegisterStateDriver(statePanel, "rcclear", "[@mouseover,harm,nodead]1;0")
-                PushRCState()
+                SyncRightClickState()
             else
                 rightClickHover:UnregisterAllEvents()
                 UnregisterStateDriver(statePanel, "rcclear")
@@ -5431,7 +5431,7 @@ do
     end
 
     -- Sweep current buffs, canceling any included transform. Descending so a cancel (shifts later indices down) can't skip a match.
-    local function CancelMatching(force)
+    local function CancelMatchingBuffs(force)
         if not (C_UnitAuras and C_UnitAuras.GetBuffDataByIndex) then return end
         if not force and UnitAffectingCombat("player") then return end
         if AurasRestricted() then return end
@@ -5449,7 +5449,7 @@ do
     auraWatch:SetScript("OnEvent", function(_, eventName, _, updateInfo)
         if eventName == "PLAYER_REGEN_ENABLED" then
             -- Combat just ended: clear anything that landed while locked.
-            CancelMatching(true)
+            CancelMatchingBuffs(true)
             return
         end
         -- UNIT_AURA (player only, via RegisterUnitEvent). The payload (and its fields) can be secret in
@@ -5459,12 +5459,12 @@ do
         local isFull = updateInfo.isFullUpdate
         if isFull ~= nil and issecretvalue and issecretvalue(isFull) then return end
         if isFull then
-            CancelMatching(false)
+            CancelMatchingBuffs(false)
         elseif updateInfo.addedAuras then
             for _, aura in ipairs(updateInfo.addedAuras) do
                 local spellId = aura.spellId
                 if spellId and not (issecretvalue and issecretvalue(spellId)) and cTable[spellId] then
-                    CancelMatching(false)
+                    CancelMatchingBuffs(false)
                     break
                 end
             end
@@ -5500,7 +5500,7 @@ do
         if isEnabled and next(cTable) ~= nil then
             auraWatch:RegisterUnitEvent("UNIT_AURA", "player")
             auraWatch:RegisterEvent("PLAYER_REGEN_ENABLED")
-            CancelMatching(false) -- immediate sweep of anything already active
+            CancelMatchingBuffs(false) -- immediate sweep of anything already active
         else
             auraWatch:UnregisterEvent("UNIT_AURA")
             auraWatch:UnregisterEvent("PLAYER_REGEN_ENABLED")

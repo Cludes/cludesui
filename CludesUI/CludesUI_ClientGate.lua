@@ -51,7 +51,7 @@ eventFrame:SetScript("OnEvent", function(self)
     backdrop:SetColorTexture(0.062, 0.050, 0.039, 0.97)
 
     -- 1px accent border (no dependencies -- the shared border kit is gated).
-    local function Edge(point1, point2, wid, hgt)
+    local function AddFrameEdge(point1, point2, wid, hgt)
         local tex = p:CreateTexture(nil, "BORDER")
         tex:SetColorTexture(0.30, 0.79, 0.94, 0.9)
         tex:SetPoint(point1)
@@ -60,10 +60,10 @@ eventFrame:SetScript("OnEvent", function(self)
         if hgt then tex:SetHeight(hgt) end
         return tex
     end
-    Edge("TOPLEFT", "TOPRIGHT", nil, 1)
-    Edge("BOTTOMLEFT", "BOTTOMRIGHT", nil, 1)
-    Edge("TOPLEFT", "BOTTOMLEFT", 1, nil)
-    Edge("TOPRIGHT", "BOTTOMRIGHT", 1, nil)
+    AddFrameEdge("TOPLEFT", "TOPRIGHT", nil, 1)
+    AddFrameEdge("BOTTOMLEFT", "BOTTOMRIGHT", nil, 1)
+    AddFrameEdge("TOPLEFT", "BOTTOMLEFT", 1, nil)
+    AddFrameEdge("TOPRIGHT", "BOTTOMRIGHT", 1, nil)
 
     local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -16)
