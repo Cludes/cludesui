@@ -968,12 +968,7 @@ do
         close = function(closeBtn)
             closeBtn:SetSize(12, 12)
             closeBtn:SetPoint("TOPRIGHT", closeBtn:GetParent(), "TOPRIGHT", -9, -9)
-            closeBtn.icon = closeBtn:CreateTexture(nil, "OVERLAY")
-            closeBtn.icon:SetAllPoints()
-            closeBtn.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
-            closeBtn.icon:SetAlpha(0.7)
-            closeBtn:SetScript("OnEnter", function() closeBtn.icon:SetAlpha(0.9) end)
-            closeBtn:SetScript("OnLeave", function() closeBtn.icon:SetAlpha(0.7) end)
+            mod.StyleCloseIcon(closeBtn)
         end,
     }
 

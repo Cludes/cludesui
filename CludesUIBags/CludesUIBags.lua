@@ -546,6 +546,17 @@ CludesUI.NewInternals(mod, "_bagsInternals", {
     SetSlotMetrics = "slotMetricSetters",
 })
 
+-- The close "x" of a bag window button: its icon, dimmed and brighter under the cursor,
+-- kept as button.icon. The caller sizes, places and wires the button.
+function mod.StyleCloseIcon(button)
+    button.icon = button:CreateTexture(nil, "OVERLAY")
+    button.icon:SetAllPoints()
+    button.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
+    button.icon:SetAlpha(0.7)
+    button:SetScript("OnEnter", function() button.icon:SetAlpha(0.9) end)
+    button:SetScript("OnLeave", function() button.icon:SetAlpha(0.7) end)
+end
+
 -- slot size and spacing come from the profile. each file that lays out slots
 -- keeps its own copy (OnSlotMetrics gets { size, spacing }), and frames made
 -- through SizeSlot get resized on a change
