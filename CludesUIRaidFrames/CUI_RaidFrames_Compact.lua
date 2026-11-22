@@ -173,7 +173,7 @@ local function NewState(ownerFrame, isParty)
     }
 end
 
-local function PutStyle(st, key, value)
+local function SetStyleValue(st, key, value)
     if st.style[key] ~= value then
         st.style[key], st.dirty, st.styleDirty = value, true, true
     end
@@ -190,27 +190,27 @@ local function UpdateStyle(st, cfg)
             red, green, blue, a = mod.GetBgColor(nil, cfg)
         end
     end
-    PutStyle(st, "tex", cfg.borderTexture)
-    PutStyle(st, "size", cfg.borderSize or 1)
-    PutStyle(st, "px", CUI.BorderPx(cfg.borderSizePx, cfg.borderSize or 1, cfg.borderTexture))
-    PutStyle(st, "offX", cfg.borderTextureOffset)
-    PutStyle(st, "offY", cfg.borderTextureOffsetY)
-    PutStyle(st, "shiftX", cfg.borderTextureShiftX)
-    PutStyle(st, "shiftY", cfg.borderTextureShiftY)
-    PutStyle(st, "behind", cfg.borderBehind)
-    PutStyle(st, "r", color.r)
-    PutStyle(st, "g", color.g)
-    PutStyle(st, "b", color.b)
-    PutStyle(st, "a", cfg.borderAlpha or 1)
-    PutStyle(st, "bgR", red)
-    PutStyle(st, "bgG", green)
-    PutStyle(st, "bgB", blue)
-    PutStyle(st, "bgA", a)
-    PutStyle(st, "one", CUI.PP.perfect / st.owner:GetEffectiveScale())
-    PutStyle(st, "grid", grid)
+    SetStyleValue(st, "tex", cfg.borderTexture)
+    SetStyleValue(st, "size", cfg.borderSize or 1)
+    SetStyleValue(st, "px", CUI.BorderPx(cfg.borderSizePx, cfg.borderSize or 1, cfg.borderTexture))
+    SetStyleValue(st, "offX", cfg.borderTextureOffset)
+    SetStyleValue(st, "offY", cfg.borderTextureOffsetY)
+    SetStyleValue(st, "shiftX", cfg.borderTextureShiftX)
+    SetStyleValue(st, "shiftY", cfg.borderTextureShiftY)
+    SetStyleValue(st, "behind", cfg.borderBehind)
+    SetStyleValue(st, "r", color.r)
+    SetStyleValue(st, "g", color.g)
+    SetStyleValue(st, "b", color.b)
+    SetStyleValue(st, "a", cfg.borderAlpha or 1)
+    SetStyleValue(st, "bgR", red)
+    SetStyleValue(st, "bgG", green)
+    SetStyleValue(st, "bgB", blue)
+    SetStyleValue(st, "bgA", a)
+    SetStyleValue(st, "one", CUI.PP.perfect / st.owner:GetEffectiveScale())
+    SetStyleValue(st, "grid", grid)
     -- Textured Background on the empty backgrounds, as on the frames.
-    PutStyle(st, "bgTex", grid and not st.isPet and mod.RF_TexBgPath(cfg) or false)
-    PutStyle(st, "bgVert", grid and mod.RF_IsVerticalFill(cfg) or false)
+    SetStyleValue(st, "bgTex", grid and not st.isPet and mod.RF_TexBgPath(cfg) or false)
+    SetStyleValue(st, "bgVert", grid and mod.RF_IsVerticalFill(cfg) or false)
 end
 
 -- Records frame f as the index-th cell of group gi (rect in the owner's scale, top-left).
@@ -339,7 +339,7 @@ local function Seam(st, index, first, posX, posY, length, vertical)
     t:Show()
 end
 
-local function Draw(st)
+local function DrawCompact(st)
     if not st.dirty then return end
     local val = st.style
     if st.styleDirty then
@@ -640,7 +640,7 @@ RefreshLive = function(st)
     local s = StateSource(st)
     UpdateStyle(st, s)
     CollectLive(st, s)
-    Draw(st)
+    DrawCompact(st)
 end
 
 local function NewLiveState(ownerFrame, isParty)
@@ -797,7 +797,7 @@ local function PreviewCompact(st, frameList, s, isParty, growth, isPet)
     if st.count ~= total then
         st.count, st.dirty = total, true
     end
-    Draw(st)
+    DrawCompact(st)
     return st
 end
 

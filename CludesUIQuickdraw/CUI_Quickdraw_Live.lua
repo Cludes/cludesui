@@ -316,7 +316,7 @@ end
 -- ordinary close; this covers closes with no release (the timeout, a zone
 -- change), open or not. Protected in combat, so PLAYER_REGEN_ENABLED tries
 -- again: an ESCAPE left bound to a closed palette is a dead key.
-local function ReleaseEscape()
+local function ReleaseCancelBinding()
     if cancelButton and not InCombatLockdown() then ClearOverrideBindings(cancelButton) end
 end
 
@@ -329,14 +329,14 @@ function mod.Close()
     if not liveView then return end
     local frame = liveView:GetFrame()
     if not frame:IsShown() then
-        ReleaseEscape()
+        ReleaseCancelBinding()
         return
     end
     frame:SetScript("OnUpdate", nil)
     frame:Hide()
     WatchMounts(false)
     ReleaseSecureState(liveView:GetPaletteIndex())
-    ReleaseEscape()
+    ReleaseCancelBinding()
     -- Both together: a fan centre left behind with no target reads as a
     -- settle that never ends, and SteerUnchanged would then deny every later
     -- open (any layout) its per-frame skip. The next fan open seeds both.
@@ -345,6 +345,6 @@ function mod.Close()
 end
 
 Inner.CreateLiveView, Inner.EnsureScrollCatcher = CreateLiveView, EnsureScrollCatcher
-Inner.EnsureSecureHeader, Inner.ReleaseEscape = EnsureSecureHeader, ReleaseEscape
+Inner.EnsureSecureHeader, Inner.ReleaseEscape = EnsureSecureHeader, ReleaseCancelBinding
 Inner.SetReleaseSecureState = function(frame) ReleaseSecureState = frame end
 Inner.broken = false

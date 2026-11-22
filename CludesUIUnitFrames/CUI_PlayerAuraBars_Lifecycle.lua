@@ -207,7 +207,7 @@ end
 -- retry-loop against secrecy).
 local pabDegraded = false
 local pabSettleTicker
-local function PabAssistProbe()
+local function CanAssistSelf()
     local probe = UnitUsingVehicle or UnitInVehicle
     if probe("player") then return false end
     local success, canSelf = pcall(UnitCanAssist, "player", "player")
@@ -350,14 +350,14 @@ local function ReapplyAfterCinematic()
         -- alpha-only now, so nothing else re-shows the bars, and a watcher that
         -- stopped early would leave them invisible for the rest of the session.
         -- Two C calls per quarter-second, and only while degraded.
-        if not PabAssistProbe() then
+        if not CanAssistSelf() then
             if not pabDegraded then
                 pabDegraded = true
                 SetSuppressed(vehicleHidden)
             end
             if not pabSettleTicker then
                 pabSettleTicker = C_Timer.NewTicker(0.25, function()
-                    if PabAssistProbe() then
+                    if CanAssistSelf() then
                         pabSettleTicker:Cancel()
                         pabSettleTicker = nil
                         ReapplyAfterCinematic()

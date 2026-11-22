@@ -400,7 +400,7 @@ end
 
 -- Resolves a spec into filter tokens + a fresh candidate table, or nil when it
 -- can never match.
-local function MatchFinish(match)
+local function FinishMatch(match)
     if match.empty then return nil end
     -- PLAYER (your casts, pet and vehicle included) is always a player source.
     if match.tok.PLAYER == true and match.cf.isFromPlayerOrPlayerPet == false then return nil end
@@ -479,7 +479,7 @@ end
 
 -- True when a Match All indicator's own lanes can never match together.
 local function TileMatchEmpty(tileDef, dmCfg)
-    return MatchFinish((MatchSpec(tileDef.claim, tileDef.neg, dmCfg))) == nil
+    return FinishMatch((MatchSpec(tileDef.claim, tileDef.neg, dmCfg))) == nil
 end
 
 -- Hand-off atoms: the set a Match All indicator takes, as AND terms -- the
@@ -583,14 +583,14 @@ local function Carve(region, atoms, dmCfg)
         for jdx = i, #atoms do
             MatchAtom(rest, atoms[jdx], true, dmCfg)
         end
-        if not MatchFinish(rest) then
+        if not FinishMatch(rest) then
             if not parts then return nil end
             parts[#parts + 1] = current
             return parts
         end
         local result = MatchCopy(current)
         MatchAtom(result, atoms[i], false, dmCfg)
-        if MatchFinish(result) then
+        if FinishMatch(result) then
             parts = parts or {}
             parts[#parts + 1] = result
         end
@@ -1863,7 +1863,7 @@ local function BuildRecords(s, dmCfg)
             for jdx = 1, #atoms do
                 MatchAtom(match, atoms[jdx], true, dmCfg)
             end
-            if MatchFinish(match) then
+            if FinishMatch(match) then
                 matchSets = matchSets or {}
                 matchSets[#matchSets + 1] = { tile = tileDef, atoms = atoms }
             end
@@ -2028,7 +2028,7 @@ local function BuildRecords(s, dmCfg)
     -- parts. A set that can never match builds nothing (ns.DM_MatchEmpty and
     -- ns.DM_TileMatchEmpty are the options warnings' tests).
     local function EmitMatch(rest, catList, fl, tile)
-        local restT, restC = MatchFinish(rest)
+        local restT, restC = FinishMatch(rest)
         if restT and fl then
             local inSet, split = {}, {}
             for i = 1, #catList do
@@ -2052,7 +2052,7 @@ local function BuildRecords(s, dmCfg)
                             split[Other] = true
                             local place = MatchCopy(rest)
                             if MatchApply(place, Other, true, dmCfg) then
-                                local pT, pC = MatchFinish(place)
+                                local pT, pC = FinishMatch(place)
                                 if pT then
                                     local pcats = { Other }
                                     for c = 1, #catList do
@@ -2071,7 +2071,7 @@ local function BuildRecords(s, dmCfg)
                                     local negm = MatchCopy(rest)
                                     MatchApply(negm, Other, false, dmCfg)
                                     rest = negm
-                                    restT, restC = MatchFinish(negm)
+                                    restT, restC = FinishMatch(negm)
                                 end
                             end
                         end
@@ -2124,7 +2124,7 @@ local function BuildRecords(s, dmCfg)
                     then
                         local try = MatchCopy(match)
                         MatchApply(try, category, false, dmCfg)
-                        if MatchFinish(try) then match = try end
+                        if FinishMatch(try) then match = try end
                     end
                 end
             end
@@ -2480,7 +2480,7 @@ local function BuildRecords(s, dmCfg)
                 end
                 if parts then
                     for profile = 1, #parts do
-                        local tokenList, castFrame = MatchFinish(parts[profile])
+                        local tokenList, castFrame = FinishMatch(parts[profile])
                         if tokenList then
                             result[#result + 1] = {
                                 key = record.key,
@@ -2512,7 +2512,7 @@ function mod.DM_MatchEmpty(view)
     local dmCfg = DM()
     if not (view and dmCfg and MatchOn(view)) then return false end
     local _, claimMap = EffectiveState(view, true)
-    return MatchFinish((MatchSpec(view, view.neg, dmCfg, claimMap))) == nil
+    return FinishMatch((MatchSpec(view, view.neg, dmCfg, claimMap))) == nil
 end
 
 -- Indicator Match All (options: the Filters summary join, the sidebar
@@ -2619,7 +2619,7 @@ local function EffectFilterForTile(dmCfg, tileDef, category)
     -- the spec). A set that can never match keeps a plain filter; FxApply's gate
     -- (fx.matchLive) silences the slot instead.
     if category == "match" then
-        local tokenList, castFrame = MatchFinish((MatchSpec(tileDef.claim, tileDef.neg, dmCfg)))
+        local tokenList, castFrame = FinishMatch((MatchSpec(tileDef.claim, tileDef.neg, dmCfg)))
         if not tokenList then return { "HARMFUL" }, {} end
         if cap then castFrame.maxDuration = cap end
         return tokenList, castFrame
@@ -4173,7 +4173,7 @@ end
 -- height square shape, effect single-cat, fx single-config and healthcolor
 -- alpha once. Legacy shapes only ever existed in the all-specs array, but
 -- healing everywhere is idempotent and keeps one path.
-local function HealTiles(arr)
+local function RepairTiles(arr)
     for i = 1, #arr do
         local tileDef = arr[i]
         if tileDef.type == "square" and not tileDef.claim then
@@ -4215,7 +4215,7 @@ function mod.DM_Tiles()
     local dmCfg = DM()
     if not dmCfg then return nil end
     if not dmCfg.tiles then dmCfg.tiles = {} end
-    HealTiles(dmCfg.tiles)
+    RepairTiles(dmCfg.tiles)
     return dmCfg.tiles
 end
 
@@ -4289,7 +4289,7 @@ function mod.DM_BucketTiles(key, create)
     if not dmCfg then return nil end
     local b = SpecBucket(dmCfg, key, create)
     if not b then return nil end
-    HealTiles(b.tiles)
+    RepairTiles(b.tiles)
     return b.tiles
 end
 
@@ -4351,7 +4351,7 @@ local function UnionFor(dmCfg, spellRef)
     -- this runs on the runtime config path and must not write an empty
     -- table into every tile-less profile's SavedVariables).
     local base = dmCfg.tiles
-    if base then HealTiles(base) end
+    if base then RepairTiles(base) end
     local result = {}
     local tileStyle = dmCfg.specTiles
     local con = tileStyle and spellRef and tileStyle["spec" .. spellRef] or nil
@@ -4363,11 +4363,11 @@ local function UnionFor(dmCfg, spellRef)
         end
     end
     if tileStyle and spellRef then
-        local function AddBucket(key, filtered)
+        local function AddTileBucket(key, filtered)
             local b = tileStyle[key]
             local tileList = b and b.tiles
             if not tileList then return end
-            HealTiles(tileList)
+            RepairTiles(tileList)
             for i = 1, #tileList do
                 local tileDef = tileList[i]
                 if not (filtered and dis and dis[tileDef.id]) then result[#result + 1] = tileDef end
@@ -4376,11 +4376,11 @@ local function UnionFor(dmCfg, spellRef)
         -- WoW Forever: a class renders All Specs and its own bucket only
         -- (group buckets are not offered there).
         if not CUI.IS_FOREVER and not (mod.BM_SpecKeyForSpecID and mod.BM_SpecKeyForSpecID(spellRef)) then
-            AddBucket("nonhealer", true)
+            AddTileBucket("nonhealer", true)
         end
         local roleKey = mod.BM_RoleBucketForSpecID and mod.BM_RoleBucketForSpecID(spellRef)
-        if roleKey then AddBucket(roleKey, true) end
-        AddBucket("spec" .. spellRef, false)
+        if roleKey then AddTileBucket(roleKey, true) end
+        AddTileBucket("spec" .. spellRef, false)
     end
     return result
 end
@@ -4408,7 +4408,7 @@ function mod.DM_ViewTiles(view)
     local result = {}
     local function Add(entries)
         if not entries then return end
-        HealTiles(entries)
+        RepairTiles(entries)
         for i = 1, #entries do
             result[#result + 1] = entries[i]
         end

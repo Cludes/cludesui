@@ -592,16 +592,16 @@ do
                 -- this slot still holds the same unit. No-op when the name is cached.
                 if not UnitName(unitToken) then
                     local tries = 0
-                    local function RetryName()
+                    local function RetryUnitName()
                         if widget:GetAttribute("unit") ~= unitToken then return end
                         if UnitName(unitToken) then
                             UpdateButton(widget)
                             return
                         end
                         tries = tries + 1
-                        if tries < 5 then C_Timer.After(2, RetryName) end
+                        if tries < 5 then C_Timer.After(2, RetryUnitName) end
                     end
-                    C_Timer.After(2, RetryName)
+                    C_Timer.After(2, RetryUnitName)
                 end
                 for _, ev in ipairs(Extras.EVENTS) do
                     t:RegisterUnitEvent(ev, unitToken)

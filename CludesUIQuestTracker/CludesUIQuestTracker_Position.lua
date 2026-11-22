@@ -35,7 +35,7 @@ end
 
 -- The container puts a held tracker back in its slot on every update, so an
 -- unlock session moves a stand-in of the tracker's size instead.
-local function UnlockFrame()
+local function TrackerForUnlock()
     local frame = Tracker()
     if not (CUI._unlockActive and Held()) then return frame end
     if not standInPlaced then
@@ -248,9 +248,9 @@ function EQT.InitPosition()
             label = "Quest Tracker",
             group = "Quest Tracker",
             order = 560,
-            getFrame = UnlockFrame,
+            getFrame = TrackerForUnlock,
             getSize = function()
-                local frame = UnlockFrame()
+                local frame = TrackerForUnlock()
                 return frame:GetWidth(), EQT.DB().height or frame:GetHeight()
             end,
             isHidden = function() return not EQT.Cfg("enabled") end,
@@ -269,7 +269,7 @@ function EQT.InitPosition()
             -- tracker takes its Height setting.
             savePos = function(_, point, relPoint, x, y)
                 if point == "CENTER" then
-                    point, relPoint, y = "TOP", "CENTER", y + UnlockFrame():GetHeight() / 2
+                    point, relPoint, y = "TOP", "CENTER", y + TrackerForUnlock():GetHeight() / 2
                 end
                 EQT.Set("position", { point = point, relPoint = relPoint or point, x = x, y = y })
                 Changed()

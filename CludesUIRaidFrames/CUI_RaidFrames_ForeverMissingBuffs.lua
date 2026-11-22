@@ -510,7 +510,7 @@ local function EndGlows(o, from)
     end
 end
 
-local function HideOverlay(o)
+local function HideBuffOverlay(o)
     EndGlows(o, 1)
     o:Hide()
 end
@@ -568,7 +568,7 @@ local function Layout(o, cfg, health, entries, num)
         end
     end
     if num == 0 then
-        HideOverlay(o)
+        HideBuffOverlay(o)
         return
     end
     o:SetSize(num * size + (num - 1) * edge, size)
@@ -606,7 +606,7 @@ local function PaintMissing(button, skinData)
     local on = enabled and cfg and cfg.showMissingBuffs ~= false
     local o = skinData.fvMissing
     if not on then
-        if o then HideOverlay(o) end
+        if o then HideBuffOverlay(o) end
         return
     end
     local unitToken = button:GetAttribute("unit")
@@ -730,7 +730,7 @@ local function Flush()
     wipe(pendingBtns)
 end
 
-local function Arm()
+local function ArmFlush()
     if flushArmed then return end
     flushArmed = true
     C_Timer.After(0, Flush)
@@ -738,12 +738,12 @@ end
 
 local function MarkDirty(unitToken)
     dirty[unitToken] = true
-    Arm()
+    ArmFlush()
 end
 
 local function ArmFull()
     fullArmed = true
-    Arm()
+    ArmFlush()
 end
 
 -------------------------------------------------------------------------------
@@ -926,7 +926,7 @@ end
 -- On (for a class that casts one of the buffs at all): events and a full
 -- look-up; a buff switched on or off while on re-reads everyone for it.
 local syncArmed = false
-local function Sync()
+local function SyncMissingBuffs()
     syncArmed = false
     local wanted, changed = false, false
     if CAN_EVER then
@@ -958,7 +958,7 @@ function mod.RF_FvMissingAnchor(button, skinData)
     PaintMissing(button, skinData)
     if not syncArmed then
         syncArmed = true
-        C_Timer.After(0, Sync)
+        C_Timer.After(0, SyncMissingBuffs)
     end
 end
 
@@ -969,7 +969,7 @@ function mod.RF_FvMissingUnit(button, skinData, unitToken)
     skinData._fvUnit = unitToken
     if not unitToken then
         -- An emptied button hides: its glows leave the driver with it.
-        if skinData.fvMissing then HideOverlay(skinData.fvMissing) end
+        if skinData.fvMissing then HideBuffOverlay(skinData.fvMissing) end
         return
     end
     pendingBtns[button] = true
@@ -1014,7 +1014,7 @@ function mod.RF_FvMissingPreview(frame, index, cfg, indVis)
     end
     local o = frame._fvMissing
     if num == 0 then
-        if o then HideOverlay(o) end
+        if o then HideBuffOverlay(o) end
         return
     end
     if not o then
@@ -1029,5 +1029,5 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_ENTERING_WORLD")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    Sync()
+    SyncMissingBuffs()
 end)

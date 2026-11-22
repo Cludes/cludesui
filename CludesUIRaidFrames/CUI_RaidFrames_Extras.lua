@@ -311,7 +311,7 @@ do
     end
     mod._PGSet = PGSet
 
-    local function ModeColor(mode, custom)
+    local function ColorForMode(mode, custom)
         if mode == "custom" then return custom end
         local red, green, blue
         if mode == "class" then
@@ -326,7 +326,7 @@ do
         return { r = red, g = green, b = blue, a = 1 }
     end
 
-    local function CustomColor(key)
+    local function GroupCustomColor(key)
         local pg, s = PGSet(), saved.profile
         if pg[key] then return pg[key] end
         if key == "textColor" then
@@ -336,13 +336,13 @@ do
         local bc = s.borderColor or {}
         return { r = bc.r or 0, g = bc.g or 0, b = bc.b or 0, a = s.borderAlpha or 1 }
     end
-    mod._PGCustomColor = CustomColor
+    mod._PGCustomColor = GroupCustomColor
 
     function mod._PGStyle()
         local pg, s = PGSet(), saved.profile
         local backdrop = s.customBgColor or {}
         return pg.textSize or s.groupNumberSize or 10,
-            ModeColor(pg.textColorMode or "accent", CustomColor("textColor")),
+            ColorForMode(pg.textColorMode or "accent", GroupCustomColor("textColor")),
             pg.bgColor or {
                 r = backdrop.r or 17 / 255,
                 g = backdrop.g or 17 / 255,
@@ -350,7 +350,7 @@ do
                 a = 1,
             },
             pg.borderSize or s.borderSize or 1,
-            ModeColor(pg.borderColorMode or "accent", CustomColor("borderColor"))
+            ColorForMode(pg.borderColorMode or "accent", GroupCustomColor("borderColor"))
     end
 
     local function ApplyPos()
@@ -384,7 +384,7 @@ do
 
     local fmt, isShown -- the text format and the group it shows
 
-    local function UpdateGroup()
+    local function RefreshGroupNumber()
         if not widget then return end
         local index = IsInRaid() and UnitInRaid("player")
         local set = index and select(3, GetRaidRosterInfo(index))
@@ -414,7 +414,7 @@ do
         local on = pg.enabled and true or false
         if on and not events then
             events = CreateFrame("Frame")
-            events:SetScript("OnEvent", UpdateGroup)
+            events:SetScript("OnEvent", RefreshGroupNumber)
             CUI.RegAccent({ type = "callback", fn = mod.PG_Apply })
         end
         if events then
@@ -477,7 +477,7 @@ do
             nil,
             px
         )
-        UpdateGroup()
+        RefreshGroupNumber()
     end
 
     function mod.PG_SetPreview(on)
