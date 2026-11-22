@@ -197,7 +197,7 @@ local function CreateHeader()
     -- mid-run, and a stale callback clearing the live chain's OnEvent would
     -- strand it with refreshEnabled false (bags frozen until reload).
     local consolidator, retrier
-    local function LockSort()
+    local function HoldSort()
         sortLocked = true
         SyncSortButton()
     end
@@ -225,10 +225,10 @@ local function CreateHeader()
     local SORT_STUCK_AFTER = 5
 
     -- mergeOnly (category views): consolidate partial stacks, then the visual sort.
-    local function DoPhysicalSort(mergeOnly)
+    local function SortBagsNow(mergeOnly)
         if InCombatLockdown() or physicalActive then return end -- confirm popup can outlive the pull
         physicalActive = true
-        LockSort()
+        HoldSort()
         CUI_Bags.refreshEnabled = false
 
         local sfxWas = GetCVar("Sound_EnableSFX")
@@ -651,7 +651,7 @@ local function CreateHeader()
         end
 
         if not skipRefresh then CUI_Bags:RefreshInventory() end
-        LockSort()
+        HoldSort()
         C_Timer.After(3, ReleaseSort)
     end
 
@@ -661,7 +661,7 @@ local function CreateHeader()
     local function DoBlizzardSort()
         if InCombatLockdown() then return end
         PlaySound(SOUNDKIT.UI_BAG_SORTING_01)
-        LockSort()
+        HoldSort()
         if BP().bagSortToBottom and C_Container.SetSortBagsRightToLeft then
             C_Container.SetSortBagsRightToLeft(false)
         end
@@ -673,7 +673,7 @@ local function CreateHeader()
         if sortLocked or (InCombatLockdown() and SortMovesItems()) then return end
         if selectedCategoryIndex == -1 then
             if CludesUIDB and CludesUIDB.bagSortWarningDismissed then
-                DoPhysicalSort()
+                SortBagsNow()
             else
                 CUI:ShowConfirmPopup({
                     title = "OneBag Sort",
@@ -686,7 +686,7 @@ local function CreateHeader()
                             if not CludesUIDB then CludesUIDB = {} end
                             CludesUIDB.bagSortWarningDismissed = true
                         end
-                        DoPhysicalSort()
+                        SortBagsNow()
                     end,
                 })
             end
@@ -718,7 +718,7 @@ local function CreateHeader()
             -- Partial stacks merge first, then the display sort. The run plays the
             -- sort sound itself, on Master: its sound effects mute would cut a
             -- sound played here short.
-            DoPhysicalSort(true)
+            SortBagsNow(true)
         end
     end)
     CUI_Bags._doVisualSort = DoVisualSort

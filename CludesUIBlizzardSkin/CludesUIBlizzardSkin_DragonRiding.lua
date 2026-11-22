@@ -1252,7 +1252,7 @@ end
 -- Resolve a classic atlas by its texture-kit name, falling back to the "-2x"
 -- member name in case a client only registers that one. nil = art missing.
 local classicAtlasCache = {}
-local function ClassicAtlas(suffix)
+local function ClassicAtlasFor(suffix)
     local hit = classicAtlasCache[suffix]
     if hit ~= nil then return hit or nil end
     local name = CLASSIC.kit .. "_" .. suffix
@@ -1265,7 +1265,7 @@ local function ClassicAtlas(suffix)
 end
 
 local function SetClassicArt(texture, suffix, wid, hgt)
-    local atlas = ClassicAtlas(suffix)
+    local atlas = ClassicAtlasFor(suffix)
     if atlas then texture:SetAtlas(atlas) end
     texture:SetSize(wid, hgt)
     return atlas
@@ -1299,12 +1299,12 @@ local function CreateClassicCell(hostFrame)
     barFrame:SetSize(C.fillW, C.fillH)
     barFrame:SetFrameLevel(pipCell:GetFrameLevel() + 1)
     pipCell.bar = barFrame
-    pipCell.fillAtlas = ClassicAtlas("fill")
-    pipCell.fillFullAtlas = ClassicAtlas("fillfull")
+    pipCell.fillAtlas = ClassicAtlasFor("fill")
+    pipCell.fillFullAtlas = ClassicAtlasFor("fillfull")
     if pipCell.fillAtlas then barFrame:SetStatusBarTexture(pipCell.fillAtlas) end
     pipCell.isFull = false
 
-    local flipAtlas = ClassicAtlas("fill_flipbook")
+    local flipAtlas = ClassicAtlasFor("fill_flipbook")
     if flipAtlas then
         pipCell.flip = barFrame:CreateTexture(nil, "OVERLAY")
         pipCell.flip:SetAllPoints(barFrame)
@@ -1340,7 +1340,7 @@ local function CreateClassicCell(hostFrame)
     SetClassicArt(pipCell.spark, "spark", C.sparkW, C.sparkH)
     pipCell.spark:SetPoint("CENTER", barFrame:GetStatusBarTexture(), "TOP", 0, 0)
     pipCell.spark:Hide()
-    local maskAtlas = ClassicAtlas("mask")
+    local maskAtlas = ClassicAtlasFor("mask")
     if maskAtlas then
         local mask = overlay:CreateMaskTexture()
         mask:SetAtlas(maskAtlas, false, nil, nil, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")

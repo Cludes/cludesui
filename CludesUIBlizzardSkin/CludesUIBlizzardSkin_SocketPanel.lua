@@ -245,7 +245,7 @@ end
 -- the session a second time, nested inside that handler. The window is never
 -- made invisible: when it cannot be hidden (combat) it stays on screen so the
 -- player can close it by hand.
-local function SafeCloseSession()
+local function CloseSocketSession()
     local frame = _G.ItemSocketingFrame
     if frame and frame:IsShown() then
         if not InCombatLockdown() and HideUIPanel then HideUIPanel(frame) end
@@ -283,7 +283,7 @@ local function DoSocket(targetSlot, socketIndex, gemItemID)
             -- until the user closes it by hand. Never reopen in the same click --
             -- the old session's SOCKET_INFO_CLOSE would wipe the new pending
             -- mid-flight. The flyout stays open; the next gem click goes through.
-            SafeCloseSession()
+            CloseSocketSession()
         end
         return -- manual session: never hijack
     end
@@ -325,7 +325,7 @@ local function OnSocketInfoUpdate()
     local bagId, slotId = FindBagSlotForItem(waiting.gemItemID)
     if not bagId then
         waiting = nil
-        SafeCloseSession()
+        CloseSocketSession()
         return
     end
 
@@ -1172,7 +1172,7 @@ local function OnEvent(self, evt, arg1)
         local ours = waiting ~= nil
         waiting = nil
         gemsStale = true
-        if ours then SafeCloseSession() end
+        if ours then CloseSocketSession() end
     elseif evt == "SOCKET_INFO_CLOSE" then
         waiting = nil
         ourSession = false

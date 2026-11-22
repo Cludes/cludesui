@@ -216,7 +216,7 @@ do
     -- the session (blocked SetShown and rejected secret cooldowns in combat,
     -- the gamepad bars' class flyout). Kept broadcasters need nothing added,
     -- and our dispatcher paints ExtraActionButton1 and the override bar.
-    local function ApplyBroadcaster()
+    local function SyncBroadcaster()
         local wanted = (_vehNeed or _extraNeed) and "full" or "off"
         -- Folded into `want` so the mode comparison below sees the change and
         -- re-applies; PLAYER_ENTERING_WORLD and the REGEN edges re-run this.
@@ -246,7 +246,7 @@ do
     -- quieting must come back through here.
     mod.ResyncBroadcaster = function()
         _broadcasterMode = nil -- the caller has just quieted the frames; never early-out
-        ApplyBroadcaster()
+        SyncBroadcaster()
     end
     -- Recompute from ground truth on a broad event set rather than tracking
     -- enter/exit: vehicle enter events don't reliably fire/keep state. Ground
@@ -257,7 +257,7 @@ do
     local function RefreshBroadcasterNeeds()
         _vehNeed = (C_ActionBar.HasVehicleActionBar() or C_ActionBar.HasOverrideActionBar()) and true or false
         _extraNeed = C_ActionBar.HasExtraActionBar() and true or false
-        ApplyBroadcaster()
+        SyncBroadcaster()
     end
     -- Exposed for the extra action button's Show-hook refresh in
     -- SetupBlizzardMovableFrame (a reliable trigger for delve entry).
@@ -278,7 +278,7 @@ do
         if evt == "PLAYER_REGEN_DISABLED" or evt == "PLAYER_REGEN_ENABLED" then
             -- Undeferred, and a secrecy re-check only: the needs are unchanged
             -- at a combat edge, so this early-outs unless the secret state moved.
-            ApplyBroadcaster()
+            SyncBroadcaster()
             return
         end
         C_Timer.After(0, RefreshBroadcasterNeeds) -- deferred so Blizzard's bar state has settled

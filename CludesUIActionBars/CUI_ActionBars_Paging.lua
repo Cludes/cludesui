@@ -375,15 +375,15 @@ function mod.RefreshPagingCycleMacros()
         prevMacro = _macroPrev
     end
 
-    local function UpdateButton(btnFrame, macro)
+    local function SyncPagingButton(btnFrame, macro)
         if btnFrame and btnFrame:GetAttribute("macrotext") ~= macro then
             btnFrame:SetAttribute("macrotext", macro)
         end
     end
-    UpdateButton(_pagingFrame and _pagingFrame._upBtn, nextMacro)
-    UpdateButton(_pagingFrame and _pagingFrame._downBtn, prevMacro)
-    UpdateButton(_G.EABPageNext, nextMacro)
-    UpdateButton(_G.EABPagePrev, prevMacro)
+    SyncPagingButton(_pagingFrame and _pagingFrame._upBtn, nextMacro)
+    SyncPagingButton(_pagingFrame and _pagingFrame._downBtn, prevMacro)
+    SyncPagingButton(_G.EABPageNext, nextMacro)
+    SyncPagingButton(_G.EABPagePrev, prevMacro)
     _filteredPagingActive = not not enabled
 end
 

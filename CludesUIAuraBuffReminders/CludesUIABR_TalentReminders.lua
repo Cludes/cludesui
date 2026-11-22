@@ -186,7 +186,7 @@ local function LayoutIcons()
     end
 end
 
-local function HideIcons()
+local function HideReminderIcons()
     if InCombat() then return end
     for index = 1, #talentActiveIcons do
         local button = talentActiveIcons[index]
@@ -356,11 +356,11 @@ local function Refresh()
         or (IsMounted() and IsFlying())
         or UnitInVehicle("player")
     then
-        HideIcons()
+        HideReminderIcons()
         return
     end
 
-    HideIcons()
+    HideReminderIcons()
     Collect()
 
     if #_missing > 0 and talentIconAnchor then
@@ -444,7 +444,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
     end
 
     if evt == "PLAYER_REGEN_DISABLED" then
-        HideIcons()
+        HideReminderIcons()
         return
     end
 
@@ -478,4 +478,4 @@ end)
 --  Public API (for options and unlock mode)
 -------------------------------------------------------------------------------
 _G._CUABR_TR_RequestRefresh = QueueRefresh
-_G._CUABR_TR_HideIcons = HideIcons
+_G._CUABR_TR_HideIcons = HideReminderIcons

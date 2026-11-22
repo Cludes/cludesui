@@ -58,7 +58,7 @@ end
 -------------------------------------------------------------------------------
 local Theme = {}
 Skin.Theme = Theme
-local function ResolveTheme()
+local function WindowTheme()
     local ACC = (CUI and CUI.CLUDES_GREEN) or { r = 0.298, g = 0.788, b = 0.941 }
     Theme.accR, Theme.accG, Theme.accB = ACC.r or 0.298, ACC.g or 0.788, ACC.b or 0.941
     -- Neutral dark grays (no color cast): panel/button/dropdown fill and the
@@ -72,7 +72,7 @@ local function ResolveTheme()
     Theme.fontShadow = (Theme.fontFlag == "")
         and (not (CUI and CUI.GetFontUseShadow) or CUI.GetFontUseShadow("blizzardSkin"))
 end
-Skin.ResolveTheme = ResolveTheme
+Skin.ResolveTheme = WindowTheme
 
 local function SolidTex(hostFrame, layer, red, green, blue, a, sublevel)
     local tex = hostFrame:CreateTexture(nil, layer, nil, sublevel)
@@ -1385,7 +1385,7 @@ function Skin.ItemButton(button, options)
         end
         if nt then nt:SetAlpha(0) end
         if button.IconBorder and button.IconBorder.SetAlpha then button.IconBorder:SetAlpha(0) end
-        if not Theme.insetR then ResolveTheme() end
+        if not Theme.insetR then WindowTheme() end
         local backing = button:CreateTexture(nil, "BACKGROUND", nil, -7)
         backing:SetColorTexture(Theme.insetR, Theme.insetG, Theme.insetB, 1)
         backing:SetAllPoints(iconTex)
@@ -2087,7 +2087,7 @@ local function WindowOn(winKey) return Skin.GetStyle(winKey) ~= "off" end
 
 local function TryApply(record)
     if not WindowOn(record.key) then return end
-    if not Theme.fontPath then ResolveTheme() end
+    if not Theme.fontPath then WindowTheme() end
     local success, err = pcall(record.apply)
     if not success and err then
         -- Surface through the normal error pipeline (respects scriptErrors)
@@ -2103,7 +2103,7 @@ boot:RegisterEvent("PLAYER_LOGIN")
 boot:RegisterEvent("ADDON_LOADED")
 boot:SetScript("OnEvent", function(_, evt, name)
     if evt == "PLAYER_LOGIN" then
-        ResolveTheme()
+        WindowTheme()
         for _, record in ipairs(_windows) do
             -- Immediate windows (no LoD addon) and any LoD addon that is
             -- already loaded get skinned now.

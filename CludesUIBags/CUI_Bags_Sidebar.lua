@@ -120,7 +120,7 @@ local function EnsureGroupHighlight()
     -- Accent border
     local Pix = CUI and CUI.PP
     local px = (Pix and Pix.mult) or 1
-    local function MakeLine(point1, rel1, point2, rel2, wid, hgt)
+    local function NewLine(point1, rel1, point2, rel2, wid, hgt)
         local tex = highlight:CreateTexture(nil, "OVERLAY", nil, 7)
         tex:SetColorTexture(eg.r, eg.g, eg.b, 0.6)
         tex:SetPoint(point1, highlight, rel1, 0, 0)
@@ -129,10 +129,10 @@ local function EnsureGroupHighlight()
         if hgt then tex:SetHeight(hgt) end
         return tex
     end
-    MakeLine("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT", nil, px)
-    MakeLine("BOTTOMLEFT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMRIGHT", nil, px)
-    MakeLine("TOPLEFT", "TOPLEFT", "BOTTOMLEFT", "BOTTOMLEFT", px, nil)
-    MakeLine("TOPRIGHT", "TOPRIGHT", "BOTTOMRIGHT", "BOTTOMRIGHT", px, nil)
+    NewLine("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT", nil, px)
+    NewLine("BOTTOMLEFT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMRIGHT", nil, px)
+    NewLine("TOPLEFT", "TOPLEFT", "BOTTOMLEFT", "BOTTOMLEFT", px, nil)
+    NewLine("TOPRIGHT", "TOPRIGHT", "BOTTOMRIGHT", "BOTTOMRIGHT", px, nil)
     highlight:Hide()
     _dragGroupHL = highlight
     return highlight

@@ -89,7 +89,7 @@ local CJK_GLYPHS = {
     koKR = { "천", "만", "억" },
 }
 
-local function CJKBreakpoints(g)
+local function CjkBreaks(g)
     return {
         {
             breakpoint = 100000000,
@@ -130,9 +130,9 @@ function CludesUI.NumberAbbrevGlyphs(localeCode) return CJK_GLYPHS[localeCode or
 
 -- Locale-specific algorithms: [localeCode] -> breakpoint-table builder.
 local localeBuilders = {
-    zhCN = function() return CJKBreakpoints(CJK_GLYPHS.zhCN) end,
-    zhTW = function() return CJKBreakpoints(CJK_GLYPHS.zhTW) end,
-    koKR = function() return CJKBreakpoints(CJK_GLYPHS.koKR) end,
+    zhCN = function() return CjkBreaks(CJK_GLYPHS.zhCN) end,
+    zhTW = function() return CjkBreaks(CJK_GLYPHS.zhTW) end,
+    koKR = function() return CjkBreaks(CJK_GLYPHS.koKR) end,
 }
 
 -- A locale may add or replace its algorithm (e.g. from its CludesUILocales

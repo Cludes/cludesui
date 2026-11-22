@@ -936,7 +936,7 @@ do
             -- hover art on OnEnter, so fade ALL native art every pass and from
             -- enter/leave hooks too, keeping our arrow.
             local mountDisplay = FrameDataOf(menuArrow)
-            local function FadeArrowArt()
+            local function DimArrowArt()
                 local keepSet = { [skinData.arrow] = true }
                 Skin.FadeRegions(menuArrow, keepSet)
                 for _, g in ipairs({
@@ -951,11 +951,11 @@ do
                 end
                 if menuArrow.Art and menuArrow.Art.SetAlpha then menuArrow.Art:SetAlpha(0) end
             end
-            FadeArrowArt()
+            DimArrowArt()
             if not mountDisplay.hoverHooked then
                 mountDisplay.hoverHooked = true
-                menuArrow:HookScript("OnEnter", FadeArrowArt)
-                menuArrow:HookScript("OnLeave", FadeArrowArt)
+                menuArrow:HookScript("OnEnter", DimArrowArt)
+                menuArrow:HookScript("OnLeave", DimArrowArt)
             end
         end
 
@@ -4558,7 +4558,7 @@ do
     -- Hold a texture permanently invisible against Blizzard's re-raises: a
     -- reentry-guarded SetAlpha post-hook forces it back to 0 (a plain SetAlpha(0)
     -- is reverted by the next row re-init on expand/select). Taint-safe (hooksecurefunc only).
-    local function KillTex(t)
+    local function HideTex(t)
         if not t or not t.SetAlpha then return end
         t:SetAlpha(0)
         local titleData = FrameDataOf(t)
@@ -4613,12 +4613,12 @@ do
                 and region.IsObjectType
                 and region:IsObjectType("Texture")
             then
-                KillTex(region)
+                HideTex(region)
             end
         end
-        if row.NineSlice then KillTex(row.NineSlice) end
-        if row.Icon and row.Icon.frame then KillTex(row.Icon.frame) end
-        if row.Check then KillTex(row.Check) end
+        if row.NineSlice then HideTex(row.NineSlice) end
+        if row.Icon and row.Icon.frame then HideTex(row.Icon.frame) end
+        if row.Check then HideTex(row.Check) end
     end
 
     -- Achievement row (main + summary list): parchment/glow art gone, flat block +
@@ -6965,7 +6965,7 @@ do
                 -- right by the measured delta (one-shot; other three chain off it).
                 -- Rects exist only once laid out, so retry on show.
                 local firstTab = subFrame.PublicOrdersButton
-                local function AlignOrderTabs()
+                local function AlignTabs()
                     if FrameDataOf(subFrame).tabsAligned or not firstTab then return end
                     local ol2 = subFrame.OrderList
                     local tl = firstTab.GetLeft and firstTab:GetLeft()
@@ -6994,7 +6994,7 @@ do
                         end
                     end
                 end
-                AlignOrderTabs()
+                AlignTabs()
                 if not FrameDataOf(subFrame).alignHook then
                     FrameDataOf(subFrame).alignHook = true
                     subFrame:HookScript("OnShow", function()
@@ -7002,10 +7002,10 @@ do
                         if C_Timer then
                             C_Timer.After(0, function()
                                 StyleOrderTabs()
-                                AlignOrderTabs()
+                                AlignTabs()
                             end)
                         else
-                            AlignOrderTabs()
+                            AlignTabs()
                         end
                     end)
                 end
@@ -7434,7 +7434,7 @@ do
                     end
                     -- Fade ALL native caret art, keeping our arrow; re-run on hover
                     -- so Blizzard's caret cannot resurface from OnEnter.
-                    local function FadeArrowArt()
+                    local function DimArrowArt()
                         local keepSet = { [mountDisplay.arrow] = true }
                         Skin.FadeRegions(menuArrow, keepSet)
                         for _, g in ipairs({
@@ -7449,11 +7449,11 @@ do
                         end
                         if menuArrow.Art and menuArrow.Art.SetAlpha then menuArrow.Art:SetAlpha(0) end
                     end
-                    FadeArrowArt()
+                    DimArrowArt()
                     if not mountDisplay.hoverHooked then
                         mountDisplay.hoverHooked = true
-                        menuArrow:HookScript("OnEnter", FadeArrowArt)
-                        menuArrow:HookScript("OnLeave", FadeArrowArt)
+                        menuArrow:HookScript("OnEnter", DimArrowArt)
+                        menuArrow:HookScript("OnLeave", DimArrowArt)
                     end
                 end
             end
@@ -7540,7 +7540,7 @@ do
                         optionsData.hover = SolidTex(ovf, "HIGHLIGHT", 1, 1, 1, 0.1)
                         optionsData.hover:SetAllPoints(ovf)
                     end
-                    local function FadeOvfArt()
+                    local function DimOverflowArt()
                         local keepSet = { [optionsData.arrow] = true }
                         if optionsData.hover then keepSet[optionsData.hover] = true end
                         Skin.FadeRegions(ovf, keepSet)
@@ -7555,11 +7555,11 @@ do
                             if part and not keepSet[part] and part.SetAlpha then part:SetAlpha(0) end
                         end
                     end
-                    FadeOvfArt()
+                    DimOverflowArt()
                     if not optionsData.hoverHooked then
                         optionsData.hoverHooked = true
-                        ovf:HookScript("OnEnter", FadeOvfArt)
-                        ovf:HookScript("OnLeave", FadeOvfArt)
+                        ovf:HookScript("OnEnter", DimOverflowArt)
+                        ovf:HookScript("OnLeave", DimOverflowArt)
                     end
                 end
             end

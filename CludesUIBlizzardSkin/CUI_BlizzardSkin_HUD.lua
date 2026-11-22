@@ -1288,7 +1288,7 @@ local GetFFD = Inner.GetFFD--
     --     bevel around a 40px icon. Clearing .Style alone leaves that socket
     --     ring behind, which is most of the chrome in the screenshot.
     ---------------------------------------------------------------------------
-    local function StripZoneAbility()
+    local function StripZoneButton()
         local frame = _G.ZoneAbilityFrame
         if not frame or frame:IsForbidden() then return end
 
@@ -1364,18 +1364,18 @@ local GetFFD = Inner.GetFFD--
         local frame = _G.ZoneAbilityFrame
         if frame and not GetFFD(frame).zaHooks then
             GetFFD(frame).zaHooks = true
-            frame:HookScript("OnShow", StripZoneAbility)
+            frame:HookScript("OnShow", StripZoneButton)
             -- The authoritative hook: this is the method that re-atlases
             -- .Style and refills the button pool.
             if type(frame.UpdateDisplayedZoneAbilities) == "function" then
-                hooksecurefunc(frame, "UpdateDisplayedZoneAbilities", StripZoneAbility)
+                hooksecurefunc(frame, "UpdateDisplayedZoneAbilities", StripZoneButton)
             end
         end
         if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then return end
-        StripZoneAbility()
+        StripZoneButton()
         if C_Timer then
-            C_Timer.After(0, StripZoneAbility)
-            C_Timer.After(0.3, StripZoneAbility)
+            C_Timer.After(0, StripZoneButton)
+            C_Timer.After(0.3, StripZoneButton)
         end
     end)
 end)()

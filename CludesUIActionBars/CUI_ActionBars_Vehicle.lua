@@ -500,7 +500,7 @@ end
 do
     local hooked = {}
     local function OnPanelToggle() ABAR._UpdateSpellbookNeverBars() end
-    local function TryHook(name)
+    local function HookWhenReady(name)
         if hooked[name] then return true end
         local frame = _G[name]
         if not frame then return false end
@@ -514,13 +514,13 @@ do
     eventFrame:SetScript("OnEvent", function(self, evt, addon)
         if evt == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
-            local a, b = TryHook("PlayerSpellsFrame"), TryHook("MacroFrame")
+            local a, b = HookWhenReady("PlayerSpellsFrame"), HookWhenReady("MacroFrame")
             if not (a and b) then self:RegisterEvent("ADDON_LOADED") end
         else
             local name = (addon == "Blizzard_PlayerSpells" and "PlayerSpellsFrame")
                 or (addon == "Blizzard_MacroUI" and "MacroFrame")
             if not name then return end
-            TryHook(name)
+            HookWhenReady(name)
             if hooked.PlayerSpellsFrame and hooked.MacroFrame then self:UnregisterEvent("ADDON_LOADED") end
         end
     end)

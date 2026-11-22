@@ -241,7 +241,7 @@ do
     -- user drags the mover. READ only, container never modified. Retries
     -- harmlessly until the container has a real rect (Edit Mode layouts land
     -- after login); a stored position (seeded or dragged) is never overwritten, so this runs at most once per profile.
-    local function EnsureSeeded()
+    local function SeedProfile()
         local profileTbl = ActiveProfile()
         if not profileTbl or profileTbl.tooltipFixedPos then return end
         -- Adopt a position left under the old account-global key.
@@ -277,7 +277,7 @@ do
     -- center, matching how the mover stores CENTER coords). Reading the profile live every call makes profile switches self-heal on the next tooltip show, with zero extra wiring.
     local function PlaceFromSaved()
         local anchorFrame = EnsureFixedFrame()
-        EnsureSeeded()
+        SeedProfile()
         local profileTbl = ActiveProfile()
         local place = profileTbl and profileTbl.tooltipFixedPos
         anchorFrame:ClearAllPoints()
@@ -360,7 +360,7 @@ do
         -- An open Unlock Mode session owns the anchor frame (live drags + uncommitted edits): re-parking from saved would snap it back mid-session, so pin to wherever the session has it.
         -- A screen-edge link in Unlock Mode owns the position too: re-parking would pull the box off the edge until the anchor chain moves it back a frame later.
         if CUI._unlockActive then
-            EnsureSeeded()
+            SeedProfile()
         elseif not CUI.IsUnlockAnchored("CUI_TooltipAnchor") then
             PlaceFromSaved()
         end
@@ -426,7 +426,7 @@ do
                     profileTbl.tooltipFixedPos = { centerX = posX, centerY = posY }
                 end,
                 loadPos = function()
-                    EnsureSeeded()
+                    SeedProfile()
                     local profileTbl = ActiveProfile()
                     local place = profileTbl and profileTbl.tooltipFixedPos
                     if place and place.centerX and place.centerY then

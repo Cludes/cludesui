@@ -461,7 +461,7 @@ local function StartAddon()
     end)
 
     local OriginalToggleAllBags = ToggleAllBags
-    local function CloseBags()
+    local function HideBags()
         CUI_Bags:Hide()
         CUI_BagsReagent:Hide()
         if not CludesUIDB then CludesUIDB = {} end
@@ -471,7 +471,7 @@ local function StartAddon()
     end
     local function ToggleBags()
         if CUI_Bags:IsVisible() then
-            CloseBags()
+            HideBags()
         else
             -- Controller cursor: gamepad pointer on at this user-requested
             -- open, as Blizzard's own bag toggle does (one C call when no
@@ -532,7 +532,7 @@ local function StartAddon()
 
     local _lastToggleTime = 0
     local _visibleBeforeToggle = false
-    local function SmartToggleBags()
+    local function ToggleBagsOnce()
         -- Debounce: Blizzard keybinds can fire both ToggleAllBags and C_Container.ToggleAllBags in the same frame, causing a double-toggle.
         if GetTime() == _lastToggleTime then return end
         _lastToggleTime = GetTime()
@@ -556,9 +556,9 @@ local function StartAddon()
         hooksecurefunc("ToggleAllBags", StyleCheck)
         hooksecurefunc("ToggleBackpack", StyleCheck)
     else
-        ToggleAllBags = SmartToggleBags
+        ToggleAllBags = ToggleBagsOnce
         -- Hook ToggleBackpack/ToggleBag via hooksecurefunc (avoids tainting the global)
-        hooksecurefunc("ToggleBackpack", SmartToggleBags)
+        hooksecurefunc("ToggleBackpack", ToggleBagsOnce)
 
         -- Hide Blizzard bag frames by reparenting to a hidden container (never write .Show/.Hide onto Blizzard frames -- causes taint).
         local _blizzBagHidden = CreateFrame("Frame")
@@ -608,7 +608,7 @@ local function StartAddon()
                 end
                 return
             end
-            SmartToggleBags()
+            ToggleBagsOnce()
         end)
 
         -- Window that auto-opened the bags (merchant, mail, auction house, ...)
@@ -623,7 +623,7 @@ local function StartAddon()
             if isOpen and not CUI_Bags:IsVisible() then
                 ToggleBags()
             elseif not isOpen and CUI_Bags:IsVisible() then
-                CloseBags()
+                HideBags()
             end
             if isOpen and not wasVisible then bagsOpener = widget end
             KillBlizzard()
@@ -636,7 +636,7 @@ local function StartAddon()
                 CUI_Bags:IsShown()
                 and mod.BagAutoWindowOn("bagAutoCloseWindows", mod.BagAutoWindowKey(widget))
             then
-                CloseBags()
+                HideBags()
             end
         end)
         -- Closed by hand: a later open is the player's, so it stays open.
@@ -713,7 +713,7 @@ local function StartAddon()
         return counts, sequence
     end
 
-    local function SnapshotKnownIDs()
+    local function SnapshotKnownItems()
         _knownItemCounts = TallyItemCounts()
         _snapshotReady = true
     end
@@ -780,7 +780,7 @@ local function StartAddon()
         if CUI_Bags:IsVisible() then CUI_Bags:RefreshInventory() end
     end
 
-    C_Timer.After(1, function() SnapshotKnownIDs() end)
+    C_Timer.After(1, function() SnapshotKnownItems() end)
 
     -- Debounced full refresh: one code path, no stale state. The first paint of a
     -- window stays at 0.1 s. When events kept landing during that window a burst is
@@ -1005,7 +1005,7 @@ local function StartAddon()
             -- items would flag against the stale frozen baselines the moment
             -- the interaction check reads closed.
             _snapshotReady = false
-            C_Timer.After(0.5, SnapshotKnownIDs)
+            C_Timer.After(0.5, SnapshotKnownItems)
             -- No return: falls through to the ITEM_PANEL_EVENTS handling below.
         end
         if eventName == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
@@ -1017,7 +1017,7 @@ local function StartAddon()
             then
                 -- Same settle-window hold as the legacy branch above.
                 _snapshotReady = false
-                C_Timer.After(0.5, SnapshotKnownIDs)
+                C_Timer.After(0.5, SnapshotKnownItems)
             end
             return
         end

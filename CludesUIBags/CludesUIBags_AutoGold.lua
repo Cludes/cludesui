@@ -9,19 +9,19 @@ if CUI.IS_FOREVER then return end -- no warband bank there
 
 local COPPER_PER_GOLD = 10000
 local _emptyP = {}
-local function Acct() return _G.CludesUIDB or _emptyP end
+local function AccountDB() return _G.CludesUIDB or _emptyP end
 
 local AutoGold = {}
 mod.AutoGold = AutoGold
 
 -- The gold to keep on hand, or nil while the box is empty.
 function AutoGold.Target()
-    local g = Acct().bagAutoGoldAmount
+    local g = AccountDB().bagAutoGoldAmount
     return type(g) == "number" and g >= 0 and g or nil
 end
 
-function AutoGold.Enabled() return Acct().bagAutoGold == true end
-function AutoGold.ChatEnabled() return Acct().bagAutoGoldChat == true end
+function AutoGold.Enabled() return AccountDB().bagAutoGold == true end
+function AutoGold.ChatEnabled() return AccountDB().bagAutoGoldChat == true end
 
 -- An options write: key is bagAutoGold, bagAutoGoldAmount or bagAutoGoldChat.
 function AutoGold.Set(key, value)

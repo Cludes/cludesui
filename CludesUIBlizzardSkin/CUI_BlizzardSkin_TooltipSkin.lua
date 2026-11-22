@@ -26,7 +26,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     local function _tipsOn() return not CludesUIDB or CludesUIDB.customTooltips ~= false end
     -- Popups + context menus reskin. customTooltips governs ONLY the game tooltip; reskinPopupsMenus
     -- is seeded from it once at login then independent. BLIZZARD WINDOW RESKINS (queue popup, game menu, group finder, great vault) are independent of BOTH masters.
-    local function _pmEnabled() return not CludesUIDB or CludesUIDB.reskinPopupsMenus ~= false end
+    local function _popupsOn() return not CludesUIDB or CludesUIDB.reskinPopupsMenus ~= false end
 
     -- IsForbidden() reports only EXPLICIT marking. A forbidden LAYOUT aspect inherited from
     -- the frame a tooltip or menu is anchored to (Blizzard UI widget owners hand one to the
@@ -1209,7 +1209,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     -- re-anchors relative to the frame, nothing accumulates), so running every pass self-heals reuse.
 
     local function _menuSkinFrame(widget)
-        if not widget or widget:IsForbidden() or not _pmEnabled() then return end
+        if not widget or widget:IsForbidden() or not _popupsOn() then return end
         for i = 1, _select("#", widget:GetRegions()) do
             local regionFrame = _select(i, widget:GetRegions())
             if regionFrame and regionFrame:IsObjectType("Texture") and not GetFFD(regionFrame).owned then
@@ -1225,7 +1225,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     end
 
     local function _menuOnOpen(manager, _, menuDescription)
-        if not _pmEnabled() then return end
+        if not _popupsOn() then return end
         -- Defer out of the secure context: this post-hook runs inside Blizzard's
         -- protected menu pipeline, so touching Blizzard objects here taints action bar buttons.
         --
@@ -1238,13 +1238,13 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         --
         -- Self-owned staggered passes instead: fetch the menu frame from the manager and
         -- skin it ourselves, handing Blizzard nothing. Extra passes cover submenus and pooled frames acquired shortly after open.
-        local function skinOpenMenu()
+        local function skinMenuNow()
             local dropMenu = manager.GetOpenMenu and manager:GetOpenMenu()
             if dropMenu then _menuSkinFrame(dropMenu) end
         end
-        C_Timer.After(0, skinOpenMenu)
-        C_Timer.After(0.05, skinOpenMenu)
-        C_Timer.After(0.15, skinOpenMenu)
+        C_Timer.After(0, skinMenuNow)
+        C_Timer.After(0.05, skinMenuNow)
+        C_Timer.After(0.15, skinMenuNow)
     end
 
     -- Submenu coverage via the style mixin. The manager hooks above only ever
@@ -1313,7 +1313,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
 
     local function _popupSkin(dialogFrame)
         if not dialogFrame or dialogFrame:IsForbidden() then return end
-        if not _pmEnabled() then return end
+        if not _popupsOn() then return end
         for i = 1, _select("#", dialogFrame:GetRegions()) do
             local region = _select(i, dialogFrame:GetRegions())
             if region and region:IsObjectType("Texture") and not GetFFD(region).owned then
@@ -1474,7 +1474,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     }
     local _resGlowHooked = false
 
-    local function _resGlowEnabled()
+    local function _resGlowOn()
         local saved = CludesUIDB
         return saved and saved.resurrectAcceptGlow and saved.reskinPopupsMenus ~= false or false
     end
@@ -1538,7 +1538,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     local function _resGlowRefresh(dialogFrame)
         local button = _resGlowButton(dialogFrame)
         if not button then return end
-        if _resGlowEnabled() and RES_WHICH[dialogFrame.which] and dialogFrame:IsShown() then
+        if _resGlowOn() and RES_WHICH[dialogFrame.which] and dialogFrame:IsShown() then
             _resGlowStart(button)
         else
             _resGlowStop(button)
@@ -1560,7 +1560,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             local dialogFrame = _G["StaticPopup" .. i]
             if dialogFrame then
                 dialogFrame:HookScript("OnShow", function(self)
-                    if not _resGlowEnabled() then return end
+                    if not _resGlowOn() then return end
                     _resGlowRefresh(self)
                 end)
                 dialogFrame:HookScript("OnHide", function(self) _resGlowStop(_resGlowButton(self)) end)
@@ -1570,7 +1570,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
 
     -- Options-panel entry point: installs hooks on first enable and syncs visible popups on any flip, so no reload is needed.
     CUI._EnsureResurrectGlow = function()
-        if _resGlowEnabled() then _resGlowInit() end
+        if _resGlowOn() then _resGlowInit() end
         if _resGlowHooked then _resGlowRefreshAll() end
         if CUI._repaintPopupPreview then CUI._repaintPopupPreview() end
     end
@@ -1590,12 +1590,12 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 _ttInitVisual()
             end
             if CUI.SyncAuraTooltipSkin then CUI.SyncAuraTooltipSkin() end
-            if _pmEnabled() then
+            if _popupsOn() then
                 _menuInit()
                 _popupInit()
             end
             -- Independent of both reskin masters. Default OFF; disabled users pay only this boolean check (no hooks, no frames).
-            if _resGlowEnabled() then _resGlowInit() end
+            if _resGlowOn() then _resGlowInit() end
         end)
     end
     CUI._initTooltipSkins = function()
@@ -1832,7 +1832,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         local frame = _pp.f
         if not frame then return end
         if _pp.place then _pp.place(frame) end
-        local on = _pmEnabled()
+        local on = _popupsOn()
         frame:Show()
         if on then _popupSkin(frame) end
         _resGlowRefresh(frame)

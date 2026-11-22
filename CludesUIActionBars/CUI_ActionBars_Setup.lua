@@ -925,7 +925,7 @@ function ABAR:FinishSetup()
         self:UpdateHousingVisibility()
     end)
 
-    local function QueueAlwaysShowButtonsRefresh()
+    local function QueueButtonRefresh()
         -- During drag, skip. OnGridChange already shows everything, and
         -- HIDEGRID / CURSOR_CHANGED will restore afterwards.
         if _gridState.shown then return end
@@ -943,8 +943,8 @@ function ABAR:FinishSetup()
     -- Slot changes alone are not sufficient for all paging transitions
     -- (dragonriding, druid forms, mount state). Include page/bonus events
     -- so empty-slot visibility refreshes immediately on those swaps.
-    self:RegisterEvent("ACTIONBAR_PAGE_CHANGED", QueueAlwaysShowButtonsRefresh)
-    self:RegisterEvent("UPDATE_BONUS_ACTIONBAR", QueueAlwaysShowButtonsRefresh)
+    self:RegisterEvent("ACTIONBAR_PAGE_CHANGED", QueueButtonRefresh)
+    self:RegisterEvent("UPDATE_BONUS_ACTIONBAR", QueueButtonRefresh)
 
     -- Spec swap: Blizzard may re-show SlotArt/SlotBackground or change button
     -- regions after our hooks ran. Deferred re-apply ensures our cosmetic
@@ -1305,7 +1305,7 @@ function ABAR:FinishSetup()
             if asbSlotFilled[slotIndex] == filled then return end
             asbSlotFilled[slotIndex] = filled
         end
-        QueueAlwaysShowButtonsRefresh()
+        QueueButtonRefresh()
     end)
 
     -- Pet bar: re-layout and refresh visibility when the pet's action bar changes.

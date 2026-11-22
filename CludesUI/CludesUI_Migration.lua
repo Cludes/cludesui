@@ -5229,7 +5229,7 @@ do
         -- A blank Buff Manager payload: Raid Frames' own "empty" preset (every key
         -- that would seed content is pre-seeded EMPTY, so the data also reads
         -- blank on retail), else plain empty maps. Fresh tables on every call.
-        local function BlankFork()
+        local function BlankForkPreset()
             local func = _G._CURF_BM2PresetFork
             if type(func) == "function" then
                 local success, f = pcall(func, "empty")
@@ -5419,7 +5419,7 @@ do
             local b = profile.bm2
             if type(b) == "table" and b[KEY] ~= nil then return nil end
             if not OnForeverClient() then return nil end
-            local f = BlankFork()
+            local f = BlankForkPreset()
             if type(b) == "table" then
                 local filters = b.filters
                 if type(filters) ~= "table" then filters = { nextId = 1, list = {} } end
@@ -5480,7 +5480,7 @@ do
         -- check fails.
         function FvBW.BlankLayer(layer)
             if type(layer) ~= "table" or not OnForeverClient() then return false end
-            layer.bm2 = BlankFork()
+            layer.bm2 = BlankForkPreset()
             return true
         end
 
@@ -5521,7 +5521,7 @@ do
             end
             local blanks = {}
             for index = 1, #layers do
-                blanks[index] = BlankFork()
+                blanks[index] = BlankForkPreset()
             end
             for index = 1, #layers do
                 layers[index].bm2 = blanks[index]
@@ -5721,7 +5721,7 @@ do
             if type(bl) ~= "table" then bl = nil end
             if not forkLive then SeedAllSpecs(b, idList) end
             if bl then
-                if type(bl.bm2) ~= "table" then bl.bm2 = BlankFork() end
+                if type(bl.bm2) ~= "table" then bl.bm2 = BlankForkPreset() end
                 SeedAllSpecs(bl.bm2, idList)
             end
             b[SEED_KEY] = 1

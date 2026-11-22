@@ -2563,7 +2563,7 @@ local function BuildContent()
     scrollTarget = 0
     smoothing = false
 
-    local function StopScrollDrag()
+    local function EndScrollDrag()
         if not isDragging then return end
         isDragging = false
         thumbKnob:SetScript("OnUpdate", nil)
@@ -2669,7 +2669,7 @@ local function BuildContent()
     local function ScrollThumbOnUpdate(self)
         -- Auto-release when mouse button is no longer held
         if not IsMouseButtonDown("LeftButton") then
-            StopScrollDrag()
+            EndScrollDrag()
             return
         end
         -- Cancel any smooth animation during drag
@@ -2704,7 +2704,7 @@ local function BuildContent()
     end)
     thumbKnob:SetScript("OnMouseUp", function(_, button)
         if button ~= "LeftButton" then return end
-        StopScrollDrag()
+        EndScrollDrag()
     end)
 
     -- Hit area: click to jump + drag (same as track click but with wider target)
@@ -2738,7 +2738,7 @@ local function BuildContent()
     end)
     scrollHit:SetScript("OnMouseUp", function(_, button)
         if button ~= "LeftButton" then return end
-        StopScrollDrag()
+        EndScrollDrag()
     end)
     -- Controller cursor: pointer-position controls are never stops, and its own
     -- scrolling of the content moves the thumb (the lerp and drag paint their own).
@@ -3470,7 +3470,7 @@ local function BuildFooter(rightW, rightX)
     end
 end
 
-local function CreateMainFrame()
+local function BuildMainFrame()
     if panelFrame then return panelFrame end
 
     BuildFrame()
@@ -5809,7 +5809,7 @@ end
 --  Sidebar Unlock Mode tip  (one-time, shown on first panel open)
 -----------------------------------------------------------------------
 local _sidebarUnlockTip
-local function ShowSidebarUnlockTip()
+local function ShowNavUnlockTip()
     if CludesUIDB and CludesUIDB.sidebarUnlockTipSeen then return end
     if _sidebarUnlockTip and _sidebarUnlockTip:IsShown() then return end
     local anchor = CUI._unlockSidebarBtn
@@ -5874,12 +5874,12 @@ function CUI:Show()
         return
     end
     if self:_SplitFirstOpen(function() CUI:Show() end) then return end
-    CreateMainFrame()
+    BuildMainFrame()
     SyncNavStates()
     panelFrame:Show()
     -- An open request while folded to the mini window unfolds it.
     if self._panelCollapsed then self._SetPanelCollapsed(false) end
-    ShowSidebarUnlockTip()
+    ShowNavUnlockTip()
 end
 function CUI:Hide()
     if panelFrame then panelFrame:Hide() end
@@ -5893,7 +5893,7 @@ function CUI:Toggle()
         return
     end
     if self:_SplitFirstOpen(function() CUI:Toggle() end) then return end
-    CreateMainFrame()
+    BuildMainFrame()
     if self._panelCollapsed then
         -- Folded to the mini window: the toggle asks for the options back.
         self._SetPanelCollapsed(false)
@@ -5902,7 +5902,7 @@ function CUI:Toggle()
     else
         SyncNavStates()
         panelFrame:Show()
-        ShowSidebarUnlockTip()
+        ShowNavUnlockTip()
         -- Refresh widget disabled states (e.g. width-match may have
         -- changed in unlock mode since the page was last shown).
         if self.RefreshPage then self:RefreshPage() end
@@ -6080,11 +6080,11 @@ function CUI:ShowModule(moduleFolder)
     -- First-open split (see _SplitFirstOpen): the combat check above stays in
     -- the click execution; the deferred re-invoke re-checks it harmlessly.
     if self:_SplitFirstOpen(function() CUI:ShowModule(moduleFolder) end) then return end
-    CreateMainFrame()
+    BuildMainFrame()
     SyncNavStates()
     panelFrame:Show()
     if self._panelCollapsed then self._SetPanelCollapsed(false) end
-    ShowSidebarUnlockTip()
+    ShowNavUnlockTip()
     if moduleList[moduleFolder] then self:SelectModule(moduleFolder) end
 end
 

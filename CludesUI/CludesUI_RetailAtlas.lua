@@ -401,7 +401,7 @@ end
 
 -- Each piece shown while the frame is on, fits, has taken a size and (an
 -- edge strip) has room between its corners.
-local function HeavyShow(ring)
+local function ShowHeavyRing(ring)
     local p = ring.p
     local enabled = ring.on and ring.fit and ring.sized
     p.tl:SetShown(enabled)
@@ -467,7 +467,7 @@ local function HeavyLayout(box, wid, hgt)
         gy / re.height
     )
     ring.roomX, ring.roomY, ring.sized = gx > EPS, gy > EPS, true
-    HeavyShow(ring)
+    ShowHeavyRing(ring)
 end
 
 -- The frame on `frame` (a frame of ours drawn at the art's scale), seated by
@@ -543,7 +543,7 @@ end
 
 function CUI.ForeverHeavyShown(ring, isShown)
     ring.on = isShown and true or false
-    HeavyShow(ring)
+    ShowHeavyRing(ring)
 end
 
 -- A box (w x h at the rim's outer edge, in the frame's parent's units) that
@@ -551,7 +551,7 @@ end
 function CUI.ForeverHeavyFit(ring, wid, hgt)
     local span = 2 * CUI.FOREVER_HEAVY.band * ring.k
     ring.fit = wid >= span and hgt >= span
-    HeavyShow(ring)
+    ShowHeavyRing(ring)
 end
 
 -- The top pieces cut below the window title bar they carry (on) or at the

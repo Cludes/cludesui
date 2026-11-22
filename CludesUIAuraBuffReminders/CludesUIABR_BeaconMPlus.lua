@@ -167,7 +167,7 @@ end
 -- The tank is read only inside a key, so the roster events are registered from
 -- CHALLENGE_MODE_START (or arming, or a PLAYER_ENTERING_WORLD, inside a key) to
 -- the key's end; each of those starts looks the tank up again.
-local function WatchRoster(enabled)
+local function WatchPartyRoster(enabled)
     if enabled then
         eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
         eventFrame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
@@ -179,7 +179,7 @@ end
 
 -- Built while the key's countdown runs (out of combat), so the first pull does
 -- no engine construction; Arm still builds it if a key began before the option.
-local function Prebuild()
+local function PrebuildIcons()
     if level == 2 and tankUnit and C_ChallengeMode.IsChallengeModeActive() then EnsureContainer(tankUnit) end
 end
 
@@ -208,12 +208,12 @@ local function Sync()
         eventFrame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
         eventFrame:RegisterEvent("CHALLENGE_MODE_RESET")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        WatchRoster(C_ChallengeMode.IsChallengeModeActive())
+        WatchPartyRoster(C_ChallengeMode.IsChallengeModeActive())
         FindTank()
         if IsEncounterInProgress() then
             Arm()
         else
-            Prebuild()
+            PrebuildIcons()
         end
     end
 end
@@ -222,13 +222,13 @@ eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "ENCOUNTER_START" then
         Arm()
     elseif evt == "CHALLENGE_MODE_START" then
-        WatchRoster(true)
+        WatchPartyRoster(true)
         FindTank()
-        Prebuild()
+        PrebuildIcons()
     elseif evt == "ENCOUNTER_END" then
         StandDown()
     elseif evt == "CHALLENGE_MODE_COMPLETED" or evt == "CHALLENGE_MODE_RESET" then
-        WatchRoster(false)
+        WatchPartyRoster(false)
         StandDown()
     elseif evt == "GROUP_ROSTER_UPDATE" or evt == "PLAYER_ROLES_ASSIGNED" then
         FindTank()
@@ -242,12 +242,12 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             return
         end
         StandDown()
-        WatchRoster(C_ChallengeMode.IsChallengeModeActive())
+        WatchPartyRoster(C_ChallengeMode.IsChallengeModeActive())
         FindTank()
         if IsEncounterInProgress() then
             Arm()
         else
-            Prebuild()
+            PrebuildIcons()
         end
     else -- PLAYER_SPECIALIZATION_CHANGED
         Sync()

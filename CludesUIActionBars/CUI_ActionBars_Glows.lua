@@ -886,7 +886,7 @@ do
         return nil
     end
 
-    local function UpdateAssistHighlights()
+    local function SyncAssistHighlights()
         if not AssistCVarOn() then
             for button in pairs(_assistGlowed) do
                 AssistHide(button)
@@ -935,7 +935,7 @@ do
         end
         _assistGlowed = newSet
     end
-    mod.UpdateAssistHighlights = UpdateAssistHighlights
+    mod.UpdateAssistHighlights = SyncAssistHighlights
 
     -- Coalesced re-run: OnActionChanged fires per button on page swaps and in
     -- SLOT_CHANGED storms dozens of times per second (mouseover-conditional
@@ -954,12 +954,12 @@ do
         C_Timer.After(delay, function()
             _assistRescanPending = false
             _assistLastScan = GetTime()
-            UpdateAssistHighlights()
+            SyncAssistHighlights()
         end)
     end
     mod.QueueAssistRescan = QueueAssistRescan
 
-    local function SyncAssistCombat()
+    local function SyncAssistInCombat()
         local inCombat = (InCombatLockdown() or UnitAffectingCombat("player")) and true or false
         local changed = _assistInCombat ~= inCombat
         _assistInCombat = inCombat
@@ -997,7 +997,7 @@ do
     local function InstallAssistHook()
         if _assistHookInstalled then return end
         _assistHookInstalled = true
-        SyncAssistCombat()
+        SyncAssistInCombat()
         if EventRegistry and EventRegistry.RegisterCallback then
             -- No hooksecurefunc on UpdateAllAssistedHighlightFramesForSpell:
             -- the manager calls it then fires this event right after, so a
@@ -1028,13 +1028,13 @@ do
         castFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         castFrame:SetScript("OnEvent", function(_, evt)
             if evt == "PLAYER_ENTERING_WORLD" then
-                SyncAssistCombat()
-                UpdateAssistHighlights()
+                SyncAssistInCombat()
+                SyncAssistHighlights()
             else
-                SyncAssistCombat()
+                SyncAssistInCombat()
             end
         end)
-        UpdateAssistHighlights()
+        SyncAssistHighlights()
     end
     InstallAssistHook()
 end

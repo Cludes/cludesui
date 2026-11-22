@@ -325,7 +325,7 @@ end
 -- Apply tab visibility: show labels only on Tab 1
 -- Similar to ApplyTabVisibility in CharacterSheet.lua
 -- Takes a boolean parameter: true = show labels (Tab 1), false = hide labels (Tab 2/3)
-local function ApplyTabVisibility(showLabels)
+local function SetTabLabelsShown(showLabels)
     local widget = InspectFrame
     if not widget then return end
 
@@ -1055,7 +1055,7 @@ local function SkinInspectSheet()
         if GetFFD(widget).textEyeBtn then GetFFD(widget).textEyeBtn:SetShown(onFirstTab) end
 
         -- Update label visibility with ApplyTabVisibility - only show on Tab 1
-        ApplyTabVisibility(onFirstTab)
+        SetTabLabelsShown(onFirstTab)
 
         for idx = 1, 3 do
             local tabBtn = _G["InspectFrameTab" .. idx]
@@ -1270,7 +1270,7 @@ local function ApplyThemedInspectSheet()
     if InspectFrame then
         SkinInspectSheet()
         -- Show labels on Tab 1
-        ApplyTabVisibility((InspectFrame.selectedTab or 1) == 1)
+        SetTabLabelsShown((InspectFrame.selectedTab or 1) == 1)
     end
 end
 
@@ -1436,7 +1436,7 @@ if CUI then
         -- Update label visibility after all slots have been styled
         local widget = InspectFrame
         if widget then
-            ApplyTabVisibility(InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown())
+            SetTabLabelsShown(InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown())
         end
     end
 
@@ -1462,7 +1462,7 @@ if CUI then
         RefreshSlotStyles()
         local widget = InspectFrame
         if widget then
-            ApplyTabVisibility(InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown())
+            SetTabLabelsShown(InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown())
             -- Apply visibility settings after styling
             if CUI._refreshInspectItemLevelVisibility then
                 CUI._refreshInspectItemLevelVisibility()

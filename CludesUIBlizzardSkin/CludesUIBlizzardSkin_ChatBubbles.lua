@@ -755,7 +755,7 @@ local function ForgetCVars()
 end
 
 -- Hand back every CVar we are currently holding, and drop the claim on it.
-local function RestoreCVars()
+local function RestoreBubbleCVars()
     local stored, heldSet = storedCVars, heldCVarSet
     if not stored or not heldSet then return end
     for _, label in ipairs(BLIZZ_CVARS) do
@@ -822,7 +822,7 @@ local function AssertCVars()
     cvarWaiting = false
 
     if conf.enabled ~= true then
-        RestoreCVars()
+        RestoreBubbleCVars()
         ForgetCVars()
         return
     end
@@ -846,7 +846,7 @@ local function AssertCVars()
         -- We draw nothing inside, so holding their switches on would put Blizzard's bubbles
         -- in front of a player who had them off. Hand them back for the stay; the
         -- PLAYER_ENTERING_WORLD on the way out takes them again.
-        RestoreCVars()
+        RestoreBubbleCVars()
         return
     end
 
@@ -883,7 +883,7 @@ local function OnEvent(_, evt, ...)
         -- nothing left in game to run AssertCVars, a CVar we forced would keep our value for
         -- good. Both records go with it, so the next login snapshots the player's live values
         -- fresh instead of reading our own value back as theirs.
-        RestoreCVars()
+        RestoreBubbleCVars()
         ForgetCVars()
         -- The CVars are only half of what we hold: every claimed bubble also has Blizzard's
         -- own chrome sitting at alpha 0 under ours. Handing that back costs one pass over a

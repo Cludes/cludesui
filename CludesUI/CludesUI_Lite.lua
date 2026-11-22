@@ -43,7 +43,7 @@ local tinsert, tremove = table.insert, table.remove
 local xpcall, geterrorhandler = xpcall, geterrorhandler
 
 local function errorhandler(err) return geterrorhandler()(err) end
-local function safecall(func, ...)
+local function safeCall(func, ...)
     if type(func) == "function" then return xpcall(func, errorhandler, ...) end
 end
 
@@ -338,7 +338,7 @@ logoutFrame:RegisterEvent("PLAYER_LOGOUT")
 logoutFrame:SetScript("OnEvent", function()
     -- Fire pre-logout callbacks while data is still intact
     for _, fn in ipairs(preLogoutCallbacks) do
-        safecall(fn)
+        safeCall(fn)
     end
 
     -- Strip defaults from a COPY of each profile table, then write the stripped copy
@@ -438,7 +438,7 @@ local function FlushEnableQueue()
         local addon = tremove(enableQueue, 1)
         if addon.enabledState then
             statuses[addon.name] = true
-            safecall(addon.OnEnable, addon)
+            safeCall(addon.OnEnable, addon)
         end
     end
 end
@@ -466,7 +466,7 @@ lifecycleFrame:SetScript("OnEvent", function(self, evt, arg1)
         if arg1 == ADDON_NAME then
             _parentDBRef = CludesUIDB
             for idx = 1, #_svLoadedHooks do
-                safecall(_svLoadedHooks[idx])
+                safeCall(_svLoadedHooks[idx])
             end
             wipe(_svLoadedHooks)
             if IS_STANDALONE then
@@ -489,7 +489,7 @@ lifecycleFrame:SetScript("OnEvent", function(self, evt, arg1)
     -- Process init queue on every ADDON_LOADED (same as AceAddon)
     while #initQueue > 0 do
         local addon = tremove(initQueue, 1)
-        safecall(addon.OnInitialize, addon)
+        safeCall(addon.OnInitialize, addon)
         tinsert(enableQueue, addon)
     end
 

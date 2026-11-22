@@ -440,7 +440,7 @@ local host
 
 local function Settings() return host and host.Settings() end
 
-local function Enabled()
+local function FriendsOn()
     local f = Settings()
     return f ~= nil and f.enabled ~= false
 end
@@ -951,7 +951,7 @@ end
 -------------------------------------------------------------------------------
 local function PaintCard(cardFrame)
     if not TILE_PAINT then return end
-    if not Enabled() then return end
+    if not FriendsOn() then return end
     -- The custom friends list (CludesUI_FriendsList.lua) covers Blizzard's
     -- cards while it shows: they stay unpainted, on file for the catch-up
     -- when it stands down (Kit.RedecorateTiles).
@@ -1061,7 +1061,7 @@ Kit._tile = {
 --    region mark -> the free corner above the party button (Show Region Icons)
 -------------------------------------------------------------------------------
 local function DecorateStockCard(cardFrame)
-    if not Enabled() then return end
+    if not FriendsOn() then return end
     local ed = cardFrame.elementData
     local account = ed and ed.accountInfo
     if not account then return end
@@ -1191,7 +1191,7 @@ local function DecorateStockRow(btnFrame, restore)
         return
     end
     cardData.stale = nil
-    if not Enabled() then return end
+    if not FriendsOn() then return end
 
     -- Every decoration off: stand down whatever is still painted and read no
     -- friend data at all.

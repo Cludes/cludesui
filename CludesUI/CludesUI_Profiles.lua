@@ -5206,7 +5206,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     end
 
     -- Resize scroll child to fit editbox content
-    local function RefreshHeight()
+    local function SyncListHeight()
         C_Timer.After(0.01, function()
             local lineH = (inputBox.GetLineHeight and inputBox:GetLineHeight()) or 14
             local hgt = inputBox:GetNumLines() * lineH
@@ -5227,7 +5227,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
             self:SetText(self._readOnly or "")
             self:HighlightText()
         end
-        RefreshHeight()
+        SyncListHeight()
     end)
 
     -- Absorb large pastes so the box never has to lay out a huge string
@@ -5280,19 +5280,19 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
         end
     end)
 
-    return shade, inputBox, RefreshHeight
+    return shade, inputBox, SyncListHeight
 end
 
 -------------------------------------------------------------------------------
 --  Export Popup
 -------------------------------------------------------------------------------
 function CUI:ShowExportPopup(exportStr)
-    local shade, inputBox, RefreshHeight =
+    local shade, inputBox, SyncListHeight =
         BuildStringPopup("Export Profile", "Copy the string below and share it", true, nil, nil)
 
     inputBox._readOnly = exportStr
     inputBox:SetText(exportStr)
-    RefreshHeight()
+    SyncListHeight()
 
     shade:Show()
     C_Timer.After(0.05, function()
@@ -5307,11 +5307,11 @@ end
 --  title and subtitle (e.g. for the preset "Copy Blizz Edit Mode" string).
 -------------------------------------------------------------------------------
 function CUI:ShowCopyPopup(title, subtitle, packed)
-    local shade, inputBox, RefreshHeight = BuildStringPopup(title or "Copy", subtitle or "", true, nil, nil)
+    local shade, inputBox, SyncListHeight = BuildStringPopup(title or "Copy", subtitle or "", true, nil, nil)
 
     inputBox._readOnly = packed or ""
     inputBox:SetText(packed or "")
-    RefreshHeight()
+    SyncListHeight()
 
     shade:Show()
     C_Timer.After(0.05, function()

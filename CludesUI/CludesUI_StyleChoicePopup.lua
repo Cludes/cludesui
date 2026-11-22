@@ -33,7 +33,7 @@ local Pix = CUI.PanelPP
 local MakeBorder = CUI.MakeBorder
 local CLUDES_GREEN = CUI.CLUDES_GREEN
 
-local function Stamp()
+local function StampChoice()
     if not CludesUIDB then CludesUIDB = {} end
     CludesUIDB.styleChoicePending = nil
 end
@@ -68,8 +68,8 @@ CUI.ApplyFirstInstallLook = ApplyLook
 -- change needs, asked for first in the click, then the look written as its
 -- pre-reload work (RequestReload). When the options addon is turned off,
 -- the popup (dimmer) closes on the chat hint instead of reloading.
-local function ChooseOtherLook(styleKey, labelText, dimmer)
-    Stamp()
+local function PickOtherLook(styleKey, labelText, dimmer)
+    StampChoice()
     if C_AddOns.IsAddOnLoaded("CludesUIOptions") or C_AddOns.GetAddOnEnableState("CludesUIOptions") > 0 then
         CUI.RequestReload(
             nil,
@@ -142,7 +142,7 @@ local function ShowStyleChoicePopup()
     )
 
     KeepLook = function()
-        Stamp()
+        StampChoice()
         dimmer:Hide()
         ReleasePending()
     end
@@ -151,13 +151,13 @@ local function ShowStyleChoicePopup()
         if styleKey == activeKey then
             KeepLook()
         elseif styleKey == "blizzard" then
-            ChooseOtherLook("blizzard", "Blizzard Style", dimmer)
+            PickOtherLook("blizzard", "Blizzard Style", dimmer)
         elseif styleKey == "classic" then
-            ChooseOtherLook("classic", "Classic WoW UI", dimmer)
+            PickOtherLook("classic", "Classic WoW UI", dimmer)
         elseif styleKey == "forever" then
-            ChooseOtherLook("forever", "WoW Forever", dimmer)
+            PickOtherLook("forever", "WoW Forever", dimmer)
         else
-            ChooseOtherLook("cui", "CludesUI Style", dimmer)
+            PickOtherLook("cui", "CludesUI Style", dimmer)
         end
     end
 
@@ -243,7 +243,7 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
     if CUI._firstInstallPending then return end
     -- A registered external installer owns the first-run experience.
     if CUI._externalInstaller then
-        Stamp()
+        StampChoice()
         ReleasePending()
         return
     end

@@ -37,7 +37,7 @@ do
         if CUI and CUI.PP and CUI.PP.UpdateMult then CUI.PP.UpdateMult() end
     end
 
-    local function SyncMultOnly()
+    local function SyncPixelMult()
         if CUI and CUI.PP then
             if CUI.PP.UpdateMult then CUI.PP.UpdateMult() end
             if CUI.PP.ResnapAllBorders then CUI.PP.ResnapAllBorders() end
@@ -110,7 +110,7 @@ do
             local saved = CludesUIDB and CludesUIDB.ppUIScale
             if saved then
                 SetScaleWhenSafe(saved)
-                SyncMultOnly()
+                SyncPixelMult()
             end
             return
         elseif evt == "PLAYER_ENTERING_WORLD" then
@@ -171,12 +171,12 @@ do
             C_Timer.After(2, function()
                 if InCombatLockdown() then return end
                 if CludesUIDB and CludesUIDB.ppUIScale then SetScaleWhenSafe(CludesUIDB.ppUIScale) end
-                SyncMultOnly()
+                SyncPixelMult()
             end)
             C_Timer.After(5, function()
                 if InCombatLockdown() then return end
                 if CludesUIDB and CludesUIDB.ppUIScale then SetScaleWhenSafe(CludesUIDB.ppUIScale) end
-                SyncMultOnly()
+                SyncPixelMult()
             end)
         end
     end)

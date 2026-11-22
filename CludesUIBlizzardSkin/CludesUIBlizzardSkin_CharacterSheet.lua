@@ -1105,7 +1105,7 @@ local function SkinCharacterSheet()
 
     -- Faint background on the Reputation + Currency panes, idempotent. Anchored to the inner
     -- ScrollBox so it stays in the list area and never bleeds over the tab chrome.
-    local function _ensureTabBg(panel)
+    local function _makeTabBg(panel)
         if not panel or GetFFD(panel).bg then return end
         local anchorFrame = panel.ScrollBox or panel.scrollFrame or panel
         local texture = panel:CreateTexture(nil, "BACKGROUND", nil, -7)
@@ -1115,8 +1115,8 @@ local function SkinCharacterSheet()
         GetFFD(panel).bg = texture
     end
     if not mod.CharSheetStock() then
-        _ensureTabBg(_G.ReputationFrame)
-        _ensureTabBg(_G.TokenFrame)
+        _makeTabBg(_G.ReputationFrame)
+        _makeTabBg(_G.TokenFrame)
     end
 
     -- Tab visibility dispatcher: hook each sub-pane's OnShow (Blizzard drives visibility, we react)
@@ -1192,8 +1192,8 @@ local function SkinCharacterSheet()
     local function _hookPaneOnShow(panel, isChar)
         if not panel then return end
         panel:HookScript("OnShow", function()
-            _ensureTabBg(_G.ReputationFrame)
-            _ensureTabBg(_G.TokenFrame)
+            _makeTabBg(_G.ReputationFrame)
+            _makeTabBg(_G.TokenFrame)
             ApplyTabVisibility(isChar)
         end)
     end
@@ -2533,7 +2533,7 @@ local function SkinCharacterSheet()
         ["Speed"] = "ITEM_MOD_CR_SPEED_SHORT",
     }
     local statGlows, statGlowsLit = {}, false
-    local function StopStatHighlights()
+    local function EndStatGlow()
         if not statGlowsLit then return end
         statGlowsLit = false
         for _, frame in pairs(statGlows) do
@@ -2544,7 +2544,7 @@ local function SkinCharacterSheet()
         end
     end
     local function StartStatHighlights(statName)
-        StopStatHighlights()
+        EndStatGlow()
         local modKey = STAT_NAME_TO_ITEM_MOD[statName]
         if not modKey then return end
         for _, slotKey in ipairs(CUI_GEAR_SLOTS) do
@@ -2580,7 +2580,7 @@ local function SkinCharacterSheet()
     GetFFD(widget).lastSpec = GetSpecialization() -- Track current spec
 
     -- Rebuild the Attributes rows when the spec changed.
-    local function RefreshAttributeStats()
+    local function RedrawAttributeStats()
         local currentSpec = GetSpecialization()
         if currentSpec == GetFFD(widget).lastSpec then return end
 
@@ -2691,7 +2691,7 @@ local function SkinCharacterSheet()
             queue(true)
             return
         end
-        RefreshAttributeStats()
+        RedrawAttributeStats()
         SyncStatSections()
     end)
     -- Same dynamic-registration trick as statsEventFrame below.
@@ -2703,7 +2703,7 @@ local function SkinCharacterSheet()
     widget:HookScript("OnHide", function()
         specUpdateFrame:UnregisterAllEvents()
         -- A close mid-hover never fires the stat row's OnLeave
-        StopStatHighlights()
+        EndStatGlow()
     end)
     -- The build runs inside the first OnShow, after that open's hooks fired.
     if widget:IsShown() then
@@ -2712,7 +2712,7 @@ local function SkinCharacterSheet()
         end
     end
     widget:HookScript("OnShow", function()
-        RefreshAttributeStats()
+        RedrawAttributeStats()
         SyncStatSections()
         if CludesUI._updateStatCategoryVisibility then CludesUI._updateStatCategoryVisibility() end
         -- Deferred re-layout: scroll child bounds may not be finalized on the OnShow
@@ -2724,7 +2724,7 @@ local function SkinCharacterSheet()
     end)
 
     -- Show/hide whole stat categories per their DB setting.
-    local function UpdateStatCategoryVisibility()
+    local function SyncStatCategories()
         if not GetFFD(widget).statsSections or #GetFFD(widget).statsSections == 0 then return end
 
         for _, sectionInfo in ipairs(GetFFD(widget).statsSections) do
@@ -2742,7 +2742,7 @@ local function SkinCharacterSheet()
         end
         GetFFD(widget).recalculateSections()
     end
-    CludesUI._updateStatCategoryVisibility = UpdateStatCategoryVisibility
+    CludesUI._updateStatCategoryVisibility = SyncStatCategories
 
     local function RecalculateSectionPositions()
         -- Collect visible sections so first/last are known once hidden ones are out
@@ -3269,7 +3269,7 @@ local function SkinCharacterSheet()
 
                 valueButton:SetScript("OnLeave", function()
                     GameTooltip:Hide()
-                    StopStatHighlights()
+                    EndStatGlow()
                 end)
 
                 table.insert(GetFFD(widget).statsValues, {
@@ -3441,11 +3441,11 @@ local function SkinCharacterSheet()
     -- Initial visibility. RefreshStatsVisibility also settles opt-in rows (Mana,
     -- built unconditionally so toggles apply without /reload) before first OnShow.
     SyncStatSections()
-    UpdateStatCategoryVisibility()
+    SyncStatCategories()
     -- Deferred pass: some settings (e.g. section visibility) may not be initialized yet.
     C_Timer.After(0, function()
         SyncStatSections()
-        UpdateStatCategoryVisibility()
+        SyncStatCategories()
     end)
 
     -- Repaint every stat row.
@@ -3518,7 +3518,7 @@ local function SkinCharacterSheet()
             flushFn.spec = false
             if not widget:IsShown() then return end
             if specInfo then
-                RefreshAttributeStats()
+                RedrawAttributeStats()
                 SyncStatSections()
             elseif (widget.selectedTab or 1) == 1 then
                 RedrawStats()
@@ -4682,7 +4682,7 @@ local function SkinCharacterSheet()
         end
 
         local _equippedItemIDs = {}
-        local function RefreshEquippedItemIDs()
+        local function ReadEquippedIds()
             wipe(_equippedItemIDs)
             for _, slotKey in ipairs(slotList) do
                 local sl = _G[slotKey]
@@ -4692,7 +4692,7 @@ local function SkinCharacterSheet()
                 end
             end
         end
-        RefreshEquippedItemIDs()
+        ReadEquippedIds()
 
         -- Equipment/item-load hooks: TRAILING debounce so a burst of GET_ITEM_INFO_RECEIVED
         -- yields one refresh after data settles (a leading debounce fires once on stale links right after /reload).
@@ -4723,7 +4723,7 @@ local function SkinCharacterSheet()
             if not CharSheetGemsActive() then return end
             if evt == "UNIT_INVENTORY_CHANGED" and arg1 ~= "player" then return end
             if evt == "PLAYER_EQUIPMENT_CHANGED" or evt == "PLAYER_ENTERING_WORLD" then
-                RefreshEquippedItemIDs()
+                ReadEquippedIds()
             end
             if evt == "GET_ITEM_INFO_RECEIVED" and (not arg1 or not _equippedItemIDs[arg1]) then return end
             -- Clear the changed slot's stale gem art BEFORE the debounced refresh, or old icons can survive until /reload on cached gem data.
@@ -4743,7 +4743,7 @@ local function SkinCharacterSheet()
             -- Sockets and the container only matter on the Character tab.
             local isCharacterTab = (widget.selectedTab or 1) == 1
             if isCharacterTab then
-                RefreshEquippedItemIDs()
+                ReadEquippedIds()
                 RefreshAllSocketIcons()
                 QueueSocketRefresh()
                 globalSocketContainer:Show()

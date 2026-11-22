@@ -127,7 +127,7 @@ local function OnEvent(_, evt)
 end
 
 -- Combat is watched while the mode is on or a slot is hovered, Alt only then.
-local function SyncEvents()
+local function SyncQuickEvents()
     if not events then
         if not (isActive or hovered) then return end
         events = CreateFrame("Frame")
@@ -148,7 +148,7 @@ end
 function StopHover()
     if not hovered then return end
     hovered = nil
-    SyncEvents()
+    SyncQuickEvents()
 end
 
 local function CastOnEnter(self)
@@ -211,7 +211,7 @@ local function OnSlotEnter(button)
         if cfg.spell then ShowCast(button, cfg.spell, cfg.bag, cfg.slot) end
     else
         hovered = button
-        SyncEvents()
+        SyncQuickEvents()
         TryAlt()
     end
 end
@@ -312,7 +312,7 @@ function SetActive(on)
         end
         wipe(tipCache)
     end
-    SyncEvents()
+    SyncQuickEvents()
     SyncIconLook()
 end
 

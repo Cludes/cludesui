@@ -51,14 +51,14 @@ do
     local _comparisonSupportActive = false
     local _comparisonStateWatcherRegistered = false
 
-    local function ComparisonSuppressionModeEnabled()
+    local function ComparisonModeOn()
         if CludesUIDB and CludesUIDB.customTooltips == false then return false end
         return ((CludesUIDB and CludesUIDB.tooltipShowMode) or "always") ~= "always"
     end
 
     local function ComparisonStateWatcherNeeded()
         local modeName = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
-        return ComparisonSuppressionModeEnabled()
+        return ComparisonModeOn()
             and (modeName == "outOfCombat" or modeName == "outOfBossCombat")
     end
 
@@ -222,7 +222,7 @@ do
         -- Queue only while parked: an unparked build's comparisons are
         -- legitimate and must not be cleared after their owner refreshes.
         if not _parked then return end
-        if not ComparisonSuppressionModeEnabled() or not CUI._tooltipSuppressedByMode(GameTooltip) then
+        if not ComparisonModeOn() or not CUI._tooltipSuppressedByMode(GameTooltip) then
             return
         end
         if _comparisonClearPending then return end
@@ -275,7 +275,7 @@ do
     end
 
     EnsureComparisonSupport = function()
-        if not ComparisonSuppressionModeEnabled() then return false end
+        if not ComparisonModeOn() then return false end
         _comparisonSupportActive = true
         InstallComparisonHooks()
         return true
@@ -346,7 +346,7 @@ do
         -- Explicitly-owned paths must follow the same global visibility mode as
         -- default-anchored paths. This includes action buttons, container items,
         -- character equipment slots, and custom CUI tooltip owners.
-        if ComparisonSuppressionModeEnabled() then ApplySuppression(tip) end
+        if ComparisonModeOn() then ApplySuppression(tip) end
     end)
 
     -- Re-apply the mode when combat/encounter state changes while a tooltip is
@@ -372,7 +372,7 @@ do
         QueueComparisonClear()
     end
     UpdateStateWatcher = function()
-        if not ComparisonSuppressionModeEnabled() then
+        if not ComparisonModeOn() then
             ReleaseComparisonSuppression(GameTooltip)
             _comparisonSupportActive = false
             UnregisterStateWatcher()

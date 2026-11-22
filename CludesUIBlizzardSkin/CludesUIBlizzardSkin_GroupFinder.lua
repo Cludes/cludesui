@@ -282,7 +282,7 @@ local function LiftButton(button)
 end
 
 -- Search / input box -> flat block, keep the magnifier + clear button art.
-local function SkinEditBox(editField)
+local function StyleEditBox(editField)
     if not editField or editField:IsForbidden() then return end
     local skinData = GetFFD(editField)
     if skinData.bg then return end
@@ -408,7 +408,7 @@ end
 
 -- MinimalScrollBar -> strip track/arrows; the thumb becomes a slim 5px white
 -- strip centered in the thumb's hit area (the house scrollbar look).
-local function SkinScrollBar(scrollBar)
+local function StyleScrollBar(scrollBar)
     if not scrollBar or scrollBar:IsForbidden() then return end
     local skinData = GetFFD(scrollBar)
     if skinData.skinned then return end
@@ -520,7 +520,7 @@ local function UpdateRailZone()
     if skinData.leftSep then skinData.leftSep:SetShown(show and true or false) end
 end
 
-local function UpdateTabVisuals()
+local function PaintTabs()
     if not PVEFrame then return end
     UpdateRailZone()
     local sel = PVEFrame.selectedTab or 1
@@ -537,7 +537,7 @@ local function UpdateTabVisuals()
     end
     if not _gfLooksHooked and mod.WSkin and mod.WSkin.OnLooksChanged then
         _gfLooksHooked = true
-        mod.WSkin.OnLooksChanged(UpdateTabVisuals)
+        mod.WSkin.OnLooksChanged(PaintTabs)
     end
 end
 
@@ -803,7 +803,7 @@ local function Skin_PVEFrame()
         end
     end
     if mod.WSkin and mod.WSkin.NormalizeTabRow then mod.WSkin.NormalizeTabRow(pveTabs) end
-    UpdateTabVisuals()
+    PaintTabs()
 end
 
 local function Skin_GroupFinder()
@@ -827,9 +827,9 @@ local function Skin_GroupFinder()
     if _G.LFDQueueFrameTypeDropdown then SkinDropdown(_G.LFDQueueFrameTypeDropdown) end
     local lfdSB = _G["LFDQueueFrameRandomScrollFrameScrollBar"]
         or (LFDQueueFrameRandomScrollFrame and LFDQueueFrameRandomScrollFrame.ScrollBar)
-    if lfdSB then SkinScrollBar(lfdSB) end
+    if lfdSB then StyleScrollBar(lfdSB) end
     if _G.LFDQueueFrameSpecific and _G.LFDQueueFrameSpecific.ScrollBar then
-        SkinScrollBar(_G.LFDQueueFrameSpecific.ScrollBar)
+        StyleScrollBar(_G.LFDQueueFrameSpecific.ScrollBar)
     end
 end
 
@@ -924,13 +924,13 @@ local function Skin_LFGList()
     if SP then
         SkinFinderPanel(SP, { noBg = true, noBorder = true })
         if SP.ResultsInset then HideInset(SP.ResultsInset) end
-        if SP.SearchBox then SkinEditBox(SP.SearchBox) end
+        if SP.SearchBox then StyleEditBox(SP.SearchBox) end
         if SP.FilterButton then StyleButton(SP.FilterButton) end
         if SP.RefreshButton then Skin.RefreshGlyph(SP.RefreshButton) end
         if SP.BackButton then StyleButton(SP.BackButton) end
         if SP.BackToGroupButton then StyleButton(SP.BackToGroupButton) end
         if SP.SignUpButton then StyleButton(SP.SignUpButton) end
-        if SP.ScrollBar then SkinScrollBar(SP.ScrollBar) end
+        if SP.ScrollBar then StyleScrollBar(SP.ScrollBar) end
         -- The active-filter X, as on every other filter dropdown: it straddles
         -- the filter button's top edge, above the button's border.
         local reset = SP.FilterButton and SP.FilterButton.ResetButton
@@ -943,15 +943,15 @@ local function Skin_LFGList()
         if EC.Inset then HideInset(EC.Inset) end
         if EC.CancelButton then StyleButton(EC.CancelButton) end
         if EC.ListGroupButton then StyleButton(EC.ListGroupButton) end
-        if EC.Name then SkinEditBox(EC.Name) end
-        if EC.Description then SkinEditBox(EC.Description) end
+        if EC.Name then StyleEditBox(EC.Name) end
+        if EC.Description then StyleEditBox(EC.Description) end
         for _, keyName in ipairs({ "GroupDropdown", "ActivityDropdown", "PlayStyleDropdown" }) do
             if EC[keyName] then SkinDropdown(EC[keyName]) end
         end
         for _, keyName in ipairs({ "ItemLevel", "MythicPlusRating", "PVPRating", "PvpItemLevel", "VoiceChat" }) do
             local req = EC[keyName]
             if req then
-                if req.EditBox then SkinEditBox(req.EditBox) end
+                if req.EditBox then StyleEditBox(req.EditBox) end
                 if req.CheckButton then SkinCheckbox(req.CheckButton) end
             end
         end
@@ -983,7 +983,7 @@ local function Skin_LFGList()
         }) do
             if AV[keyName] then StyleButton(AV[keyName]) end
         end
-        if AV.ScrollBar then SkinScrollBar(AV.ScrollBar) end
+        if AV.ScrollBar then StyleScrollBar(AV.ScrollBar) end
         if AV.InfoBackground then AV.InfoBackground:SetAlpha(0) end
     end
 
@@ -997,7 +997,7 @@ end
 -- a path that fires when the panel shows (none of our restrip hooks cover that
 -- transition), so this runs from both the skin pass AND an OnShow refade.
 local _rbGuard = false
-local function FadeRaidFinderArt()
+local function DimRaidFinderArt()
     local ri = _G.RaidFinderFrameRoleInset
     if ri then
         HideInset(ri)
@@ -1038,10 +1038,10 @@ end
 local _rfShowHooked = false
 local function Skin_RaidFinder()
     if RaidFinderFrame then SkinFinderPanel(RaidFinderFrame, { noBg = true, noBorder = true }) end
-    FadeRaidFinderArt()
+    DimRaidFinderArt()
     if RaidFinderFrame and not _rfShowHooked then
         _rfShowHooked = true
-        RaidFinderFrame:HookScript("OnShow", FadeRaidFinderArt)
+        RaidFinderFrame:HookScript("OnShow", DimRaidFinderArt)
     end
     if RaidFinderQueueFrame then SkinFinderPanel(RaidFinderQueueFrame, { noBg = true, noBorder = true }) end
     if RaidFinderFrameFindRaidButton then
@@ -1053,7 +1053,7 @@ local function Skin_RaidFinder()
     end
     local rfSB = (_G.RaidFinderQueueFrameScrollFrame and _G.RaidFinderQueueFrameScrollFrame.ScrollBar)
         or _G.RaidFinderQueueFrameScrollFrameScrollBar
-    if rfSB then SkinScrollBar(rfSB) end
+    if rfSB then StyleScrollBar(rfSB) end
 end
 
 -------------------------------------------------------------------------------
@@ -1228,7 +1228,7 @@ end
 -- stripped so the shell backdrop shows through.
 local function PVPCategoryButton(idx) return _G.PVPQueueFrame and _G.PVPQueueFrame["CategoryButton" .. idx] end
 
-local function UpdatePVPCategorySelection()
+local function SyncPvpCategory()
     local sel = ResolveRailSelection(PVPCategoryButton, _pvpSel, _G.PVPQueueFrame)
     for idx = 1, 4 do
         local button = PVPCategoryButton(idx)
@@ -1261,9 +1261,9 @@ local function Skin_PVP()
         SkinFinderPanel(pq, { noBg = true, noBorder = true })
         for idx = 1, 4 do
             local b = PVPCategoryButton(idx)
-            if b then SkinCategoryButton(b, { keepRing = true, onSelect = UpdatePVPCategorySelection }) end
+            if b then SkinCategoryButton(b, { keepRing = true, onSelect = SyncPvpCategory }) end
         end
-        UpdatePVPCategorySelection()
+        SyncPvpCategory()
     end
     -- Casual (Honor) panel.
     local hf = _G.HonorFrame
@@ -1278,7 +1278,7 @@ local function Skin_PVP()
         if hf.TypeDropdown then SkinDropdown(hf.TypeDropdown) end
         local sfr = hf.SpecificScrollBox or hf.SpecificFrame
         local scrollBar = (sfr and sfr.ScrollBar) or hf.ScrollBar
-        if scrollBar then SkinScrollBar(scrollBar) end
+        if scrollBar then StyleScrollBar(scrollBar) end
         if hf.BonusFrame then SkinFinderPanel(hf.BonusFrame, { noBg = true, noBorder = true }) end
     end
     -- Rated (Conquest) panel.
@@ -1307,7 +1307,7 @@ local function Skin_PVP()
         if specInfo then
             SkinFinderPanel(specInfo, { noBg = true, noBorder = true })
             local scrollBar = specInfo.ScrollBar or (specInfo.ScrollBox and specInfo.ScrollBox.ScrollBar)
-            if scrollBar then SkinScrollBar(scrollBar) end
+            if scrollBar then StyleScrollBar(scrollBar) end
         end
         local bonus = tg.BonusTrainingGroundList
         if bonus then
@@ -1333,7 +1333,7 @@ local function InstallPVPHooks()
             -- Arg is an index on some builds, the button itself on others.
             if type(sel) == "number" or type(sel) == "table" then _pvpSel = sel end
             StripAgain()
-            UpdatePVPCategorySelection()
+            SyncPvpCategory()
         end)
     end
     if _G.PVPQueueFrame_ShowFrame then hooksecurefunc("PVPQueueFrame_ShowFrame", StripAgain) end
@@ -1366,14 +1366,14 @@ local function InstallHooks()
         hooksecurefunc("PVEFrame_ShowFrame", function()
             C_Timer.After(0, function()
                 RestyleAll()
-                UpdateTabVisuals()
+                PaintTabs()
             end)
         end)
     end
     if PVEFrame_TabOnClick then
         hooksecurefunc("PVEFrame_TabOnClick", function()
             RestyleAll()
-            UpdateTabVisuals()
+            PaintTabs()
         end)
     end
     if GroupFinderFrame_SelectGroupButton then
@@ -1411,7 +1411,7 @@ local function InstallHooks()
         end)
     end
     if RaidFinderQueueFrameRewards_UpdateFrame then
-        hooksecurefunc("RaidFinderQueueFrameRewards_UpdateFrame", FadeRaidFinderArt)
+        hooksecurefunc("RaidFinderQueueFrameRewards_UpdateFrame", DimRaidFinderArt)
     end
 end
 
@@ -1429,10 +1429,10 @@ end
 -- state; reads/writes no search-result data.
 local _restoringRoles = false
 
-local function RememberRolesOn() return CludesUIDB and CludesUIDB.lfgRememberRoles == true end
+local function RolesRemembered() return CludesUIDB and CludesUIDB.lfgRememberRoles == true end
 
 local function SaveAppRoles(dialog)
-    if not (RememberRolesOn() and dialog and CludesUIDB) then return end
+    if not (RolesRemembered() and dialog and CludesUIDB) then return end
     local function chk(button)
         local c = button and button.CheckButton and button.CheckButton:GetChecked()
         if issecretvalue(c) then return nil end
@@ -1451,7 +1451,7 @@ end
 
 local function RestoreAppRoles(dialog)
     if _restoringRoles then return end
-    if not (RememberRolesOn() and dialog and CludesUIDB and CludesUIDB.lfgSavedRoles) then return end
+    if not (RolesRemembered() and dialog and CludesUIDB and CludesUIDB.lfgSavedRoles) then return end
     if InCombatLockdown() then return end
     _restoringRoles = true
     pcall(function()
@@ -1671,14 +1671,14 @@ end
 -- feature's hooks are installed ONLY when that feature is enabled, so a disabled
 -- feature attaches no hooks and creates no frames.
 CludesUI._GroupFinder_InitQoL = function()
-    if RememberRolesOn() then InstallRememberRolesHooks() end
+    if RolesRemembered() then InstallRememberRolesHooks() end
     InstallPVEDockHooks()
 end
 
 -- Called by the options toggle when a QoL flag flips: installs that feature's
 -- hooks lazily on first enable. No reload needed.
 CludesUI._GroupFinder_RefreshQoL = function()
-    if RememberRolesOn() then InstallRememberRolesHooks() end
+    if RolesRemembered() then InstallRememberRolesHooks() end
 end
 
 -------------------------------------------------------------------------------

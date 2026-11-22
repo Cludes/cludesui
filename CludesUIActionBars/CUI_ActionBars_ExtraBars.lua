@@ -586,26 +586,26 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
         -- On WoW Forever the eye is an Edit Mode system whose SetPoint and
         -- ClearAllPoints are Blizzard overrides that flag Edit Mode's anchor
         -- pass (tainted from here); the saved base methods move it cleanly.
-        local function RepositionQueue()
+        local function PlaceQueueFrame()
             CUI.ClearFramePoints(blizzFrame)
             CUI.SetFramePoint(blizzFrame, "CENTER", holderFrame, "CENTER", 0, 0)
         end
 
-        RepositionQueue()
+        PlaceQueueFrame()
         SyncQueueHolderSize()
         blizzFrame:HookScript("OnSizeChanged", SyncQueueHolderSize)
 
         -- Prevent Blizzard from snapping the eye back or reparenting away
         local _upGuard = false
-        local function Repin()
+        local function ReseatBlizzFrame()
             if _upGuard then return end
             _upGuard = true
-            RepositionQueue()
+            PlaceQueueFrame()
             ParentQueueFrame()
             _upGuard = false
         end
         if type(blizzFrame.UpdatePosition) == "function" then
-            hooksecurefunc(blizzFrame, "UpdatePosition", Repin)
+            hooksecurefunc(blizzFrame, "UpdatePosition", ReseatBlizzFrame)
         end
         -- WoW Forever: the eye is an Edit Mode system with no UpdatePosition.
         -- Blizzard re-anchors it through UpdateDefaultAnchor (its own layout
@@ -613,12 +613,12 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
         -- callback that holds the unhooked function, on a Minimap size change.
         if CUI.IS_FOREVER then
             if type(blizzFrame.UpdateDefaultAnchor) == "function" then
-                hooksecurefunc(blizzFrame, "UpdateDefaultAnchor", Repin)
+                hooksecurefunc(blizzFrame, "UpdateDefaultAnchor", ReseatBlizzFrame)
             end
             if MinimapCluster and type(MinimapCluster.SetEditModeScale) == "function" then
                 hooksecurefunc(MinimapCluster, "SetEditModeScale", function()
                     mod.AB_ForeverEyeRelayout()
-                    Repin()
+                    ReseatBlizzFrame()
                 end)
             end
         end
@@ -638,7 +638,7 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
         queueWatcher:RegisterEvent("LFG_PROPOSAL_UPDATE")
         queueWatcher:SetScript("OnEvent", function()
             ParentQueueFrame()
-            RepositionQueue()
+            PlaceQueueFrame()
         end)
 
         return holderFrame

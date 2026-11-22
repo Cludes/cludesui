@@ -122,7 +122,7 @@ local function SuppressTexture(artTexture)
     end
 end
 
-local function ApplyFont(fontString, skinName, size, red, green, blue, a, flags)
+local function SetVaultFont(fontString, skinName, size, red, green, blue, a, flags)
     if not fontString then return end
 
     CUI.PrimeFontShadow(fontString, true)
@@ -478,7 +478,7 @@ local function RefreshActivityItemState(rewardFrame, activityFrame, skinName)
     end
 
     if rewardFrame.Name then
-        ApplyFont(rewardFrame.Name, skinName, STYLE.sizes.itemName, 1, 1, 1, STYLE.alpha.itemName)
+        SetVaultFont(rewardFrame.Name, skinName, STYLE.sizes.itemName, 1, 1, 1, STYLE.alpha.itemName)
     end
 end
 
@@ -635,7 +635,7 @@ local function RefreshActivityVisualState(widget, selectedActivity, skinName)
     if widget.Threshold then
         local thresholdAlpha = activity.isComplete and STYLE.alpha.thresholdUnlocked
             or STYLE.alpha.thresholdLocked
-        ApplyFont(widget.Threshold, skinName, STYLE.sizes.threshold, 1, 1, 1, thresholdAlpha)
+        SetVaultFont(widget.Threshold, skinName, STYLE.sizes.threshold, 1, 1, 1, thresholdAlpha)
     end
 
     if widget.Progress then
@@ -644,7 +644,7 @@ local function RefreshActivityVisualState(widget, selectedActivity, skinName)
             -- we already modified it on a prior pass so it stays current.
             local rawText = widget.Progress:GetText() or ""
             local diffText = rawText:match("^%d+%s*%((.+)%)$") or rawText
-            ApplyFont(widget.Progress, skinName, STYLE.sizes.progress, complete.r, complete.g, complete.b, 1)
+            SetVaultFont(widget.Progress, skinName, STYLE.sizes.progress, complete.r, complete.g, complete.b, 1)
 
             local details = widget.info
             local ilvl
@@ -660,7 +660,7 @@ local function RefreshActivityVisualState(widget, selectedActivity, skinName)
             if ilvl then widget.Progress:SetText(ilvl .. " (" .. diffText .. ")") end
         else
             local progressColor = activity.progressColor
-            ApplyFont(
+            SetVaultFont(
                 widget.Progress,
                 skinName,
                 STYLE.sizes.progress,
@@ -710,7 +710,7 @@ local function RefreshConcessionVisualState(widget, selectedActivity, skinName)
 
     if widget.RewardsFrame then
         if widget.RewardsFrame.Label then
-            ApplyFont(
+            SetVaultFont(
                 widget.RewardsFrame.Label,
                 skinName,
                 STYLE.sizes.itemName,
@@ -721,7 +721,7 @@ local function RefreshConcessionVisualState(widget, selectedActivity, skinName)
             )
         end
         if widget.RewardsFrame.Text then
-            ApplyFont(
+            SetVaultFont(
                 widget.RewardsFrame.Text,
                 skinName,
                 STYLE.sizes.itemName,
@@ -742,7 +742,7 @@ local function RefreshOverlayState(overlayFrame, skinName)
     if overlayFrame.NineSlice then overlayFrame.NineSlice:SetAlpha(0) end
 
     if overlayFrame.Title then
-        ApplyFont(
+        SetVaultFont(
             overlayFrame.Title,
             skinName,
             STYLE.sizes.overlayTitle,
@@ -753,7 +753,7 @@ local function RefreshOverlayState(overlayFrame, skinName)
         )
     end
     if overlayFrame.Text then
-        ApplyFont(overlayFrame.Text, skinName, STYLE.sizes.overlayText, 1, 1, 1, STYLE.alpha.overlayText)
+        SetVaultFont(overlayFrame.Text, skinName, STYLE.sizes.overlayText, 1, 1, 1, STYLE.alpha.overlayText)
     end
 end
 
@@ -766,7 +766,7 @@ local function RefreshWarningDialogState(widget, skinName)
         widget.WarningIcon:SetDesaturated(true)
     end
     if widget.Description then
-        ApplyFont(widget.Description, skinName, STYLE.sizes.warningText, 1, 1, 1, STYLE.alpha.warningText)
+        SetVaultFont(widget.Description, skinName, STYLE.sizes.warningText, 1, 1, 1, STYLE.alpha.warningText)
     end
     -- Any standard buttons on the dialog get the engine treatment too
     -- (depth-capped, no-op when there are none).

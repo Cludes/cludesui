@@ -1620,7 +1620,7 @@ local function HideUnseen(entries)
     end
 end
 
-local function LayoutVisible()
+local function LayoutVisibleRows()
     if not isActive then return end
     visGen = visGen + 1
     if itemCount > 0 and viewH > 0 then
@@ -1687,7 +1687,7 @@ end
 
 -- The list moved: the rows in view, and the bar unless the bar moved it
 local function OnListScroll()
-    LayoutVisible()
+    LayoutVisibleRows()
     if not barBusy then SyncBarSpot() end
 end
 
@@ -1713,7 +1713,7 @@ Refill = function()
     if scrollFrame:GetVerticalScroll() > range then
         ScrollTo(range)
     else
-        LayoutVisible()
+        LayoutVisibleRows()
     end
     SyncBar()
 end
@@ -2014,7 +2014,7 @@ local function Build()
         fn = function()
             if not isActive then return end
             styleGen = styleGen + 1
-            LayoutVisible()
+            LayoutVisibleRows()
         end,
     })
 end

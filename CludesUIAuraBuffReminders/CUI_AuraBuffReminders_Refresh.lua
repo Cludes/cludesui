@@ -66,14 +66,14 @@ local UpdateDurationTicker -- forward-declare; defined after RequestRefresh
 -- on, a family's EABR._fvKnownFams entry is the list of its known ranks,
 -- lowest first as the spellbook lists them (one list per name), else the last
 -- rank found.
-local function PickerEnabled()
+local function PickerOn()
     local frameOrder = saved.profile.forever
     return frameOrder ~= nil and frameOrder.pickerEnabled == true
 end
 
 function REMIND.ForeverFamily(ident)
     local fams = REMIND._fvFams
-    if not (fams and fams[ident]) or REMIND._fvFamDirty or REMIND._fvRanksEnabled ~= PickerEnabled() then
+    if not (fams and fams[ident]) or REMIND._fvFamDirty or REMIND._fvRanksEnabled ~= PickerOn() then
         REMIND.BuildForeverFamilies()
         fams = REMIND._fvFams
     end
@@ -82,7 +82,7 @@ end
 
 function REMIND.BuildForeverFamilies()
     REMIND._fvFamDirty = false
-    local pickerEnabled = PickerEnabled()
+    local pickerEnabled = PickerOn()
     REMIND._fvRanksEnabled = pickerEnabled
     local fams = REMIND._fvFams
     if fams then
@@ -283,7 +283,7 @@ function REMIND.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
         REMIND._fvGroupN = 0
     end
     local aurasRestricted = CUI.AuraKit and CUI.AuraKit.AurasRestricted()
-    local pickerEnabled = PickerEnabled()
+    local pickerEnabled = PickerOn()
     for _, set in ipairs(groups) do
         local spellIDs = type(set) == "table" and set.ids
         if
@@ -641,7 +641,7 @@ function REMIND.CollectClassBuffs(missing, frameOrder, auraLock, ids, classKey)
                 buffRec.own or buffRec.ownMemory,
                 buffRec.ownMemory
             )
-            if record and PickerEnabled() then ApplyClassBuffPicker(record, frameOrder, buffRec) end
+            if record and PickerOn() then ApplyClassBuffPicker(record, frameOrder, buffRec) end
             if up and up ~= last and key and buffRec.lines[2] then
                 if not storage then
                     storage = {}
@@ -913,7 +913,7 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
         wantBag and not sleepBag and not REMIND._fvMaxLevel and frameOrder.weapon ~= true or false
     )
     REMIND.FvSyncBagEvent(shows and (frameOrder.weapon == true or sleepBag) or false)
-    local watchPickerSpells = shows and PickerEnabled() or false
+    local watchPickerSpells = shows and PickerOn() or false
     if watchPickerSpells ~= (REMIND._fvPickerSpellEvents or false) then
         REMIND.FvSyncPickerSpellEvents(watchPickerSpells)
     end

@@ -1902,7 +1902,7 @@ end
 mod.PaintXPText = XPPaintText
 
 -- levelUp: called from PLAYER_LEVEL_UP, whose values can be half updated.
-local function UpdateXPBar(levelUp)
+local function SyncXPBar(levelUp)
     -- XP per Hour counts the XP gained while the bar's visibility hides it
     -- too; after a level-up, the XP update that follows counts the gain.
     local holderFrame = dataBarFrames.XPBar
@@ -1983,7 +1983,7 @@ end
 -- Called by CreateManagedDataBarFrames (CUI_ActionBars_DataBars.lua) when the
 -- data bars are built at enable.
 function mod.CreateXPBar()
-    local holderFrame = mod.CreateXPBarFrame(UpdateXPBar)
+    local holderFrame = mod.CreateXPBarFrame(SyncXPBar)
     holderFrame:SetPoint("TOP", UIParent, "TOP", 0, -100)
 
     -- Tooltip. Click Through suppresses it: on a mouseover bar the holder keeps mouse
@@ -2046,13 +2046,13 @@ function mod.CreateXPBar()
     evFrame:SetScript("OnEvent", function(_, evt, arg1)
         if evt == "PLAYER_LEVEL_UP" then
             XPTextLevelUp(holderFrame, arg1)
-            UpdateXPBar(true)
+            SyncXPBar(true)
             return
         end
         if evt == "PLAYER_ENTERING_WORLD" then XPRequestPlayed(holderFrame) end
-        UpdateXPBar()
+        SyncXPBar()
     end)
 
     ApplyDataBarLayout("XPBar")
-    UpdateXPBar()
+    SyncXPBar()
 end

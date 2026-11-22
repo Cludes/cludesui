@@ -358,7 +358,7 @@ end
 -- Shift-click on a top-level section collapses or expands all of them.
 -- A virtual category's ("Virtual:...") state lasts the session: nothing of it is saved.
 local _virtualCollapsed = {}
-local function IsCollapsed(key)
+local function IsGroupCollapsed(key)
     return _virtualCollapsed[key] or (BagsProfile().bagListCollapsed or _emptyP)[key] == true
 end
 local function SetCollapsed(set, key, val)
@@ -376,13 +376,13 @@ local function ToggleCollapsed(self)
         profile.bagListCollapsed = set
     end
     if IsShiftKeyDown() and not self._sub then
-        local collapse = not IsCollapsed(self._key) or nil
+        local collapse = not IsGroupCollapsed(self._key) or nil
         for i = 1, _sectionsUsed do
             local cfg = _sections[i]
             if not cfg._sub then SetCollapsed(set, cfg._key, collapse) end
         end
     else
-        SetCollapsed(set, self._key, not IsCollapsed(self._key) or nil)
+        SetCollapsed(set, self._key, not IsGroupCollapsed(self._key) or nil)
     end
     RefreshBags()
 end
@@ -436,7 +436,7 @@ end
 
 local _colX, _colW = {}, {}
 local _lastRowW
-local function LayoutColumns(rowW)
+local function PlaceColumns(rowW)
     _lastRowW = rowW
     ResolveListFont()
     local cols = ListColumns()
@@ -453,7 +453,7 @@ local function LayoutColumns(rowW)
     end
     return cols
 end
-mod.ListLayoutColumns = LayoutColumns
+mod.ListLayoutColumns = PlaceColumns
 
 -------------------------------------------------------------------------------
 --  Column header bar: click sorts, drag reorders, right-click edits columns
@@ -603,7 +603,7 @@ end
 local function ReflowHost(owner)
     local barFrame = _hdrBars[owner]
     if not barFrame or not barFrame:IsShown() or not barFrame._rowW then return end
-    local cols = LayoutColumns(barFrame._rowW)
+    local cols = PlaceColumns(barFrame._rowW)
     mod.UpdateListHeaderBar(owner, cols, barFrame._leftX, barFrame._topY, barFrame._startX, barFrame._noSort)
     for _, button in ipairs(_hostRows[owner] or _emptyP) do
         if button:IsVisible() then
@@ -660,7 +660,7 @@ local function SizerOnMouseDown(self, btnFrame)
     local heading = self:GetParent()
     local barFrame = heading:GetParent()
     if not barFrame._rowW then return end
-    LayoutColumns(barFrame._rowW)
+    PlaceColumns(barFrame._rowW)
     -- Width the flexible column can give up (no flexible column: capped growth)
     local slack = 200
     for _, cid in ipairs(ListColumns()) do
@@ -817,7 +817,7 @@ end
 local function RenderRow(button, payload, cols, rowW, posX, posY, stripe, dim)
     -- Bags and bank share the column tables at their own row widths: a bank
     -- batch painted after a bags refresh re-lays them out for its width.
-    if rowW ~= _lastRowW then LayoutColumns(rowW) end
+    if rowW ~= _lastRowW then PlaceColumns(rowW) end
     local hostFrame = button:GetParent()
     hostFrame:ClearAllPoints()
     hostFrame:SetSize(rowW, RowH())
@@ -957,7 +957,7 @@ end
 -- Empty bag slot row (OneBag / MultiBag); clicking or dropping an item
 -- places it in that slot.
 local function RenderEmptyRow(button, cols, skinData, rowW, posX, posY, stripe)
-    if rowW ~= _lastRowW then LayoutColumns(rowW) end
+    if rowW ~= _lastRowW then PlaceColumns(rowW) end
     local hostFrame = button:GetParent()
     hostFrame:ClearAllPoints()
     hostFrame:SetSize(rowW, RowH())
@@ -1005,7 +1005,7 @@ local function PlaceSection(key, labelText, count, posX, posY, wid, sub)
     s._label:SetText(labelText)
     s._count:SetText(count)
     s._key, s._sub = key, sub
-    local collapsed = IsCollapsed(key) and true or false
+    local collapsed = IsGroupCollapsed(key) and true or false
     -- Arrow points right when collapsed, down when open
     s._arrow:SetRotation(collapsed and math.pi or math.pi / 2)
     if s._clearBtn then
@@ -1142,7 +1142,7 @@ function mod.RenderListView(itemList, options)
 
     mod.ListSortSetup()
     local rowCompare = slotView and SlotCompare or ListCompare
-    local cols = LayoutColumns(rowW)
+    local cols = PlaceColumns(rowW)
     mod.UpdateListHeaderBar(CUI_Bags, cols, options.leftX, options.topY, options.startX, slotView ~= nil)
 
     for _, s in ipairs(_sections) do

@@ -316,7 +316,7 @@ function mod.StyleDataBarFrame(widget, cfg)
     mod.ApplyDataBarBorder(widget, cfg)
 end
 
-local function ApplyDataBarLayout(barId)
+local function LayoutDataBar(barId)
     local widget = dataBarFrames[barId]
     local s = ABAR.db.profile.bars[barId]
     if widget and s then
@@ -328,7 +328,7 @@ local function ApplyDataBarLayout(barId)
     end
     mod.RefreshDataBarPreview(barId)
 end
-mod.ApplyDataBarLayout = ApplyDataBarLayout
+mod.ApplyDataBarLayout = LayoutDataBar
 
 -- An options preview of a data bar repaints after the live bar (one per bar
 -- key in ns._dataBarPreview, set by the options; also while Blizzard's bars
@@ -649,7 +649,7 @@ local function CreateRepBar()
     end
     evFrame:SetScript("OnEvent", UpdateRepBar)
 
-    ApplyDataBarLayout("RepBar")
+    LayoutDataBar("RepBar")
     UpdateRepBar()
 end
 
@@ -691,7 +691,7 @@ if not CUI.IS_FOREVER then
         return (s and not ABAR.VisibilityCompat.IsNever(s)) and true or false
     end
 
-    local function UpdateFavorBar()
+    local function SyncFavorBar()
         if ArmFavorEvents then ArmFavorEvents() end
         local widget, s = EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate("FavorBar")
         if not widget then return end
@@ -752,7 +752,7 @@ if not CUI.IS_FOREVER then
                 C_Housing.GetCurrentHouseLevelFavor(unitGuid)
             else
                 favorState = nil
-                UpdateFavorBar()
+                SyncFavorBar()
             end
         elseif evt == "HOUSE_LEVEL_FAVOR_UPDATED" then
             if type(arg1) == "table" and arg1.houseLevel ~= nil then
@@ -768,7 +768,7 @@ if not CUI.IS_FOREVER then
             else
                 favorState = nil
             end
-            UpdateFavorBar()
+            SyncFavorBar()
         end
     end
 
@@ -793,7 +793,7 @@ if not CUI.IS_FOREVER then
     end
 
     local function CreateFavorBar()
-        local holderFrame = CreateDataBarFrame("FavorBar", UpdateFavorBar)
+        local holderFrame = CreateDataBarFrame("FavorBar", SyncFavorBar)
         holderFrame:SetPoint("TOP", UIParent, "TOP", 0, -68)
 
         -- Tooltip (suppressed under Click Through, as on the XP bar)
@@ -850,8 +850,8 @@ if not CUI.IS_FOREVER then
 
         -- Event registration is handled by ArmFavorEvents (via UpdateFavorBar):
         -- nothing is registered while the bar is hidden.
-        ApplyDataBarLayout("FavorBar")
-        UpdateFavorBar()
+        LayoutDataBar("FavorBar")
+        SyncFavorBar()
     end
 
     mod._CreateFavorBar = CreateFavorBar
@@ -912,13 +912,13 @@ local function RegisterDataBarsWithUnlockMode()
                     local cfg = ABAR.db.profile.bars[bk]
                     local PPab = CUI and CUI.PP
                     if cfg then cfg.width = PPab and PPab.Snap(wid) or math.floor(wid + 0.5) end
-                    ApplyDataBarLayout(bk)
+                    LayoutDataBar(bk)
                 end,
                 setHeight = function(_, hgt)
                     local cfg = ABAR.db.profile.bars[bk]
                     local PPab = CUI and CUI.PP
                     if cfg then cfg.height = PPab and PPab.Snap(hgt) or math.floor(hgt + 0.5) end
-                    ApplyDataBarLayout(bk)
+                    LayoutDataBar(bk)
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     if anchorPoint and posX and posY then

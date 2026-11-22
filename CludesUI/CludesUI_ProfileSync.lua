@@ -51,7 +51,7 @@ do
     -- CludesUI_SpecOverrides.lua); matcher walks the tree dot-joined so gsub("\30",".") is exact.
     CUI._SyncExclusionsWithOverrides = function(moduleFolder, staticEx, srcProf, dstProf)
         local merged
-        local function ensure()
+        local function ensureMerged()
             if not merged then
                 merged = {}
                 if staticEx then
@@ -72,7 +72,7 @@ do
                                 if type(fkey) == "string" then
                                     local f, filePath = fkey:match("^([^\31]+)\31(.*)$")
                                     if f == moduleFolder and filePath and filePath ~= "" then
-                                        ensure()
+                                        ensureMerged()
                                         merged[filePath:gsub("\30", ".")] = true
                                     end
                                 end
@@ -99,7 +99,7 @@ do
                     )
                     or (type(c) == "table" and type(c.layouts) == "table" and next(c.layouts))
                 then
-                    ensure()
+                    ensureMerged()
                     merged.bmIndicators = true
                     merged.bmSimple = true
                     merged.bmDisplayMode = true
@@ -119,7 +119,7 @@ do
                     )
                     or (type(dc) == "table" and type(dc.layouts) == "table" and next(dc.layouts))
                 then
-                    ensure()
+                    ensureMerged()
                     merged.dmDebuff = true
                 end
             end
@@ -1191,7 +1191,7 @@ do
         dialog._refreshLabel = refreshSyncBtnLabel
         refreshSyncBtnLabel()
 
-        local function RefreshSidebarSyncIcon()
+        local function SyncNavSyncIcon()
             local sidebarBtns = CUI_NS.sidebarButtons
             if sidebarBtns and sidebarBtns[moduleFolder] and sidebarBtns[moduleFolder]._syncBtn then
                 local scrollBar = sidebarBtns[moduleFolder]._syncBtn
@@ -1218,7 +1218,7 @@ do
                 if not CludesUIDB.syncedModules then CludesUIDB.syncedModules = {} end
                 CludesUIDB.syncedModules[moduleFolder] = {}
                 dialog:Hide()
-                RefreshSidebarSyncIcon()
+                SyncNavSyncIcon()
                 return
             end
 
@@ -1235,7 +1235,7 @@ do
                 if not CludesUIDB.syncedModules then CludesUIDB.syncedModules = {} end
                 CludesUIDB.syncedModules[moduleFolder] = syncTargets
                 dialog:Hide()
-                RefreshSidebarSyncIcon()
+                SyncNavSyncIcon()
                 return
             end
 
@@ -1269,7 +1269,7 @@ do
                 active = isActive,
                 onDone = function()
                     dialog:Hide()
-                    RefreshSidebarSyncIcon()
+                    SyncNavSyncIcon()
                 end,
                 onCancel = function() dialog:Hide() end,
             })

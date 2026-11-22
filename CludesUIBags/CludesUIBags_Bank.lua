@@ -58,7 +58,7 @@ local function GetBankSidebarWidth()
 end
 
 local function GetFont() return CUI.GetFontPath("bags") end
-local function SetBankFont(fontStr, size)
+local function StyleBankFont(fontStr, size)
     CludesUI.PrimeFontShadow(fontStr, true)
     fontStr:SetFont(GetFont(), size, CUI.GetFontOutlineFlag("bags"))
 end
@@ -267,14 +267,14 @@ hdrBg:SetAllPoints()
 hdrBg:SetColorTexture(0, 0, 0, 0.5)
 
 local titleText = headerBar:CreateFontString(nil, "OVERLAY")
-SetBankFont(titleText, 13)
+StyleBankFont(titleText, 13)
 titleText:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
 titleText:SetTextColor(1, 1, 1)
 titleText:SetText(CludesUI.L("Bank"))
 BankWin._headerTitle = titleText -- the alt button sits next to this
 
 local itemCount = headerBar:CreateFontString(nil, "OVERLAY")
-SetBankFont(itemCount, 11)
+StyleBankFont(itemCount, 11)
 itemCount:SetPoint("LEFT", titleText, "RIGHT", 8, 0)
 itemCount:SetTextColor(0.6, 0.6, 0.6)
 BankWin._headerItemCount = itemCount
@@ -292,7 +292,7 @@ searchBg:SetColorTexture(0.02, 0.02, 0.02, 1)
 if CUI and CUI.PanelPP then CUI.PanelPP.CreateBorder(searchBox, 0.25, 0.25, 0.25, 1, 1, "OVERLAY", 7) end
 
 local searchPlaceholder = searchBox:CreateFontString(nil, "OVERLAY")
-SetBankFont(searchPlaceholder, 11)
+StyleBankFont(searchPlaceholder, 11)
 searchPlaceholder:SetPoint("LEFT", searchBox, "LEFT", 5, 0)
 searchPlaceholder:SetText(CludesUI.L("Search..."))
 searchPlaceholder:SetTextColor(0.4, 0.4, 0.4)
@@ -303,7 +303,7 @@ local clearSearchBtn = CreateFrame("Button", nil, searchBox)
 clearSearchBtn:SetSize(22, 22)
 clearSearchBtn:SetPoint("RIGHT", searchBox, "RIGHT", 0, 0)
 clearSearchBtn.tex = clearSearchBtn:CreateFontString(nil, "OVERLAY")
-SetBankFont(clearSearchBtn.tex, 14)
+StyleBankFont(clearSearchBtn.tex, 14)
 clearSearchBtn.tex:SetText("x")
 clearSearchBtn.tex:SetPoint("CENTER", 0, 1)
 clearSearchBtn.tex:SetTextColor(0.8, 0.8, 0.8)
@@ -591,7 +591,7 @@ do
 
     -- Layout: | [10px] [player gold] ... [withdraw] [deposit] [10px] [warband gold] [10px] |
     local goldText = footerBar:CreateFontString(nil, "OVERLAY")
-    SetBankFont(goldText, 11)
+    StyleBankFont(goldText, 11)
     goldText:SetPoint("LEFT", footerBar, "LEFT", 10, 0)
     goldText:SetTextColor(1, 1, 1)
     footerBar.playerGold = goldText
@@ -605,7 +605,7 @@ do
     goldHitbox:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
     local warbandMoney = footerBar:CreateFontString(nil, "OVERLAY")
-    SetBankFont(warbandMoney, 11)
+    StyleBankFont(warbandMoney, 11)
     warbandMoney:SetPoint("RIGHT", footerBar, "RIGHT", -10, 0)
     warbandMoney:SetTextColor(1, 1, 1)
     -- The resize grip's inset moves it clear of the grip (_bankGripCfg)
@@ -636,7 +636,7 @@ do
         end
 
         local labelFS = button:CreateFontString(nil, "OVERLAY")
-        SetBankFont(labelFS, 9)
+        StyleBankFont(labelFS, 9)
         labelFS:SetPoint("CENTER", button, "CENTER", 0, 0)
         labelFS:SetText(CludesUI.L(caption))
         labelFS:SetTextColor(GOLD_R, GOLD_G, GOLD_B, 0.8)
@@ -700,7 +700,7 @@ do
     depositAllBtn:EnableMouse(true)
 
     local depositText = depositAllBtn:CreateFontString(nil, "OVERLAY")
-    SetBankFont(depositText, 10)
+    StyleBankFont(depositText, 10)
     depositText:SetPoint("CENTER", depositAllBtn, "CENTER", 0, 0)
     depositText:SetTextColor(accR, accG, accB, 1)
     depositAllBtn._label = depositText
@@ -794,7 +794,7 @@ local function EnsureBankTabConfigFrame()
     hdrBgBTC:SetColorTexture(0, 0, 0, 0.5)
 
     local titleBTC = buyHeader:CreateFontString(nil, "OVERLAY")
-    SetBankFont(titleBTC, 13)
+    StyleBankFont(titleBTC, 13)
     titleBTC:SetPoint("LEFT", buyHeader, "LEFT", 8, 0)
     titleBTC:SetTextColor(1, 1, 1)
     titleBTC:SetText(CludesUI.L("Edit Tab Settings"))
@@ -834,7 +834,7 @@ local function EnsureBankTabConfigFrame()
 
     -- Bank Tab Name Label
     local tabNameText = tabCfgBody:CreateFontString(nil, "OVERLAY")
-    SetBankFont(tabNameText, 10)
+    StyleBankFont(tabNameText, 10)
     tabNameText:SetPoint("TOPLEFT", tabCfgBody, "TOPLEFT", PADDING_X, -PADDING_Y)
     tabNameText:SetTextColor(1, 1, 1, 1)
     tabNameText:SetText(CHARACTER_BANK_TAB_NAME_PROMPT)
@@ -844,7 +844,7 @@ local function EnsureBankTabConfigFrame()
     local tabNameBox = CreateFrame("EditBox", "CUI_BankFrame_TabSettingsMenu_NameBox", tabCfgBody)
     tabNameBox:SetSize(170, WIDGET_HEIGHT)
     tabNameBox:SetPoint("TOPLEFT", tabNameText, "BOTTOMLEFT", 0, -PADDING_Y / 2)
-    SetBankFont(tabNameBox, 10)
+    StyleBankFont(tabNameBox, 10)
     tabNameBox:SetAutoFocus(false)
     tabNameBox:SetTextInsets(5, 5, 0, 0)
     local bankTabNameBg = tabNameBox:CreateTexture(nil, "BACKGROUND")
@@ -866,7 +866,7 @@ local function EnsureBankTabConfigFrame()
 
     -- Assign To Tab Label
     local assignText = tabCfgBody:CreateFontString(nil, "OVERLAY")
-    SetBankFont(assignText, 10)
+    StyleBankFont(assignText, 10)
     assignText:SetPoint("TOPLEFT", tabNameBox, "BOTTOMLEFT", 0, -PADDING_Y / 2)
     assignText:SetTextColor(1, 1, 1, 1)
     assignText:SetText(BAG_FILTER_ASSIGN_TO)
@@ -906,7 +906,7 @@ local function EnsureBankTabConfigFrame()
         Pix.Point(box, "LEFT", button, "LEFT", 0, 0)
 
         local caption = CUI.MakeFont(button, 14, nil, CUI.TEXT_WHITE.r, CUI.TEXT_WHITE.g, CUI.TEXT_WHITE.b)
-        SetBankFont(caption, 10)
+        StyleBankFont(caption, 10)
         caption:SetPoint("LEFT", box, "RIGHT", 8, 0)
         caption:SetText(assignOpt.text)
 
@@ -972,7 +972,7 @@ local function EnsureBankTabConfigFrame()
     tabCfgSaveBtn:EnableMouse(true)
 
     local tabCfgSaveLabel = tabCfgSaveBtn:CreateFontString(nil, "OVERLAY")
-    SetBankFont(tabCfgSaveLabel, 10)
+    StyleBankFont(tabCfgSaveLabel, 10)
     tabCfgSaveLabel:SetPoint("CENTER", tabCfgSaveBtn, "CENTER", 0, 0)
     tabCfgSaveLabel:SetTextColor(accR, accG, accB, 0.9)
     tabCfgSaveBtn._label = tabCfgSaveLabel
@@ -1018,7 +1018,7 @@ local function EnsureBankTabConfigFrame()
     cancelBuyBtn:EnableMouse(true)
 
     local cancelBtnLabel = cancelBuyBtn:CreateFontString(nil, "OVERLAY")
-    SetBankFont(cancelBtnLabel, 10)
+    StyleBankFont(cancelBtnLabel, 10)
     cancelBtnLabel:SetPoint("CENTER", cancelBuyBtn, "CENTER", 0, 0)
     cancelBtnLabel:SetTextColor(1, 1, 1, 0.7)
     cancelBuyBtn._label = cancelBtnLabel
@@ -2106,7 +2106,7 @@ local function GetOrCreateBankHeader(position)
     local frame = CreateFrame("Frame", nil, BankWin)
     frame:SetHeight(20)
     frame._label = frame:CreateFontString(nil, "OVERLAY")
-    SetBankFont(frame._label, 11)
+    StyleBankFont(frame._label, 11)
     frame._label:SetPoint("LEFT", frame, "LEFT", 0, 0)
     frame._label:SetTextColor(0.7, 0.7, 0.7)
     frame._label:SetJustifyH("LEFT")
@@ -2914,15 +2914,15 @@ function BankWin:RefreshBank()
                     -- depth must set every property rather than rely on defaults.
                     local skinData = record.depth or 0
                     if skinData >= 2 then
-                        SetBankFont(heading._label, 10)
+                        StyleBankFont(heading._label, 10)
                         heading._label:SetTextColor(0.45, 0.45, 0.45)
                         heading._line:SetColorTexture(0.7, 0.7, 0.7, 0.06)
                     elseif skinData == 1 then
-                        SetBankFont(heading._label, 10)
+                        StyleBankFont(heading._label, 10)
                         heading._label:SetTextColor(0.55, 0.55, 0.55)
                         heading._line:SetColorTexture(0.7, 0.7, 0.7, 0.10)
                     else
-                        SetBankFont(heading._label, 11)
+                        StyleBankFont(heading._label, 11)
                         heading._label:SetTextColor(0.7, 0.7, 0.7)
                         heading._line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
                     end
@@ -2969,7 +2969,7 @@ function BankWin:RefreshBank()
     end
 
     -- Hide pooled slots and rows this refresh did not use
-    local function HideUnused()
+    local function HideSpareSlots()
         for si = slotIdx + 1, #_bankSlots do
             if _bankSlots[si] then _bankSlots[si]:GetParent():Hide() end
         end
@@ -2984,18 +2984,18 @@ function BankWin:RefreshBank()
     if not BankWin._batchFrame then BankWin._batchFrame = CreateFrame("Frame") end
     if wasRendered >= #_layout then
         BankWin._batchFrame:SetScript("OnUpdate", nil)
-        HideUnused()
+        HideSpareSlots()
     else
         BankWin._batchFrame:SetScript("OnUpdate", function(self)
             if wasRendered >= #_layout or not BankWin:IsVisible() then
                 self:SetScript("OnUpdate", nil)
-                HideUnused()
+                HideSpareSlots()
                 return
             end
             RenderBatch()
             if wasRendered >= #_layout then
                 self:SetScript("OnUpdate", nil)
-                HideUnused()
+                HideSpareSlots()
             end
         end)
     end
@@ -3091,7 +3091,7 @@ local function DragVisuals(button)
         dragShade._icon = dragShade:CreateTexture(nil, "ARTWORK")
         dragShade._icon:SetSize(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
         dragShade._label = dragShade:CreateFontString(nil, "OVERLAY")
-        SetBankFont(dragShade._label, 11)
+        StyleBankFont(dragShade._label, 11)
         dragShade._label:SetPoint("LEFT", dragShade._icon, "RIGHT", 6, 0)
         dragRule = sideChild:CreateTexture(nil, "OVERLAY")
         dragRule:SetHeight(2)
@@ -3285,13 +3285,13 @@ function BuildBankSidebar()
         button._icon:SetSize(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
         button._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         button._label = button:CreateFontString(nil, "OVERLAY")
-        SetBankFont(button._label, 11)
+        StyleBankFont(button._label, 11)
         button._label:SetJustifyH("LEFT")
         button._label:SetWordWrap(false)
         button._label:SetPoint("LEFT", button._icon, "RIGHT", 6, 0)
         button._label:SetPoint("RIGHT", button, "RIGHT", -30, 0)
         button._count = button:CreateFontString(nil, "OVERLAY")
-        SetBankFont(button._count, 10)
+        StyleBankFont(button._count, 10)
         button._count:SetJustifyH("RIGHT")
         button._count:SetTextColor(0.5, 0.5, 0.5)
         button._count:SetPoint("RIGHT", button, "RIGHT", -6, 0)
@@ -3375,7 +3375,7 @@ function BuildBankSidebar()
         return button
     end
 
-    local function RenderPurchaseEntry(bankKind, caption)
+    local function DrawPurchaseRow(bankKind, caption)
         btnCount = btnCount + 1
         local button = MakeSidebarBtn(btnCount)
         local locLabel = CludesUI.L(caption)
@@ -3757,8 +3757,8 @@ function BuildBankSidebar()
             and C_Bank.CanPurchaseBankTab(Enum.BankType.Account)
             and not C_Bank.HasMaxBankTabs(Enum.BankType.Account)
         if canBuyChar or canBuyWarband then ShowSortDivider("_buyDivider") end
-        if canBuyChar then RenderPurchaseEntry(Enum.BankType.Character, "Buy Bank Tab") end
-        if canBuyWarband then RenderPurchaseEntry(Enum.BankType.Account, "Buy Warbank Tab") end
+        if canBuyChar then DrawPurchaseRow(Enum.BankType.Character, "Buy Bank Tab") end
+        if canBuyWarband then DrawPurchaseRow(Enum.BankType.Account, "Buy Warbank Tab") end
     else
         if not _warbandOnly and showTabs then
             ShowSortDivider("_bankTabDivider")
@@ -3790,7 +3790,7 @@ function BuildBankSidebar()
             and not C_Bank.HasMaxBankTabs(Enum.BankType.Character)
         then
             if not showTabs then ShowSortDivider("_bankTabDivider") end
-            RenderPurchaseEntry(Enum.BankType.Character, "Buy Bank Tab")
+            DrawPurchaseRow(Enum.BankType.Character, "Buy Bank Tab")
         end
 
         -- Warband individual tabs
@@ -3821,7 +3821,7 @@ function BuildBankSidebar()
             and not C_Bank.HasMaxBankTabs(Enum.BankType.Account)
         then
             if not hasWarbandTab then ShowSortDivider("_warbandDivider") end
-            RenderPurchaseEntry(Enum.BankType.Account, "Buy Warbank Tab")
+            DrawPurchaseRow(Enum.BankType.Account, "Buy Warbank Tab")
         end
     end
 

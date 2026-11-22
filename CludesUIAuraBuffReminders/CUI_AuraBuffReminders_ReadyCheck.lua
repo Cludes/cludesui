@@ -86,7 +86,7 @@ local SetupReadyCheckManaWarning = function()
         if warnFrame:IsShown() then warnFS:SetVertexColor(red, green, blue, 1) end
     end
 
-    local function BuildWarnFrame()
+    local function MakeWarnFrame()
         if warnFrame then return end
         warnFrame = CreateFrame("Frame", nil, UIParent)
         warnFrame:SetSize(600, 60)
@@ -155,7 +155,7 @@ local SetupReadyCheckManaWarning = function()
         local role = GetSpecializationRole(specInfo)
         if role ~= "HEALER" then return end
         if not UnitPowerPercent then return end
-        BuildWarnFrame()
+        MakeWarnFrame()
         REMIND.RCWApplySettings()
         if not warnCurve then return end
         -- Lets WoW's C side evaluate mana% against the curve: full alpha below 80%, zero above. SetVertexColor applies the secret RGBA directly -- no reads needed.
@@ -170,12 +170,12 @@ local SetupReadyCheckManaWarning = function()
 
     -- Options hooks (Consumables -> Ready Check Mana Warning row).
     _G._CUABR_RCWarnApply = function()
-        BuildWarnFrame()
+        MakeWarnFrame()
         REMIND.RCWApplySettings()
     end
     -- Preview bypasses the curve (must be visible at any mana level), tinting with the plain configured color (readable constants, no secrets).
     _G._CUABR_RCWarnPreview = function()
-        BuildWarnFrame()
+        MakeWarnFrame()
         REMIND.RCWApplySettings()
         if warnTimer then
             warnTimer:Cancel()

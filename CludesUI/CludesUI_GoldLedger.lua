@@ -39,7 +39,7 @@ local function Build()
     local type, pairs = type, pairs
     local issecretvalue = issecretvalue
 
-    local function IsUsable(val) return type(val) == "number" and not (issecretvalue and issecretvalue(val)) end
+    local function IsUsableNumber(val) return type(val) == "number" and not (issecretvalue and issecretvalue(val)) end
 
     -- "Name-Realm": a character name never contains a hyphen, a realm name can (Azjol-Nerub).
     local function SplitKey(key)
@@ -67,7 +67,7 @@ local function Build()
                 if
                     type(key) == "string"
                     and type(bag) == "table"
-                    and IsUsable(bag.gold)
+                    and IsUsableNumber(bag.gold)
                     and bag.gold >= 0
                 then
                     local name, realm = SplitKey(key)
@@ -76,7 +76,7 @@ local function Build()
                         class = bag.class,
                         name = name,
                         realm = realm,
-                        updated = IsUsable(bag.lastUpdated) and bag.lastUpdated or nil,
+                        updated = IsUsableNumber(bag.lastUpdated) and bag.lastUpdated or nil,
                     }
                 end
             end
@@ -86,7 +86,7 @@ local function Build()
                 if
                     type(key) == "string"
                     and type(bar) == "table"
-                    and IsUsable(bar.currentMoney)
+                    and IsUsableNumber(bar.currentMoney)
                     and bar.currentMoney >= 0
                 then
                     local current = chars[key]
@@ -105,9 +105,9 @@ local function Build()
                 end
             end
         end
-        if type(wband) == "table" and IsUsable(wband.gold) and wband.gold >= 0 and not ledger.warband then
+        if type(wband) == "table" and IsUsableNumber(wband.gold) and wband.gold >= 0 and not ledger.warband then
             ledger.warband =
-                { money = wband.gold, updated = IsUsable(wband.lastUpdated) and wband.lastUpdated or nil }
+                { money = wband.gold, updated = IsUsableNumber(wband.lastUpdated) and wband.lastUpdated or nil }
         end
 
         saved.characterGold, saved.dataBarsGold, saved.warbandGold = nil, nil, nil
@@ -155,9 +155,9 @@ local function Build()
 
     -- The only places the modules touch the money APIs. A secret or non-number
     -- read comes back nil, so no caller ever does arithmetic on one.
-    local function LiveMoney()
+    local function ReadMoney()
         local money = GetMoney()
-        if IsUsable(money) then return money end
+        if IsUsableNumber(money) then return money end
     end
 
     -- Readable at any time, not only with the warband bank open.
@@ -165,14 +165,14 @@ local function Build()
         local bank = C_Bank
         if not (bank and bank.FetchDepositedMoney and Enum and Enum.BankType) then return nil end
         local money = bank.FetchDepositedMoney(Enum.BankType.Account)
-        if IsUsable(money) then return money end
+        if IsUsableNumber(money) then return money end
     end
 
     --- The current character's balance, for display. Does not write the ledger
     --- (writing is the caller's call; Bags can turn tracking off). When the live
     --- read is unusable, falls back to the last stored balance; nil if neither.
     function Ledger.Money()
-        local money = LiveMoney()
+        local money = ReadMoney()
         if money then return money end
         local key = Ledger.CharKey()
         local e = key and Ledger.Data().chars[key]
@@ -193,8 +193,8 @@ local function Build()
     --- number); a failed read never overwrites a good entry. Nothing is written
     --- while tracking is off, but the balance is still returned.
     function Ledger.RecordCharacter(money)
-        if money == nil then money = LiveMoney() end
-        if not IsUsable(money) then return nil end
+        if money == nil then money = ReadMoney() end
+        if not IsUsableNumber(money) then return nil end
         if not Ledger.IsTracking() then return money end
         local key = Ledger.CharKey()
         if not key then return money end
@@ -296,7 +296,7 @@ local function Build()
     local function OnMoneyEvent(_, evt)
         local money
         if evt ~= "ACCOUNT_MONEY" and evt ~= "BANKFRAME_OPENED" then
-            money = LiveMoney()
+            money = ReadMoney()
             if Ledger.IsTracking() then dirtyChar = true end
         end
         if evt ~= "PLAYER_MONEY" then dirtyWarband = true end
