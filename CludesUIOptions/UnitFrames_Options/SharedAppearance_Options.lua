@@ -1198,7 +1198,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     then
         local NO_FRAMES = "This option requires an CludesUI Target or Focus frame."
         local function noFrames() return not (frameList.target or frameList.focus) end
-        local function pctOff() return noFrames() or not saved.profile.threatPctEnabled end
+        local function ThreatPctOff() return noFrames() or not saved.profile.threatPctEnabled end
         local function threatPctOffTip()
             if noFrames() then return NO_FRAMES end
             return "Show Threat % on Target"
@@ -1236,7 +1236,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             text = "Threat % Position",
             values = mod._threatPctPositions,
             order = mod._threatPctPositionOrder,
-            disabled = pctOff,
+            disabled = ThreatPctOff,
             disabledTooltip = threatPctOffTip,
             getValue = function() return saved.profile.threatPctPosition end,
             setValue = function(value) PctSet("threatPctPosition", value) end,
@@ -1245,7 +1245,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         if not CUI._prebuilding then
             CUI.BuildInlineCog(pctRow._leftRegion, {
                 title = "Threat % Units",
-                disabled = pctOff,
+                disabled = ThreatPctOff,
                 disabledTooltip = threatPctOffTip,
                 rows = {
                     {
@@ -1258,7 +1258,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             })
             CUI.BuildInlineCog(pctRow._rightRegion, {
                 title = "Threat %",
-                disabled = pctOff,
+                disabled = ThreatPctOff,
                 disabledTooltip = threatPctOffTip,
                 rows = {
                     {
@@ -2635,7 +2635,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         -- pattern). Power Color stays in the cog; the three modes are mutually exclusive.
         if not CUI._prebuilding then
             local btbLRgn = btbTextRow._leftRegion
-            local function blOff()
+            local function BottomLeftOff()
                 return ReadSetting("btbLeftContent", "none") == "none"
                     or not ReadSetting("bottomTextBar", false)
             end
@@ -2654,7 +2654,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             )
             Pix.Point(blClassSwatch, "RIGHT", btbLRgn._lastInline or btbLRgn._control, "LEFT", -8, 0)
             blClassSwatch:SetScript("OnClick", function()
-                if blOff() then return end
+                if BottomLeftOff() then return end
                 WriteSetting("btbLeftClassColor", true)
                 WriteSetting("btbLeftPowerColor", false)
                 RepaintPreview()
@@ -2678,7 +2678,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             btbLRgn._lastInline = blSwatch
             local blOrigClick = blSwatch:GetScript("OnClick")
             blSwatch:SetScript("OnClick", function(self, ...)
-                if blOff() then return end
+                if BottomLeftOff() then return end
                 if ReadSetting("btbLeftClassColor", false) or ReadSetting("btbLeftPowerColor", false) then
                     WriteSetting("btbLeftClassColor", false)
                     WriteSetting("btbLeftPowerColor", false)
@@ -2708,15 +2708,15 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             Pix.Point(blPowerSwatch, "RIGHT", blSwatch, "LEFT", -8, 0)
             btbLRgn._lastInline = blPowerSwatch
             blPowerSwatch:SetScript("OnClick", function()
-                if blOff() then return end
+                if BottomLeftOff() then return end
                 WriteSetting("btbLeftPowerColor", true)
                 WriteSetting("btbLeftClassColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
             CUI.HoverTip(blPowerSwatch, "Power Colored")
-            local function UpdateBlSwatches()
-                local isOff = blOff()
+            local function FadeBottomLeftSwatches()
+                local isOff = BottomLeftOff()
                 local classMode = ReadSetting("btbLeftClassColor", false)
                 local powerMode = ReadSetting("btbLeftPowerColor", false)
                 blSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
@@ -2727,9 +2727,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 blUpdateSwatch()
                 blUpdateClassSwatch()
                 blUpdatePowerSwatch()
-                UpdateBlSwatches()
+                FadeBottomLeftSwatches()
             end)
-            UpdateBlSwatches()
+            FadeBottomLeftSwatches()
         end
         -- Cogwheel on BTB Right Text
         if not CUI._prebuilding then
@@ -2849,7 +2849,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         -- the cog; the three modes are mutually exclusive).
         if not CUI._prebuilding then
             local btbRRgn = btbTextRow._rightRegion
-            local function brOff()
+            local function BottomRightOff()
                 return ReadSetting("btbRightContent", "none") == "none"
                     or not ReadSetting("bottomTextBar", false)
             end
@@ -2868,7 +2868,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             )
             Pix.Point(brClassSwatch, "RIGHT", btbRRgn._lastInline or btbRRgn._control, "LEFT", -8, 0)
             brClassSwatch:SetScript("OnClick", function()
-                if brOff() then return end
+                if BottomRightOff() then return end
                 WriteSetting("btbRightClassColor", true)
                 WriteSetting("btbRightPowerColor", false)
                 RepaintPreview()
@@ -2892,7 +2892,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             btbRRgn._lastInline = brSwatch
             local brOrigClick = brSwatch:GetScript("OnClick")
             brSwatch:SetScript("OnClick", function(self, ...)
-                if brOff() then return end
+                if BottomRightOff() then return end
                 if ReadSetting("btbRightClassColor", false) or ReadSetting("btbRightPowerColor", false) then
                     WriteSetting("btbRightClassColor", false)
                     WriteSetting("btbRightPowerColor", false)
@@ -2922,15 +2922,15 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             Pix.Point(brPowerSwatch, "RIGHT", brSwatch, "LEFT", -8, 0)
             btbRRgn._lastInline = brPowerSwatch
             brPowerSwatch:SetScript("OnClick", function()
-                if brOff() then return end
+                if BottomRightOff() then return end
                 WriteSetting("btbRightPowerColor", true)
                 WriteSetting("btbRightClassColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
             CUI.HoverTip(brPowerSwatch, "Power Colored")
-            local function UpdateBrSwatches()
-                local isOff = brOff()
+            local function FadeBottomRightSwatches()
+                local isOff = BottomRightOff()
                 local classMode = ReadSetting("btbRightClassColor", false)
                 local powerMode = ReadSetting("btbRightPowerColor", false)
                 brSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
@@ -2941,9 +2941,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 brUpdateSwatch()
                 brUpdateClassSwatch()
                 brUpdatePowerSwatch()
-                UpdateBrSwatches()
+                FadeBottomRightSwatches()
             end)
-            UpdateBrSwatches()
+            FadeBottomRightSwatches()
         end
         -- Sync icons: BTB Left Text (left) and BTB Right Text (right)
         if not CUI._prebuilding then
@@ -3111,7 +3111,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         -- the cog; the three modes are mutually exclusive).
         if not CUI._prebuilding then
             local btbCRgn = sharedBtbCenterRow._leftRegion
-            local function bcOff()
+            local function BottomCenterOff()
                 return ReadSetting("btbCenterContent", "none") == "none"
                     or not ReadSetting("bottomTextBar", false)
             end
@@ -3130,7 +3130,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             )
             Pix.Point(bcClassSwatch, "RIGHT", btbCRgn._lastInline or btbCRgn._control, "LEFT", -8, 0)
             bcClassSwatch:SetScript("OnClick", function()
-                if bcOff() then return end
+                if BottomCenterOff() then return end
                 WriteSetting("btbCenterClassColor", true)
                 WriteSetting("btbCenterPowerColor", false)
                 RepaintPreview()
@@ -3154,7 +3154,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             btbCRgn._lastInline = bcSwatch
             local bcOrigClick = bcSwatch:GetScript("OnClick")
             bcSwatch:SetScript("OnClick", function(self, ...)
-                if bcOff() then return end
+                if BottomCenterOff() then return end
                 if ReadSetting("btbCenterClassColor", false) or ReadSetting("btbCenterPowerColor", false) then
                     WriteSetting("btbCenterClassColor", false)
                     WriteSetting("btbCenterPowerColor", false)
@@ -3184,15 +3184,15 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             Pix.Point(bcPowerSwatch, "RIGHT", bcSwatch, "LEFT", -8, 0)
             btbCRgn._lastInline = bcPowerSwatch
             bcPowerSwatch:SetScript("OnClick", function()
-                if bcOff() then return end
+                if BottomCenterOff() then return end
                 WriteSetting("btbCenterPowerColor", true)
                 WriteSetting("btbCenterClassColor", false)
                 RepaintPreview()
                 CUI:RefreshPage()
             end)
             CUI.HoverTip(bcPowerSwatch, "Power Colored")
-            local function UpdateBcSwatches()
-                local isOff = bcOff()
+            local function FadeBottomCenterSwatches()
+                local isOff = BottomCenterOff()
                 local classMode = ReadSetting("btbCenterClassColor", false)
                 local powerMode = ReadSetting("btbCenterPowerColor", false)
                 bcSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
@@ -3203,9 +3203,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 bcUpdateSwatch()
                 bcUpdateClassSwatch()
                 bcUpdatePowerSwatch()
-                UpdateBcSwatches()
+                FadeBottomCenterSwatches()
             end)
-            UpdateBcSwatches()
+            FadeBottomCenterSwatches()
         end
         -- Cogwheel on Class Icon for size/location/x/y
         if not CUI._prebuilding then
@@ -3586,14 +3586,14 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
         if optionState.selectedUnit ~= "player" and optionState.selectedUnit ~= "target" then return end
         local eyes = mod._ufPvEyes
         local eyeButton, eyeTex = CUI.NewInlineEye(region)
-        local function RefreshEye()
+        local function RedrawEyeIcon()
             eyeTex:SetTexture(eyes[settingKey] and CUI.EYE_INVISIBLE_ICON or CUI.EYE_VISIBLE_ICON)
         end
-        RefreshEye()
+        RedrawEyeIcon()
         eyeButton:SetScript("OnClick", function()
             eyes[settingKey] = not eyes[settingKey]
             if settingKey == "raid" and eyes[settingKey] then eyes.raidIndex = math.random(1, 8) end
-            RefreshEye()
+            RedrawEyeIcon()
             RepaintPreview()
         end)
         eyeButton:SetScript("OnEnter", function(self)

@@ -965,7 +965,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     if ltOrigClick then ltOrigClick(self, ...) end
                 end)
                 CUI.HoverTip(ltSwatch, "Custom Colored")
-                local function UpdateLtSwatches()
+                local function FadeLeftTextSwatch()
                     local noneMode = ReadSetting("leftTextContent", "name") == "none"
                     local classMode = ReadSetting("leftTextClassColor", false)
                     ltSwatch:SetAlpha((classMode or noneMode) and 0.3 or 1)
@@ -974,9 +974,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 RegisterWidgetRefresh(function()
                     ltUpdateSwatch()
                     ltUpdateClassSwatch()
-                    UpdateLtSwatches()
+                    FadeLeftTextSwatch()
                 end)
-                UpdateLtSwatches()
+                FadeLeftTextSwatch()
                 -- The class-color mode flag is written only by bespoke swatch OnClicks (no
                 -- widget getter reads it), so Spec Overrides' read-trace can't link an
                 -- override to this row without a capture accessor declared explicitly.
@@ -1297,7 +1297,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     if rtOrigClick then rtOrigClick(self, ...) end
                 end)
                 CUI.HoverTip(rtSwatch, "Custom Colored")
-                local function UpdateRtSwatches()
+                local function FadeRightTextSwatch()
                     local noneMode = ReadSetting("rightTextContent", "both") == "none"
                     local classMode = ReadSetting("rightTextClassColor", false)
                     rtSwatch:SetAlpha((classMode or noneMode) and 0.3 or 1)
@@ -1306,9 +1306,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 RegisterWidgetRefresh(function()
                     rtUpdateSwatch()
                     rtUpdateClassSwatch()
-                    UpdateRtSwatches()
+                    FadeRightTextSwatch()
                 end)
-                UpdateRtSwatches()
+                FadeRightTextSwatch()
                 -- Mirror of the Left Text class-flag accessor: see that comment.
                 if CUI.AddCaptureAccessor then
                     CUI.AddCaptureAccessor(rightRegion, {
@@ -1613,7 +1613,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     if ctOrigClick then ctOrigClick(self, ...) end
                 end)
                 CUI.HoverTip(ctSwatch, "Custom Colored")
-                local function UpdateCtSwatches()
+                local function FadeCenterTextSwatch()
                     local noneMode = ReadSetting("centerTextContent", "none") == "none"
                     local classMode = ReadSetting("centerTextClassColor", false)
                     ctSwatch:SetAlpha((classMode or noneMode) and 0.3 or 1)
@@ -1622,9 +1622,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 RegisterWidgetRefresh(function()
                     ctUpdateSwatch()
                     ctUpdateClassSwatch()
-                    UpdateCtSwatches()
+                    FadeCenterTextSwatch()
                 end)
-                UpdateCtSwatches()
+                FadeCenterTextSwatch()
             end
         end,
     }
@@ -1934,7 +1934,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     if etOrigClick then etOrigClick(self, ...) end
                 end)
                 CUI.HoverTip(etSwatch, "Custom Colored")
-                local function UpdateEtSwatches()
+                local function FadeExtraTextSwatch()
                     local noneMode = ReadSetting("extraTextContent", "none") == "none"
                     local classMode = ReadSetting("extraTextClassColor", false)
                     etSwatch:SetAlpha((classMode or noneMode) and 0.3 or 1)
@@ -1943,9 +1943,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 RegisterWidgetRefresh(function()
                     etUpdateSwatch()
                     etUpdateClassSwatch()
-                    UpdateEtSwatches()
+                    FadeExtraTextSwatch()
                 end)
-                UpdateEtSwatches()
+                FadeExtraTextSwatch()
             end
         end,
     }
@@ -4136,11 +4136,11 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
-            local function UpdateAbsorbSwatchVis()
+            local function FadeAbsorbSwatch()
                 colorSwatch:SetAlpha(SupportedOr("showPlayerAbsorb", "none") == "none" and 0.3 or 1)
             end
-            RegisterWidgetRefresh(UpdateAbsorbSwatchVis)
-            UpdateAbsorbSwatchVis()
+            RegisterWidgetRefresh(FadeAbsorbSwatch)
+            FadeAbsorbSwatch()
         end
         -- Sync icon: Absorb Style + color swatch + cog settings across all frames
         if not CUI._prebuilding then
@@ -4346,11 +4346,11 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             end, true, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
-            local function UpdateAbsorbBarSwatchVis()
+            local function FadeAbsorbBarSwatch()
                 colorSwatch:SetAlpha(SupportedOr("absorbBarPosition", "none") == "none" and 0.3 or 1)
             end
-            RegisterWidgetRefresh(UpdateAbsorbBarSwatchVis)
-            UpdateAbsorbBarSwatchVis()
+            RegisterWidgetRefresh(FadeAbsorbBarSwatch)
+            FadeAbsorbBarSwatch()
         end
 
         -- Row 4: Heal Absorb Bar (position dropdown) | Bar Height (+ alpha swatch)
@@ -4555,11 +4555,11 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 region._lastInline = colorSwatch
                 colorSwatch:HookScript("OnEnter", function(sw) CUI.ShowWidgetTooltip(sw, tipText) end)
                 colorSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
-                local function UpdateVis()
+                local function FadeHealPredictionSwatch()
                     colorSwatch:SetAlpha(SupportedOr("healPrediction", false) == true and 1 or 0.3)
                 end
-                RegisterWidgetRefresh(UpdateVis)
-                UpdateVis()
+                RegisterWidgetRefresh(FadeHealPredictionSwatch)
+                FadeHealPredictionSwatch()
             end
             -- Each swatch lands left of the last, so build others' first: reads yours, others'.
             PredSwatch(
