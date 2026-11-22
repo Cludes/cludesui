@@ -756,10 +756,12 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         UNIT_LETHAL_LEVEL_TEMPLATE,
         UNIT_TYPE_LETHAL_LEVEL_TEMPLATE,
     }) do
-        if fmt:gsub("%%%d?%$?[sd]", ""):find("[^%s%p]") then
-            -- Escape the magic characters, then turn the (now escaped) %s / %d / %1$s into ".-".
-            local pat = "^" .. fmt:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"):gsub("%%%%%d?%%?%$?[sd]", ".-")
-            _LEVEL_PATTERNS[#_LEVEL_PATTERNS + 1] = pat
+        -- A format that is nothing but placeholders and punctuation would match any line.
+        local words = fmt:gsub("%%%d?%$?[sd]", "")
+        if words:find("[^%s%p]") then
+            -- Magic characters escaped first, then each (now escaped) %s / %d / %1$s becomes ".-".
+            local escaped = fmt:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+            table.insert(_LEVEL_PATTERNS, "^" .. escaped:gsub("%%%%%d?%%?%$?[sd]", ".-"))
         end
     end
     -- The game draws a hidden ("??") or hard level in a difficulty colour, so the line can
@@ -767,9 +769,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     -- at the start, so the escapes come off before matching.
     local function _isLevelText(textValue)
         if not textValue:find("[%d%?]") then return false end
-        local plain = textValue:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-        for _, pat in ipairs(_LEVEL_PATTERNS) do
-            if plain:find(pat) then return true end
+        local bare = textValue:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+        for i = 1, #_LEVEL_PATTERNS do
+            if bare:find(_LEVEL_PATTERNS[i]) then return true end
         end
         return false
     end
@@ -778,94 +780,101 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
     local function _isGuildText(textValue, guildName)
         if textValue:sub(1, #guildName) ~= guildName then return false end
         local rest = textValue:sub(#guildName + 1)
-        local two = rest:sub(1, 2)
-        return rest == "" or rest:sub(1, 1) == "-" or two == " (" or two == " ["
+        return rest == "" or rest:find("^%-") ~= nil or rest:find("^ [%(%[]") ~= nil
     end
+    local function _isClean(value) return not (_isSecret and _isSecret(value)) end
     -- One parts list for the compact level line, refilled on every build.
     local _compactParts = {}
+    -- Which line holds the level: the one the client tags as UnitLevel in the tooltip data,
+    -- else the first of lines 2-4 (after name, guild or title) that reads like a level.
+    local function _levelLineIndex(payload, nLines, guildName)
+        for _, ld in ipairs(payload and payload.lines or {}) do
+            local kind = ld.type
+            if _isClean(kind) and kind == Enum.TooltipDataLineType.UnitLevel then
+                if ld.lineIndex then return ld.lineIndex end
+                break
+            end
+        end
+        for i = 2, math.min(nLines, 4) do
+            local textValue = _G["GameTooltipTextLeft" .. i]:GetText()
+            if
+                textValue
+                and _isClean(textValue)
+                and not (guildName and _isGuildText(textValue, guildName))
+            then
+                if _isLevelText(textValue) then return i end
+            end
+        end
+    end
+    -- The level's difficulty colour (as a "%0" wrap for gsub) and the compact line: "90 Tauren"
+    -- for players, "90 Elite Humanoid" for NPCs. Friendly units get a colour too; battle pet
+    -- levels are not comparable to the player's, so pets keep Blizzard's line.
+    local function _levelLook(unitToken, saved, known)
+        if not (saved.tooltipLevelColor or saved.tooltipCompactLevel) then return end
+        if UnitIsWildBattlePet(unitToken) or UnitIsBattlePetCompanion(unitToken) then return end
+        local lvl = known or UnitEffectiveLevel(unitToken)
+        local red, green, blue, hex
+        if saved.tooltipLevelColor then
+            red, green, blue = CUI.GetLevelColor(unitToken, lvl, true)
+        end
+        if red then hex = CUI.ColorText("%0", red, green, blue) end
+        local player = UnitIsPlayer(unitToken)
+        if not saved.tooltipCompactLevel or not (_isClean(lvl) and _isClean(player)) then return hex end
+        local parts = _compactParts
+        wipe(parts)
+        parts[1] = CUI.ColorText(lvl > 0 and lvl or "??", red, green, blue)
+        if player then
+            parts[2] = UnitRace(unitToken)
+        else
+            local rank = _CLASSIFICATION[UnitClassification(unitToken)]
+            if rank then parts[#parts + 1] = rank[2]:WrapTextInColorCode(rank[1]) end
+            parts[#parts + 1] = UnitCreatureType(unitToken)
+        end
+        for _, piece in ipairs(parts) do
+            if not _isClean(piece) then return hex end
+        end
+        return hex, table.concat(parts, " ")
+    end
+    -- The level line's new text, or nil to leave it: a known level fills in the "??", then
+    -- the number (or "??") alone takes the colour unless another addon already coloured it.
+    local function _levelLineText(textValue, known, hex)
+        local text, changed = textValue, false
+        if known then
+            local hits
+            text, hits = text:gsub("%?%?", tostring(known), 1)
+            changed = hits > 0
+        end
+        if hex and not text:find("|c", 1, true) then
+            local wrapped, hits = text:gsub("%d+", hex, 1)
+            if hits == 0 then
+                wrapped, hits = text:gsub("%?%?", hex, 1)
+            end
+            if hits > 0 then
+                text, changed = wrapped, true
+            end
+        end
+        if changed then return text end
+    end
     local function _ttLineColors(tip, payload, unitToken, classColor)
         local saved = CludesUIDB
         -- Forever: a hidden ("??") player level the PvP feature knows. Looked up first so
         -- it is written in even when none of the tooltip colour options is on.
         local knownLevel = unitToken and CUI.KnownHiddenLevel and CUI.KnownHiddenLevel(unitToken)
-        if
-            not (
-                saved
-                and (
-                    knownLevel
-                    or saved.tooltipLevelColor
-                    or saved.tooltipClassLineColor
-                    or saved.tooltipFactionColor
-                    or saved.tooltipGuildmateColor
-                    or saved.tooltipCompactLevel
-                )
-            )
-        then
-            return
-        end
+        if not saved then return end
+        local anyOption = saved.tooltipLevelColor
+            or saved.tooltipClassLineColor
+            or saved.tooltipFactionColor
+            or saved.tooltipGuildmateColor
+            or saved.tooltipCompactLevel
+        if not (knownLevel or anyOption) then return end
         local guildName = unitToken and GetGuildInfo(unitToken)
-        if guildName and _isSecret and _isSecret(guildName) then guildName = nil end
+        if guildName and not _isClean(guildName) then guildName = nil end
         local nLines = tip.NumLines and tip:NumLines() or 0
-        -- Level line: the tooltip data's UnitLevel line type when the client tags it, else the
-        -- first of lines 2-4 (after name, guild or title) that matches a level format.
-        local levelIdx
-        for _, ld in ipairs(payload and payload.lines or {}) do
-            local t = ld.type
-            if not (_isSecret and _isSecret(t)) and t == Enum.TooltipDataLineType.UnitLevel then
-                levelIdx = ld.lineIndex
-                break
-            end
-        end
-        if not levelIdx then
-            for i = 2, math.min(nLines, 4) do
-                local textValue = _G["GameTooltipTextLeft" .. i]:GetText()
-                if
-                    textValue
-                    and not (_isSecret and _isSecret(textValue))
-                    and not (guildName and _isGuildText(textValue, guildName))
-                    and _isLevelText(textValue)
-                then
-                    levelIdx = i
-                    break
-                end
-            end
-        end
-        -- Difficulty color on every unit, friendly included; battle pet levels aren't
-        -- comparable to the player's, so pets keep Blizzard's line.
-        local hex, compact
-        -- Forever: a hidden player level the PvP feature knows replaces the "??".
+        local levelIdx = _levelLineIndex(payload, nLines, guildName)
         local known = levelIdx and knownLevel
-        if
-            levelIdx
-            and unitToken
-            and (saved.tooltipLevelColor or saved.tooltipCompactLevel)
-            and not (UnitIsWildBattlePet(unitToken) or UnitIsBattlePetCompanion(unitToken))
-        then
-            local lvl = known or UnitEffectiveLevel(unitToken)
-            local red, green, blue
-            if saved.tooltipLevelColor then
-                red, green, blue = CUI.GetLevelColor(unitToken, lvl, true)
-            end
-            if red then hex = CUI.ColorText("%0", red, green, blue) end
-            -- Compact line: "90 Tauren" for players, "90 Elite Humanoid" for NPCs.
-            local player = UnitIsPlayer(unitToken)
-            if saved.tooltipCompactLevel and not (_isSecret and (_isSecret(lvl) or _isSecret(player))) then
-                local parts = _compactParts
-                wipe(parts)
-                parts[1] = CUI.ColorText(lvl > 0 and lvl or "??", red, green, blue)
-                if player then
-                    parts[2] = UnitRace(unitToken)
-                else
-                    local cl = _CLASSIFICATION[UnitClassification(unitToken)]
-                    if cl then parts[#parts + 1] = cl[2]:WrapTextInColorCode(cl[1]) end
-                    parts[#parts + 1] = UnitCreatureType(unitToken)
-                end
-                local secret = false
-                for _, val in ipairs(parts) do
-                    if _isSecret and _isSecret(val) then secret = true end
-                end
-                if not secret then compact = table.concat(parts, " ") end
-            end
+        local hex, compact
+        if levelIdx and unitToken then
+            hex, compact = _levelLook(unitToken, saved, known)
         end
         local doClass = levelIdx and unitToken and classColor and saved.tooltipClassLineColor
         local guildColor = guildName
@@ -876,30 +885,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
         for i = 2, nLines do
             local line = _G["GameTooltipTextLeft" .. i]
             local textValue = line and line:GetText()
-            if textValue and not (_isSecret and _isSecret(textValue)) then
+            if textValue and _isClean(textValue) then
                 if i == levelIdx then
-                    -- Compact rewrite, else color the number (or "??") only, leaving text
-                    -- another addon already colored.
-                    if compact then
-                        line:SetText(compact)
-                    else
-                        local newText, changed = textValue, false
-                        if known then
-                            local n
-                            newText, n = newText:gsub("%?%?", tostring(known), 1)
-                            changed = n > 0
-                        end
-                        if hex and not string.find(newText, "|c", 1, true) then
-                            local coloured, num = newText:gsub("%d+", hex, 1)
-                            if num == 0 then
-                                coloured, num = newText:gsub("%?%?", hex, 1)
-                            end
-                            if num > 0 then
-                                newText, changed = coloured, true
-                            end
-                        end
-                        if changed then line:SetText(newText) end
-                    end
+                    local newText = compact or _levelLineText(textValue, known, hex)
+                    if newText then line:SetText(newText) end
                 elseif
                     guildColor
                     and (not levelIdx or i < levelIdx)
@@ -908,10 +897,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                     line:SetTextColor(guildColor.r, guildColor.g, guildColor.b)
                     guildColor = nil
                 elseif _FACTION_CC[textValue] then
-                    if saved.tooltipFactionColor then
-                        local fc = _FACTION_CC[textValue]
-                        line:SetTextColor(fc.r, fc.g, fc.b)
-                    end
+                    local tint = saved.tooltipFactionColor and _FACTION_CC[textValue]
+                    if tint then line:SetTextColor(tint.r, tint.g, tint.b) end
                 -- The spec/class line directly follows the level line on player tooltips.
                 elseif doClass and i == levelIdx + 1 and textValue ~= PVP_ENABLED then
                     line:SetTextColor(classColor.r, classColor.g, classColor.b)
@@ -1732,7 +1719,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 1
             )
         end
-        if posX.tooltipShowTarget then tip:AddDoubleLine(Loc("Targeting:"), Loc("You"), 1, 1, 1, 0.1, 1, 0.1) end
+        if posX.tooltipShowTarget then
+            tip:AddDoubleLine(Loc("Targeting:"), Loc("You"), 1, 1, 1, 0.1, 1, 0.1)
+        end
         if on and saved.tooltipItemLevel ~= false then
             local _, isEquipped = GetAverageItemLevel()
             if isEquipped and isEquipped > 0 then
@@ -1782,9 +1771,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
                 topStrip:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
                 topStrip:SetHeight(3)
                 topStrip.bg:Show()
-                if CUI._applyTooltipHealthStripStyle then
-                    CUI._applyTooltipHealthStripStyle(nil, topStrip)
-                end
+                if CUI._applyTooltipHealthStripStyle then CUI._applyTooltipHealthStripStyle(nil, topStrip) end
             else
                 topStrip:SetPoint("TOPLEFT", tip, "BOTTOMLEFT", 2, -1)
                 topStrip:SetPoint("TOPRIGHT", tip, "BOTTOMRIGHT", -2, -1)
