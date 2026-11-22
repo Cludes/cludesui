@@ -180,6 +180,19 @@ local ENGLISH_NAMES = {
     ["CUI Options Language"] = "Settings Language",
     ["Overlap Cycling"] = "Cycle Overlapping Frames",
     ["Reset CUI Module Settings"] = "Reset Module Settings",
+    -- Sidebar (and the page titles and tabs that share these names).
+    ["Layout Mode"] = "Edit Layout",
+    ["LAYOUT MODE"] = "EDIT LAYOUT",
+    ["Global Settings"] = "Core Settings",
+    ["Profiles"] = "Profiles & Sharing",
+    ["Patch Notes"] = "What's New",
+    ["Raid & Dungeon"] = "Group Content",
+    ["Raid & Party Frames"] = "Group Frames",
+    ["Resource & Cast Bars"] = "Power & Cast Bars",
+    ["Buff Reminders"] = "Buff Checks",
+    ["Window Skins"] = "Window Styling",
+    ["Quest Tracker"] = "Objective Tracker",
+    ["Utilities"] = "Quality of Life",
 }
 
 local function Activate()
