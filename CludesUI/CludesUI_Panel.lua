@@ -300,30 +300,10 @@ local function BuildFrame()
     -- window): one table, so they cost this function a single local. See titleBoxes.Paint.
     local titleBoxes = {}
 
-    -- Accent hue via desaturate + vertex tint: every theme draws the one CludesUI
-    -- frame (frost blue), so desaturating removes the hue and vertex colour re-tints
-    -- it to the theme's accent. The house themes show the frame as drawn: TintColor
-    -- returns nil for those, else the vertex colour of the desaturated art.
-    function titleBoxes.TintColor(skinName, red, green, blue)
-        -- CludesUI Forever has its own frame art (bronze, its own logo), also as drawn.
-        if
-            skinName == "CludesUI"
-            or skinName == "CludesUI Original"
-            or skinName == "CludesUI Forever"
-            or skinName == "CludesUI Clean"
-        then
-            return nil
-        end
-        local minBright = 1.10
-        local maxBright = 1.60
-        local floor = 0.08
-        local lum = 0.2126 * red + 0.7152 * green + 0.0722 * blue
-        local darkFactor = 1 - lum
-        local bright = minBright + darkFactor * (maxBright - minBright)
-        return math.min(floor + red * bright, 1),
-            math.min(floor + green * bright, 1),
-            math.min(floor + blue * bright, 1)
-    end
+    -- Every theme's frame art is drawn as is: the flat frame is neutral and takes the
+    -- theme's accent through its logo overlay and the controls, and CludesUI Forever
+    -- has its own bronze art. So no layer is desaturated or tinted.
+    function titleBoxes.TintColor() return nil end
     local function ApplyBgTintToLayer(layer, skinName, red, green, blue)
         local fr, fg, fb = titleBoxes.TintColor(skinName, red, green, blue)
         if fr then

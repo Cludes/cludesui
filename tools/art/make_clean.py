@@ -52,17 +52,21 @@ d.line((SIDE + 1, FOOT, R - 1, FOOT), fill=RULE)
 d.line((118, 190, 376, 190), fill=RULE)
 
 # Logo emblem: the white mask tinted to the accent, no glow, centred where the
-# old emblem sat (its 76 unit box at 118, 110).
+# old emblem sat (its 76 unit box at 118, 110). The emblem and the "UI" go in
+# the accent overlay (white, tinted in game with the live UI accent), so the
+# base art holds only the neutral "Cludes".
+OV_X, OV_Y, OV_W, OV_H = 118, 110, 202, 76
+overlay = Image.new("RGBA", (OV_W, OV_H), (0, 0, 0, 0))
 mark = Image.open(media + "/logo-full-thin.png").convert("RGBA").resize((46, 46), Image.LANCZOS)
-tint = Image.new("RGBA", mark.size, ACCENT)
-tint.putalpha(mark.getchannel("A"))
-im.alpha_composite(tint, (156 - 23, 148 - 23))
+white = Image.new("RGBA", mark.size, (255, 255, 255, 255))
+white.putalpha(mark.getchannel("A"))
+overlay.alpha_composite(white, (156 - 23 - OV_X, 148 - 23 - OV_Y))
 
 # Wordmark.
 font = ImageFont.truetype(media + "/fonts/Poppins.ttf", 23)
 d.text((196, 148), "Cludes", font=font, fill=TEXT, anchor="lm")
 cw = d.textlength("Cludes", font=font)
-d.text((196 + cw, 148), "UI", font=font, fill=ACCENT, anchor="lm")
+ImageDraw.Draw(overlay).text((196 + cw - OV_X, 148 - OV_Y), "UI", font=font, fill=(255, 255, 255, 255), anchor="lm")
 
 # Close box: square, 1px ring, flat fill, X centred at (1367, 136).
 CX0, CY0, CX1, CY1 = 1345, 115, 1388, 157
@@ -72,4 +76,5 @@ d.line((1367 - g, 136 - g, 1367 + g, 136 + g), fill=(200, 204, 208, 255), width=
 d.line((1367 - g, 136 + g, 1367 + g, 136 - g), fill=(200, 204, 208, 255), width=2)
 
 im.save(out, optimize=True)
-print("wrote", out)
+overlay.save(sys.argv[3], optimize=True)
+print("wrote", out, sys.argv[3], "overlay at", OV_X, OV_Y, OV_W, OV_H)

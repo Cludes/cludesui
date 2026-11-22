@@ -54,23 +54,12 @@ local THEME_PRESETS = {
     ["Class Colored"] = nil, -- resolved at runtime from player class
     ["Custom Color"] = nil, -- user-chosen via color picker
 }
+-- The themes offered: one flat CludesUI frame (colour comes from the UI accent),
+-- plus the Forever client's own art. Older theme names stay valid in saved
+-- settings (THEME_BG_FILES maps them all to the flat frame).
 local THEME_ORDER = {
     "CludesUI",
     "CludesUI Forever",
-    "CludesUI Clean",
-    "Horde",
-    "Alliance",
-    "Faction (Auto)",
-    "Midnight",
-    "Dark",
-    "Pixels",
-    "Ember",
-    "Blood",
-    "Arcane",
-    "Gold",
-    "Toxic",
-    "Class Colored",
-    "Custom Color",
 }
 -- "CludesUI Forever" is the WoW Forever look: only that client lists it.
 if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
@@ -78,28 +67,32 @@ if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
 -- backdrop, every other client on the blue CludesUI theme. A chosen theme always wins.
 CludesUI.DEFAULT_THEME = (CUI_CLIENT_FOREVER == true) and "CludesUI Forever" or "CludesUI"
 -- Background file paths per theme (relative to MEDIA_PATH, in backgrounds/ subfolder)
-local THEME_BG_FILES = {
-    ["CludesUI"] = "backgrounds\\cui-bg-new.png",
-    ["CludesUI Original"] = "backgrounds\\cui-bg-new.png",
-    ["CludesUI Forever"] = "backgrounds\\cui-bg-forever-compressed.png",
-    -- Flat frame: square corners, 1px rules, no glow line or ornaments.
-    ["CludesUI Clean"] = "backgrounds\\cui-bg-clean.png",
-    ["Horde"] = "backgrounds\\cui-bg-new.png",
-    ["Alliance"] = "backgrounds\\cui-bg-new.png",
-    ["Midnight"] = "backgrounds\\cui-bg-new.png",
-    ["Dark"] = "backgrounds\\cui-bg-new.png",
-    ["Pixels"] = "backgrounds\\cui-bg-new.png",
-    -- The six colour schemes share the tintable art: the panel desaturates it
-    -- and tints it to the scheme's accent, as it does for Class Colored.
-    ["Ember"] = "backgrounds\\cui-bg-new.png",
-    ["Blood"] = "backgrounds\\cui-bg-new.png",
-    ["Frost"] = "backgrounds\\cui-bg-new.png",
-    ["Arcane"] = "backgrounds\\cui-bg-new.png",
-    ["Gold"] = "backgrounds\\cui-bg-new.png",
-    ["Toxic"] = "backgrounds\\cui-bg-new.png",
-    ["Class Colored"] = "backgrounds\\cui-bg-new.png",
-    ["Custom Color"] = "backgrounds\\cui-bg-new.png",
-}
+-- Every theme but CludesUI Forever draws the one flat CludesUI frame (square
+-- corners, 1px rules, no glow); a theme is its accent colour, which the logo
+-- overlay (THEME_ACCENT_OVERLAYS below) and the controls take. "CludesUI Clean"
+-- and "CludesUI Original" are not listed; kept for saved settings.
+local CLEAN_BG = "backgrounds\\cui-bg-clean.png"
+local THEME_BG_FILES = { ["CludesUI Forever"] = "backgrounds\\cui-bg-forever-compressed.png" }
+for _, name in ipairs({
+    "CludesUI",
+    "CludesUI Original",
+    "CludesUI Clean",
+    "Horde",
+    "Alliance",
+    "Midnight",
+    "Dark",
+    "Pixels",
+    "Ember",
+    "Blood",
+    "Frost",
+    "Arcane",
+    "Gold",
+    "Toxic",
+    "Class Colored",
+    "Custom Color",
+}) do
+    THEME_BG_FILES[name] = CLEAN_BG
+end
 -- Theme art is not loaded at file load: each file is a 1500x1154 canvas, and
 -- holding every theme in VRAM costs tens of MB for a panel most sessions never
 -- open. A theme loads on its first pick (the crossfade starts the new layer at
@@ -110,6 +103,13 @@ local THEME_BG_FILES = {
 -- offset; w, h = size, all in canvas units). Drawn above the theme art and tinted
 -- with the live UI accent; built on the theme's first apply (CreateMainFrame).
 CludesUI.THEME_ACCENT_OVERLAYS = {}
+-- The flat frame's logo emblem and "UI", white, tinted with the live accent.
+for name, file in pairs(THEME_BG_FILES) do
+    if file == CLEAN_BG then
+        CludesUI.THEME_ACCENT_OVERLAYS[name] =
+            { file = "backgrounds\\cui-bg-clean-accent.png", x = 118, y = 110, w = 202, h = 76 }
+    end
+end
 -- The close box painted into each theme art file, in canvas units: x, y, w, h =
 -- tight rect around its border; bx, by, bw, bh = outer rect of the border line
 -- itself and bd = its depth (the hover glow lights only that ring); gx, gy =

@@ -747,9 +747,8 @@ CUI.AtOptionsLogin(function()
         local function UninstallRefused()
             local msg
             if InCombatLockdown() then
-                msg = CUI.L(
-                    "Uninstalling reloads the UI and cannot run in combat. Leave combat and try again."
-                )
+                msg =
+                    CUI.L("Uninstalling reloads the UI and cannot run in combat. Leave combat and try again.")
             elseif CUI.EditModeOpen() then
                 msg = CUI.L("Close Edit Mode first, then try again.")
             end
@@ -851,8 +850,7 @@ CUI.AtOptionsLogin(function()
         end
 
         -- Row 1: CUI Options Theme | UI Accent Color (the accent follows the theme)
-        local themeRow
-        themeRow, height = W:DualRow(hostFrame, cursorY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "CUI Options Theme",
             tooltip = "The look of this options window: its frame art and colours.",
@@ -886,9 +884,7 @@ CUI.AtOptionsLogin(function()
                         CUI.RefreshAccent()
                         CUI:RefreshPage()
                     end,
-                    refreshAlpha = function()
-                        return (select(1, CUI.GetActiveAccentState())) and 1 or 0.3
-                    end,
+                    refreshAlpha = function() return (select(1, CUI.GetActiveAccentState())) and 1 or 0.3 end,
                 },
                 {
                     tooltip = "Custom Color",
@@ -896,10 +892,7 @@ CUI.AtOptionsLogin(function()
                     getValue = function()
                         local _, ca = CUI.GetActiveAccentState()
                         if ca then return ca.r, ca.g, ca.b, 1 end
-                        return CUI.DEFAULT_ACCENT_R,
-                            CUI.DEFAULT_ACCENT_G,
-                            CUI.DEFAULT_ACCENT_B,
-                            1
+                        return CUI.DEFAULT_ACCENT_R, CUI.DEFAULT_ACCENT_G, CUI.DEFAULT_ACCENT_B, 1
                     end,
                     setValue = function(red, green, blue)
                         -- Persists per-profile (custom + useClass=false), applies live.
@@ -915,52 +908,11 @@ CUI.AtOptionsLogin(function()
                         end
                         if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
-                    refreshAlpha = function()
-                        return (select(1, CUI.GetActiveAccentState())) and 0.3 or 1
-                    end,
+                    refreshAlpha = function() return (select(1, CUI.GetActiveAccentState())) and 0.3 or 1 end,
                 },
             },
         })
         cursorY = cursorY - height
-
-        -- Inline color swatch on CUI Options Theme (left region)
-        if not CUI._prebuilding then
-            local rightRegion = themeRow._leftRegion -- the theme dropdown's slot
-            local function customColorOff() return CUI.GetActiveTheme() ~= "Custom Color" end
-
-            local tcGet = function()
-                local db = CludesUIDB
-                local sa = db and db.accentColor
-                if sa then return sa.r, sa.g, sa.b, 1 end
-                return CUI.GetAccentColor()
-            end
-            local tcSet = function(red, green, blue)
-                Account().accentColor = { r = red, g = green, b = blue }
-                -- Only update the window background, not the accent color
-                if CUI._applyBgTint then CUI._applyBgTint(red, green, blue) end
-            end
-            local tcSwatch, tcUpdateSwatch =
-                CUI.BuildColorSwatch(rightRegion, rightRegion:GetFrameLevel() + 5, tcGet, tcSet, nil, 20)
-            Pix.Point(tcSwatch, "RIGHT", rightRegion._control, "LEFT", -12, 0)
-            rightRegion._lastInline = tcSwatch
-            CUI.RegisterWidgetRefresh(function()
-                local off = customColorOff()
-                tcSwatch:SetAlpha(off and 0.15 or 1)
-                tcSwatch:EnableMouse(not off)
-                tcUpdateSwatch()
-            end)
-            tcSwatch:SetAlpha(customColorOff() and 0.15 or 1)
-            tcSwatch:EnableMouse(not customColorOff())
-            tcSwatch:SetScript("OnEnter", function(self)
-                if customColorOff() then
-                    CUI.ShowWidgetTooltip(
-                        self,
-                        "This option is only available for the Custom Color Theme"
-                    )
-                end
-            end)
-            tcSwatch:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
-        end
 
         -- CUI Options Language (Row 2's right slot): options-panel display language (auto-detects the client; untranslated text falls back to English).
         local langCfg
@@ -1803,10 +1755,7 @@ CUI.AtOptionsLogin(function()
                 -- tracking bars); a spec swap or bar change behind a cached page would
                 -- leave rows writing into stale tables. Rebuild on every return.
                 C_Timer.After(0, function()
-                    if
-                        CUI:GetActiveModule() == GLOBAL_KEY
-                        and CUI:GetActivePage() == PAGE_GLOWS
-                    then
+                    if CUI:GetActiveModule() == GLOBAL_KEY and CUI:GetActivePage() == PAGE_GLOWS then
                         CUI:RefreshPage(true)
                     end
                 end)
@@ -1998,9 +1947,7 @@ CUI.AtOptionsLogin(function()
     local function BuildOverridesPage(hostFrame, yOffset)
         local cursorY = yOffset - BuildOverridesModeToggle(hostFrame, yOffset)
         if (CUI._overridesTabMode or "spec") == "cond" then
-            if CUI.Conditions_BuildListPage then
-                return CUI.Conditions_BuildListPage(hostFrame, cursorY)
-            end
+            if CUI.Conditions_BuildListPage then return CUI.Conditions_BuildListPage(hostFrame, cursorY) end
         elseif CUI.SpecOverrides_BuildListPage then
             return CUI.SpecOverrides_BuildListPage(hostFrame, cursorY)
         end
