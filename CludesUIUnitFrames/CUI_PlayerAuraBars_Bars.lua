@@ -457,7 +457,7 @@ local function OwnsNativeAuras()
     return (pabCfg and pabCfg.enabled == true and pabCfg.useBlizzardBuffs ~= true) and true or false
 end
 
-local function HideBlizzardPlayerAuras()
+local function HideStockAuras()
     if blizzardAurasHidden then return end
     blizzardAurasHidden = true
     if BuffFrame then
@@ -495,7 +495,7 @@ local function SyncNativeAuras()
             if BuffFrame then BuffFrame:Hide() end
             if DebuffFrame then DebuffFrame:Hide() end
         else
-            HideBlizzardPlayerAuras()
+            HideStockAuras()
         end
     else
         ShowBlizzardPlayerAuras()
@@ -686,7 +686,7 @@ local function BuildBars()
         return
     end
 
-    HideBlizzardPlayerAuras()
+    HideStockAuras()
 
     local buffConf, debuffConf = DefaultBuffsCfg(pabCfg), DefaultDebuffsCfg(pabCfg)
 
@@ -1094,13 +1094,13 @@ end
 -- grow direction). Applies to ONE polarity's container; callers touching a shared
 -- field (iconSize) call it for both. No-op before the container exists
 -- (SetupOptionsPanel calls CreateBars() once ns.db is ready).
-local function ApplyLiveConfig(buffSide)
+local function ApplyLiveCfg(buffSide)
     local pabCfg = PAB()
     if not (AK and pabCfg) then return end
     if
         DeferRestrictedApply(
             buffSide and "default-buffs" or "default-debuffs",
-            function() ApplyLiveConfig(buffSide) end,
+            function() ApplyLiveCfg(buffSide) end,
             buffSide and buffsContainer or debuffsContainer,
             (buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg)).growDirection
         )
@@ -1157,7 +1157,7 @@ local function ApplyLiveConfig(buffSide)
         local rebasePending = centered
             and not (place and place.point == "CENTER" and (place.relPoint or place.point) == "CENTER")
         if sizeChanged or rebasePending then
-            QueuePABRegenApply(sizeKey, function() ApplyLiveConfig(buffSide) end)
+            QueuePABRegenApply(sizeKey, function() ApplyLiveCfg(buffSide) end)
         end
     else
         if centered then
@@ -1338,7 +1338,7 @@ local function ApplyLiveConfig(buffSide)
 
     if PAB_MaybeRefreshPreview then PAB_MaybeRefreshPreview(buffSide and "buff" or "debuff", "default") end
 end
-mod.PAB_ApplyLiveConfig = ApplyLiveConfig
+mod.PAB_ApplyLiveConfig = ApplyLiveCfg
 -- Bridge for CludesUF:GetGrowDirectionForBar/SetGrowDirectionForBar, kept here
 -- rather than in CUI_UnitFrames_Lifecycle.lua so the settings-field names stay defined
 -- in one place.
@@ -1373,12 +1373,12 @@ function mod.PAB_SetGrowDirection(barId, direction)
     if barId == "PAB_Buffs" then
         DefaultBuffsCfg(pabCfg).growDirection = direction
         StyleAllBars()
-        ApplyLiveConfig(true)
+        ApplyLiveCfg(true)
         return
     elseif barId == "PAB_Debuffs" then
         DefaultDebuffsCfg(pabCfg).growDirection = direction
         StyleAllBars()
-        ApplyLiveConfig(false)
+        ApplyLiveCfg(false)
         return
     end
     local buffId = barId:match("^PAB_CustomBuff_(%d+)$")
@@ -1402,7 +1402,7 @@ function mod.PAB_SetGrowDirection(barId, direction)
 end
 
 Inner.ApplyContainerAnchorAndGrowth = ApplyContainerAnchorAndGrowth
-Inner.ApplyDefaultBarShown, Inner.ApplyLiveConfig = ApplyDefaultBarShown, ApplyLiveConfig
+Inner.ApplyDefaultBarShown, Inner.ApplyLiveConfig = ApplyDefaultBarShown, ApplyLiveCfg
 Inner.BarAnchorOffset, Inner.BuffsContentSig = BarAnchorOffset, BuffsContentSig
 Inner.BuildContainerSpec, Inner.CornerFor, Inner.CreateBars = BuildContainerSpec, CornerFor, BuildBars
 Inner.DeferRestrictedApply, Inner.MapElementSettings = DeferRestrictedApply, MapElementSettings

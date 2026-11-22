@@ -5277,7 +5277,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- The spell/item/icon ID lines can be gated behind a held modifier (the "Use Modifier"
         -- cog: none | shift | control | alt, default none). "none" shows them whenever Show
         -- Spell ID is on (the original behavior); the others only surface the lines while that key is held.
-        local function IsSpellIDModifierHeld()
+        local function SpellIdModifierHeld()
             local mod = (CludesUIDB and CludesUIDB.spellIDModifier) or "none"
             if mod == "none" then return true end
             if mod == "control" then return IsControlKeyDown() end
@@ -5376,7 +5376,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
 
         local function SpellIDTooltipHook(tipText, info)
             if not CUI.SpellIDOn() then return end
-            if not IsSpellIDModifierHeld() then return end
+            if not SpellIdModifierHeld() then return end
             if not info or not info.id then return end
             if _isSecret and _isSecret(info.id) then return end
             -- 12.1 no-modifier configs render aura IDs engine-side via the tooltipShowAuraSpellIDs
@@ -5402,7 +5402,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
 
         local function ItemIDTooltipHook(tipText, info)
             if not CUI.SpellIDOn() then return end
-            if not IsSpellIDModifierHeld() then return end
+            if not SpellIdModifierHeld() then return end
             if not info or not info.id then return end
             if _isSecret and _isSecret(info.id) then return end
             if not tipText or not tipText.GetName then return end
@@ -5447,7 +5447,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- to (honoring conditionals) is exposed as the FIRST tooltip line's tooltipID, read from the tooltip data.
         local function MacroSpellIDTooltipHook(tipText, _data)
             if not CUI.SpellIDOn() then return end
-            if not IsSpellIDModifierHeld() then return end
+            if not SpellIdModifierHeld() then return end
             if not tipText or not tipText.GetName or not tipText.GetTooltipData then return end
             local success, details = pcall(tipText.GetTooltipData, tipText)
             if not success or type(details) ~= "table" or not details.lines then return end

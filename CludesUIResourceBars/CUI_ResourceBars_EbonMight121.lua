@@ -40,7 +40,7 @@ local EbonState = {}
 -- to "2m" if extensions ever push past 60). Falls back to the suite
 -- duration formatter, then to the engine default.
 local timeFmt
-local function GetTimeFormatter()
+local function EbonTimeFormat()
     if timeFmt ~= nil then return timeFmt or nil end
     timeFmt = false
     if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding then
@@ -183,9 +183,9 @@ local function Build()
                     local AK2 = CUI.AuraKit
                     local dopts
                     if AK2 and AK2.BuildDurationTextOpts then
-                        dopts = AK2.BuildDurationTextOpts(GetTimeFormatter())
+                        dopts = AK2.BuildDurationTextOpts(EbonTimeFormat())
                     else
-                        dopts = { textFormatter = GetTimeFormatter() }
+                        dopts = { textFormatter = EbonTimeFormat() }
                     end
                     if AK2 and AK2.SetDurationTextSafe then
                         AK2.SetDurationTextSafe(btnFrame, fontStr, dopts)

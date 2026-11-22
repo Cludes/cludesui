@@ -830,7 +830,7 @@ do
             mod._methodInternalSurfaceNickHooked = true
         end
     end
-    local function RegisterNSRT()
+    local function HookNsrtNick()
         if mod._nsrtNickHooked then return true end
         if NSAPI and NSAPI.RegisterCallback then
             NSAPI.RegisterCallback("CludesUIUnitFrames", "NSRT_NICKNAME_UPDATED", RedrawNames)
@@ -840,7 +840,7 @@ do
         end
         return false
     end
-    local function RegisterTR()
+    local function HookTRNick()
         if mod._trNickHooked then return true end
         local TR = TimelineReminders
         if TR and TR.RegisterCallback then
@@ -861,13 +861,13 @@ do
         end
         return false
     end
-    if not (RegisterNSRT() and RegisterTR()) then
+    if not (HookNsrtNick() and HookTRNick()) then
         local nf = CreateFrame("Frame")
         nf:RegisterEvent("PLAYER_LOGIN")
         nf:RegisterEvent("PLAYER_ENTERING_WORLD")
         nf:SetScript("OnEvent", function(self, evt)
-            local a = RegisterNSRT()
-            local b = RegisterTR()
+            local a = HookNsrtNick()
+            local b = HookTRNick()
             if (a and b) or evt == "PLAYER_ENTERING_WORLD" then self:UnregisterAllEvents() end
         end)
     end
@@ -1074,7 +1074,7 @@ do
     -- [absorb:abr], [healabsorb:abr]: empty at zero like the full tags. The presets
     -- above keep "0" because ApplyAbsorbGate clips their whole zone instead.
     local IsZeroValue = CUI.IsZeroValue
-    local function AbsorbShortTag(get)
+    local function ShortAbsorbTag(get)
         return function(unit)
             if not unit or not UnitExists(unit) then return "" end
             local val = get(unit) or 0
@@ -1082,8 +1082,8 @@ do
             return AbbrevAbsorb(val)
         end
     end
-    P.absorbshorttag = AbsorbShortTag(UnitGetTotalAbsorbs)
-    P.healabsorbshorttag = AbsorbShortTag(UnitGetTotalHealAbsorbs)
+    P.absorbshorttag = ShortAbsorbTag(UnitGetTotalAbsorbs)
+    P.healabsorbshorttag = ShortAbsorbTag(UnitGetTotalHealAbsorbs)
     P.group = function(unit)
         if not IsInRaid() then return "" end
         local position = UnitInRaid(unit)

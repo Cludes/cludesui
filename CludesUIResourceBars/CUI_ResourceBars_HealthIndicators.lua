@@ -236,7 +236,7 @@ local function OnHostSized()
     end
 end
 
-local function PaintMax()
+local function DrawMaxHealth()
     local mx = UnitHealthMax("player")
     if on.absorb then
         barList.absorb:SetMinMaxValues(0, mx)
@@ -302,7 +302,7 @@ eventFrame:SetScript("OnEvent", function(_, evt)
     elseif evt == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED" then
         barList.healAbsorb:SetValue(UnitGetTotalHealAbsorbs("player"))
     elseif evt == "UNIT_MAXHEALTH" then
-        PaintMax()
+        DrawMaxHealth()
         if on.absorb then DrawAbsorb() end
     elseif evt == "UNIT_HEALTH" then
         Glow.Flip(barList.absorb, "player")
@@ -454,7 +454,7 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
     local ab = barList.absorb
     SetEventWanted("UNIT_HEALTH", ab and ab._glowOn and ab._glow.ge ~= 3)
 
-    PaintMax()
+    DrawMaxHealth()
     if showA then
         DrawAbsorb()
         barList.absorb:Show()

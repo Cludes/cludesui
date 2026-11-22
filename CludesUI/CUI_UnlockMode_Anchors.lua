@@ -115,7 +115,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
     end
 
-    local function GetAnchorDB()
+    local function AnchorStore()
         if not CludesUIDB then return nil end
         if not CludesUIDB.unlockAnchors then CludesUIDB.unlockAnchors = {} end
         return CludesUIDB.unlockAnchors
@@ -126,7 +126,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- when another element links to it. ValidateStoredLinks deletes it when
     -- Unlock Mode opens.
     local function GetAnchorInfo(barId)
-        local saved = GetAnchorDB()
+        local saved = AnchorStore()
         if not saved then return nil end
         local element = registeredElements[barId]
         if element and element.ownsPosition then return nil end
@@ -220,7 +220,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     end
 
     local function SetAnchorInfo(childBarKey, targetBarKey, edgeSide, offsetX, offsetY)
-        local saved = GetAnchorDB()
+        local saved = AnchorStore()
         if not saved then return end
         -- Keep an existing fallback only when re-anchoring to the SAME target; a new target invalidates it (fallback belongs to the link, not the child).
         local previous = saved[childBarKey]
@@ -252,7 +252,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     end
 
     local function ClearAnchorInfo(childBarKey)
-        local saved = GetAnchorDB()
+        local saved = AnchorStore()
         if not saved then return end
         saved[childBarKey] = nil
         CUI._anchorLinksStamp = (CUI._anchorLinksStamp or 0) + 1
@@ -595,7 +595,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             end
         end
 
-        local function ShiftMatchStore(storage)
+        local function ShiftMatchData(storage)
             if not storage then return end
             for childBarKey, targetBarKey in pairs(storage) do
                 if targetBarKey == removedKey then
@@ -624,10 +624,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
         DropSeveredExtras(CludesUIDB.unlockWidthMatch, CludesUIDB.unlockWidthMatchExtra)
         DropSeveredExtras(CludesUIDB.unlockHeightMatch, CludesUIDB.unlockHeightMatchExtra)
-        ShiftMatchStore(CludesUIDB.unlockWidthMatchExtra)
-        ShiftMatchStore(CludesUIDB.unlockHeightMatchExtra)
-        ShiftMatchStore(CludesUIDB.unlockWidthMatch)
-        ShiftMatchStore(CludesUIDB.unlockHeightMatch)
+        ShiftMatchData(CludesUIDB.unlockWidthMatchExtra)
+        ShiftMatchData(CludesUIDB.unlockHeightMatchExtra)
+        ShiftMatchData(CludesUIDB.unlockWidthMatch)
+        ShiftMatchData(CludesUIDB.unlockHeightMatch)
     end
 
     -- Validate stored relationships against registered elements. Runs on every
@@ -989,7 +989,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 else
                     -- If this element is itself anchored, re-apply its own position
                     -- first: it resized and must reposition relative to its target.
-                    local anchorDB = GetAnchorDB()
+                    local anchorDB = AnchorStore()
                     if anchorDB then
                         local ownInfo = anchorDB[key]
                         if ownInfo and ownInfo.target then
@@ -1067,7 +1067,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
 
         function CUI._MigrateAnchorFollowBaselines()
             if LM.isUnlocked or InCombatLockdown() then return end
-            local anchorDB = GetAnchorDB()
+            local anchorDB = AnchorStore()
             if not anchorDB then return end
             for childBarKey, details in pairs(anchorDB) do
                 if
@@ -1264,7 +1264,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             and CUI._abBarKeys
             and CUI._abBarKeys[barKey]
         if not layoutBarHandled and not abSwapSkip then
-            local anchorDB = GetAnchorDB()
+            local anchorDB = AnchorStore()
             local ownAnchor = anchorDB and anchorDB[barKey]
             if ownAnchor and ownAnchor.target then
                 if CUI.ReapplyOwnAnchor then CUI.ReapplyOwnAnchor(barKey) end
@@ -1672,7 +1672,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     local _overlayFadeFrame -- tiny OnUpdate driver for select-element dimmer fade
 
     -- Smoothly fade the background overlay between normal and select-element alpha
-    local function FadeOverlayForSelectElement(entering)
+    local function FadeForSelect(entering)
         if not LM.unlockFrame or not LM.unlockFrame._overlay then return end
         local startA = entering and (LM.unlockFrame._overlayMaxAlpha or 0.20) or SELECT_ELEMENT_ALPHA
         local endA = entering and SELECT_ELEMENT_ALPHA or (LM.unlockFrame._overlayMaxAlpha or 0.20)
@@ -1702,7 +1702,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             end
             LM.pickMode = nil
             LM.pickModeMover = nil
-            FadeOverlayForSelectElement(false)
+            FadeForSelect(false)
         end
         -- Also cancel snap select-element picker if active
         if LM.selectElementPicker then
@@ -1711,7 +1711,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             picker._preSelectTarget = nil
             if picker._updateSnapLabel then picker._updateSnapLabel() end
             LM.selectElementPicker = nil
-            FadeOverlayForSelectElement(false)
+            FadeForSelect(false)
         end
         -- Hide anchor dropdown if open
         if LM.anchorDropdownFrame then LM.anchorDropdownFrame:Hide() end
@@ -1731,7 +1731,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if mover._showPickText then
             mover._showPickText("Click any element\nto set as the Fallback Anchor")
         end
-        FadeOverlayForSelectElement(true)
+        FadeForSelect(true)
     end
 
     -- Red border flash animation for error feedback (e.g. trying to drag an anchored element)
@@ -1937,7 +1937,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- absolute UIParent-space math as a fresh side-snap anchor.
         function CUI._TryFallbackAnchor(childBarKey, targetBarKey, childBar, targetFrame)
             if LM.isUnlocked then return false end
-            local saved = GetAnchorDB()
+            local saved = AnchorStore()
             local details = saved and saved[childBarKey]
             local fb = details and details.fallback
             if not fb or not fb.target then return false end
@@ -2057,7 +2057,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- Store the fallback link (target + side), chosen through the same element
         -- pick mode as regular anchoring.
         function CUI.SetAnchorFallback(childBarKey, targetBarKey, edgeSide)
-            local saved = GetAnchorDB()
+            local saved = AnchorStore()
             local details = saved and saved[childBarKey]
             if not details or not details.target then return false end
             if not targetBarKey or targetBarKey == childBarKey or targetBarKey == details.target then
@@ -2071,7 +2071,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
 
         function CUI.ClearAnchorFallback(childBarKey)
-            local saved = GetAnchorDB()
+            local saved = AnchorStore()
             local details = saved and saved[childBarKey]
             if details then details.fallback = nil end
             CUI._anchorLinksStamp = (CUI._anchorLinksStamp or 0) + 1
@@ -2089,7 +2089,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         local petWatchOn
         local petPassPending
         function CUI._EnsureFallbackWatchers()
-            local saved = GetAnchorDB()
+            local saved = AnchorStore()
             if not saved then return end
             local needPet = false
             for _, details in pairs(saved) do
@@ -2124,7 +2124,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- unless at least one fallback is stored.
         local tbbPassPending
         function CUI.NotifyFallbackTargetsChanged()
-            local saved = GetAnchorDB()
+            local saved = AnchorStore()
             if not saved then return end
             local any = false
             for _, details in pairs(saved) do
@@ -2144,11 +2144,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
     end
 
     LM.GetBarGrowDirActual, LM.GetBarGrowDir, LM.GetAnchorDB, LM.GetAnchorInfo =
-        GetBarGrowDirActual, GetBarGrowDir, GetAnchorDB, GetAnchorInfo
+        GetBarGrowDirActual, GetBarGrowDir, AnchorStore, GetAnchorInfo
     LM.SetAnchorInfo, LM.ClearAnchorInfo, LM.IsAnchored, LM.MatchH =
         SetAnchorInfo, ClearAnchorInfo, IsAnchored, MatchKit
     LM.ValidateStoredLinks, LM.ScheduleAnchorBatch, LM.ApplyAllWidthHeightMatches, LM.HookFrameSizeChanged =
         ValidateStoredLinks, QueueAnchorBatch, ApplyAllWidthHeightMatches, HookFrameSizeChanged
     LM.FadeOverlayForSelectElement, LM.CancelPickMode, LM.FlashRedBorder, LM.RejectH =
-        FadeOverlayForSelectElement, CancelPickMode, FlashRedBorder, RejectH
+        FadeForSelect, CancelPickMode, FlashRedBorder, RejectH
 end

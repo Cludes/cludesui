@@ -115,7 +115,7 @@ local function CustomBuffSpellSignature(spells) return table.concat(spells, ",")
 -- renumbered, so TBB's "never unregister, just hide" caution does not apply: a deleted
 -- bar's key is retired for good and calling UnregisterUnlockElement is correct, not
 -- lossy. Still noResize/noAnchorTarget for the same reason as the default bars.
-local function RegisterPABCustomUnlock()
+local function RegisterCustomUnlock()
     if not (CUI and CUI.RegisterUnlockElements and CUI.MakeUnlockElement) then return end
     local MK = CUI.MakeUnlockElement
 
@@ -283,7 +283,7 @@ local function RegisterPABCustomUnlock()
         end
     end
 end
-mod.PAB_RegisterCustomUnlock = RegisterPABCustomUnlock
+mod.PAB_RegisterCustomUnlock = RegisterCustomUnlock
 
 -- Public hook for the Options UI: (re)builds one custom buff bar's engine state to
 -- match its current DB entry. Safe after ANY change to that bar (spell add/remove, any
@@ -466,7 +466,7 @@ end
 
 function mod.PAB_ReloadCustomBuffBar(barId)
     ReloadCustomBuffBarImpl(barId)
-    RegisterPABCustomUnlock()
+    RegisterCustomUnlock()
     if PAB_MaybeRefreshPreview then PAB_MaybeRefreshPreview("buff", barId) end
 end
 
@@ -573,7 +573,7 @@ end
 
 function mod.PAB_ReloadCustomDebuffBar(barId)
     ReloadCustomDebuffBarImpl(barId)
-    RegisterPABCustomUnlock()
+    RegisterCustomUnlock()
     if PAB_MaybeRefreshPreview then PAB_MaybeRefreshPreview("debuff", barId) end
 end
 
@@ -639,6 +639,6 @@ mod.PAB_ReloadAllCustomBars = ReloadAllCustomBarsImpl
 
 Inner.customBuffContainers, Inner.customBuffParents = customBuffContainers, customBuffParents
 Inner.customDebuffContainers, Inner.customDebuffParents = customDebuffContainers, customDebuffParents
-Inner.RegisterPABCustomUnlock = RegisterPABCustomUnlock
+Inner.RegisterPABCustomUnlock = RegisterCustomUnlock
 Inner.ReloadAllCustomBars = ReloadAllCustomBars
 Inner.broken = false

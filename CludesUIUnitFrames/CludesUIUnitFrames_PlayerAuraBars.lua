@@ -584,7 +584,7 @@ end
 -- Union of two dispel-type sets as a NEW table (the shared vocabulary tables
 -- are never mutated); nil-safe on the accumulator. Several per-type classes
 -- can forward at once, so the carrier accumulates instead of overwriting.
-local function MergeTypes(acc, add)
+local function UnionTypes(acc, add)
     local result = {}
     if acc then
         for key, val in pairs(acc) do
@@ -650,7 +650,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                     bools = bools or {}
                     bools[bk] = false
                 elseif cc.includeDispelTypes and not prShown then
-                    types = MergeTypes(types, cc.includeDispelTypes)
+                    types = UnionTypes(types, cc.includeDispelTypes)
                 end
             end
         end
@@ -723,7 +723,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         if cc.isFromPlayerOrPlayerPet == false then
             ex = ex or {}
             ex.isPriorityAura = false
-            if flipTypes then ex.excludeDispelTypes = MergeTypes(ex.excludeDispelTypes, flipTypes) end
+            if flipTypes then ex.excludeDispelTypes = UnionTypes(ex.excludeDispelTypes, flipTypes) end
             if flipBools then
                 for key, val in pairs(flipBools) do
                     ex[key] = val
@@ -733,7 +733,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         return ex
     end
 
-    local function CollectSub(cc)
+    local function CollectSubset(cc)
         subCand = subCand or {}
         for key, val in pairs(cc) do
             if type(val) == "boolean" then subCand[key] = not val end
@@ -784,7 +784,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                         hidden = true,
                     }
                     if cc.includeDispelTypes then
-                        excludeDispelTypes = MergeTypes(excludeDispelTypes, cc.includeDispelTypes)
+                        excludeDispelTypes = UnionTypes(excludeDispelTypes, cc.includeDispelTypes)
                     end
                     if cc.isFromPlayerOrPlayerPet == false then
                         npOwned = true
@@ -792,7 +792,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                         anyOwned = true
                     end
                 else
-                    CollectSub(cc)
+                    CollectSubset(cc)
                 end
             end
         end
@@ -821,7 +821,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 chain[#chain + 1] =
                     { key = class.key, tokens = tokens, cand = cc, excludeCand = ShownCand(cc) }
                 if cc.includeDispelTypes then
-                    excludeDispelTypes = MergeTypes(excludeDispelTypes, cc.includeDispelTypes)
+                    excludeDispelTypes = UnionTypes(excludeDispelTypes, cc.includeDispelTypes)
                 end
                 if cc.isFromPlayerOrPlayerPet == false then
                     npOwned = true
@@ -896,7 +896,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                     hidden = (sub and not en) or nil,
                 }
                 if cc.includeDispelTypes then
-                    excludeDispelTypes = MergeTypes(excludeDispelTypes, cc.includeDispelTypes)
+                    excludeDispelTypes = UnionTypes(excludeDispelTypes, cc.includeDispelTypes)
                 end
                 if cc.isFromPlayerOrPlayerPet == false then
                     npOwned = true
@@ -910,7 +910,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                     boolOwned[bk] = false
                 end
             else
-                CollectSub(cc)
+                CollectSubset(cc)
             end
         end
     end
@@ -950,7 +950,7 @@ CUI.NewInternals(mod, "_pabInternals", {
     DEBUFF_FILTER_ORDER = DEBUFF_FILTER_ORDER,
     DebuffSubtractFn = DebuffSubtractFn,
     ExpandFamily = ExpandFamily,
-    MergeTypes = MergeTypes,
+    MergeTypes = UnionTypes,
     PAB = PAB,
     PAB_ApplyDmFx = PAB_ApplyDmFx,
     PAB_FxEntryActive = PAB_FxEntryActive,

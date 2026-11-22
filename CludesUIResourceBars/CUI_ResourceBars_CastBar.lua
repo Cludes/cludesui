@@ -1335,7 +1335,7 @@ end
 
 -- Latency overlay helper. Called once per cast/channel start: sizes the
 -- overlay as this cast's latency over the total cast duration.
-local function ShowLatencyOverlay(castType)
+local function ShowLatencyZone(castType)
     if not castFrame then return end
     -- Channels use the front twin: the bar starts full, so the drain-side
     -- zone must draw above the fill to be visible at all. Casts keep the
@@ -1420,7 +1420,7 @@ local function ShowLatencyOverlay(castType)
     overlayFrame:Show()
 end
 
-local function HideLatencyOverlay()
+local function HideLatencyZone()
     if not castFrame then return end
     if castFrame._latencyOverlay then castFrame._latencyOverlay:Hide() end
     if castFrame._latencyOverlayFront then castFrame._latencyOverlayFront:Hide() end
@@ -1490,7 +1490,7 @@ function mod.ShowIdleCastBar()
     end
     castFrame._numStages = 0
     HideChannelTicks()
-    HideLatencyOverlay()
+    HideLatencyZone()
     mod.ApplyCastBgAnchor()
 
     if callback.alwaysShow and callback.enabled and not mod._erbCastPadHidden then
@@ -1639,7 +1639,7 @@ OnCastStart = function()
         end
     end
 
-    ShowLatencyOverlay("cast")
+    ShowLatencyZone("cast")
     -- After the latency overlay: its " (NNms)" suffix widens the timer.
     if callback.fitSpellName then mod.ERB_FitCastName(callback) end
 
@@ -1708,7 +1708,7 @@ OnChannelStart = function()
     -- Channel tick marks
     ShowChannelTicks(spellId)
 
-    ShowLatencyOverlay("channel")
+    ShowLatencyZone("channel")
     if callback.fitSpellName then mod.ERB_FitCastName(callback) end
 
     mod.ActivateCastBar()
@@ -2114,7 +2114,7 @@ OnEmpowerStart = function()
     castFrame._spellName = spellName
     castFrame._spellID = spellId
     castFrame._totalDurSuffix = " / " .. format("%.1f", (endMs - startMs) / 1000)
-    HideLatencyOverlay()
+    HideLatencyZone()
     castFrame._nameText:SetText(mod.CastDisplayName(callback, spellName, spellId))
     if callback.fitSpellName then mod.ERB_FitCastName(callback) end
     mod.ERB_SetBlizzCastFill("cast")

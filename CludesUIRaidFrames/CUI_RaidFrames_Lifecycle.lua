@@ -209,13 +209,13 @@ function ERF:OnEnable()
             queue[#queue + 1] = button
         end
         local position = 1
-        local function drain()
+        local function drainQueue()
             local deadline = debugprofilestop() + 8
             while position <= #queue do
                 StyleButton(queue[position])
                 position = position + 1
                 if position <= #queue and debugprofilestop() > deadline then
-                    C_Timer.After(0, drain)
+                    C_Timer.After(0, drainQueue)
                     return
                 end
             end
@@ -230,7 +230,7 @@ function ERF:OnEnable()
             end)
             C_Timer.After(0, RegisterWithUnlockMode)
         end
-        drain()
+        drainQueue()
     end)
 
     -- Party container size + saved position. The container is implicitly
@@ -602,7 +602,7 @@ function ERF:OnEnable()
     -- All registrations are dot calls, NOT colon: the first argument is the unique
     -- registrant key (CallbackHandler keys registrations by it). A colon call would
     -- pass the API table itself as the key and collide with other addons doing the same.
-    local function RegisterNSRTNicknames()
+    local function HookNsrtNicknames()
         if mod._nsrtNickHooked then return true end
         if NSAPI and NSAPI.RegisterCallback then
             local function onNamesChanged()
@@ -624,7 +624,7 @@ function ERF:OnEnable()
             mod._methodInternalSurfaceNickHooked = true
         end
     end
-    local function RegisterTRNicknames()
+    local function HookTRNicknames()
         if mod._trNickHooked then return true end
         local TR = TimelineReminders
         if TR and TR.RegisterCallback then
@@ -641,7 +641,7 @@ function ERF:OnEnable()
         end
         return false
     end
-    local function RegisterRGALIASNicknames()
+    local function HookAliasNicknames()
         if mod._rgaliasNickHooked then return true end
         local RGA = _G.RG_ALIAS
         if RGA and RGA.RegisterCallback and _G.RG_UnitName then
@@ -673,17 +673,17 @@ function ERF:OnEnable()
         return false
     end
 
-    local nsrtHooked = RegisterNSRTNicknames()
-    local trHooked = RegisterTRNicknames()
-    local rgaliasHooked = RegisterRGALIASNicknames()
+    local nsrtHooked = HookNsrtNicknames()
+    local trHooked = HookTRNicknames()
+    local rgaliasHooked = HookAliasNicknames()
     if not (nsrtHooked and trHooked and rgaliasHooked) then
         local nickFrame = mod.TakeShell()
         nickFrame:RegisterEvent("PLAYER_LOGIN")
         nickFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         nickFrame:SetScript("OnEvent", function(self, evt)
-            local a = RegisterNSRTNicknames()
-            local b = RegisterTRNicknames()
-            local c = RegisterRGALIASNicknames()
+            local a = HookNsrtNicknames()
+            local b = HookTRNicknames()
+            local c = HookAliasNicknames()
             -- Anything not loaded by first PLAYER_ENTERING_WORLD is not coming.
             if (a and b and c) or evt == "PLAYER_ENTERING_WORLD" then self:UnregisterAllEvents() end
         end)

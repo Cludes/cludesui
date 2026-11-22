@@ -3852,7 +3852,7 @@ local function CreateDispelSet(widget, record, fillTex)
     local count = 0
     for index = 1, #DISPEL_SLOTS do
         local slotIndex = DISPEL_SLOTS[index]
-        local function ParkSlot(slotButton)
+        local function ParkSlotButton(slotButton)
             -- Park the slot button on the health bar center (the overlay textures
             -- anchor to the health bar independently). Anchored HERE, inside the
             -- creation window: SetPoint on the returned button is denied while
@@ -3867,7 +3867,7 @@ local function CreateDispelSet(widget, record, fillTex)
                 filter = { "HARMFUL" },
                 candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slotIndex.key]] = true } },
                 style = DispelStyleKey(slotIndex.key, fillTex),
-                extraInit = ParkSlot,
+                extraInit = ParkSlotButton,
             })
             record[addsField] = count
         end
@@ -3882,7 +3882,7 @@ local function CreateDispelSet(widget, record, fillTex)
                 filter = { "HARMFUL", "RAID_PLAYER_DISPELLABLE" },
                 candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slotIndex.key]] = true } },
                 style = DispelStyleKey(slotIndex.key .. "_byme", fillTex),
-                extraInit = ParkSlot,
+                extraInit = ParkSlotButton,
             })
             record[addsField] = count
         end

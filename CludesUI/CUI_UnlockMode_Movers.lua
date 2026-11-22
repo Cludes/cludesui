@@ -4135,12 +4135,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                         if PPo and PPo.ToPixels then v = PPo.ToPixels(v) end
                         return math.floor(v + 0.5)
                     end
-                    local function OffsetText(key) return tostring(OffsetPx(key)) end
+                    local function OffsetLabel(key) return tostring(OffsetPx(key)) end
                     local function MakeOffsetRow(textValue, key)
                         local _, _, checkBox = MakeAnchorRow(textValue, true)
                         checkBox:SetNumeric(false)
                         checkBox:SetMaxLetters(6)
-                        checkBox:SetText(OffsetText(key))
+                        checkBox:SetText(OffsetLabel(key))
                         local function Commit(self)
                             local value = tonumber(self:GetText())
                             if value and not InCombatLockdown() and PPo and PPo.FromPixels then
@@ -4156,7 +4156,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                                     if handle._syncCogPos then handle._syncCogPos() end
                                 end
                             end
-                            self:SetText(OffsetText(key))
+                            self:SetText(OffsetLabel(key))
                         end
                         -- Enter applies, Escape reverts; losing focus does neither, like
                         -- the X/Y Position boxes above.
@@ -4165,7 +4165,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                             Commit(self)
                         end)
                         checkBox:SetScript("OnEscapePressed", function(self)
-                            self:SetText(OffsetText(key))
+                            self:SetText(OffsetLabel(key))
                             self:ClearFocus()
                         end)
                         return checkBox
@@ -4177,8 +4177,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local prevSync = handle._syncCogPos
                     handle._syncCogPos = function()
                         if prevSync then prevSync() end
-                        if not oxBox:HasFocus() then oxBox:SetText(OffsetText("offsetX")) end
-                        if not oyBox:HasFocus() then oyBox:SetText(OffsetText("offsetY")) end
+                        if not oxBox:HasFocus() then oxBox:SetText(OffsetLabel("offsetX")) end
+                        if not oyBox:HasFocus() then oyBox:SetText(OffsetLabel("offsetY")) end
                     end
                     MenuPool.Div(gearMenu, rowOffset - 4, Pix and Pix.mult or 1)
                     rowOffset = rowOffset - 9
@@ -4221,7 +4221,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             rowOffset = rowOffset - ITEM_H
 
             -- Helper: menu action item
-            local function MakeActionItem(textValue, onClick, hoverFullText)
+            local function NewActionLink(textValue, onClick, hoverFullText)
                 local menuItem, highlight, labelFS = MenuPool.Item(gearMenu, rowOffset, ITEM_H)
                 -- Cap the label at the row width, ending 5px before the row edge,
                 -- so long dynamic labels truncate instead of spilling past the menu.
@@ -4254,7 +4254,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 return menuItem, labelFS, highlight
             end
 
-            MakeActionItem("Center on Screen", function()
+            NewActionLink("Center on Screen", function()
                 if InCombatLockdown() then return end
                 local barKey = handle._barKey
                 local PPc = CUI and CUI.PP
@@ -4501,10 +4501,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                 MenuPool.Div(gearMenu, rowOffset - 4, Pix and Pix.mult or 1)
                 rowOffset = rowOffset - 9
 
-                local seItem, seLbl, seHl = MakeActionItem("Relative to Screen", function() end)
+                local seItem, seLbl, seHl = NewActionLink("Relative to Screen", function() end)
                 local seArrow = MenuPool.Arrow(seItem, ARROW_RIGHT_ICON, 0.7)
                 -- Linked to an edge: the row wears the same orange as an anchored mover.
-                local function SERestColor()
+                local function EdgeRestColor()
                     local linked
                     if ownScreen then
                         linked = ownScreen.getScreenPoint(barId) ~= "CENTER"
@@ -4522,7 +4522,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         seLbl:SetTextColor(0.75, 0.75, 0.75, 0.9)
                     end
                 end
-                SERestColor()
+                EdgeRestColor()
 
                 -- Leaving the flyout closes it. A check made in it changed the links
                 -- the cog menu's anchor rows show, so the menu is built again then:
@@ -4532,7 +4532,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     if handle._cogEdgeDirty and gearMenu and gearMenu:IsShown() then BuildCogMenu() end
                 end
 
-                local function ShowEdgeSub()
+                local function ShowEdgeMenu()
                     -- Built once per mover and kept on it, parented to unlockFrame;
                     -- CloseCogMenu and every BuildCogMenu hide it.
                     local edgeFlyout = handle._cogEdgeSub
@@ -4637,8 +4637,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                                 handle._cogEdgeDirty = true
                                 -- The anchor rows' offset boxes read the links live.
                                 if handle._syncCogPos then handle._syncCogPos() end
-                                SERestColor()
-                                ShowEdgeSub()
+                                EdgeRestColor()
+                                ShowEdgeMenu()
                             end)
                             -- The row just clicked is still under the cursor.
                             if foci and foci[1] == subItem then OnEnter() end
@@ -4664,17 +4664,17 @@ CUI_NS.unlockParts.Movers = function(LM)
 
                 -- The row is a pooled one, so its hover handlers are set whole (the
                 -- action row's highlight plus the arrow and the flyout), never hooked.
-                seItem:SetScript("OnClick", ShowEdgeSub)
+                seItem:SetScript("OnClick", ShowEdgeMenu)
                 seItem:SetScript("OnEnter", function()
                     seHl:SetColorTexture(1, 1, 1, 0.08)
                     seLbl:SetTextColor(1, 1, 1, 1)
                     seArrow:SetAlpha(0.9)
-                    ShowEdgeSub()
+                    ShowEdgeMenu()
                 end)
                 seItem:SetScript("OnLeave", function()
                     seHl:SetColorTexture(1, 1, 1, 0)
                     seArrow:SetAlpha(0.7)
-                    SERestColor()
+                    EdgeRestColor()
                     C_Timer.After(0.05, function()
                         local flyout = handle._cogEdgeSub
                         if
@@ -4691,7 +4691,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
             -- Toggle Orientation (hidden for vis-only bars)
             if not isVisOnly then
-                MakeActionItem("Toggle Orientation", function()
+                NewActionLink("Toggle Orientation", function()
                     if InCombatLockdown() then return end
                     if not ABAR then return end
                     ABAR:ToggleOrientationForBar(handle._barKey)
@@ -4720,7 +4720,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     -- fallback records need a target (a legacy record without
                     -- one, from the retired position-capture flow, reads as unset)
                     local hasFb = aiF.fallback ~= nil and aiF.fallback.target ~= nil
-                    MakeActionItem(
+                    NewActionLink(
                         hasFb and "Fallback Anchor: Change" or "Fallback Anchor: Select",
                         function()
                             if CUI._BeginFallbackAnchorPick then
@@ -4729,7 +4729,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         end
                     )
                     if hasFb then
-                        MakeActionItem("Fallback Anchor: Clear", function()
+                        NewActionLink("Fallback Anchor: Clear", function()
                             if CUI.ClearAnchorFallback then CUI.ClearAnchorFallback(barId) end
                         end)
                     end

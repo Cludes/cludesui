@@ -665,7 +665,7 @@ local function ResolveAnchorFrame(anchorKey)
     return nil
 end
 
-local function NormalizeAnchorKey(anchorKey)
+local function CleanAnchorKey(anchorKey)
     if anchorKey and ERB_VALID_ANCHORS[anchorKey] then return anchorKey end
     return "none"
 end
@@ -689,12 +689,12 @@ end
 local function ResolveExpandDirSign(pp, sp)
     if not sp then return 1 end
     -- Anchored: class resource pinned relative to the power bar.
-    if NormalizeAnchorKey(sp.anchorTo) == "erb_powerbar" then
+    if CleanAnchorKey(sp.anchorTo) == "erb_powerbar" then
         if sp.anchorPosition == "bottom" then return -1 end
         if sp.anchorPosition == "top" then return 1 end
     end
     -- Anchored the other way: power bar pinned relative to the class resource.
-    if NormalizeAnchorKey(pp.anchorTo) == "erb_classresource" then
+    if CleanAnchorKey(pp.anchorTo) == "erb_classresource" then
         if pp.anchorPosition == "top" then return -1 end -- power above CR -> CR below -> grow down
         if pp.anchorPosition == "bottom" then return 1 end -- power below CR -> CR above -> grow up
     end
@@ -968,7 +968,7 @@ RefreshAnchoredBarsForUnlockTarget = function(unlockKey)
 end
 
 Inner.ApplyBarAnchor, Inner.ApplyFreeBarPosition = ApplyBarAnchor, ApplyFreeBarPosition
-Inner.GetAnchorOffsets, Inner.NormalizeAnchorKey = GetAnchorOffsets, NormalizeAnchorKey
+Inner.GetAnchorOffsets, Inner.NormalizeAnchorKey = GetAnchorOffsets, CleanAnchorKey
 Inner.ReapplyInternalBarAnchors = ReapplyInternalBarAnchors
 Inner.RegisterUnlockElements, Inner.ResolveExpandDirSign = RegisterUnlockElements, ResolveExpandDirSign
 Inner.broken = false

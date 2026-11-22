@@ -169,7 +169,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         -- it hangs off the far side of the fill -- its right edge normally, its
         -- top edge on a vertical bar. Mirrors the live UpdateHealthBg.
         local pvVert = mod.RF_IsVerticalFill(cfg)
-        local function AnchorPreviewBg()
+        local function PlacePreviewBg()
             frame._bg:ClearAllPoints()
             if pvVert then
                 if pvInvert then
@@ -197,12 +197,12 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                 or nil
         )
         if cfg.healthColorMode == "dark" then
-            AnchorPreviewBg()
+            PlacePreviewBg()
             frame._bg:SetColorTexture(CludesUI.GetDarkModeBg())
         else
             -- Matches the real-frame themed branch + Dark mode. Keeps the preview
             -- a 1:1 replica for reduced-fill-opacity setups.
-            AnchorPreviewBg()
+            PlacePreviewBg()
             local bgA = (cfg.bgDarkness or 50) / 100
             local cc = cfg.bgClassColored and classToken and CludesUI.GetClassColor(classToken)
             if cc then

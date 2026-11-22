@@ -443,7 +443,7 @@ local function PvReanchorAuras(frameIndex, auraType)
     end
 end
 
-local function PvAuraTick()
+local function PvTickAuras()
     if not PvActive() then return end
     local nowTime = GetTime()
     local s2 = PreviewCfg()
@@ -676,8 +676,8 @@ end
 local function StartPvAuraTicker()
     if not pvAuraTicker then
         -- Seed initial auras
-        PvAuraTick()
-        pvAuraTicker = C_Timer.NewTicker(0.5, PvAuraTick)
+        PvTickAuras()
+        pvAuraTicker = C_Timer.NewTicker(0.5, PvTickAuras)
     end
 end
 

@@ -267,7 +267,7 @@ local POWER_KEY_ALIAS = {
     ["MAELSTROM_WEAPON"] = "MAELSTROM",
 }
 
-local function ResolvePowerKey(powerKey)
+local function PowerKeyOf(powerKey)
     if type(powerKey) == "number" then return POWER_ENUM_TO_KEY[powerKey] end
     return POWER_KEY_ALIAS[powerKey] or powerKey
 end
@@ -285,7 +285,7 @@ local POWER_COLORS = setmetatable({}, {
         -- index this memo with that result. rawset with a nil key throws.
         if powerKey == nil then return nil end
         if not CludesUI then return nil end
-        local key = ResolvePowerKey(powerKey)
+        local key = PowerKeyOf(powerKey)
         if key and CludesUI.GetPowerColor then
             local color = CludesUI.GetPowerColor(key)
             if color then
@@ -348,7 +348,7 @@ mod._crAtlasClass = {
     WARRIOR = "Warrior",
 }
 function mod.GetBlizzardPowerAtlas(powerKey)
-    local resolved = ResolvePowerKey(powerKey) or powerKey
+    local resolved = PowerKeyOf(powerKey) or powerKey
     local suffix = mod._crAtlasSuffix[resolved]
     if not suffix or not (C_Texture and C_Texture.GetAtlasInfo) then return nil end
     -- Try Midnight family first (e.g. "Unit_Druid_AstralPower_Fill"), then classless

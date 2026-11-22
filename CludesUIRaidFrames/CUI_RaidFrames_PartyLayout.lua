@@ -178,7 +178,7 @@ mod._LayoutPartyFrames = function()
             wantGroupFilter = fGroup and tostring(fGroup) or "1,2,3,4,5,6,7,8"
         end
 
-        local function ApplyAttrs()
+        local function SetHeaderAttrs()
             mod._partyHeader:SetAttribute("groupFilter", wantGroupFilter)
             mod._partyHeader:SetAttribute("nameList", wantNameList)
             mod._partyHeader:SetAttribute("groupingOrder", wantGroupingOrder)
@@ -195,10 +195,10 @@ mod._LayoutPartyFrames = function()
         if needsHideShow then mod._fsChanged = true end
         if needsHideShow and mod._partyHeader:IsShown() then
             mod._partyHeader:Hide()
-            ApplyAttrs()
+            SetHeaderAttrs()
             mod._partyHeader:Show()
         elseif needsHideShow then
-            ApplyAttrs()
+            SetHeaderAttrs()
         end
         -- Which layout the header now carries (shown: full; hidden: native), for
         -- _UpdatePartyVisibility to re-lay it when the set hides.

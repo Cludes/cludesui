@@ -69,7 +69,7 @@ local lvlWatch -- PLAYER_LEVEL_UP while a held frame waits for its level
 local function UFns() return CUI._ModuleNS and CUI._ModuleNS["CludesUIUnitFrames"] end
 
 -- The Unit Frames "Blizzard" class resource style holds the frame (it wins a tie).
-local function UFOwns()
+local function UnitFramesOwn()
     local uf = UFns()
     return (uf and uf.UF_OwnsBlizzClassPower and uf.UF_OwnsBlizzClassPower()) and true or false
 end
@@ -86,7 +86,7 @@ end
 local function WantedBar(sp)
     if not (sp and sp.blizzardClassArt) or sp.enabled == false then return nil end
     if CUI.IS_FOREVER then return nil end
-    if UFOwns() then return nil end
+    if UnitFramesOwn() then return nil end
     return ClassFrame()
 end
 
@@ -440,7 +440,7 @@ function mod.ERB_BlizzClassArtSupported()
     if CUI.IS_FOREVER then return false, "client" end
     local barFrame = ClassFrame()
     if not barFrame then return false, "resource" end
-    if UFOwns() then return false, "uf" end
+    if UnitFramesOwn() then return false, "uf" end
     if barFrame.hiddenByPersonalResourceDisplay then return false, "prd" end
     local gsr = _G._CURB_GetSecondaryResource
     if ResourceOK(gsr and gsr()) then return true end

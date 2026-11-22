@@ -1637,7 +1637,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- again at the landing for a mover that was not built yet (the retry
         -- ticker spawns late registrations). The request is kept until the mover
         -- exists; the landing drops it after one more try.
-        local function TryAutoSelect()
+        local function AutoSelectMover()
             local autoKey = CUI._unlockAutoSelectKey
             if not autoKey then return end
             local m = handles[autoKey]
@@ -1870,7 +1870,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 -- The movers are in: the requested mover is selected and flashed now.
                 if not moversIn and fadeTime >= GLITCH_DUR then
                     moversIn = true
-                    TryAutoSelect()
+                    AutoSelectMover()
                 end
                 -- Blizzard-owned overlays fade in on the same curve
                 for _, bov in pairs(_blizzOwnedOverlays) do
@@ -2014,10 +2014,10 @@ CUI_NS.unlockParts.Session = function(LM)
 
             -- A requested mover not built when the movers faded in: one more try
             -- after the retry ticker's first pass, then the request is dropped.
-            TryAutoSelect()
+            AutoSelectMover()
             if CUI._unlockAutoSelectKey then
                 C_Timer.After(0.6, function()
-                    TryAutoSelect()
+                    AutoSelectMover()
                     CUI._unlockAutoSelectKey = nil
                     CUI._unlockAutoSelectFlash = nil
                 end)

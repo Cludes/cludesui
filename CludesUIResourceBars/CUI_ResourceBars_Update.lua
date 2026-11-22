@@ -864,7 +864,7 @@ end
 
 -- Buff coloring for the class-resource bar. The 5th return is the winning row's
 -- index, which the class-bar value early-out keys on.
-local function ActiveBuffColor(record)
+local function BuffTint(record)
     if not record or not record.buffColorEnabled then return nil end
     local entries = record.buffColors
     if not entries then return nil end
@@ -1047,7 +1047,7 @@ end
 -- Per-frame render for the Guardian Ironfur bar: prune expired ticks, position
 -- the moving hash lines (right -> left as each cast decays), and drive the fill
 -- to the longest-remaining fraction.
-local function UpdateIronfurBar()
+local function SyncIronfurBar()
     if not (classBar and classBar:IsShown()) then return end
     local secondaryCfg = _G._CURB_ResolveSecondaryCfg() or ERB.db.profile.secondary
     local nowTime = GetTime()
@@ -1141,7 +1141,7 @@ local function UpdateIronfurBar()
     local _tiWanted = (tsEntry and tsEntry.thresholdTextInstead and secondaryCfg.showText) and true or false
     -- Buff coloring wins: a tracked buff on this entry overrides the base color and
     -- suppresses the stack-count threshold/bands below.
-    local _bfr, _bfg, _bfb, _bfa = ActiveBuffColor(tsEntry)
+    local _bfr, _bfg, _bfb, _bfa = BuffTint(tsEntry)
     -- No tracked buff active: a castable spender supplies the override color instead.
     if not _bfr then
         _bfr, _bfg, _bfb, _bfa = mod.ActiveSpenderColor(tsEntry)
@@ -1442,7 +1442,7 @@ local function SyncSecondary()
     local pointCap = cachedSecondary.max or 5
 
     if powerKind == "IRONFUR_BAR" then
-        UpdateIronfurBar()
+        SyncIronfurBar()
         return
     end
 
@@ -1484,7 +1484,7 @@ local function SyncSecondary()
             if textBlock then
                 local i
                 _ebEntry = mod.STK.entry
-                _ebR, _ebG, _ebB, _ebA, i = ActiveBuffColor(_ebEntry)
+                _ebR, _ebG, _ebB, _ebA, i = BuffTint(_ebEntry)
                 bw = i or 0
             end
             if ts then sw = mod.SpenderWinner() end
@@ -1612,7 +1612,7 @@ local function SyncSecondary()
     if _ebEntry ~= nil and _ebEntry == _buffEntry then
         _bfr, _bfg, _bfb, _bfa = _ebR, _ebG, _ebB, _ebA
     else
-        _bfr, _bfg, _bfb, _bfa = ActiveBuffColor(_buffEntry)
+        _bfr, _bfg, _bfb, _bfa = BuffTint(_buffEntry)
     end
     -- No tracked buff active: a castable spender supplies the override color instead.
     if not _bfr then
@@ -3499,7 +3499,7 @@ mod.MotionTick = CUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     local cs = cachedSecondary
     if not (cs and classBar and classBar:IsShown() and classBar:GetAlpha() > 0) then return end
     if cs.power == "IRONFUR_BAR" then
-        UpdateIronfurBar()
+        SyncIronfurBar()
         return true
     elseif cs.power == "IGNOREPAIN_BAR" then
         IP.EnsureViewer()

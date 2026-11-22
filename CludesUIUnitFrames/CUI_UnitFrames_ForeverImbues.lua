@@ -81,7 +81,7 @@ end
 
 -- Fills `shown` from the weapons; returns the count. Equipment data, read on
 -- the weapon events and at each layout only.
-local function Scan()
+local function ScanImbues()
     local num, nowTime = 0, GetTime()
     local enchantIcon = C_CVar.GetCVarBool("displayTemporaryEnchantIcon")
     for _, ws in ipairs(WEAPONS) do
@@ -226,7 +226,7 @@ end
 function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchor)
     if not (enabled and boxHolder and hostFrame and conf and grid and layout and anchor) then return end
     numDeclared = grid.enchSlots or 0
-    Scan()
+    ScanImbues()
     numLaidFrom = numShown
     local num = math.min(numShown, grid.enchSlots or 0)
     local direction = conf.growDirection or "LEFT"
@@ -273,7 +273,7 @@ function mod.PAB_FvImbueCount() return enabled and numLaid or 0 end
 
 local function OnEvent()
     if not enabled then return end
-    Scan()
+    ScanImbues()
     if numShown ~= numLaidFrom then
         -- A cell came or went: the bar re-lays (and this file with it).
         if mod.PAB_ApplyLiveConfig then mod.PAB_ApplyLiveConfig(true) end

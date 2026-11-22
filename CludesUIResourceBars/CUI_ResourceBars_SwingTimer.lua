@@ -343,7 +343,7 @@ end
 -- the client refuses it, the plain tenths table the Tracking Bars use stands
 -- in. nil: no countdown (neither table taken).
 local timeFormatter -- false once both tables were refused
-local function TimeFormatter()
+local function SwingTimeFormat()
     if timeFormatter ~= nil then return timeFormatter or nil end
     timeFormatter = false
     if not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding) then
@@ -373,7 +373,7 @@ local cueFormatter -- false once refused
 local function CueFormatter()
     if cueFormatter ~= nil then return cueFormatter or nil end
     cueFormatter = false
-    if not TimeFormatter() then return nil end
+    if not SwingTimeFormat() then return nil end
     local frame = C_StringUtil.CreateNumericRuleFormatter()
     local rule = {
         {
@@ -449,7 +449,7 @@ local function BuildRow(defaults)
     swingTime:SetText("")
     swingRow._time = swingTime
     -- The countdown, written engine-side from the row's duration object.
-    local fmt = C_DurationUtil.CreateDurationTextBinding and TimeFormatter()
+    local fmt = C_DurationUtil.CreateDurationTextBinding and SwingTimeFormat()
     if fmt then
         local widget = C_DurationUtil.CreateDurationTextBinding()
         widget:SetFontString(swingTime)
@@ -520,7 +520,7 @@ local function UpdateRangeRow(swingRow)
     SetOutOfRange(swingRow, IsPlainVal(inRange) and inRange == false)
 end
 
-local function UpdateRangeAll()
+local function SyncAllRanges()
     for i = 1, #SwingState.rows do
         local swingRow = SwingState.rows[i]
         if swingRow:IsShown() then UpdateRangeRow(swingRow) end
@@ -1158,7 +1158,7 @@ end
 -- One-shot read of both states, for the edges this frame was not listening
 -- to: the action bars' own auto-repeat test, and Auto Attack as the current
 -- spell. The edges keep them current from here.
-local function SeedActive()
+local function SeedActiveSwings()
     SwingState.seeded = true
     local rep = false
     local isRep = C_ActionBar and C_ActionBar.IsAutoRepeatAction
@@ -1485,7 +1485,7 @@ local function RefreshRows(conf)
         SetRangeCheck(defaults.type, wantRange and canSwing)
     end
     if Layout(conf) and CludesUI.NotifyElementResized then CludesUI.NotifyElementResized(UNLOCK_KEY) end
-    UpdateRangeAll()
+    SyncAllRanges()
     return marked
 end
 
@@ -1609,7 +1609,7 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
             local swingRow = SwingState.rows[i]
             SetRangeCheck(swingRow._def.type, wantRange and swingRow:IsShown())
         end
-        UpdateRangeAll()
+        SyncAllRanges()
     else
         -- WEAPON_SLOT_CHANGED / PLAYER_EQUIPMENT_CHANGED (off hand slot only) /
         -- UNIT_ATTACK_SPEED / PLAYER_ENTERING_WORLD
@@ -1618,7 +1618,7 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         if TracksAttack(conf) then
             -- A loading screen can end an attack without its edge reaching us.
             if evt == "PLAYER_ENTERING_WORLD" then
-                SeedActive()
+                SeedActiveSwings()
                 ApplyMoveEvents(conf)
             end
             -- A row the weapon change just showed takes its attack's state.
@@ -1769,7 +1769,7 @@ local function Arm(conf)
     if not TracksAttack(conf) then
         SwingState.seeded = nil
     elseif not SwingState.seeded then
-        SeedActive()
+        SeedActiveSwings()
     end
     ApplyMoveEvents(conf)
 end

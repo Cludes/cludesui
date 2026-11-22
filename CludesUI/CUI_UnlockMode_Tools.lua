@@ -26,7 +26,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     -------------------------------------------------------------------------------
     --  Accent color helper (reads live from CludesUI)
     -------------------------------------------------------------------------------
-    local function GetAccent()
+    local function AccentColor()
         local eg = CUI and CUI.CLUDES_GREEN
         if eg then return eg.r, eg.g, eg.b end
         return 76 / 255, 201 / 255, 240 / 255
@@ -51,7 +51,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             end
             local position = 0
             local wid, hgt = UIParent:GetWidth(), UIParent:GetHeight()
-            local accR, accG, accB = GetAccent()
+            local accR, accG, accB = AccentColor()
             local baseA = GridBaseAlpha()
             local centerA = GridCenterAlpha()
 
@@ -181,12 +181,12 @@ CUI_NS.unlockParts.Tools = function(LM)
         end
 
         -- Cache accent color; refreshed when grid is rebuilt
-        local cachedAR, cachedAG, cachedAB = GetAccent()
+        local cachedAR, cachedAG, cachedAB = AccentColor()
 
         local origRebuild = LM.gridFrame.Rebuild
         function LM.gridFrame:Rebuild()
             origRebuild(self)
-            cachedAR, cachedAG, cachedAB = GetAccent()
+            cachedAR, cachedAG, cachedAB = AccentColor()
         end
 
         -- Cursor flashlight: highlights grid lines near the cursor via a radial
@@ -455,7 +455,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         HideAllGuides()
         if not prevSnap then return end
 
-        local accR, accG, accB = GetAccent()
+        local accR, accG, accB = AccentColor()
         local guideIdx = 0
         local screenW = UIParent:GetWidth()
         local screenH = UIParent:GetHeight()
@@ -673,7 +673,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     end
 
     local function SelectMover(handle)
-        local accR, accG, accB = GetAccent()
+        local accR, accG, accB = AccentColor()
         -- Selecting a mover releases any selected fallback ghost (one arrow-key
         -- target at a time)
         if CUI._DeselectFallbackGhosts then CUI._DeselectFallbackGhosts() end
@@ -717,7 +717,7 @@ CUI_NS.unlockParts.Tools = function(LM)
 
     local function DeselectMover()
         if LM.selectedMover then
-            local accR, accG, accB = GetAccent()
+            local accR, accG, accB = AccentColor()
             LM.selectedMover._selected = false
             SetSelectionHighlight(LM.selectedMover, false)
             if not LM.selectedMover._dragging then
@@ -798,7 +798,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         end
         -- The mover is raised on select, so the border takes its level each flash.
         handle._selFlashBrd._frame:SetFrameLevel(handle:GetFrameLevel() + 4)
-        flashR, flashG, flashB = GetAccent()
+        flashR, flashG, flashB = AccentColor()
         flashM, flashT = handle, 0
         if not flashFrame then flashFrame = CreateFrame("Frame") end
         flashFrame:SetScript("OnUpdate", FlashTick)
@@ -1341,7 +1341,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     }
 
     local function CreateBlizzOwnedOverlay(def, hostFrame)
-        local accR, accG, accB = GetAccent()
+        local accR, accG, accB = AccentColor()
         local shade = CreateFrame("Frame", nil, hostFrame)
         shade:EnableMouse(true)
         -- Background: same as regular movers
@@ -1516,7 +1516,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     end
 
     LM.GetAccent, LM.CreateGrid, LM.ClearSnapHighlight, LM.ShowSnapHighlight =
-        GetAccent, CreateGrid, DropSnapHighlight, ShowSnapHighlight
+        AccentColor, CreateGrid, DropSnapHighlight, ShowSnapHighlight
     LM.HideAllGuidesAndHighlight, LM.ShowAlignmentGuides, LM.SnapPosition, LM.SelectMover =
         HideAllGuidesAndHighlight, ShowAlignmentGuides, SnapPosition, SelectMover
     LM.DeselectMover, LM.ApplyDarkOverlays, LM.SetupArrowKeyFrame, LM.GetActionBarVisualSize =

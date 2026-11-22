@@ -354,7 +354,7 @@ end
 
 local itemUpkeep = CreateFrame("Frame")
 
-local function ArmItemUpkeep()
+local function StartItemUpkeep()
     itemUpkeep:RegisterEvent("BAG_UPDATE_DELAYED")
     itemUpkeep:RegisterEvent("PLAYER_REGEN_ENABLED")
 end
@@ -387,7 +387,7 @@ itemUpkeep:SetScript("OnEvent", function(self, evt)
     if self:IsEventRegistered("BAG_UPDATE_DELAYED") then return end
     for i = 1, #ITEM_DEFS do
         if GetMacroIndexByName(ITEM_DEFS[i].name) ~= 0 then
-            ArmItemUpkeep()
+            StartItemUpkeep()
             ItemUpkeepPass()
             return
         end
@@ -1700,9 +1700,9 @@ function CUI.BuildMacroFactory(hostFrame, startY, Pix)
             btn._playFlash = PlayFlash
 
             -- State
-            local function MacroExists() return GetMacroIndexByName(def.name) ~= 0 end
+            local function HasMacro() return GetMacroIndexByName(def.name) ~= 0 end
             local function RefreshState()
-                local exists = MacroExists()
+                local exists = HasMacro()
                 texture:SetDesaturated(exists)
                 btn._isGray = exists
             end
@@ -1787,7 +1787,7 @@ function CUI.BuildMacroFactory(hostFrame, startY, Pix)
                 aHL:SetAllPoints()
                 aHL:SetColorTexture(1, 1, 1, 0)
                 local function RefAct()
-                    if MacroExists() then
+                    if HasMacro() then
                         aL:SetText(CUI.L("|cffff4444Delete Macro|r"))
                     else
                         aL:SetText(CUI.L("Create Macro"))
@@ -1805,7 +1805,7 @@ function CUI.BuildMacroFactory(hostFrame, startY, Pix)
                 end)
                 aR:SetScript("OnClick", function()
                     if InCombatLockdown() then return end
-                    if MacroExists() then
+                    if HasMacro() then
                         DeleteMacro(def.name)
                     else
                         local saved = GetDB()
@@ -1813,7 +1813,7 @@ function CUI.BuildMacroFactory(hostFrame, startY, Pix)
                         if body == nil then return end -- spell data not cached yet
                         CreateMacro(def.name, ResolveMacroIcon(def), body, nil)
                         lastAvailableItems[def.name] = GetMacroInventoryKey(def, saved)
-                        if def.checkboxes then ArmItemUpkeep() end
+                        if def.checkboxes then StartItemUpkeep() end
                         PlayFlash()
                         C_Timer.After(0.15, function()
                             if not InCombatLockdown() then ShowMacroFrame() end
@@ -2375,7 +2375,7 @@ function CUI.BuildMacroFactory(hostFrame, startY, Pix)
                 if body == nil then return end -- spell data not cached yet
                 CreateMacro(def.name, ResolveMacroIcon(def), body, nil)
                 lastAvailableItems[def.name] = GetMacroInventoryKey(def, saved)
-                if def.checkboxes then ArmItemUpkeep() end
+                if def.checkboxes then StartItemUpkeep() end
                 self._playFlash()
                 C_Timer.After(0.15, function()
                     if not InCombatLockdown() then ShowMacroFrame() end
@@ -2535,12 +2535,12 @@ CUI._macroSpecWatcher:UnregisterAllEvents()
 do
     local watcher = CUI._macroSpecWatcher
     local seenSpecID
-    local function CurrentSpecID()
+    local function ActiveSpecId()
         local position = C_SpecializationInfo.GetSpecialization()
         return position and C_SpecializationInfo.GetSpecializationInfo(position) or nil
     end
     local function OnSpecChanged()
-        seenSpecID = CurrentSpecID()
+        seenSpecID = ActiveSpecId()
         CUI.RefreshMacroFactory()
         -- Also re-run the active page's in-place widget refreshers so other
         -- spec-dependent controls update, as the old per-build event frame did.
@@ -2551,10 +2551,10 @@ do
     CUI:RegisterOnShow(function()
         watcher:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
         -- The first open builds its pages for the current spec already.
-        if seenSpecID ~= nil and CurrentSpecID() ~= seenSpecID then
+        if seenSpecID ~= nil and ActiveSpecId() ~= seenSpecID then
             OnSpecChanged()
         else
-            seenSpecID = CurrentSpecID()
+            seenSpecID = ActiveSpecId()
         end
     end)
     CUI:RegisterOnHide(function() watcher:UnregisterEvent("PLAYER_SPECIALIZATION_CHANGED") end)

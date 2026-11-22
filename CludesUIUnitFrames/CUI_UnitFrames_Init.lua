@@ -420,7 +420,7 @@ local function InitializeFrames()
     -- UIParent-parented bars).
     local _cpExpectedParent = nil
 
-    local function PositionClassPowerBar(barFrame)
+    local function PlaceClassPowerBar(barFrame)
         if not barFrame or not frameList.player then return end
         barFrame:ClearAllPoints()
         -- Stock styles: the health bar keeps the kit's spot (the stock pass
@@ -569,7 +569,7 @@ local function InitializeFrames()
             _cpExpectedParent = frameList.player
             barFrame:SetParent(frameList.player)
             if barFrame._bottomBdrFrame then barFrame._bottomBdrFrame:Hide() end
-            local function AnchorBottom()
+            local function AnchorBarBottom()
                 barFrame:ClearAllPoints()
                 local baseY = -1 + offsetY
                 if offsetY == 0 then
@@ -586,7 +586,7 @@ local function InitializeFrames()
                 end
                 Pix.Point(barFrame, "TOP", frameList.player, "BOTTOM", offsetX, baseY)
             end
-            AnchorBottom()
+            AnchorBarBottom()
             -- Stock styles: the stock pass re-seats the kit.
             if mod.UF_Blizz() then mod.UF_ApplyBlizzardLayout(frameList.player, "player") end
             -- Only run the castbar watcher if the player castbar is enabled
@@ -610,7 +610,7 @@ local function InitializeFrames()
                         and saved.profile.player.showPlayerCastbar
                     if nowVis ~= lastCastVis then
                         lastCastVis = nowVis
-                        AnchorBottom()
+                        AnchorBarBottom()
                     end
                 end
                 watcher:Show()
@@ -652,7 +652,7 @@ local function InitializeFrames()
             local wanted = _cpExpectedParent or frameList.player or UIParent
             if self:GetParent() ~= wanted or (self:GetNumPoints() or 0) == 0 then
                 _cpSetParentGuard = true
-                PositionClassPowerBar(self)
+                PlaceClassPowerBar(self)
                 -- Blizzard may have re-stolen during PositionClassPowerBar.
                 -- The anchor is already correct, so just fix the parent directly.
                 if self:GetParent() ~= wanted then self:SetParent(wanted) end
@@ -700,7 +700,7 @@ local function InitializeFrames()
                 mod._ufBlizzCPHeld = true
                 storedClassPower.ignoreFramePositionManager = true
                 HookBlizzardClassPower(storedClassPower)
-                PositionClassPowerBar(storedClassPower)
+                PlaceClassPowerBar(storedClassPower)
                 frameList._classPowerBar = storedClassPower
             end
         else
@@ -710,7 +710,7 @@ local function InitializeFrames()
             if custom then
                 frameList._customClassPower = custom
                 frameList._classPowerBar = custom
-                PositionClassPowerBar(custom)
+                PlaceClassPowerBar(custom)
                 if mod._WCUF_Sync then mod._WCUF_Sync(custom) end
             else
                 -- Spec has no class resource: reset frame sizing
@@ -828,7 +828,7 @@ local function InitializeFrames()
                 frameList._classPowerBar = classPowerFrame
             end
             if frameList._classPowerBar and frameList.player then
-                PositionClassPowerBar(frameList._classPowerBar)
+                PlaceClassPowerBar(frameList._classPowerBar)
             end
             -- Took Blizzard's class resource frame: Resource Bars' Blizzard Class
             -- Resource Art stands down now rather than at its next rebuild.
@@ -841,7 +841,7 @@ local function InitializeFrames()
             if custom then
                 frameList._customClassPower = custom
                 frameList._classPowerBar = custom
-                PositionClassPowerBar(custom)
+                PlaceClassPowerBar(custom)
                 if mod._WCUF_Sync then mod._WCUF_Sync(custom) end
             else
                 -- Spec has no class resource: reset frame sizing
@@ -1016,7 +1016,7 @@ local function InitializeFrames()
             local combatIcon = popFrame._combatIndicator
 
             -- Helper: resolve which texture file + coords to use
-            local function ApplyCombatTexture()
+            local function SetCombatTexture()
                 local look = powerSettings.combatIndicatorStyle or ciDefStyle
                 if look == "none" then
                     combatIcon:Hide()
@@ -1090,7 +1090,7 @@ local function InitializeFrames()
                     end
                 end
             end
-            popFrame._applyCombatTexture = ApplyCombatTexture
+            popFrame._applyCombatTexture = SetCombatTexture
 
             -- Event frame for combat state changes (reuse existing)
             if not popFrame._combatEventFrame then
@@ -1109,7 +1109,7 @@ local function InitializeFrames()
             combatFrame:SetScript("OnEvent", function()
                 local look = powerSettings.combatIndicatorStyle or ciDefStyle
                 if look ~= "none" and UnitAffectingCombat(ciUnit) then
-                    ApplyCombatTexture()
+                    SetCombatTexture()
                     combatIcon:Show()
                 else
                     combatIcon:Hide()
@@ -1119,7 +1119,7 @@ local function InitializeFrames()
             -- Set correct initial state
             local look = powerSettings.combatIndicatorStyle or ciDefStyle
             if look ~= "none" and UnitAffectingCombat(ciUnit) then
-                ApplyCombatTexture()
+                SetCombatTexture()
                 combatIcon:Show()
             end
         end

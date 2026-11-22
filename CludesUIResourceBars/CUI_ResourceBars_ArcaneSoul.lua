@@ -92,7 +92,7 @@ end
 
 -- Does any phase need a GCD length? Drives the one combat event this module
 -- registers, so a pure-seconds setup stays event-free in combat.
-local function NeedsGcd()
+local function NeedsGcdTick()
     local profile = SoulCfg()
     local m = profile and profile.countMode
     return m == "gcd" or m == "secondsGcd"
@@ -137,7 +137,7 @@ local function SoulColor()
     return p.soulR or 0.64, p.soulG or 0.21, p.soulB or 0.93
 end
 
-local function LastColor()
+local function PrevColor()
     local p = SoulCfg() or {}
     return p.lastR or 1.0, p.lastG or 0.25, p.lastB or 0.25
 end
@@ -463,7 +463,7 @@ local function SoulCurve(modeName, gcdInfo)
         local cacheKey = string.format("c|%.3f|%.3f|%.3f", sr, sg, scrollBar)
         return StepCurve(cacheKey, { { 0, sr, sg, scrollBar, 1 }, { 60, sr, sg, scrollBar, 1 } })
     end
-    local lr, lg, lb = LastColor()
+    local lr, lg, lb = PrevColor()
     local cacheKey =
         string.format("l|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", gcdInfo, sr, sg, scrollBar, lr, lg, lb)
     return StepCurve(cacheKey, { { 0, lr, lg, lb, 1 }, { gcdInfo + 0.0001, sr, sg, scrollBar, 1 } })
@@ -494,7 +494,7 @@ local function StampFor(phaseNum, modeName, thresholdVal, gcdInfo)
         )
     end
     local sr, sg, scrollBar = SoulColor()
-    local lr, lg, lb = LastColor()
+    local lr, lg, lb = PrevColor()
     return string.format(
         "%s|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f",
         modeName,
@@ -634,7 +634,7 @@ end
 
 -- LOOK ONLY: size, fonts, colors, duration bindings. Safe to run at any time,
 -- including mid-drag.
-local function ApplyLook()
+local function StyleSoul()
     if not SoulState.proxy then return end
     SoulState.proxy:SetSize(ProxySize())
 
@@ -650,7 +650,7 @@ local function ApplyLook()
 end
 
 local function ApplySettings()
-    ApplyLook()
+    StyleSoul()
     PlaceProxy()
 end
 
@@ -788,7 +788,7 @@ local function DemoText(fontStr, t, gcdInfo)
             local num = DemoGcdCount(leftX, gcdInfo)
             if num == 1 then
                 fontStr:SetText(CUI.L("LAST"))
-                red, green, blue = LastColor()
+                red, green, blue = PrevColor()
             else
                 fontStr:SetFormattedText("%d", num)
                 red, green, blue = SoulColor()
@@ -803,7 +803,7 @@ end
 -- the live binding's S.gcdLen.
 local function DemoTick(self)
     local t = self._demoT or 0
-    if NeedsGcd() and (not self._demoGcd or t - (self._demoGcdAt or 0) > DEMO_GCD_AGE) then
+    if NeedsGcdTick() and (not self._demoGcd or t - (self._demoGcdAt or 0) > DEMO_GCD_AGE) then
         self._demoGcd, self._demoGcdAt = CalcGcdLen(), t
     end
     if self._fs then DemoText(self._fs, t, self._demoGcd) end
@@ -864,7 +864,7 @@ local function GateOK()
     return true
 end
 
-local function Park()
+local function ParkSoul()
     HidePreview()
     if SoulState.proxy then SoulState.proxy:Hide() end
 end
@@ -886,7 +886,7 @@ local function StartTracking(placeOnly)
     if placeOnly then
         SoulState.proxy:SetSize(ProxySize())
     else
-        ApplyLook()
+        StyleSoul()
     end
     -- Placement belongs to the mover while unlock mode is open (see ApplyPosition).
     if not (CUI and CUI._unlockActive) then PlaceProxy() end
@@ -949,7 +949,7 @@ local function EnsureGateEvents()
         SoulState.ev:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
         SoulState.ev:RegisterEvent("TRAIT_CONFIG_UPDATED")
     end
-    local wantCast = NeedsGcd()
+    local wantCast = NeedsGcdTick()
     if wantCast and not SoulState.evCast then
         SoulState.evCast = true
         SoulState.ev:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
@@ -1007,7 +1007,7 @@ function mod.AS_Apply()
     SyncDemo()
     if not OnForClass() then
         DropGateEvents()
-        Park()
+        ParkSoul()
         return
     end
     EnsureGateEvents()
@@ -1025,7 +1025,7 @@ function mod.AS_Apply()
         return
     end
     if not GateOK() then
-        Park()
+        ParkSoul()
         return
     end
     StartTracking()

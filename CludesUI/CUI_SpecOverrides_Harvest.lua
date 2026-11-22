@@ -695,7 +695,7 @@ function CUI.SpecOverrides_HarvestCurrent()
     -- branches below this runs AFTER WriteSpecValues restores the real values.
     -- Banking while a session's swapped values sit live rebanks view-state
     -- values into the cond defaults (default poisoning).
-    local function BankCond()
+    local function StoreConditions()
         if CUI._CondOv then
             CUI._CondOv.Harvest(
                 CUI.Conditions_AppliedGid and CUI.Conditions_AppliedGid() or nil
@@ -710,7 +710,7 @@ function CUI.SpecOverrides_HarvestCurrent()
         if TeardownEditSession then TeardownEditSession() end
         local changedSet = WriteSpecValues(_activeSpec or CurrentSpecID())
         if changedSet then RunRefreshers(changedSet) end
-        BankCond()
+        StoreConditions()
         return
     end
     if _defaultView then
@@ -721,10 +721,10 @@ function CUI.SpecOverrides_HarvestCurrent()
         if UpdateIndicator then UpdateIndicator() end
         local changedSet = WriteSpecValues(_activeSpec or CurrentSpecID())
         if changedSet then RunRefreshers(changedSet) end
-        BankCond()
+        StoreConditions()
         return
     end
-    BankCond()
+    StoreConditions()
     -- WoW Forever banks only a spec an apply made live: before the first
     -- apply no resolved spec owns the live values.
     Harvest(_activeSpec or ((not CUI.IS_FOREVER) and CurrentSpecID() or nil))

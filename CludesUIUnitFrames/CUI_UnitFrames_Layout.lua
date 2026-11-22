@@ -403,7 +403,7 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
 
     btb._textOverlay = textOvr
 
-    local function ApplyBTBTextTags(lc, rc, cc)
+    local function SetBtbTextTags(lc, rc, cc)
         mod.SetTextZone(widget, leftFS, lc, "btbLeft", prefs)
         mod.SetTextZone(widget, rightFS, rc, "btbRight", prefs)
         mod.SetTextZone(widget, centerFS, cc, "btbCenter", prefs)
@@ -521,14 +521,14 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
         ApplyBTBPowerColors(cfg)
     end
 
-    ApplyBTBTextTags(
+    SetBtbTextTags(
         prefs.btbLeftContent or "none",
         prefs.btbRightContent or "none",
         prefs.btbCenterContent or "none"
     )
     ApplyBTBTextPositions(prefs)
 
-    btb._applyBTBTextTags = ApplyBTBTextTags
+    btb._applyBTBTextTags = SetBtbTextTags
     btb._applyBTBTextPositions = ApplyBTBTextPositions
     btb._applyBTBPowerColors = ApplyBTBPowerColors
 

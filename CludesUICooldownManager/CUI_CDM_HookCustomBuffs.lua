@@ -780,11 +780,11 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
     -- after any bar move/resize/visibility change.
     if rec.hookedBar ~= barFrame then
         rec.hookedBar = barFrame
-        local function poke() _AC.MarkSync(barId) end
-        hooksecurefunc(barFrame, "SetPoint", poke)
-        barFrame:HookScript("OnSizeChanged", poke)
-        barFrame:HookScript("OnShow", poke)
-        barFrame:HookScript("OnHide", poke)
+        local function markSync() _AC.MarkSync(barId) end
+        hooksecurefunc(barFrame, "SetPoint", markSync)
+        barFrame:HookScript("OnSizeChanged", markSync)
+        barFrame:HookScript("OnShow", markSync)
+        barFrame:HookScript("OnHide", markSync)
     end
     _AC.Anchor(barId, rec)
 end

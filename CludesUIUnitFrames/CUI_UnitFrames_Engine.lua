@@ -853,7 +853,7 @@ pollTicker:SetScript("OnUpdate", function(self, elapsed)
     end
 end)
 
-local function PollVisibilityChanged()
+local function PollVisibility()
     for widget in pairs(pollFrames) do
         if widget:IsShown() then
             pollTicker:Show()
@@ -876,10 +876,10 @@ function Engine.AttachPolled(widget, unitId, channels)
     widget:HookScript("OnShow", function(frame)
         frame._cuiLastGuid = nil
         Engine.RepaintAll(frame, "Show")
-        PollVisibilityChanged()
+        PollVisibility()
     end)
-    widget:HookScript("OnHide", PollVisibilityChanged)
-    PollVisibilityChanged()
+    widget:HookScript("OnHide", PollVisibility)
+    PollVisibility()
 end
 
 -------------------------------------------------------------------------------

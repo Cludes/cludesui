@@ -486,7 +486,7 @@ do
     -- Talent loadout popups (import/edit): dark panel + border, white title, house
     -- buttons + inputs. Separate top-level frames created with the PlayerSpells
     -- addon, so skinning sticks on the talent pass even though shown on demand.
-    local function SkinTalentDialog(dialog)
+    local function StyleTalentDialog(dialog)
         if not dialog or dialog:IsForbidden() then return end
         -- STYLE-AWARE shell (not a flat WSkin.Panel): the popup must follow the
         -- Talents window's theme (atlas "glass" or Modern flat color); a plain
@@ -719,7 +719,7 @@ do
         -- Loadout popups.
         local importD = _G.ClassTalentLoadoutImportDialog
         if importD then
-            SkinTalentDialog(importD)
+            StyleTalentDialog(importD)
             -- Import-string box.
             local importControl = importD.ImportControl
             if importControl and importControl.InputContainer then
@@ -727,10 +727,10 @@ do
             end
         end
         local createD = _G.ClassTalentLoadoutCreateDialog
-        if createD then SkinTalentDialog(createD) end
+        if createD then StyleTalentDialog(createD) end
         local editD = _G.ClassTalentLoadoutEditDialog
         if editD then
-            SkinTalentDialog(editD)
+            StyleTalentDialog(editD)
             if editD.LoadoutName then Skin.EditBox(editD.LoadoutName) end
             local chk = editD.UsesSharedActionBars and editD.UsesSharedActionBars.CheckButton
             if chk then Skin.Checkbox(chk) end
@@ -1853,7 +1853,7 @@ do
         SeatMonthlyHelp()
 
         -- Boss detail "book": strip parchment, flatten rows, white the text.
-        local function RefreshDetail()
+        local function RedrawDetail()
             local e = win.encounter
             if not e then return end
             if _G.EncounterJournalEncounterFrameInfoBG then
@@ -1934,7 +1934,7 @@ do
             SkinCreatureButtons()
             WhitenTextIn(e)
         end
-        RefreshDetail()
+        RedrawDetail()
 
         FadeEJArt(win)
         Skin.ButtonsIn(win)
@@ -1947,7 +1947,7 @@ do
             _ejHooked = true
             local refresh = Skin.Debounce(function()
                 if not win:IsVisible() then return end
-                RefreshDetail()
+                RedrawDetail()
                 RestyleNav()
                 if win.instanceSelect then
                     FlattenInstanceButtons(win.instanceSelect)
@@ -2000,7 +2000,7 @@ do
             win,
             Skin.Debounce(function()
                 if win:IsVisible() then
-                    RefreshDetail()
+                    RedrawDetail()
                     RestyleNav()
                     if win.instanceSelect then
                         RestyleGreatVaultButton(win.instanceSelect.GreatVaultButton)
@@ -2566,7 +2566,7 @@ do
                     -- sweep all non-house art per repaint and clamp the icon's alpha
                     -- against Blizzard's re-raises.
                     local importControl = _G[base .. suffix .. "Icon"]
-                    local function SweepArrowArt()
+                    local function ScanArrowArt()
                         if importControl and importControl.SetAlpha then importControl:SetAlpha(0) end
                         -- Spare OUR pieces by identity: the arrow path resolves to a fileID later, so name matching is unreliable.
                         local own = FrameDataOf(progressBar)
@@ -2586,15 +2586,15 @@ do
                             end
                         end
                     end
-                    SweepArrowArt()
+                    ScanArrowArt()
                     local progressData = FrameDataOf(progressBar)
                     if not progressData.arrowHooks then
                         progressData.arrowHooks = true
                         local function Deferred()
                             if C_Timer then
-                                C_Timer.After(0, SweepArrowArt)
+                                C_Timer.After(0, ScanArrowArt)
                             else
-                                SweepArrowArt()
+                                ScanArrowArt()
                             end
                         end
                         progressBar:HookScript("OnClick", Deferred)
@@ -3889,7 +3889,7 @@ do
         end
         -- Guild log popup (old-style dialog: named Bg/corner pieces, corner X
         -- "<name>Close", bottom text button "<name>CloseButton", old scrollbar).
-        local function SkinGuildLog()
+        local function StyleGuildLog()
             local guildLog = _G.CommunitiesGuildLogFrame
             if not guildLog or type(guildLog) ~= "table" or FrameDataOf(guildLog).logSkinned then return end
             FrameDataOf(guildLog).logSkinned = true
@@ -3972,11 +3972,11 @@ do
                 end
             end
         end
-        SkinGuildLog = Skin.WindowCallback("guild", SkinGuildLog)
-        SkinGuildLog()
+        StyleGuildLog = Skin.WindowCallback("guild", StyleGuildLog)
+        StyleGuildLog()
         if logBtn and not FrameDataOf(logBtn).logHook then
             FrameDataOf(logBtn).logHook = true
-            logBtn:HookScript("OnClick", SkinGuildLog)
+            logBtn:HookScript("OnClick", StyleGuildLog)
         end
         -- "Add to Chat" button: house caret + white label.
         local atc = win.AddToChatButton
@@ -4149,7 +4149,7 @@ do
         local function RefreshGuild()
             if not win:IsVisible() then return end
             SkinGuildDialogs(win)
-            SkinGuildLog()
+            StyleGuildLog()
             SkinGuildControls(win)
             SkinRosterColumns()
             -- State-dependent tab opacity remains Blizzard-driven. Do not branch
@@ -4182,7 +4182,7 @@ end
 -------------------------------------------------------------------------------
 -- Shift a frame up by dyUp px, preserving EVERY anchor point (one-shot): a
 -- single-point reseat would width-collapse a multi-anchored frame.
-local function CalReseat(widget, dyUp)
+local function ReseatCalendar(widget, dyUp)
     if not widget then return end
     local skinData = FrameDataOf(widget)
     if skinData.reseated then return end
@@ -4204,7 +4204,7 @@ end
 
 do
     local _calendarHook = false
-    local function SkinCalendarDays()
+    local function StyleCalendarDays()
         for idx = 1, 42 do
             local day = _G["CalendarDayButton" .. idx]
             if day then
@@ -4234,7 +4234,7 @@ do
         if _G.CalendarCloseButton then Skin.CloseButton(_G.CalendarCloseButton) end
         if _G.CalendarPrevMonthButton then Skin.PageButton(_G.CalendarPrevMonthButton, "<", 16) end
         if _G.CalendarNextMonthButton then Skin.PageButton(_G.CalendarNextMonthButton, ">", 16) end
-        SkinCalendarDays()
+        StyleCalendarDays()
         Skin.ButtonsIn(win)
         Skin.ScrollBarsIn(win)
         Skin.FadeArtIn(win)
@@ -4242,9 +4242,9 @@ do
         -- Filter dropdown: left-align "Filters" label; it and the close button rise 10px (both sit low against the shell top bar).
         if win.FilterButton then
             LeftAlignFilterLabel(win.FilterButton)
-            CalReseat(win.FilterButton, 10)
+            ReseatCalendar(win.FilterButton, 10)
         end
-        if _G.CalendarCloseButton then CalReseat(_G.CalendarCloseButton, 10) end
+        if _G.CalendarCloseButton then ReseatCalendar(_G.CalendarCloseButton, 10) end
 
         -- Holiday view popup: style-aware shell backdrop (atlas/Modern flat, not a
         -- flat black panel), header art gone, no screen-dimming modal overlay, house close.
@@ -4263,7 +4263,7 @@ do
                 if ht then
                     Skin.Font(ht)
                     Skin.White(ht)
-                    CalReseat(ht, -5)
+                    ReseatCalendar(ht, -5)
                 end
                 local creatureBtn = _G.CalendarViewHolidayCloseButton
                 if creatureBtn then
@@ -4343,7 +4343,7 @@ do
                         end
                     end
                 end
-                if titleFS then CalReseat(titleFS, -5) end
+                if titleFS then ReseatCalendar(titleFS, -5) end
                 -- Class-icon column: button 1 anchors to the container, the rest
                 -- chain off it, so nudging the container right 3px moves the whole column (one-shot).
                 local ccc = _G.CalendarClassButtonContainer
@@ -4413,7 +4413,7 @@ do
                         end
                     end
                 end
-                if titleFS then CalReseat(titleFS, -8) end
+                if titleFS then ReseatCalendar(titleFS, -8) end
             end
             SkinEventPicker()
             Skin.HookShow(popFrame, Skin.Debounce(SkinEventPicker))
@@ -4425,7 +4425,7 @@ do
                 "CalendarFrame_Update",
                 Skin.Debounce(function()
                     if win:IsVisible() then
-                        SkinCalendarDays()
+                        StyleCalendarDays()
                         Skin.Restrip()
                     end
                 end)
@@ -4435,7 +4435,7 @@ do
             win,
             Skin.Debounce(function()
                 if win:IsVisible() then
-                    SkinCalendarDays()
+                    StyleCalendarDays()
                     Skin.Restrip()
                 end
             end)
@@ -4881,7 +4881,7 @@ do
         end
         -- Every list pane wraps content in an anonymous inset child whose NineSlice
         -- is the box art, so fade any such child. Swept again on show: some panes only build theirs when first opened.
-        local function SweepInsetChildren()
+        local function ScanInsetChildren()
             for _, label in ipairs({
                 "AchievementFrameSummary",
                 "AchievementFrameStats",
@@ -4903,7 +4903,7 @@ do
                 end
             end
         end
-        SweepInsetChildren()
+        ScanInsetChildren()
 
         -- Search box: tucked into the top bar's right side, filter dropdown left.
         local searchField = win.SearchBox
@@ -4966,7 +4966,7 @@ do
 
         local sweepOnTab = Skin.Debounce(function()
             if win:IsVisible() then
-                SweepInsetChildren()
+                ScanInsetChildren()
                 Skin.Restrip()
             end
         end)
@@ -5276,7 +5276,7 @@ do
                     HookRowInit(_G.AchievementFrameAchievements, SkinAchRow)
                     HookRowInit(_G.AchievementFrameStats, SkinStatRow)
                     if _G.AchievementFrameSummary then AchWhiteTextsIn(_G.AchievementFrameSummary) end
-                    SweepInsetChildren()
+                    ScanInsetChildren()
                     RetintHeaderPlate()
                     Skin.Restrip()
                     Skin.UpdateAllTabs()
@@ -5349,7 +5349,7 @@ end
 -- MAIL deliberately does not. Mail rows have no other rarity cue and Blizzard's
 -- rounded ring is the only one they get, so flipping it there is a visual
 -- change nobody asked for -- it is a one-word change if that is ever wanted.
-local function SkinMailItemButton(button, quality)
+local function StyleMailItem(button, quality)
     if not button or button:IsForbidden() then return end
     local nt = button.GetNormalTexture and button:GetNormalTexture()
     if nt and nt.SetAlpha then nt:SetAlpha(0) end
@@ -5396,7 +5396,7 @@ do
             local subject = _G[label .. "Subject"]
             if subject then Skin.FontFamily(subject) end
         end
-        if row.Button then SkinMailItemButton(row.Button) end
+        if row.Button then StyleMailItem(row.Button) end
     end
 
     -- Auction-house invoices and crafting-order mail are their own panels (not the
@@ -5552,10 +5552,10 @@ do
             local button = _G[n]
             if button then Skin.Button(button) end
         end
-        SkinMailItemButton(_G.OpenMailLetterButton)
-        SkinMailItemButton(_G.OpenMailMoneyButton)
+        StyleMailItem(_G.OpenMailLetterButton)
+        StyleMailItem(_G.OpenMailMoneyButton)
         for idx = 1, 16 do
-            SkinMailItemButton(_G["OpenMailAttachmentButton" .. idx])
+            StyleMailItem(_G["OpenMailAttachmentButton" .. idx])
         end
         WhitenMailText()
     end
@@ -5736,9 +5736,9 @@ do
                 hooksecurefunc(
                     "OpenMail_Update",
                     Skin.Debounce(function()
-                        SkinMailItemButton(_G.OpenMailLetterButton)
+                        StyleMailItem(_G.OpenMailLetterButton)
                         for idx = 1, 16 do
-                            SkinMailItemButton(_G["OpenMailAttachmentButton" .. idx])
+                            StyleMailItem(_G["OpenMailAttachmentButton" .. idx])
                         end
                         WhitenMailText()
                     end)
@@ -5950,7 +5950,7 @@ do
         -- and a gem section at the bottom. Tooltip text keeps its native scroll-
         -- child anchors; only the scrollframe and gem container are positioned
         -- (absolute anchors, idempotent per update pass).
-        local function LayoutSocketing()
+        local function PlaceSocketing()
             local sf2 = _G.ItemSocketingScrollFrame or win.ScrollFrame
             local c = win.SocketingContainer
             if sf2 then
@@ -6037,14 +6037,14 @@ do
             if c.ApplySocketsButton then Skin.Button(c.ApplySocketsButton) end
         end
         -- Full pass: reposition + reskin + restrip. Idempotent, safe to repeat.
-        local function FullPass()
+        local function RestylePass()
             if not win:IsVisible() then return end
-            LayoutSocketing()
+            PlaceSocketing()
             SkinSocketsArt()
             Skin.Restrip()
         end
 
-        LayoutSocketing()
+        PlaceSocketing()
         SkinSocketsArt()
         Skin.ScrollBarsIn(win)
 
@@ -6055,10 +6055,10 @@ do
         -- FIRST open where sockets are not laid out for the sync pass.
         if type(_G.ItemSocketingFrame_Update) == "function" and not FrameDataOf(win).updHook then
             FrameDataOf(win).updHook = true
-            local deferred = Skin.Debounce(FullPass)
+            local deferred = Skin.Debounce(RestylePass)
             hooksecurefunc("ItemSocketingFrame_Update", function()
                 if not win:IsVisible() then return end
-                LayoutSocketing()
+                PlaceSocketing()
                 deferred()
             end)
         end
@@ -6068,10 +6068,10 @@ do
         Skin.HookShow(
             win,
             Skin.Debounce(function()
-                FullPass()
+                RestylePass()
                 if C_Timer then
-                    C_Timer.After(0, FullPass)
-                    C_Timer.After(0.1, FullPass)
+                    C_Timer.After(0, RestylePass)
+                    C_Timer.After(0.1, RestylePass)
                 end
             end)
         )
@@ -7845,7 +7845,7 @@ do
             end
             -- Chain seat: box edge flush with the window edge (measured once on the
             -- first laid-out show), gaps 8px tighter down the chain.
-            local function SeatSideTabs()
+            local function PlaceSideTabs()
                 local gd2 = FrameDataOf(questMap)
                 if gd2.sideSeated then return end
                 local qt = questMap.QuestsTab
@@ -7889,14 +7889,14 @@ do
                     end
                 end
             end
-            SeatSideTabs()
+            PlaceSideTabs()
             if not FrameDataOf(questMap).sideSeatHook then
                 FrameDataOf(questMap).sideSeatHook = true
                 questMap:HookScript("OnShow", function()
                     if C_Timer then
-                        C_Timer.After(0, SeatSideTabs)
+                        C_Timer.After(0, PlaceSideTabs)
                     else
-                        SeatSideTabs()
+                        PlaceSideTabs()
                     end
                 end)
             end
@@ -8830,7 +8830,7 @@ do
         local btnFrame = entry.ItemButton or (label and _G[label .. "ItemButton"])
         -- true: vendor tiles take the square RARITY border. Mail, which shares this
         -- helper, keeps Blizzard's rounded ring.
-        if btnFrame then SkinMailItemButton(btnFrame, true) end
+        if btnFrame then StyleMailItem(btnFrame, true) end
 
         -- CENTRE THE ICON IN THE ROW.
         --
@@ -9555,7 +9555,7 @@ do
     -- open (explicit flag, not visibility) AND the toggle is on.
     local mILvlBoot = CreateFrame("Frame")
     local _merchantOpen = false
-    local function SyncMerchantILvlEvents()
+    local function SyncMerchantLevelEvents()
         local on = CludesUIDB and CludesUIDB.merchantShowItemLevel == true
         if on then EnsureMerchantILvlHook() end
         if on and _merchantOpen then
@@ -9567,7 +9567,7 @@ do
 
     -- Options toggle entry point: re-sync listeners, then render or clear.
     CUI._Merchant_RefreshItemLevels = function()
-        SyncMerchantILvlEvents()
+        SyncMerchantLevelEvents()
         SyncMerchantLevels()
     end
 
@@ -9576,11 +9576,11 @@ do
     mILvlBoot:SetScript("OnEvent", function(_, event)
         if event == "MERCHANT_SHOW" then
             _merchantOpen = true
-            SyncMerchantILvlEvents()
+            SyncMerchantLevelEvents()
             SyncMerchantLevels()
         elseif event == "MERCHANT_CLOSED" then
             _merchantOpen = false
-            SyncMerchantILvlEvents()
+            SyncMerchantLevelEvents()
         else -- GET_ITEM_INFO_RECEIVED: an item's data resolved while shopping
             SyncMerchantLevels()
         end
@@ -10048,7 +10048,7 @@ do
         }) do
             local s = _G[sn]
             if s then
-                CalReseat(s, 40)
+                ReseatCalendar(s, 40)
                 local skinData = FrameDataOf(s)
                 if not skinData.heightBumped and s.GetHeight and s.SetHeight then
                     local hgt = s:GetHeight()
@@ -10080,7 +10080,7 @@ do
         -- Shared QuestInfo body/header coloring (detail+reward panels). QuestInfo*
         -- frames are GLOBAL and reparent between the NPC window and the map, so
         -- only recolor when displayed into THIS window; the world-map pack owns the map case (colors match either way).
-        local function StyleQuestNPCText()
+        local function RecolorQuestNpcText()
             for _, n in ipairs({
                 "QuestInfoTitleHeader",
                 "QuestInfoDescriptionHeader",
@@ -10248,7 +10248,7 @@ do
         -- dark parchment material color in the greeting panel's OnShow AFTER our skin, so
         -- re-white on every show (hooked below), not once here. The greeting paragraph's
         -- global is the bare "GreetingText" (QuestFrame.xml), NOT QuestGreetingText.
-        local function StyleQuestGreeting()
+        local function RecolorGreeting()
             if _G.GreetingText then
                 Skin.White(_G.GreetingText)
                 RecolorDarkText(_G.GreetingText)
@@ -10276,7 +10276,7 @@ do
         if _G.QuestGreetingFrameHorizontalBreak and _G.QuestGreetingFrameHorizontalBreak.SetAlpha then
             _G.QuestGreetingFrameHorizontalBreak:SetAlpha(0)
         end
-        StyleQuestGreeting()
+        RecolorGreeting()
 
         -- Progress panel static text.
         if _G.QuestProgressTitleText then
@@ -10298,11 +10298,11 @@ do
             )
             -- Greeting rows repopulate on QUEST_GREETING / QUEST_LOG_UPDATE.
             local gp = _G.QuestFrameGreetingPanel
-            if gp then gp:HookScript("OnShow", Skin.Debounce(StyleQuestGreeting)) end
+            if gp then gp:HookScript("OnShow", Skin.Debounce(RecolorGreeting)) end
             if type(_G.QuestFrameGreetingPanel_OnShow) == "function" then
                 hooksecurefunc("QuestFrameGreetingPanel_OnShow", function()
-                    StyleQuestGreeting()
-                    if C_Timer then C_Timer.After(0, StyleQuestGreeting) end
+                    RecolorGreeting()
+                    if C_Timer then C_Timer.After(0, RecolorGreeting) end
                 end)
             end
             -- Body text: Blizzard re-colors on each display, so re-assert in the
@@ -10320,8 +10320,8 @@ do
                         if not p then break end
                     end
                     if not isQuest then return end
-                    StyleQuestNPCText()
-                    if C_Timer then C_Timer.After(0, StyleQuestNPCText) end
+                    RecolorQuestNpcText()
+                    if C_Timer then C_Timer.After(0, RecolorQuestNpcText) end
                 end)
             end
             if type(_G.QuestFrameProgressItems_Update) == "function" then
@@ -10333,7 +10333,7 @@ do
                 end)
             end
         end
-        StyleQuestNPCText()
+        RecolorQuestNpcText()
     end
 
     Skin.RegisterWindow({
@@ -10415,7 +10415,7 @@ do
         end
         -- State-driven action buttons (bid/buyout/cancel): label mirrors the native
         -- enabled/disabled state instead of reading white while disabled.
-        local function StateBtn(button)
+        local function StyleStateBtn(button)
             if button then
                 Skin.Button(button)
                 Skin.StateButtonLabel(button)
@@ -10921,7 +10921,7 @@ do
                         if hgt and hgt > 5 then qib:SetHeight(hgt - 5) end
                     end
                 end
-                StateBtn(buttonData.BuyButton)
+                StyleStateBtn(buttonData.BuyButton)
             end
         end
 
@@ -10929,9 +10929,9 @@ do
         local ibf = win.ItemBuyFrame
         if ibf then
             SkinWhiteButton(ibf.BackButton)
-            if ibf.BuyoutFrame then StateBtn(ibf.BuyoutFrame.BuyoutButton) end
+            if ibf.BuyoutFrame then StyleStateBtn(ibf.BuyoutFrame.BuyoutButton) end
             if ibf.BidFrame then
-                StateBtn(ibf.BidFrame.BidButton)
+                StyleStateBtn(ibf.BidFrame.BidButton)
                 -- Bid button rides 20px right on the bottom bar (one-shot).
                 local bb = ibf.BidFrame.BidButton
                 if bb and not FrameDataOf(bb).shiftedX then
@@ -11022,9 +11022,9 @@ do
                     importData.card = cardFrame
                 end
             end
-            if auctionsFrame.BuyoutFrame then StateBtn(auctionsFrame.BuyoutFrame.BuyoutButton) end
-            if auctionsFrame.BidFrame then StateBtn(auctionsFrame.BidFrame.BidButton) end
-            StateBtn(auctionsFrame.CancelAuctionButton)
+            if auctionsFrame.BuyoutFrame then StyleStateBtn(auctionsFrame.BuyoutFrame.BuyoutButton) end
+            if auctionsFrame.BidFrame then StyleStateBtn(auctionsFrame.BidFrame.BidButton) end
+            StyleStateBtn(auctionsFrame.CancelAuctionButton)
             SkinList(auctionsFrame.CommoditiesList, true)
             SkinList(auctionsFrame.ItemList, true)
             SkinList(auctionsFrame.SummaryList, false)
@@ -12125,7 +12125,7 @@ do
                 Skin.WhiteButtonLabel(button)
             end
         end
-        local function StateBtn(button)
+        local function StyleStateBtn(button)
             if button then
                 Skin.Button(button)
                 Skin.StateButtonLabel(button)
@@ -12479,7 +12479,7 @@ do
             -- so the divider seats once the panels have laid out.
             if not frameData.formShowHook then
                 frameData.formShowHook = true
-                local function SyncFormZone()
+                local function SyncFormArea()
                     if frameData.formHost then
                         frameData.formHost:SetShown(form:IsShown() and true or false)
                     end
@@ -12487,12 +12487,12 @@ do
                 form:HookScript(
                     "OnShow",
                     Skin.Debounce(function()
-                        SyncFormZone()
+                        SyncFormArea()
                         Skin_CraftOrders()
                     end)
                 )
-                form:HookScript("OnHide", SyncFormZone)
-                SyncFormZone()
+                form:HookScript("OnHide", SyncFormArea)
+                SyncFormArea()
             end
             SkinWhiteButton(form.BackButton)
             for _, keyName in ipairs({ "RecipeHeader", "LeftPanelBackground", "RightPanelBackground" }) do
@@ -12574,8 +12574,8 @@ do
                     SkinMoneyBox(pay.TipMoneyInputFrame.SilverBox)
                 end
                 if pay.DurationDropdown then Skin.Dropdown(pay.DurationDropdown) end
-                StateBtn(pay.ListOrderButton)
-                StateBtn(pay.CancelOrderButton)
+                StyleStateBtn(pay.ListOrderButton)
+                StyleStateBtn(pay.CancelOrderButton)
             end
             local cls = form.CurrentListings
             if cls then
@@ -13584,7 +13584,7 @@ do
         -- deep = also walk UIParent's children looking for NEW toast frames. Only
         -- the first pass of a burst needs that; the follow-ups re-skin what is
         -- already known, which is a handful of frames.
-        local function SweepAlerts(deep)
+        local function ScanAlerts(deep)
             for win in pairs(known) do
                 SkinToast(win)
             end
@@ -13655,7 +13655,7 @@ do
 
         -- Options entry point: re-sweep so a strip toggle lands on a toast that is
         -- already on screen (the next one would pick it up regardless).
-        CUI._LootToast_Refresh = function() SweepAlerts(true) end
+        CUI._LootToast_Refresh = function() ScanAlerts(true) end
 
         local skinData = FrameDataOf(_G.AlertFrame or UIParent)
         if skinData.toastEvt then return end
@@ -13664,9 +13664,9 @@ do
         -- Toasts are handed out by the pool, set up, then animated in over a few
         -- tenths of a second, and the setup can land AFTER the first pass. Sweep
         -- immediately and again across the animation window; only the FIRST pass walks UIParent, the rest re-skin the frames it found.
-        local function Shallow() SweepAlerts(false) end
+        local function Shallow() ScanAlerts(false) end
         local sweep = Skin.Debounce(function()
-            SweepAlerts(true)
+            ScanAlerts(true)
             if C_Timer then
                 C_Timer.After(0.05, Shallow)
                 C_Timer.After(0.2, Shallow)
@@ -13695,7 +13695,7 @@ do
         }) do
             pcall(eventFrame.RegisterEvent, eventFrame, event)
         end
-        SweepAlerts(true)
+        ScanAlerts(true)
     end
 
     Skin.RegisterWindow({
@@ -16010,7 +16010,7 @@ do
         -- true: square icon plus the square RARITY border, the same call the
         -- merchant grid makes. Reused rather than reimplemented -- this is a
         -- file-scope local declared far above, so it is in scope here.
-        if btnFrame then SkinMailItemButton(btnFrame, true) end
+        if btnFrame then StyleMailItem(btnFrame, true) end
     end
 
     -- REMOVED ENTIRELY, on request, after several rounds of trying to make it sit

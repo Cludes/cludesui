@@ -21,7 +21,7 @@ local _, playerClassFile = UnitClass("player")
 -- The druid's per-form bucket, the same on every bar: Cat (1), Bear (5, and
 -- WoW Forever's Dire Bear Form, 8) and Moonkin (31/35) each have their own; any
 -- other form, or none, is "Caster" ("mana").
-local function FormBucket()
+local function FormKey()
     local frame = GetShapeshiftFormID()
     return (frame == 1) and "energy"
         or (frame == 5 or frame == 8) and "rage"
@@ -33,7 +33,7 @@ _G._CURB_TextHiddenByForm = function(conf)
     if playerClassFile ~= "DRUID" then return false end
     local df = conf and conf.textDisabledForms
     if not df then return false end
-    return df[FormBucket()] and true or false
+    return df[FormKey()] and true or false
 end
 -- Druid "hide whole bar per form", driven by cfg.barDisabledForms (the WoW
 -- Forever swing timer reads it too). Alpha-based hide, safe to flip mid-combat.
@@ -41,7 +41,7 @@ _G._CURB_BarHiddenByForm = function(conf)
     if playerClassFile ~= "DRUID" then return false end
     local df = conf and conf.barDisabledForms
     if not df then return false end
-    return df[FormBucket()] and true or false
+    return df[FormKey()] and true or false
 end
 -- Static neutral defaults for custom fill colors; used only as the initial custom
 -- color when the user first enables "Custom Colored" (class/power colors apply

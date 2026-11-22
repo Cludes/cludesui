@@ -952,7 +952,7 @@ do
         end
     end
 
-    local function handleFrame(widget, doNotReparent)
+    local function takeOverFrame(widget, doNotReparent)
         if not widget then return end
         widget:UnregisterAllEvents()
         CUI.HideFrame(widget)
@@ -1010,7 +1010,7 @@ do
     -- owns it. OnShow re-asserts the scale-down: Edit Mode re-shows the system
     -- (and may reset its scale) on every entry.
     if CompactRaidFrameContainer then
-        handleFrame(CompactRaidFrameContainer)
+        takeOverFrame(CompactRaidFrameContainer)
         CompactRaidFrameContainer:HookScript("OnShow", function(self)
             -- A protected frame hides only out of combat; in combat
             -- resetParent above takes it back under the hidden parent (a
@@ -1029,16 +1029,16 @@ do
         if mod._blizzPartySuppressed then return end
         if not early then mod._blizzPartySuppressed = true end
         if PartyFrame then
-            handleFrame(PartyFrame)
+            takeOverFrame(PartyFrame)
             if early then return end
             if PartyFrame.PartyMemberFramePool then
                 for mf in PartyFrame.PartyMemberFramePool:EnumerateActive() do
-                    handleFrame(mf, true)
+                    takeOverFrame(mf, true)
                 end
             end
             local MEMBERS_PER_GROUP = _G.MEMBERS_PER_RAID_GROUP or 5
             for index = 1, MEMBERS_PER_GROUP do
-                handleFrame(_G["CompactPartyFrameMember" .. index])
+                takeOverFrame(_G["CompactPartyFrameMember" .. index])
             end
             -- Party Edit Mode overlay: only while we own the party frames (from
             -- UpdateVisibility), so untouched Blizzard party frames keep movers.
@@ -1075,7 +1075,7 @@ do
         )
     end
 
-    local function hookEditModeManager()
+    local function hookEditMode()
         if not EditModeManagerFrame then return end
         local fd = CUI._GetFFD(EditModeManagerFrame)
         if fd.rfOverlayHooked then return end
@@ -1085,9 +1085,9 @@ do
         hooksecurefunc(EditModeManagerFrame, "Hide", function() C_Timer.After(0, hideEditModeOverlays) end)
     end
     if EditModeManagerFrame then
-        hookEditModeManager()
+        hookEditMode()
     elseif EventUtil and EventUtil.ContinueOnAddOnLoaded then
-        EventUtil.ContinueOnAddOnLoaded("Blizzard_EditMode", hookEditModeManager)
+        EventUtil.ContinueOnAddOnLoaded("Blizzard_EditMode", hookEditMode)
     end
 end
 

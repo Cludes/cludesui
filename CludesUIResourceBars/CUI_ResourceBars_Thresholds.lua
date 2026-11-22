@@ -143,7 +143,7 @@ do
     end
     _G._CURB_ResolveSpecIDCached = ResolveSpecIDCached
 
-    local function IsTalentGateActive(gate)
+    local function TalentGateOn(gate)
         local val = _talentGateCache[gate]
         if val == nil then
             val = ((IsPlayerSpell and IsPlayerSpell(gate)) or (IsSpellKnown and IsSpellKnown(gate))) and true
@@ -162,7 +162,7 @@ do
         for jdx = 1, #ids do
             if ids[jdx] == ident then
                 local gate = record.talentSpellID
-                return not gate or IsTalentGateActive(gate)
+                return not gate or TalentGateOn(gate)
             end
         end
         return false
@@ -255,7 +255,7 @@ do
                 if matchSpec or matchAll then
                     local gate = record.talentSpellID
                     if gate then
-                        if IsTalentGateActive(gate) then
+                        if TalentGateOn(gate) then
                             -- spec + active talent gate is the top tier: nothing can
                             -- outrank it, so return as soon as it is found.
                             if matchSpec then return record end

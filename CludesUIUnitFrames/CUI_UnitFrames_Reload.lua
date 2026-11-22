@@ -42,7 +42,7 @@ Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- Detached portrait click overlays on the settled geometry; true while any
 -- frame wants one.
-local function SyncPortraitClicks()
+local function SyncPortraitMouse()
     local any = false
     for _, widget in pairs(frameList) do
         if type(widget) == "table" and widget.Portrait and mod.UF_SyncPortraitClick(widget) then
@@ -2430,7 +2430,7 @@ ReloadFramesBody = function()
 
     -- Detached portrait click overlays, and once more next frame (anchors still
     -- resolving) only while a frame uses one.
-    if SyncPortraitClicks() then C_Timer.After(0, SyncPortraitClicks) end
+    if SyncPortraitMouse() then C_Timer.After(0, SyncPortraitMouse) end
 
     -- Rounded corners (CludesUI_RoundedCorners.lua), on the settled
     -- geometry. The radius rides with the border source, like the border; a

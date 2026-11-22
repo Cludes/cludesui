@@ -500,7 +500,7 @@ end
 local glowSpec = {}
 local NO_SHAPE = { [4] = true } -- Shape Glow follows an icon shape; these cells have none
 
-local function StopGlows(o, from)
+local function EndGlows(o, from)
     for index = from, NUM_FAMILIES do
         local g = o.slots[index].glow
         if g and g.fvOn then
@@ -511,7 +511,7 @@ local function StopGlows(o, from)
 end
 
 local function HideOverlay(o)
-    StopGlows(o, 1)
+    EndGlows(o, 1)
     o:Hide()
 end
 
@@ -519,7 +519,7 @@ local function ApplyGlows(o, s, num, size)
     local G = CUI.Glows
     local specInfo = G.SpecFromPrefix(glowSpec, s, "missingBuffsGlow")
     if not specInfo then
-        StopGlows(o, 1)
+        EndGlows(o, 1)
         return
     end
     specInfo.excludes = NO_SHAPE
@@ -536,7 +536,7 @@ local function ApplyGlows(o, s, num, size)
         G.StartSpecGlow(g, specInfo, size, size, "icon")
         g.fvOn = true
     end
-    StopGlows(o, num + 1)
+    EndGlows(o, num + 1)
 end
 
 -- Lays out n icons (the family indices in list) at the configured position:
@@ -666,7 +666,7 @@ local function PaintList(entries)
     end
 end
 
-local function PaintAll()
+local function PaintAllMissing()
     PaintList(mod._allButtons) -- raid + Extra Frames
     PaintList(mod._partyAllButtons)
 end
@@ -713,7 +713,7 @@ local function Flush()
         wipe(instance)
         EvaluateList(mod._allButtons, restricted)
         EvaluateList(mod._partyAllButtons, restricted)
-        PaintAll()
+        PaintAllMissing()
         return
     end
     for unitToken in pairs(dirty) do
@@ -942,7 +942,7 @@ local function Sync()
             wipe(instance)
             wipe(dirty)
             wipe(pendingBtns)
-            PaintAll()
+            PaintAllMissing()
         end
     elseif wanted and changed then
         ArmFull()

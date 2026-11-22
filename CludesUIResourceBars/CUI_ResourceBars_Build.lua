@@ -1064,7 +1064,7 @@ local function BuildBars()
                 -- During unlock mode, only update size -- position is managed by the mover
                 secondaryFrame:SetSize(frameW, frameH)
             else
-                local function ApplySecondaryBarTransform()
+                local function PlaceSecondaryBarAnim()
                     local ox = secondaryFrame["_barAnim_ox"] or sp.offsetX or 0
                     local oy = secondaryFrame["_barAnim_oy"] or sp.offsetY or -38
                     local wid = secondaryFrame["_barAnim_w"] or frameW
@@ -1077,16 +1077,16 @@ local function BuildBars()
                     secondaryFrame,
                     "ox",
                     sp.offsetX or 0,
-                    function() ApplySecondaryBarTransform() end
+                    function() PlaceSecondaryBarAnim() end
                 )
                 SmoothBarAnimate(
                     secondaryFrame,
                     "oy",
                     sp.offsetY or -38,
-                    function() ApplySecondaryBarTransform() end
+                    function() PlaceSecondaryBarAnim() end
                 )
-                SmoothBarAnimate(secondaryFrame, "w", frameW, function() ApplySecondaryBarTransform() end)
-                SmoothBarAnimate(secondaryFrame, "h", frameH, function() ApplySecondaryBarTransform() end)
+                SmoothBarAnimate(secondaryFrame, "w", frameW, function() PlaceSecondaryBarAnim() end)
+                SmoothBarAnimate(secondaryFrame, "h", frameH, function() PlaceSecondaryBarAnim() end)
             end
         end
 

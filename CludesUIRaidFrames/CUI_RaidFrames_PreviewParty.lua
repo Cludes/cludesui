@@ -56,7 +56,7 @@ mod.partyPvReducedMaxHealth = {}
 mod._partyPvRoles = {}
 mod._partyPvCT = {}
 
-local function BuildPartyPreviewRoles()
+local function MakePartyPreviewRoles()
     for i = 1, 5 do
         mod._partyPvRoles[i] = nil
     end
@@ -357,7 +357,7 @@ local function GetOrCreatePartyOverlayContainer()
     return oc
 end
 
-local function RefreshPartyPreview()
+local function RedrawPartyPreview()
     if not mod._partyPvActive then return end
     if mod._RebuildPvOverlay then mod._RebuildPvOverlay() end
     -- Recompute party indicator/aura scale before applying preview data so the
@@ -370,7 +370,7 @@ local function RefreshPartyPreview()
     local pitch = spacing + mod.PT_AlongPitch(cfg, cfg.partyShowTargets == true)
     local mode = saved.profile.previewMode or "overlay"
 
-    BuildPartyPreviewRoles()
+    MakePartyPreviewRoles()
 
     -- "Hide Self": mirror the real party frames (showPlayer=false) by hiding the
     -- player's preview frame and reflowing the remaining members to fill the gap.
@@ -624,7 +624,7 @@ local function ShowPartyPreview()
         if mod._HideSizePreview then mod._HideSizePreview() end
     end
     if mod._partyPvActive then
-        RefreshPartyPreview()
+        RedrawPartyPreview()
         return
     end
     local mode = saved.profile.previewMode or "overlay"
@@ -637,8 +637,8 @@ local function ShowPartyPreview()
     mod._SetRealFramesPreviewHidden(true)
     if mode == "overlay" then GetOrCreatePartyOverlayContainer() end
     InitPartyPreviewHealthValues()
-    BuildPartyPreviewRoles()
-    RefreshPartyPreview()
+    MakePartyPreviewRoles()
+    RedrawPartyPreview()
 end
 
 -- skipRestore: leave the real frames parented to the hidden frame instead of

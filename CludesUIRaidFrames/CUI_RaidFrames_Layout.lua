@@ -276,7 +276,7 @@ function mod._UpdateGroupNumbers()
 end
 
 -- Subgroups holding at least one raid member: [subgroup] = true.
-local function OccupiedGroups()
+local function FilledGroups()
     local tbl = {}
     for ri = 1, GetNumGroupMembers() or 0 do
         local _, _, sub = GetRaidRosterInfo(ri)
@@ -454,7 +454,7 @@ mod._LayoutGroupsImpl = function()
         -- visibility driver shows the set mid-fight (the shown pass collapses).
         local occupied
         if cfg.hideEmptyGroups ~= false and IsInRaid() and mod._RFVisWanted() then
-            occupied = OccupiedGroups()
+            occupied = FilledGroups()
         end
 
         local visSlot = 0 -- running counter for visible groups (collapses gaps)
@@ -467,7 +467,7 @@ mod._LayoutGroupsImpl = function()
         -- member in combat is placed after combat, like Hide Empty Groups.
         local shiftX, shiftY = 0, 0
         if centered then
-            local occ = occupied or OccupiedGroups()
+            local occ = occupied or FilledGroups()
             local num, isShown = 0, 0
             for slot = 1, 8 do
                 local set = groupOrder and groupOrder[slot] or slot

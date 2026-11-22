@@ -630,15 +630,15 @@ local function CreateCustomClassPower(playerFrame, style)
         if num <= 0 then return end
         local efs = boxHolder:GetEffectiveScale()
         if efs <= 0 then efs = 1 end
-        local function Snap(val) return math_floor(val * efs + 0.5) / efs end
+        local function SnapPx(val) return math_floor(val * efs + 0.5) / efs end
         local intW = math_floor(targetW)
-        local gapPx = Snap(gap)
+        local gapPx = SnapPx(gap)
         local totalGapW = (num - 1) * gapPx
         local totalPipW = intW - totalGapW
         local basePipW = totalPipW / num
         for i = 1, num do
-            local leftEdge = Snap((i - 1) * (basePipW + gapPx))
-            local rightEdge = Snap((i - 1) * (basePipW + gapPx) + basePipW)
+            local leftEdge = SnapPx((i - 1) * (basePipW + gapPx))
+            local rightEdge = SnapPx((i - 1) * (basePipW + gapPx) + basePipW)
             local wid = rightEdge - leftEdge
             pips[i]:ClearAllPoints()
             pips[i]:SetSize(wid, pipH)

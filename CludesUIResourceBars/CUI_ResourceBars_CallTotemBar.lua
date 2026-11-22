@@ -245,7 +245,7 @@ end
 
 -- Pin the bar's top-left corner to the holder's, through the system's base
 -- methods (Blizzard's SetPoint / ClearAllPoints overrides flag Edit Mode).
-local function PinBar()
+local function PinTotemBar()
     CUI.ClearFramePoints(barFrame)
     CUI.SetFramePoint(barFrame, "TOPLEFT", holderFrame, "TOPLEFT", 0, 0)
 end
@@ -314,7 +314,7 @@ local function Layout(cfg)
     end
     CUI.SetFrameScale(barFrame, scale)
     barFrame:SetFrameStrata(cfg.frameStrata or "MEDIUM")
-    PinBar()
+    PinTotemBar()
 end
 
 -- Blizzard's own anchors (the template's, and its update rules for the first
@@ -386,7 +386,7 @@ local function OnSystemAnchor()
         Queue("CTRefresh", Refresh)
         return
     end
-    PinBar()
+    PinTotemBar()
 end
 
 local function OnBarUpdate()

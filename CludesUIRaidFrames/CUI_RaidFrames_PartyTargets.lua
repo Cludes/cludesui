@@ -497,7 +497,7 @@ do
 
     -- The reserve changed: re-anchor the groups that can attach beside the party frames (a Show in
     -- Dungeons boss group, the pet header). Both only move when their spot changed. OOC only.
-    local function PT_NotifyReserve()
+    local function PT_ReportReserve()
         local FB = mod._FB
         local fontStr = FB.Settings()
         if FB.built and fontStr and fontStr.showInDungeons == true then FB.Anchor() end
@@ -570,7 +570,7 @@ do
             end
             PT_Place(widget, widget._ptOwner, side, off, posX, posY)
         end
-        if reserve then PT_NotifyReserve() end
+        if reserve then PT_ReportReserve() end
     end
 
     -- The target frames' own style inputs after the shared ones: Fill Color and its custom colour,
@@ -875,7 +875,7 @@ do
             -- The party frames close the pitch the frames held along the stack, and the attached
             -- groups take the room back.
             if (mod._ptPitchApplied or 0) ~= 0 then mod._LayoutPartyFrames() end
-            PT_NotifyReserve()
+            PT_ReportReserve()
         end
         mod._PT_RefreshPreviewBlock()
     end
