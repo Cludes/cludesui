@@ -171,7 +171,7 @@ CludesUI.AtOptionsLogin(function()
             -- Header Color, so the lit swatch is the one they show now.
             if not CludesUI._prebuilding then
                 local function ZoneAccent() return (select(4, EQT.CustomZoneRGB())) end
-                local function PickZone(accent)
+                local function PickZoneColor(accent)
                     local was = TrackerGet("customZoneUseAccent")
                     Set("customZoneUseAccent", accent)
                     EQT.RefreshCustom()
@@ -194,11 +194,11 @@ CludesUI.AtOptionsLogin(function()
                             Set("customZoneR", red)
                             Set("customZoneG", green)
                             Set("customZoneB", blue)
-                            PickZone(false)
+                            PickZoneColor(false)
                         end,
                         onClick = function(self)
                             if ZoneAccent() then
-                                PickZone(false)
+                                PickZoneColor(false)
                                 return
                             end
                             if self._eabOrigClick then self._eabOrigClick(self) end
@@ -210,7 +210,7 @@ CludesUI.AtOptionsLogin(function()
                         hasAlpha = false,
                         getValue = function() return CludesUI.ResolveActiveAccent() end,
                         setValue = function() end,
-                        onClick = function() PickZone(true) end,
+                        onClick = function() PickZoneColor(true) end,
                         refreshAlpha = function() return ZoneAccent() and 1 or 0.3 end,
                     },
                 }, {

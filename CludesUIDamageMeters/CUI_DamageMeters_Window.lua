@@ -2044,7 +2044,7 @@ local function CreateDMWindow(winIdx)
         Win.stickyGuard = false
     end
 
-    local function RecalcViewport(dataCount)
+    local function ResizeViewport(dataCount)
         if not viewport or not contentFrame then return end
         local cfg = DB()
         local _, _, stride =
@@ -2366,7 +2366,7 @@ local function CreateDMWindow(winIdx)
             count = math.min(#sources, BAR_POOL_SIZE)
             if cfg.rightTextUseThreatGradient then mod.DMPrepareValueGradient(Win, sources, #sources) end
             -- Before the visible range below: it must read this segment's clamped scroll and pinned viewport.
-            RecalcViewport(count)
+            ResizeViewport(count)
             Win.UpdateSticky(sources, count)
             -- Cache key: detects settings changes that require full bar rebuild
             local iconStyle = cfg.iconStyle or "spec"
@@ -2627,7 +2627,7 @@ local function CreateDMWindow(winIdx)
                 Win.rowPool[i].row:Hide()
             end
             Win.cachedSources = nil
-            RecalcViewport(0)
+            ResizeViewport(0)
             Win.UpdateSticky(nil, 0)
         end
         Win.visibleCount = count
@@ -3855,7 +3855,7 @@ local function CreateDMWindow(winIdx)
         sp._srcGUID = nil
         sp._class = nil
         viewport:SetVerticalScroll(0)
-        RecalcViewport(0)
+        ResizeViewport(0)
         Win.srcViewport:SetVerticalScroll(0)
         _srcScrollMax = 0
         if homeScroll then homeScroll:SetVerticalScroll(0) end

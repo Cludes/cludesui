@@ -56,7 +56,7 @@ do
         return saved.unlockAnchors, saved.unlockWidthMatch, saved.unlockHeightMatch
     end
 
-    local function Bucket(profileName, specKey, create)
+    local function BucketFor(profileName, specKey, create)
         if not profileName or not specKey then return nil end
         local sp = mod.GetSpecProfilesForProfile and mod.GetSpecProfilesForProfile(profileName)
         if not sp then return nil end
@@ -120,7 +120,7 @@ do
                 and mod.GetSpecProfilesForProfile(profileName)
             if not (sp and sp[specKey]) then return end
         end
-        local b = Bucket(profileName, specKey, true)
+        local b = BucketFor(profileName, specKey, true)
         if not b then return end
         local an, wm, hm = LiveStores(false)
         CopyOne(an, b.anchors)
@@ -167,9 +167,9 @@ do
     local function SwapIn(profileName, specKey)
         local an, wm, hm = LiveStores(true)
         if not an then return end
-        local b = Bucket(profileName, specKey, false)
+        local b = BucketFor(profileName, specKey, false)
         if not b then
-            b = Bucket(profileName, specKey, true)
+            b = BucketFor(profileName, specKey, true)
             if not b then return end
             -- First view for this spec: seed from live entries, keeping only slots that have a bar here.
             CopyOne(an, b.anchors)

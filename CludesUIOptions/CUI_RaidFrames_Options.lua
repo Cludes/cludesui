@@ -127,13 +127,13 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         if mod.RF_PtRefreshAll then mod.RF_PtRefreshAll() end
         if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then mod.ShowPartyPreview() end
     end
-    local function PtSet(keyName, value)
+    local function SetProfileKey(keyName, value)
         db.profile[keyName] = value
         SyncProxyModes()
     end
     -- Row setters over PtSet: the key written with the row's value.
     local function PtSetRow(key)
-        return function(value) PtSet(key, value) end
+        return function(value) SetProfileKey(key, value) end
     end
     local function RunWidgetRefresh()
         C_Timer.After(0, function()
@@ -304,7 +304,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 label = "Clickable Portrait",
                 tooltip = "Clicking or hovering the detached portrait acts like clicking or hovering the frame's bars.",
                 get = PVRow("partyPortraitClickable", false),
-                set = function(value) PtSet("partyPortraitClickable", value or nil) end,
+                set = function(value) SetProfileKey("partyPortraitClickable", value or nil) end,
             },
             {
                 type = "colorpicker",
@@ -320,7 +320,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     return 0.1, 0.1, 0.1, 1
                 end,
                 set = function(red, green, blue, a)
-                    PtSet("partyPortraitBgColor", { r = red, g = green, b = blue, a = a or 1 })
+                    SetProfileKey("partyPortraitBgColor", { r = red, g = green, b = blue, a = a or 1 })
                 end,
             },
         },
@@ -376,7 +376,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         end,
         getValue = PVRow("partyPortraitSide", "left"),
         setValue = function(value)
-            PtSet("partyPortraitSide", value)
+            SetProfileKey("partyPortraitSide", value)
             CUI:RefreshPage()
         end,
     })
@@ -484,11 +484,11 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
-                    PtSet("partyPortraitBorderColor", { r = red, g = green, b = blue })
+                    SetProfileKey("partyPortraitBorderColor", { r = red, g = green, b = blue })
                 end,
                 onClick = function(self)
                     if ProfileVal("partyPortraitBorderClassColor", true) then
-                        PtSet("partyPortraitBorderClassColor", false)
+                        SetProfileKey("partyPortraitBorderClassColor", false)
                         CUI:RefreshPage()
                         return
                     end
@@ -509,7 +509,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 end,
                 setValue = function() end,
                 onClick = function()
-                    PtSet("partyPortraitBorderClassColor", true)
+                    SetProfileKey("partyPortraitBorderClassColor", true)
                     CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
@@ -568,14 +568,14 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         if mod.partyPvActive() then mod.ShowPartyPreview() end
     end
     -- Colour and background: the fingerprint-gated restyle and repaint.
-    local function PtSet(keyName, value)
+    local function SetProfileKey(keyName, value)
         db.profile[keyName] = value
         mod.PT_Refresh()
         ShowActivePreview()
     end
     -- Row setters over PtSet: the key written with the row's value.
     local function PtSetRow(key)
-        return function(value) PtSet(key, value) end
+        return function(value) SetProfileKey(key, value) end
     end
     -- Size, side and offsets: the delta-gated layout (combat-deferred).
     local function LaySet(keyName, value)
@@ -640,7 +640,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         tooltip = "Class Color uses the class color for players and the reaction color for NPCs.",
         getValue = PVRow("partyTargetHealthColorMode", "class"),
         setValue = function(value)
-            PtSet("partyTargetHealthColorMode", value)
+            SetProfileKey("partyTargetHealthColorMode", value)
             CUI:RefreshPage()
         end,
     }, {
@@ -667,7 +667,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 if color then return color.r, color.g, color.b, 1 end
                 return 37 / 255, 193 / 255, 29 / 255, 1
             end,
-            function(red, green, blue) PtSet("partyTargetCustomFillColor", { r = red, g = green, b = blue }) end,
+            function(red, green, blue) SetProfileKey("partyTargetCustomFillColor", { r = red, g = green, b = blue }) end,
             false,
             20
         )
@@ -703,7 +703,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
             return 1, 1, 1, 1
         end, function() end, false, 20)
         bgClassSwatch:SetScript("OnClick", function()
-            PtSet("partyTargetBgClassColored", true)
+            SetProfileKey("partyTargetBgClassColored", true)
             CUI:RefreshPage()
         end)
         bgClassSwatch:HookScript(
@@ -722,14 +722,14 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 if color then return color.r, color.g, color.b, 1 end
                 return 17 / 255, 17 / 255, 17 / 255, 1
             end,
-            function(red, green, blue) PtSet("partyTargetCustomBgColor", { r = red, g = green, b = blue }) end,
+            function(red, green, blue) SetProfileKey("partyTargetCustomBgColor", { r = red, g = green, b = blue }) end,
             false,
             20
         )
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
         bgSwatch:SetScript("OnClick", function(self)
             if ProfileVal("partyTargetBgClassColored", false) then
-                PtSet("partyTargetBgClassColored", false)
+                SetProfileKey("partyTargetBgClassColored", false)
                 CUI:RefreshPage()
                 return
             end

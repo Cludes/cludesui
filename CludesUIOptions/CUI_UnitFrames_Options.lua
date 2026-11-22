@@ -374,7 +374,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
     -- Border Options cog (left): shifts and layering, textured styles only.
     do
         -- A stored shift, else the registry default for the style and size.
-        local function Shift(settingKey, isY)
+        local function ShiftSetting(settingKey, isY)
             local cfg = settingGet()
             if cfg[settingKey] then return cfg[settingKey] end
             local _, _, dsx, dsy = CludesUI.GetBorderDefaults(
@@ -389,7 +389,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
         local function SetShift(settingKey, isY, value)
             local cfg = settingGet()
             cfg[settingKey] = nil
-            if value ~= Shift(settingKey, isY) then cfg[settingKey] = value end
+            if value ~= ShiftSetting(settingKey, isY) then cfg[settingKey] = value end
             NotifyChange()
         end
         local cogBtn = CludesUI.BuildInlineCog(line._leftRegion, {
@@ -401,7 +401,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                     min = -10,
                     max = 10,
                     step = 1,
-                    get = function() return Shift("castBorderShiftX", false) end,
+                    get = function() return ShiftSetting("castBorderShiftX", false) end,
                     set = function(value) SetShift("castBorderShiftX", false, value) end,
                 },
                 {
@@ -410,7 +410,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                     min = -10,
                     max = 10,
                     step = 1,
-                    get = function() return Shift("castBorderShiftY", true) end,
+                    get = function() return ShiftSetting("castBorderShiftY", true) end,
                     set = function(value) SetShift("castBorderShiftY", true, value) end,
                 },
                 {
@@ -693,7 +693,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
     -- Border Options cog (left): shifts and layering, own textured styles only.
     do
         -- A stored shift, else the registry default for the style and size.
-        local function Shift(settingKey, isY)
+        local function ShiftSetting(settingKey, isY)
             if B[settingKey] then return B[settingKey] end
             local _, _, dsx, dsy =
                 CludesUI.GetBorderDefaults("unitframes", B.borderTexture or "solid", B.borderSize or 1)
@@ -703,7 +703,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
         -- The shown default stores nil, any other value (0 included) is kept.
         local function SetShift(settingKey, isY, value)
             B[settingKey] = nil
-            if value ~= Shift(settingKey, isY) then B[settingKey] = value end
+            if value ~= ShiftSetting(settingKey, isY) then B[settingKey] = value end
             changed()
         end
         local cogBtn = CludesUI.BuildInlineCog(line._leftRegion, {
@@ -715,7 +715,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
                     min = -10,
                     max = 10,
                     step = 1,
-                    get = function() return Shift("borderTextureShiftX", false) end,
+                    get = function() return ShiftSetting("borderTextureShiftX", false) end,
                     set = function(value) SetShift("borderTextureShiftX", false, value) end,
                 },
                 {
@@ -724,7 +724,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
                     min = -10,
                     max = 10,
                     step = 1,
-                    get = function() return Shift("borderTextureShiftY", true) end,
+                    get = function() return ShiftSetting("borderTextureShiftY", true) end,
                     set = function(value) SetShift("borderTextureShiftY", true, value) end,
                 },
                 {
@@ -1386,7 +1386,7 @@ CludesUI.AtLogin(function()
         do
             local GO = CludesUI.GlowOptions
             -- Open Settings selects the unit first (the page shows one unit at a time).
-            local function SelectUnit(unitToken)
+            local function PickUnit(unitToken)
                 return function()
                     CludesUI._setUnitFrameUnit(unitToken)
                     CludesUI._pendingUnitSelect = unitToken
@@ -1399,7 +1399,7 @@ CludesUI.AtLogin(function()
                 module = "CludesUIUnitFrames",
                 page = PAGE_DISPLAY,
                 section = "BUFFS AND DEBUFFS",
-                preSelect = SelectUnit("target"),
+                preSelect = PickUnit("target"),
                 -- The Purgeable Buffs cog sits on the unit's Buff Filter row.
                 highlight = "Buff Filter",
                 desc = UF_PurgeGlowDesc(UNIT_SETTINGS.target),
@@ -1411,7 +1411,7 @@ CludesUI.AtLogin(function()
                 module = "CludesUIUnitFrames",
                 page = PAGE_DISPLAY,
                 section = "BUFFS AND DEBUFFS",
-                preSelect = SelectUnit("focus"),
+                preSelect = PickUnit("focus"),
                 highlight = "Buff Filter",
                 desc = UF_PurgeGlowDesc(UNIT_SETTINGS.focus),
             })
@@ -1422,7 +1422,7 @@ CludesUI.AtLogin(function()
                 module = "CludesUIUnitFrames",
                 page = PAGE_DISPLAY,
                 section = "CAST BAR",
-                preSelect = SelectUnit("target"),
+                preSelect = PickUnit("target"),
                 highlight = "Important Cast Glow",
                 desc = UF_ImpCastGlowDesc(UNIT_SETTINGS.target),
             })
@@ -1433,7 +1433,7 @@ CludesUI.AtLogin(function()
                 module = "CludesUIUnitFrames",
                 page = PAGE_DISPLAY,
                 section = "CAST BAR",
-                preSelect = SelectUnit("focus"),
+                preSelect = PickUnit("focus"),
                 highlight = "Important Cast Glow",
                 desc = UF_ImpCastGlowDesc(UNIT_SETTINGS.focus),
             })

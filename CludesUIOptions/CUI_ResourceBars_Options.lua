@@ -179,7 +179,7 @@ CUI.AtOptionsLogin(function()
     end
 
     -- Re-applies every bar from the saved settings.
-    local function Refresh()
+    local function ApplyResourceBars()
         if _G._CURB_Apply then _G._CURB_Apply() end
     end
 
@@ -1791,7 +1791,7 @@ CUI.AtOptionsLogin(function()
         if _refreshTimer then _refreshTimer:Cancel() end
         _refreshTimer = C_Timer.NewTimer(0.05, function()
             _refreshTimer = nil
-            Refresh()
+            ApplyResourceBars()
         end)
     end
 
@@ -1840,7 +1840,7 @@ CUI.AtOptionsLogin(function()
 
     -- At once (scale and offset changes animate).
     local function GentleRefresh()
-        Refresh()
+        ApplyResourceBars()
         UpdatePreviewHeader()
     end
     -- After a change: the bars a moment later, the preview at once. The six
@@ -5258,7 +5258,7 @@ CUI.AtOptionsLogin(function()
         TexBgRowCfg = TexBgRowCfg,
         DB = DB,
         PP = Pix,
-        Refresh = Refresh,
+        Refresh = ApplyResourceBars,
         SmoothRefresh = GentleRefresh,
         RefreshHealth = RefreshHealth,
         RebuildHealth = RebuildHealth,
@@ -5852,7 +5852,7 @@ CUI.AtOptionsLogin(function()
         end,
         onReset = function()
             if _G._CURB_AceDB then _G._CURB_AceDB:ResetProfile() end
-            Refresh()
+            ApplyResourceBars()
         end,
     })
 

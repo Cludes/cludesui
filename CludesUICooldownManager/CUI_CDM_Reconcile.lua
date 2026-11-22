@@ -813,7 +813,7 @@ end
 -------------------------------------------------------------------------------
 
 -- Reject secret-tainted/non-positive numbers before they key a table or get compared.
-local function _IsUsableSID(ident)
+local function _IsUsableSpellId(ident)
     if type(ident) ~= "number" then return false end
     if issecretvalue and issecretvalue(ident) then return false end
     return ident > 0 and ident == math.floor(ident)
@@ -858,7 +858,7 @@ end
 -- customized) is not "nothing hidden" evidence -- treated as unreachable and kept
 -- visible, same as every other fail-open path in this file.
 function mod.CDMIsGroupBuffSpellHidden(spellId)
-    if not _IsUsableSID(spellId) then return false end
+    if not _IsUsableSpellId(spellId) then return false end
     if not (CooldownViewerSettings and CooldownViewerSettings.GetLayoutManager) then return false end
     local okLM, layoutManager = pcall(CooldownViewerSettings.GetLayoutManager, CooldownViewerSettings)
     if not okLM or not layoutManager then return false end
@@ -889,7 +889,7 @@ function mod.CDMBuildLiveCategorySetLookup(category)
     local lookup = {}
     for index = 1, #ids do
         local ident = ids[index]
-        if _IsUsableSID(ident) then lookup[ident] = true end
+        if _IsUsableSpellId(ident) then lookup[ident] = true end
     end
     return lookup
 end
@@ -899,7 +899,7 @@ end
 -- mergedInfo/rawInfo may be pre-fetched by the caller to batch a scan; liveSetLookup is
 -- this id's category lookup from CDMBuildLiveCategorySetLookup above.
 function mod.CDMEntryHiddenOrRemoved(cooldownId, combinedInfo, rawInfo, liveSetLookup)
-    if not _IsUsableSID(cooldownId) then return nil end
+    if not _IsUsableSpellId(cooldownId) then return nil end
     if not mod._cdmDataLoaded then return nil end -- pre-load reads see only static defaults
 
     local evicted = Enum and Enum.CooldownViewerCategory
@@ -1008,14 +1008,14 @@ function mod.CDMForeverListedSet()
     local NormalizeToBase, ResolveToLive = mod.NormalizeToBase, mod.ResolveToLive
     local keySet = {}
     local function Add(val)
-        if _IsUsableSID(val) then
+        if _IsUsableSpellId(val) then
             keySet[val] = true
             keySet[NormalizeToBase(val)] = true
             keySet[ResolveToLive(val)] = true
         end
     end
     for _, cooldownId in ipairs(ordered) do
-        local details = _IsUsableSID(cooldownId) and getCdInfo(cooldownId)
+        local details = _IsUsableSpellId(cooldownId) and getCdInfo(cooldownId)
         if details then
             Add(details.spellID)
             Add(details.overrideSpellID)
@@ -1056,7 +1056,7 @@ function mod.CDMDefaultHiddenSet()
         if key ~= nil and keySet[key] ~= false then keySet[key] = dh end
     end
     local function Add(val, dh)
-        if _IsUsableSID(val) then
+        if _IsUsableSpellId(val) then
             Mark(val, dh)
             Mark(NormalizeToBase(val), dh)
             Mark(ResolveToLive(val), dh)
@@ -1150,7 +1150,7 @@ local function BuildBuffFamilyPresentSet()
 
     local present, sawEntry = {}, false
     for _, cooldownId in ipairs(ordered) do
-        local combinedInfo = _IsUsableSID(cooldownId) and infoByID[cooldownId]
+        local combinedInfo = _IsUsableSpellId(cooldownId) and infoByID[cooldownId]
         local category = type(combinedInfo) == "table" and combinedInfo.category
         if category ~= nil and wantCats[category] then
             sawEntry = true
@@ -1161,11 +1161,11 @@ local function BuildBuffFamilyPresentSet()
             local verdict = mod.CDMEntryHiddenOrRemoved
                 and mod.CDMEntryHiddenOrRemoved(cooldownId, combinedInfo, rawInfo, liveSetByCat[category])
             if verdict == nil and rawInfo then
-                if _IsUsableSID(rawInfo.spellID) then present[rawInfo.spellID] = true end
-                if _IsUsableSID(rawInfo.overrideSpellID) then present[rawInfo.overrideSpellID] = true end
+                if _IsUsableSpellId(rawInfo.spellID) then present[rawInfo.spellID] = true end
+                if _IsUsableSpellId(rawInfo.overrideSpellID) then present[rawInfo.overrideSpellID] = true end
                 if type(rawInfo.linkedSpellIDs) == "table" then
                     for _, lsid in ipairs(rawInfo.linkedSpellIDs) do
-                        if _IsUsableSID(lsid) then present[lsid] = true end
+                        if _IsUsableSpellId(lsid) then present[lsid] = true end
                     end
                 end
             end
@@ -1177,7 +1177,7 @@ local function BuildBuffFamilyPresentSet()
     -- catalog/hidden-channel state.
     if mod.EnumerateCDMViewerSpells then
         for _, entry in ipairs(mod.EnumerateCDMViewerSpells(true)) do
-            if _IsUsableSID(entry.sid) then present[entry.sid] = true end
+            if _IsUsableSpellId(entry.sid) then present[entry.sid] = true end
         end
     end
     return present
@@ -1272,7 +1272,7 @@ function mod.ReconcileBuffFamilyDrops(barId)
                         local partners = ledger[frontier[index]]
                         if partners then
                             for partner in pairs(partners) do
-                                if _IsUsableSID(partner) and not ledgerClosure[partner] then
+                                if _IsUsableSpellId(partner) and not ledgerClosure[partner] then
                                     ledgerClosure[partner] = true
                                     nn = nn + 1
                                     nf = nf or {}

@@ -582,12 +582,12 @@ local function MMAddCharStats()
     -- Stat reads return SECRET numbers in restricted content. They do NOT error on
     -- read: format() carries the secret into the row text, which detonates in
     -- Tip_Show's width measuring. Check every value and drop that row alone (Tip_AddDouble also refuses secret rows as a net).
-    local function clean(val)
+    local function plainOrNil(val)
         if issecretvalue(val) then return nil end
         return val or 0
     end
     local function pctRating(labelText, pct, rating)
-        pct, rating = clean(pct), clean(rating)
+        pct, rating = plainOrNil(pct), plainOrNil(rating)
         if not (pct and rating) then return end
         mod.Tip_AddDouble(
             labelText,
@@ -604,7 +604,7 @@ local function MMAddCharStats()
     mod.Tip_AddLine(" ")
 
     local _, eq = GetAverageItemLevel()
-    eq = clean(eq)
+    eq = plainOrNil(eq)
     if eq then
         mod.Tip_AddDouble(STAT_AVERAGE_ITEM_LEVEL or "Item Level", format("%.1f", eq), ar, ag, ab, 1, 1, 1)
     end
@@ -612,7 +612,7 @@ local function MMAddCharStats()
     local pLabel, pIdx = MMPrimaryStat()
     if pLabel and pIdx then
         local _, eff = UnitStat("player", pIdx)
-        eff = clean(eff)
+        eff = plainOrNil(eff)
         if eff then mod.Tip_AddDouble(pLabel, format("%.0f", eff), ar, ag, ab, 1, 1, 1) end
     end
 
@@ -936,7 +936,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     -- Blizzard style: a shown counter sits above its icon (new blocks seed the
     -- Text Position 8px up), so the guild banner and the friends emblem drop
     -- to clear it.
-    local function PlaceIcon(key)
+    local function PlaceMenuIcon(key)
         local iconTex, fontStr = icons[key], textFS[key]
         local drop = 0
         if fontStr and fontStr:IsShown() and BlockSettings().iconStyle == "wow" then
@@ -951,7 +951,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         if not iconTex or not widget then return end
         local painted = ApplyMicroIcon(iconTex, key, BlockSettings().iconStyle == "wow", force)
         -- SetPortraitTexture can reset anchors; restore our slot after each paint.
-        PlaceIcon(key)
+        PlaceMenuIcon(key)
         local size = max(8, GetIconSize() - 6)
         -- Non-square Blizzard art keeps its shape, fitted inside the square.
         local wid, hgt = size, size
@@ -972,7 +972,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
 
     -- Blizzard style only: the portrait and the guild tabard repaint from their
     -- own events, registered while the style and that button are on.
-    local function SyncStyleEvents()
+    local function SyncStyleListeners()
         local mm = BlockSettings()
         local wow = isActive and mm.iconStyle == "wow"
         local wanted = wow and MMButtonOn(mm, "char") and icons.char ~= nil
@@ -1014,7 +1014,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         end
         if not fontStr:IsShown() then
             fontStr:Show()
-            if icons[key] then PlaceIcon(key) end
+            if icons[key] then PlaceMenuIcon(key) end
         end
         if frameList[key]:IsMouseOver() then
             fontStr:SetTextColor(mod.GetAccent())
@@ -1268,7 +1268,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         if not IsInGuild() then
             if textFS.guild:IsShown() then
                 textFS.guild:Hide()
-                if icons.guild then PlaceIcon("guild") end
+                if icons.guild then PlaceMenuIcon("guild") end
             end
             return
         end
@@ -1291,7 +1291,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         mod.RefreshMicroMenuHider()
         SyncCombatLook()
         if not contentFrame:IsShown() or InCombatLockdown() then
-            SyncStyleEvents()
+            SyncStyleListeners()
             return
         end
 
@@ -1299,7 +1299,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         wipe(counterShown) -- a full pass sets the counters' font again (it may have changed)
         -- Materialise any buttons enabled after creation (options toggle).
         CreateFramesInner()
-        SyncStyleEvents()
+        SyncStyleListeners()
         if not next(frameList) then return end
         if mm.hideSocialText then
             for _, fontStr in pairs(textFS) do
@@ -1410,7 +1410,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         isActive = true
         contentFrame:Show()
         RegisterInstEvents(self)
-        SyncStyleEvents()
+        SyncStyleListeners()
         mod.RefreshMicroMenuHider()
         SyncCombatLook()
     end

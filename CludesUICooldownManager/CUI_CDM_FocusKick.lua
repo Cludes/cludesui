@@ -141,7 +141,7 @@ mod.GetFocusKickUnit = GetFocusKickUnit
 
 -- Set the bar frame and all of its icons to the given alpha. CDM icons are parented to the
 -- Blizzard viewer pool, not the bar frame, so hiding the bar frame alone leaves the icons visible -- per-icon alpha is required.
-local function SetFocusKickAlpha(a)
+local function FadeFocusKick(a)
     local widget = cdmBarFrames[FOCUSKICK_BAR_KEY]
     if widget then
         widget:SetAlpha(a)
@@ -186,7 +186,7 @@ local function PlaceFocusKick()
         and C_NamePlate.GetNamePlateForUnit
         and C_NamePlate.GetNamePlateForUnit(kickUnit)
     if not backing then
-        SetFocusKickAlpha(0)
+        FadeFocusKick(0)
         return
     end
     -- Prefer the scaled health bar from our custom NameplateFrame so the icon tracks Target/Cast
@@ -207,7 +207,7 @@ local function PlaceFocusKick()
     else
         widget:SetPoint("CENTER", anchor, "CENTER", ox, oy)
     end
-    SetFocusKickAlpha(1)
+    FadeFocusKick(1)
 end
 mod.ApplyFocusKickAnchor = PlaceFocusKick
 
@@ -288,7 +288,7 @@ local function EnsureFocusKickProxy()
         end
         if shownNow ~= _focusKickLastPlateVisible then
             _focusKickLastPlateVisible = shownNow
-            SetFocusKickAlpha(shownNow and 1 or 0)
+            FadeFocusKick(shownNow and 1 or 0)
         end
         return true
     end
@@ -542,14 +542,14 @@ do
         PlayThrottled(key, ident, gainEdge and _soundThrottle or _soundThrottleLost)
     end
 
-    local function FlushBuffEdges()
+    local function FlushEdges()
         _flushQueued = false
         -- Still inside the frame these edges were recorded in (the timer can tick
         -- after some of the frame's aura events but before the rest): a later edge
         -- could still pair with them, so decide next frame instead.
         if GetTime() == _pendStamp then
             _flushQueued = true
-            C_Timer.After(0, FlushBuffEdges)
+            C_Timer.After(0, FlushEdges)
             return
         end
         -- Entries are cleared BEFORE playing so a throw inside PlaySoundFile cannot
@@ -611,7 +611,7 @@ do
         -- boundary, or a real drop and an unrelated real gain a frame later cancel out.
         local nowTime = GetTime()
         if nowTime ~= _pendStamp then
-            FlushBuffEdges()
+            FlushEdges()
             _pendStamp = nowTime
         end
         if gainEdge then
@@ -621,7 +621,7 @@ do
         end
         if not _flushQueued then
             _flushQueued = true
-            C_Timer.After(0, FlushBuffEdges)
+            C_Timer.After(0, FlushEdges)
         end
     end
 
@@ -875,7 +875,7 @@ local _HEALER_NO_KICK = {
     [1468] = true, -- Preservation Evoker
 }
 
-local function UpdateFocusKickContext()
+local function SyncFocusKickContext()
     local _, instanceType = IsInInstance()
     local inDungeonNow = (instanceType == "party")
     local specIdx = C_SpecializationInfo.GetSpecialization()
@@ -886,7 +886,7 @@ local function UpdateFocusKickContext()
     _focusKickNoKick = nowNoKick
     if changed then RefreshFocusReminders() end
 end
-mod.UpdateFocusKickContext = UpdateFocusKickContext
+mod.UpdateFocusKickContext = SyncFocusKickContext
 
 local function EnsureFocusReminderProxy()
     if _focusReminderProxy then
@@ -898,12 +898,12 @@ local function EnsureFocusReminderProxy()
         _focusReminderProxy:RegisterEvent("ZONE_CHANGED_NEW_AREA")
         _focusReminderProxy:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
         _focusKickHasFocus = UnitExists("focus") and true or false
-        UpdateFocusKickContext()
+        SyncFocusKickContext()
         return _focusReminderProxy
     end
     -- Initialize focus + context state once at proxy creation
     _focusKickHasFocus = UnitExists("focus") and true or false
-    UpdateFocusKickContext()
+    SyncFocusKickContext()
     _focusReminderProxy = mod.TakeShell()
     _focusReminderProxy:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     _focusReminderProxy:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
@@ -921,7 +921,7 @@ local function EnsureFocusReminderProxy()
             or evt == "ZONE_CHANGED_NEW_AREA"
             or evt == "PLAYER_SPECIALIZATION_CHANGED"
         then
-            UpdateFocusKickContext()
+            SyncFocusKickContext()
         elseif evt == "NAME_PLATE_UNIT_ADDED" then
             if _focusKickHasFocus then return end
             if not _focusKickInDungeon then return end
@@ -998,7 +998,7 @@ function mod.RefreshFocusKickProxies()
         if _focusKickProxy then
             _focusKickProxy:UnregisterAllEvents()
             if _focusKickProxy._stop then _focusKickProxy._stop() end
-            SetFocusKickAlpha(0)
+            FadeFocusKick(0)
         end
         if _focusReminderProxy then
             _focusReminderProxy:UnregisterAllEvents()

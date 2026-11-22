@@ -433,13 +433,13 @@ function mod.SetupViewerHooks()
     -- Some buff frames (e.g. Dread Plague) may not exist until Blizzard's
     -- viewer finishes its deferred layout pass. Also invalidate TBB cache
     -- so tracking bars re-scan for late-loading BuffBar viewer frames.
-    local function DelayedFullRefresh()
+    local function RefreshAfterDelay()
         if mod.InvalidateTBBFrameCache then mod.InvalidateTBBFrameCache() end
         QueueAnchorPass()
     end
-    C_Timer.After(1, DelayedFullRefresh)
-    C_Timer.After(3, DelayedFullRefresh)
-    C_Timer.After(6, DelayedFullRefresh)
+    C_Timer.After(1, RefreshAfterDelay)
+    C_Timer.After(3, RefreshAfterDelay)
+    C_Timer.After(6, RefreshAfterDelay)
 
     -- 5. Buff ticker: staleness check + buff/pandemic glow (0.1s)
     do

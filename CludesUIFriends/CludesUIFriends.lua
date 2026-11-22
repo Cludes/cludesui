@@ -95,7 +95,7 @@ end
 -- re-anchors Blizzard scroll boxes and hooks mouse wheel, tainting Battle.net
 -- whisper handling (SetTellTarget on a secret target) -- so the skin stays off
 -- there; checked live since the switch can flip mid-session.
-local function LegacyFriendsRetired()
+local function StockFriendsRetired()
     -- The Style page's stock styles keep Blizzard's own friends window on
     -- either path, so the legacy skin stands down for them too.
     local mns = CUI._ModuleNS[ADDON_NAME]
@@ -995,7 +995,7 @@ local function PostUpdateFriendButton(btnFrame)
 end
 
 local function ProcessFriendButtons(force)
-    if LegacyFriendsRetired() then return end
+    if StockFriendsRetired() then return end
     local scrollList = FriendsListFrame and FriendsListFrame.ScrollBox
     if not scrollList or not scrollList:IsVisible() then return end
     for _, btnFrame in scrollList:EnumerateFrames() do
@@ -1315,7 +1315,7 @@ local chromePainted = {}
 
 local function PaintFriendsChrome()
     local widget = FriendsFrame
-    if not (friendsSkinned and widget) or LegacyFriendsRetired() then return end
+    if not (friendsSkinned and widget) or StockFriendsRetired() then return end
     local ws = SkinEngine()
     local look = ChromeStyle(ws)
     local shellFrame = look ~= "flat"
@@ -1466,7 +1466,7 @@ CUI._ModuleNS[ADDON_NAME].FR_ChromeShell = function() return ChromeStyle(SkinEng
 --  SkinFriendsFrame (one-time structural setup)
 -------------------------------------------------------------------------------
 local function SkinFriendsFrame()
-    if LegacyFriendsRetired() then return end
+    if StockFriendsRetired() then return end
     local widget = FriendsFrame
     if not widget or friendsSkinned then return end
     friendsSkinned = true
@@ -2627,7 +2627,7 @@ local function SkinFriendsFrame()
     local function QueueSkin(force)
         _forceFriendSkin = _forceFriendSkin or force
         local scrollBar = FriendsListFrame and FriendsListFrame.ScrollBox
-        if not scrollBar or not scrollBar:IsVisible() or LegacyFriendsRetired() then return end
+        if not scrollBar or not scrollBar:IsVisible() or StockFriendsRetired() then return end
         skinDriver:Show()
     end
 
@@ -3156,7 +3156,7 @@ local function StyleFriends()
     -- Every profile apply (live switch, spec switch, import) re-syncs the
     -- auto-accept listener before any look or combat gate below.
     if _G._CUFR_SyncAutoAccept then _G._CUFR_SyncAutoAccept() end
-    if LegacyFriendsRetired() then return end
+    if StockFriendsRetired() then return end
     local _mplus = C_ChallengeMode
         and C_ChallengeMode.IsChallengeModeActive
         and C_ChallengeMode.IsChallengeModeActive()
@@ -3196,7 +3196,7 @@ end
 
 -- Visibility
 local function UpdateFriendsVisibility()
-    if LegacyFriendsRetired() then return end
+    if StockFriendsRetired() then return end
     local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
     if not profile or not profile.enabled then return end
     if not FriendsFrame or not FriendsFrame:IsShown() then return end
@@ -3301,7 +3301,7 @@ function SKIN:OnEnable()
     end)
 
     -- Load-on-demand hook for FriendsFrame; skipped once the Social UI owns the window (this only drives the legacy skin).
-    if SKIN.db.profile.friends.enabled and not LegacyFriendsRetired() then
+    if SKIN.db.profile.friends.enabled and not StockFriendsRetired() then
         if not FriendsFrame then
             local hookFrame = CreateFrame("Frame")
             hookFrame:RegisterEvent("ADDON_LOADED")

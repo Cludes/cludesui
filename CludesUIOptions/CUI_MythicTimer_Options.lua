@@ -229,7 +229,7 @@ CUI.AtOptionsLogin(function()
     -- The bar texture dropdown: every registered texture in the module's
     -- order (separators dropped, SharedMedia ones appended first), each row
     -- drawn over its own texture.
-    local function BuildBarTexDropdown()
+    local function BarTextureChoices()
         local appendMedia = mod.AppendSharedMediaBarTextures
         if appendMedia then appendMedia() end
         local names, files = mod.barTextureNames or {}, mod.barTextures or {}
@@ -849,7 +849,7 @@ CUI.AtOptionsLogin(function()
         local timerDisplayOrder = { "REMAINING", "REMAINING_TOTAL", "ELAPSED", "ELAPSED_DETAIL" }
         local timerBarStyleValues = { TICKS = "Ticks", SEGMENTS = "Gaps" }
         local timerBarStyleOrder = { "TICKS", "SEGMENTS" }
-        local texValues, texOrder = BuildBarTexDropdown()
+        local texValues, texOrder = BarTextureChoices()
 
         -- Cog disabled tooltips: a cog greys out with the module OR its section
         -- toggle, so name whichever is actually off.
@@ -1941,7 +1941,7 @@ CUI.AtOptionsLogin(function()
     }
     mod._MT_WHERE_LABELS = WHERE_LABELS
     -- The Kick Tracker page (its own file) uses the bar texture list too.
-    mod._MT_BuildBarTexDropdown = BuildBarTexDropdown
+    mod._MT_BuildBarTexDropdown = BarTextureChoices
 
     -- The Cast Bars' Where to Show checklist (CludesUI.BuildVisOptsCBDropdown,
     -- as on the buff reminders page): every content type but arenas and
@@ -2183,7 +2183,7 @@ CUI.AtOptionsLogin(function()
         )
         Row(Slider("Height", "height", 6, 60, 20, true), Slider("Bar Spacing", "spacing", 0, 20, 4, true))
 
-        local texValues, texOrder = BuildBarTexDropdown()
+        local texValues, texOrder = BarTextureChoices()
         Row(
             Slider(
                 "Max Bars",
@@ -2374,7 +2374,7 @@ CUI.AtOptionsLogin(function()
         CUI:SetContentHeader(tfbBuilder)
         hostFrame._showRowDivider = true
 
-        local texValues, texOrder = BuildBarTexDropdown()
+        local texValues, texOrder = BarTextureChoices()
 
         local function Row(left, right)
             row, height = W:DualRow(hostFrame, cursorY, left, right)
@@ -2637,14 +2637,14 @@ CUI.AtOptionsLogin(function()
     -----------------------------------------------------------------------
     --  Run Summary page
     -----------------------------------------------------------------------
-    local function RSCfg()
+    local function RunSummaryCfg()
         local profile = DB()
         return profile and profile.runSummary
     end
 
     -- A Run Summary setting, fallback while it was never stored.
     local function RSGet(key, fallback)
-        local c = RSCfg()
+        local c = RunSummaryCfg()
         local value = c and c[key]
         if value ~= nil then return value end
         return fallback
@@ -2653,7 +2653,7 @@ CUI.AtOptionsLogin(function()
     -- Stores a Run Summary setting, then re-applies it and repaints an open
     -- panel (columns and scale show at once, not only on the next opening).
     local function RSSet(key, val)
-        local c = RSCfg()
+        local c = RunSummaryCfg()
         if c then c[key] = val end
         for _, step in ipairs({ "RS_Apply", "RS_Refresh" }) do
             if mod[step] then mod[step]() end
@@ -2661,7 +2661,7 @@ CUI.AtOptionsLogin(function()
     end
 
     local function RSOn()
-        local c = RSCfg()
+        local c = RunSummaryCfg()
         return c ~= nil and c.enabled == true
     end
     local function RSOff() return not RSOn() end

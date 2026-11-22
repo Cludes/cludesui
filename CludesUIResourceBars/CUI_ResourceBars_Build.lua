@@ -760,7 +760,7 @@ local function BuildBars()
                 local ow, oh = OrientedSize(ppWidth, ppHeight, ppOri)
                 primaryBar:SetSize(ow, oh)
             else
-                local function ApplyPowerBarTransform()
+                local function PlacePowerBarAnim()
                     local ox = primaryBar["_barAnim_ox"] or pp.offsetX or 0
                     local oy = primaryBar["_barAnim_oy"] or pp.offsetY or -54
                     local wid = primaryBar["_barAnim_w"] or ppWidth
@@ -776,10 +776,10 @@ local function BuildBars()
                     primaryBar:SetPoint("CENTER", mainFrame, "CENTER", ox, oy + extra)
                     primaryBar:SetSize(ow, oh)
                 end
-                SmoothBarAnimate(primaryBar, "ox", pp.offsetX or 0, function() ApplyPowerBarTransform() end)
-                SmoothBarAnimate(primaryBar, "oy", pp.offsetY or -54, function() ApplyPowerBarTransform() end)
-                SmoothBarAnimate(primaryBar, "w", ppWidth, function() ApplyPowerBarTransform() end)
-                SmoothBarAnimate(primaryBar, "h", ppHeight, function() ApplyPowerBarTransform() end)
+                SmoothBarAnimate(primaryBar, "ox", pp.offsetX or 0, function() PlacePowerBarAnim() end)
+                SmoothBarAnimate(primaryBar, "oy", pp.offsetY or -54, function() PlacePowerBarAnim() end)
+                SmoothBarAnimate(primaryBar, "w", ppWidth, function() PlacePowerBarAnim() end)
+                SmoothBarAnimate(primaryBar, "h", ppHeight, function() PlacePowerBarAnim() end)
             end
         end
         -- expandIfNoResource grows the power bar toward the class resource (above

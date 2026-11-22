@@ -580,19 +580,19 @@ local function SkinChatFrame(castFrame)
         -- Stock column: its bottom-button slot, flush with the column's foot.
         scrollButton:SetPoint("BOTTOM", sideBar, "BOTTOM", 0, CHAT.SB_KIT and 0 or ICON_SPACING)
 
-        local function HookIconTooltip(button, labelText)
+        local function AddIconTooltip(button, labelText)
             button:HookScript("OnEnter", function(self)
                 if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, labelText) end
             end)
             button:HookScript("OnLeave", function(self) HideSidebarIconTooltip(self) end)
         end
-        if copyBtn then HookIconTooltip(copyBtn, "Copy Chat") end
-        if voiceBtn then HookIconTooltip(voiceBtn, "Voice/Channels") end
-        if settingsButton then HookIconTooltip(settingsButton, "Settings") end
-        HookIconTooltip(scrollButton, "Scroll to Bottom")
+        if copyBtn then AddIconTooltip(copyBtn, "Copy Chat") end
+        if voiceBtn then AddIconTooltip(voiceBtn, "Voice/Channels") end
+        if settingsButton then AddIconTooltip(settingsButton, "Settings") end
+        AddIconTooltip(scrollButton, "Scroll to Bottom")
         -- No click of ours: Blizzard's own button takes it (ECHAT.AttachChatMenu).
         if chatMenuBtn then
-            HookIconTooltip(chatMenuBtn, "Chat Menu")
+            AddIconTooltip(chatMenuBtn, "Chat Menu")
             CHAT.AttachChatMenu(chatMenuBtn)
         end
 
@@ -638,7 +638,7 @@ local function SkinChatFrame(castFrame)
                 if InCombatLockdown() then return end
                 CHAT.TogglePortalFlyout(self)
             end)
-            HookIconTooltip(portalBtn, "M+ Portals")
+            AddIconTooltip(portalBtn, "M+ Portals")
         end
 
         if voiceBtn then

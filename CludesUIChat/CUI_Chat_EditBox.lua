@@ -88,7 +88,7 @@ local _chatStateCallbacksDone = false
 -- HistoryKeeper through the secret BN_WHISPER tellTarget, which is what the
 -- "idx <= 10" gate in SkinEditBox exists to prevent, so the same filter has
 -- to be re-applied inside each callback body.
-local function PermanentEditBox(eb)
+local function IsPermanentEditBox(eb)
     if not eb or type(eb.GetName) ~= "function" then return false end
     local num = eb:GetName()
     local i = num and tonumber(num:match("^ChatFrame(%d+)EditBox$"))
@@ -101,7 +101,7 @@ end
 function CHAT._RegisterEditBoxFocusGained(ownerFrame, func)
     if not (EventRegistry and EventRegistry.RegisterCallback) then return end
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusGained", function(_, eb)
-        if not PermanentEditBox(eb) then return end
+        if not IsPermanentEditBox(eb) then return end
         func(eb)
     end, ownerFrame)
 end
@@ -116,21 +116,21 @@ local function EnsureChatStateCallbacks()
     -- replace; RefreshInputTopStrips rescans every frame, so one registration
     -- covers all of them.
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxShow", function(_, eb)
-        if not PermanentEditBox(eb) then return end
+        if not IsPermanentEditBox(eb) then return end
         CHAT.RefreshInputTopStrips()
     end, "CUI_Chat_InputTopShow")
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxHide", function(_, eb)
-        if not PermanentEditBox(eb) then return end
+        if not IsPermanentEditBox(eb) then return end
         CHAT.RefreshInputTopStrips()
     end, "CUI_Chat_InputTopHide")
     -- IM Style keeps a closed box shown, so there the strip follows the focus
     -- (ECHAT.InputTopStripActive) and is re-derived on both focus edges.
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusGained", function(_, eb)
-        if not PermanentEditBox(eb) or not CHAT.InputOnTop(CHAT.DB()) then return end
+        if not IsPermanentEditBox(eb) or not CHAT.InputOnTop(CHAT.DB()) then return end
         CHAT.RefreshInputTopStrips()
     end, "CUI_Chat_InputTopFocusIn")
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusLost", function(_, eb)
-        if not PermanentEditBox(eb) or not CHAT.InputOnTop(CHAT.DB()) then return end
+        if not IsPermanentEditBox(eb) or not CHAT.InputOnTop(CHAT.DB()) then return end
         CHAT.RefreshInputTopStrips()
     end, "CUI_Chat_InputTopFocusOut")
 
@@ -141,7 +141,7 @@ local function EnsureChatStateCallbacks()
     -- slash command and ClearChat emptied the box) reaches here as "" and is
     -- taken from the copy the edit box's OnKeyDown hook made at Enter.
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxPreSendText", function(_, eb)
-        if not PermanentEditBox(eb) then return end
+        if not IsPermanentEditBox(eb) then return end
         local skinData = CFD(eb)
         local hgt = skinData.history
         if not hgt then return end
@@ -201,7 +201,7 @@ local function EnsureChatStateCallbacks()
     -- OnEditFocusLost, one line before it reaches DeactivateChat, so the
     -- timing is identical to the HookScript this replaces.
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusLost", function(_, eb)
-        if not PermanentEditBox(eb) then return end
+        if not IsPermanentEditBox(eb) then return end
         CFD(eb).histIdx = 0
     end, "CUI_Chat_RecallReset")
 end

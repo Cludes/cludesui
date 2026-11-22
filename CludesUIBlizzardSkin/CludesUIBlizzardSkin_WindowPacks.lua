@@ -2720,22 +2720,22 @@ local function SkinGuildCheck(creatureBtn)
     washTex:SetAllPoints(boxF)
     washTex:Hide()
     local hovering = false
-    local function updState()
+    local function syncChecked()
         local checked = creatureBtn:GetChecked() and true or false
         tick:SetShown(checked)
         washTex:SetShown(hovering or checked)
     end
     creatureBtn:HookScript("OnEnter", function()
         hovering = true
-        updState()
+        syncChecked()
     end)
     creatureBtn:HookScript("OnLeave", function()
         hovering = false
-        updState()
+        syncChecked()
     end)
-    creatureBtn:HookScript("OnClick", updState)
-    hooksecurefunc(creatureBtn, "SetChecked", updState)
-    updState()
+    creatureBtn:HookScript("OnClick", syncChecked)
+    hooksecurefunc(creatureBtn, "SetChecked", syncChecked)
+    syncChecked()
     local labelFS = creatureBtn.Text or (creatureBtn.GetFontString and creatureBtn:GetFontString())
     if labelFS then Skin.White(labelFS) end
 end
@@ -2889,7 +2889,7 @@ do
             -- the card synchronously against every caller.
             if not bgd.guard then
                 bgd.guard = true
-                local function reapply()
+                local function reapplyBg()
                     if bgd.inSet then return end
                     bgd.inSet = true
                     texture:SetAtlas("Ui-Dialog-New-Background")
@@ -2898,10 +2898,10 @@ do
                     texture:SetAlpha(0.5)
                     bgd.inSet = false
                 end
-                bgd.reapply = reapply
-                hooksecurefunc(texture, "SetAtlas", reapply)
-                hooksecurefunc(texture, "SetTexture", reapply)
-                hooksecurefunc(texture, "SetAlpha", reapply)
+                bgd.reapply = reapplyBg
+                hooksecurefunc(texture, "SetAtlas", reapplyBg)
+                hooksecurefunc(texture, "SetTexture", reapplyBg)
+                hooksecurefunc(texture, "SetAlpha", reapplyBg)
             end
             bgd.reapply()
             CardRect(texture)
@@ -3305,7 +3305,7 @@ do
                         sd2.pin = pts
                         return true
                     end
-                    local function reseat()
+                    local function reseatPin()
                         if not sd2.pin then return end
                         sd2.inPin = true
                         sbx2:ClearAllPoints()
@@ -3315,13 +3315,13 @@ do
                         end
                         sd2.inPin = false
                     end
-                    if capture() then reseat() end
+                    if capture() then reseatPin() end
                     hooksecurefunc(sbx2, "SetPoint", function()
                         if sd2.inPin then return end
                         if not sd2.pin then
-                            if capture() then reseat() end
+                            if capture() then reseatPin() end
                         else
-                            reseat()
+                            reseatPin()
                         end
                     end)
                 end
@@ -4580,7 +4580,7 @@ do
         if not fontStr or not fontStr.SetFont then return end
         local fieldData = FrameDataOf(fontStr)
         fieldData.colorFn = colorFn
-        local function reapply()
+        local function reapplyBg()
             if fieldData.inLock then return end
             fieldData.inLock = true
             Skin.Font(fontStr)
@@ -4591,12 +4591,12 @@ do
             end
             fieldData.inLock = false
         end
-        reapply()
+        reapplyBg()
         if not fieldData.textLocked then
             fieldData.textLocked = true
-            if fontStr.SetFontObject then hooksecurefunc(fontStr, "SetFontObject", reapply) end
-            hooksecurefunc(fontStr, "SetFont", reapply)
-            if fontStr.SetTextColor then hooksecurefunc(fontStr, "SetTextColor", reapply) end
+            if fontStr.SetFontObject then hooksecurefunc(fontStr, "SetFontObject", reapplyBg) end
+            hooksecurefunc(fontStr, "SetFont", reapplyBg)
+            if fontStr.SetTextColor then hooksecurefunc(fontStr, "SetTextColor", reapplyBg) end
         end
     end
 
@@ -5136,14 +5136,14 @@ do
                 FrameDataOf(compPts).moved = true
                 compPts:ClearAllPoints()
                 compPts:SetPoint("LEFT", compName, "RIGHT", 6, 0)
-                local function TintComparePoints()
+                local function TintCompareScore()
                     local lr, lg, lb = Skin.LinkColor()
                     compPts:SetTextColor(lr, lg, lb)
                 end
-                TintComparePoints()
-                hooksecurefunc(compPts, "SetText", TintComparePoints)
+                TintCompareScore()
+                hooksecurefunc(compPts, "SetText", TintCompareScore)
                 if compPts.SetFormattedText then
-                    hooksecurefunc(compPts, "SetFormattedText", TintComparePoints)
+                    hooksecurefunc(compPts, "SetFormattedText", TintCompareScore)
                 end
             end
             local function SkinCompareCard(cardFrame)
@@ -9471,7 +9471,7 @@ do
     local MERCHANT_ILVL_WEAPON = Enum.ItemClass.Weapon
     local MERCHANT_ILVL_ARMOR = Enum.ItemClass.Armor
 
-    local function UpdateMerchantItemLevels()
+    local function SyncMerchantLevels()
         local win = _G.MerchantFrame
         if not win then return end
         local show = CludesUIDB and CludesUIDB.merchantShowItemLevel == true
@@ -9542,7 +9542,7 @@ do
         if _merchantILvlHooked then return end
         _merchantILvlHooked = true
         if type(_G.MerchantFrame_Update) == "function" then
-            hooksecurefunc("MerchantFrame_Update", Skin.Debounce(UpdateMerchantItemLevels))
+            hooksecurefunc("MerchantFrame_Update", Skin.Debounce(SyncMerchantLevels))
         end
     end
 
@@ -9568,7 +9568,7 @@ do
     -- Options toggle entry point: re-sync listeners, then render or clear.
     CUI._Merchant_RefreshItemLevels = function()
         SyncMerchantILvlEvents()
-        UpdateMerchantItemLevels()
+        SyncMerchantLevels()
     end
 
     mILvlBoot:RegisterEvent("MERCHANT_SHOW")
@@ -9577,12 +9577,12 @@ do
         if event == "MERCHANT_SHOW" then
             _merchantOpen = true
             SyncMerchantILvlEvents()
-            UpdateMerchantItemLevels()
+            SyncMerchantLevels()
         elseif event == "MERCHANT_CLOSED" then
             _merchantOpen = false
             SyncMerchantILvlEvents()
         else -- GET_ITEM_INFO_RECEIVED: an item's data resolved while shopping
-            UpdateMerchantItemLevels()
+            SyncMerchantLevels()
         end
     end)
 end

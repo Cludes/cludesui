@@ -1167,7 +1167,7 @@ end
 
 -- True (after deferring the button's style key to the restriction lift) when
 -- the bound host's button refuses our calls right now.
-local function BoundBlocked(rec)
+local function BoundTouchBlocked(rec)
     local AK = CUI.AuraKit
     if AK.CanTouchButton(rec.button) then return false end
     AK.DeferRestyle(rec.d.styleKey)
@@ -1216,7 +1216,7 @@ end
 local function StopGlow(holder)
     if not holder then return end
     local rec = BOUND[holder]
-    if rec and BoundBlocked(rec) then return false end
+    if rec and BoundTouchBlocked(rec) then return false end
     StopAllGlows(holder)
     holder._cuiGlowActive = false
     holder:SetAlpha(0)
@@ -1468,7 +1468,7 @@ end
 local function StartAnimatedAntsPublic(holder, ...)
     local rec = BOUND[holder]
     if not rec then return StartAnimatedAnts(holder, ...) end
-    if BoundBlocked(rec) then return false end
+    if BoundTouchBlocked(rec) then return false end
     StartAnimatedAnts(holder, ...)
     return SyncBoundHost(holder, rec, EngineGroupsInto(holder, 1, _bWant))
 end
@@ -1478,7 +1478,7 @@ local function StopAnimatedAntsPublic(holder)
     if not rec then return StopAnimatedAnts(holder) end
     -- Never armed: nothing to stop and nothing registered.
     if not holder._cuiAnimAnts then return true end
-    if BoundBlocked(rec) then return false end
+    if BoundTouchBlocked(rec) then return false end
     StopAnimatedAnts(holder)
     return SyncBoundHost(holder, rec, 0)
 end
@@ -1863,7 +1863,7 @@ do
             if position == STEALABLE_BORDER then
                 red, green, blue = specInfo.r, specInfo.g, specInfo.b
             end
-            if rec and BoundBlocked(rec) then return end
+            if rec and BoundTouchBlocked(rec) then return end
             -- StopGlow leaves the host at alpha 0 and a caller may park it
             -- there, so the alpha is re-asserted even when nothing changed.
             holder:SetAlpha(1)
@@ -1950,7 +1950,7 @@ do
         then
             return position, converted
         end
-        if rec and BoundBlocked(rec) then return end
+        if rec and BoundTouchBlocked(rec) then return end
 
         local o = _opts
         o.N, o.th, o.period = N, th, period

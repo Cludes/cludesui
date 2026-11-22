@@ -110,7 +110,7 @@ CUI.AtOptionsLogin(function()
         }
     end
 
-    local function FullRebuildMinimap()
+    local function RebuildMinimap()
         if _G._CUMM_FullRebuildMinimap then
             _G._CUMM_FullRebuildMinimap()
         else
@@ -924,7 +924,7 @@ CUI.AtOptionsLogin(function()
                     else
                         mapDB.ungroupedButtons[keyName] = nil
                     end
-                    FullRebuildMinimap()
+                    RebuildMinimap()
                 end,
                 {
                     hint = "Drag to Reorder Buttons",
@@ -936,7 +936,7 @@ CUI.AtOptionsLogin(function()
                         for idx, keyName in ipairs(orderedKeys) do
                             if mapDB.ungroupedButtons[keyName] then mapDB.ungroupedButtons[keyName] = idx end
                         end
-                        FullRebuildMinimap()
+                        RebuildMinimap()
                     end,
                 }
             )
@@ -1255,7 +1255,7 @@ CUI.AtOptionsLogin(function()
                             local mapDB = MinimapDB()
                             if not mapDB then return end
                             mapDB.btnBackgrounds = value
-                            FullRebuildMinimap()
+                            RebuildMinimap()
                         end,
                     },
                 },
@@ -1882,9 +1882,9 @@ CUI.AtOptionsLogin(function()
         -- Inline cog on Show Coordinates for decimal precision
         if not CUI._prebuilding then
             local region = coordsRow._leftRegion
-            local function coordsOff() return CoordsMode() == "never" end
+            local function coordsHidden() return CoordsMode() == "never" end
             CUI.BuildInlineCog(region, {
-                disabled = coordsOff,
+                disabled = coordsHidden,
                 disabledTooltip = "Show Coordinates",
                 title = "Coordinate Precision",
                 rows = {
@@ -1895,10 +1895,10 @@ CUI.AtOptionsLogin(function()
         -- Inline cog on Coordinates Position for X/Y offset
         if not CUI._prebuilding then
             local region = coordsRow._rightRegion
-            local function coordsOff() return CoordsMode() == "never" end
+            local function coordsHidden() return CoordsMode() == "never" end
             CUI.BuildInlineCog(region, {
                 chain = false,
-                disabled = coordsOff,
+                disabled = coordsHidden,
                 disabledTooltip = "Show Coordinates",
                 title = "Coordinates Size and Position",
                 rows = {

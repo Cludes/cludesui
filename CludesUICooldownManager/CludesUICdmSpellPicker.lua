@@ -95,7 +95,7 @@ local function ResolveVariantValue(sourceMap, spellId)
     return nil
 end
 
-local function IsVariantOf(spellIDA, spellIDB)
+local function AreVariants(spellIDA, spellIDB)
     if not _IsUsableSpellId(spellIDA) or not _IsUsableSpellId(spellIDB) then return false end
     if spellIDA == spellIDB then return true end
     -- Some rotating viewer spells expose no reversible relationship through
@@ -114,7 +114,7 @@ end
 
 mod.StoreVariantValue = StoreVariantValue
 mod.ResolveVariantValue = ResolveVariantValue
-mod.IsVariantOf = IsVariantOf
+mod.IsVariantOf = AreVariants
 
 -- WoW Forever: each rank of a spell is a spell ID of its own, and the ranks
 -- share the spell's name. Blizzard's Cooldown Manager shows a spell's ranks as
@@ -462,7 +462,7 @@ local function FindVariantIndex(spellArray, spellId)
     if spellId > 0 then
         for i = 1, #spellArray do
             local existing = spellArray[i]
-            if _IsUsableSpellId(existing) and IsVariantOf(existing, spellId) then return i end
+            if _IsUsableSpellId(existing) and AreVariants(existing, spellId) then return i end
         end
         local label = RankName and RankName(spellId)
         if label then
@@ -1161,14 +1161,14 @@ local function BuffOrderKeyMatchesEntry(barKey, spellRef, cooldownId, widget)
     if stable and stable == barKey then return true end
     local storedSid = SpellIdsForBuffOrderKey(barKey)
     if not storedSid then return false end
-    if spellRef and IsVariantOf(storedSid, spellRef) then return true end
+    if spellRef and AreVariants(storedSid, spellRef) then return true end
     if widget and mod.GetCanonicalSpellIDForFrame then
         local canon = mod.GetCanonicalSpellIDForFrame(widget)
-        if canon and IsVariantOf(storedSid, canon) then return true end
+        if canon and AreVariants(storedSid, canon) then return true end
     end
     if cooldownId and type(cooldownId) == "number" and mod._cdmCleanSidByCDID then
         local clean = mod._cdmCleanSidByCDID[cooldownId]
-        if clean and IsVariantOf(storedSid, clean) then return true end
+        if clean and AreVariants(storedSid, clean) then return true end
     end
     return false
 end
@@ -2039,7 +2039,7 @@ function mod.SetCooldownBuffReplacement(barId, targetSID, buffSID, buffCdID)
                 local oSid = rawget(other, "replaceBuffID")
                 local oCd = rawget(other, "replaceBuffCdID")
                 local same = (buffCdID and oCd == buffCdID)
-                    or (not buffCdID and not oCd and oSid and IsVariantOf(oSid, buffSID))
+                    or (not buffCdID and not oCd and oSid and AreVariants(oSid, buffSID))
                 if same then
                     other.replaceBuffID = nil
                     other.replaceBuffCdID = nil

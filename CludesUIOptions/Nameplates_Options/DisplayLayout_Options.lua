@@ -1437,7 +1437,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- A slot is empty while it holds none of the checkbox dropdown's elements
     -- (Quest Objective Text alone fills it; the Rare/Quest frame with both of
     -- its halves unchecked does not).
-    local function CorePosOffDisabled(place)
+    local function CorePosLocked(place)
         for idx = 1, #CORE_ORDER do
             if CoreHas(place, CORE_ORDER[idx]) then return false end
         end
@@ -2607,7 +2607,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local button = CludesUI.BuildInlineCog(region, {
             anchorTo = region._control,
             title = CludesUI.Lf("%1$s Slot Settings", CludesUI.L(slotLabel)),
-            disabled = function() return CorePosOffDisabled(posKey) end,
+            disabled = function() return CorePosLocked(posKey) end,
             disabledTooltip = DISABLED_TIP,
             rawTooltip = true,
             sections = CoreCog.Sections(posKey),
@@ -2680,7 +2680,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         order = coreElementOrder,
         getValue = function() return GetElementAtPosition("top") end,
         setValue = function(val) CoreSingleSet("top", val) end,
-        disabled = function() return CorePosOffDisabled("top") end,
+        disabled = function() return CorePosLocked("top") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -2691,7 +2691,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         order = coreElementOrder,
         getValue = function() return GetElementAtPosition("right") end,
         setValue = function(val) CoreSingleSet("right", val) end,
-        disabled = function() return CorePosOffDisabled("right") end,
+        disabled = function() return CorePosLocked("right") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -2712,7 +2712,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         order = coreElementOrder,
         getValue = function() return GetElementAtPosition("left") end,
         setValue = function(val) CoreSingleSet("left", val) end,
-        disabled = function() return CorePosOffDisabled("left") end,
+        disabled = function() return CorePosLocked("left") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -2723,7 +2723,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         order = coreElementOrder,
         getValue = function() return GetElementAtPosition("topright") end,
         setValue = function(val) CoreSingleSet("topright", val) end,
-        disabled = function() return CorePosOffDisabled("topright") end,
+        disabled = function() return CorePosLocked("topright") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -2744,7 +2744,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         order = coreElementOrder,
         getValue = function() return GetElementAtPosition("topleft") end,
         setValue = function(val) CoreSingleSet("topleft", val) end,
-        disabled = function() return CorePosOffDisabled("topleft") end,
+        disabled = function() return CorePosLocked("topleft") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -2755,7 +2755,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         order = coreElementOrder,
         getValue = function() return GetElementAtPosition("bottom") end,
         setValue = function(val) CoreSingleSet("bottom", val) end,
-        disabled = function() return CorePosOffDisabled("bottom") end,
+        disabled = function() return CorePosLocked("bottom") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,

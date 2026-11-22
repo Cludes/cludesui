@@ -47,14 +47,14 @@ function mod.InvalidateSpecKey()
 end
 
 -- Live spec key from the game API without touching the cache; nil if not ready.
-local function ComputeLiveSpecKey()
+local function LiveSpecKey()
     local specIndex = C_SpecializationInfo.GetSpecialization()
     if not specIndex or specIndex == 0 then return nil end
     local specID = select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
     if not specID or specID == 0 then return nil end
     return tostring(specID)
 end
-mod.ComputeLiveSpecKey = ComputeLiveSpecKey
+mod.ComputeLiveSpecKey = LiveSpecKey
 
 if CUI.IS_FOREVER then
     -- WoW Forever reports one spec per class. The store key is the Forever
@@ -68,7 +68,7 @@ if CUI.IS_FOREVER then
     -- and the raw live spec ID. The active key also records the store root it
     -- was resolved for (ns._fvSpecKeyRoot), so a key resolved against one
     -- profile's store is never served against another's.
-    ComputeLiveSpecKey = function()
+    LiveSpecKey = function()
         local specIndex = C_SpecializationInfo.GetSpecialization()
         if not specIndex or specIndex == 0 then return nil end
         local specID = select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
@@ -80,10 +80,10 @@ if CUI.IS_FOREVER then
         mod._fvSpecKeyMemo = { root = specProfiles, raw = specID, key = key }
         return key
     end
-    mod.ComputeLiveSpecKey = ComputeLiveSpecKey
+    mod.ComputeLiveSpecKey = LiveSpecKey
     function mod.GetActiveSpecKey()
         if _cachedSpecKey and mod._fvSpecKeyRoot == mod.GetActiveSpecProfiles() then return _cachedSpecKey end
-        local key = ComputeLiveSpecKey()
+        local key = LiveSpecKey()
         if not key then return nil end
         _cachedSpecKey = key
         mod._fvSpecKeyRoot = mod.GetActiveSpecProfiles()
@@ -315,7 +315,7 @@ mod.ProcessSpecChange = ProcessSpecChange
 -- Compare live spec to cached; if different, process the change. Called exclusively from
 -- SPELLS_CHANGED. Idempotent: after ProcessSpecChange the cached key matches live and subsequent calls are no-ops.
 local function CheckSpecChange()
-    local liveKey = ComputeLiveSpecKey()
+    local liveKey = LiveSpecKey()
     if liveKey and liveKey ~= _cachedSpecKey then ProcessSpecChange(liveKey) end
 end
 mod.CheckSpecChange = CheckSpecChange
@@ -329,7 +329,7 @@ mod.CDM_BAR_ROOTS = {
 }
 
 Inner.CheckSpecChange = CheckSpecChange
-Inner.ComputeLiveSpecKey, Inner.EnsureMappings = ComputeLiveSpecKey, EnsureMappings
+Inner.ComputeLiveSpecKey, Inner.EnsureMappings = LiveSpecKey, EnsureMappings
 Inner.GetStore, Inner.GHOST_CD_BAR_KEY, Inner.MAIN_BAR_KEYS = GetStore, GHOST_CD_BAR_KEY, MAIN_BAR_KEYS
 Inner.ResolveChildSpellID, Inner.ResolveInfoSpellID = ResolveChildSpellID, ResolveInfoSpellID
 Inner.SaveCurrentSpecProfile = SaveCurrentSpecProfile

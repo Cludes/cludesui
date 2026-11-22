@@ -380,13 +380,13 @@ initFrame:SetScript("OnEvent", function(self)
     -- Blizzard performs additional dock sizing after the initial chat setup, so
     -- text-derived widths are re-applied across a few deferred passes and saved
     -- Inner Padding X is correct without requiring a tab click.
-    local function ApplyInitialTabLayout()
+    local function LayoutTabsFirst()
         PaintTabs()
         CHAT.ApplyTabLayout()
     end
-    C_Timer.After(0, ApplyInitialTabLayout)
-    C_Timer.After(0.10, ApplyInitialTabLayout)
-    C_Timer.After(0.50, ApplyInitialTabLayout)
+    C_Timer.After(0, LayoutTabsFirst)
+    C_Timer.After(0.10, LayoutTabsFirst)
+    C_Timer.After(0.50, LayoutTabsFirst)
     local _tabColorTimer
     local function DeferredTabColorUpdate()
         if _tabColorTimer then return end
@@ -411,7 +411,7 @@ initFrame:SetScript("OnEvent", function(self)
         local _idleMouseOver = false
         local SetMessageWake -- with OnActiveMessage below
 
-        local function IsIdleApplicable()
+        local function IdleFadeApplies()
             local conf = CHAT.DB()
             local vis = conf.visibility or "always"
             return vis ~= "never"
@@ -427,7 +427,7 @@ initFrame:SetScript("OnEvent", function(self)
             if CHAT.ApplyIdleFadeHoverMotion then CHAT.ApplyIdleFadeHoverMotion() end
         end
 
-        local function CancelIdleFade()
+        local function StopIdleFade()
             local wasActive = _idleFadeActive
             SetIdleFadeActive(false)
             if idleTicker then
@@ -441,9 +441,9 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         function CHAT.ResetIdleTimer()
-            CancelIdleFade()
+            StopIdleFade()
             local conf = CHAT.DB()
-            local enabled = IsIdleApplicable() and conf.idleFadeEnabled ~= false
+            local enabled = IdleFadeApplies() and conf.idleFadeEnabled ~= false
             -- Chat lines wake the fade only while it can run: nothing per line otherwise.
             SetMessageWake(enabled)
             if not enabled then return end
@@ -453,7 +453,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Visibility fully hid the chat: fade now and drop the leftover delay.
         function CHAT.StartIdleFadeNow()
-            if not IsIdleApplicable() then return end
+            if not IdleFadeApplies() then return end
             if idleTicker then
                 idleTicker:Cancel()
                 idleTicker = nil
@@ -468,7 +468,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- line pool is parked in the engine's hidden container, and OUR
             -- message frames are hidden outright while passthrough is
             -- engaged -- a hidden frame arms nothing.)
-            if not IsIdleApplicable() then return end
+            if not IdleFadeApplies() then return end
             -- Hidden by visibility: lines and whispers land unseen, so they must
             -- not wake the fade (StartIdleFadeNow) and flash the chat on reveal.
             if not _visChatVisible then return end
@@ -476,7 +476,7 @@ initFrame:SetScript("OnEvent", function(self)
             if nowTime - _lastIdleReset < 1 then return end
             _lastIdleReset = nowTime
             if _idleMouseOver then
-                CancelIdleFade()
+                StopIdleFade()
             else
                 CHAT.ResetIdleTimer()
             end
@@ -607,10 +607,10 @@ initFrame:SetScript("OnEvent", function(self)
 
         local function SyncHover()
             local over = (_hoverCount > 0) or (_editFocusCount > 0)
-            if not IsIdleApplicable() then return end
+            if not IdleFadeApplies() then return end
             if over and not _idleMouseOver then
                 _idleMouseOver = true
-                CancelIdleFade()
+                StopIdleFade()
             elseif not over and (_idleMouseOver or not (idleTicker or _idleFadeActive)) then
                 -- Also re-arm when nothing is armed: a hover that began while
                 -- faded is cleared by the reveal (ApplyIdleFadeHoverMotion),

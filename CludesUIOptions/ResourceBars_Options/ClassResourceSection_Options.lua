@@ -1869,8 +1869,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             local entry = current()
                             return (entry and mod.IsEntryBarType(entry)) and true or false
                         end
-                        local function isStagger() return HasSpec(current(), 268) end
-                        local function isEnhance()
+                        local function isBrewmaster() return HasSpec(current(), 268) end
+                        local function isEnhancement()
                             local rowCfg = rowConf()
                             return (rowCfg and rowCfg.enhanceFiveBar == true and HasSpec(current(), 263))
                                     and true
@@ -1885,7 +1885,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         end
                         local function multiOn()
                             local entry = current()
-                            return (entry and entry.multiBandEnabled and not isEnhance()) and true or false
+                            return (entry and entry.multiBandEnabled and not isEnhancement()) and true or false
                         end
                         local function resourceUsable() return enabled() and not multiOn() end
                         local function offTip()
@@ -1923,7 +1923,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 labels = { percent = "Percent", value = "Value" },
                                 rawTooltip = true,
                                 disabled = function()
-                                    return (not resourceUsable()) or (not entryIsBar()) or isStagger()
+                                    return (not resourceUsable()) or (not entryIsBar()) or isBrewmaster()
                                 end,
                                 disabledTooltip = function()
                                     if not resourceUsable() then return offTip() end
@@ -2005,7 +2005,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 -- editing another spec's entry while playing that spec stays unlocked
                 entryRules = function(ent, r, cfg)
                     local entryIsBar = mod.IsEntryBarType(ent)
-                    local isGuardian, isIgnorePain, isVengeance, isStagger, isEnhance
+                    local isGuardian, isIgnorePain, isVengeance, isBrewmaster, isEnhancement
                     if ent.specIDs then
                         for _, spec in ipairs(ent.specIDs) do
                             -- WoW Forever: the Druid class resource there is combo points, which
@@ -2021,34 +2021,34 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             end
                             if spec == 73 then isIgnorePain = true end
                             if spec == 581 then isVengeance = true end
-                            if spec == 268 then isStagger = true end
-                            if spec == 263 and cfg.enhanceFiveBar == true then isEnhance = true end
+                            if spec == 268 then isBrewmaster = true end
+                            if spec == 263 and cfg.enhanceFiveBar == true then isEnhancement = true end
                         end
                     end
                     -- Brewmaster stagger reads its threshold as a percent only
-                    if isStagger and ent.thresholdMode == "value" then ent.thresholdMode = "percent" end
+                    if isBrewmaster and ent.thresholdMode == "value" then ent.thresholdMode = "percent" end
                     -- Bar-type reads the threshold as % (max 100) or an absolute value (higher cap); pips count stacks
-                    local isValue = entryIsBar and not isStagger and ent.thresholdMode == "value"
+                    local isValue = entryIsBar and not isBrewmaster and ent.thresholdMode == "value"
                     r.pips = not entryIsBar
                     -- The Guardian Ironfur and Prot Ignore Pain bars draw their own hash lines
                     r.hideHash = (isGuardian or isIgnorePain) and true or false
-                    r.thrMin = isEnhance and 7 or 1
-                    r.thrMax = isStagger and 500 or (entryIsBar and (isValue and 1000 or 100) or 20)
-                    r.thrDef = isEnhance and 7 or (entryIsBar and 30 or 3)
+                    r.thrMin = isEnhancement and 7 or 1
+                    r.thrMax = isBrewmaster and 500 or (entryIsBar and (isValue and 1000 or 100) or 20)
+                    r.thrDef = isEnhancement and 7 or (entryIsBar and 30 or 3)
                     r.thrLabel = CludesUI.L("Threshold") .. ((entryIsBar and not isValue) and " %" or "")
-                    if isEnhance then
+                    if isEnhancement then
                         r.thrTip = CludesUI.L(
                             "Enhance 5 Bar minimum is %d (if you want less just change 5 bar color)"
                         )
                             :format(7)
                         r.multiBlock = CludesUI.L("Unavailable with Enhancement 5-bar style.")
                     end
-                    r.bandPctCap = isStagger and 500 or nil
+                    r.bandPctCap = isBrewmaster and 500 or nil
                     -- "Recolor text instead" no-ops for secret resources (Vengeance soul fragments, Prot Ignore Pain bar)
                     if isVengeance or (isIgnorePain and cfg.protIgnorePainBar) then
                         r.textBlock = CludesUI.L(TI_BLOCK_TIP)
                     end
-                    r.barInput = isStagger
+                    r.barInput = isBrewmaster
                 end,
             })
         end

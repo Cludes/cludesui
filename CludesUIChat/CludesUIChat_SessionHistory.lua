@@ -128,7 +128,7 @@ local function ShouldTrackFrame(castFrame)
     return not IsCombatLogChatFrame(castFrame)
 end
 
-local function GetSV()
+local function SavedHistory()
     local savedVars = _G[SV_NAME]
     if type(savedVars) ~= "table" then
         savedVars = { sessionLog = {} }
@@ -273,7 +273,7 @@ local function SanitizeLineList(lines)
 end
 
 local function SanitizeSV()
-    local savedVars = GetSV()
+    local savedVars = SavedHistory()
     local cleaned = SanitizeLineList(savedVars.sessionLog)
     if cleaned and #cleaned > 0 then
         savedVars.sessionLog = cleaned
@@ -294,7 +294,7 @@ local function FrameShowsEvent(castFrame, evt)
 end
 
 local function AppendLogEntry(record)
-    local savedVars = GetSV()
+    local savedVars = SavedHistory()
     local log = savedVars.sessionLog
     local norm = NormalizeForDedup(record.message)
     if norm then
@@ -401,13 +401,13 @@ local function UninstallCapture()
     if CHAT.EngineSetTailObserver then CHAT.EngineSetTailObserver(nil) end
 end
 
-local function ClearSavedSessionHistory()
+local function ClearHistoryStore()
     restoreToken = restoreToken + 1
     wipe(restoredFrames)
     captureSeq = 0
     sessionEpochTime = nil
     UnarmDeferredRestore()
-    GetSV().sessionLog = {}
+    SavedHistory().sessionLog = {}
 end
 
 function CHAT.SnapshotChatSessionHistory()
@@ -482,7 +482,7 @@ local function RunRestore(token)
     if token ~= restoreToken then return end
     if not HistoryUsable() then return false end
 
-    local log = GetSV().sessionLog
+    local log = SavedHistory().sessionLog
     if not log or #log == 0 then return false end
 
     local any = false
@@ -526,7 +526,7 @@ TryRestore = function(token, attempt)
     end
 
     attempt = attempt or 1
-    local log = GetSV().sessionLog
+    local log = SavedHistory().sessionLog
     local hasLog = log and #log > 0
     local restored = RunRestore(token)
 
@@ -551,7 +551,7 @@ function CHAT.OnSessionHistoryToggled(enabled)
         CHAT.RestoreChatSessionHistory()
     else
         UninstallCapture()
-        ClearSavedSessionHistory()
+        ClearHistoryStore()
     end
 end
 
@@ -562,7 +562,7 @@ end
 function CHAT.InitChatSessionHistory()
     if not HistoryOn() then
         UninstallCapture()
-        ClearSavedSessionHistory()
+        ClearHistoryStore()
         return
     end
     SanitizeSV()
@@ -581,7 +581,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
         if HistoryOn() then
             CHAT.SnapshotChatSessionHistory()
         else
-            ClearSavedSessionHistory()
+            ClearHistoryStore()
         end
         return
     end

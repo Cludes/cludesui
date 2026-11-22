@@ -61,7 +61,7 @@ CUI.AtLogin(function()
     }
     local SUGGEST_MAX, SUGGEST_MIN_CHARS = 8, 2
 
-    local function SLC()
+    local function CouncilAddon()
         local slc = _G.SimpleLootCouncil
         if slc and slc.db and slc.UI and slc.UI.OptionsSchema then return slc end
     end
@@ -69,7 +69,7 @@ CUI.AtLogin(function()
     local function PageShown() return CUI:IsShown() and CUI:GetActiveModule() == ADDON_NAME end
 
     local function InvalidateOptions()
-        local slc = SLC()
+        local slc = CouncilAddon()
         if slc then slc.Callbacks:Invalidate("options") end
     end
 
@@ -285,13 +285,13 @@ CUI.AtLogin(function()
         button:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
         local _, border, labelText = CUI.MakeStyledButton(button, "", 11, CUI.WB_COLOURS)
 
-        local function Edge()
+        local function PaintEdge()
             local c = button.tone
             if c then border:SetColor(c[1], c[2], c[3], 1) end
         end
         function button:SetTone(c)
             button.tone = c
-            Edge()
+            PaintEdge()
         end
         button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         button:SetScript("OnClick", function(_, btnFrame)
@@ -301,12 +301,12 @@ CUI.AtLogin(function()
         local hoverOn, hoverOff = button:GetScript("OnEnter"), button:GetScript("OnLeave")
         button:SetScript("OnEnter", function(b)
             hoverOn(b)
-            Edge()
+            PaintEdge()
             if b.tip then CUI.ShowWidgetTooltip(b, b.tip) end
         end)
         button:SetScript("OnLeave", function(b)
             hoverOff(b)
-            Edge()
+            PaintEdge()
             CUI.HideWidgetTooltip()
         end)
         button.Label = labelText
@@ -523,7 +523,7 @@ CUI.AtLogin(function()
 
     local function ShowBanner()
         if not OnOurPage() then return end
-        local slc = SLC()
+        local slc = CouncilAddon()
         local main = CUI._mainFrame
         if not (slc and main) then return end
         if not bannerTitle then bannerTitle = FindTitle(main, 6, CUI.L(MODULE_TITLE)) end
@@ -533,7 +533,7 @@ CUI.AtLogin(function()
             bannerTexture:SetPoint("TOPLEFT", bannerTitle, "TOPLEFT", 0, 0)
 
             local slot = {
-                ApplyLogo = function() ApplyBanner(SLC()) end,
+                ApplyLogo = function() ApplyBanner(CouncilAddon()) end,
             }
             slc.Style.logoWindows[#slc.Style.logoWindows + 1] = slot
         end
@@ -641,7 +641,7 @@ CUI.AtLogin(function()
 
         CUI:ClearContentHeader()
 
-        local slc = SLC()
+        local slc = CouncilAddon()
         if not slc then return math.abs(cursorY) end
 
         if not prebuild then hostFrame._showRowDivider = true end
@@ -722,7 +722,7 @@ CUI.AtLogin(function()
             local record = slc.Player:Get(fullName)
             return ClassText(record and record.classFile, Ambiguate(fullName, "short"))
         end
-        local function RankText(rankName) return S.Colorize(S.color.accentPale, rankName) end
+        local function ColoredRank(rankName) return S.Colorize(S.color.accentPale, rankName) end
         local faint = S.ColorStart(S.Flatten(S.color.textFaint))
 
         local pending, lastRightId
@@ -828,7 +828,7 @@ CUI.AtLogin(function()
 
             local full = hostFrame:GetWidth() - PAD * 2
             councilCols = CouncilColumns(full)
-            local lines = CouncilLines(#CouncilMembers(inForce, PlayerText, RankText), councilCols)
+            local lines = CouncilLines(#CouncilMembers(inForce, PlayerText, ColoredRank), councilCols)
             local capacity = lines * councilCols
             local height = LIST_Y + lines * COUNCIL_CELL_H + COUNCIL_BOTTOM
 
@@ -976,7 +976,7 @@ CUI.AtLogin(function()
                 mlNote:SetText(note or "")
             end)
             AddRefresh(function()
-                local entries, count = CouncilMembers(inForce, PlayerText, RankText)
+                local entries, count = CouncilMembers(inForce, PlayerText, ColoredRank)
                 voters:SetText(S.Colorize(count == 0 and S.color.bad or S.color.accentPale, tostring(count)))
                 local headW = math.ceil(heading:GetStringWidth() or 0)
                 local countW = math.ceil(voters:GetStringWidth() or 0)
@@ -1376,7 +1376,7 @@ CUI.AtLogin(function()
                     present = entry.kind ~= "rank" and (here[entry.fullName] and true or false)
                     local nowTime = present
                     if entry.kind == "rank" then
-                        local name = RankText(entry.name)
+                        local name = ColoredRank(entry.name)
                         if not entry.known then
                             labelText:SetText(
                                 S.Colorize(
@@ -1471,7 +1471,7 @@ CUI.AtLogin(function()
                     labelText:SetPoint("RIGHT", button, "RIGHT", -20, 0)
                     labelText:SetJustifyH("LEFT")
                     labelText:SetWordWrap(false)
-                    labelText:SetText(RankText(name))
+                    labelText:SetText(ColoredRank(name))
                     local hovering = false
                     local function PaintAutoroll()
                         apply(specInfo.isEmpowered(name) and true or false, hovering)

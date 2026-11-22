@@ -202,7 +202,7 @@ UpdateSATimerText = function()
 end
 SetUpdateSATimerText(UpdateSATimerText)
 
-local function RepositionSATimer()
+local function PlaceTimer()
     if not _saTimer then return end
     local conf = DB()
     -- While the timer has a live unlock anchor link, the anchor system owns
@@ -293,7 +293,7 @@ local function SetupSATimer()
     ApplySATimerStyle()
     _saTimerFS:SetText("0:00")
 
-    RepositionSATimer()
+    PlaceTimer()
 
     _saTimer:Hide() -- starts hidden; combat state controls visibility
     UpdateSATimerText() -- Show Out of Combat can bring it straight back up
@@ -344,7 +344,7 @@ mod.ApplySATimer = function()
         if not _saTimer then CreateSATimer() end
         ApplySATimerStyle()
         local prevText = _saTimerFS:GetText()
-        RepositionSATimer()
+        PlaceTimer()
         if _saTimerPreview then
             _saTimerFS:SetText(GetSATimerPreviewText())
         else
@@ -520,7 +520,7 @@ mod.MakeSATimerUnlockElement = function(MK)
             return nil
         end,
         clearPos = function() DB().standaloneTimerPos = nil end,
-        applyPos = function() RepositionSATimer() end,
+        applyPos = function() PlaceTimer() end,
     })
 end
 

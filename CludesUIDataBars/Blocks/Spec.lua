@@ -131,7 +131,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         end
     end
 
-    local function UpdateCurrentSpec()
+    local function ReadCurrentSpec()
         currentSpecIdx = C_SpecializationInfo.GetSpecialization()
         currentLootSpecID = GetLootSpecialization() or 0
     end
@@ -641,7 +641,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     function instance:Refresh()
         -- No combat gate: only our own insecure frames (text, textures, sizes),
         -- and an in-combat loot spec change must repaint at once.
-        UpdateCurrentSpec()
+        ReadCurrentSpec()
         local skinData = D()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
@@ -862,7 +862,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
         -- Talent and spell events fire often: a redraw only if something shown changed.
-        UpdateCurrentSpec()
+        ReadCurrentSpec()
         if Fingerprint() ~= drawn then self:Refresh() end
     end)
 
@@ -870,7 +870,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         contentFrame:Show()
         drawn = nil
         BuildSpecCache()
-        UpdateCurrentSpec()
+        ReadCurrentSpec()
         K.RegisterInstEvents(self)
     end
 

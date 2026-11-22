@@ -204,7 +204,7 @@ local StartCastAnim
 -------------------------------------------------------------------------------
 --  History management
 -------------------------------------------------------------------------------
-local function RefreshViews()
+local function RedrawViews()
     local historyCfg = HistoryDB()
     if historyCfg.iconEnabled then BuildIconStrip() end
     if historyCfg.barEnabled then RefreshBarWindow() end
@@ -213,7 +213,7 @@ end
 local function PushEntry(record)
     table.insert(_history, 1, record)
     if #_history > MAX_HISTORY then _history[#_history] = nil end
-    RefreshViews()
+    RedrawViews()
 end
 
 local _pendingTargets = {} -- castGUID -> target name (from UNIT_SPELLCAST_SENT)
@@ -316,7 +316,7 @@ local function FinishPending(castGuid, statusText)
     record.endTime = GetTime()
     if record.startTime then record.castDuration = record.endTime - record.startTime end
     _pendingCasts[castGuid] = nil
-    RefreshViews()
+    RedrawViews()
 end
 
 -------------------------------------------------------------------------------
@@ -444,7 +444,7 @@ local function OnSpellEvent(_, evt, unitToken, ...)
                         he.status = "success"
                         he.fillProgress = nil
                         covered = true
-                        RefreshViews()
+                        RedrawViews()
                         break
                     end
                 end

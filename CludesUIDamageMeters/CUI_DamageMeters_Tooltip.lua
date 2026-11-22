@@ -91,7 +91,7 @@ local function ApplyInheritedBlizzardBorder(widget, prefixText)
     return success
 end
 
-local function EnsureTooltipFrame()
+local function MakeTooltipFrame()
     if _ttFrame then
         if not _ttFrame._fvRim then ApplyInheritedBlizzardBorder(_ttFrame, "tooltip") end
         return
@@ -182,7 +182,7 @@ end
 -- Lazy bar pool: creates bars on demand up to the requested index
 local function EnsureTTBar(index)
     if _ttBars[index] then return _ttBars[index] end
-    EnsureTooltipFrame()
+    MakeTooltipFrame()
     local tipStride = TTStride()
     local b = NewTTRow(_ttFrame)
     b.row:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, -(TT_HDR_H + (index - 1) * tipStride))
@@ -507,7 +507,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
 
     -- Helper: apply header styling
     local function ApplyTTHeader(playerName, typeName)
-        EnsureTooltipFrame()
+        MakeTooltipFrame()
         _ttFrame._hdrText:SetText(CludesUI.Lf("%1$s's %2$s Breakdown", playerName, typeName))
         local conf = DB()
         local hc = conf.hdrBgColor
@@ -956,7 +956,7 @@ end
 local function ShowBarTooltip(barFrame, curSession, curSessionID, curDMType)
     local conf = DB()
     if conf.showHoverTooltip == false then return end
-    EnsureTooltipFrame()
+    MakeTooltipFrame()
 
     -- Scale before populating: the row stride snaps against the frame's effective scale.
     local scale = (conf.hoverTooltipScale or 100) / 100
@@ -986,6 +986,6 @@ end)
 
 Inner._hoverPollFrame, Inner._ttBars = _hoverPollFrame, _ttBars
 Inner.ApplyInheritedBlizzardBorder = ApplyInheritedBlizzardBorder
-Inner.EnsureTooltipFrame, Inner.HideBarTooltip = EnsureTooltipFrame, HideBarTooltip
+Inner.EnsureTooltipFrame, Inner.HideBarTooltip = MakeTooltipFrame, HideBarTooltip
 Inner.HideTTTargets, Inner.TT_HDR_H, Inner.TT_WIDTH = HideTTTargets, TT_HDR_H, TT_WIDTH
 Inner.broken = false

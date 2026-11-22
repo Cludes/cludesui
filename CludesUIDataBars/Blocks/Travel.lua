@@ -222,12 +222,12 @@ local function TravelHousingBlocked()
     return (inInst and instType == "raid") and true or false
 end
 
-local function TravelRequestHouses()
+local function RequestHouses()
     if TravelHousingBlocked() then return end
     C_Housing.GetPlayerOwnedHouses()
 end
 
-local function TravelSyncHouseEvents()
+local function SyncHouseEvents()
     local watching = next(houseWatchers) ~= nil
     if watching or housePending then
         houseWatch:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
@@ -243,14 +243,14 @@ end
 
 houseWatch:SetScript("OnEvent", function(_, evt, houses)
     if evt == "PLAYER_ENTERING_WORLD" then
-        TravelRequestHouses()
+        RequestHouses()
         return
     end
     travelHouses = type(houses) == "table" and houses or {}
     travelHousesGen = travelHousesGen + 1
     local onLoaded = housePending
     housePending = nil
-    TravelSyncHouseEvents()
+    SyncHouseEvents()
     for instance in next, houseWatchers do
         instance:OnHouseList()
     end
@@ -261,15 +261,15 @@ local function TravelWatchHouses(instance, on)
     on = on and TravelHousingAvailable() or false
     if (houseWatchers[instance] == true) == on then return end
     houseWatchers[instance] = on or nil
-    TravelSyncHouseEvents()
-    if on and not travelHouses then TravelRequestHouses() end
+    SyncHouseEvents()
+    if on and not travelHouses then RequestHouses() end
 end
 
 function mod.TravelRequestHouseList(onLoaded)
     if travelHouses or housePending or not TravelHousingAvailable() or TravelHousingBlocked() then return end
     housePending = onLoaded
-    TravelSyncHouseEvents()
-    TravelRequestHouses()
+    SyncHouseEvents()
+    RequestHouses()
 end
 
 local function TravelIsHouseChoice(pick)
@@ -303,7 +303,7 @@ local function TravelHouseName(hgt)
     return Loc["HOME"]
 end
 
-local function TravelCanReturnHome()
+local function CanReturnHome()
     local frame = C_HousingNeighborhood and C_HousingNeighborhood.CanReturnAfterVisitingHouse
     if not frame then return false end
     local success, can = pcall(frame)
@@ -593,7 +593,7 @@ end
 
 local function TravelChoiceCooldown(pick)
     if TravelFindHouse(pick) then
-        if TravelCanReturnHome() then return 0, true end
+        if CanReturnHome() then return 0, true end
         return TravelHouseCooldown()
     end
     if TRAVEL_EXTRA_SET[pick] then
@@ -863,7 +863,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
             or TravelFindHouse(TravelClickChoice(deltaTime, 3))
         if house then
             local hstr, hready = "-", false
-            local returnTrip = TravelCanReturnHome()
+            local returnTrip = CanReturnHome()
             if returnTrip then
                 hstr, hready = Loc["RETURN_AVAILABLE"], true
             else
@@ -973,7 +973,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
                 if pick == "random" then
                     what = Loc["RANDOM_HEARTHSTONE"]
                 elseif hgt then
-                    what = TravelCanReturnHome() and Loc["RETURN_FROM_HOME"] or TravelHouseName(hgt)
+                    what = CanReturnHome() and Loc["RETURN_FROM_HOME"] or TravelHouseName(hgt)
                 elseif TRAVEL_EXTRA_SET[pick] and TravelExtraKind(pick) then
                     what = TravelEntryName(pick) or Loc["USE_HEARTHSTONE"]
                 else
@@ -1026,7 +1026,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
                 local pick = TravelClickChoice(deltaTime, button)
                 local house = TravelFindHouse(pick)
                 if house then
-                    if canReturn == nil then canReturn = TravelCanReturnHome() end
+                    if canReturn == nil then canReturn = CanReturnHome() end
                     hearthBtn:SetAttribute("*type" .. button, canReturn and "returnhome" or "teleporthome")
                     hearthBtn:SetAttribute("*house-neighborhood-guid" .. button, house.neighborhoodGUID)
                     hearthBtn:SetAttribute("*house-guid" .. button, house.houseGUID)

@@ -57,20 +57,20 @@ CUI.AtLogin(function()
     local function QuickFireDisabled() return ModeNever() or RaidToolsCfg("quickFire") ~= true end
 
     -- The runtime owns the normalize (unknown values retain One Window).
-    local function ShowAsVal()
+    local function ShowAsMode()
         if mod.ShowAs then return mod.ShowAs() end
         return RaidToolsCfg("showAs") or "one"
     end
 
-    local function LegacyDisabled() return ModeNever() or ShowAsVal() == "compact" end
-    local function RoleCheckDisabled() return ModeNever() or ShowAsVal() == "markers" end
+    local function LegacyDisabled() return ModeNever() or ShowAsMode() == "compact" end
+    local function RoleCheckDisabled() return ModeNever() or ShowAsMode() == "markers" end
     local function FullPanelButtonDisabled()
-        local mode = ShowAsVal()
+        local mode = ShowAsMode()
         return ModeNever() or mode == "compact" or mode == "markers"
     end
     -- Raid Buff Check is retail only: its rows are not built on WoW Forever.
     local function BuffCheckOff() return RaidToolsCfg("buffCheck") ~= true end
-    local function PullDisabled() return ModeNever() or ShowAsVal() == "markers" end
+    local function PullDisabled() return ModeNever() or ShowAsMode() == "markers" end
 
     -- Pull durations live in a fixed 3-slot array; each slider owns one slot.
     local function PullGet(idx)
@@ -106,7 +106,7 @@ CUI.AtLogin(function()
         -- is also the One Window shell and the first of Two Windows).
         CUI.BuildSectionUnlockJump(heading, {
             key = function()
-                local showAs = ShowAsVal()
+                local showAs = ShowAsMode()
                 if showAs == "compact" then return "CUI_RaidTools_Compact" end
                 if showAs == "markers" then return "CUI_RaidTools_Markers" end
                 return "CUI_RaidTools_Group"
@@ -205,7 +205,7 @@ CUI.AtLogin(function()
                 markers = "Only Markers",
             },
             order = { "compact", "one", "two", "group", "markers" },
-            getValue = function() return ShowAsVal() end,
+            getValue = function() return ShowAsMode() end,
             setValue = function(value)
                 Set("showAs", value)
                 ApplyRaidTools()

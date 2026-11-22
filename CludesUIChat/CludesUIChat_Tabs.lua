@@ -52,7 +52,7 @@ local function DB() return CHAT.DB() end
 -- only as invisible motion catchers. Classic keeps the ghosts over the
 -- invisible strip and paints them with the vanilla tab sheet at its native
 -- 32px height (the strip's clip rect is raised to fit it).
-local function BlizzTabs() return mod.ChatBlizzTabs and mod.ChatBlizzTabs() end
+local function StockTabs() return mod.ChatBlizzTabs and mod.ChatBlizzTabs() end
 local function ClassicTabs() return mod.ChatStyle and mod.ChatStyle() == "classic" end
 local CLASSIC_TAB_H = 32
 local CLASSIC_CLIP_UP = CLASSIC_TAB_H - 26 -- the dock manager is 26 tall
@@ -491,23 +491,23 @@ local function StyleGhost(g, active)
         local showBorder = not CHAT.ExtendBgBehindTabs(conf)
         local sync = conf.syncTabBorder ~= false
         local prefixText = sync and "panelBorder" or "tabBorder"
-        local function K(suffix, fallback)
+        local function TabCfgVal(suffix, fallback)
             local val = conf[prefixText .. suffix]
             if val == nil then return fallback end
             return val
         end
         local sizes = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
-        local thicknessKey = K("Thickness", "none")
+        local thicknessKey = TabCfgVal("Thickness", "none")
         local size = sizes[thicknessKey] or 1
-        local texKey = K("Texture", "solid")
+        local texKey = TabCfgVal("Texture", "solid")
         -- Exact pixel size under the same prefix as the step (nil = the legacy
         -- step path); the hidden 0 passed below is a substitute, so no px then.
-        local px = showBorder and CUI.BorderPx(K("ThicknessPx", nil), size, texKey) or nil
-        local br, bgr, bb, ba = ResolveModeColor(K("ColorMode", "custom"), K("Color", nil), {
+        local px = showBorder and CUI.BorderPx(TabCfgVal("ThicknessPx", nil), size, texKey) or nil
+        local br, bgr, bb, ba = ResolveModeColor(TabCfgVal("ColorMode", "custom"), TabCfgVal("Color", nil), {
             r = 1,
             g = 1,
             b = 1,
-            a = K("Opacity", nil) or ((K("ColorMode", "custom") == "custom") and 0.18 or 0.5),
+            a = TabCfgVal("Opacity", nil) or ((TabCfgVal("ColorMode", "custom") == "custom") and 0.18 or 0.5),
         })
         if conf.activeTabBorder ~= false and active and conf.tabBorderColorActive then
             local ac = conf.tabBorderColorActive
@@ -522,10 +522,10 @@ local function StyleGhost(g, active)
             bb,
             ba,
             texKey,
-            K("OffsetX", nil),
-            K("OffsetY", nil),
-            K("ShiftX", nil),
-            K("ShiftY", nil),
+            TabCfgVal("OffsetX", nil),
+            TabCfgVal("OffsetY", nil),
+            TabCfgVal("ShiftX", nil),
+            TabCfgVal("ShiftY", nil),
             "chat",
             thicknessKey,
             nil,
@@ -597,7 +597,7 @@ local function RefreshFloatGhost(castFrame, height, fontFile, fontSize, padX, la
     g:SetPoint("BOTTOMLEFT", tabBtn, "BOTTOMLEFT", 0, 0)
     g:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
     g:SetHeight(height)
-    if BlizzTabs() then
+    if StockTabs() then
         -- Blizzard's own tab is the visible one here: the ghost stays only as
         -- the invisible motion catcher that keeps the panel following drags.
         if g:GetAlpha() ~= 0 then g:SetAlpha(0) end
@@ -633,7 +633,7 @@ end
 -------------------------------------------------------------------------------
 --  Strip placement: mirror the dock manager's rect exactly (live anchors).
 -------------------------------------------------------------------------------
-local function PositionStrip()
+local function PlaceTabStrip()
     local dockManager = _G.GeneralDockManager
     if not dockManager then return end
     tabStrip:ClearAllPoints()
@@ -658,7 +658,7 @@ end
 --  move, resize, drag, and scroll in the same render pass.
 -------------------------------------------------------------------------------
 local function RefreshNow()
-    PositionStrip()
+    PlaceTabStrip()
     local conf = DB()
     local selected = SelectedWindow()
     local height = TabHeight()
@@ -716,7 +716,7 @@ local function RefreshNow()
     local tabGap = (conf.tabSpacing or 1) * ((CUI.PP and CUI.PP.mult) or 1)
     -- Blizzard Style shows Blizzard's real docked tabs: no docked ghosts (the
     -- sweep below hides any left from the pool).
-    if type(dockList) == "table" and not BlizzTabs() then
+    if type(dockList) == "table" and not StockTabs() then
         for tabIndex = 1, #dockList do
             local castFrame = dockList[tabIndex]
             local tabBtn = castFrame and _G[castFrame:GetName() .. "Tab"]
@@ -908,7 +908,7 @@ end
 
 function CHAT.TabsSweepBlizzard()
     local dockManager = _G.GeneralDockManager
-    local blizzTabs = BlizzTabs()
+    local blizzTabs = StockTabs()
     if dockManager then
         -- Full hide owns the dock's shown state (SetChatStackShown hides it
         -- with a remember); the sweep only heals a wrongly-hidden dock when
@@ -1037,7 +1037,7 @@ local function OnTabMessage(castFrame, evt)
     -- Blizzard Style: Blizzard's own tabs flash natively and docked windows
     -- have no ghost at all; only a shown undocked window still wants its
     -- (invisible, motion-catching) float ghost.
-    if BlizzTabs() then
+    if StockTabs() then
         if not castFrame.isDocked and castFrame:IsShown() and not GhostFor(castFrame) then
             RequestRefresh()
         end
@@ -1099,12 +1099,12 @@ function CHAT.ApplyTabSeparators() RequestRefresh() end
 function CHAT.ApplyTabSpacing() RequestRefresh() end
 
 function CHAT.ApplyTabLayout()
-    PositionStrip()
+    PlaceTabStrip()
     RequestRefresh()
 end
 
 function CHAT.ApplyTabPadding()
-    PositionStrip()
+    PlaceTabStrip()
     if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
     if CHAT.ApplySidebarIcons then CHAT.ApplySidebarIcons() end
     RequestRefresh()

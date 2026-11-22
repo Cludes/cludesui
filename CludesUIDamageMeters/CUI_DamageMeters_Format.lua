@@ -504,7 +504,7 @@ local ICON_STYLE_ORDER = {
 _G._CUDM_IconStyleValues = ICON_STYLE_VALUES
 _G._CUDM_IconStyleOrder = ICON_STYLE_ORDER
 
-local function ZoomCoords(u1, u2, v1, v2, z)
+local function ZoomedCoords(u1, u2, v1, v2, z)
     local du = (u2 - u1) * z
     local dv = (v2 - v1) * z
     return u1 + du, u2 - du, v1 + dv, v2 - dv
@@ -544,7 +544,7 @@ local function ResolveIcon(source, iconTex, barH)
         iconTex:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
         local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if coords then
-            iconTex:SetTexCoord(ZoomCoords(coords[1], coords[2], coords[3], coords[4], zoom))
+            iconTex:SetTexCoord(ZoomedCoords(coords[1], coords[2], coords[3], coords[4], zoom))
         else
             iconTex:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
@@ -552,7 +552,7 @@ local function ResolveIcon(source, iconTex, barH)
         iconTex:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
         local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if coords then
-            iconTex:SetTexCoord(ZoomCoords(coords[1], coords[2], coords[3], coords[4], zoom))
+            iconTex:SetTexCoord(ZoomedCoords(coords[1], coords[2], coords[3], coords[4], zoom))
         else
             iconTex:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
@@ -562,7 +562,7 @@ local function ResolveIcon(source, iconTex, barH)
             iconTex:SetTexture(CLASS_ICON_SPRITE_TEX[style] or (CLASS_ICON_SPRITE_BASE .. style .. ".tga"))
             local zoom = conf.spriteIconZoom or 0
             if zoom ~= 0 then
-                iconTex:SetTexCoord(ZoomCoords(coords[1], coords[2], coords[3], coords[4], zoom))
+                iconTex:SetTexCoord(ZoomedCoords(coords[1], coords[2], coords[3], coords[4], zoom))
             else
                 iconTex:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
             end

@@ -551,7 +551,7 @@ CUI.AtOptionsLogin(function()
             local name = mod.GetSelectedSet()
             if name ~= nil and gearValues[name] ~= nil then return name end
         end
-        local function TalentPickKey()
+        local function PickedTalentKey()
             local sel = mod.GetSelectedTalent()
             local key = sel and tostring(sel.configID)
             if key and talentValues[key] ~= nil then return key end
@@ -561,10 +561,10 @@ CUI.AtOptionsLogin(function()
             local scope = mod.GetScope()
             return scope == nil or scope == mod.GetCurrentSpecID()
         end
-        local function HasSelection() return GearPick() ~= nil or TalentPickKey() ~= nil end
-        local function CanSave() return GearPick() ~= nil or (TalentPickKey() ~= nil and TalentScopeOK()) end
+        local function HasSelection() return GearPick() ~= nil or PickedTalentKey() ~= nil end
+        local function CanSave() return GearPick() ~= nil or (PickedTalentKey() ~= nil and TalentScopeOK()) end
         local function SaveBlockedTip()
-            if TalentPickKey() and not TalentScopeOK() then return TALENT_SCOPE end
+            if PickedTalentKey() and not TalentScopeOK() then return TALENT_SCOPE end
             return PICK_FIRST
         end
         -- Drop a pick its list no longer holds before an action reads the
@@ -573,7 +573,7 @@ CUI.AtOptionsLogin(function()
             gearUpdate()
             talentUpdate()
             if mod.GetSelectedSet() ~= nil and not GearPick() then mod.SetSelectedSet(nil) end
-            if mod.GetSelectedTalent() ~= nil and not TalentPickKey() then mod.SetSelectedTalent(nil) end
+            if mod.GetSelectedTalent() ~= nil and not PickedTalentKey() then mod.SetSelectedTalent(nil) end
         end
 
         local pickRow
@@ -594,7 +594,7 @@ CUI.AtOptionsLogin(function()
             values = talentValues,
             order = talentOrder,
             tooltip = "The talent loadout the Save buttons assign.",
-            getValue = function() return TalentPickKey() or NONE end,
+            getValue = function() return PickedTalentKey() or NONE end,
             setValue = SetSelectedTalentKey,
             disabled = function() return not TalentScopeOK() end,
             disabledTooltip = TALENT_SCOPE,

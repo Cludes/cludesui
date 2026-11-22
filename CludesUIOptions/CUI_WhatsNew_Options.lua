@@ -400,7 +400,7 @@ function CUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         labelFS:SetText(CUI.L("New Patch Reminder Dot"))
         row:SetSize(BOX + 10 + (labelFS:GetStringWidth() or 130), 20)
         Pix.Point(row, "TOPRIGHT", hostFrame, "TOPRIGHT", -PAD, cursorY + 2)
-        local function Paint()
+        local function PaintPatchDot()
             local on = not (CludesUIDB and CludesUIDB.patchDotDisabled)
             check:SetShown(on)
             check:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
@@ -410,12 +410,12 @@ function CUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
                 boxBrd:SetColor(1, 1, 1, 0.25)
             end
         end
-        Paint()
-        OnAccent(check, function() Paint() end)
+        PaintPatchDot()
+        OnAccent(check, function() PaintPatchDot() end)
         row:SetScript("OnClick", function()
             if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.patchDotDisabled = (not CludesUIDB.patchDotDisabled) and true or nil
-            Paint()
+            PaintPatchDot()
             if CUI._UpdatePatchDot then CUI._UpdatePatchDot() end
         end)
         row:SetScript("OnEnter", function(self)

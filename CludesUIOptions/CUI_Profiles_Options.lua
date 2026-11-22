@@ -186,7 +186,7 @@ local function BuildAddonListRow(scrollChild, i, entry, fullWidth, o)
     local boxFrame, tick, boxBorder, boxBg = CheckBox(lineFrame, true)
     boxFrame:SetPoint("CENTER", lineFrame, "RIGHT", INCLUDE_CENTER_X, 0)
 
-    local function ApplyRowVisual()
+    local function PaintRowState()
         local state = not o.active and "blocked" or (entry.getVal() and "included" or "skipped")
         local look = ROW_LOOK[state]
         nameFs:SetAlpha(look.name)
@@ -207,8 +207,8 @@ local function BuildAddonListRow(scrollChild, i, entry, fullWidth, o)
             statusFs:SetTextColor(1, 1, 1, 0.35)
         end
     end
-    ApplyRowVisual()
-    o.visuals[#o.visuals + 1] = ApplyRowVisual
+    PaintRowState()
+    o.visuals[#o.visuals + 1] = PaintRowState
 
     local hoverTex = lineFrame:CreateTexture(nil, "ARTWORK")
     hoverTex:SetAllPoints()
@@ -241,7 +241,7 @@ local function BuildAddonListRow(scrollChild, i, entry, fullWidth, o)
     clickBtn:SetFrameLevel(lineFrame:GetFrameLevel() + 2)
     clickBtn:SetScript("OnClick", function()
         entry.setVal(not entry.getVal())
-        o.onToggle(ApplyRowVisual)
+        o.onToggle(PaintRowState)
     end)
     clickBtn:SetScript("OnEnter", function()
         hoverTex:Show()

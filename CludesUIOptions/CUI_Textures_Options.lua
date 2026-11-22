@@ -844,7 +844,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local function saved() return _G._CURB_AceDB and _G._CURB_AceDB.profile end
-    local function RBApply()
+    local function ApplyResourceBars()
         if _G._CURB_Apply then _G._CURB_Apply() end
     end
     if CUI.AppendSharedMediaTextures then
@@ -888,7 +888,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             local profile = saved()
             if not (profile and profile.general) then return end
             profile.general.barTexture = value
-            RBApply()
+            ApplyResourceBars()
         end,
     }, {
         type = "dropdown",
@@ -903,7 +903,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             local profile = saved()
             if not (profile and profile.castBar) then return end
             profile.castBar.texture = value
-            RBApply()
+            ApplyResourceBars()
             if CUI.NotifyElementResized then CUI.NotifyElementResized("ERB_CastBar") end
         end,
     })
@@ -911,7 +911,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
     -- Textured Background cogs.
     local environ = mod._CURB_OptEnv
     local function TexRowCfg(kind)
-        return function() return environ and environ.TexBgRowCfg(kind, RBApply) end
+        return function() return environ and environ.TexBgRowCfg(kind, ApplyResourceBars) end
     end
     AddTexBgCog(barTexRow._leftRegion, TexRowCfg("bars"))
     AddTexBgCog(barTexRow._rightRegion, TexRowCfg("cast"), "castbar")
@@ -935,7 +935,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
                     local profile = saved()
                     if not profile then return end
                     mod.ERB_SetBarTexture(profile, barId, val ~= "__match" and val)
-                    RBApply()
+                    ApplyResourceBars()
                     -- Neither bar has its own texture any more: the row goes.
                     if profile.splitTex ~= true then CUI:RefreshPage(true) end
                 end,
@@ -964,7 +964,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             local profile = saved()
             if not (profile and profile.gcdBar) then return end
             profile.gcdBar.texture = value
-            RBApply()
+            ApplyResourceBars()
             if CUI.NotifyElementResized then CUI.NotifyElementResized("ERB_GCDBar") end
         end,
     }, BLANK())

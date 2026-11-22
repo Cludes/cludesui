@@ -346,7 +346,7 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
         }
     end
     -- A category toggle's colour, locked while the feature or that category is off
-    local function sctSwatch(region, settingKey, colorKey, labelText)
+    local function sctColorSwatch(region, settingKey, colorKey, labelText)
         if CUI._prebuilding then return end
         CUI.BuildInlineSwatches(region, {
             {
@@ -473,8 +473,8 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
         sctToggle("Show Healing Received", "heal")
     )
     cursorY = cursorY - height
-    sctSwatch(sctRow2._leftRegion, "damage", "damageColor", "Show Damage Taken")
-    sctSwatch(sctRow2._rightRegion, "heal", "healColor", "Show Healing Received")
+    sctColorSwatch(sctRow2._leftRegion, "damage", "damageColor", "Show Damage Taken")
+    sctColorSwatch(sctRow2._rightRegion, "heal", "healColor", "Show Healing Received")
 
     local sctRow3
     sctRow3, height = W:DualRow(
@@ -484,8 +484,8 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
         sctToggle("Show Combat Enter/Leave", "combat")
     )
     cursorY = cursorY - height
-    sctSwatch(sctRow3._leftRegion, "avoid", "avoidColor", "Show Avoidance")
-    sctSwatch(sctRow3._rightRegion, "combat", "combatColor", "Show Combat Enter/Leave")
+    sctColorSwatch(sctRow3._leftRegion, "avoid", "avoidColor", "Show Avoidance")
+    sctColorSwatch(sctRow3._rightRegion, "combat", "combatColor", "Show Combat Enter/Leave")
 
     return cursorY
 end
@@ -1490,14 +1490,14 @@ CUI.AtOptionsLogin(function()
             CUI.SetGlyphAlpha(eyeButton, durOff() and 0.15 or 0.4)
             local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
-            local function RefreshDurEye()
+            local function SyncDurabilityEye()
                 if durabilityPreview then
                     eyeTex:SetTexture(EYE_INVISIBLE)
                 else
                     eyeTex:SetTexture(EYE_VISIBLE)
                 end
             end
-            RefreshDurEye()
+            SyncDurabilityEye()
             eyeButton:SetScript("OnEnter", function(self)
                 CUI.SetGlyphAlpha(self, 0.7)
                 CUI.ShowWidgetTooltip(self, "Preview durability warning")
@@ -1508,7 +1508,7 @@ CUI.AtOptionsLogin(function()
             end)
             eyeButton:SetScript("OnClick", function(self)
                 durabilityPreview = not durabilityPreview
-                RefreshDurEye()
+                SyncDurabilityEye()
                 if durabilityPreview then
                     if CUI._applyDurWarn then CUI._applyDurWarn() end
                     if CUI._durWarnPreview then CUI._durWarnPreview() end
@@ -1531,7 +1531,7 @@ CUI.AtOptionsLogin(function()
                 local isOff = durOff()
                 if isOff then
                     durabilityPreview = false
-                    RefreshDurEye()
+                    SyncDurabilityEye()
                     CUI.SetGlyphAlpha(eyeButton, 0.15)
                     eyeBlock:Show()
                 else
@@ -2409,12 +2409,12 @@ CUI.AtOptionsLogin(function()
                 local p = PRESETS and (PRESETS[s] or PRESETS.Normal)
                 return (p and p.width) or 2
             end
-            local function applyCH()
+            local function applyCrosshair()
                 if CUI._applyCrosshair then CUI._applyCrosshair() end
             end
             local function dbset(keyName, val)
                 cset(keyName, val)
-                applyCH()
+                applyCrosshair()
             end
             -- Re-resolve the size dropdown's label so it shows "Custom" (or snaps
             -- back to a preset) live when the thickness is changed in this cog.
@@ -2486,7 +2486,7 @@ CUI.AtOptionsLogin(function()
                     end,
                     set = function(red, green, blue, a)
                         cset("crosshairBorderColor", { r = red, g = green, b = blue, a = a or 1 })
-                        applyCH()
+                        applyCrosshair()
                     end,
                 },
                 {
@@ -2529,7 +2529,7 @@ CUI.AtOptionsLogin(function()
                         if CUI._RefreshCrosshairCutoffRange then
                             CUI._RefreshCrosshairCutoffRange()
                         end
-                        applyCH()
+                        applyCrosshair()
                     end,
                 }
             end

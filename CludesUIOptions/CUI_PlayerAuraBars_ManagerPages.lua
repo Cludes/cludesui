@@ -568,7 +568,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, startY, rowConf, apply
         if region._control then region._control:Hide() end
         local function AllBuffsOn() return rowConf.showAllBuffs ~= false end
         local function BroadOn() return rowConf.showAllBuffs ~= false or rowConf.hasDuration == true end
-        local function FilterItems()
+        local function FilterChoices()
             local filters = DedupedFilterItems()
             local itemList = {
                 {
@@ -633,7 +633,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, startY, rowConf, apply
             region,
             190,
             region:GetFrameLevel() + 2,
-            FilterItems,
+            FilterChoices,
             function(keyName, neg)
                 if keyName == PAB_ALL_BUFFS_KEY then return AllBuffsOn() end
                 if keyName == PAB_HAS_DURATION_KEY then return rowConf.hasDuration == true end
@@ -899,7 +899,7 @@ local function BuildAssignedDebuffsFields(widget, fontFile, startY, rowConf, app
         local lockedTip = Loc(
             "All Debuffs is selected, so every debuff already shows. Use the red Hide box to exclude these instead."
         )
-        local function FilterItems()
+        local function FilterChoices()
             local itemList = {
                 {
                     key = PAB_ALL_DEBUFFS_KEY,
@@ -983,7 +983,7 @@ local function BuildAssignedDebuffsFields(widget, fontFile, startY, rowConf, app
             region,
             190,
             region:GetFrameLevel() + 2,
-            FilterItems,
+            FilterChoices,
             function(keyName, neg)
                 if keyName == PAB_ALL_DEBUFFS_KEY then return AllOn() end
                 if keyName == PAB_DEBUFF_HAS_DUR_KEY then return rowConf.hasDuration == true end

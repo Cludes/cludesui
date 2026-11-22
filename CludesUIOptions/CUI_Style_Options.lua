@@ -436,7 +436,7 @@ Register("chat", "CludesUIChat", "Chat", ChatProfile, "useBlizzardStyle", "useCl
 -- ApplyAll leaves it out; a pick here is saved either way (false = the
 -- CludesUI style), so it holds against that majority.
 if IS_FOREVER then
-    local function BagsProfile()
+    local function BagsProfileOf()
         local db = CUI._bagsDB
         return db and db.profile
     end
@@ -446,16 +446,16 @@ if IS_FOREVER then
         display = "Bags",
         styles = { cui = true, forever = true },
         firstInstall = false,
-        profile = BagsProfile,
+        profile = BagsProfileOf,
         foreverFlag = "useForeverStyle",
         foreverLatch = "BagsForever",
         get = function()
-            local p = BagsProfile()
+            local p = BagsProfileOf()
             local num = p and ModuleNS("CludesUIBags")
             return (num and num.BagsForeverWanted(p)) and "forever" or "cui"
         end,
         set = function(styleKey)
-            local p = BagsProfile()
+            local p = BagsProfileOf()
             if p then p.useForeverStyle = (styleKey == "forever") end
         end,
         active = function()

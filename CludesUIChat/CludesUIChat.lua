@@ -288,7 +288,7 @@ function CHAT.InputOnTop(conf) return (conf.inputOnTop and not mod.ChatStock()) 
 function CHAT.BordersHidden(conf) return (conf.hideBorders or mod.ChatStock()) and true or false end
 
 local Pix = CUI.PP
-local function GetFont()
+local function ChatFont()
     local conf = CHAT.DB()
     local fontKey = conf.font or "__global"
     if fontKey == "__global" then return (CUI.GetFontPath("chat")) or STANDARD_TEXT_FONT end
@@ -308,7 +308,7 @@ end
 -- Published for the tabs and the stock sidebar, which follow the Chat page's own font and
 -- outline pickers, not just the global "chat" module font. Going straight to
 -- CUI.GetFontPath("chat") skips the cfg.font / cfg.outlineMode overrides above.
-CHAT.GetFont = GetFont
+CHAT.GetFont = ChatFont
 CHAT.GetOutlineFlag = GetOutlineFlag
 
 -- Strength 100 is a true full hide: alpha 0 plus mouse passthrough
@@ -382,9 +382,9 @@ end
 local function GetEditBoxHeight() return min(60, upper(10, CHAT.DB().editBoxHeight or 23)) end
 local function GetEditBoxFont()
     local key = CHAT.DB().editBoxFont
-    if not key or key == "__chat" then return GetFont() end
+    if not key or key == "__chat" then return ChatFont() end
     if key == "__global" then return (CUI.GetFontPath("chat")) or STANDARD_TEXT_FONT end
-    return (CUI.ResolveFontName(key)) or GetFont()
+    return (CUI.ResolveFontName(key)) or ChatFont()
 end
 local function GetEditBoxFontSize(ident) return CHAT.DB().editBoxFontSize or GetFrameFontSize(ident) end
 -- Tab font size is hardcoded to 11 (no getter).
@@ -704,7 +704,7 @@ end
 -- combat log renders through ChatFrame2, and their buffers should wrap
 -- identically to ours for backfill copies.
 function CHAT.ApplyFonts()
-    local font = GetFont()
+    local font = ChatFont()
     local editFont = GetEditBoxFont()
     local outline = GetOutlineFlag()
     for index = 1, 20 do
@@ -1565,7 +1565,7 @@ CludesUI.NewInternals(mod, "_internals", {
     GetEditBoxFont = GetEditBoxFont,
     GetEditBoxFontSize = GetEditBoxFontSize,
     GetEditBoxHeight = GetEditBoxHeight,
-    GetFont = GetFont,
+    GetFont = ChatFont,
     GetFrameFontSize = GetFrameFontSize,
     GetIdleFadeAlpha = GetIdleFadeAlpha,
     GetInnerBorderColor = GetInnerBorderColor,

@@ -4671,7 +4671,7 @@ do
         alertFrame:Hide()
     end
 
-    local function ShowAlert(label, classFile)
+    local function ShowLabelAlert(label, classFile)
         if not label then return end
         BuildAlertOverlay()
         StyleAlertOverlay()
@@ -4762,7 +4762,7 @@ do
         end
         -- One alert per poll (extra ShowAlert calls would just clobber each other) and at most one throttled sound.
         if newlyDeadCount then
-            ShowAlert(newlyDeadName, newlyDeadClass)
+            ShowLabelAlert(newlyDeadName, newlyDeadClass)
             TryPlayDeathSound()
         end
     end
@@ -4808,14 +4808,14 @@ do
     -- Fires a sample alert (with sound) so the look/sound can be checked without a real death; uses your own name/class as preview text.
     CUI._announceGroupDeathsPreview = function()
         local _, classFile = UnitClass("player")
-        ShowAlert(UnitName("player"), classFile)
+        ShowLabelAlert(UnitName("player"), classFile)
         PlayDeathSound()
     end
 
     -- Visual-only preview (used by the Text Size slider so dragging it doesn't repeatedly fire the sound).
     CUI._groupDeathShowVisual = function()
         local _, classFile = UnitClass("player")
-        ShowAlert(UnitName("player"), classFile)
+        ShowLabelAlert(UnitName("player"), classFile)
     end
 
     CUI._groupDeathPlaySound = PlayDeathSound
@@ -4930,7 +4930,7 @@ do
         return (store and store.combatAlertEnterText) or DEFAULTS.enterText
     end
 
-    local function ShowAlert(which, preview)
+    local function ShowLabelAlert(which, preview)
         local red, green, blue = ResolveColor(which)
         CUI.Alerts.Line("combat").Show(AlertText(which), red, green, blue, preview)
     end
@@ -4940,9 +4940,9 @@ do
         if not (store and store.combatAlertEnabled) then return end
         local mode = store.combatAlertMode or "both"
         if eventName == "PLAYER_REGEN_DISABLED" then
-            if mode ~= "leave" then ShowAlert("enter") end
+            if mode ~= "leave" then ShowLabelAlert("enter") end
         elseif eventName == "PLAYER_REGEN_ENABLED" then
-            if mode ~= "enter" then ShowAlert("leave") end
+            if mode ~= "enter" then ShowLabelAlert("leave") end
         end
     end
 
@@ -4962,7 +4962,7 @@ do
     CUI._applyCombatAlert = ApplyCombatAlert
 
     -- Fires a sample alert for the given transition so the look can be checked from the options cog without a real combat change.
-    CUI._combatAlertPreview = function(which) ShowAlert(which, true) end
+    CUI._combatAlertPreview = function(which) ShowLabelAlert(which, true) end
 
     -- Re-apply size/position (called from the Text Size slider).
     CUI._applyCombatAlertFrame = function() CUI.Alerts.Refresh() end

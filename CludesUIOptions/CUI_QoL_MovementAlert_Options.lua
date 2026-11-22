@@ -126,7 +126,7 @@ local MOVEMENT_DEFAULT_OFF = CUI._MovementDefaultOff or {}
 -- Voices are enumerated live from C_VoiceChat rather than a static list --
 -- availability varies by client/OS. Falls back to a single "Default" entry
 -- (voiceID 0) if the API or voice list isn't available.
-local function TTSVoiceDropdownValues()
+local function VoiceChoices()
     local values, sequence = { [0] = "Default" }, { 0 }
     if C_VoiceChat and C_VoiceChat.GetTtsVoices then
         local success, voices = pcall(C_VoiceChat.GetTtsVoices)
@@ -537,7 +537,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     -- every slot keeps the exact profile keys and side-effects the popup rows had;
     -- RefreshPage() is added only where a value gates another widget's disabled state.
     local sndValues, sndOrder = CUI.BuildSoundDropdownValues()
-    local ttsValues, ttsOrder = TTSVoiceDropdownValues()
+    local ttsValues, ttsOrder = VoiceChoices()
 
     -- Bar texture dropdown: identical catalog + SharedMedia merge +
     -- texture-preview rows as the CDM Tracking Bars "Bar Texture" dropdown.
@@ -860,7 +860,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         local playerClass = select(2, UnitClass("player"))
         if not ma.spellOverrides then ma.spellOverrides = {} end
 
-        local function GridChanged()
+        local function OnGridChanged()
             if CUI._RebuildMovementSpellLookup then CUI._RebuildMovementSpellLookup() end
             if CUI._CacheMovementSpells then CUI._CacheMovementSpells() end
             ApplyMovementAlert()
@@ -1022,7 +1022,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         ShowAddSpellPopup(function(spellId)
                             ma.spellOverrides[spellId] = ma.spellOverrides[spellId]
                                 or { enabled = true, class = playerClass }
-                            GridChanged()
+                            OnGridChanged()
                             CUI:RefreshPage(true)
                         end)
                     end)
@@ -1072,7 +1072,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     -- Enable Movement Alerts dropdown (tracking can never
                     -- fire for it). The X delete on custom cells stays live
                     -- so stale entries can still be cleaned up.
-                    local function CellDisabled()
+                    local function ClassCellOff()
                         local ec = ma.enabledClasses
                         if not ec then return true end
                         if entry.classToken then return not ec[entry.classToken] end
@@ -1080,7 +1080,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end
 
                     local function PaintCell()
-                        local dis = CellDisabled()
+                        local dis = ClassCellOff()
                         local on = entry.getVal()
                         if on then
                             check:Show()
@@ -1100,7 +1100,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     PaintCell()
 
                     button:SetScript("OnClick", function(_, mouseButton)
-                        if CellDisabled() then return end
+                        if ClassCellOff() then return end
                         if mouseButton == "RightButton" then
                             local shade = ma.spellOverrides[entry.spellId]
                             ShowCustomTextPopup(entry.label, shade and shade.customText or "", function(txt)
@@ -1116,10 +1116,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         end
                         entry.setVal(not entry.getVal())
                         PaintCell()
-                        GridChanged()
+                        OnGridChanged()
                     end)
                     button:SetScript("OnEnter", function()
-                        if CellDisabled() then
+                        if ClassCellOff() then
                             CUI.ShowWidgetTooltip(
                                 cell,
                                 CUI.DisabledTooltip("Enable this class above")
@@ -1149,7 +1149,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         delBtn:SetScript("OnLeave", function() delIcon:SetAlpha(0.4) end)
                         delBtn:SetScript("OnClick", function()
                             ma.spellOverrides[entry.spellId] = nil
-                            GridChanged()
+                            OnGridChanged()
                             CUI:RefreshPage(true)
                         end)
                     end
@@ -1208,7 +1208,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     if not CUI._prebuilding then
         local leftRegion = extraRow._leftRegion
         local sndValues2, sndOrder2 = CUI.BuildSoundDropdownValues()
-        local ttsValues2, ttsOrder2 = TTSVoiceDropdownValues()
+        local ttsValues2, ttsOrder2 = VoiceChoices()
         CUI.BuildInlineCog(leftRegion, {
             title = "Time Spiral Settings",
             minWidth = 300,
@@ -1296,7 +1296,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     if not CUI._prebuilding then
         local region = extraRow._rightRegion
         local sndValues2, sndOrder2 = CUI.BuildSoundDropdownValues()
-        local ttsValues2, ttsOrder2 = TTSVoiceDropdownValues()
+        local ttsValues2, ttsOrder2 = VoiceChoices()
         CUI.BuildInlineCog(region, {
             title = "Gateway Shard Settings",
             minWidth = 300,

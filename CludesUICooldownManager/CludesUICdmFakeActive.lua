@@ -168,7 +168,7 @@ local _slotItemKey = {}
 -- over any of them -- so an on-use head piece or weapon has the identical
 -- two-token problem a trinket does. Driving off the same table the rest of the
 -- module uses keeps the two from drifting apart again.
-local function RefreshSlotItemKeys()
+local function ReadSlotItemKeys()
     wipe(_slotItemKey)
     local slots = mod.INV_SLOT_NAMES
     if not slots then return end
@@ -201,7 +201,7 @@ local function KeyMatches(ruleKey, frameKey)
         local nowTime = GetTime()
         if nowTime >= _slotKeyNextTry then
             _slotKeyNextTry = nowTime + 0.2
-            RefreshSlotItemKeys()
+            ReadSlotItemKeys()
         end
     end
     return _slotItemKey[frameKey] == ruleKey or _slotItemKey[ruleKey] == frameKey
@@ -1086,7 +1086,7 @@ OnEvent = function(self, evt, unitToken, updateInfo, spellId)
         -- The key map covers every equipment slot, so ANY swap can stale it --
         -- refresh unconditionally. It is a wipe plus one lookup per slot on an
         -- event that fires only when gear actually changes.
-        RefreshSlotItemKeys()
+        ReadSlotItemKeys()
         -- Gear changed: one re-evaluation so a swapped-in mid-cooldown item
         -- paints its cd-state (trinket slots re-arm below, which also evals).
         QueueCdStateEval()
@@ -1896,7 +1896,7 @@ function mod.FakeActive_Rearm()
     wipe(_settledCastItems)
     -- Re-read rather than wipe: a re-arm during the login window would leave
     -- the map empty and the lazy refresh in KeyMatches would just rebuild it.
-    RefreshSlotItemKeys()
+    ReadSlotItemKeys()
     _needAura, _needCast, _armed, _hasUserRules, _needUsable, _needForms, _needFormAuras =
         false, false, false, false, false, false, false
     _needStance = false
