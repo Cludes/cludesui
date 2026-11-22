@@ -1083,7 +1083,7 @@ local function GetPlayerMovementSpells()
     return result
 end
 
-local function UpdateCachedCharges()
+local function CacheSpellCharges()
     if inCombat or InCombatLockdown() then return end
     for _, record in ipairs(cachedMovementSpells) do
         if record.checkType == "buffActive" then
@@ -1220,7 +1220,7 @@ local function LoadMovementSpells(fullReset)
         end
     end
 
-    UpdateCachedCharges()
+    CacheSpellCharges()
 end
 CUI._CacheMovementSpells = LoadMovementSpells
 
@@ -1901,7 +1901,7 @@ movementCheckFrame:SetScript("OnUpdate", function(self)
     self:Hide()
     if movementCheckCharges then
         movementCheckCharges = false
-        UpdateCachedCharges()
+        CacheSpellCharges()
     end
     CheckMovementCooldown()
 end)
@@ -2167,7 +2167,7 @@ local function StopMovementPreview()
     CheckMovementCooldown()
 end
 
-local function PreviewTick()
+local function PreviewStep()
     local alertCfg = AlertCfg()
     -- Auto-shutoff: options window closed, or the user navigated to another
     -- page/module. (Page name must match PAGE_MOVEMENT in CUI_QoL_Options.lua.)
@@ -2210,8 +2210,8 @@ local function StartMovementPreview()
     -- The preview owns the display: stop the real poll loop (its state
     -- resumes from StopMovementPreview's CheckMovementCooldown call).
     StopMovementCountdown()
-    movementPreviewTicker = C_Timer.NewTicker(0.1, PreviewTick)
-    PreviewTick()
+    movementPreviewTicker = C_Timer.NewTicker(0.1, PreviewStep)
+    PreviewStep()
 end
 
 CUI._MovementAlertPreviewActive = function() return movementPreviewTicker ~= nil end
@@ -2249,7 +2249,7 @@ local glowCooldown = 0
 local procDebounce = 0
 local castFilters = {}
 
-local function RefreshCastFilters()
+local function LoadCastFilters()
     wipe(castFilters)
     local classData = MOVEMENT_ABILITIES[select(2, UnitClass("player"))]
     if not classData or not classData.filter then return end
@@ -2591,7 +2591,7 @@ local function UpdateEventRegistration()
         loadFrame:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
         loadFrame:RegisterEvent("UNIT_SPELLCAST_SENT")
         timeSpiralEventsRegistered = true
-        RefreshCastFilters()
+        LoadCastFilters()
     elseif not alertCfg.tsEnabled and timeSpiralEventsRegistered then
         loadFrame:UnregisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
         loadFrame:UnregisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
@@ -2729,7 +2729,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         if not InCombatLockdown() then
             LoadMovementSpells(true)
             CheckMovementCooldown()
-            RefreshCastFilters()
+            LoadCastFilters()
         end
     elseif evt == "UPDATE_SHAPESHIFT_FORM" then
         LoadMovementSpells()

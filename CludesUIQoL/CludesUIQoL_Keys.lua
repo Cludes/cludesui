@@ -166,7 +166,7 @@ local function StoreOwnKey()
     if me then partyKeys[me] = { dungeon = map, keyLevel = lvl, rating = rating, classFile = myClassFile } end
 end
 
-local function QueryPartyKeys()
+local function RequestPartyKeys()
     if not LibKeystone then return end
     -- A party of your own: PARTY from a Dungeon Finder group alone only brings back "You aren't in a party."
     if IsInGroup(LE_PARTY_CATEGORY_HOME) then LibKeystone.Request("PARTY") end
@@ -286,7 +286,7 @@ local function MakePopup()
         refBtn:EnableMouse(false)
         refTex:SetAlpha(0.15)
         StoreOwnKey()
-        if IsInGroup() then QueryPartyKeys() end
+        if IsInGroup() then RequestPartyKeys() end
         ShowKeystonePopup()
         if IsInGroup() then C_Timer.After(1.0, ShowKeystonePopup) end
         C_Timer.After(2, function()
@@ -655,7 +655,7 @@ end
 -- solicits a reply from every online guild member running the lib), and each
 -- rebuild re-lays-out every row. Coalesce bursts into one rebuild per 0.2s.
 local refreshQueued = false
-local function RefreshPopupIfOpen()
+local function QueueDialogRefresh()
     if not (dialog and dialog:IsShown()) then return end
     if refreshQueued then return end
     refreshQueued = true
@@ -664,7 +664,7 @@ local function RefreshPopupIfOpen()
         if dialog and dialog:IsShown() then ShowKeystonePopup() end
     end)
 end
-_G._CUI_RefreshKeystonePopup = RefreshPopupIfOpen
+_G._CUI_RefreshKeystonePopup = QueueDialogRefresh
 
 -------------------------------------------------------------------------------
 --  LibKeystone callback
@@ -683,7 +683,7 @@ do
             if not playerName then return end
             local list = (channel == "GUILD") and guildKeys or partyKeys
             list[playerName] = { dungeon = keyMapID, keyLevel = keyLevel, rating = playerRating }
-            RefreshPopupIfOpen()
+            QueueDialogRefresh()
         end)
     end
 end
@@ -702,7 +702,7 @@ do
     SlashCmdList["CUIKEYS"] = function()
         if not enabled then return end
         StoreOwnKey()
-        QueryPartyKeys()
+        RequestPartyKeys()
         ShowKeystonePopup()
         C_Timer.After(1.0, ShowKeystonePopup)
     end

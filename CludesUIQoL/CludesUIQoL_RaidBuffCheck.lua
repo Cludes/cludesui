@@ -70,7 +70,7 @@ local colShown, colX = { true, true, true, true }, {}
 local buffsX, blockW
 local colsKey = 0
 
-local function SetColumns(runeShown, vantusShown)
+local function ShowColumns(runeShown, vantusShown)
     if buffsX and colShown[RUNE_COL] == runeShown and colShown[VANTUS_COL] == vantusShown then return end
     colShown[RUNE_COL], colShown[VANTUS_COL] = runeShown, vantusShown
     local posX = NAME_W
@@ -82,7 +82,7 @@ local function SetColumns(runeShown, vantusShown)
     blockW = buffsX + BUFF_SLOTS * BUFF_STEP + 2
     colsKey = colsKey + 1
 end
-SetColumns(true, false)
+ShowColumns(true, false)
 local providers = {} -- [classToken] = true for connected members
 local dirty, flushPending, rosterDirty = {}, false, false
 local runeReadable, vantusReadable -- every ID of the list is non-secret on this client; set on first open
@@ -129,7 +129,7 @@ end
 -------------------------------------------------------------------------------
 --  Aura lookups
 -------------------------------------------------------------------------------
-local function AllReadable(ids)
+local function AllAurasReadable(ids)
     local should = C_Secrets and C_Secrets.ShouldSpellAuraBeSecret
     if not should then return true end
     for index = 1, #ids do
@@ -733,7 +733,7 @@ end
 function Render()
     local filter = OnlyMissing()
     local runeRequired, vantusRequired = RuneRequired(), VantusRequired()
-    SetColumns(runeRequired, vantusRequired)
+    ShowColumns(runeRequired, vantusRequired)
     local nowTime = GetTime()
     for t = 1, TOTAL_ROWS do
         for key = 1, CELLS + 1 do
@@ -824,7 +824,7 @@ function Render()
     end
 end
 
-local function Rebuild()
+local function RebuildRows()
     if not widget or not widget:IsShown() or InCombatLockdown() then return end
     CollectUnits()
     local restricted = Restricted()
@@ -847,7 +847,7 @@ local function Flush()
     if rosterDirty then
         rosterDirty = false
         wipe(dirty)
-        Rebuild()
+        RebuildRows()
         return
     end
     local restricted = Restricted()
@@ -869,19 +869,19 @@ end
 -------------------------------------------------------------------------------
 --  Events
 -------------------------------------------------------------------------------
-local function Open()
+local function OpenWindow()
     if InCombatLockdown() then
         Msg(CUI.L("Raid Buff Check cannot be opened in combat."))
         return
     end
     if runeReadable == nil then
-        runeReadable = AllReadable(RUNE_IDS)
-        vantusReadable = AllReadable(VANTUS_IDS)
+        runeReadable = AllAurasReadable(RUNE_IDS)
+        vantusReadable = AllAurasReadable(VANTUS_IDS)
     end
     Build()
     widget:Show()
     Listen(true)
-    Rebuild()
+    RebuildRows()
 end
 
 -- Called by RaidTools' Apply (login, settings, profile switch).
@@ -908,7 +908,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
         rosterDirty = true
         QueueFlush()
     elseif evt == "READY_CHECK" then
-        if RT.HasAssist() then Open() end
+        if RT.HasAssist() then OpenWindow() end
     elseif evt == "PLAYER_REGEN_DISABLED" then
         if widget then widget:Hide() end
     end
@@ -921,5 +921,5 @@ function mod.ToggleBuffCheck()
         widget:Hide()
         return
     end
-    Open()
+    OpenWindow()
 end

@@ -50,7 +50,7 @@ local function AnyEnabled()
     return false
 end
 
-local function MaxSize()
+local function LargestAlertSize()
     local m = DEFAULT_SIZE
     for _, def in ipairs(DEFS) do
         if AlertDB(def.enabledKey) then m = math.max(m, SizeOf(def)) end
@@ -69,7 +69,7 @@ end
 
 local function PositionAnchor()
     if not anchor then return end
-    local size = MaxSize()
+    local size = LargestAlertSize()
     anchor:SetSize(size * 7, size + 14)
     local place = AnchorPos()
     anchor:ClearAllPoints()
@@ -242,7 +242,7 @@ local function RegisterUnlock()
                 return anchor
             end,
             getSize = function()
-                local size = MaxSize()
+                local size = LargestAlertSize()
                 return size * 7, size + 14
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
@@ -329,7 +329,7 @@ do
         end
     end
 
-    local function CancelTimer()
+    local function CancelPending()
         if timer then
             timer:Cancel()
             timer = nil
@@ -339,7 +339,7 @@ do
 
     local ArmTimer
 
-    local function OnReady()
+    local function OnItemReady()
         timer = nil
         local itemId = pendingItem
         pendingItem = nil
@@ -367,14 +367,14 @@ do
     end
 
     ArmTimer = function(itemId, delay)
-        CancelTimer()
+        CancelPending()
         pendingItem = itemId
-        timer = C_Timer.NewTimer(math.max(delay, 0), OnReady)
+        timer = C_Timer.NewTimer(math.max(delay, 0), OnItemReady)
         SyncCooldownEvent()
     end
 
     -- Try to start tracking the potion just used. Returns true once armed or given up.
-    local function TrackUsed()
+    local function TrackUsedItem()
         local itemId = usedItem
         if not itemId then return true end
         local start, dur = ReadCD(itemId)
@@ -412,7 +412,7 @@ do
 
     -- Every bag when turned on; afterwards only the bags BAG_UPDATE flagged.
     local dirtyBags = {}
-    local function ScanBags(onlyDirty)
+    local function ScanBagItems(onlyDirty)
         if not (GetInstant and GetUseSpell) then return end
         for bag = 0, NUM_BAG_SLOTS do
             if not onlyDirty or dirtyBags[bag] then
@@ -429,7 +429,7 @@ do
             local itemId = spellToItem[spellId]
             if not itemId then return end
             usedItem = itemId
-            if not TrackUsed() then
+            if not TrackUsedItem() then
                 SyncCooldownEvent()
                 -- No cooldown ever appeared (nothing to wait for): stop listening.
                 C_Timer.After(2, function()
@@ -440,7 +440,7 @@ do
                 end)
             end
         elseif evt == "BAG_UPDATE_COOLDOWN" then
-            if usedItem and TrackUsed() then return end
+            if usedItem and TrackUsedItem() then return end
             if pendingItem then
                 -- A reset (encounter end, death) makes the potion ready early.
                 local start, dur = ReadCD(pendingItem)
@@ -449,14 +449,14 @@ do
                         timer:Cancel()
                         timer = nil
                     end
-                    OnReady()
+                    OnItemReady()
                 end
             end
         elseif evt == "BAG_UPDATE" then
             local bag = ...
             if bag then dirtyBags[bag] = true end
         elseif evt == "BAG_UPDATE_DELAYED" then
-            ScanBags(true)
+            ScanBagItems(true)
         end
     end
 
@@ -467,11 +467,11 @@ do
             watcher:RegisterEvent("BAG_UPDATE")
             watcher:RegisterEvent("BAG_UPDATE_DELAYED")
             installed = true
-            ScanBags()
+            ScanBagItems()
         elseif not enabled and installed then
             watcher:UnregisterAllEvents()
             installed = false
-            CancelTimer()
+            CancelPending()
             usedItem = nil
             Alerts.Hide("potion")
         end
@@ -556,7 +556,7 @@ do
         lastHad = has
     end
 
-    local function MarkDirty()
+    local function QueueEvaluate()
         if dirty then return end
         dirty = true
         C_Timer.After(0, Evaluate) -- next frame: one pass per burst of events
@@ -574,14 +574,14 @@ do
             if not listening then
                 listening = true
                 CUI:RegisterUnlockModeListener("CUI_TalentAlert", function(isActive)
-                    if not isActive and installed then MarkDirty() end
+                    if not isActive and installed then QueueEvaluate() end
                 end)
                 -- Opening the talents counts as seeing the alert.
                 EventRegistry:RegisterCallback("PlayerSpellsFrame.TalentTab.Show", function()
                     if installed then Line().Dismiss() end
                 end, "CUI_TalentAlert")
             end
-            MarkDirty()
+            QueueEvaluate()
         elseif not enabled and installed then
             watcher:UnregisterAllEvents()
             installed = false
@@ -594,7 +594,7 @@ do
     watcher:SetScript("OnEvent", function(_, evt)
         -- A level-up brings new points: a dismissed alert shows again.
         if evt == "PLAYER_LEVEL_CHANGED" then dismissed = false end
-        MarkDirty()
+        QueueEvaluate()
     end)
 
     CUI._applyTalentAlert = ApplyPotionAlert

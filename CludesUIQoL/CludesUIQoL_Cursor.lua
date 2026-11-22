@@ -1094,11 +1094,11 @@ local function RegisterUnlockElements()
     -- mover sync reads isHidden every pass, and the options setters re-run
     -- this registration on every Attach flip, so the mover follows the toggle
     -- inside an open unlock session too.
-    local function GCDDetached()
+    local function GcdIsDetached()
         local g2 = GcdCfg()
         return g2.enabled and g2.attached == false
     end
-    local function CastDetached()
+    local function CastIsDetached()
         local castCfg = Cast_DB()
         return castCfg.enabled and castCfg.attached == false
     end
@@ -1109,9 +1109,9 @@ local function RegisterUnlockElements()
             label = "GCD Circle",
             group = "Cursor Lite",
             order = 500,
-            isHidden = function() return not GCDDetached() end,
+            isHidden = function() return not GcdIsDetached() end,
             getFrame = function()
-                if not GCDDetached() then return nil end
+                if not GcdIsDetached() then return nil end
                 return gcdRoot
             end,
             getSize = function()
@@ -1164,9 +1164,9 @@ local function RegisterUnlockElements()
             label = "Cast Bar Circle",
             group = "Cursor Lite",
             order = 501,
-            isHidden = function() return not CastDetached() end,
+            isHidden = function() return not CastIsDetached() end,
             getFrame = function()
-                if not CastDetached() then return nil end
+                if not CastIsDetached() then return nil end
                 return castRoot
             end,
             getSize = function()
