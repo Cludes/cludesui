@@ -365,7 +365,7 @@ local function GetSpecBindings(specID)
     return {}
 end
 
-local function GetGlobalBindings()
+local function GlobalBindingList()
     local clickDB = GetClickCastDB()
     return clickDB and clickDB.globals or {}
 end
@@ -625,7 +625,7 @@ end
 -- spell is one the character has not got: the global then competes for the key
 -- and the conflict filter hands it over); only enabled bindings; gated on the
 -- master enable toggle.
-local function GetActiveBindings()
+local function ActiveBindingList()
     local clickDB = GetClickCastDB()
     if not clickDB or not clickDB.enabled then return {} end
     local outcome, usedKeys, specBindings = {}, {}, {}
@@ -665,7 +665,7 @@ end
 local knownSig = ""
 local sigBits = {}
 local watchCommandDemon = false
-local function ComputeKnownSignature()
+local function KnownSpellSignature()
     watchCommandDemon = false
     local clickDB = GetClickCastDB()
     if not clickDB or not clickDB.enabled then return "" end
@@ -986,7 +986,7 @@ end
 
 -- The combat rez item a class with no battle rez falls back to: the first one
 -- carried, or nil.
-local function CarriedRezItem()
+local function FindCarriedRezItem()
     local _, playerClass = UnitClass("player")
     local rezKit = REZ_BY_CLASS[playerClass]
     if rezKit and rezKit.battle then return nil end
@@ -1127,7 +1127,7 @@ local function BuildBaseMacroText(bindRec)
             local harmfulName = ResolveHarmfulSpellName(bindRec)
             if harmfulName then
                 local lineList = {}
-                local function AddReactionLine(reaction, harmful)
+                local function AddReactionMacroLine(reaction, harmful)
                     local reactionEnabled = (reaction == "help" and unitType ~= "harmful")
                         or (reaction == "harm" and unitType ~= "friendly")
                     if not reactionEnabled then return end
@@ -1143,8 +1143,8 @@ local function BuildBaseMacroText(bindRec)
                         harmful
                     )
                 end
-                AddReactionLine("help", false)
-                AddReactionLine("harm", true)
+                AddReactionMacroLine("help", false)
+                AddReactionMacroLine("harm", true)
                 if #lineList == 0 then return nil end
                 return table.concat(lineList, "\n")
             end
@@ -2010,7 +2010,7 @@ burst.Get = function()
     local nowTime = GetTime()
     if burst.at ~= nowTime then
         burst.at = nowTime
-        burst.list = GetActiveBindings()
+        burst.list = ActiveBindingList()
     end
     return burst.list
 end
@@ -2480,12 +2480,12 @@ function mod.CC_ApplyBindings()
     NormalizeSavedBindingKeys()
     wipe(clearMemo)
 
-    local bindList = GetActiveBindings()
+    local bindList = ActiveBindingList()
     -- Fresh list becomes the burst list: any registration later this frame
     -- reads the post-write set.
     burst.at, burst.list = GetTime(), bindList
 
-    knownSig = ComputeKnownSignature()
+    knownSig = KnownSpellSignature()
     if knownSig ~= "" then
         eventHost:RegisterEvent("SPELLS_CHANGED")
     else
@@ -2512,7 +2512,7 @@ function mod.CC_ApplyBindings()
             end
         end
     end
-    rezItemID = wantRezItem and CarriedRezItem() or nil
+    rezItemID = wantRezItem and FindCarriedRezItem() or nil
     if wantRezItem then
         eventHost:RegisterEvent("BAG_UPDATE_DELAYED")
     else
@@ -2692,9 +2692,9 @@ function mod.CC_RemoveGlobalBinding(index)
 end
 
 -- Expose getters
-mod.CC_GetActiveBindings = GetActiveBindings
+mod.CC_GetActiveBindings = ActiveBindingList
 mod.CC_GetSpecBindings = GetSpecBindings
-mod.CC_GetGlobalBindings = GetGlobalBindings
+mod.CC_GetGlobalBindings = GlobalBindingList
 mod.CC_GetCurrentSpecID = CurrentSpecID
 mod.CC_GetCurrentSpecName = GetCurrentSpecName
 mod.CC_GetCurrentSpecIcon = GetCurrentSpecIcon
@@ -2974,7 +2974,7 @@ local function OnCCEvent(self, evt)
     elseif evt == "SPELLS_CHANGED" or evt == "UNIT_PET" then
         -- A talent or loadout swap that moved a bound spell in or out of the
         -- book; the apply re-resolves which binding owns each key.
-        if ComputeKnownSignature() ~= knownSig then
+        if KnownSpellSignature() ~= knownSig then
             if not InCombatLockdown() then
                 mod.CC_ApplyBindings()
             else
@@ -2983,7 +2983,7 @@ local function OnCCEvent(self, evt)
         end
     elseif evt == "BAG_UPDATE_DELAYED" then
         -- Re-applies only when the carried combat rez item changed.
-        if CarriedRezItem() ~= rezItemID then
+        if FindCarriedRezItem() ~= rezItemID then
             if not InCombatLockdown() then
                 mod.CC_ApplyBindings()
             else
@@ -2993,7 +2993,7 @@ local function OnCCEvent(self, evt)
     elseif evt == "UPDATE_MACROS" then
         -- A macro was created, edited, renamed or deleted: re-applies only when a
         -- bound macro now resolves or reads differently.
-        if MacroSignature(GetActiveBindings()) ~= macroSig then
+        if MacroSignature(ActiveBindingList()) ~= macroSig then
             if not InCombatLockdown() then
                 mod.CC_ApplyBindings()
             else
@@ -3439,7 +3439,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
     -- Lookup sets for already-bound spells/macros/items (used to dim in popups + strip)
     local boundSpells, boundMacros, boundItems = {}, {}, {}
-    for _, bind in ipairs(GetGlobalBindings()) do
+    for _, bind in ipairs(GlobalBindingList()) do
         if bind.spell then
             boundSpells[mod.CC_SpellBoundKey(bind.spellID, bind.spell, bind.rankPinned)] = true
         end
@@ -3455,7 +3455,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     end
     local _, playerClass = UnitClass("player")
     local hasDispel, hasExternal, hasDynamicRez = false, false, false
-    for _, gb in ipairs(GetGlobalBindings()) do
+    for _, gb in ipairs(GlobalBindingList()) do
         if gb.enabled and gb.key then
             if gb.type == "dispel" then hasDispel = true end
             if gb.type == "external" then hasExternal = true end
@@ -3966,7 +3966,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     local leftHeader = NewLabel(listPane, 13, 1, 1, 1, 0.75)
     leftHeader:SetPoint("TOP", listPane, "TOP", 0, -18)
     leftHeader:SetText(CludesUI.L("Global Bindings"))
-    CC.Sidebar(listPane, leftBg, leftHeader, #GetGlobalBindings())
+    CC.Sidebar(listPane, leftBg, leftHeader, #GlobalBindingList())
 
     local listScroll = CreateFrame("ScrollFrame", nil, listPane)
     listScroll:SetPoint("TOPLEFT", listPane, "TOPLEFT", 0, -38)
@@ -3983,7 +3983,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     end)
 
     local listY = 0
-    local globals = GetGlobalBindings()
+    local globals = GlobalBindingList()
     for i, gb in ipairs(globals) do
         local isSel = selectedSide == "global" and selectedIndex == i
         local canDelete = gb.customAction
@@ -4191,7 +4191,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             CC_PickerFinish(gridChildG, #itemsG, totalRowsG)
         end
 
-        local function UpdateToggleG()
+        local function RefreshGlobalPickerGrid()
             picker.tabsRefresh()
             gridScrollG:SetVerticalScroll(0)
             if picker.mode == "macro" then
@@ -4218,7 +4218,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                         hoverEnemy = true,
                     })
                     mod._ccSelSide = "global"
-                    mod._ccSelIndex = #(GetGlobalBindings())
+                    mod._ccSelIndex = #(GlobalBindingList())
                     RedrawPage()
                 end)
             elseif picker.mode == "item" then
@@ -4236,7 +4236,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                         hoverEnemy = true,
                     })
                     mod._ccSelSide = "global"
-                    mod._ccSelIndex = #(GetGlobalBindings())
+                    mod._ccSelIndex = #(GlobalBindingList())
                     RedrawPage()
                 end)
             else -- "action"
@@ -4249,16 +4249,16 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                         hovercast = false,
                     })
                     mod._ccSelSide = "global"
-                    mod._ccSelIndex = #(GetGlobalBindings())
+                    mod._ccSelIndex = #(GlobalBindingList())
                     RedrawPage()
                 end)
             end
         end
-        UpdateToggleG()
+        RefreshGlobalPickerGrid()
 
         picker.onTab = function(bindKey)
             picker.mode = bindKey
-            UpdateToggleG()
+            RefreshGlobalPickerGrid()
         end
 
         dialog:SetScript("OnShow", function(p)
@@ -4319,7 +4319,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
     -- Button bottom in scroll child space (positive downward)
     local globalBtnBottom = math.abs(listY)
-    local function UpdateLeftSticky()
+    local function SyncLeftStickyBar()
         local scrollVal = listScroll:GetVerticalScroll()
         local viewH = listScroll:GetHeight()
         if globalBtnBottom > scrollVal + viewH then
@@ -4335,9 +4335,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     local origLeftWheel = listScroll:GetScript("OnMouseWheel")
     listScroll:SetScript("OnMouseWheel", function(self, change)
         origLeftWheel(self, change)
-        UpdateLeftSticky()
+        SyncLeftStickyBar()
     end)
-    UpdateLeftSticky()
+    SyncLeftStickyBar()
 
     ---------------------------------------------------------------------------
     --  RIGHT SIDEBAR (Spec Bindings)
@@ -5002,7 +5002,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             CC_PickerFinish(gridChild, #items2, totalRows2)
         end
 
-        local function UpdateToggle()
+        local function RefreshSpecPickerGrid()
             picker.tabsRefresh()
             gridScroll:SetVerticalScroll(0)
 
@@ -5087,11 +5087,11 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 end)
             end
         end
-        UpdateToggle()
+        RefreshSpecPickerGrid()
 
         picker.onTab = function(bindKey)
             picker.mode = bindKey
-            UpdateToggle()
+            RefreshSpecPickerGrid()
         end
 
         -- Auto-close on click outside (dropdown pattern: poll IsMouseButtonDown)
@@ -5178,7 +5178,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     stickyQBBtn:Hide()
 
     local rightBtnBottom = math.abs(rightY)
-    local function UpdateRightSticky()
+    local function SyncRightStickyBar()
         local scrollVal = specScroll:GetVerticalScroll()
         local viewH = specScroll:GetHeight()
         if rightBtnBottom > scrollVal + viewH then
@@ -5198,9 +5198,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     local origRightWheel = specScroll:GetScript("OnMouseWheel")
     specScroll:SetScript("OnMouseWheel", function(self, change)
         origRightWheel(self, change)
-        UpdateRightSticky()
+        SyncRightStickyBar()
     end)
-    UpdateRightSticky()
+    SyncRightStickyBar()
 
     ---------------------------------------------------------------------------
     --  CENTER CONTENT
@@ -5729,7 +5729,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     overlayTex:SetAlpha(0.5)
                 end
             end
-            local function StripEnter()
+            local function OnStripEnter()
                 stripFrame._wantHover = true
                 if not stripFrame._pending then
                     stripFrame._pending = true
@@ -5744,7 +5744,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 end
             end
 
-            stripFrame:SetScript("OnEnter", StripEnter)
+            stripFrame:SetScript("OnEnter", OnStripEnter)
             stripFrame:SetScript("OnLeave", StripLeave)
 
             local stripScroll = CreateFrame("ScrollFrame", nil, stripFrame)
@@ -5763,7 +5763,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
             stripFrame._overlay, stripFrame._overlayTex = stripOverlay, overlayTex
             stripFrame._scroll, stripFrame._child = stripScroll, stripChild
-            stripFrame._enter, stripFrame._leave = StripEnter, StripLeave
+            stripFrame._enter, stripFrame._leave = OnStripEnter, StripLeave
             stripFrame._cells = {}
             mod._ccSpellStrip = stripFrame
         end
@@ -5781,7 +5781,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         stripFrame:SetAlpha(0.35)
         stripFrame._overlayTex:SetAlpha(1)
         local stripScroll, stripChild = stripFrame._scroll, stripFrame._child
-        local StripEnter, StripLeave = stripFrame._enter, stripFrame._leave
+        local OnStripEnter, StripLeave = stripFrame._enter, stripFrame._leave
         local cells = stripFrame._cells
         stripScroll:SetVerticalScroll(0)
         stripFrame:Show()
@@ -5819,7 +5819,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
             cellFrame:SetScript("OnEnter", function()
                 iconEdge:Show()
-                StripEnter()
+                OnStripEnter()
                 if not mod.CC_RankTip(cellFrame, spellRec) then
                     CludesUI.ShowWidgetTooltip(cellFrame, spellRec.name)
                 end
@@ -5859,7 +5859,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             if foci then
                 for modKey = 1, #foci do
                     if foci[modKey] == stripFrame then
-                        StripEnter()
+                        OnStripEnter()
                         break
                     end
                 end
