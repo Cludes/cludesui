@@ -163,6 +163,25 @@ end
 -- active one (the language picker's native-script entries).
 CludesUI.LocaleGlyphFont = GlyphFont
 
+-- Display names: the English text a setting is known by in code (left) and the
+-- name the panel shows for it (right). A new name must not already be English
+-- text anywhere in the suite, or EnKey would send that other text here.
+local ENGLISH_NAMES = {
+    ["Visibility Extras"] = "Also Show When",
+    ["Toggle Action Bar"] = "Show/Hide Keybind",
+    ["Always Show Buttons"] = "Show Empty Slots",
+    ["Number of Icons"] = "Icon Count",
+    ["Number of Rows"] = "Row Count",
+    ["Custom Button Shape"] = "Button Shape",
+    ["Bar Animations"] = "Button Effects",
+    ["Search Features..."] = "Search settings...",
+    ["Search Module Settings..."] = "Search this page...",
+    ["CUI Options Theme"] = "Window Theme",
+    ["CUI Options Language"] = "Settings Language",
+    ["Overlap Cycling"] = "Cycle Overlapping Frames",
+    ["Reset CUI Module Settings"] = "Reset Module Settings",
+}
+
 local function Activate()
     local client = GetLocale()
     if client == "enGB" then client = "enUS" end
@@ -180,7 +199,14 @@ local function Activate()
 
     reverse = {}
     if locale == "enUS" then
-        activeCatalog = nil
+        -- English shows CludesUI's own names for a few settings; the English text
+        -- in code stays the identity (search, dispatch, translations key on it).
+        local names = {}
+        for key, val in pairs(ENGLISH_NAMES) do
+            names[key] = val
+            reverse[val] = key
+        end
+        activeCatalog = names
     else
         local source = localeData[locale]
         -- Fill keys this locale leaves out from its FALLBACK locale once here,
@@ -199,6 +225,10 @@ local function Activate()
             localeData[fbCode] = nil
         end
         if source then
+            -- A setting this locale leaves untranslated shows its English display name.
+            for key, val in pairs(ENGLISH_NAMES) do
+                if source[key] == nil then source[key] = val end
+            end
             -- Resolve the "= true" keep-English sentinel and build the reverse map.
             for key, val in pairs(source) do
                 if val == true then
