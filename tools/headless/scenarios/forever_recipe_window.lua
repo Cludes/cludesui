@@ -5,7 +5,9 @@
 -- bags and bank. Shows the game's window and snapshots ours; picks a recipe
 -- and presses Create All and Create (records the CraftRecipe calls); searches
 -- by a reagent's name; the Have Materials filter; right-click favourites a
--- recipe; the Not learned tab and one recipe's source lines; the overview
+-- recipe; skill-up chances per row, the threshold line and the Best for
+-- Skill-ups sort (the bracers and belt are coloured yellow/green by the game
+-- but grey by the data, so they show no number); the Not learned tab and one recipe's source lines; the overview
 -- page's cards. Each step's state is written as == lines.
 local CUI = rawget(_G, "CludesUI")
 local RW = CUI and CUI._RecipeWindow
@@ -38,7 +40,7 @@ local recipes = {
         icon = 132400,
         learned = true,
         categoryID = 11,
-        relativeDifficulty = 3,
+        relativeDifficulty = 2,
     },
 }
 local schematics = {
@@ -210,6 +212,28 @@ CludesUIDB.professions.windowFilters = { favorite = true }
 W.Render()
 Report("favourites only")
 CludesUIDB.professions.windowFilters = {}
+
+-- Skill-ups: each row's chance, the picked recipe's threshold line, then the
+-- Best for Skill-ups sort.
+local function Chances(label)
+    local rows = {}
+    for _, r in ipairs(win.rows) do
+        if r:IsShown() and r.name:GetText() then
+            rows[#rows + 1] = r.name:GetText() .. "=" .. tostring(r.chance and r.chance:GetText() or "nil")
+        end
+    end
+    OUT:write(("== %s: %s\n"):format(label, table.concat(rows, "; ")))
+end
+W.Render()
+Chances("chances")
+row = RowNamed("Runed Copper Bracers")
+if row then row:GetScript("OnClick")(row, "LeftButton") end
+OUT:write("== thresholds: " .. (tostring(win.detail.needs:GetText()):gsub("|", "!"):gsub("\n", " / ")) .. "\n")
+CludesUIDB.professions.sortSkillUps = true
+W.Render()
+Chances("best for skill-ups")
+CludesUIDB.professions.sortSkillUps = nil
+W.Render()
 
 -- Not learned tab and the first recipe's source lines.
 win.tabs[2]:GetScript("OnClick")(win.tabs[2])

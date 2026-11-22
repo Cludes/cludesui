@@ -21,7 +21,15 @@ if not (CUI and CUI.IS_FOREVER) then return end
 local _, module = ...
 
 local F =
-    module.Feature("professions", { enabled = false, rankAlert = true, showLater = true, craftWindow = true })
+    module.Feature("professions", {
+        enabled = false,
+        rankAlert = true,
+        showLater = true,
+        craftWindow = true,
+        skillUpChances = true,
+        skillThresholds = true,
+        sortSkillUps = false,
+    })
 local Get, On = F.Get, F.Enabled
 
 local NPC_ID, NPC_NAME, NPC_FACTION, NPC_MAP, NPC_X, NPC_Y, NPC_PRICE = 1, 2, 3, 4, 5, 6, 7

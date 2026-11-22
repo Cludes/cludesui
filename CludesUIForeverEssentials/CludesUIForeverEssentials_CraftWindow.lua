@@ -347,11 +347,124 @@ local function Collapsed(key)
     return state.collapsed[key] == true
 end
 
+-------------------------------------------------------------------------------
+--  Skill-ups: a recipe's chance to raise your skill, from its yellow and grey
+--  levels in the recipe data (the game's own grey level wins when it gives
+--  one). Bands are the game's: 0 orange, 1 yellow, 2 green, 3 grey.
+-------------------------------------------------------------------------------
+local SkillUps = {}
+
+function SkillUps.Entry(spell)
+    local index = state.spellIndex
+    if not index then
+        index = {}
+        for _, region in ipairs(state.payload and state.payload.recipes or {}) do
+            index[region.spell] = region
+        end
+        state.spellIndex = index
+    end
+    return index[spell]
+end
+
+function SkillUps.Chance(skill, yellow, grey)
+    if skill >= grey then return 0, 3 end
+    if skill < yellow then return 1, 0 end
+    return (grey - skill) / (grey - yellow), skill < math.floor((yellow + grey) / 2) and 1 or 2
+end
+
+function SkillUps.Skill()
+    local prof = state.prof
+    return prof and prof.skill + (prof.modifier or 0)
+end
+
+-- learn, yellow, grey for a recipe the data knows.
+function SkillUps.Range(spell, liveGrey)
+    local region = SkillUps.Entry(spell)
+    if not (region and region.yellow) then return end
+    local grey = (type(liveGrey) == "number" and liveGrey > 0) and liveGrey or region.grey
+    if not grey or region.yellow > grey then return end
+    return Prof.Skill(region), region.yellow, grey
+end
+
+-- yellow, grey for a recipe you know, only when the data agrees with the
+-- colour the game gives it (the game is right when they differ).
+function SkillUps.Levels(info)
+    local _, yellow, grey = SkillUps.Range(info.recipeID, info.maxTrivialLevel)
+    local skill = SkillUps.Skill()
+    if not (yellow and skill) then return end
+    local chance, band = SkillUps.Chance(skill, yellow, grey)
+    if info.relativeDifficulty and info.relativeDifficulty ~= band then return end
+    return yellow, grey, chance
+end
+
+function SkillUps.ForRecipe(info)
+    if info.relativeDifficulty == 0 then return 1, 0 end
+    if info.relativeDifficulty == 3 then return 0, 3 end
+    local _, _, chance = SkillUps.Levels(info)
+    return chance, info.relativeDifficulty
+end
+
+-- "Skill-ups: yellow 100, green 112, grey 125  (now 60%)", each level in its colour.
+function SkillUps.Thresholds(info)
+    local yellow, grey, chance = SkillUps.Levels(info)
+    if not yellow then return end
+    local function Level(band, name, level)
+        local c = COLOUR.difficulty[band]
+        return CUI.HexColor(c[1], c[2], c[3]) .. name .. " " .. level .. "|r"
+    end
+    local text = "Skill-ups: "
+        .. Level(1, "yellow", yellow)
+        .. ", "
+        .. Level(2, "green", math.floor((yellow + grey) / 2))
+        .. ", "
+        .. Level(3, "grey", grey)
+    return text .. ("  (now %d%%)"):format(math.floor(chance * 100 + 0.5))
+end
+
+function SkillUps.ForUnlearned(entry)
+    local region, skill = entry.r, SkillUps.Skill()
+    if entry.status ~= "ready" or not (region.yellow and region.grey and skill) or region.yellow > region.grey then
+        return
+    end
+    return SkillUps.Chance(skill, region.yellow, region.grey)
+end
+
+-- Best for Skill-ups: every recipe that can still raise your skill, likeliest first.
+local function BestForSkillUps()
+    local shown = {}
+    for _, cat in ipairs(state.categories or {}) do
+        for _, info in ipairs(cat.recipes) do
+            local chance = SkillUps.ForRecipe(info)
+            if chance ~= 0 and Matches(info.name, info.recipeID) and PassesLearned(info) then
+                shown[#shown + 1] = { info = info, chance = chance or -1 }
+            end
+        end
+    end
+    table.sort(shown, function(lhs, rhs)
+        if lhs.chance ~= rhs.chance then return lhs.chance > rhs.chance end
+        return lhs.info.recipeID < rhs.info.recipeID
+    end)
+    return shown
+end
+
 local function BuildEntries()
     wipe(entries)
     local first, found
     learnedCount = 0
-    for _, cat in ipairs(state.categories or {}) do
+    local bySkill = state.tab == "learned" and Get("sortSkillUps") and not state.linked
+    if bySkill then
+        local shown = BestForSkillUps()
+        learnedCount = #shown
+        if #shown > 0 then
+            entries[#entries + 1] = { head = "best", name = "BEST FOR SKILL-UPS", count = #shown }
+            for _, item in ipairs(shown) do
+                first = first or item.info
+                if state.selected == item.info.recipeID then found = true end
+                if not Collapsed("best") then entries[#entries + 1] = { info = item.info } end
+            end
+        end
+    end
+    for _, cat in ipairs(bySkill and {} or state.categories or {}) do
         local shown = {}
         for _, info in ipairs(cat.recipes) do
             if Matches(info.name, info.recipeID) and PassesLearned(info) then shown[#shown + 1] = info end
@@ -532,6 +645,17 @@ local function OpenFilterMenu()
         root:CreateCheckbox("Have Materials", function() return f.materials end, Toggle("materials"))
         root:CreateCheckbox("Has Skill-Up", function() return f.skillUp end, Toggle("skillUp"))
         root:CreateDivider()
+        root:CreateTitle("Your recipes: sort")
+        local function Sort(bySkill)
+            return function()
+                F.Cfg().sortSkillUps = bySkill
+                state.offset = 0
+                Window.Render()
+            end
+        end
+        root:CreateRadio("By Category", function() return not Get("sortSkillUps") end, Sort(false))
+        root:CreateRadio("Best for Skill-ups", function() return Get("sortSkillUps") == true end, Sort(true))
+        root:CreateDivider()
         root:CreateTitle("Not learned: comes from")
         for _, s in ipairs(SOURCE_FILTERS) do
             root:CreateCheckbox(s.text, function() return f["src_" .. s.key] end, Toggle("src_" .. s.key))
@@ -605,6 +729,9 @@ local function NewRow(index)
     row.count = NewText(row, 12, COLOUR.text)
     row.count:SetPoint("RIGHT", -10, 0)
     row.count:SetJustifyH("RIGHT")
+    row.chance = NewText(row, 11, COLOUR.muted)
+    row.chance:SetPoint("RIGHT", row.count, "LEFT", -6, 0)
+    row.chance:SetJustifyH("RIGHT")
     row.star = row:CreateTexture(nil, "ARTWORK")
     row.star:SetSize(12, 12)
     row.star:SetTexture("Interface\\COMMON\\ReputationStar")
@@ -1067,6 +1194,7 @@ function Window.RenderList()
             row.sel:Hide()
             row.edge:Hide()
             row.star:Hide()
+            row.chance:SetText("")
             row.name:ClearAllPoints()
             if entry.head then
                 row.icon:Hide()
@@ -1080,7 +1208,7 @@ function Window.RenderList()
                 Kit.Font(row.name, 13, "essentials")
                 row.icon:Show()
                 row.name:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
-                local favourite
+                local favourite, chance, band
                 if entry.info then
                     local info = entry.info
                     row.icon:SetTexture(info.icon)
@@ -1090,6 +1218,7 @@ function Window.RenderList()
                     row.count:SetText(can > 0 and can or "")
                     Paint(row.count, COLOUR.text)
                     favourite = IsFavourite(info.recipeID, info)
+                    chance, band = SkillUps.ForRecipe(info)
                     local picked = info.recipeID == state.selected
                     row.sel:SetShown(picked)
                     row.edge:SetShown(picked)
@@ -1106,14 +1235,22 @@ function Window.RenderList()
                     row.count:SetText(unlearned.need)
                     Paint(row.count, UnlearnedColour(unlearned))
                     favourite = IsFavourite(spell)
+                    chance, band = SkillUps.ForUnlearned(unlearned)
                     local picked = unlearned == state.picked
                     row.sel:SetShown(picked)
                     row.edge:SetShown(picked)
                 end
+                -- A skill-up chance only where it is not certain either way.
+                local showChance = Get("skillUpChances") ~= false and chance and chance > 0 and chance < 1
+                if showChance then
+                    row.chance:SetText(("%d%%"):format(math.floor(chance * 100 + 0.5)))
+                    Paint(row.chance, COLOUR.difficulty[band] or COLOUR.muted)
+                end
+                local right = showChance and row.chance or row.count
                 row.star:SetShown(favourite)
                 row.star:ClearAllPoints()
-                row.star:SetPoint("RIGHT", row.count, "LEFT", -6, 0)
-                row.name:SetPoint("RIGHT", favourite and row.star or row.count, "LEFT", -6, 0)
+                row.star:SetPoint("RIGHT", right, "LEFT", -6, 0)
+                row.name:SetPoint("RIGHT", favourite and row.star or right, "LEFT", -6, 0)
             end
             row.edge:SetColorTexture(r, g, b, 1)
             row:Show()
@@ -1178,6 +1315,8 @@ function Window.RenderDetail()
     pane.starIcon:SetTexCoord(favourite and 0 or 0.5, favourite and 0.5 or 1, 0, 0.5)
     local can = Data.Craftable(info)
     local needs, unmet, allowed = NeedsLine(info, output, made, can)
+    local thresholds = Get("skillThresholds") ~= false and SkillUps.Thresholds(info)
+    if thresholds then needs = needs ~= "" and (thresholds .. "\n" .. needs) or thresholds end
     pane.needs:SetText(needs)
     local okDesc, desc = pcall(C_TradeSkillUI.GetRecipeDescription, info.recipeID, {})
     pane.desc:SetText(okDesc and desc or "")
@@ -1348,6 +1487,7 @@ function Window.Render()
         state.line = Data.Line(prof)
         state.categories = Data.Collect()
         state.unlearned, state.payload = Data.Unlearned(state.line, prof)
+        state.spellIndex = nil
         wipe(Data.reagents)
     end
     state.prof = prof

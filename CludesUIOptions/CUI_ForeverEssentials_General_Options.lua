@@ -2334,6 +2334,22 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             tooltip = "Opening a profession shows CludesUI's recipe window in place of the game's: your recipes by category with how many you can make, favourites, a filter, reagents with what is in your bags and bank, and the recipes you have not learned yet with where to learn them.",
             getValue = function() return PF.Get("craftWindow") end,
             setValue = function(val) Set("craftWindow", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Skill-up Chances",
+            disabled = function() return pOff() or not PF.Get("craftWindow") end,
+            tooltip = "The recipe window shows each recipe's chance to raise your skill, where it is not certain either way.",
+            getValue = function() return PF.Get("skillUpChances") end,
+            setValue = function(val) Set("skillUpChances", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Skill-up Levels",
+            disabled = function() return pOff() or not PF.Get("craftWindow") end,
+            tooltip = "The picked recipe shows the skill where it turns yellow, green and grey, and your chance now.",
+            getValue = function() return PF.Get("skillThresholds") end,
+            setValue = function(val) Set("skillThresholds", val and true or false) end,
         })
         cursorY = cursorY - height
     end
