@@ -20,7 +20,8 @@ if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local F = module.Feature("professions", { enabled = false, rankAlert = true, showLater = true })
+local F =
+    module.Feature("professions", { enabled = false, rankAlert = true, showLater = true, craftWindow = true })
 local Get, On = F.Get, F.Enabled
 
 local NPC_ID, NPC_NAME, NPC_FACTION, NPC_MAP, NPC_X, NPC_Y, NPC_PRICE = 1, 2, 3, 4, 5, 6, 7
@@ -733,6 +734,7 @@ end)
 
 local function Apply()
     eventFrame:UnregisterAllEvents()
+    if CUI._RecipeWindow then CUI._RecipeWindow.Apply() end
     if not On() then
         if window then window:Hide() end
         return
@@ -776,6 +778,24 @@ CUI._Professions = {
     Apply = Apply,
     Open = function() Open() end,
     CheckRanks = function() CheckRanks(true) end,
+}
+
+-- What the recipe window (CludesUIForeverEssentials_CraftWindow.lua) shares with /cprof.
+module.Prof = {
+    F = F,
+    RecipeData = RecipeData,
+    ProfData = ProfData,
+    Learned = Learned,
+    Skill = Skill,
+    Cost = Cost,
+    Describe = Describe,
+    NearestFor = NearestFor,
+    LinkNpc = LinkNpc,
+    NpcText = NpcText,
+    RankReady = RankReady,
+    CharStore = CharStore,
+    Money = Money,
+    SOURCE_TAG = SOURCE_TAG,
 }
 
 F.Start(Apply)

@@ -65,6 +65,7 @@ CludesUIForeverEssentials_QuestData.lua
 CludesUIForeverEssentials_QuestList.lua
 CludesUIForeverEssentials_RecipeData.lua
 CludesUIForeverEssentials_Professions.lua
+CludesUIForeverEssentials_CraftWindow.lua
 CludesUIForeverEssentials_QuestRewards.lua
 
 # Travel (flight timer)

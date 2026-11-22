@@ -2327,6 +2327,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             setValue = function(val) Set("showLater", val and true or false) end,
         })
         cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Recipe Window",
+            disabled = pOff,
+            tooltip = "Opening a profession shows CludesUI's recipe window in place of the game's: your recipes by category with how many you can make, favourites, a filter, reagents with what is in your bags and bank, and the recipes you have not learned yet with where to learn them.",
+            getValue = function() return PF.Get("craftWindow") end,
+            setValue = function(val) Set("craftWindow", val and true or false) end,
+        })
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
