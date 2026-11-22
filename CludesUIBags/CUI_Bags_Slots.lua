@@ -259,6 +259,38 @@ local function GetOrCreateReagentSlot(position)
     return button
 end
 
+-- How many entries a table holds (none for no table).
+local function CountEntries(tbl)
+    if not tbl then return 0 end
+    local count = 0
+    for _ in pairs(tbl) do
+        count = count + 1
+    end
+    return count
+end
+
+-- Makes the slots of one pool that do not exist yet, up to count: create(i) builds one
+-- (nil when the combat guard refuses) and its parent starts hidden. False, with the pool
+-- flagged short, at the first slot that cannot be made or once the time budget
+-- (msBudget ms from t0, when given) is spent; true when every slot exists.
+local function BuildMissing(pool, count, create, t0, msBudget)
+    for i = 1, count do
+        if not pool[i] then
+            local widget = create(i)
+            if not widget then
+                CUI_Bags._poolShort = true
+                return false
+            end
+            widget:GetParent():Hide()
+            if t0 and debugprofilestop() - t0 > msBudget then
+                CUI_Bags._poolShort = true
+                return false
+            end
+        end
+    end
+    return true
+end
+
 -- Builds the secure item-button pools up to the current bag sizes (main pool = bags 0-5,
 -- reagent pool = bag 5), creating only the slots that do not exist yet and hiding only
 -- those. Stops at the first slot the combat guard refuses, or once msBudget (ms, optional)
@@ -278,49 +310,18 @@ function CUI_Bags:WarmSlotPool(msBudget)
         CUI_Bags._poolShort = true
     elseif listMode then
         -- Pinned and Recent repeat their items as extra rows
-        local pinned = PinnedItems()
-        if pinned then
-            for _ in pairs(pinned) do
-                sum = sum + 1
-            end
-        end
-        if CUI_Bags._recentItems then
-            for _ in pairs(CUI_Bags._recentItems) do
-                sum = sum + 1
-            end
-        end
+        sum = sum + CountEntries(PinnedItems()) + CountEntries(CUI_Bags._recentItems)
         if not mod.WarmListRows(sum, t0, msBudget) then return false end
-    else
-        for i = 1, sum do
-            if not itemSlots[i] then
-                local widget = mod.GetOrCreateSlot(i)
-                if not widget then
-                    CUI_Bags._poolShort = true
-                    return false
-                end
-                widget:GetParent():Hide()
-                if t0 and debugprofilestop() - t0 > msBudget then
-                    CUI_Bags._poolShort = true
-                    return false
-                end
-            end
-        end
+    elseif not BuildMissing(itemSlots, sum, mod.GetOrCreateSlot, t0, msBudget) then
+        return false
     end
-    for i = 1, (C_Container.GetContainerNumSlots(5) or 0) do
-        if not reagentSlots[i] then
-            local widget = GetOrCreateReagentSlot(i)
-            if not widget then
-                CUI_Bags._poolShort = true
-                return false
-            end
-            widget:GetParent():Hide()
-            if t0 and debugprofilestop() - t0 > msBudget then
-                CUI_Bags._poolShort = true
-                return false
-            end
-        end
-    end
-    return true
+    return BuildMissing(
+        reagentSlots,
+        C_Container.GetContainerNumSlots(5) or 0,
+        GetOrCreateReagentSlot,
+        t0,
+        msBudget
+    )
 end
 
 local function GetOrCreateBagSlot(position)
