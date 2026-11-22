@@ -36,7 +36,7 @@ local function Line(i)
         fs = { text = nil }
         function fs:GetText() return self.text end
         function fs:SetText(t) self.text = t end
-        function fs:SetTextColor() end
+        function fs:SetTextColor(r, g, b) self.color = string.format("%.2f,%.2f,%.2f", r, g, b) end
         function fs:GetFont() return "Fonts\\FRIZQT__.TTF", 12, "" end
         function fs:SetFont() end
         lines[i] = fs
@@ -47,7 +47,7 @@ end
 local function Fill(...)
     local t = { ... }
     for i = 1, 8 do
-        Line(i).text = t[i]
+        Line(i).text, Line(i).color = t[i], nil
     end
     tip.NumLines = function() return #t end
 end
@@ -91,14 +91,15 @@ tip.IsForbidden = function() return false end
 
 CludesUIDB.pvp = { enabled = false, players = { ["Beppee-Lightbane"] = { level = 54 } } }
 
+local payloadLines = {}
 local function Hover(label, level, effective, ...)
     Fill(...)
     target.level, target.effective = level, effective
-    local ok, err = pcall(hook, tip, { guid = "Player-1-BEPPEE", lines = {} })
+    local ok, err = pcall(hook, tip, { guid = "Player-1-BEPPEE", lines = payloadLines })
     OUT:write("== " .. label .. (ok and "" or (" ERR " .. tostring(err))) .. "\n")
-    for i = 1, 5 do
+    for i = 1, 6 do
         local t = lines[i] and lines[i].text
-        if t then OUT:write("   " .. i .. ": " .. t:gsub("|", "!") .. "\n") end
+        if t then OUT:write("   " .. i .. ": " .. t:gsub("|", "!") .. (lines[i].color and ("  [" .. lines[i].color .. "]") or "") .. "\n") end
     end
 end
 
@@ -121,3 +122,68 @@ Cases(", level colour on")
 CludesUIDB.tooltipLevelColor, CludesUIDB.tooltipCompactLevel = nil, true
 Cases(", compact line on")
 CludesUIDB.tooltipLevelColor, CludesUIDB.tooltipCompactLevel = nil, nil
+
+-- The other line colours: class line (after the level line, not the PvP line),
+-- faction line, and a guildmate's guild line in its guild forms. A level-like
+-- guild name must not be taken for the level line.
+local guildmate = false
+local function StubGuild(e) e.UnitIsInMyGuild = function() return guildmate end end
+StubGuild(_G)
+CludesUIDB.tooltipClassLineColor, CludesUIDB.tooltipFactionColor, CludesUIDB.tooltipGuildmateColor = true, true, true
+local function Extras(suffix)
+    Hover("extras, plain guild" .. suffix, 54, 54, "Beppee-Lightbane", "Ironworks", "Level 54 Undead", "Paladin", FACTION_HORDE)
+    Hover("extras, guild-realm" .. suffix, 54, 54, "Beppee-Lightbane", "Ironworks-Lightbane", "Level 54 Undead", "Paladin", FACTION_ALLIANCE)
+    Hover("extras, guild (rank)" .. suffix, 54, 54, "Beppee-Lightbane", "Ironworks (Officer)", "Level 54 Undead", PVP_ENABLED, "Paladin")
+    Hover("extras, guild [rank]" .. suffix, -1, -1, "Beppee-Lightbane", "Ironworks [Officer]", "|cffff2020Level ??|r Undead", "Paladin")
+    Hover("extras, not the guild" .. suffix, 54, 54, "Beppee-Lightbane", "Ironworksmen", "Level 54 Undead", "Paladin")
+    Hover("extras, no level line" .. suffix, 54, 54, "Beppee-Lightbane", "Ironworks", "Paladin", FACTION_HORDE)
+end
+Extras("")
+guildmate = true
+Extras(", guildmate")
+local realGuild = GetGuildInfo
+GetGuildInfo = function() return "Level 70 Club" end
+Hover("guild named like a level, guildmate", 54, 54, "Beppee-Lightbane", "Level 70 Club", "Level 54 Undead", "Paladin")
+GetGuildInfo = realGuild
+-- The client tags the level line in the tooltip data: that index wins even when
+-- the text reads like no level format.
+payloadLines = { { type = Enum.TooltipDataLineType.UnitLevel, lineIndex = 3 } }
+CludesUIDB.tooltipLevelColor = true
+Hover("tagged level line", 54, 54, "Beppee-Lightbane", "Ironworks", "Stufe 54 Untoter", "Paladin")
+Hover("tagged hidden level line", -1, -1, "Beppee-Lightbane", "Ironworks", "Stufe ?? Untoter", "Paladin")
+payloadLines = {}
+CludesUIDB.tooltipCompactLevel = true
+Hover("compact and colour", 54, 54, "Beppee-Lightbane", "Ironworks", "Level 54 Undead", "Paladin", FACTION_HORDE)
+CludesUIDB.tooltipLevelColor, CludesUIDB.tooltipCompactLevel = nil, nil
+CludesUIDB.tooltipClassLineColor, CludesUIDB.tooltipFactionColor, CludesUIDB.tooltipGuildmateColor = nil, nil, nil
+guildmate = false
+
+-- The level-line patterns the skin built from the client's level formats.
+local isLevel
+for i = 1, 60 do
+    local n, v = debug.getupvalue(hook, i)
+    if not n then break end
+    if n == "_ttLineColors" then
+        for j = 1, 60 do
+            local n2, v2 = debug.getupvalue(v, j)
+            if not n2 then break end
+            if n2 == "_isLevelText" then isLevel = v2 end
+        end
+    end
+end
+if isLevel then
+    for j = 1, 10 do
+        local n, v = debug.getupvalue(isLevel, j)
+        if not n then break end
+        if type(v) == "table" then
+            for k, pat in ipairs(v) do
+                OUT:write("== pattern " .. k .. ": " .. pat .. "\n")
+            end
+        end
+    end
+    for _, text in ipairs({ "Level 54", "Level 54 Undead", "Level 54 (Undead)", "Level ??", "|cff00ff00Level 12|r Beast", "Leveling Coach", "Level up!", "Ironworks", "54 Undead" }) do
+        OUT:write("== is level " .. text:gsub("|", "!") .. ": " .. tostring(isLevel(text)) .. "\n")
+    end
+else
+    OUT:write("== level check not found\n")
+end
