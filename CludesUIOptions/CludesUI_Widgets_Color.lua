@@ -1163,7 +1163,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             classSwatch:SetScript("OnLeave", function() HideWidgetTooltip() end)
         end
 
-        local function Update()
+        local function SyncSwatchState()
             local disabled = options.disabled and options.disabled()
             local mode = options.getMode()
             if disabled then
@@ -1178,10 +1178,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
             updateCustom()
         end
-        Update()
-        RegisterWidgetRefresh(Update)
+        SyncSwatchState()
+        RegisterWidgetRefresh(SyncSwatchState)
 
-        return customSwatch, defaultSwatch, classSwatch, Update
+        return customSwatch, defaultSwatch, classSwatch, SyncSwatchState
     end
 
     -- Color Picker row (swatch that opens the CludesUI picker popup)

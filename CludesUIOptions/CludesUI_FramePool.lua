@@ -245,7 +245,7 @@ local INERT_ACCENT = { type = "inert" }
 local PASS_BUTTONS = { "LeftButton", "RightButton", "MiddleButton", "Button4", "Button5" }
 
 local devOn = false
-local function RefreshDev()
+local function SyncDevMode()
     local func = CUI.IsDevModeActive
     devOn = (func and func()) and true or false
 end
@@ -269,7 +269,7 @@ local function Pack(...)
     scratchN[depth] = num
     return tbl, num
 end
-local function Release()
+local function ReleaseScratch()
     local t, num = scratch[depth], scratchN[depth]
     for i = 1, num do
         t[i] = nil
@@ -313,7 +313,7 @@ end
 
 -- The hidden frame that holds the probe objects and the inert animation target.
 local probeHolder
-local function ProbeHolder()
+local function ProbeParent()
     if not probeHolder then
         probeHolder = _G.CreateFrame("Frame")
         probeHolder:Hide()
@@ -407,7 +407,7 @@ local texRotRead, texRot, texPivot
 local function TexRotation()
     if not texRotRead then
         texRotRead = true
-        texRot, texPivot = ProbeHolder():CreateTexture():GetRotation()
+        texRot, texPivot = ProbeParent():CreateTexture():GetRotation()
     end
     return texRot, texPivot
 end
@@ -423,13 +423,13 @@ local AG_KEPT = {
 local agKept
 local ANIM_INFO = {}
 local function AGKept()
-    if agKept == nil then agKept = CaptureKept(ProbeHolder():CreateAnimationGroup(), AG_KEPT) or false end
+    if agKept == nil then agKept = CaptureKept(ProbeParent():CreateAnimationGroup(), AG_KEPT) or false end
     return agKept
 end
 local function AnimKept(kindName)
     local entries = ANIM_INFO[kindName]
     if entries == nil then
-        local animGroup = ProbeHolder():CreateAnimationGroup()
+        local animGroup = ProbeParent():CreateAnimationGroup()
         local success, a = pcall(animGroup.CreateAnimation, animGroup, kindName)
         entries = success and a and CaptureKept(a, ANIM_KEPT) or false
         ANIM_INFO[kindName] = entries
@@ -469,7 +469,7 @@ local function KindInfo(record)
     local kindName = record.kind
     local details = KIND_INFO[kindName]
     if details then return details end
-    local p = _G.CreateFrame(record.ftype, nil, ProbeHolder(), record.tmpl)
+    local p = _G.CreateFrame(record.ftype, nil, ProbeParent(), record.tmpl)
     local meta = getmetatable(p).__index
     details = { scripts = record.tmpl and TEMPLATE_SCRIPTS[record.tmpl] or nil }
     local keyList
@@ -718,7 +718,7 @@ local function QuietLeftovers(animGroup)
             local a = entries[i]
             local ar = FrameRecs[a]
             if ar and not ar.inert then
-                if not inertTarget then inertTarget = ProbeHolder():CreateTexture() end
+                if not inertTarget then inertTarget = ProbeParent():CreateTexture() end
                 ar.inert = true
                 a:SetTarget(inertTarget)
             end
@@ -1225,7 +1225,7 @@ local function ResetContents(object, record, details, pass)
             end
         end
     end
-    Release()
+    ReleaseScratch()
     -- the engine's regions of known roles: named here (rec.engRegs), reset in
     -- place after the frame's own reset (ResetFrame), never buried
     local named
@@ -1264,14 +1264,14 @@ local function ResetContents(object, record, details, pass)
             end
         end
     end
-    Release()
+    ReleaseScratch()
     -- animation groups the pool does not manage cannot move: stopped
     t, num = Pack(object:GetAnimationGroups())
     for i = 1, num do
         local animGroup = t[i]
         if FrameRecs[animGroup] == nil then animGroup:Stop() end
     end
-    Release()
+    ReleaseScratch()
     if buried > 0 and devOn then
         DevWarn(
             "foreign:" .. tostring(record.key or record.kind),
@@ -1882,7 +1882,7 @@ function Pool.Kept(ownerFrame, key, frameType, hostFrame, template, label, hidde
     if not ft or (template ~= nil and not TEMPLATES[template]) then
         return NewKept(_G.CreateFrame(frameType, label, hostFrame, template), hidden)
     end
-    RefreshDev()
+    SyncDevMode()
     local map = KEPT[ownerFrame]
     if not map then
         map = {}
@@ -1941,7 +1941,7 @@ function Pool.Begin(hostFrame)
     if CUI._prebuilding then return end
     local record = FrameRecs[hostFrame]
     if not (record and record.isFrame) then return end
-    RefreshDev()
+    SyncDevMode()
     ResetContents(hostFrame, record, KindInfo(record), PASS_BEGIN)
     -- the host itself is not reset: its own engine regions stay as they are
     local named = record.engRegs
@@ -2168,7 +2168,7 @@ function Pool._DevVerifyReset()
         CUI.PrintError("pool check: out of combat only")
         return
     end
-    RefreshDev()
+    SyncDevMode()
     local unpack, max, abs = _G.unpack, math.max, math.abs
     local EMPTY = {}
     local NOOP = function() end

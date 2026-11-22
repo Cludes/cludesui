@@ -347,7 +347,7 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
             backdrop, accentLine = brd.bg, brd.accent
         end
         -- The accent is read at paint time, so an accent change repaints it.
-        local function Paint(hover)
+        local function PaintSpecIcon(hover)
             local ac = specInfo.accent or CUI.CLUDES_GREEN
             icon:SetVertexColor(ac.r, ac.g, ac.b)
             if boxed then
@@ -360,21 +360,21 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
                 brd:SetColor(1, 1, 1, hover and (BOX_BRD_A + 0.10) or BOX_BRD_A)
             end
         end
-        Paint(false)
+        PaintSpecIcon(false)
         if not specInfo.accent then
-            CUI.RegisterWidgetRefresh(function() Paint(cardFrame:IsMouseOver()) end)
+            CUI.RegisterWidgetRefresh(function() PaintSpecIcon(cardFrame:IsMouseOver()) end)
         end
         -- The labels' resting alpha is their text colour's (MakeFont), so the
         -- hover moves that alpha, never the region's: a leave puts back exactly
         -- the look a new card has.
         cardFrame:SetScript("OnEnter", function()
-            Paint(true)
+            PaintSpecIcon(true)
             icon:SetAlpha(boxed and (BOX_ICON_A + 0.25) or 1)
             titleFs:SetTextColor(1, 1, 1, 1)
             if not boxed then descFs:SetTextColor(1, 1, 1, DESC_A + 0.15) end
         end)
         cardFrame:SetScript("OnLeave", function()
-            Paint(false)
+            PaintSpecIcon(false)
             icon:SetAlpha(p.iconA)
             titleFs:SetTextColor(1, 1, 1, TITLE_A)
             descFs:SetTextColor(1, 1, 1, p.descA)
@@ -1056,7 +1056,7 @@ local function RestUpdate()
     local popFrame = RestPlayerFrame()
     if popFrame and popFrame._restUpdate then popFrame._restUpdate() end
 end
-local function RestPlace()
+local function PlaceRestIcon()
     local popFrame = RestPlayerFrame()
     if popFrame and popFrame._restPlace then popFrame._restPlace() end
 end
@@ -1111,7 +1111,7 @@ function CUI.BuildRestedIndicatorCog(regionFrame)
                 get = function() return (CludesUIDB and CludesUIDB.restedIndicatorAnimatedSize) or 24 end,
                 set = function(val)
                     RestSet("restedIndicatorAnimatedSize", val)
-                    RestPlace()
+                    PlaceRestIcon()
                 end,
             },
             {
@@ -1123,7 +1123,7 @@ function CUI.BuildRestedIndicatorCog(regionFrame)
                 get = function() return (CludesUIDB and CludesUIDB.restedIndicatorXOffset) or 0 end,
                 set = function(val)
                     RestSet("restedIndicatorXOffset", val)
-                    RestPlace()
+                    PlaceRestIcon()
                 end,
             },
             {
@@ -1135,7 +1135,7 @@ function CUI.BuildRestedIndicatorCog(regionFrame)
                 get = function() return (CludesUIDB and CludesUIDB.restedIndicatorYOffset) or 0 end,
                 set = function(val)
                     RestSet("restedIndicatorYOffset", val)
-                    RestPlace()
+                    PlaceRestIcon()
                 end,
             },
         },

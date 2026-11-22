@@ -230,7 +230,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 local rowCfg = rowConf()
                 return rowCfg and rowCfg[keyName.style] or "none"
             end
-            local function styleOff() return styleOf() == "none" end
+            local function styleIsNone() return styleOf() == "none" end
             local absorbRow
             absorbRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
@@ -251,7 +251,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 min = 5,
                 max = 100,
                 step = 1,
-                disabled = styleOff,
+                disabled = styleIsNone,
                 disabledTooltip = styleText,
                 getValue = function()
                     local rowCfg = rowConf()
@@ -282,7 +282,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         local ori = (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
                         return ori == "VERTICAL_UP" or ori == "VERTICAL_DOWN"
                     end
-                    local function syncLabels()
+                    local function syncEdgeLabels()
                         local vertical = isVertical()
                         if lastVertical == vertical then return false end
                         lastVertical = vertical
@@ -302,11 +302,11 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         RefreshHealth()
                     end
                     local function glowUnavailable()
-                        return styleOff()
+                        return styleIsNone()
                             or isVertical()
                             or readValue("absorbEdgeMode", "overlayReverse") == "left"
                     end
-                    syncLabels()
+                    syncEdgeLabels()
                     local rowList = {
                         {
                             type = "dropdown",
@@ -315,10 +315,10 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             ddWidth = 190,
                             order = isHeal and { "overlay", "right", "left" }
                                 or { "overlay", "overlayReverse", "overlayReverseFull", "right", "left" },
-                            disabled = isHeal and styleOff or nil,
+                            disabled = isHeal and styleIsNone or nil,
                             disabledTooltip = styleText,
                             get = function()
-                                syncLabels()
+                                syncEdgeLabels()
                                 return readValue(edgeKey, edgeDefault)
                             end,
                             set = function(val) set(edgeKey, val) end,
@@ -331,7 +331,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             min = 0,
                             max = 100,
                             step = 1,
-                            disabled = styleOff,
+                            disabled = styleIsNone,
                             disabledTooltip = styleText,
                             get = function() return readValue("healAbsorbBgOpacity", 0) end,
                             set = function(val) set("healAbsorbBgOpacity", val) end,
@@ -356,7 +356,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             tooltip = "Adds the Blizzard shield glow line where the shield meets current health.",
                             disabled = glowUnavailable,
                             disabledTooltip = function()
-                                if styleOff() then
+                                if styleIsNone() then
                                     return "The glow line is not shown with Absorb Style None"
                                 end
                                 return "The glow line is not shown on a vertical fill or with the From Left Edge placement"
@@ -388,7 +388,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         rows = rowList,
                     })
                     CUI.RegisterWidgetRefresh(function()
-                        if not syncLabels() then return end
+                        if not syncEdgeLabels() then return end
                         local dialog = cogShow and cogShow._popupFrame
                         if dialog then
                             for _, childFrame in ipairs({ dialog:GetChildren() }) do
@@ -423,7 +423,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 -- Blocked while the style is None, and for the outlined stripes, which carry their own colours.
                 local swBlock = CUI.NewSwatchBlocker(colorSwatch)
                 swBlock:SetScript("OnEnter", function()
-                    local tipText = styleOff() and CUI.DisabledTooltip(styleText)
+                    local tipText = styleIsNone() and CUI.DisabledTooltip(styleText)
                         or "This style uses its own colors"
                     CUI.ShowWidgetTooltip(colorSwatch, tipText)
                 end)

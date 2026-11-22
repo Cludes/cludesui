@@ -219,7 +219,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     cursorY = cursorY - height
     cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "nameplates")
 
-    local function RefreshAllTextures()
+    local function RedrawTextures()
         mod.RefreshAllSettings()
         for _, backing in pairs(mod.friendlyPlates or {}) do
             if mod.ApplyHealthBarTexture then mod.ApplyHealthBarTexture(backing) end
@@ -1041,7 +1041,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             getValue = function() return DbValue("healthBarTexture") or "none" end,
             setValue = function(val)
                 DB().healthBarTexture = val
-                RefreshAllTextures()
+                RedrawTextures()
                 RepaintPreview()
             end,
         },
@@ -1053,7 +1053,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             getValue = function() return DbValue("castBarTexture") or "none" end,
             setValue = function(val)
                 DB().castBarTexture = val
-                RefreshAllTextures()
+                RedrawTextures()
                 RepaintPreview()
             end,
         })
@@ -1063,7 +1063,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- Blizzard Style draws its stock backgrounds (as Global Settings > Textures).
     if not CludesUI._prebuilding then
         local function TexBgApply()
-            RefreshAllTextures()
+            RedrawTextures()
             RepaintPreview()
         end
         local blizz = mod.NP_BlizzOnly()
@@ -2601,7 +2601,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         }
     end
 
-    local function MakeCogIcon(row, regionKey, posKey, slotLabel)
+    local function NewPosCog(row, regionKey, posKey, slotLabel)
         local region = row[regionKey]
         -- The shared cog popup, sectioned per element (CoreCog.Sections).
         local button = CludesUI.BuildInlineCog(region, {
@@ -2700,8 +2700,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         InstallCoreCB(coreRow1._leftRegion, "top")
         InstallCoreCB(coreRow1._rightRegion, "right")
-        MakeCogIcon(coreRow1, "_leftRegion", "top", "Top")
-        MakeCogIcon(coreRow1, "_rightRegion", "right", "Right")
+        NewPosCog(coreRow1, "_leftRegion", "top", "Top")
+        NewPosCog(coreRow1, "_rightRegion", "right", "Right")
     end
 
     -- Row 2: Left | Top Right
@@ -2732,8 +2732,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         InstallCoreCB(coreRow2._leftRegion, "left")
         InstallCoreCB(coreRow2._rightRegion, "topright")
-        MakeCogIcon(coreRow2, "_leftRegion", "left", "Left")
-        MakeCogIcon(coreRow2, "_rightRegion", "topright", "Top Right")
+        NewPosCog(coreRow2, "_leftRegion", "left", "Left")
+        NewPosCog(coreRow2, "_rightRegion", "topright", "Top Right")
     end
 
     -- Row 3: Top Left | Bottom
@@ -2764,8 +2764,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         InstallCoreCB(coreRow3._leftRegion, "topleft")
         InstallCoreCB(coreRow3._rightRegion, "bottom")
-        MakeCogIcon(coreRow3, "_leftRegion", "topleft", "Top Left")
-        MakeCogIcon(coreRow3, "_rightRegion", "bottom", "Bottom")
+        NewPosCog(coreRow3, "_leftRegion", "topleft", "Top Left")
+        NewPosCog(coreRow3, "_rightRegion", "bottom", "Bottom")
     end
 
     -- Map each position to { row, regionKey } for eye icon anchoring
@@ -3314,7 +3314,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         textFirstRow,
         ShowCogPopup,
         CogPopupOpen,
-        RefreshAllTextures
+        RedrawTextures
 end
 
 -- Used by CUI_Nameplates_Options.lua

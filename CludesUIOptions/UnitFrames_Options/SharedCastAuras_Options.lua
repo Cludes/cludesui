@@ -547,7 +547,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         -- selected unit. An icon on the portrait greys the bar-side placement rows.
         if not CUI._prebuilding then
             local region = castRow2._leftRegion
-            local function IconOnPortrait()
+            local function CastIconOnPortrait()
                 return mod.UF_CastIconOnPortrait(
                     optionState.selectedUnit,
                     UNIT_SETTINGS[optionState.selectedUnit]()
@@ -563,7 +563,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         disabled = function()
                             return CUI.BlizzStyle.Get("unitframes")
                                 or not GetShowIcon()
-                                or IconOnPortrait()
+                                or CastIconOnPortrait()
                         end,
                         disabledTooltip = "This option requires Show Icon beside the cast bar and the CludesUI style.",
                         get = function()
@@ -582,7 +582,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         -- The stock styles count a shown icon as part of the bar
                         -- (their frame art wraps both), so the toggle reads on and locks.
                         disabled = function()
-                            return CUI.BlizzStyle.Get("unitframes") or IconOnPortrait()
+                            return CUI.BlizzStyle.Get("unitframes") or CastIconOnPortrait()
                         end,
                         disabledTooltip = function()
                             if CUI.BlizzStyle.Get("unitframes") then
@@ -666,7 +666,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Show Icon on Right",
                         tooltip = "Place the cast icon on the right side of the bar instead of the left.",
-                        disabled = IconOnPortrait,
+                        disabled = CastIconOnPortrait,
                         disabledTooltip = "Show Icon on Portrait",
                         requireState = "disabled",
                         get = function()
@@ -728,7 +728,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         min = -50,
                         max = 50,
                         step = 1,
-                        disabled = IconOnPortrait,
+                        disabled = CastIconOnPortrait,
                         disabledTooltip = "Show Icon on Portrait",
                         requireState = "disabled",
                         get = function()
@@ -753,7 +753,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         min = -50,
                         max = 50,
                         step = 1,
-                        disabled = IconOnPortrait,
+                        disabled = CastIconOnPortrait,
                         disabledTooltip = "Show Icon on Portrait",
                         requireState = "disabled",
                         get = function()
@@ -2345,7 +2345,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         if ps.buffSpells and #ps.buffSpells > 0 then return true end
                         return false
                     end
-                    local function FilterItems()
+                    local function FilterChoices()
                         local itemList = {
                             {
                                 isTopAction = true,
@@ -2449,7 +2449,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         region,
                         210,
                         region:GetFrameLevel() + 2,
-                        FilterItems,
+                        FilterChoices,
                         function(keyName, neg)
                             if keyName == ALL_KEY then return ps.buffShowAll ~= false end
                             if keyName == DUR_KEY then return ps.buffHasDuration == true end
@@ -2636,7 +2636,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end
                         return Scan(mod.UF_TokenClasses) or Scan(mod.UF_CandidateClasses)
                     end
-                    local function FilterItems()
+                    local function FilterChoices()
                         -- Match Mode (ps.debuffFilterMatch: nil = Match Any, the
                         -- union; "all" = one group matching every Show pick). A
                         -- radio pair over one scalar, locked while All Debuffs
@@ -2721,7 +2721,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         region,
                         210,
                         region:GetFrameLevel() + 2,
-                        FilterItems,
+                        FilterChoices,
                         function(keyName, neg)
                             if keyName == ALL_KEY then return AllOn() end
                             if keyName == DUR_KEY then return ps.debuffHasDuration == true end

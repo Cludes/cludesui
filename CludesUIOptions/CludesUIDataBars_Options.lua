@@ -2997,7 +2997,7 @@ CUI.AtOptionsLogin(function()
                 -- cfg.fillBlockId: an unset or stale id heals to the last block, and
                 -- reading the field directly would leave the control enabled on a block
                 -- that IS the fill -- the very case this guards.
-                local function WidthInert()
+                local function WidthLocked()
                     if mod.BarSizingMode(rowConf) ~= "auto" then return true end
                     return mod.EnsureFillBlock(rowConf) == blockId
                 end
@@ -3010,7 +3010,7 @@ CUI.AtOptionsLogin(function()
                         tooltip = "Automatic follows the zone name. Manual holds the block at a fixed width and clips longer names, so it never shifts the blocks beside it.",
                         values = { auto = "Automatic", manual = "Manual" },
                         order = { "auto", "manual" },
-                        disabled = WidthInert,
+                        disabled = WidthLocked,
                         disabledTooltip = INERT_TIP,
                         getValue = function() return mod.LocationWidthMode(cfg) end,
                         setValue = function(val)
@@ -3043,14 +3043,14 @@ CUI.AtOptionsLogin(function()
                         step = 5,
                         tooltip = "How wide the block stays, whatever the zone is called.",
                         disabled = function()
-                            if WidthInert() then return true end
+                            if WidthLocked() then return true end
                             return mod.LocationWidthMode(cfg) ~= "manual"
                         end,
                         -- Two reasons to be disabled, two different sentences:
                         -- a fixed "Manual width is required." would be plainly
                         -- wrong on an Even Split bar.
                         disabledTooltip = function()
-                            if WidthInert() then return INERT_TIP end
+                            if WidthLocked() then return INERT_TIP end
                             return "Manual width is required."
                         end,
                         getValue = function()
@@ -3793,7 +3793,7 @@ CUI.AtOptionsLogin(function()
                         and not block.useIconAccentColor
                         and not block.useIconDefaultColor
                 end
-                local function ClearFlags()
+                local function ClearIconFlags()
                     block.useIconClassColor = nil
                     block.useIconAccentColor = nil
                     block.useIconDefaultColor = nil
@@ -3806,7 +3806,7 @@ CUI.AtOptionsLogin(function()
                         tip = "Accent Color",
                         get = function() return mod.GetAccent() end,
                         click = function()
-                            ClearFlags()
+                            ClearIconFlags()
                             block.useIconAccentColor = true
                             ReflowBar()
                             CUI:RefreshPage()
@@ -3822,7 +3822,7 @@ CUI.AtOptionsLogin(function()
                             return 1, 1, 1
                         end,
                         click = function()
-                            ClearFlags()
+                            ClearIconFlags()
                             block.useIconClassColor = true
                             ReflowBar()
                             CUI:RefreshPage()
@@ -3845,7 +3845,7 @@ CUI.AtOptionsLogin(function()
                         -- the second click, once custom is already active.
                         click = function(self)
                             if not FlagsOff() then
-                                ClearFlags()
+                                ClearIconFlags()
                                 ReflowBar()
                                 CUI:RefreshPage()
                                 return
@@ -4144,7 +4144,7 @@ CUI.AtOptionsLogin(function()
             watcher:SetSize(1, 1)
             local acc = 0
             local curHL
-            local function SetHL(ident)
+            local function SetHighlight(ident)
                 if ident == curHL then return end
                 curHL = ident
                 if _edbSegHighlightFn then _edbSegHighlightFn(ident) end
@@ -4163,7 +4163,7 @@ CUI.AtOptionsLogin(function()
                 if acc < 0.1 then return end
                 acc = 0
                 if not hostFrame:GetTop() or not hostFrame:IsMouseOver() then
-                    SetHL(nil)
+                    SetHighlight(nil)
                     return
                 end
                 -- The preview header (and the vertical popout) float OVER the scrolled
@@ -4172,7 +4172,7 @@ CUI.AtOptionsLogin(function()
                 -- is on the strip. Only count the cursor inside the scroll viewport.
                 local scrollFrame = CUI._scrollFrame
                 if scrollFrame and not scrollFrame:IsMouseOver() then
-                    SetHL(nil)
+                    SetHighlight(nil)
                     return
                 end
                 local hit
@@ -4183,9 +4183,9 @@ CUI.AtOptionsLogin(function()
                         break
                     end
                 end
-                SetHL(hit)
+                SetHighlight(hit)
             end)
-            watcher:HookScript("OnHide", function() SetHL(nil) end)
+            watcher:HookScript("OnHide", function() SetHighlight(nil) end)
         end
 
         -- Adding blocks lives in the preview strip's "+" tile only -- no body section.

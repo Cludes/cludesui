@@ -1199,7 +1199,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         local NO_FRAMES = "This option requires an CludesUI Target or Focus frame."
         local function noFrames() return not (frameList.target or frameList.focus) end
         local function pctOff() return noFrames() or not saved.profile.threatPctEnabled end
-        local function pctOffTip()
+        local function threatPctOffTip()
             if noFrames() then return NO_FRAMES end
             return "Show Threat % on Target"
         end
@@ -1237,7 +1237,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             values = mod._threatPctPositions,
             order = mod._threatPctPositionOrder,
             disabled = pctOff,
-            disabledTooltip = pctOffTip,
+            disabledTooltip = threatPctOffTip,
             getValue = function() return saved.profile.threatPctPosition end,
             setValue = function(value) PctSet("threatPctPosition", value) end,
         })
@@ -1246,7 +1246,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             CUI.BuildInlineCog(pctRow._leftRegion, {
                 title = "Threat % Units",
                 disabled = pctOff,
-                disabledTooltip = pctOffTip,
+                disabledTooltip = threatPctOffTip,
                 rows = {
                     {
                         type = "toggle",
@@ -1259,7 +1259,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             CUI.BuildInlineCog(pctRow._rightRegion, {
                 title = "Threat %",
                 disabled = pctOff,
-                disabledTooltip = pctOffTip,
+                disabledTooltip = threatPctOffTip,
                 rows = {
                     {
                         type = "toggle",

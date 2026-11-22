@@ -599,7 +599,7 @@ function Calc:ScanEquippedAtUpgrader(onDone)
     -- (the API returns data for whichever slot is currently selected; passing a
     -- loc argument is silently ignored and the call returns nil).
     local si = 1
-    local function scanNext()
+    local function scanNextItem()
         if Blocked() then
             onScanDone(false)
             return
@@ -622,16 +622,16 @@ function Calc:ScanEquippedAtUpgrader(onDone)
                     and C_ItemUpgrade.GetItemUpgradeItemInfo()
                 saveSlotInfo(slotId, details)
                 si = si + 1
-                scanNext()
+                scanNextItem()
             end)
         else
             -- Slot has no item or select failed; skip it.
             si = si + 1
-            C_Timer.After(0.05, scanNext)
+            C_Timer.After(0.05, scanNextItem)
         end
     end
 
-    scanNext()
+    scanNextItem()
 end
 
 function Calc:ClearCache()
@@ -1136,7 +1136,7 @@ local function StoreQueue()
 end
 
 -- Persist the current crest manual-add offsets to the profile DB.
-local function SaveCrestManualAdds()
+local function StoreCrestAdds()
     local saved = CalcDB()
     saved.crestManualAdds = {}
     for key, val in pairs(manualCrests) do
@@ -1361,12 +1361,12 @@ for ri, trackLabel in ipairs(Data.trackOrder) do
             local ck = crestKey
             minusBtn:SetScript("OnClick", function()
                 manualCrests[ck] = math.max(0, (manualCrests[ck] or 0) - 80)
-                SaveCrestManualAdds()
+                StoreCrestAdds()
                 PopulateGear()
             end)
             plusBtn:SetScript("OnClick", function()
                 manualCrests[ck] = (manualCrests[ck] or 0) + 80
-                SaveCrestManualAdds()
+                StoreCrestAdds()
                 PopulateGear()
             end)
         end
@@ -1851,7 +1851,7 @@ scanBtn:SetScript("OnClick", function()
             for key in pairs(manualCrests) do
                 manualCrests[key] = 0
             end
-            SaveCrestManualAdds()
+            StoreCrestAdds()
             PopulateGear()
         end
     end)

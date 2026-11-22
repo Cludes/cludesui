@@ -113,7 +113,7 @@ local READY_DEFAULTS = {
     desaturateSated = true,
 }
 
-local function RP(key)
+local function ReadLustPref(key)
     local bl = P()
     if bl and bl[key] ~= nil then return bl[key] end
     return READY_DEFAULTS[key]
@@ -338,7 +338,7 @@ local function ApplyShape()
     if readyText then
         readyText:SetFont(
             (CUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
-            RP("readySize") or 12,
+            ReadLustPref("readySize") or 12,
             (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
         )
         readyText:ClearAllPoints()
@@ -346,8 +346,8 @@ local function ApplyShape()
             "CENTER",
             widget,
             "CENTER",
-            _snapOff(RP("readyOffsetX") or 0),
-            _snapOff(RP("readyOffsetY") or 0)
+            _snapOff(ReadLustPref("readyOffsetX") or 0),
+            _snapOff(ReadLustPref("readyOffsetY") or 0)
         )
         readyText:SetTextColor(RP_color())
         readyText:Hide()
@@ -637,7 +637,7 @@ end
 local _lastDesat = false
 local function _syncGrey()
     if not iconTexture then return end
-    local wanted = (RP("desaturateSated") and not _readyShown) and true or false
+    local wanted = (ReadLustPref("desaturateSated") and not _readyShown) and true or false
     if wanted ~= _lastDesat then
         iconTexture:SetDesaturated(wanted)
         _lastDesat = wanted
@@ -685,8 +685,8 @@ local function ShouldShow()
         -- The 40s active-lust overlay is worth seeing even when the lockout
         -- countdown itself is switched off, so only the remainder of the lockout
         -- after that window is suppressed.
-        if RP("showSated") == false and _buffExpiry <= GetTime() then return false end
-    elseif not RP("showReady") then
+        if ReadLustPref("showSated") == false and _buffExpiry <= GetTime() then return false end
+    elseif not ReadLustPref("showReady") then
         return false
     end
 
@@ -739,7 +739,7 @@ local function PollSated()
     if not auraInfo then
         _satedActive = false
         _satedExpiryGuess = 0
-        if RP("showReady") then
+        if ReadLustPref("showReady") then
             -- Render in place and RETURN: UpdateVisibility calls back into this
             -- function whenever the icon is shown, so re-entering it here would
             -- recurse forever now that "not sated" can still mean "shown". That is
@@ -797,7 +797,7 @@ function UpdateVisibility()
         -- lockout does. In the ready state there is nothing to count down and a
         -- fresh debuff arrives on UNIT_AURA, so polling there would just burn
         -- aura lookups for the whole encounter.
-        if _satedActive or (_previewShown() and not RP("showReady")) then
+        if _satedActive or (_previewShown() and not ReadLustPref("showReady")) then
             if not _ticker then _ticker = C_Timer.NewTicker(0.5, PollSated) end
         elseif _ticker then
             _ticker:Cancel()

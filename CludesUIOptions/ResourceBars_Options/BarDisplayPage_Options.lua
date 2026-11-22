@@ -1372,18 +1372,18 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     local profile = DB()
                     return profile and profile.primary.foreverDruidMana
                 end
-                local function FdmTypeMana()
+                local function DruidManaIsMana()
                     local profile = DB()
                     local shade = profile and profile.primary.powerTypeOverride
                     return (shade and shade.foreverDruid) and true or false
                 end
                 local function DruidManaOff()
-                    if FdmTypeMana() then return true end
+                    if DruidManaIsMana() then return true end
                     local druidMana = FdmCfg()
                     return not (druidMana and druidMana.enabled)
                 end
                 local function FdmOffTip()
-                    if FdmTypeMana() then return "This option requires Power Type to be set to Match Form" end
+                    if DruidManaIsMana() then return "This option requires Power Type to be set to Match Form" end
                     return "Mana Bar while Shapeshifted"
                 end
                 local function FdmTextDis()
@@ -1403,7 +1403,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     type = "toggle",
                     text = "Mana Bar while Shapeshifted",
                     tooltip = "Shows a thin mana bar with the Power Bar while in Bear and Cat Form.",
-                    disabled = FdmTypeMana,
+                    disabled = DruidManaIsMana,
                     disabledTooltip = "This option requires Power Type to be set to Match Form",
                     getValue = function()
                         local druidMana = FdmCfg()

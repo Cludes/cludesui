@@ -154,7 +154,7 @@ BuildGCDBar = function()
         -- cooldown-chatter edge: when the values are secret it may only
         -- refresh an already-open lifecycle window, never open one --
         -- otherwise random cooldown chatter would flash an empty bar.
-        local function captureGCD(self, gc, windowOnly)
+        local function recordGcd(self, gc, windowOnly)
             local cdInfo = getCD and getCD(CUI.GCD_SPELL)
             if not cdInfo or not cdInfo.startTime then return end
             -- Engine-true fill, same duration-object push-through as the
@@ -287,7 +287,7 @@ BuildGCDBar = function()
                     -- on the hard cast's own GCD.
                     if UnitCastingInfo("player") or UnitChannelInfo("player") then return end
                 end
-                captureGCD(self, gc, true)
+                recordGcd(self, gc, true)
                 return
             end
             if unitToken ~= "player" then return end
@@ -380,10 +380,10 @@ BuildGCDBar = function()
                     -- instant, so its next press may arm the bar directly.
                     if succeededID and not castKind[succeededID] then castKind[succeededID] = "instant" end
                     local gc2 = ERB.db.profile.gcdBar
-                    if gc2 and gc2.enabled then captureGCD(self, gc2) end
+                    if gc2 and gc2.enabled then recordGcd(self, gc2) end
                 end)
             else
-                captureGCD(self, gc)
+                recordGcd(self, gc)
             end
         end)
     end

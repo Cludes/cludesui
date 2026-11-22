@@ -172,7 +172,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
 
     -- Preview display index -> underlying assignedSpells index for buff bars
     -- that collapsed a duplicate (identity when there are no dupes / not a buff bar).
-    local function BuffDataIdx(displayIdx)
+    local function BuffDataIndex(displayIdx)
         local g = popFrame._buffDispGroups and popFrame._buffDispGroups[displayIdx]
         return (g and g[1]) or displayIdx
     end
@@ -260,7 +260,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if allDone then animRunning = false end
     end
 
-    local function ClearInsertIndicator()
+    local function HideInsertLine()
         dropLine:Hide()
         dropIdx = nil
         lastInsertIdx = nil
@@ -948,7 +948,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 if isDefaultBuffs and self._previewItemID then return end
                 -- Translate the preview slot to its underlying assignedSpells index (identity
                 -- unless this buff slot collapsed a duplicate).
-                local dataIdx = BuffDataIdx(si)
+                local dataIdx = BuffDataIndex(si)
                 -- A slot is configurable if it maps to an assignedSpells entry OR (default
                 -- buffs bar mirror) exposes a live spellID. The per-icon settings menu keys off whichever is present.
                 local sdClick = mod.GetBarSpellData(edge.key)
@@ -1045,7 +1045,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 -- Resolved index refuses the commit when out of range (drag snaps back, no
                 -- write). Cd-claimed collided-buff slots carry a real assignedSpells index (a cd-claim marker, see ns.CdClaimMarker) same as any other entry, so no special-casing needed here.
                 local function SafeDataIdx(dispIdx)
-                    local di = BuffDataIdx(dispIdx)
+                    local di = BuffDataIndex(dispIdx)
                     local sdChk = mod.GetBarSpellData and mod.GetBarSpellData(edge.key)
                     local num = sdChk and sdChk.assignedSpells and #sdChk.assignedSpells or 0
                     if di < 1 or di > num then return nil end
@@ -1172,7 +1172,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     return
                 end
             end
-            ClearInsertIndicator()
+            HideInsertLine()
             dragSlot = nil
             dragIdx = nil
             dropIdx = nil
@@ -1198,7 +1198,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 end
             else
                 local tbl = sdDrag and sdDrag.assignedSpells or {}
-                local di = BuffDataIdx(si)
+                local di = BuffDataIndex(si)
                 if not tbl[di] or tbl[di] == 0 then return end
             end
             dragSlot = self
@@ -1274,14 +1274,14 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         isNoop = true
                     end
                     if isNoop then
-                        ClearInsertIndicator()
+                        HideInsertLine()
                     else
                         dragMode = newMode
                         ApplyDragFeedback(newMode, newTarget, dragIdx, visCount)
                         dropIdx = newTarget
                     end
                 else
-                    ClearInsertIndicator()
+                    HideInsertLine()
                 end
             end)
         end

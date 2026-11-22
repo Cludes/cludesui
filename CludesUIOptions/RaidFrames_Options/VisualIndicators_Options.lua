@@ -104,7 +104,7 @@ local function BuildVisualIndicators(
         -- On ns so the preview can read it.
         if mod._indicatorsVisible == nil then mod._indicatorsVisible = false end
 
-        local function RefreshIndicatorEye()
+        local function SyncIndicatorEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
                 CUI.SetGlyphAlpha(eyeButton, 0.15)
@@ -113,8 +113,8 @@ local function BuildVisualIndicators(
             eyeTex:SetTexture(mod._indicatorsVisible and EYE_INVISIBLE or EYE_VISIBLE)
             CUI.SetGlyphAlpha(eyeButton, 0.4)
         end
-        EYE.refreshIndicatorEye = RefreshIndicatorEye
-        RefreshIndicatorEye()
+        EYE.refreshIndicatorEye = SyncIndicatorEye
+        SyncIndicatorEye()
         eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then return end
             mod._indicatorsVisible = not mod._indicatorsVisible
@@ -133,7 +133,7 @@ local function BuildVisualIndicators(
                     if EYE.refreshDispelEye then EYE.refreshDispelEye() end
                 end
             end
-            RefreshIndicatorEye()
+            SyncIndicatorEye()
             if mod.PvRefresh then mod.PvRefresh() end
         end)
         eyeButton:SetScript("OnEnter", function(self)
@@ -1378,7 +1378,7 @@ local function BuildVisualIndicators(
 
         if mod._dispelsVisible == nil then mod._dispelsVisible = false end
 
-        local function RefreshDispelEye()
+        local function SyncDispelEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
                 CUI.SetGlyphAlpha(eyeButton, 0.15)
@@ -1387,8 +1387,8 @@ local function BuildVisualIndicators(
             eyeTex:SetTexture(mod._dispelsVisible and EYE_INVISIBLE or EYE_VISIBLE)
             CUI.SetGlyphAlpha(eyeButton, 0.4)
         end
-        EYE.refreshDispelEye = RefreshDispelEye
-        RefreshDispelEye()
+        EYE.refreshDispelEye = SyncDispelEye
+        SyncDispelEye()
         eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then return end
             mod._dispelsVisible = not mod._dispelsVisible
@@ -1399,7 +1399,7 @@ local function BuildVisualIndicators(
                     if EYE.refreshIndicatorEye then EYE.refreshIndicatorEye() end
                 end
             end
-            RefreshDispelEye()
+            SyncDispelEye()
             if mod.PvRefresh then mod.PvRefresh() end
         end)
         eyeButton:SetScript("OnEnter", function(self)
@@ -2093,7 +2093,7 @@ local function BuildVisualIndicators(
             return profile.extraFrames
         end
         -- Position settings only matter once something can feed the group: the tanks toggle or a bound hotkey.
-        local function XFConfigured()
+        local function ExtraFramesConfigured()
             return ExtraFramesCfg().showTanks == true or (CludesUIDB and CludesUIDB.extraFramesKey) ~= nil
         end
         -- Row 1: Add to Extra Group Hotkey (capture) | Show Tanks toggle
@@ -2103,11 +2103,11 @@ local function BuildVisualIndicators(
             tooltip = "Automatically duplicates the raid's tanks into the Extra Frames group. Shares the frame cap with hotkey picks.",
             getValue = function() return ExtraFramesCfg().showTanks == true end,
             -- Rows below are HIDDEN while unconfigured (no tanks toggle AND no hotkey); only a configured-state flip forces the rebuild.
-            setValue = CUI.DependentSetValue(XFConfigured, function(val)
+            setValue = CUI.DependentSetValue(ExtraFramesConfigured, function(val)
                 ExtraFramesCfg().showTanks = val
                 mod.XF_Apply()
                 -- Feature may have just gone dark; the mover can't stay up.
-                if not XFConfigured() then mod.XF_SetMoverShown(false) end
+                if not ExtraFramesConfigured() then mod.XF_SetMoverShown(false) end
                 CUI:RefreshPage()
             end),
         })
@@ -2149,12 +2149,12 @@ local function BuildVisualIndicators(
                         if key or CludesUIDB.extraFramesKey then ClearOverrideBindings(bindBtn) end
                         if key then SetOverrideBindingClick(bindBtn, true, key, "ERFExtraFramesBindBtn") end
                     end
-                    local wasConfigured = XFConfigured()
+                    local wasConfigured = ExtraFramesConfigured()
                     CludesUIDB.extraFramesKey = key
                     -- The mover can't stay up once the feature goes dark.
-                    if not XFConfigured() then mod.XF_SetMoverShown(false) end
+                    if not ExtraFramesConfigured() then mod.XF_SetMoverShown(false) end
                     -- Hidden rows below: a configured-state flip needs the full rebuild, not the fast refresh.
-                    if XFConfigured() ~= wasConfigured then
+                    if ExtraFramesConfigured() ~= wasConfigured then
                         CUI:RefreshPage(true)
                     else
                         CUI:RefreshPage()
@@ -2166,7 +2166,7 @@ local function BuildVisualIndicators(
         end
 
         -- Rows 2-4 are HIDDEN while unconfigured (no tanks toggle AND no hotkey); the triggers above rebuild when that state flips.
-        if XFConfigured() then
+        if ExtraFramesConfigured() then
             -- Row 2: Position | Free Move Position (Move Frames)
             row, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
@@ -2187,7 +2187,7 @@ local function BuildVisualIndicators(
                 isShown = mod.XF_IsMoverShown,
                 setShown = mod.XF_SetMoverShown,
                 allowed = function()
-                    return XFConfigured() and (ExtraFramesCfg().position == "free") and not InCombatLockdown()
+                    return ExtraFramesConfigured() and (ExtraFramesCfg().position == "free") and not InCombatLockdown()
                 end,
             })
 
@@ -2199,7 +2199,7 @@ local function BuildVisualIndicators(
                     local set = ExtraFramesCfg()
                     return set.growDirection or (set.freeHorizontal and "RIGHT" or "DOWN")
                 end
-                local function XFReapply()
+                local function ReapplyExtraFrames()
                     mod.XF_Apply()
                     if mod.XF_IsMoverShown() then mod.XF_SetMoverShown(true) end
                 end
@@ -2218,7 +2218,7 @@ local function BuildVisualIndicators(
                         set.growDirection = val
                         -- Keep the legacy key coherent for exports/older reads.
                         set.freeHorizontal = (val == "RIGHT" or val == "LEFT")
-                        XFReapply()
+                        ReapplyExtraFrames()
                         CUI:RefreshPage(true)
                     end,
                 }, {
@@ -2236,7 +2236,7 @@ local function BuildVisualIndicators(
                     end,
                     setValue = function(val)
                         ExtraFramesCfg().wrapDirection = val
-                        XFReapply()
+                        ReapplyExtraFrames()
                     end,
                 })
                 cursorY = cursorY - height
@@ -2254,7 +2254,7 @@ local function BuildVisualIndicators(
                                 get = function() return ExtraFramesCfg().wrapAfter or 0 end,
                                 set = function(val)
                                     ExtraFramesCfg().wrapAfter = val
-                                    XFReapply()
+                                    ReapplyExtraFrames()
                                 end,
                             },
                         },
@@ -2787,7 +2787,7 @@ local function BuildVisualIndicators(
 
     -- Player Group Label: raid tab only, party has no groups.
     if not optionState._partyCtx then
-        local function PGS()
+        local function PlayerGroupCfg()
             local profile = saved.profile
             if not profile.playerGroup then profile.playerGroup = {} end
             return profile.playerGroup
@@ -2795,12 +2795,12 @@ local function BuildVisualIndicators(
         local function ApplyPowerGlow()
             if mod.PG_Apply then mod.PG_Apply() end
         end
-        local function PGOff() return not PGS().enabled end
+        local function PGOff() return not PlayerGroupCfg().enabled end
         local function PGModeSwatches(modeKey, colorKey)
-            local function Mode() return PGS()[modeKey] or "accent" end
+            local function Mode() return PlayerGroupCfg()[modeKey] or "accent" end
             local function Pick(m)
                 return function()
-                    PGS()[modeKey] = m
+                    PlayerGroupCfg()[modeKey] = m
                     ApplyPowerGlow()
                     CUI:RefreshPage()
                 end
@@ -2818,7 +2818,7 @@ local function BuildVisualIndicators(
                         return color.r, color.g, color.b, color.a or 1
                     end,
                     setValue = function(red, green, blue, a)
-                        PGS()[colorKey] = { r = red, g = green, b = blue, a = a }
+                        PlayerGroupCfg()[colorKey] = { r = red, g = green, b = blue, a = a }
                         ApplyPowerGlow()
                     end,
                     onClick = function(self)
@@ -2859,9 +2859,9 @@ local function BuildVisualIndicators(
             type = "toggle",
             text = "Player Group Label",
             tooltip = "Shows your raid group number in its own movable frame. Position it in Layout Mode.",
-            getValue = function() return PGS().enabled and true or false end,
+            getValue = function() return PlayerGroupCfg().enabled and true or false end,
             setValue = function(val)
-                PGS().enabled = val
+                PlayerGroupCfg().enabled = val
                 if not val then mod._pgPreview = nil end
                 ApplyPowerGlow()
                 -- The mover's isHidden verdict changed: re-register.
@@ -2890,7 +2890,7 @@ local function BuildVisualIndicators(
                         return color.r, color.g, color.b, color.a or 1
                     end,
                     setValue = function(red, green, blue, a)
-                        PGS().bgColor = { r = red, g = green, b = blue, a = a }
+                        PlayerGroupCfg().bgColor = { r = red, g = green, b = blue, a = a }
                         ApplyPowerGlow()
                     end,
                 },
@@ -2913,9 +2913,9 @@ local function BuildVisualIndicators(
                     max = 200,
                     step = 1,
                     tooltip = "0 sizes the frame to the text plus padding.",
-                    get = function() return PGS()[key] or 0 end,
+                    get = function() return PlayerGroupCfg()[key] or 0 end,
                     set = function(val)
-                        PGS()[key] = (val > 0) and val or nil
+                        PlayerGroupCfg()[key] = (val > 0) and val or nil
                         ApplyPowerGlow()
                     end,
                 }
@@ -2930,9 +2930,9 @@ local function BuildVisualIndicators(
                         label = "Text Format",
                         values = { number = "3", full = GROUP_NUMBER:format(3) },
                         order = { "number", "full" },
-                        get = function() return PGS().format == "full" and "full" or "number" end,
+                        get = function() return PlayerGroupCfg().format == "full" and "full" or "number" end,
                         set = function(keyName)
-                            PGS().format = keyName
+                            PlayerGroupCfg().format = keyName
                             ApplyPowerGlow()
                         end,
                     },
@@ -2944,7 +2944,7 @@ local function BuildVisualIndicators(
                         step = 1,
                         get = function() return (mod._PGStyle()) end,
                         set = function(val)
-                            PGS().textSize = val
+                            PlayerGroupCfg().textSize = val
                             ApplyPowerGlow()
                         end,
                     },
@@ -2954,9 +2954,9 @@ local function BuildVisualIndicators(
                         min = 0,
                         max = 20,
                         step = 1,
-                        get = function() return PGS().padding or 4 end,
+                        get = function() return PlayerGroupCfg().padding or 4 end,
                         set = function(val)
-                            PGS().padding = val
+                            PlayerGroupCfg().padding = val
                             ApplyPowerGlow()
                         end,
                     },
@@ -2970,7 +2970,7 @@ local function BuildVisualIndicators(
                         step = 1,
                         get = function() return (select(4, mod._PGStyle())) end,
                         set = function(val)
-                            PGS().borderSize = val
+                            PlayerGroupCfg().borderSize = val
                             ApplyPowerGlow()
                         end,
                     },

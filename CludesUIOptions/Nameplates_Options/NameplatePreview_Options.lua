@@ -3770,17 +3770,17 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local totalH = SnapPx(healthFromTop + barH + castH + cpExtraH + 15)
         -- Add extra height for auras in the "bottom" slot (below cast bar)
         local bottomExtent = 0
-        local function isBottomSlot(s) return s == "bottom" end
-        if isBottomSlot(debuffSlotVal) then
+        local function isBelowSlot(s) return s == "bottom" end
+        if isBelowSlot(debuffSlotVal) then
             bottomExtent = math.max(bottomExtent, debuffH + 2 - debuffYOff)
         end
-        if isBottomSlot(buffSlotVal) then bottomExtent = math.max(bottomExtent, buffH + 2 - buffYOff) end
-        if isBottomSlot(ccSlotVal) then bottomExtent = math.max(bottomExtent, ccH + 2 - ccYOff) end
-        if isBottomSlot(rmPos) and showRM then bottomExtent = math.max(bottomExtent, rmSize + 2 - rmYOff) end
-        if isBottomSlot(clPos) and showCL then
+        if isBelowSlot(buffSlotVal) then bottomExtent = math.max(bottomExtent, buffH + 2 - buffYOff) end
+        if isBelowSlot(ccSlotVal) then bottomExtent = math.max(bottomExtent, ccH + 2 - ccYOff) end
+        if isBelowSlot(rmPos) and showRM then bottomExtent = math.max(bottomExtent, rmSize + 2 - rmYOff) end
+        if isBelowSlot(clPos) and showCL then
             bottomExtent = math.max(bottomExtent, reIconSz + 2 - clYOff)
         end
-        if popFrame._qt.shown and isBottomSlot(popFrame._qt.pos) then
+        if popFrame._qt.shown and isBelowSlot(popFrame._qt.pos) then
             bottomExtent = math.max(bottomExtent, popFrame._qt.h + 2 - popFrame._qt.y)
         end
         -- The Bottom Left / Bottom Right texts hang there too.

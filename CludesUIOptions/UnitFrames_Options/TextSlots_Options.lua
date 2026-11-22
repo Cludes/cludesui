@@ -218,13 +218,13 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         end
         if cfg.cfg.getValue() ~= "none" then cells[#cells + 1] = cfg end
     end
-    local function Assigned(key)
+    local function SlotValue(key)
         local cfg = byKey[key]
         return cfg and cfg.cfg.getValue() ~= "none"
     end
     local function Full()
         for idx = 1, #slots do
-            if not Assigned(slots[idx].key) then return false end
+            if not SlotValue(slots[idx].key) then return false end
         end
         return true
     end
@@ -245,7 +245,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
     end
     local function Add(key)
         local val = Candidate()
-        if Assigned(key) or not byKey[key] or not val then
+        if SlotValue(key) or not byKey[key] or not val then
             CUI:RefreshPage(true)
             return
         end
@@ -254,7 +254,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
     end
     local function Move(source, dest)
         if source == dest then return end
-        if not Assigned(source) or not byKey[dest] or Assigned(dest) then
+        if not SlotValue(source) or not byKey[dest] or SlotValue(dest) then
             CUI:RefreshPage(true)
             return
         end
@@ -310,7 +310,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
                     order = sequence,
                     values = values,
                     setValue = Add,
-                    itemDisabled = function(val) return Assigned(val) or Candidate() == nil end,
+                    itemDisabled = function(val) return SlotValue(val) or Candidate() == nil end,
                 })
             end
             return
@@ -324,8 +324,8 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
             getValue = function() return cell.key end,
             setValue = function(val) Move(cell.key, val) end,
             itemDisabled = function(val)
-                if not Assigned(cell.key) then return true end
-                if val ~= cell.key and Assigned(val) then return true end
+                if not SlotValue(cell.key) then return true end
+                if val ~= cell.key and SlotValue(val) then return true end
             end,
             tooltip = "Choose this text's slot position.",
         })

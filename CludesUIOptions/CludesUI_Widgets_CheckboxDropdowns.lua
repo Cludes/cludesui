@@ -737,7 +737,7 @@ function CUI.BuildVisOptsCBDropdown(
                 row._updateActionLabel = UpdateActionLabel
                 highlight:SetColorTexture(1, 1, 1, 0)
                 local EG_r, EG_g, EG_b = CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b
-                local function UpdateActionLocked()
+                local function SyncActionLocked()
                     local isLocked = entry.lockedFn and entry.lockedFn()
                     if isLocked then
                         labelFS:SetTextColor(0.4, 0.4, 0.4, 0.4)
@@ -747,14 +747,14 @@ function CUI.BuildVisOptsCBDropdown(
                         row:EnableMouse(true)
                     end
                 end
-                row._updateLocked = UpdateActionLocked
-                UpdateActionLocked()
+                row._updateLocked = SyncActionLocked
+                SyncActionLocked()
                 row:SetScript("OnEnter", function()
                     labelFS:SetTextColor(1, 1, 1, 1)
                     highlight:SetColorTexture(1, 1, 1, 0.04)
                 end)
                 row:SetScript("OnLeave", function()
-                    UpdateActionLocked()
+                    SyncActionLocked()
                     highlight:SetColorTexture(1, 1, 1, 0)
                 end)
                 row:SetScript("OnClick", function()
@@ -840,7 +840,7 @@ function CUI.BuildVisOptsCBDropdown(
                 -- other lock, but is painted and explained differently, because the row is not
                 -- merely unavailable here -- it cannot be captured into an override at all.
                 local function OvLocked() return (entry.ovLockedFn and entry.ovLockedFn()) and true or false end
-                local function RowLocked()
+                local function IsRowLocked()
                     if OvLocked() or entry.locked then return true end
                     return (entry.lockedFn and entry.lockedFn()) and true or false
                 end
@@ -916,7 +916,7 @@ function CUI.BuildVisOptsCBDropdown(
                     if entry.tooltip or entry.dimTooltip then CUI.HideWidgetTooltip() end
                 end)
                 local function UpdateLocked()
-                    local isLocked = RowLocked()
+                    local isLocked = IsRowLocked()
                     -- Mouse stays enabled so locked rows can explain themselves on hover; clicks are guarded independently in OnClick.
                     row._isLocked = isLocked and true or false
                     if isLocked then
@@ -966,7 +966,7 @@ function CUI.BuildVisOptsCBDropdown(
                     end
                 end
                 row:SetScript("OnClick", function()
-                    if RowLocked() then return end
+                    if IsRowLocked() then return end
                     -- The slot the write belongs to, taken before the setter runs: a
                     -- setter that rebuilds the page can dress ddBtn for another slot.
                     local snap = options.notifyWrites and CUI._SOAttribution(dropdownBtn) or nil
@@ -981,7 +981,7 @@ function CUI.BuildVisOptsCBDropdown(
                 end)
                 if negBox then
                     negBox:SetScript("OnClick", function()
-                        if RowLocked() then return end
+                        if IsRowLocked() then return end
                         local snap = options.notifyWrites and CUI._SOAttribution(dropdownBtn) or nil
                         CUI._SyncPickNotice(dropdownBtn)
                         setFn(entry.key, not getFn(entry.key, true), true)
@@ -1688,7 +1688,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
         return keyList
     end
     local plainPaints = {}
-    local function PaintPlainRows()
+    local function PaintRows()
         for idx = 1, #plainPaints do
             plainPaints[idx]()
         end
@@ -1933,7 +1933,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
                 for _, r in ipairs(allRows) do
                     if r._updateCheck then r._updateCheck() end
                 end
-                PaintPlainRows()
+                PaintRows()
             end)
             allRows[#allRows + 1] = row
             return row
@@ -2043,7 +2043,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
             for _, r in ipairs(allRows) do
                 if r._updateCheck then r._updateCheck() end
             end
-            PaintPlainRows()
+            PaintRows()
         end)
 
         -- One close notification per open/close cycle (reload prompts hook this)
@@ -2119,7 +2119,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
         for _, r in ipairs(allRows) do
             if r._updateCheck then r._updateCheck() end
         end
-        PaintPlainRows()
+        PaintRows()
     end
     return dropdownBtn, RefreshAll
 end

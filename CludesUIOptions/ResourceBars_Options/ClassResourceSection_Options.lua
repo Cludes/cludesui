@@ -1887,7 +1887,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             local entry = current()
                             return (entry and entry.multiBandEnabled and not isEnhance()) and true or false
                         end
-                        local function usable() return enabled() and not multiOn() end
+                        local function resourceUsable() return enabled() and not multiOn() end
                         local function offTip()
                             if multiOn() then return BAND_REPLACES_TIP end
                             return "Enable the Threshold toggle to use these options."
@@ -1923,10 +1923,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 labels = { percent = "Percent", value = "Value" },
                                 rawTooltip = true,
                                 disabled = function()
-                                    return (not usable()) or (not entryIsBar()) or isStagger()
+                                    return (not resourceUsable()) or (not entryIsBar()) or isStagger()
                                 end,
                                 disabledTooltip = function()
-                                    if not usable() then return offTip() end
+                                    if not resourceUsable() then return offTip() end
                                     if not entryIsBar() then
                                         return "This option applies to bar-type resources only (pips use stack counts)."
                                     end
@@ -1949,9 +1949,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 keys = { "upto", "from" },
                                 labels = { upto = "Up to", from = "From" },
                                 rawTooltip = true,
-                                disabled = function() return (not usable()) or isWarrCharge() end,
+                                disabled = function() return (not resourceUsable()) or isWarrCharge() end,
                                 disabledTooltip = function()
-                                    if isWarrCharge() and usable() then
+                                    if isWarrCharge() and resourceUsable() then
                                         return "Whirlwind and Sweeping Strikes thresholds only support the 'From' direction."
                                     end
                                     return offTip()
@@ -1973,13 +1973,13 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 label = "Only color at/above threshold",
                                 rawTooltip = true,
                                 disabled = function()
-                                    return (not usable()) or entryIsBar() or isUpTo() or isWarrCharge()
+                                    return (not resourceUsable()) or entryIsBar() or isUpTo() or isWarrCharge()
                                 end,
                                 disabledTooltip = function()
-                                    if isWarrCharge() and usable() then
+                                    if isWarrCharge() and resourceUsable() then
                                         return "Always on for Whirlwind and Sweeping Strikes charges: range coloring at/above the threshold is the only way these bars can display thresholds."
                                     end
-                                    if not usable() then return offTip() end
+                                    if not resourceUsable() then return offTip() end
                                     if entryIsBar() then
                                         return "This option applies to pip-type resources only."
                                     end

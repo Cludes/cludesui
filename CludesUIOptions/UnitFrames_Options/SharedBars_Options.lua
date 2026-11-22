@@ -3355,7 +3355,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
         -- style builds a saved "blizzard" as modern, and a rogue under the
         -- CludesUI look reads its own style (ns.UF_ForeverCPStyle, nil
         -- elsewhere). Display and gating only; writes and syncs keep the saved value.
-        local function SCPStyle()
+        local function ClassPowerStyle()
             local val = SupportedOr("classPowerStyle", "none")
             if mod.UF_ForeverCPStyle then val = mod.UF_ForeverCPStyle(val) end
             return val
@@ -3388,11 +3388,11 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                     end
                 end
             end,
-            getValue = function() return SCPStyle() end,
+            getValue = function() return ClassPowerStyle() end,
             -- DependentSetValue: Rows 2-3 below are hidden while the style
             -- is None; only the None <-> enabled flip forces the rebuild
             -- (style-to-style changes keep the cheap refresh path).
-            setValue = CUI.DependentSetValue(function() return SCPStyle() ~= "none" end, function(val)
+            setValue = CUI.DependentSetValue(function() return ClassPowerStyle() ~= "none" end, function(val)
                 -- WoW Forever rogues under the CludesUI look pick their
                 -- own style (ns.UF_RogueCPKey); the shared one stays as is.
                 local rogueKey = mod.UF_RogueCPKey and mod.UF_RogueCPKey()
@@ -3430,7 +3430,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
         }, {
             type = "multiSwatch",
             text = "Fill Color",
-            disabled = function() return SCPStyle() ~= "modern" end,
+            disabled = function() return ClassPowerStyle() ~= "modern" end,
             disabledTooltip = "Class Resource must be set to Modern",
             rawTooltip = true,
             swatches = {
@@ -3503,7 +3503,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
             emptySwatch:SetPoint("RIGHT", ccRgn._lastInline or ccRgn._control, "LEFT", -6, 0)
             ccRgn._lastInline = emptySwatch
             local function UpdateEmptySwatch()
-                local crOff = SCPStyle() ~= "modern"
+                local crOff = ClassPowerStyle() ~= "modern"
                 if crOff then
                     emptySwatch:SetAlpha(0.15)
                     emptySwatch:Disable()
@@ -3515,7 +3515,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
             UpdateEmptySwatch()
             RegisterWidgetRefresh(UpdateEmptySwatch)
             emptySwatch:HookScript("OnEnter", function(self)
-                if SCPStyle() ~= "modern" then
+                if ClassPowerStyle() ~= "modern" then
                     CUI.ShowWidgetTooltip(
                         self,
                         CUI.DisabledTooltip("This option requires Class Resource to be set to Modern.")
@@ -3550,14 +3550,14 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
 
         -- Rows 2-3 are HIDDEN entirely while Enable Class Resource is None
         -- (the dropdown's DependentSetValue forces the rebuild on flips).
-        if SCPStyle() ~= "none" then
+        if ClassPowerStyle() ~= "none" then
             -- Row 2: Position (with cog for x/y) + Size
             row, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Position",
                 values = classPowerPosValues,
                 order = classPowerPosOrder,
-                disabled = function() return SCPStyle() ~= "modern" end,
+                disabled = function() return ClassPowerStyle() ~= "modern" end,
                 disabledTooltip = "Class Resource must be set to Modern",
                 rawTooltip = true,
                 getValue = SValSupportedRow("classPowerPosition", "top"),
@@ -3573,7 +3573,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 min = 4,
                 max = 100,
                 step = 1,
-                disabled = function() return SCPStyle() ~= "modern" end,
+                disabled = function() return ClassPowerStyle() ~= "modern" end,
                 disabledTooltip = "Class Resource must be set to Modern",
                 rawTooltip = true,
                 getValue = SValSupportedRow("classPowerSize", 8),
@@ -3592,10 +3592,10 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 local posRgn = row._leftRegion
                 CUI.BuildInlineCog(posRgn, {
                     disabled = function()
-                        return SCPStyle() ~= "modern" or SupportedOr("classPowerPosition", "top") == "above"
+                        return ClassPowerStyle() ~= "modern" or SupportedOr("classPowerPosition", "top") == "above"
                     end,
                     disabledTooltip = function()
-                        return SCPStyle() ~= "modern"
+                        return ClassPowerStyle() ~= "modern"
                                 and "This option requires Class Resource to be set to Modern."
                             or "This option requires a dropdown selection other than Above Health Bar"
                     end,
@@ -3663,7 +3663,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 min = 0,
                 max = 10,
                 step = 1,
-                disabled = function() return SCPStyle() ~= "modern" end,
+                disabled = function() return ClassPowerStyle() ~= "modern" end,
                 disabledTooltip = "Class Resource must be set to Modern",
                 rawTooltip = true,
                 getValue = SValSupportedRow("classPowerSpacing", 2),
@@ -3677,7 +3677,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 type = "colorpicker",
                 text = "Background Color",
                 hasAlpha = true,
-                disabled = function() return SCPStyle() ~= "modern" end,
+                disabled = function() return ClassPowerStyle() ~= "modern" end,
                 disabledTooltip = "Class Resource must be set to Modern",
                 rawTooltip = true,
                 getValue = function()
@@ -3741,7 +3741,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                     tooltip = "Choose where your combo points show.",
                     values = { target = "Target Frame", player = "Player Frame", never = "Never" },
                     order = { "target", "player", "never" },
-                    disabled = function() return SCPStyle() ~= "blizzard" end,
+                    disabled = function() return ClassPowerStyle() ~= "blizzard" end,
                     disabledTooltip = "Class Resource must be set to Blizzard",
                     rawTooltip = true,
                     getValue = function() return mod.UF_ComboLocation() end,
@@ -3981,7 +3981,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             local absorbEdgeLabelsVert -- last applied axis; nil until the first sync
             -- Returns true only if the axis flipped, so the caller can skip
             -- _invalidateMenu on unrelated refreshes (would break a wired-open click).
-            local function SyncAbsorbEdgeLabels()
+            local function SyncShieldEdgeLabels()
                 local vert = (SupportedOr("healthVerticalFill", false)) and true or false
                 if absorbEdgeLabelsVert == vert then return false end
                 absorbEdgeLabelsVert = vert
@@ -3989,7 +3989,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 absorbEdgeLabels.left = vert and "From Bottom Edge" or "From Left Edge"
                 return true
             end
-            SyncAbsorbEdgeLabels()
+            SyncShieldEdgeLabels()
             local _, cogShow = CUI.BuildInlineCog(region, {
                 title = "Absorb Rendering",
                 rows = {
@@ -4001,7 +4001,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                         ddWidth = 190,
                         order = { "overlay", "overlayReverse", "overlayReverseFull", "right", "left" },
                         get = function()
-                            SyncAbsorbEdgeLabels()
+                            SyncShieldEdgeLabels()
                             return SupportedOr("absorbEdgeMode", "overlay")
                         end,
                         set = SSetSupportedRow("absorbEdgeMode"),
@@ -4109,7 +4109,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             -- Re-label on every page refresh (the Vertical Fill toggle fires one) and
             -- drop any built menu so its entries rebuild with the new wording.
             RegisterWidgetRefresh(function()
-                if not SyncAbsorbEdgeLabels() then return end
+                if not SyncShieldEdgeLabels() then return end
                 local popFrame = cogShow and cogShow._popupFrame
                 if popFrame and popFrame.GetChildren then
                     for _, childFrame in ipairs({ popFrame:GetChildren() }) do
@@ -4196,7 +4196,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             local healAbsorbEdgeLabelsVert -- last applied axis; nil until the first sync
             -- Returns true only if the axis flipped, so the caller can skip
             -- _invalidateMenu on unrelated refreshes (would break a wired-open click).
-            local function SyncHealAbsorbEdgeLabels()
+            local function SyncHealEdgeLabels()
                 local vert = (SupportedOr("healthVerticalFill", false)) and true or false
                 if healAbsorbEdgeLabelsVert == vert then return false end
                 healAbsorbEdgeLabelsVert = vert
@@ -4204,7 +4204,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 healAbsorbEdgeLabels.left = vert and "From Bottom Edge" or "From Left Edge"
                 return true
             end
-            SyncHealAbsorbEdgeLabels()
+            SyncHealEdgeLabels()
             local _, cogShow = CUI.BuildInlineCog(region, {
                 title = "Heal Absorb Rendering",
                 rows = {
@@ -4214,7 +4214,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                         values = healAbsorbEdgeLabels,
                         order = { "overlay", "right", "left" },
                         get = function()
-                            SyncHealAbsorbEdgeLabels()
+                            SyncHealEdgeLabels()
                             return SupportedOr("healAbsorbEdgeMode", "overlay")
                         end,
                         set = SSetSupportedRow("healAbsorbEdgeMode"),
@@ -4233,7 +4233,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             -- Re-label on every page refresh (the Vertical Fill toggle fires one) and
             -- drop any built menu so its entries rebuild with the new wording.
             RegisterWidgetRefresh(function()
-                if not SyncHealAbsorbEdgeLabels() then return end
+                if not SyncHealEdgeLabels() then return end
                 local popFrame = cogShow and cogShow._popupFrame
                 if popFrame and popFrame.GetChildren then
                     for _, childFrame in ipairs({ popFrame:GetChildren() }) do

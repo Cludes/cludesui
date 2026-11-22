@@ -776,7 +776,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         button:SetScript("OnLeave", OnLeave)
         local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
-        local function EnsureMenu()
+        local function MakeMenuOnce()
             if dropMenu then return dropMenu end
             local m, _, refresh = BuildDropdownMenu(
                 button,
@@ -810,7 +810,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         button:SetScript("OnClick", function()
             if locked and locked() then return end
             HideWidgetTooltip()
-            local m = EnsureMenu()
+            local m = MakeMenuOnce()
             if m:IsShown() then
                 m:Hide()
             else
@@ -846,7 +846,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local dropMenu
-        local function EnsureMenu()
+        local function MakeMenuOnce()
             if dropMenu then return dropMenu end
             local m, _, refresh = BuildDropdownMenu(
                 button,
@@ -885,7 +885,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             if dropMenu then dropMenu:Hide() end
         end)
         return function()
-            local m = EnsureMenu()
+            local m = MakeMenuOnce()
             if m:IsShown() then
                 m:Hide()
             else

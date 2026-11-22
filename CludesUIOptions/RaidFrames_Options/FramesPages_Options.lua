@@ -140,16 +140,16 @@ local function BuildSortByControl(region, options)
         rHL:SetColorTexture(1, 1, 1, 1)
         rHL:SetAlpha(0)
 
-        local function UpdateRadio()
+        local function SyncRadio()
             local isSel = options.readMode() == ri.key
             rl:SetTextColor(1, 1, 1, itemDimA)
             rHL:SetAlpha(isSel and SEL_A or 0)
         end
-        UpdateRadio()
-        rr._updateRadio = UpdateRadio
+        SyncRadio()
+        rr._updateRadio = SyncRadio
 
         rr:SetScript("OnEnter", function() rHL:SetAlpha(HL_A) end)
-        rr:SetScript("OnLeave", function() UpdateRadio() end)
+        rr:SetScript("OnLeave", function() SyncRadio() end)
         rr:SetScript("OnClick", function()
             options.writeMode(ri.key)
             UpdateSortLabel()
@@ -530,14 +530,14 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     -- (the tier was removed): once a rebuild dresses this eye again,
                     -- maybe as another row's, this refresher leaves it alone.
                     local eyeGen = PoolGen(eyeButton)
-                    local function RefreshSizeEye()
+                    local function SyncSizeEye()
                         if PoolGen(eyeButton) ~= eyeGen then return end
                         local isActive = mod._sizePreviewTier == tier
                         eyeTex:SetTexture(isActive and EYE_INVISIBLE or EYE_VISIBLE)
                         CUI.SetGlyphAlpha(eyeButton, isActive and 0.6 or 0.4)
                     end
-                    RefreshSizeEye()
-                    mod["_refreshSizeEye" .. tier] = RefreshSizeEye
+                    SyncSizeEye()
+                    mod["_refreshSizeEye" .. tier] = SyncSizeEye
 
                     eyeButton:SetScript("OnEnter", function(self)
                         CUI.SetGlyphAlpha(self, 0.7)
@@ -549,7 +549,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         )
                     end)
                     eyeButton:SetScript("OnLeave", function(self)
-                        RefreshSizeEye()
+                        SyncSizeEye()
                         CUI.HideWidgetTooltip()
                     end)
                     eyeButton:SetScript("OnClick", function()
@@ -570,7 +570,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             mod._sizePreviewTier = tier
                             if mod._ShowSizePreview then mod._ShowSizePreview(tier) end
                         end
-                        RefreshSizeEye()
+                        SyncSizeEye()
                         for _, t in ipairs(CUSTOM_TIERS) do
                             if t ~= tier then
                                 local otherRefresh = mod["_refreshSizeEye" .. t]
@@ -633,7 +633,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         end
                         return ovs[tier]
                     end
-                    local function TierGrowthChanged()
+                    local function OnTierGrowthChanged()
                         -- ReloadAndUpdate reloads the live frames (including the growth-corner anchor) AND re-shows the active size preview, so the two never diverge.
                         RebuildAndReload()
                     end
@@ -735,7 +735,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                                             function(nv) shade.unitGrowth = nv end
                                         )
                                     end
-                                    TierGrowthChanged()
+                                    OnTierGrowthChanged()
                                 end,
                             },
                             {
@@ -753,7 +753,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                                 set = function(value)
                                     if InCombatLockdown() then return end
                                     EnsureTierOv().groupGrowthCentered = value
-                                    TierGrowthChanged()
+                                    OnTierGrowthChanged()
                                 end,
                                 disabled = function()
                                     local ovs = db.profile.raidSizeOverrides
@@ -792,7 +792,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                                             function(nv) shade.groupGrowth = nv end
                                         )
                                     end
-                                    TierGrowthChanged()
+                                    OnTierGrowthChanged()
                                 end,
                             },
                             {
@@ -1387,7 +1387,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     -- -- KeepGrowthPerpendicular bumps the other axis instead. A base edit can also
     -- leave a per-tier override same-axis (an override that only set one axis
     -- inherits the other from base), so fix those up too.
-    local function FixTierOverridesPerpendicular()
+    local function FixPerpendicularTiers()
         local overrides = db.profile.raidSizeOverrides
         if type(overrides) ~= "table" then return end
         for _, shade in pairs(overrides) do
@@ -1417,7 +1417,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     function() return SettingOr("unitGrowth", "DOWN") end,
                     function(nv) db.profile.unitGrowth = nv end
                 )
-                FixTierOverridesPerpendicular()
+                FixPerpendicularTiers()
                 CUI:RefreshPage() -- the sibling dropdown may have just changed
             end
             if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
@@ -1437,7 +1437,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     function() return SettingOr("groupGrowth", "RIGHT") end,
                     function(nv) db.profile.groupGrowth = nv end
                 )
-                FixTierOverridesPerpendicular()
+                FixPerpendicularTiers()
                 CUI:RefreshPage() -- the sibling dropdown may have just changed
             end
             if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
@@ -1512,7 +1512,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         local region = sortRow._leftRegion
         -- Class list in saved order, always covering every class: any missing/new
         -- class is appended from the default alphabetical order.
-        local function GetClassItems()
+        local function ClassChoices()
             local def = mod._GetDefaultClassOrder() -- also populates ns._classNameByToken
             local nameList = mod._classNameByToken or {}
             local saved = db.profile.classOrder
@@ -1538,7 +1538,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             return result
         end
         -- FrameSort's list owns the order while it is the loaded Sort By choice.
-        local function FsOwns()
+        local function FrameSortOwns()
             return db.profile.sortMode == "FRAMESORT" and mod._FrameSortApi and mod._FrameSortApi() ~= nil
                 or false
         end
@@ -1554,7 +1554,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         db.profile.prioritizeClass = value
                         RebuildAndReload()
                     end,
-                    disabled = FsOwns,
+                    disabled = FrameSortOwns,
                     disabledTooltip = "FrameSort sets the order while Sort By is FrameSort.",
                     rawTooltip = true,
                 },
@@ -1562,12 +1562,12 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     type = "reorder",
                     label = "Class Order",
                     hint = "Drag to Reorder Classes",
-                    items = GetClassItems,
+                    items = ClassChoices,
                     set = function(keyList)
                         db.profile.classOrder = keyList
                         RebuildAndReload()
                     end,
-                    disabled = function() return not db.profile.prioritizeClass or FsOwns() end,
+                    disabled = function() return not db.profile.prioritizeClass or FrameSortOwns() end,
                 },
             },
         })
@@ -1604,7 +1604,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             function() return SettingOr("unitGrowth", "DOWN") end,
                             function(nv) db.profile.unitGrowth = nv end
                         )
-                        FixTierOverridesPerpendicular()
+                        FixPerpendicularTiers()
                     end
                     WriteSetting("mergeGroups", value)
                     CUI:RefreshPage()
@@ -2198,7 +2198,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     do
         local region = pSortRow._rightRegion
         -- Class list in saved order, always covering all 13 classes: any missing/new class is appended from the default alphabetical order.
-        local function GetClassItems()
+        local function ClassChoices()
             local def = mod._GetDefaultClassOrder() -- also populates ns._classNameByToken
             local nameList = mod._classNameByToken or {}
             local saved = db.profile.partyClassOrder
@@ -2224,7 +2224,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             return result
         end
         -- FrameSort's list owns the order while it is the loaded Sort By choice.
-        local function FsOwns()
+        local function FrameSortOwns()
             return (db.profile.partySortMode or db.profile.sortMode) == "FRAMESORT"
                     and mod._FrameSortApi
                     and mod._FrameSortApi() ~= nil
@@ -2242,7 +2242,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                         db.profile.partyPrioritizeClass = value
                         RebuildParty()
                     end,
-                    disabled = FsOwns,
+                    disabled = FrameSortOwns,
                     disabledTooltip = "FrameSort sets the order while Sort By is FrameSort.",
                     rawTooltip = true,
                 },
@@ -2250,12 +2250,12 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                     type = "reorder",
                     label = "Class Order",
                     hint = "Drag to Reorder Classes",
-                    items = GetClassItems,
+                    items = ClassChoices,
                     set = function(keyList)
                         db.profile.partyClassOrder = keyList
                         RebuildParty()
                     end,
-                    disabled = function() return not db.profile.partyPrioritizeClass or FsOwns() end,
+                    disabled = function() return not db.profile.partyPrioritizeClass or FrameSortOwns() end,
                 },
             },
         })

@@ -2516,7 +2516,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- exist (the sizing below reads subW) and again after a caption
                         -- is recomposed in place, since a dynamic label can grow while
                         -- the flyout is open ("Lower Alpha (On CD)" gaining "50% ").
-                        local function RefitSub()
+                        local function RefitSublabels()
                             local labels = {}
                             for _, entry in ipairs(flyoutEntries) do
                                 labels[#labels + 1] = entry.label
@@ -2532,7 +2532,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- in place (a rebuild would lose the scroll, the search and the
                         -- apply strip's owner): each item's live selection (a bar apply
                         -- included), its caption, its arrow and its lock, then the width.
-                        local function RefreshFlyoutSelection()
+                        local function SyncFlyoutSelection()
                             for _, entry in ipairs(flyoutEntries) do
                                 if not entry.isDivider then
                                     entry.setSelected(entry.computeSelected())
@@ -2541,10 +2541,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     if itemState then itemState(entry.frame, entry.item, subMenu) end
                                 end
                             end
-                            RefitSub()
+                            RefitSublabels()
                         end
                         -- onItemCreated swatches live outside this scope and reach it through sub.
-                        subMenu._refreshSelection = RefreshFlyoutSelection
+                        subMenu._refreshSelection = SyncFlyoutSelection
                         for _, entry in ipairs(itemList) do
                             if entry.divider then
                                 -- A thin separator (built-in sounds above, LibSharedMedia
@@ -2735,7 +2735,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         -- Repaint in place, never rebuild: a rebuild would take
                                         -- the strip's owner item away mid-use.
                                         refresh = function()
-                                            RefreshFlyoutSelection()
+                                            SyncFlyoutSelection()
                                             PaintLabel()
                                         end,
                                     })
@@ -2756,7 +2756,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         else
                                             entry.choiceSet(nil)
                                         end
-                                        RefreshFlyoutSelection()
+                                        SyncFlyoutSelection()
                                         Repaint(false)
                                         return
                                     end
@@ -2792,7 +2792,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return
                                     end
                                     setVal(entry.val)
-                                    RefreshFlyoutSelection()
+                                    SyncFlyoutSelection()
                                     Repaint(true)
                                 end
                                 subItem:SetScript("OnClick", function()
@@ -2847,7 +2847,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                         end
 
-                        RefitSub()
+                        RefitSublabels()
 
                         -- A long list (the Audio Effect sounds) caps at the dropdowns'
                         -- 200px and scrolls smoothly under the wheel; a short one sizes
@@ -2970,7 +2970,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             flyoutW = SUB_BASE_W
                             subMenu:SetWidth(flyoutW)
                             flyoutBody:SetWidth(flyoutW)
-                            RefitSub()
+                            RefitSublabels()
                             if searchBox then
                                 searchBox:SetWidth(flyoutW - 12)
                                 searchBox:SetText("")
@@ -4308,14 +4308,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 tgHl:SetAllPoints()
                                 tgHl:SetColorTexture(1, 1, 1, hlA)
                                 tgHl:SetAlpha(0)
-                                local function PaintToggle()
+                                local function PaintPotToggle()
                                     if PotSwapOn() then
                                         tgLbl:SetTextColor(acR, acG, acB, 1)
                                     else
                                         tgLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                                     end
                                 end
-                                PaintToggle()
+                                PaintPotToggle()
                                 tg:SetScript("OnEnter", function()
                                     tgLbl:SetTextColor(1, 1, 1, 1)
                                     tgHl:SetAlpha(1)
@@ -4327,13 +4327,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     )
                                 end)
                                 tg:SetScript("OnLeave", function()
-                                    PaintToggle()
+                                    PaintPotToggle()
                                     tgHl:SetAlpha(0)
                                     CUI.HideWidgetTooltip()
                                 end)
                                 tg:SetScript("OnClick", function()
                                     ActiveStatesStore().potSwap = not PotSwapOn()
-                                    PaintToggle()
+                                    PaintPotToggle()
                                     PaintPotRow()
                                     PotChanged()
                                 end)

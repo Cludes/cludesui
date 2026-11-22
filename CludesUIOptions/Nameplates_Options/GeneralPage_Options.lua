@@ -15,7 +15,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- A row half's slider label, for a "(Percent)" suffix beside it: the half's own
 -- label (a page built again keeps its earlier dresses' font strings, idle,
 -- among the half's regions).
-local function SliderLabel(region, textValue)
+local function SetSliderLabel(region, textValue)
     local labelText = region._label
     if labelText and labelText.GetText and CludesUI.EnKey(labelText:GetText()) == textValue then
         return labelText
@@ -313,7 +313,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     if not CludesUI._prebuilding then
         local rightRegion = friendlyRow._rightRegion
         local whiteSwatch, updateWhite, classSwatch, updateClass
-        local function refreshNameSwatches()
+        local function syncNameSwatches()
             if updateWhite then updateWhite() end
             if updateClass then updateClass() end
             local off = nameOnlyHidden()
@@ -338,7 +338,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 "CludesUINameplates"
             )
             if mod.RefreshAllSettings then mod.RefreshAllSettings() end
-            refreshNameSwatches()
+            syncNameSwatches()
         end
         -- White swatch: fixed white, not editable; clicking only selects the non-class-colored mode (default OnClick picker replaced below).
         whiteSwatch, updateWhite = CludesUI.BuildColorSwatch(
@@ -376,8 +376,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             ApplyClassColored(true)
         end)
         CludesUI.HoverTip(classSwatch, "Class Color")
-        CludesUI.RegisterWidgetRefresh(refreshNameSwatches)
-        refreshNameSwatches()
+        CludesUI.RegisterWidgetRefresh(syncNameSwatches)
+        syncNameSwatches()
     end
 
     ---------------------------------------------------------------
@@ -653,7 +653,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         -- Inline swatch: friendly NPC bar & name color, full-plate mode only -- the exact complement of the cog beside it, which owns the name-only colors.
         local function npcColorOff() return npcOff() or friendlyPlateOff() end
         local npcSwatch, updateNpcSwatch
-        local function refreshNpcSwatch()
+        local function syncNpcSwatch()
             if updateNpcSwatch then updateNpcSwatch() end
             local off = npcColorOff()
             npcSwatch:SetAlpha(off and 0.3 or 1)
@@ -665,7 +665,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end, function(red, green, blue)
             DB().friendlyNPCColor = { r = red, g = green, b = blue }
             mod.RefreshFriendlyColors()
-            refreshNpcSwatch()
+            syncNpcSwatch()
         end, nil, 20)
         Pix.Point(npcSwatch, "RIGHT", button or region._control, "LEFT", -8, 0)
         region._lastInline = npcSwatch
@@ -684,8 +684,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             end
         end)
         npcSwatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        CludesUI.RegisterWidgetRefresh(refreshNpcSwatch)
-        refreshNpcSwatch()
+        CludesUI.RegisterWidgetRefresh(syncNpcSwatch)
+        syncNpcSwatch()
     end
 
     _, height = W:DualRow(hostFrame, cursorY, {
@@ -1174,7 +1174,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             local suffixFS = rightFrame:CreateFontString(nil, "OVERLAY")
             suffixFS:SetFont(CludesUI.EXPRESSWAY, 11, GetNPOptOutline())
             suffixFS:SetTextColor(1, 1, 1, 0.35)
-            local sliderLabel = SliderLabel(rightFrame, "Hash Line Location")
+            local sliderLabel = SetSliderLabel(rightFrame, "Hash Line Location")
             if sliderLabel then
                 suffixFS:SetPoint("LEFT", sliderLabel, "RIGHT", 5, -1)
             else
@@ -1258,7 +1258,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             local suffixFS = leftFrame:CreateFontString(nil, "OVERLAY")
             suffixFS:SetFont(CludesUI.EXPRESSWAY, 11, GetNPOptOutline())
             suffixFS:SetTextColor(1, 1, 1, 0.35)
-            local sliderLabel = SliderLabel(leftFrame, "Scale Target Nameplate")
+            local sliderLabel = SetSliderLabel(leftFrame, "Scale Target Nameplate")
             if sliderLabel then
                 suffixFS:SetPoint("LEFT", sliderLabel, "RIGHT", 5, -1)
             else
@@ -1380,7 +1380,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             local suffixFS = leftFrame:CreateFontString(nil, "OVERLAY")
             suffixFS:SetFont(CludesUI.EXPRESSWAY, 11, GetNPOptOutline())
             suffixFS:SetTextColor(1, 1, 1, 0.35)
-            local sliderLabel = SliderLabel(leftFrame, "Focus Cast Height")
+            local sliderLabel = SetSliderLabel(leftFrame, "Focus Cast Height")
             if sliderLabel then
                 suffixFS:SetPoint("LEFT", sliderLabel, "RIGHT", 5, -1)
             else
@@ -1581,7 +1581,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             local suffixFS = leftFrame:CreateFontString(nil, "OVERLAY")
             suffixFS:SetFont(CludesUI.EXPRESSWAY, 11, GetNPOptOutline())
             suffixFS:SetTextColor(1, 1, 1, 0.35)
-            local sliderLabel = SliderLabel(leftFrame, "Scale Nameplate On Cast")
+            local sliderLabel = SetSliderLabel(leftFrame, "Scale Nameplate On Cast")
             if sliderLabel then
                 suffixFS:SetPoint("LEFT", sliderLabel, "RIGHT", 5, -1)
             else

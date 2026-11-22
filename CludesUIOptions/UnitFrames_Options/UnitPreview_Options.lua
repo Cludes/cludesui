@@ -1498,7 +1498,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     disabledText:SetText(CludesUI.L("Disabled"))
     -- Lays the overlay over pf at pf's scale, its label centred (run on
     -- every Update and whenever the preview shows).
-    local function SyncDisabledOverlay()
+    local function SyncDisabledCover()
         disabledOverlay:ClearAllPoints()
         disabledOverlay:SetScale(popFrame:GetScale())
         disabledOverlay:SetPoint("TOPLEFT", popFrame, "TOPLEFT", 0, 0)
@@ -1506,7 +1506,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         disabledText:ClearAllPoints()
         disabledText:SetPoint("CENTER", disabledOverlay, "CENTER", 0, 0)
     end
-    SyncDisabledOverlay()
+    SyncDisabledCover()
     -- The overlay lives on UIParent, so it hides with the preview (tab or
     -- module switch, page cache stash, the panel folding to its mini
     -- window) and comes back when the preview shows again without an
@@ -1515,7 +1515,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     popFrame:HookScript("OnShow", function()
         local sourceKey = unitName:match("^boss") and "boss" or unitName
         if mod.GetUnitFrameSource(sourceKey) == "cui" then return end
-        SyncDisabledOverlay()
+        SyncDisabledCover()
         disabledOverlay:Show()
     end)
 
@@ -4564,7 +4564,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
         -- Sync disabled overlay AFTER pf is fully sized/positioned
         if not isEnabled then
-            SyncDisabledOverlay()
+            SyncDisabledCover()
             disabledOverlay:Show()
         end
     end

@@ -115,7 +115,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         if region then CUI._NotifySettingWrite(region, snap) end
         ApplyColors()
     end
-    local function Rebuild() CUI:RefreshPage(true) end
+    local function RebuildPage() CUI:RefreshPage(true) end
     local function SpellName(ident, fallback)
         return (ident and C_Spell and C_Spell.GetSpellName(ident)) or fallback
     end
@@ -291,7 +291,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         if not (entries[swatchCell.n] and entries[jdx]) then return end
         entries[swatchCell.n], entries[jdx] = entries[jdx], entries[swatchCell.n]
         Write(swatchCell.class, singles, combos, swatchCell.rgn)
-        Rebuild()
+        RebuildPage()
     end
     local function Remove(swatchCell)
         local singles, combos = Read(swatchCell.class)
@@ -299,7 +299,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         if not entries[swatchCell.n] then return end
         table.remove(entries, swatchCell.n)
         Write(swatchCell.class, singles, combos, swatchCell.rgn)
-        Rebuild()
+        RebuildPage()
     end
     -- A new debuff starts unchosen; a new combo pairs the class's top two.
     local function AddSingle(classFile)
@@ -309,7 +309,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         Write(classFile, singles, combos)
         debuffColorOpen[classFile] = true
         addedDebuff = { kind = "single", class = classFile, n = #singles }
-        Rebuild()
+        RebuildPage()
         addedDebuff = nil
     end
     local function ComboRoom(classFile)
@@ -323,7 +323,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         combos[#combos + 1] = { spells = { picks[1], picks[2] }, color = CopyColor(DC.COMBO_COLOR) }
         Write(classFile, singles, combos)
         addedDebuff = { kind = "combo", class = classFile, n = #combos }
-        Rebuild()
+        RebuildPage()
         addedDebuff = nil
     end
 

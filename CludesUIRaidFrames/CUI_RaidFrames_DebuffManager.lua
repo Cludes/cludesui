@@ -3329,7 +3329,7 @@ end
 -- hidden container's own re-parse waits until it shows) -- so each button stops the glow animations it runs
 -- itself. Then switched off and bound to no unit, so nothing re-parses meanwhile; unit re-assignments skip it
 -- (_dmParked) and the apply that shows it again unparks it and re-points it (_dmUnit). Repeat parks only hide.
-local function ParkTileContainer(c)
+local function ParkContainer(c)
     c:Hide()
     if c._dmParked then return end
     c._dmParked = true
@@ -3376,7 +3376,7 @@ local function EnsureTileContainer(skinData, tileDef)
     local c = tiles[tileDef.id]
     if c then
         if c._dmType == tileDef.type then return c end
-        ParkTileContainer(c)
+        ParkContainer(c)
         local parked = skinData.dmTilesParked
         if not parked then
             parked = {}
@@ -4043,7 +4043,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                     end
                 end
             elseif live and live[tileDef.id] then
-                ParkTileContainer(live[tileDef.id])
+                ParkContainer(live[tileDef.id])
             end
         end
     end
@@ -4057,7 +4057,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
         end
         for ident, c in pairs(live) do
             if not present[ident] then
-                ParkTileContainer(c)
+                ParkContainer(c)
                 -- A parked container keeps its slot buttons, so a healthcolor tile's
                 -- overlays would stay registered on the health bar and every later
                 -- layout pass would walk them for the session. Only this container's
@@ -4138,7 +4138,7 @@ function mod.DM_ParkGroups(boxHolder, declared, skinData)
     end
     if skinData and skinData.dmTiles then
         for _, c in pairs(skinData.dmTiles) do
-            ParkTileContainer(c)
+            ParkContainer(c)
         end
     end
 end

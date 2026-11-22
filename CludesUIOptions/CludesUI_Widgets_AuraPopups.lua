@@ -147,7 +147,7 @@ function CUI.ShowTrackedAurasPopup(options)
         panelFrame:SetHeight(470 + hdrY)
     end
 
-    local function ClosePopup()
+    local function CloseAuraPopup()
         shade:Hide()
         _trackedAurasDimmer = nil
     end
@@ -157,7 +157,7 @@ function CUI.ShowTrackedAurasPopup(options)
     panelFrame:SetScript("OnKeyDown", function(self, key)
         if InCombatLockdown() then return end
         self:SetPropagateKeyboardInput(key ~= "ESCAPE")
-        if key == "ESCAPE" then ClosePopup() end
+        if key == "ESCAPE" then CloseAuraPopup() end
     end)
 
     -- X close (standard popup chrome: borderless cui-close, top right)
@@ -170,7 +170,7 @@ function CUI.ShowTrackedAurasPopup(options)
     closeBtn:SetAlpha(0.5)
     closeBtn:SetScript("OnEnter", function(self) self:SetAlpha(0.9) end)
     closeBtn:SetScript("OnLeave", function(self) self:SetAlpha(0.5) end)
-    closeBtn:SetScript("OnClick", ClosePopup)
+    closeBtn:SetScript("OnClick", CloseAuraPopup)
 
     local RefreshBoth
 
@@ -332,19 +332,19 @@ function CUI.ShowTrackedAurasPopup(options)
     -- holds MINE OPT-INS. Either way the tag reads "MINE" and lights when the
     -- entry is restricted to your casts.
     local function MakeSpellColumn(posX, titleText, promptText, listFn, otherFn, withMine)
-        local function ScopeMap()
+        local function ScopeStores()
             if not withMine then return nil end
             if withMine.mineGet then return withMine.mineGet() end
             return withMine.anyGet and withMine.anyGet()
         end
         local function MineOn(ident)
-            local map = ScopeMap()
+            local map = ScopeStores()
             if withMine and withMine.mineGet then return map ~= nil and map[ident] == true end
             return not (map and map[ident])
         end
         -- Both polarities toggle by flipping the entry's presence in the map.
         local function ToggleMine(ident)
-            local map = ScopeMap()
+            local map = ScopeStores()
             if not map then return end
             if map[ident] then
                 map[ident] = nil
@@ -531,7 +531,7 @@ function CUI.ShowTrackedAurasPopup(options)
                     local l2 = listFn()
                     if l2 then l2[row._id] = nil end
                     if withMine then
-                        local map = ScopeMap()
+                        local map = ScopeStores()
                         if map then map[row._id] = nil end
                     end
                     if options.onChanged then options.onChanged() end
@@ -606,7 +606,7 @@ function CUI.ShowTrackedAurasPopup(options)
         dl2:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
         if dbrd and dbrd.SetColor then dbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9) end
     end)
-    doneBtn:SetScript("OnClick", ClosePopup)
+    doneBtn:SetScript("OnClick", CloseAuraPopup)
 
     -- Controller in use: the popup joins the controller cursor and answers the
     -- controller's Back (registered while hidden, so it counts from this show);

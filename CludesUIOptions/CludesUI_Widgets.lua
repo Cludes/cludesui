@@ -463,20 +463,20 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     local function DDResolveLabel(values, sequence, curKey)
         -- Localize the visible label only; raw-key fallback is data. Data dropdowns (profile/spell lists) opt out via _noLoc.
         local noLoc = values and values._noLoc
-        local function TR(s)
+        local function TrText(s)
             if noLoc or type(s) ~= "string" then return s end
             return CUI.L(s)
         end
         -- Direct top-level match (non-subnav)
         local direct = values[curKey]
-        if direct and type(direct) ~= "table" then return TR(direct) end
-        if direct and type(direct) == "table" and not direct.subnav then return TR(direct.text) end
+        if direct and type(direct) ~= "table" then return TrText(direct) end
+        if direct and type(direct) == "table" and not direct.subnav then return TrText(direct.text) end
         -- curKey might be a subnav child  search all values for a parent with subnav
         for _, parentKey in ipairs(sequence) do
             local preview = values[parentKey]
             if type(preview) == "table" and preview.subnav then
                 local sv = preview.subnav.values
-                if sv and sv[curKey] then return TR(preview.text) .. " - " .. TR(sv[curKey]) end
+                if sv and sv[curKey] then return TrText(preview.text) .. " - " .. TrText(sv[curKey]) end
             end
         end
         -- SharedMedia keys ("sm:<name>") whose provider isn't loaded are absent from `values`; show the clean media name, never the raw "sm:" key.
@@ -564,7 +564,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local isWide = (style == "wide")
         -- Localize visible item captions only; data dropdowns opt out via _noLoc.
         local _noLoc = values and values._noLoc
-        local function TR(s)
+        local function TrText(s)
             if _noLoc or type(s) ~= "string" then return s end
             return CUI.L(s)
         end
@@ -716,7 +716,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             MakeFont(entry, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                         itemText:SetAlpha(1)
                         itemText:SetPoint("LEFT", entry, "LEFT", isWide and 12 or 10, 0)
-                        itemText:SetText(TR(parentText))
+                        itemText:SetText(TrText(parentText))
                         local arrowTex = entry:CreateTexture(nil, "ARTWORK")
                         arrowTex:SetSize(10, 10)
                         arrowTex:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
@@ -787,7 +787,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                     MakeFont(ci, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                                 cLbl:SetAlpha(1)
                                 cLbl:SetPoint("LEFT", ci, "LEFT", 10, 0)
-                                cLbl:SetText(TR(childText))
+                                cLbl:SetText(TrText(childText))
                                 cLbl:SetJustifyH("LEFT")
                                 local rowW = cLbl:GetStringWidth() + 22
                                 if sn.icon then
@@ -837,7 +837,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                     local g = PoolGen(dropCaption)
                                     if sn.onSelect then sn.onSelect(childKey) end
                                     if PoolGen(dropCaption) == g then
-                                        dropCaption:SetText(TR(parentText) .. ": " .. TR(childText))
+                                        dropCaption:SetText(TrText(parentText) .. ": " .. TrText(childText))
                                     end
                                     subMenu:Hide()
                                     dropMenu:Hide()
@@ -912,7 +912,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             itemText:SetWordWrap(false)
                             itemText:SetWidth(menuW * _moMaxTextPct)
                         end
-                        itemText:SetText(TR(mainText))
+                        itemText:SetText(TrText(mainText))
                         if dnAction then
                             local ACC = CUI.CLUDES_GREEN
                             itemText:SetTextColor(ACC.r, ACC.g, ACC.b, 0.8)
@@ -1065,7 +1065,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             iNote = MakeFont(entry, 11, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                             iNote:SetAlpha(0.75)
                             iNote:SetPoint("LEFT", itemText, "RIGHT", 4, 0)
-                            iNote:SetText(TR(noteText))
+                            iNote:SetText(TrText(noteText))
                         end
                         -- Hover and selection wash in the accent colour (house look).
                         local iHl = SolidTex(
@@ -1151,7 +1151,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             -- dressed again for another use (the rebuild painted it); the list always closes.
                             local g = PoolGen(dropCaption)
                             setValue(itemKey)
-                            if PoolGen(dropCaption) == g then dropCaption:SetText(TR(mainText)) end
+                            if PoolGen(dropCaption) == g then dropCaption:SetText(TrText(mainText)) end
                             dropMenu:Hide()
                             RefreshWidgetsNextFrame()
                         end)
@@ -1224,7 +1224,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             local ddSmoothFrame = PoolOwned(dropMenu, "smooth", "Frame")
             ddSmoothFrame:Hide()
 
-            local function UpdateDDThumb()
+            local function SyncDropThumb()
                 local maxScroll = CUI.SafeScrollRange(scroller)
                 if maxScroll <= 0 then
                     menuRail:Hide()
@@ -1249,7 +1249,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             local function JumpTo(pos)
                 ddScrollTarget = pos
                 scroller:SetVerticalScroll(pos)
-                UpdateDDThumb()
+                SyncDropThumb()
             end
             local function StopSmooth()
                 ddSmoothing = false
@@ -1273,7 +1273,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     return
                 end
                 scroller:SetVerticalScroll(Clamp(current + diff * math.min(1, SMOOTH_SPEED * elapsed)))
-                UpdateDDThumb()
+                SyncDropThumb()
             end)
 
             local function DDSmoothScrollTo(target)
@@ -1288,7 +1288,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 if CUI.SafeScrollRange(self) <= 0 then return end
                 DDSmoothScrollTo(StepBase() - delta * SCROLL_STEP)
             end)
-            scroller:SetScript("OnScrollRangeChanged", UpdateDDThumb)
+            scroller:SetScript("OnScrollRangeChanged", SyncDropThumb)
 
             -- Controller helpers, built by the first open that runs with a controller
             -- (menu._padOpen), so a list never opened with one carries none of them.
@@ -1402,7 +1402,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             dropMenu:HookScript("OnShow", function()
                 ddScrollTarget = 0
                 scroller:SetVerticalScroll(0)
-                UpdateDDThumb()
+                SyncDropThumb()
             end)
         else
             dropMenu:SetHeight(totalContentH + searchPad)

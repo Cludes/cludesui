@@ -648,7 +648,7 @@ local function ShowMarkerPopup(spec, barId, onAdded)
         _G[spec.name] = dialog
     end
 
-    local function SetStatus(textValue, red, green, blue)
+    local function SetDialogStatus(textValue, red, green, blue)
         dialog._status:SetText(CUI.L(textValue))
         dialog._status:SetTextColor(red or 1, green or 0.3, blue or 0.3, 1)
         if dialog._statusTimer then dialog._statusTimer:Cancel() end
@@ -658,12 +658,12 @@ local function ShowMarkerPopup(spec, barId, onAdded)
     end
 
     local function DoAdd()
-        local marker = spec.toMarker(tonumber(dialog._editBox:GetText()), SetStatus)
+        local marker = spec.toMarker(tonumber(dialog._editBox:GetText()), SetDialogStatus)
         if not marker then return end
         local sd = mod.GetBarSpellData(barId)
         for _, existing in ipairs(sd and sd.assignedSpells or {}) do
             if existing == marker then
-                SetStatus("Already tracked")
+                SetDialogStatus("Already tracked")
                 return
             end
         end
@@ -690,15 +690,15 @@ local ITEM_POPUP = {
     maxLetters = 9,
     title = "Add Custom Item",
     placeholder = "Item ID",
-    toMarker = function(itemId, SetStatus)
+    toMarker = function(itemId, SetDialogStatus)
         if not itemId or itemId < 100 then
-            SetStatus("Enter a valid item ID")
+            SetDialogStatus("Enter a valid item ID")
             return nil
         end
         itemId = math.floor(itemId)
         if not C_Item.GetItemNameByID(itemId) then
             C_Item.RequestLoadItemDataByID(itemId)
-            SetStatus("Loading item data, try again")
+            SetDialogStatus("Loading item data, try again")
             return nil
         end
         return -itemId
@@ -733,9 +733,9 @@ local SLOT_POPUP = {
             line:SetText("")
         end
     end,
-    toMarker = function(slot, SetStatus)
+    toMarker = function(slot, SetDialogStatus)
         if not slot or not mod.INV_SLOT_NAMES[slot] then
-            SetStatus("Enter a slot ID from 1 to 19")
+            SetDialogStatus("Enter a slot ID from 1 to 19")
             return nil
         end
         return -slot

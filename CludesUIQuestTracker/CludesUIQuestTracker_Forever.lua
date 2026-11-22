@@ -85,19 +85,19 @@ local passZone, instancePass, passInstance
 local function ToolsOn() return mod.UseCustomTracker() or Cfg("questWatchExperimental") == true end
 -- Quest Log Order is the base mode (a saved "default", the retired Blizzard
 -- order mode, reads as it).
-local function SortMode()
+local function QuestSortMode()
     local mode = Cfg("questSortMode")
     return (mode == nil or mode == "default") and "log" or mode
 end
 local function SortCompleted() return Cfg("questSortCompleted") or "mixed" end
 -- The second key; none when the first is already unique per quest.
 local function SortThenBy()
-    if SortMode() == "log" then return "none" end
+    if QuestSortMode() == "log" then return "none" end
     return Cfg("questSortThenBy") or "none"
 end
 -- The tools keep the watch list sorted while they are on.
 local SortOn = ToolsOn
-local function SortUses(key) return SortMode() == key or SortThenBy() == key end
+local function SortUses(key) return QuestSortMode() == key or SortThenBy() == key end
 
 -- A filter counts only while Filter Quests is on.
 local function Filter(key) return ToolsOn() and Cfg("filterEnabled") and Cfg(key) end
@@ -460,7 +460,7 @@ function TrackerNS.IsQuestFiltered(questId)
     return FilterOn() and Filtered(questId, C_SuperTrack.GetSuperTrackedQuestID())
 end
 function TrackerNS.AutoTrackOn() return AutoOn() end
-function TrackerNS.SortQuestList(ids) SortList(ids, SortMode(), SortCompleted(), SortThenBy()) end
+function TrackerNS.SortQuestList(ids) SortList(ids, QuestSortMode(), SortCompleted(), SortThenBy()) end
 
 -- A watch edit fires QUEST_WATCH_LIST_CHANGED at once, so Blizzard's tracker,
 -- quest log and super-track handlers run under our taint (and the tracker
@@ -523,7 +523,7 @@ local function WatchPass()
         restoreOrder = false
         ApplySort("log", "mixed", "none")
     end
-    if SortOn() then ApplySort(SortMode(), SortCompleted(), SortThenBy()) end
+    if SortOn() then ApplySort(QuestSortMode(), SortCompleted(), SortThenBy()) end
     -- The last pass after everything was turned off: the frame sleeps.
     if not WatchesActive() then watchList:UnregisterAllEvents() end
 end

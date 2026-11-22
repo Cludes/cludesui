@@ -203,7 +203,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         CUI.SetGlyphAlpha(eyeButton, 0.4)
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
-        local function RefreshHealthEye()
+        local function SyncHealthEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
                 CUI.SetGlyphAlpha(eyeButton, 0.15)
@@ -212,8 +212,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             eyeTex:SetTexture(mod._healthAnimActive and EYE_INVISIBLE or EYE_VISIBLE)
             CUI.SetGlyphAlpha(eyeButton, 0.4)
         end
-        RefreshHealthEye()
-        EYE.refreshHealthEye = RefreshHealthEye
+        SyncHealthEye()
+        EYE.refreshHealthEye = SyncHealthEye
         mod._stopHealthAnim = StopHealthAnim
         mod._startHealthAnim = StartHealthAnim
         eyeButton:SetScript("OnClick", function()
@@ -227,7 +227,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 end
                 StartHealthAnim()
             end
-            RefreshHealthEye()
+            SyncHealthEye()
             if mod.PvRefresh then mod.PvRefresh() end
         end)
         eyeButton:SetScript("OnEnter", function(self)
@@ -703,7 +703,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         -- On ns so the preview renderer can read it.
         if mod._absorbsPreviewVisible == nil then mod._absorbsPreviewVisible = false end
 
-        local function RefreshAbsorbEye()
+        local function SyncAbsorbEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
                 CUI.SetGlyphAlpha(eyeButton, 0.15)
@@ -712,8 +712,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             eyeTex:SetTexture(mod._absorbsPreviewVisible and EYE_INVISIBLE or EYE_VISIBLE)
             CUI.SetGlyphAlpha(eyeButton, 0.4)
         end
-        EYE.refreshAbsorbEye = RefreshAbsorbEye
-        RefreshAbsorbEye()
+        EYE.refreshAbsorbEye = SyncAbsorbEye
+        SyncAbsorbEye()
         eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then return end
             mod._absorbsPreviewVisible = not mod._absorbsPreviewVisible
@@ -722,7 +722,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 mod._indicatorsVisible = false
                 if EYE.refreshIndicatorEye then EYE.refreshIndicatorEye() end
             end
-            RefreshAbsorbEye()
+            SyncAbsorbEye()
             if mod.PvRefresh then mod.PvRefresh() end
         end)
         eyeButton:SetScript("OnEnter", function(self)
@@ -802,7 +802,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         -- (The Party Frames kit's bar always fills horizontally; decided at build.)
         local kitPage = mod.RF_OptPartyKit()
         -- Returns true ONLY when the axis flipped, so callers skip _invalidateMenu on unrelated refreshes -- it nils the cached menu and would break an open menu's wired click.
-        local function SyncAbsorbEdgeLabels()
+        local function SyncShieldEdgeLabels()
             local vert = (not kitPage) and SettingOr("healthVerticalFill", false) and true or false
             if absorbEdgeLabelsVert == vert then return false end
             absorbEdgeLabelsVert = vert
@@ -810,7 +810,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             absorbEdgeLabels.left = vert and "From Bottom Edge" or "From Left Edge"
             return true
         end
-        SyncAbsorbEdgeLabels()
+        SyncShieldEdgeLabels()
         local _, cogShow = CUI.BuildInlineCog(region, {
             title = "Absorb Rendering",
             rows = {
@@ -825,7 +825,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     disabledTooltip = "Default Blizz Frames uses a fixed placement",
                     rawTooltip = true,
                     get = function()
-                        SyncAbsorbEdgeLabels()
+                        SyncShieldEdgeLabels()
                         return SettingOr("absorbEdgeMode", "overlay")
                     end,
                     set = SSetRow("absorbEdgeMode"),
@@ -882,7 +882,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         })
         -- Re-label on page refresh (Vertical Fill fires one) and drop any built menu so its entries rebuild with the new wording.
         CUI.RegisterWidgetRefresh(function()
-            if not SyncAbsorbEdgeLabels() then return end
+            if not SyncShieldEdgeLabels() then return end
             local popFrame = cogShow and cogShow._popupFrame
             if popFrame and popFrame.GetChildren then
                 for _, childFrame in ipairs({ popFrame:GetChildren() }) do
@@ -920,7 +920,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         UpdateAbsorbSwatchVis()
     end
 
-    local function CurAbsorbBarPos()
+    local function CurrentAbsorbPos()
         local p = ReadSetting("absorbBarPosition")
         if p then return p end
         return SettingOr("absorbBarEnabled", false) and "aboveRight" or "none"
@@ -939,7 +939,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             leftVertical = "Left Edge (Vertical)",
         },
         order = { "none", "aboveRight", "aboveLeft", "topRight", "topLeft", "rightVertical", "leftVertical" },
-        getValue = function() return CurAbsorbBarPos() end,
+        getValue = function() return CurrentAbsorbPos() end,
         setValue = function(val)
             StoreSetting("absorbBarEnabled", val ~= "none") -- keep legacy flag in sync
             WriteSetting("absorbBarPosition", val)
@@ -951,7 +951,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         min = 1,
         max = 20,
         step = 1,
-        disabled = function() return CurAbsorbBarPos() == "none" end,
+        disabled = function() return CurrentAbsorbPos() == "none" end,
         disabledTooltip = "Absorb Bar",
         getValue = SValRow("absorbBarHeight", 4),
         setValue = SSetRow("absorbBarHeight"),
@@ -962,7 +962,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         CUI.BuildInlineCog(region, {
             -- Vertical Grow, its only setting, has no effect off the vertical positions.
             disabled = function()
-                local p = CurAbsorbBarPos()
+                local p = CurrentAbsorbPos()
                 return p ~= "rightVertical" and p ~= "leftVertical"
             end,
             disabledTooltip = "Only affects the vertical (Right/Left Edge) positions",
@@ -975,7 +975,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     values = { up = "Up", down = "Down" },
                     order = { "up", "down" },
                     disabled = function()
-                        local p = CurAbsorbBarPos()
+                        local p = CurrentAbsorbPos()
                         return p ~= "rightVertical" and p ~= "leftVertical"
                     end,
                     disabledTooltip = "Only affects the vertical (Right/Left Edge) positions",
@@ -990,7 +990,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     do
         local labelFS = absorbBarRow._rightRegion._label
         local function UpdateAbsorbBarSizeLabel()
-            local p = CurAbsorbBarPos()
+            local p = CurrentAbsorbPos()
             local vertical = p == "rightVertical" or p == "leftVertical"
             labelFS:SetText(CUI.L(vertical and "Bar Width" or "Bar Height"))
         end
@@ -1010,7 +1010,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
         local function UpdateAbsorbBarSwatchVis()
-            colorSwatch:SetAlpha(CurAbsorbBarPos() ~= "none" and 1 or 0.3)
+            colorSwatch:SetAlpha(CurrentAbsorbPos() ~= "none" and 1 or 0.3)
         end
         CUI.RegisterWidgetRefresh(UpdateAbsorbBarSwatchVis)
         UpdateAbsorbBarSwatchVis()
@@ -1052,7 +1052,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         local healAbsorbEdgeLabels = { overlay = "Overlay" }
         local healAbsorbEdgeLabelsVert -- last applied axis; nil until first sync
         local kitPage = mod.RF_OptPartyKit()
-        local function SyncHealAbsorbEdgeLabels()
+        local function SyncHealEdgeLabels()
             local vert = (not kitPage) and SettingOr("healthVerticalFill", false) and true or false
             if healAbsorbEdgeLabelsVert == vert then return false end
             healAbsorbEdgeLabelsVert = vert
@@ -1060,7 +1060,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             healAbsorbEdgeLabels.left = vert and "From Bottom Edge" or "From Left Edge"
             return true
         end
-        SyncHealAbsorbEdgeLabels()
+        SyncHealEdgeLabels()
         local _, cogShow = CUI.BuildInlineCog(region, {
             title = "Heal Absorb Rendering",
             rows = {
@@ -1070,7 +1070,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     values = healAbsorbEdgeLabels,
                     order = { "overlay", "right", "left" },
                     get = function()
-                        SyncHealAbsorbEdgeLabels()
+                        SyncHealEdgeLabels()
                         return SettingOr("healAbsorbEdgeMode", "overlay")
                     end,
                     set = SSetRow("healAbsorbEdgeMode"),
@@ -1093,7 +1093,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             },
         })
         CUI.RegisterWidgetRefresh(function()
-            if not SyncHealAbsorbEdgeLabels() then return end
+            if not SyncHealEdgeLabels() then return end
             local popFrame = cogShow and cogShow._popupFrame
             if popFrame and popFrame.GetChildren then
                 for _, childFrame in ipairs({ popFrame:GetChildren() }) do
@@ -1431,7 +1431,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         CUI.SetGlyphAlpha(eyeButton, 0.4)
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
-        local function RefreshPowerEye()
+        local function SyncPowerEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
                 CUI.SetGlyphAlpha(eyeButton, 0.15)
@@ -1440,9 +1440,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             eyeTex:SetTexture(mod._powerAnimActive and EYE_INVISIBLE or EYE_VISIBLE)
             CUI.SetGlyphAlpha(eyeButton, 0.4)
         end
-        EYE.refreshPowerEye = RefreshPowerEye
+        EYE.refreshPowerEye = SyncPowerEye
         mod._stopPowerAnim = StopPowerAnim
-        RefreshPowerEye()
+        SyncPowerEye()
         eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then return end
             if mod._powerAnimActive then
@@ -1454,7 +1454,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 end
                 StartPowerAnim()
             end
-            RefreshPowerEye()
+            SyncPowerEye()
         end)
         eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then

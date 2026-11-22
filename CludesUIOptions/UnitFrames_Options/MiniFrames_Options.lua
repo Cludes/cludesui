@@ -2907,7 +2907,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         -- DIRECTIONS cog holding the cluster X/Y offset; setters refresh live
         -- frames + both previews. Debuff Size (and its cog) disable while Simple
         -- Debuff Display frame-matches the size, or when no debuffs show at all (Simple None + Location None).
-        local bossDebuffSizeOff = function()
+        local bossDebuffSizeHidden = function()
             local bossCfg = saved.profile.boss
             return mod.GetBossSimpleDebuffMode(bossCfg) ~= "none"
                 or (bossCfg.debuffAnchor or "bottomleft") == "none"
@@ -2915,7 +2915,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         -- Buff Size (and its directions cog) are disabled while Simple Buff
         -- Display frame-matches the size, or when buffs are hidden (Buffs
         -- Location None). Shared so the cog matches.
-        local bossBuffSizeOff = function()
+        local bossBuffSizeHidden = function()
             local bossCfg = saved.profile.boss
             return mod.GetBossSimpleBuffMode(bossCfg) ~= "none" or bossCfg.showBuffs == false
         end
@@ -2935,7 +2935,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 min = 10,
                 max = 70,
                 step = 1,
-                disabled = bossBuffSizeOff,
+                disabled = bossBuffSizeHidden,
                 disabledTooltip = function()
                     if mod.GetBossSimpleBuffMode(saved.profile.boss) ~= "none" then
                         return CUI.DisabledTooltip("Simple Buff Display", "disabled")
@@ -2967,7 +2967,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             rowY = rowY - hh
             if not CUI._prebuilding then -- Directions cog on Buff Size (X/Y cluster offset)
                 CUI.BuildInlineCog(bossAuraSizeRow._leftRegion, {
-                    disabled = bossBuffSizeOff,
+                    disabled = bossBuffSizeHidden,
                     title = "Buff Position",
                     rows = {
                         {
@@ -3168,7 +3168,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     min = 10,
                     max = 70,
                     step = 1,
-                    disabled = bossDebuffSizeOff,
+                    disabled = bossDebuffSizeHidden,
                     disabledTooltip = function()
                         if mod.GetBossSimpleDebuffMode(saved.profile.boss) ~= "none" then
                             return CUI.DisabledTooltip("Simple Debuff Display", "disabled")
@@ -3200,7 +3200,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 rowY = rowY - hh
                 if not CUI._prebuilding then -- Directions cog on Debuff Size (X/Y cluster offset)
                     CUI.BuildInlineCog(textSizeRow._leftRegion, {
-                        disabled = bossDebuffSizeOff,
+                        disabled = bossDebuffSizeHidden,
                         title = "Debuff Position",
                         rows = {
                             {
@@ -3681,7 +3681,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         if not CUI._prebuilding then
             local leftRegion = bossAuraRow._leftRegion
             CUI.BuildInlineCog(leftRegion, {
-                disabled = bossBuffSizeOff,
+                disabled = bossBuffSizeHidden,
                 -- Both branches are whole sentences (raw), so translated clients wrap once.
                 disabledTooltip = function()
                     return mod.GetBossSimpleBuffMode(saved.profile.boss) ~= "none"
@@ -3742,7 +3742,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         if not CUI._prebuilding then
             local rightRegion = bossAuraRow._rightRegion
             CUI.BuildInlineCog(rightRegion, {
-                disabled = bossDebuffSizeOff,
+                disabled = bossDebuffSizeHidden,
                 disabledTooltip = function()
                     return mod.GetBossSimpleDebuffMode(saved.profile.boss) ~= "none"
                             and CUI.DisabledTooltip("Simple Debuff Display", "disabled")

@@ -1355,7 +1355,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     end
 
     local targetPreview, focusPreview
-    local function RefreshFocusPreview()
+    local function SyncFocusPreview()
         RedrawPlates()
         if focusPreview and focusPreview.UpdateOverlay then focusPreview.UpdateOverlay() end
     end
@@ -1648,7 +1648,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         DB().focusOverlayAlpha = val / 100
-                        RefreshFocusPreview()
+                        SyncFocusPreview()
                     end,
                 },
                 {
@@ -1661,7 +1661,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         DB().focusOverlayFullBgAlpha = val
-                        RefreshFocusPreview()
+                        SyncFocusPreview()
                     end,
                 },
                 {
@@ -1672,7 +1672,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().focusOverlayNoTint = val
                         RefreshAllTextures()
-                        RefreshFocusPreview()
+                        SyncFocusPreview()
                     end,
                 },
             },

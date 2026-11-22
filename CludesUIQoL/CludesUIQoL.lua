@@ -434,7 +434,7 @@ qolFrame:SetScript("OnEvent", function(self)
         local _lastBagChurn = 0
         local CHURN_SETTLE_WINDOW = 0.35 -- "recent" churn cutoff, seconds
         local CHURN_SETTLE_DELAY = 0.4 -- extra wait when churn was recent
-        local function AODbg(...)
+        local function AutoOpenLog(...)
             if CUI._AODEBUG then print("|cff33ff99[AutoOpen]|r", ...) end
         end
         -- Forward-declared: scanFrame's OnUpdate calls ScanAndOpen once cache is built, so both must be in-scope upvalues (assigned further down).
@@ -721,7 +721,7 @@ qolFrame:SetScript("OnEvent", function(self)
             _cycleGen = _cycleGen + 1
             local myGen = _cycleGen
             local madeProgress = false
-            AODbg(("cycle start: %d candidate(s)"):format(#toOpen))
+            AutoOpenLog(("cycle start: %d candidate(s)"):format(#toOpen))
 
             -- Only place _openBusy is cleared; every step() exit routes here so it
             -- can't leak (freezes auto-open until reload). A stale generation must NOT clear it -- belongs to the new cycle.
@@ -782,7 +782,7 @@ qolFrame:SetScript("OnEvent", function(self)
                             itemID = prevID,
                             count = prevCount,
                         }
-                        AODbg(("open bag=%d slot=%d item=%d"):format(entry.bag, entry.slot, prevID))
+                        AutoOpenLog(("open bag=%d slot=%d item=%d"):format(entry.bag, entry.slot, prevID))
                         C_Container.UseContainerItem(entry.bag, entry.slot)
                         C_Timer.After(0.5, function()
                             -- Always release the slot flag; a stale-generation chain
@@ -812,7 +812,7 @@ qolFrame:SetScript("OnEvent", function(self)
                                 -- Unchanged, unlocked, no loot window => genuine failure.
                                 -- A still-locked slot is just slow, so it's left uncached for a later retry.
                                 _failedItems[prevID] = true
-                                AODbg("genuine fail, item=" .. prevID)
+                                AutoOpenLog("genuine fail, item=" .. prevID)
                             end
                             -- A real open resolved: pace before advancing. Non-actionable skips above advance unpaced.
                             PaceNext(position + 1)
@@ -832,7 +832,7 @@ qolFrame:SetScript("OnEvent", function(self)
                     extra, why = CHURN_SETTLE_DELAY, "churn"
                 end
                 if extra > 0 then
-                    AODbg(("pacing +%.1fs (%s)"):format(extra, why))
+                    AutoOpenLog(("pacing +%.1fs (%s)"):format(extra, why))
                     C_Timer.After(extra, function() step(position) end)
                 else
                     step(position)
@@ -1013,7 +1013,7 @@ qolFrame:SetScript("OnEvent", function(self)
             return num, gold
         end
 
-        local function RefreshButton()
+        local function SyncTrainButton()
             if not trainButton then return end
             if not (CludesUIDB and CludesUIDB.trainAllButton) then
                 trainButton:Hide()
@@ -1029,7 +1029,7 @@ qolFrame:SetScript("OnEvent", function(self)
             if not ClassTrainerFrame or not ClassTrainerTrainButton then return end
             if trainButton then
                 trainButton:Show()
-                RefreshButton()
+                SyncTrainButton()
                 return
             end
 
@@ -1066,10 +1066,10 @@ qolFrame:SetScript("OnEvent", function(self)
             trainButton:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
             if not isHooked then
-                hooksecurefunc("ClassTrainerFrame_Update", RefreshButton)
+                hooksecurefunc("ClassTrainerFrame_Update", SyncTrainButton)
                 isHooked = true
             end
-            RefreshButton()
+            SyncTrainButton()
         end
 
         local function ApplyTrainAllButton()
@@ -3378,7 +3378,7 @@ end
 -------------------------------------------------------------------------------
 do
     local durabilityAlert
-    local function CreateDurabilityWarning()
+    local function BuildDurabilityWarning()
         if durabilityAlert then return end
 
         durabilityAlert = CreateFrame("Frame", nil, UIParent)
@@ -3454,13 +3454,13 @@ do
     end
 
     CUI._applyDurWarn = function()
-        CreateDurabilityWarning()
+        BuildDurabilityWarning()
         durabilityAlert._applySettings()
     end
     CUI._durWarnApplySettings = CUI._applyDurWarn
 
     CUI._durWarnPreview = function()
-        CreateDurabilityWarning()
+        BuildDurabilityWarning()
         durabilityAlert._show(25)
         durabilityAlert._text:SetText(CUI.L("Low Durability (Preview)"))
     end
@@ -3504,7 +3504,7 @@ do
         end
 
         if lowestDur < (CludesUIDB.durWarnThreshold or 40) then
-            CreateDurabilityWarning()
+            BuildDurabilityWarning()
             durabilityAlert._show(lowestDur)
         elseif durabilityAlert then
             durabilityAlert:Hide()

@@ -66,7 +66,7 @@ do
         end
         return result
     end
-    local function TypesMinus(a, b)
+    local function TypesWithout(a, b)
         local result
         for key in pairs(a) do
             if not (b and b[key]) then
@@ -165,7 +165,7 @@ do
         -- shown types changes nothing. Always a fresh set (never a vocabulary table).
         local typed = inc or anyType
         if typed then
-            typed = TypesMinus(typed, exc)
+            typed = TypesWithout(typed, exc)
             if not typed then clash = true end
             cand.includeDispelTypes = typed
             -- One shown type: every member carries it (with two, neither is certain).
@@ -204,21 +204,21 @@ do
         local set = cc.includeDispelTypes
         if set then
             local inc, exc = profile.cand.includeDispelTypes, profile.cand.excludeDispelTypes
-            if inc and not TypesMinus(inc, set) then return "in" end
+            if inc and not TypesWithout(inc, set) then return "in" end
             local place
             if inc then
                 place = TypesAnd(inc, set)
             else
                 place = set
             end
-            if place then place = TypesMinus(place, exc) end
+            if place then place = TypesWithout(place, exc) end
             if not place then return nil end
             if probe then return "split" end
             local a, b = CopyPart(profile), CopyPart(profile)
             a.cand.includeDispelTypes = place
             a.cand.excludeDispelTypes = nil
             if inc then
-                b.cand.includeDispelTypes = TypesMinus(inc, set)
+                b.cand.includeDispelTypes = TypesWithout(inc, set)
             else
                 b.cand.excludeDispelTypes = MergeTypes(exc, set)
             end

@@ -260,7 +260,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
     if not CUI._prebuilding then
-        local function OffsetRow(labelText, key)
+        local function OffsetSlider(labelText, key)
             return {
                 type = "slider",
                 label = labelText,
@@ -284,10 +284,10 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             disabledTooltip = SWING_TIP,
             title = "Text Position",
             rows = {
-                OffsetRow("Time X Offset", "timeX"),
-                OffsetRow("Time Y Offset", "timeY"),
-                OffsetRow("Label X Offset", "labelX"),
-                OffsetRow("Label Y Offset", "labelY"),
+                OffsetSlider("Time X Offset", "timeX"),
+                OffsetSlider("Time Y Offset", "timeY"),
+                OffsetSlider("Label X Offset", "labelX"),
+                OffsetSlider("Label Y Offset", "labelY"),
             },
         })
     end
@@ -924,8 +924,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         -- shows the colour the bar paints (ST_SparkColor). A pick of the unset
         -- colour (white, or a combined off hand's fill) stores nothing, so the
         -- picker's Cancel leaves an unset spark following its default.
-        local function Near(posX, cursorY) return math.abs(posX - cursorY) < 0.002 end
-        local function SparkSwatch(name, key)
+        local function IsNear(posX, cursorY) return math.abs(posX - cursorY) < 0.002 end
+        local function SparkColorRow(name, key)
             local prefixText = key .. "Spark"
             return {
                 tooltip = name,
@@ -940,7 +940,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     a = a or 1
                     if mod.ST_SparkColor then
                         local ur, ug, ub, ua = mod.ST_SparkColor(key, true)
-                        if Near(r, ur) and Near(gg, ug) and Near(b, ub) and Near(a, ua) then
+                        if IsNear(r, ur) and IsNear(gg, ug) and IsNear(b, ub) and IsNear(a, ua) then
                             r, gg, b, a = nil, nil, nil, nil
                         end
                     end
@@ -980,9 +980,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     type = "multiswatch",
                     label = "Spark Colors",
                     swatches = {
-                        SparkSwatch("Main Hand", "mh"),
-                        SparkSwatch("Off Hand", "oh"),
-                        SparkSwatch("Ranged", "r"),
+                        SparkColorRow("Main Hand", "mh"),
+                        SparkColorRow("Off Hand", "oh"),
+                        SparkColorRow("Ranged", "r"),
                     },
                 },
             },
