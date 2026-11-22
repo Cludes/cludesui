@@ -50,7 +50,7 @@ function mod.CenterPosFns(P)
 end
 
 local _qolExtrasDB
-local function QoLExtrasProfile()
+local function ExtrasProfile()
     if not _qolExtrasDB and CUI and CUI.Lite and CUI.Lite.NewDB then
         _qolExtrasDB = CUI.Lite.NewDB("CludesUIQoLDB", {
             profile = {
@@ -67,12 +67,12 @@ local function QoLExtrasProfile()
     return _qolExtrasDB and _qolExtrasDB.profile
 end
 function CUI.QoLExtrasGet(key)
-    local p = QoLExtrasProfile()
+    local p = ExtrasProfile()
     if p and p[key] ~= nil then return p[key] end
     return CludesUIDB and CludesUIDB[key]
 end
 function CUI.QoLExtrasSet(key, val)
-    local p = QoLExtrasProfile()
+    local p = ExtrasProfile()
     if p then
         p[key] = val
         return
@@ -286,7 +286,7 @@ qolFrame:SetScript("OnEvent", function(self)
         local busy = false
 
         -- Walks all mount IDs so journal filters cannot hide a pending mount.
-        local function AckMountAlerts()
+        local function AckMountFanfare()
             if not C_MountJournal then return false end
             local waiting = C_MountJournal.GetNumMountsNeedingFanfare
                 and C_MountJournal.GetNumMountsNeedingFanfare()
@@ -302,7 +302,7 @@ qolFrame:SetScript("OnEvent", function(self)
             return true
         end
 
-        local function AckPetAlerts()
+        local function AckPetFanfare()
             if not C_PetJournal or not C_PetJournal.GetNumPetsNeedingFanfare then return false end
             if (C_PetJournal.GetNumPetsNeedingFanfare() or 0) == 0 then return false end
             local anyFound = false
@@ -347,8 +347,8 @@ qolFrame:SetScript("OnEvent", function(self)
             -- taints them and blocks SetAvatarTexture in the Communities list.
             C_Timer.After(0.2, function()
                 busy = false
-                local mounts = AckMountAlerts()
-                local pets = AckPetAlerts()
+                local mounts = AckMountFanfare()
+                local pets = AckPetFanfare()
                 if not (mounts or pets) then AckToyAlerts() end
             end)
         end
@@ -356,8 +356,8 @@ qolFrame:SetScript("OnEvent", function(self)
         -- Runs during PLAYER_LOGIN, before Blizzard's PLAYER_ENTERING_WORLD
         -- check, so the Collections button does not raise the unopened alert.
         if CludesUIDB and CludesUIDB.autoUnwrapCollections then
-            AckMountAlerts()
-            AckPetAlerts()
+            AckMountFanfare()
+            AckPetFanfare()
         end
 
         hooksecurefunc("MainMenuMicroButton_ShowAlert", function(_, textValue)
@@ -1328,7 +1328,7 @@ qolFrame:SetScript("OnEvent", function(self)
     end
 
     -- Releases the held-back junk sweep. Idempotent: debit or settle timer, whichever arrives first, starts it.
-    local function ReleaseJunkSweep()
+    local function RunRepairWatchSweep()
         local sweep = repairWatchSweep
         repairWatchSweep = nil
         if sweep then sweep() end
@@ -1340,7 +1340,7 @@ qolFrame:SetScript("OnEvent", function(self)
     local TOPUP_WINDOW = 8 -- outlasts a full junk sweep (12 passes backing off to 1.6s)
     local repairExtra, repairTopUpGen = nil, 0
 
-    local function CancelRepairTopUp()
+    local function StopRepairTopUp()
         repairTopUpGen = repairTopUpGen + 1
         if repairExtra then
             repairExtra:UnregisterAllEvents()
@@ -1349,14 +1349,14 @@ qolFrame:SetScript("OnEvent", function(self)
     end
 
     local function StartRepairTopUp(remainCost)
-        CancelRepairTopUp()
+        StopRepairTopUp()
         if not repairExtra then repairExtra = CreateFrame("Frame", "CUI_RepairTopUp", UIParent) end
         local gen = repairTopUpGen
         local settled = false
 
-        local function Finish(afford)
+        local function FinishTopUp(afford)
             settled = true
-            CancelRepairTopUp()
+            StopRepairTopUp()
             -- Giving up isn't the same as being broke: gold still in pocket is nobody's fault.
             if not afford then
                 if GetMoney() < remainCost then ReportRepairBroke() end
@@ -1369,22 +1369,22 @@ qolFrame:SetScript("OnEvent", function(self)
             ReportRepairOutcome(0, nowCost)
         end
 
-        local function Poll(_, eventName)
+        local function PollTopUpEvent(_, eventName)
             if settled or gen ~= repairTopUpGen then return end
             -- MERCHANT_CLOSED rather than merchantOpen: two frames listening for
             -- the same event have no defined order, so the flag may not be down yet
-            if eventName == "MERCHANT_CLOSED" or not CanMerchantRepair() then return Finish(false) end
-            if GetMoney() >= remainCost then return Finish(true) end
+            if eventName == "MERCHANT_CLOSED" or not CanMerchantRepair() then return FinishTopUp(false) end
+            if GetMoney() >= remainCost then return FinishTopUp(true) end
         end
 
-        Poll()
+        PollTopUpEvent()
         if settled then return end
-        repairExtra:SetScript("OnEvent", Poll)
+        repairExtra:SetScript("OnEvent", PollTopUpEvent)
         repairExtra:RegisterEvent("PLAYER_MONEY")
         repairExtra:RegisterEvent("MERCHANT_CLOSED")
         C_Timer.After(TOPUP_WINDOW, function()
             if settled or gen ~= repairTopUpGen then return end
-            Finish(false)
+            FinishTopUp(false)
         end)
     end
 
@@ -1395,7 +1395,7 @@ qolFrame:SetScript("OnEvent", function(self)
             repairWatchOut = repairWatchOut + spent
             -- The debit is booked, so nothing later can net against it; holding
             -- the sweep longer only risks losing the sale on a visit that ends within the window.
-            ReleaseJunkSweep()
+            RunRepairWatchSweep()
         end
         repairWatchLast = nowTime
     end
@@ -1416,7 +1416,7 @@ qolFrame:SetScript("OnEvent", function(self)
         repairWatchLast = moneyBefore
         repairWatchOut = 0
         repairWatchSweep = sweep
-        CancelRepairTopUp() -- a remainder from the last merchant is no longer payable
+        StopRepairTopUp() -- a remainder from the last merchant is no longer payable
         repairWatch:RegisterEvent("PLAYER_MONEY")
 
         local gen = repairSerial
@@ -1442,7 +1442,7 @@ qolFrame:SetScript("OnEvent", function(self)
             if paid > 0 then ReportRepairOutcome(guildText, own) end
 
             -- Release before handing the remainder over: funds can run dry mid-bill and the sweep's income is what the top-up waits for.
-            ReleaseJunkSweep()
+            RunRepairWatchSweep()
             if remainCost > 0 then StartRepairTopUp(remainCost) end
         end)
     end
@@ -1934,7 +1934,7 @@ qolFrame:SetScript("OnEvent", function(self)
             end)
         end
 
-        local function HookHistory()
+        local function HookLootHistory()
             local frame = HistoryFrame()
             if not frame or CUI._GetFFD(frame).lootHistHooked then return end
             CUI._GetFFD(frame).lootHistHooked = true
@@ -1950,7 +1950,7 @@ qolFrame:SetScript("OnEvent", function(self)
         local waitArmed = false
         local function HookTalkingHead()
             if _G.GroupLootHistoryFrame then
-                HookHistory()
+                HookLootHistory()
                 return
             end
             if waitArmed then return end
@@ -1959,7 +1959,7 @@ qolFrame:SetScript("OnEvent", function(self)
             waitFrame:RegisterEvent("ADDON_LOADED")
             waitFrame:SetScript("OnEvent", function(self)
                 if _G.GroupLootHistoryFrame then
-                    HookHistory()
+                    HookLootHistory()
                     self:UnregisterAllEvents()
                 end
             end)
@@ -2230,7 +2230,7 @@ qolFrame:SetScript("OnEvent", function(self)
             end)
         end
         -- Track: hook the checkbox to remember user changes
-        local function HookClockCheckbox()
+        local function HookMilitaryTimeCheckbox()
             local callback = TimeManagerMilitaryTimeCheck
             if not callback then return end
             callback:HookScript("OnClick", function(self)
@@ -2240,14 +2240,14 @@ qolFrame:SetScript("OnEvent", function(self)
         end
         -- The TimeManager may not be loaded yet; hook when it appears
         if TimeManagerMilitaryTimeCheck then
-            HookClockCheckbox()
+            HookMilitaryTimeCheckbox()
         else
             local hookFrame = CreateFrame("Frame")
             hookFrame:RegisterEvent("ADDON_LOADED")
             hookFrame:SetScript("OnEvent", function(self, _, addon)
                 if addon == "Blizzard_TimeManager" then
                     self:UnregisterEvent("ADDON_LOADED")
-                    HookClockCheckbox()
+                    HookMilitaryTimeCheckbox()
                 end
             end)
         end
@@ -2987,21 +2987,21 @@ do
         local DIV_W, DIV_H = 1, 10
         local DIV_PAD = 6
 
-        local function MakeDivider()
+        local function MakePanelDivider()
             local skinData = fpsPanel:CreateTexture(nil, "OVERLAY")
             skinData:SetColorTexture(1, 1, 1, 0.25)
             skinData:SetSize(DIV_W, DIV_H)
             return skinData
         end
 
-        local divWorld = MakeDivider()
+        local divWorld = MakePanelDivider()
         local worldValueText = MakeFS(FONT_SIZE)
         local worldLabelText = MakeFS(LABEL_SIZE)
         fpsPanel._divWorld = divWorld
         fpsPanel._textWorld = worldValueText
         fpsPanel._lblWorld = worldLabelText
 
-        local divLocal = MakeDivider()
+        local divLocal = MakePanelDivider()
         local localValueText = MakeFS(FONT_SIZE)
         local localLabelText = MakeFS(LABEL_SIZE)
         fpsPanel._divLocal = divLocal
@@ -3324,7 +3324,7 @@ end
 do
     local holdBtn, pingButton, bindOwner, holdBase
 
-    local function Release() ClearOverrideBindings(holdBtn) end
+    local function ClearPingBindings() ClearOverrideBindings(holdBtn) end
 
     local function Build()
         pingButton = CreateFrame("Button", "CUI_EnvPingButton", UIParent, "SecureActionButtonTemplate")
@@ -3337,9 +3337,9 @@ do
         pingButton:SetScript("PostClick", function()
             if holdBase and IsKeyDown(holdBase) then return end
             if InCombatLockdown() then
-                mod.CombatQueue.Defer("EnvPingRelease", Release)
+                mod.CombatQueue.Defer("EnvPingRelease", ClearPingBindings)
             else
-                Release()
+                ClearPingBindings()
             end
         end)
         holdBtn = CreateFrame("Button", "CUI_EnvPingHoldButton", UIParent, "SecureHandlerClickTemplate")
@@ -3367,7 +3367,7 @@ do
         if not (settingKey or bindOwner) then return end
         if not bindOwner then Build() end
         ClearOverrideBindings(bindOwner)
-        Release()
+        ClearPingBindings()
         holdBase = settingKey and settingKey:match("[^%-]+$")
         if settingKey then SetOverrideBindingClick(bindOwner, true, settingKey, "CUI_EnvPingHoldButton") end
     end
@@ -3471,7 +3471,7 @@ do
 
     local repairAlert = CreateFrame("Frame", nil, UIParent)
 
-    local function CheckDurabilityAndShow()
+    local function ShowDurabilityWarning()
         if not CludesUIDB then return end
         if CludesUIDB.repairWarning == false then
             if durabilityAlert then durabilityAlert:Hide() end
@@ -3517,7 +3517,7 @@ do
     local durCheckPending = false
     local function FlushDurabilityCheck()
         durCheckPending = false
-        CheckDurabilityAndShow()
+        ShowDurabilityWarning()
     end
     repairAlert:SetScript("OnEvent", function(_, eventName)
         if eventName == "PLAYER_REGEN_DISABLED" then
@@ -3541,7 +3541,7 @@ do
             repairAlert:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
             -- Self-repair items recalculate alerts without the durability event.
             repairAlert:RegisterEvent("UPDATE_INVENTORY_ALERTS")
-            CheckDurabilityAndShow()
+            ShowDurabilityWarning()
         end
     end
     CUI._syncDurWarnEvents()
@@ -4484,7 +4484,7 @@ do
             end
         end
     end
-    local function HideOpenTips()
+    local function HideHelpTips()
         if not (HelpTip and HelpTip.framePool and HelpTip.framePool.EnumerateActive) then return end
         pcall(DoHideOpenTips)
     end
@@ -4523,14 +4523,14 @@ do
         coreHooked = true
         if HelpTip and HelpTip.Show then
             hooksecurefunc(HelpTip, "Show", function()
-                if RollConfirmOn() then HideOpenTips() end
+                if RollConfirmOn() then HideHelpTips() end
             end)
         end
         if ShowUIPanel then
             hooksecurefunc("ShowUIPanel", function(widget)
                 if RollConfirmOn() and widget then
                     HideButtonsUnder(widget)
-                    HideOpenTips()
+                    HideHelpTips()
                 end
             end)
         end
@@ -4562,7 +4562,7 @@ do
             weSetCVar = true
             -- No global EnumerateFrames walk here (runs inside PLAYER_LOGIN): already-open
             -- panels pick up their "i" buttons on the next ShowUIPanel.
-            HideOpenTips()
+            HideHelpTips()
         else
             if weSetCVar then
                 pcall(CUI.SetCVar, "hideHelptips", "0", "CludesUIQoL")
@@ -4700,7 +4700,7 @@ do
     CUI._groupDeathSoundNames = GROUP_DEATH_SOUND_NAMES
     CUI._groupDeathSoundOrder = GROUP_DEATH_SOUND_ORDER
 
-    local function PlayDeathSound()
+    local function PlayGroupDeathSound()
         local settingKey = CludesUIDB and CludesUIDB.groupDeathSoundKey
         if not settingKey or settingKey == "none" then return end
         local filePath = GROUP_DEATH_SOUND_PATHS[settingKey]
@@ -4734,10 +4734,10 @@ do
             if nowTime - lastSoundTime < SOUND_COOLDOWN then return end
             lastSoundTime = nowTime
         end
-        PlayDeathSound()
+        PlayGroupDeathSound()
     end
 
-    local function Poll()
+    local function PollTopUpEvent()
         if not (CludesUIDB and CludesUIDB.announceGroupDeaths) then return end
         local seen = {}
         local newlyDeadName, newlyDeadClass, newlyDeadCount
@@ -4770,8 +4770,8 @@ do
     local function StartTicker()
         if ticker then return end
         wipe(deadState)
-        Poll() -- prime alive/dead state without announcing
-        ticker = C_Timer.NewTicker(POLL_INTERVAL, Poll)
+        PollTopUpEvent() -- prime alive/dead state without announcing
+        ticker = C_Timer.NewTicker(POLL_INTERVAL, PollTopUpEvent)
     end
 
     local function StopTicker()
@@ -4809,7 +4809,7 @@ do
     CUI._announceGroupDeathsPreview = function()
         local _, classFile = UnitClass("player")
         ShowLabelAlert(UnitName("player"), classFile)
-        PlayDeathSound()
+        PlayGroupDeathSound()
     end
 
     -- Visual-only preview (used by the Text Size slider so dragging it doesn't repeatedly fire the sound).
@@ -4818,7 +4818,7 @@ do
         ShowLabelAlert(UnitName("player"), classFile)
     end
 
-    CUI._groupDeathPlaySound = PlayDeathSound
+    CUI._groupDeathPlaySound = PlayGroupDeathSound
 
     -- Re-apply font size/position (called from the Text Size slider and from unlock mode on saved-position change).
     CUI._applyGroupDeathAlert = function()
@@ -5424,7 +5424,7 @@ do
 
     -- Index scans hard-error while aura restrictions are active (M+/raids, even
     -- out of combat); cosmetic transforms just skip there, re-running on the next event outside.
-    local function AurasRestricted()
+    local function AuraReadsRestricted()
         local AK = CUI and CUI.AuraKit
         if AK and AK.AurasRestricted then return AK.AurasRestricted() end
         return false
@@ -5434,7 +5434,7 @@ do
     local function CancelMatchingBuffs(force)
         if not (C_UnitAuras and C_UnitAuras.GetBuffDataByIndex) then return end
         if not force and UnitAffectingCombat("player") then return end
-        if AurasRestricted() then return end
+        if AuraReadsRestricted() then return end
         for i = 40, 1, -1 do
             local payload = C_UnitAuras.GetBuffDataByIndex("player", i)
             if payload then
@@ -5479,7 +5479,7 @@ do
         if spellId ~= 131476 then return end
         if UnitAffectingCombat("player") then return end
         if not (C_UnitAuras and C_UnitAuras.GetBuffDataByIndex) then return end
-        if AurasRestricted() then return end
+        if AuraReadsRestricted() then return end
         for i = 40, 1, -1 do
             local payload = C_UnitAuras.GetBuffDataByIndex("player", i)
             if payload then

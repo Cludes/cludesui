@@ -539,7 +539,7 @@ local function ShowAsMode()
 end
 mod.ShowAs = ShowAsMode
 
-local function CompactWidth()
+local function CompactBarWidth()
     local profile = P()
     return math.max(COMPACT_MIN_W, (profile and profile.compactWidth) or COMPACT_W)
 end
@@ -866,14 +866,14 @@ end
 
 local function BossModPullHandler() return SlashCmdList.BIGWIGSPULL or SlashCmdList.DEADLYBOSSMODSPULL end
 
-local function ChatLocked()
+local function ChatIsLocked()
     return C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()
 end
 
 local function StartPull(seconds)
     local handler = BossModPullHandler()
     if handler then handler(tostring(seconds)) end
-    if ChatLocked() then
+    if ChatIsLocked() then
         CUI.Print(
             CUI.COLOR_CODES.BRAND
                 .. "CludesUI:|r "
@@ -889,7 +889,7 @@ end
 local function StopPull()
     local handler = BossModPullHandler()
     if handler then handler("0") end
-    if not ChatLocked() then C_PartyInfo.DoCountdown(0) end
+    if not ChatIsLocked() then C_PartyInfo.DoCountdown(0) end
 end
 
 -------------------------------------------------------------------------------
@@ -1028,7 +1028,7 @@ end
 -- Places the Group & Pull buttons per the settings and is the ONLY writer of
 -- GROUP_CONTENT_H. Plain frames only, run from build and Apply (out of combat);
 -- must run BEFORE ApplyLayout, which sizes the shells from that height.
-local function LayoutGroupContent()
+local function PlaceGroupContent()
     if not groupFrame then return end
     local frame = groupFrame
 
@@ -1124,7 +1124,7 @@ local function BuildGroupContent()
 
     -- A height right away: BuildAll has callers (the slash command, unlock
     -- mode) that reach the shells without going through Apply.
-    LayoutGroupContent()
+    PlaceGroupContent()
 end
 
 -- Row order matches how they are used: unit markers first, ground markers
@@ -1608,7 +1608,7 @@ local function LayoutTools()
     if compactFrame then compactFrame:SetShown(isCompact) end
 
     if isCompact then
-        local width = CompactWidth()
+        local width = CompactBarWidth()
         windowGroup:SetWidth(width)
         compactFrame:SetParent(windowGroup)
         compactFrame:ClearAllPoints()
@@ -2099,7 +2099,7 @@ end
 -- Apply is pending, since PLAYER_REGEN_ENABLED is what completes it). The
 -- frame itself is created on first need and reused.
 local eventName
-local function EnsureEvents()
+local function EnsureEventFrame()
     if not eventName then
         eventName = CreateFrame("Frame")
         eventName:SetScript("OnEvent", function(_, evt)
@@ -2252,7 +2252,7 @@ local function RegisterUnlock()
         getSize = function()
             local frame = sectionList.Group
             if frame then return frame:GetWidth(), frame:GetHeight() end
-            return CompactWidth(), CompactHeight()
+            return CompactBarWidth(), CompactHeight()
         end,
         setWidth = function(_, newW)
             local profile = P()
@@ -2304,7 +2304,7 @@ function Apply()
     if mod.BuffCheckSync then mod.BuffCheckSync() end
     if InCombatLockdown() then
         applyPending = true
-        EnsureEvents()
+        EnsureEventFrame()
         return
     end
     applyPending = false
@@ -2332,12 +2332,12 @@ function Apply()
         return
     end
 
-    EnsureEvents()
+    EnsureEventFrame()
     RegisterUnlock()
     BuildSections()
     -- Before ApplyLayout: it sizes the shells from GROUP_CONTENT_H, which the
     -- hidden buttons and the 0-second pull slots move.
-    LayoutGroupContent()
+    PlaceGroupContent()
     LayoutTools()
     -- One Window Scale for everything the feature draws.
     local scale = ToolScale()
