@@ -54,27 +54,28 @@ local THEME_PRESETS = {
     ["Class Colored"] = nil, -- resolved at runtime from player class
     ["Custom Color"] = nil, -- user-chosen via color picker
 }
--- The themes offered: one flat CludesUI frame (colour comes from the UI accent),
--- plus the Forever client's own art. Older theme names stay valid in saved
--- settings (THEME_BG_FILES maps them all to the flat frame).
+-- The themes offered: the flat CludesUI frame, with the Forever client's bronze
+-- accent as its own entry there. Older theme names stay valid in saved settings
+-- (THEME_BG_FILES maps them all to the flat frame).
 local THEME_ORDER = {
     "CludesUI",
     "CludesUI Forever",
 }
 -- "CludesUI Forever" is the WoW Forever look: only that client lists it.
 if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
--- The theme in force when none was chosen: the Forever client opens on its own
--- backdrop, every other client on the blue CludesUI theme. A chosen theme always wins.
+-- The theme in force when none was chosen: the Forever client opens on its bronze
+-- accent, every other client on the blue CludesUI theme. A chosen theme always wins.
 CludesUI.DEFAULT_THEME = (CUI_CLIENT_FOREVER == true) and "CludesUI Forever" or "CludesUI"
 -- Background file paths per theme (relative to MEDIA_PATH, in backgrounds/ subfolder)
--- Every theme but CludesUI Forever draws the one flat CludesUI frame (square
--- corners, 1px rules, no glow); a theme is its accent colour, which the logo
+-- Every theme draws the one flat CludesUI frame (square corners, 1px rules, no
+-- glow); a theme is its accent colour (CludesUI Forever: bronze), which the logo
 -- overlay (THEME_ACCENT_OVERLAYS below) and the controls take. "CludesUI Clean"
 -- and "CludesUI Original" are not listed; kept for saved settings.
 local CLEAN_BG = "backgrounds\\cui-bg-clean.png"
-local THEME_BG_FILES = { ["CludesUI Forever"] = "backgrounds\\cui-bg-forever-compressed.png" }
+local THEME_BG_FILES = {}
 for _, name in ipairs({
     "CludesUI",
+    "CludesUI Forever",
     "CludesUI Original",
     "CludesUI Clean",
     "Horde",
@@ -120,28 +121,6 @@ end
 -- rb = the logo badge ring colour. The collapse button and the collapsed mini
 -- window rebuild their boxes and badge from these rects of the art on screen.
 CludesUI.THEME_CLOSE_BOX = {
-    ["backgrounds\\cui-bg-new.png"] = {
-        x = 1345,
-        y = 115,
-        w = 44,
-        h = 43,
-        gx = 1367,
-        gy = 136,
-        bx = 1346,
-        by = 116,
-        bw = 42,
-        bh = 41,
-        bd = 2,
-        r = 0.686,
-        g = 0.718,
-        b = 0.714,
-        sh = 0.5,
-        ex = 118,
-        ey = 110,
-        rr = 0.324,
-        rg = 0.345,
-        rb = 0.363,
-    },
     ["backgrounds\\cui-bg-clean.png"] = {
         x = 1345,
         y = 115,
@@ -163,28 +142,6 @@ CludesUI.THEME_CLOSE_BOX = {
         rr = 0.29,
         rg = 0.314,
         rb = 0.333,
-    },
-    ["backgrounds\\cui-bg-forever-compressed.png"] = {
-        x = 1346,
-        y = 114,
-        w = 43,
-        h = 41,
-        gx = 1368,
-        gy = 134,
-        bx = 1348,
-        by = 116,
-        bw = 40,
-        bh = 38,
-        bd = 3,
-        r = 0.894,
-        g = 0.788,
-        b = 0.617,
-        sh = 0.5,
-        ex = 122,
-        ey = 109,
-        rr = 0.417,
-        rg = 0.311,
-        rb = 0.231,
     },
 }
 

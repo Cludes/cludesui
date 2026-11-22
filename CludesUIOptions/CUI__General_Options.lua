@@ -124,17 +124,51 @@ end
 -------------------------------------------------------------------------------
 CUI._WHATSNEW_PATCHES = {
     {
+        version = "1.2.0",
+        heroes = {
+            {
+                module = "Global Settings",
+                title = "A whole new look",
+                desc = "The settings window has been rebuilt to look like CludesUI and nothing else: a clean, flat frame with square corners, no glowing lines or ornaments, and the CludesUI logo drawn in your own accent colour.",
+            },
+            {
+                module = "Bags",
+                title = "Modern bags, now the default",
+                desc = "Your bags open in the Modern display: one tidy grid with category chips across the top, in place of the sidebar. Prefer the old layout? Set Bag Style back to Grid and it stays that way.",
+            },
+        },
+        features = {
+            {
+                module = "Global Settings",
+                title = "Friendlier names",
+                desc = "Pages and settings have clearer names, such as Edit Layout, Core Settings, What's New, Group Frames, Buff Checks, Quality of Life, Also Show When and Show Empty Slots. Search still finds them by their old names.",
+            },
+            {
+                module = "Global Settings",
+                title = "One frame, your colour",
+                desc = "Every theme now shares the same clean frame, and your colour comes from UI Accent Color on Core Settings. WoW Forever keeps its warm bronze.",
+            },
+        },
+        fixes = {
+            {
+                module = "Forever Tools",
+                forever = true,
+                text = "A player whose level shows ?? now shows their known level in the tooltip, even when the game colours that line.",
+            },
+        },
+    },
+    {
         version = "1.1.0",
         heroes = {
             {
                 module = "Global Settings",
                 title = "A look of its own",
-                desc = "Every page groups its settings into cards, each setting has a one-line description under its name, and corners are square throughout. Tabs, the sidebar and the footer are restyled to match.",
+                desc = "Every page groups its settings into cards, every setting has a short description under its name, and corners are square throughout. Tabs, the sidebar and the footer were restyled to match.",
             },
             {
                 module = "Layout Mode",
-                title = "New Layout Mode bar",
-                desc = "A toolbar across the top of the screen: square toggle buttons with captions, the element filter, and Exit and Save & Exit on the right. Opening it plays a new animation.",
+                title = "A new Layout Mode bar",
+                desc = "A toolbar across the top of the screen with square toggle buttons, the element filter, and Exit and Save & Exit on the right. It opens with a new animation.",
                 onClick = function()
                     if CUI.OpenUnlockMode then CUI:OpenUnlockMode() end
                 end,
@@ -144,32 +178,27 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Global Settings",
                 title = "New icons and colours",
-                desc = "A new set of interface icons, a cool slate colour for pop-ups, menus and input boxes, and pop-ups with the title on the left and buttons on the right.",
+                desc = "A fresh set of interface icons, a cool slate for pop-ups, menus and input boxes, and pop-ups with the title on the left and buttons on the right.",
             },
             {
                 module = "Global Settings",
-                title = "Buttons for short choices",
-                desc = "Settings with two or three choices, such as Orientation or Grow Direction, show every choice as a button instead of a dropdown.",
+                title = "Buttons for quick choices",
+                desc = "Settings with two or three options, such as Orientation or Grow Direction, show every option as a button, so one click does it.",
             },
             {
                 module = "Global Settings",
                 title = "Sidebar groups",
-                desc = "Modules are grouped as Combat, Raid & Dungeon, Interface and Tools.",
+                desc = "Modules are grouped by what they are for: Combat, Group Content, Interface and Tools.",
             },
             {
                 module = "Global Settings",
                 title = "Minimap button",
-                desc = "The minimap button uses LibDBIcon, so minimap button collectors handle it like any other addon's.",
-            },
-            {
-                module = "Global Settings",
-                title = "Default themes",
-                desc = "WoW Forever opens in the CludesUI Forever theme, retail in the blue CludesUI theme.",
+                desc = "The minimap button uses LibDBIcon, so minimap button collectors tidy it away like any other addon's.",
             },
             {
                 module = "Raid Frames",
                 title = "Frame Bindings",
-                desc = "HoverCast is now called Frame Bindings. Global and spec bindings share one column on the left, with the options beside them.",
+                desc = "HoverCast is now Frame Bindings. Global and spec bindings share one column on the left, with their options right beside them.",
             },
             {
                 module = "Raid Frames",
@@ -179,16 +208,17 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Global Settings",
                 title = "/cuiperf",
-                desc = "Prints how much CPU time each CludesUI addon is using.",
+                desc = "Shows how much CPU time each CludesUI addon is using.",
             },
         },
         fixes = {
-            { module = "Unit Frames", text = "The Unit Frames page opens on WoW Forever again." },
+            { module = "Unit Frames", forever = true, text = "The Unit Frames page opens again." },
             {
                 module = "Forever Tools",
+                forever = true,
                 text = "The Restock alert, the Discovery tracker and its librarian tooltip no longer cause Lua errors.",
             },
-            { module = "Forever Tools", text = "The Training page opens for every class." },
+            { module = "Forever Tools", forever = true, text = "The Training page opens for every class." },
             {
                 module = "Global Settings",
                 text = "Setting descriptions no longer run under the icons and buttons beside a control.",
@@ -200,218 +230,63 @@ CUI._WHATSNEW_PATCHES = {
         features = {
             {
                 module = "Tank Kit",
-                title = "A module made for tanks",
-                desc = "Your co-tank's health, debuffs and defensives beside your frames, with TAUNT alerts, plus a row of the externals other players put on you. Its settings are under Tank Kit in this panel, or type /ctank. Move its frames in Layout Mode.",
+                title = "Built for tanks",
+                desc = "Your co-tank's health, debuffs and defensives beside your frames, TAUNT alerts, and a row of the externals other players put on you. Set it up under Tank Kit or with /ctank, and move its frames in Layout Mode.",
             },
             {
                 module = "Raid Lead",
                 title = "Sort or split the raid",
-                desc = "/raidlead roles sorts the raid into tanks, melee, ranged and healers. /raidlead split makes two balanced halves. /raidlead undo puts everyone back.",
+                desc = "/raidlead roles sorts the raid into tanks, melee, ranged and healers, /raidlead split makes two balanced halves, and /raidlead undo puts everyone back.",
             },
             {
                 module = "Raid Lead",
                 title = "Encounter reminders",
-                desc = "Paste a boss note from wowutils, wowaudit or a Method Raid Tools note. At the pull, your lines show before their time with a countdown, spoken if you like. The leader can send notes to the group.",
+                desc = "Paste a boss note from wowutils, wowaudit or Method Raid Tools. On the pull, your lines appear just before they are due with a countdown, spoken aloud if you like. Leaders can send notes to the whole group.",
             },
             {
                 module = "Raid Lead",
                 title = "Invites, assistants and version check",
-                desc = "Invite a saved roster, promote assistants as they join, and see who runs which CludesUI version.",
+                desc = "Invite a saved roster, promote assistants as they join, and see who is running which CludesUI version.",
             },
             {
                 module = "Raid Lead",
-                title = "Ready check gear and cooldowns",
-                desc = "On a ready check, CludesUI users report durability, item level, missing enchants, raid cooldowns not ready, and a missing flask, food, rune or healthstone. The leader sees the list.",
+                title = "Ready check, sorted",
+                desc = "On a ready check, CludesUI users report durability, item level, missing enchants, raid cooldowns still on cooldown, and a missing flask, food, rune or healthstone. The leader sees it all in one list.",
             },
             {
                 module = "Raid Lead",
                 title = "Immunities on You and Boss Pace",
-                desc = "Icons for immunities on you, and a boss health bar against your target kill time: green ahead, red behind.",
+                desc = "Icons for the immunities on you, and a boss health bar against your target kill time: green when you are ahead, red when behind.",
             },
             {
                 module = "Raid Lead",
-                title = "Nicknames, synced with your guild",
-                desc = "Set your nickname once; other CludesUI users in your guild and group see it on their frames.",
+                title = "Nicknames, shared with your guild",
+                desc = "Set your nickname once and other CludesUI users in your guild and group see it on their frames.",
             },
             {
                 module = "Raid Lead",
                 title = "Break timer",
-                desc = "/raidlead break 5 puts a break countdown on every CludesUI user's screen, with a sound when it ends. Buttons are under Raid Lead > Setup.",
+                desc = "/raidlead break 5 puts a break countdown on every CludesUI user's screen, with a sound when it ends. The buttons are under Raid Lead > Setup.",
             },
             {
                 module = "Raid Lead",
                 title = "Kick rotation",
-                desc = "Whose interrupt is next, from an intstart / intend block in the boss note or a Kick Order you type. Red with a sound when it is your turn.",
+                desc = "Shows whose interrupt is next, from an intstart / intend block in the boss note or a Kick Order you type. It turns red with a sound when it is your turn.",
             },
             {
                 module = "Raid Lead",
                 title = "Aura Glows",
-                desc = "A glowing icon while an aura you pick is on you, built on the game's own aura display so it works in boss fights. Under Raid Lead > Tracking.",
+                desc = "A glowing icon while an aura you pick is on you. It is built on the game's own aura display, so it keeps working in boss fights. Under Raid Lead > Tracking.",
             },
             {
                 module = "Raid Lead",
                 title = "Feasts, gateways and stats",
-                desc = "A chat line when a CludesUI user drops a feast or cauldron, Gateway usable when you can click a Demonic Gateway, and a stats panel. Under Raid Lead > Tracking.",
+                desc = "A chat line when a CludesUI user drops a feast or cauldron, a Gateway usable alert when you can click a Demonic Gateway, and a stats panel. Under Raid Lead > Tracking.",
             },
             {
                 module = "Raid Lead",
                 title = "Aura Sounds",
-                desc = "Play a sound when an aura you pick is applied to you, gains a stack or falls off. The game plays it, so it works in boss fights.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Training Planner",
-                desc = "On WoW Forever: what your trainer has for you now and its total price, what the next levels bring, and a chat line when you level up. Find it under Forever Tools > Training.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Tracking Reminder",
-                desc = "On WoW Forever: icons for tracking you know but have not turned on. Click one to turn it on. Under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Swing Timer",
-                desc = "On WoW Forever: a bar per weapon filling to your next auto attack, from the swing length the game sends. Under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Mana Bar and five-second rule",
-                desc = "On WoW Forever: your mana while in Bear or Cat Form, and a line counting down the five-second rule after you spend mana. Under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Consumable Bar",
-                desc = "On WoW Forever: the consumables in your bags on a clickable bar, with counts and cooldowns. Pick which kinds under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Raid Debuffs",
-                desc = "On WoW Forever: the raid debuffs you pick on your target, bright while up, dim while missing. Works in combat. Under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Gear Sets",
-                desc = "On WoW Forever: your equipment sets on a bar to swap with a click, plus optional sets for mounted and resting. Under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Instance Tracker",
-                desc = "On WoW Forever: new instances this hour against the cap, a run timer, and a summary of time, deaths, XP and loot when you leave. Under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Group Inspect",
-                desc = "On WoW Forever: /cinspect lists everyone in your group with level, item level and unenchanted slots. Click a name for the full inspect window.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Combat extras",
-                desc = "On WoW Forever: a combat timer, a + Combat / - Combat alert, and a stealth reminder for rogues and cat druids. Under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Bag Space",
-                desc = "On WoW Forever: free bag slots on screen, a warning when nearly full, and the cheapest items you carry on hover.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Quest Automation",
-                desc = "On WoW Forever: accepts and turns in quests, stops when you have a reward to choose, and can post objective progress to your party. Hold Shift to skip.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Action Bar Profiles",
-                desc = "On WoW Forever: save your action bars and keybinds under a name and load them on any character of the same class. /cbars or Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Loot Sparkles",
-                desc = "On WoW Forever: keeps the sparkle on lootable quest items, even after a graphics preset turns it off. Under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Best in Slot list",
-                desc = "On WoW Forever: Alt+Shift-click any item to make it your pick for its slot. /cbis shows the list and what you have; tooltips mark BiS items, and a Drop Alert warns when one drops.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Stat Weights and upgrades",
-                desc = "On WoW Forever: +X% upgrade on gear tooltips for your spec, and each BiS pick's gain. Change any weight under Forever Tools > General.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Dungeon Journal",
-                desc = "On WoW Forever: /cjournal shows every dungeon and raid with bosses, loot and drop chances, a tip per boss and the quests.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Healer Mana and Pet Tracker",
-                desc = "On WoW Forever: your healers' mana, lowest first, with drinkers marked; and a warning when your pet is missing, passive or low.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Mana Efficiency",
-                desc = "On WoW Forever: a mana spell's healing or damage per mana and per second on its tooltip, with your spell power and talents counted.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Restock and reminders",
-                desc = "On WoW Forever: a restock list when you reach a city (with optional auto buy), Lockpicking on lockbox tooltips, a gear swap reminder and unspent talent points.",
-            },
-            {
-                module = "Forever Tools",
-                title = "PvP: enemy players and Kill on Sight",
-                desc = "On WoW Forever: a new PvP page. Enemy players nearby with alerts and stealth warnings, Kill on Sight, last hour, statistics with wins and losses, and sharing that works with Spy users. /cpvp.",
-            },
-            {
-                module = "Forever Tools",
-                title = "XP per Hour and Group XP",
-                desc = "On WoW Forever: XP per hour, time to level and how long each level took; and XP bars for your group (works with Naowh Forever users too).",
-            },
-            {
-                module = "Forever Tools",
-                title = "Layer Tracker",
-                desc = "On WoW Forever: which layer you are on, a countdown before the game moves you, and auto-accepting the layer swap when you join a group.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Mail and Alts",
-                desc = "On WoW Forever: what your alts hold on item tooltips, an Alts button and Quick Attach on the mailbox, and an expiring mail warning.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Boat and Zeppelin Timers",
-                desc = "On WoW Forever: when each ship leaves and arrives, on the minimap and a zone list. Timed by riding, clicking, or players who share timings.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Town Map",
-                desc = "On WoW Forever: trainers, vendors, innkeepers, bank, mailboxes and spirit healers for your faction on the world map, and mailboxes and spirit healers on the minimap.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Dungeon maps in the journal",
-                desc = "On WoW Forever: each dungeon page in /cjournal shows its map, floor by floor, with a numbered pin per boss and the entrance.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Blessing Bar",
-                desc = "On WoW Forever, for paladins: a button per class that blesses whoever needs it next, your aura, seal and Righteous Fury, and /cbless for every paladin's assignments. Works with Naowh Forever and PallyPower users.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Discovery",
-                desc = "On WoW Forever: /cdiscovery lists the library books, the Cozy Sleeping Bag chain and a Field Journal of fish, herbs and dishes, with a tracker, map pins and a nearby book alert.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Quest List and Rares",
-                desc = "On WoW Forever: Discovery lists every quest and rare by zone with what you have done, puts quest givers and rares on the world map, and alerts you when a rare is near.",
-            },
-            {
-                module = "Forever Tools",
-                title = "Professions",
-                desc = "On WoW Forever: /cprof shows your next rank and where to train it, your skill-up recipes and a Recipe Finder for everything you have not learned, with a next rank alert.",
+                desc = "Plays a sound when an aura you pick lands on you, gains a stack or falls off. The game plays it, so it works in boss fights too.",
             },
             {
                 module = "Raid Lead",
@@ -420,8 +295,195 @@ CUI._WHATSNEW_PATCHES = {
             },
             {
                 module = "Forever Tools",
+                forever = true,
+                title = "Training Planner",
+                desc = "What your trainer has for you right now and what it costs, what the next levels bring, and a chat line when you level up. Under Forever Tools > Training.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Tracking Reminder",
+                desc = "Icons for tracking you know but have not switched on. Click one to turn it on. Under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Swing Timer",
+                desc = "A bar per weapon that fills up to your next auto attack, timed from the swing length the game sends. Under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Mana Bar and five-second rule",
+                desc = "Your mana while in Bear or Cat Form, and a line counting down the five-second rule after you spend mana. Under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Consumable Bar",
+                desc = "The consumables in your bags on one clickable bar, with counts and cooldowns. Choose which kinds under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Raid Debuffs",
+                desc = "The raid debuffs you pick, shown on your target: bright while up, dim while missing. Works in combat. Under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Gear Sets",
+                desc = "Your equipment sets on a bar, swapped with one click, plus optional sets for mounted and resting. Under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Instance Tracker",
+                desc = "New instances this hour against the cap, a run timer, and a summary of time, deaths, XP and loot when you leave. Under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Group Inspect",
+                desc = "/cinspect lists everyone in your group with their level, item level and unenchanted slots. Click a name for the full inspect window.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Combat extras",
+                desc = "A combat timer, a + Combat / - Combat alert, and a stealth reminder for rogues and cat druids. Under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Bag Space",
+                desc = "Free bag slots on screen, a warning when you are nearly full, and the cheapest items you carry on hover.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Quest Automation",
+                desc = "Accepts and turns in quests for you, stops when there is a reward to choose, and can post objective progress to your party. Hold Shift to skip.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Action Bar Profiles",
+                desc = "Save your action bars and keybinds under a name and load them on any character of the same class. /cbars or Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Loot Sparkles",
+                desc = "Keeps the sparkle on lootable quest items, even after a graphics preset turns it off. Under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Best in Slot list",
+                desc = "Alt+Shift-click any item to make it your pick for its slot. /cbis shows the list and what you already have, tooltips mark BiS items, and a Drop Alert tells you when one drops.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Stat Weights and upgrades",
+                desc = "A +X% upgrade line on gear tooltips for your spec, and each BiS pick's gain. Change any weight under Forever Tools > General.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Dungeon Journal",
+                desc = "/cjournal shows every dungeon and raid with its bosses, loot and drop chances, a tip per boss and the quests.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Dungeon maps in the journal",
+                desc = "Each dungeon page in /cjournal shows its map floor by floor, with a numbered pin per boss and the entrance.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Healer Mana and Pet Tracker",
+                desc = "Your healers' mana, lowest first, with anyone drinking marked; and a warning when your pet is missing, passive or low.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Mana Efficiency",
+                desc = "A mana spell's healing or damage per mana and per second on its tooltip, with your spell power and talents counted in.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Restock and reminders",
+                desc = "A restock list when you reach a city (with optional auto buy), Lockpicking on lockbox tooltips, a gear swap reminder and a nudge about unspent talent points.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "PvP: enemy players and Kill on Sight",
+                desc = "A new PvP page: enemy players nearby with alerts and stealth warnings, Kill on Sight, the last hour, win and loss statistics, and sharing that works with Spy users. /cpvp.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "XP per Hour and Group XP",
+                desc = "XP per hour, time to level and how long each level took, plus XP bars for your group (Naowh Forever users included).",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Layer Tracker",
+                desc = "Which layer you are on, a countdown before the game moves you, and the layer swap accepted for you when you join a group.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Mail and Alts",
+                desc = "What your alts hold on item tooltips, an Alts button and Quick Attach at the mailbox, and a warning before mail expires.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Boat and Zeppelin Timers",
+                desc = "When each ship leaves and arrives, on the minimap and in a zone list. Timed by riding, clicking, or players who share their timings.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Town Map",
+                desc = "Trainers, vendors, innkeepers, the bank, mailboxes and spirit healers for your faction on the world map, with mailboxes and spirit healers on the minimap too.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Blessing Bar",
+                desc = "For paladins: a button per class that blesses whoever needs it next, your aura, seal and Righteous Fury, and /cbless for every paladin's assignments. Works with Naowh Forever and PallyPower users.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Discovery",
+                desc = "/cdiscovery lists the library books, the Cozy Sleeping Bag chain and a Field Journal of fish, herbs and dishes, with a tracker, map pins and an alert when a book is nearby.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Quest List and Rares",
+                desc = "Discovery lists every quest and rare by zone with what you have done, puts quest givers and rares on the world map, and alerts you when a rare is close.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Professions",
+                desc = "/cprof shows your next rank and where to train it, your skill-up recipes and a Recipe Finder for everything you have not learned, with an alert when the next rank is ready.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
                 title = "Player History and notes",
-                desc = "On WoW Forever: who you grouped with and how often (/chistory), and a tag and note on any player from their right-click menu, shown on their tooltip.",
+                desc = "Who you have grouped with and how often (/chistory), plus a tag and note on any player from their right-click menu, shown on their tooltip.",
             },
             {
                 module = "Mythic+ Tools",
@@ -430,39 +492,24 @@ CUI._WHATSNEW_PATCHES = {
             },
             {
                 module = "Global Settings",
-                title = "Class colour by default",
-                desc = "A fresh install opens in your class colour. Pick any other theme under CUI Options Theme.",
-            },
-            {
-                module = "Global Settings",
-                title = "Frost blue house colour",
-                desc = "The CludesUI theme, logo and highlights are frost blue.",
-            },
-            {
-                module = "Global Settings",
-                title = "Five new colour themes",
-                desc = "Ember, Blood, Arcane, Gold and Toxic join the theme list.",
-            },
-            {
-                module = "Global Settings",
                 title = "Expressway is the default font",
-                desc = "Change it under Fonts. Barlow Condensed and the other fonts are still in the list.",
+                desc = "Change it under Fonts. Barlow Condensed and the rest are still in the list.",
             },
             {
                 module = "Profiles",
                 title = "Import older profile strings",
-                desc = "Import Profile also accepts strings in the older format and converts them as it imports.",
+                desc = "Import Profile also accepts strings in the older format and converts them as it goes.",
             },
             {
                 module = "Global Settings",
                 title = "Shorter slash commands",
-                desc = "/cui opens the panel and /ce the global settings. Each addon has its own shortcut, such as /cab, /cuf, /crf and /cnp.",
+                desc = "/cui opens the panel and /ce the core settings. Each addon has its own shortcut too, such as /cab, /cuf, /crf and /cnp.",
             },
         },
         fixes = {
             {
                 module = "Global Settings",
-                text = "Panel artwork loads when a theme is picked instead of all at login, which uses less video memory.",
+                text = "Window artwork now loads only when it is first shown, instead of all at login, so it uses less video memory.",
             },
             {
                 module = "Raid Frames",

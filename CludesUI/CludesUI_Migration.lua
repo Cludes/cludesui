@@ -2562,6 +2562,27 @@ if CUI.IS_FOREVER == true then
     })
 end
 
+-- The Modern bag display is the default from 1.2.0. Existing profiles hold
+-- "grid" (the old default, written into every profile), so they move to
+-- Modern once; anyone who sets Grid again keeps it (this runs once).
+CUI.RegisterMigration({
+    id = "bags_modern_default_v1",
+    scope = "global",
+    description = "Move every profile's Bag Style from Grid to Modern once, now that Modern is the default.",
+    body = function(context)
+        local saved = context.db
+        if not saved or not saved.profiles then return end
+        for _, profileRec in pairs(saved.profiles) do
+            local bagCfg = type(profileRec) == "table"
+                and type(profileRec.addons) == "table"
+                and profileRec.addons.CludesUIBags
+            if type(bagCfg) == "table" and bagCfg.bagDisplayMode == "grid" then
+                bagCfg.bagDisplayMode = "modern"
+            end
+        end
+    end,
+})
+
 -- Guardian Druid Ironfur bar ships ON (DEFAULTS.secondary.guardianIronfurBar=true)
 -- for new installs; existing users expect no class resource bar, so pin every
 -- already-existing profile OFF. Runs at parent ADDON_LOADED BEFORE any child NewDB
