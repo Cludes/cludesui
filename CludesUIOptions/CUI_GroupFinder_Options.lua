@@ -337,7 +337,7 @@ CludesUI.AtLogin(function()
             CUI.RegisterWidgetRefresh(ddRefresh)
             -- the effect's style and each status's color (the list's own
             -- colors and keys: ns.STATUS_LINES, CUI_GroupFinder_ResultsList.lua)
-            local function Picker(key, labelText)
+            local function StatusPicker(key, labelText)
                 local line = mod.STATUS_LINES[key]
                 return {
                     type = "colorpicker",
@@ -365,10 +365,10 @@ CludesUI.AtLogin(function()
                         end,
                         set = function(value) mod.SetOwnListValue("statusStyle", value) end,
                     },
-                    Picker("lineDelisted", "Delisted Color"),
-                    Picker("lineAccepted", "Accepted Color"),
-                    Picker("lineCancelled", "Canceled Color"),
-                    Picker("lineDeclined", "Declined Color"),
+                    StatusPicker("lineDelisted", "Delisted Color"),
+                    StatusPicker("lineAccepted", "Accepted Color"),
+                    StatusPicker("lineCancelled", "Canceled Color"),
+                    StatusPicker("lineDeclined", "Declined Color"),
                 },
             })
         end

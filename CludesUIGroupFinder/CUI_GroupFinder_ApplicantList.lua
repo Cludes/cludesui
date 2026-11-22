@@ -32,7 +32,7 @@ local COLS_KEYS = { SPEC_COL, ROLE_COL, ILVL_COL, RATING_COL, KEY_COL }
 local COLS_PVP = { SPEC_COL, ROLE_COL, ILVL_COL, RATING_COL }
 
 local Secret = CludesUI.IsSecret
-local function Readable(t)
+local function IsReadableTable(t)
     return type(t) == "table" and not Secret(t) and not (canaccesstable and not canaccesstable(t))
 end
 
@@ -65,7 +65,7 @@ local source = LIVE
 -------------------------------------------------------------------------------
 -- +12, red when it wasn't timed
 local function KeyText(cfg)
-    if not Readable(cfg) then return "-" end
+    if not IsReadableTable(cfg) then return "-" end
     local lvl, done = cfg.bestRunLevel, cfg.finishedSuccess
     if Secret(lvl) or Secret(done) or type(lvl) ~= "number" or lvl == 0 then return "-" end
     return (done and "" or BAD) .. "+" .. lvl .. (done and "" or "|r")
@@ -73,8 +73,8 @@ end
 
 local function ActiveActivity()
     local record = C_LFGList.GetActiveEntryInfo()
-    local acts = Readable(record) and record.activityIDs
-    local act = Readable(acts) and acts[1]
+    local acts = IsReadableTable(record) and record.activityIDs
+    local act = IsReadableTable(acts) and acts[1]
     if not act or Secret(act) then return nil end
     return act, C_LFGList.GetActivityInfoTable(act)
 end
@@ -84,12 +84,12 @@ end
 local function AnySecret()
     local apps = C_LFGList.GetApplicants()
     if not apps then return false end
-    if not Readable(apps) then return true end
+    if not IsReadableTable(apps) then return true end
     for _, ident in ipairs(apps) do
         if Secret(ident) then return true end
         local details = C_LFGList.GetApplicantInfo(ident)
         if details then
-            if not Readable(details) then return true end
+            if not IsReadableTable(details) then return true end
             for k = 1, details.numMembers or 0 do
                 local label, classFile, _, _, ilvl, _, tank, healer, damage, role, _, score, pvpIlvl, _, _, specID =
                     C_LFGList.GetApplicantMemberInfo(ident, k)
@@ -128,12 +128,12 @@ local function Collect()
     wipe(isNew)
     wipe(sequence)
     local apps = C_LFGList.GetApplicants()
-    if not Readable(apps) then return end
+    if not IsReadableTable(apps) then return end
     local sortable = true
     for _, ident in ipairs(apps) do
         local details = C_LFGList.GetApplicantInfo(ident)
         if
-            Readable(details)
+            IsReadableTable(details)
             and not (DECLINED[details.applicationStatus] and not details.pendingApplicationStatus)
         then
             entries[#entries + 1] = ident
@@ -330,7 +330,7 @@ local function PrivateTooltip(rowLine, ident)
         GameTooltip:AddDoubleLine(RATING or "Rating", score, 1, 0.82, 0, 1, 1, 1)
     end
     local details = C_LFGList.GetApplicantInfo(ident)
-    local comment = Readable(details) and details.comment
+    local comment = IsReadableTable(details) and details.comment
     if
         not mod.OwnListGet("streamerNote")
         and type(comment) == "string"
@@ -898,14 +898,14 @@ local function FillLine(l, ident, key, grey, noTouch)
     elseif baseCols == COLS_PVP then
         local act = ActiveActivity()
         local pvp = act and C_LFGList.GetApplicantPvpRatingInfoForListing(ident, key, act)
-        local rating = Readable(pvp) and pvp.rating
+        local rating = IsReadableTable(pvp) and pvp.rating
         c.rating:SetText((rating and not Secret(rating)) and rating or "-")
     end
 end
 
 local function FillBlock(b, ident, numAllowed, current, numInvited)
     local details = source.info(ident)
-    if not Readable(details) then
+    if not IsReadableTable(details) then
         b.applicantID = nil
         b:Hide()
         return 0
@@ -1059,7 +1059,7 @@ local function PaintRaidRoles()
         and Enum.LFGListDisplayType
         and activity.displayType == Enum.LFGListDisplayType.RoleCount
     local payload = wanted and source.counts()
-    wanted = wanted and Readable(payload)
+    wanted = wanted and IsReadableTable(payload)
     raidRoles:SetShown(wanted and true or false)
     if not wanted then return end
     local isz = mod.OwnListIconSize(mod.OwnListRowHeight())
@@ -1122,7 +1122,7 @@ local function MostRoles(ids)
     for _, ident in ipairs(ids) do
         local details = source.info(ident)
         if
-            Readable(details) and (details.pendingApplicationStatus or not GONE[details.applicationStatus])
+            IsReadableTable(details) and (details.pendingApplicationStatus or not GONE[details.applicationStatus])
         then
             for k = 1, details.numMembers or 1 do
                 local _, _, _, _, _, _, tank, healer, damage = source.member(ident, k)
@@ -1391,7 +1391,7 @@ local EVENTS = {
     "ADDON_RESTRICTION_STATE_CHANGED",
 }
 
-local function SyncEvents()
+local function SyncListEvents()
     local wanted = (mod.ApplicantListOn() and watch:IsVisible()) and true or false
     if wanted == watching then return end
     watching = wanted
@@ -1406,7 +1406,7 @@ end
 
 function mod.ApplicantListRefresh()
     if not AV then return end
-    SyncEvents()
+    SyncListEvents()
     PaintCensor()
     SetActive(Wanted() and true or false)
     Paint()
@@ -1445,11 +1445,11 @@ if mod.WhenGroupFinder then
         -- a child of the viewer shows and hides with it, no hooks on blizzard's frame
         watch = CreateFrame("Frame", nil, AV)
         watch:SetScript("OnShow", function()
-            SyncEvents()
+            SyncListEvents()
             if watching then Queue() end
         end)
         watch:SetScript("OnHide", function()
-            SyncEvents()
+            SyncListEvents()
             SetActive(false)
         end)
         watch:SetScript("OnEvent", function(_, evt)

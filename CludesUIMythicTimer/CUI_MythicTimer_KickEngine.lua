@@ -466,7 +466,7 @@ end
 
 local ReadNext
 
-local function ReadLater(delay)
+local function QueueRead(delay)
     if readWait then return end
     readWait = true
     C_Timer.After(delay, function()
@@ -475,7 +475,7 @@ local function ReadLater(delay)
     end)
 end
 
-local function DoneReading()
+local function FinishReading()
     readingUnit, readingGuid = nil, nil
     if eventTag then eventTag:UnregisterEvent("INSPECT_READY") end
     -- An inspect the player's own window opened meanwhile is theirs to keep.
@@ -501,7 +501,7 @@ local function OnReadReady(unitGuid)
         end
         if ResolveKick(member) then Notify("roster", GetTime()) end
     end
-    DoneReading()
+    FinishReading()
     readAsked[unitToken] = nil
     ReadNext()
 end
@@ -512,7 +512,7 @@ local INSPECT_TRIES = 3
 local function ReadTimedOut(unitGuid)
     if readingUnit and readingGuid == unitGuid then
         local unitToken = readingUnit
-        DoneReading()
+        FinishReading()
         local member = rosterMap[unitToken]
         local tries = ((member and member.readTries) or 0) + 1
         if member then member.readTries = tries end
@@ -521,14 +521,14 @@ local function ReadTimedOut(unitGuid)
         else
             readAsked[unitToken] = nil
         end
-        ReadLater(INSPECT_RETRY)
+        QueueRead(INSPECT_RETRY)
     end
 end
 
 ReadNext = function()
     if not isActive or readingUnit or #readList == 0 then return end
     if not MayReadNow() then
-        ReadLater(INSPECT_RETRY)
+        QueueRead(INSPECT_RETRY)
         return
     end
     for i = 1, #readList do
@@ -551,7 +551,7 @@ ReadNext = function()
         end
     end
     -- Everyone queued is out of range: try again later.
-    ReadLater(INSPECT_RETRY)
+    QueueRead(INSPECT_RETRY)
 end
 
 -- renew: a new occupant of the slot is read even where the last read of
@@ -1666,7 +1666,7 @@ local function Deactivate()
     if not isActive then return end
     isActive = false
     eventTag:UnregisterAllEvents()
-    if readingUnit then DoneReading() end
+    if readingUnit then FinishReading() end
     wipe(readList)
     wipe(readAsked)
     wipe(wasStopped)

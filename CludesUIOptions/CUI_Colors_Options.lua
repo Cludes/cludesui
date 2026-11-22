@@ -342,7 +342,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             CUI.RegisterWidgetRefresh(cbDDRefresh)
 
             -- The four darken amounts (same keys and ranges the old rows had).
-            local function Darken(key, labelText, tipText)
+            local function DarkenRow(key, labelText, tipText)
                 return {
                     label = labelText,
                     tooltip = tipText,
@@ -359,10 +359,10 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             local drgn = dmRow._rightRegion
             if drgn._control then drgn._control:Hide() end
             local sDD, sDDRefresh = CUI.BuildSliderDropdown(drgn, 210, drgn:GetFrameLevel() + 2, {
-                Darken("classDarken", "Class", "Darkens every class color."),
-                Darken("resourceDarken", "Resource", "Darkens every class resource color."),
-                Darken("powerDarken", "Power", "Darkens every power color."),
-                Darken("powerBgDarken", "BG Power", "Darkens power-colored bar backgrounds."),
+                DarkenRow("classDarken", "Class", "Darkens every class color."),
+                DarkenRow("resourceDarken", "Resource", "Darkens every class resource color."),
+                DarkenRow("powerDarken", "Power", "Darkens every power color."),
+                DarkenRow("powerBgDarken", "BG Power", "Darkens power-colored bar backgrounds."),
             })
             Pix.Point(sDD, "RIGHT", drgn, "RIGHT", -20, 0)
             drgn._control = sDD
@@ -420,7 +420,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         pullValues[num] = num
     end
     local _colorGates = {} -- { section, top, bot } per section grid
-    local function SectionSourceRow(section)
+    local function AddSourceRow(section)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Apply to All Profiles",
@@ -456,7 +456,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     _, height = W:SectionHeader(hostFrame, "CLASS COLORS", cursorY)
     cursorY = cursorY - height
-    SectionSourceRow("class")
+    AddSourceRow("class")
 
     local classItems = {}
     for _, token in ipairs(CLASS_ORDER) do
@@ -492,7 +492,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     _, height = W:SectionHeader(hostFrame, "POWER COLORS", cursorY)
     cursorY = cursorY - height
-    SectionSourceRow("power")
+    AddSourceRow("power")
 
     local POWER_ORDER = {
         "MANA",
@@ -537,7 +537,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     _, height = W:SectionHeader(hostFrame, "CLASS RESOURCE COLORS", cursorY)
     cursorY = cursorY - height
-    SectionSourceRow("classResource")
+    AddSourceRow("classResource")
     do
         -- Order + labels only; defaults live in the shared DEFAULT_CLASS_RESOURCE_COLORS, the source the resource bar's "Class Resource
         -- Color" fill mode reads.

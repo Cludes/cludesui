@@ -210,7 +210,7 @@ local function SignUp(ident)
     end
 end
 
-local function PaintSignBtn()
+local function PaintSignUpBtn()
     if not signBtn then return end
     local success, why = SignUpState(selected)
     signBtn:SetEnabled(success)
@@ -218,14 +218,14 @@ local function PaintSignBtn()
 end
 -- first-seen order, so applied groups can stay put
 local posOf, nextPos = {}, 0
-local function Pos(ident)
+local function ResultPos(ident)
     if not posOf[ident] then
         nextPos = nextPos + 1
         posOf[ident] = nextPos
     end
     return posOf[ident]
 end
-local function ByPos(a, b) return Pos(a) < Pos(b) end
+local function ByPos(a, b) return ResultPos(a) < ResultPos(b) end
 
 local function Accent()
     local a = CUI.CLUDES_GREEN
@@ -260,7 +260,7 @@ local function BySortVal(a, b)
         if sortDown then return va > vb end
         return va < vb
     end
-    return Pos(a) < Pos(b)
+    return ResultPos(a) < ResultPos(b)
 end
 local function Collect()
     wipe(isShown)
@@ -273,7 +273,7 @@ local function Collect()
     if type(res) ~= "table" then return end
     local appsFirst = mod.OwnListGet("appsFirst") ~= false
     for _, ident in ipairs(res) do
-        if not Secret(ident) then Pos(ident) end
+        if not Secret(ident) then ResultPos(ident) end
     end
     local apps = C_LFGList.GetApplications() or {}
     for _, ident in ipairs(apps) do
@@ -1917,7 +1917,7 @@ function Paint() -- forward-declared up top
         rowList[i].resultID = nil
         rowList[i]:Hide()
     end
-    PaintSignBtn()
+    PaintSignUpBtn()
     SyncTicker()
     -- scroll thumb
     if maxPx > 0 then
@@ -2027,7 +2027,7 @@ local function Flush()
         if region then Fill(region, ident) end
     end
     wipe(dirty)
-    PaintSignBtn()
+    PaintSignUpBtn()
     SyncTicker()
 end
 
@@ -2138,7 +2138,7 @@ local function Build()
             fullDirty = true
             flusher:Show()
         else
-            PaintSignBtn()
+            PaintSignUpBtn()
         end
     end)
 end

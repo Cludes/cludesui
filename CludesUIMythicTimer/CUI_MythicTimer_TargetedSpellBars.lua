@@ -1023,7 +1023,7 @@ local function SyncMarkerEvent(conf)
     end
 end
 
-local function ReleaseAll()
+local function ReleaseAllBars()
     for i = #isShown, 1, -1 do
         local e = isShown[i]
         unitEntry[e.unit] = nil
@@ -1095,7 +1095,7 @@ local function Deactivate()
         evt:UnregisterEvent(CAST_EVENTS[i])
     end
     evt:UnregisterEvent("RAID_TARGET_UPDATE")
-    ReleaseAll()
+    ReleaseAllBars()
 end
 
 SyncWhereActive = function()
@@ -1202,7 +1202,7 @@ end
 local function ShowPreview()
     local conf = Cfg()
     if not conf then return end
-    ReleaseAll()
+    ReleaseAllBars()
     MakeContainer()
     local rowList = math.min(#PREVIEW_ROWS, conf.maxBars or 5)
     for i = 1, rowList do
@@ -1239,7 +1239,7 @@ function mod.TSB_SetPreview(on)
     if previewOn then
         ShowPreview()
     else
-        ReleaseAll()
+        ReleaseAllBars()
         -- The gate was held open while the preview ran: re-apply it before
         -- reseeding, so leaving the preview lands on the real content state.
         SyncWhereActive()

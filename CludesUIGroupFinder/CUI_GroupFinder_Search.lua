@@ -821,7 +821,7 @@ local RAID_DIFFS_MENU = {
     { key = "mythic", label = PLAYER_DIFFICULTY6 or "Mythic" },
 }
 
-local function ChosenRaidDiffs()
+local function PickedRaidDiffs()
     local tbl = FinderCfg().raidDiffs
     if type(tbl) ~= "table" then return nil, 0 end
     local count = 0
@@ -882,7 +882,7 @@ end
 local function RaidListFilterActive()
     return SP
             and SP.categoryID == RAIDS
-            and (ChosenRaidDiffs() ~= nil or HideWorldBosses() or ChosenRaidPlaystyles() ~= nil or ChosenRaidRoles() ~= nil or Finder.AnyRaidHidden())
+            and (PickedRaidDiffs() ~= nil or HideWorldBosses() or ChosenRaidPlaystyles() ~= nil or ChosenRaidRoles() ~= nil or Finder.AnyRaidHidden())
         or false
 end
 
@@ -932,7 +932,7 @@ local function RaidListKeep(resultID, details)
     if HideWorldBosses() and IsWorldBoss(activityInfo) then return false end
     local joinId = raidByActivity and raidByActivity[activity]
     if joinId and not RaidShown(joinId) then return false end
-    local diffs = ChosenRaidDiffs()
+    local diffs = PickedRaidDiffs()
     local filterKey = diffs and ActivityDiffKey(activityInfo)
     if filterKey and not diffs[filterKey] then return false end
     local styles = ChosenRaidPlaystyles()
@@ -1261,7 +1261,7 @@ end
 -------------------------------------------------------------------------------
 -- result rows and tooltip
 -------------------------------------------------------------------------------
-local function Opt(filterKey)
+local function FilterOpt(filterKey)
     local val = FinderCfg()[filterKey]
     if val == nil then return true end
     return val and true or false
@@ -1331,7 +1331,7 @@ end
 local rioApi
 local function RatingColor(score)
     if rioApi == nil then rioApi = _G.RaiderIO or false end
-    if Opt("rioRatingColors") and rioApi and rioApi.GetScoreColor then
+    if FilterOpt("rioRatingColors") and rioApi and rioApi.GetScoreColor then
         local success, red, green, blue = pcall(rioApi.GetScoreColor, score)
         if success and type(red) == "number" then return red, green, blue end
     end
@@ -1447,7 +1447,7 @@ local function DecorateIcons(record, resultID, details, activityInfo)
     if not icons then return end
     local isShown = enum:IsShown()
     -- none = no missing roles
-    local crownOn, specOn = Opt("leaderCrown"), Opt("specIcons")
+    local crownOn, specOn = FilterOpt("leaderCrown"), FilterOpt("specIcons")
     local missOn = not (mod.OwnListGet and mod.OwnListGet("missingIcons") == "none")
     local disabled = (not SecretVal(details.isDelisted) and details.isDelisted) and true or false
     -- sort like blizzard fills its icons
@@ -1709,7 +1709,7 @@ local function DecorateEntry(record)
     local enum = record.DataDisplay and record.DataDisplay.Enumerate
     local score = details.leaderOverallDungeonScore
     if
-        Opt("leaderRating")
+        FilterOpt("leaderRating")
         and enum
         and enum:IsShown()
         and record.DataDisplay:IsShown()
@@ -1754,7 +1754,7 @@ end
 
 -- our rows use the same settings
 mod.GFRatingColor = RatingColor
-mod.GFOpt = Opt
+mod.GFOpt = FilterOpt
 mod.GFSpecIcon = SpecIcon
 -- the name colour a row gets (nil = blizzard's own): red when declined or
 -- locked out, green when new since the last search
@@ -1809,7 +1809,7 @@ local ROLE_ICON = {
     DAMAGER = "groupfinder-icon-role-micro-dps",
 }
 local function AddClassesByRole(tooltip, resultID)
-    if not Opt("classTooltip") or not (tooltip and tooltip.IsShown and tooltip:IsShown()) then return end
+    if not FilterOpt("classTooltip") or not (tooltip and tooltip.IsShown and tooltip:IsShown()) then return end
     if Finder.ResultsSecret() then return end
     local details = ResultInfo(resultID)
     if not details or SecretVal(details.isDelisted) or details.isDelisted then return end
@@ -2496,9 +2496,9 @@ local function PaintRegionItems(menu)
     end
 end
 
-local function PaintMenu()
+local function PaintDiffMenu()
     if raidDiffMenu and raidDiffMenu:IsShown() then
-        local chosen = ChosenRaidDiffs()
+        local chosen = PickedRaidDiffs()
         for _, skinData in ipairs(RAID_DIFFS_MENU) do
             raidDiffMenu.items[skinData.key]:SetChecked(chosen ~= nil and chosen[skinData.key] == true)
         end
@@ -2669,7 +2669,7 @@ local function BuildRaidDiffMenu()
         menu.items[filterKey] = MenuItem(menu, posY, skinData.label, function()
             local tbl = Diffs()
             tbl[filterKey] = (not tbl[filterKey]) or nil
-            local _, n = ChosenRaidDiffs()
+            local _, n = PickedRaidDiffs()
             if n == #RAID_DIFFS_MENU then wipe(tbl) end
             RunFilters()
             Paint()
@@ -2699,7 +2699,7 @@ local function ToggleMenu()
             mod.ExtraWidenMenu(raidDiffMenu, difficultyBtn, SQ_GAP, refreshButton or difficultyBtn)
         end
         raidDiffMenu:Show()
-        PaintMenu()
+        PaintDiffMenu()
         return
     end
     if not dropMenu then BuildMenu() end
@@ -2714,7 +2714,7 @@ local function ToggleMenu()
         mod.ExtraWidenMenu(dropMenu, difficultyBtn, SQ_GAP, refreshButton or difficultyBtn)
     end
     dropMenu:Show()
-    PaintMenu()
+    PaintDiffMenu()
 end
 
 -------------------------------------------------------------------------------
@@ -3375,7 +3375,7 @@ Paint = function()
     if difficultyBtn then
         local isActive
         if SP.categoryID == RAIDS then
-            isActive = ChosenRaidDiffs() or ChosenRaidPlaystyles() or ChosenRaidRoles()
+            isActive = PickedRaidDiffs() or ChosenRaidPlaystyles() or ChosenRaidRoles()
         else
             isActive = not DiffAllOrNone(frame)
                 or DungeonPlaystyles(frame)
@@ -3488,7 +3488,7 @@ Paint = function()
             RegionFilterActive()
             or DelveFilterActive()
             or BossFilterActive()
-            or (ChosenRaidDiffs() or ChosenRaidPlaystyles() or ChosenRaidRoles()) and SP.categoryID == RAIDS
+            or (PickedRaidDiffs() or ChosenRaidPlaystyles() or ChosenRaidRoles()) and SP.categoryID == RAIDS
             or Finder.ExtraFilterActive()
         then
             isDefault = false
@@ -3498,7 +3498,7 @@ Paint = function()
             resetBtn.Glyph:SetAlpha(isDefault and 0.35 or 0.9)
         end
     end
-    PaintMenu()
+    PaintDiffMenu()
 end
 
 -- search again glyph: dim on cooldown, accent when filters changed.

@@ -83,7 +83,7 @@ local function DataBarKit(hostFrame)
     end
     -- Returns the row config rather than building it, so two bars can share one
     -- row (rightVis) instead of each taking a half-empty one.
-    local function VisOpts(barId, leftLabel, disabledFn, disTip, trackNeverFlip)
+    local function VisibilityOptions(barId, leftLabel, disabledFn, disTip, trackNeverFlip)
         local wasNever = trackNeverFlip and BarIsNever(barId)
         return {
             getStore = function()
@@ -124,7 +124,7 @@ local function DataBarKit(hostFrame)
             end,
         }
     end
-    K.VisOpts = VisOpts
+    K.VisOpts = VisibilityOptions
 
     -- Single-bar row (data bar sections): one Visibility control; rightCfg is
     -- any ordinary widget for the right slot (nil = blank). Returns the row
@@ -134,7 +134,7 @@ local function DataBarKit(hostFrame)
             W,
             hostFrame,
             cursorY,
-            VisOpts(barId, leftLabel, disabledFn, disTip, trackNeverFlip),
+            VisibilityOptions(barId, leftLabel, disabledFn, disTip, trackNeverFlip),
             rightCfg
         )
         return visRow, cursorY - visH
@@ -949,7 +949,7 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
     local ABAR, EndCapsCtl = environ.EAB, environ.EndCapsCtl
     local W = CUI.Widgets
     local K = DataBarKit(hostFrame)
-    local VisOpts = K.VisOpts
+    local VisibilityOptions = K.VisOpts
     local cursorY = yOffset
     local _, height
 
@@ -965,8 +965,8 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
     -- Both bars' Visibility in ONE row: same kind of control, and pairing them
     -- leaves no half-empty slot behind now that Visibility Options is folded in.
     do
-        local microOpts = VisOpts("MicroBar", "Micro Menu Visibility")
-        microOpts.rightVis = VisOpts("BagBar", "Bag Bar Visibility")
+        local microOpts = VisibilityOptions("MicroBar", "Micro Menu Visibility")
+        microOpts.rightVis = VisibilityOptions("BagBar", "Bag Bar Visibility")
         _, height = CUI.BuildVisibilityRow(W, hostFrame, cursorY, microOpts)
         cursorY = cursorY - height
     end

@@ -958,7 +958,7 @@ do
     -- so OOC-only: a mid-combat teardown sets the dirty flag and the host's
     -- regen handler finishes it (state driver already pulled the host off
     -- screen, so nothing stays clickable meanwhile).
-    local function HideActionButtons()
+    local function HideActionRow()
         if activeActions == 0 and not actionsDirty then return end
         if InCombatLockdown() then
             actionsDirty = true
@@ -991,7 +991,7 @@ do
         regen:RegisterEvent("PLAYER_REGEN_DISABLED")
         regen:SetScript("OnEvent", function(_, evt)
             if evt == "PLAYER_REGEN_ENABLED" then
-                if actionsDirty then HideActionButtons() end
+                if actionsDirty then HideActionRow() end
                 return
             end
             -- REGEN_DISABLED: InCombatLockdown() reports true already, but
@@ -1104,7 +1104,7 @@ do
         widget:Show()
     end
 
-    local function StopKeepAlive()
+    local function CancelKeepAlive()
         if keepAlive then
             keepAlive:Cancel()
             keepAlive = nil
@@ -1122,7 +1122,7 @@ do
         local missed = 0
         keepAlive = C_Timer.NewTicker(0.1, function()
             if not (tipText and tipText:IsShown()) then
-                StopKeepAlive()
+                CancelKeepAlive()
                 return
             end
             local overOwner = owner
@@ -1536,7 +1536,7 @@ do
         -- the full row rect. Skipped in combat (rows degrade to plain text, no
         -- protected touches fire). Rebuilt from scratch each show so a reused
         -- tip never carries stale buttons.
-        HideActionButtons()
+        HideActionRow()
         interactive = false
         if not InCombatLockdown() then
             for i = 1, dataCount do
@@ -1619,7 +1619,7 @@ do
         if interactive then
             StartKeepAlive()
         else
-            StopKeepAlive()
+            CancelKeepAlive()
         end
 
         -- Smart anchoring: opens off the BAR's roomier side (above/below H,
@@ -1675,9 +1675,9 @@ do
         if not tipText then return end
         if ownerFrame and owner ~= ownerFrame then return end
         owner = nil
-        HideActionButtons()
+        HideActionRow()
         HideClickButtons()
-        StopKeepAlive()
+        CancelKeepAlive()
         interactive = false
         tipText:EnableMouse(false)
         tipText:EnableMouseWheel(false)

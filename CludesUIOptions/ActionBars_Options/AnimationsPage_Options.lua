@@ -37,7 +37,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
     local highlightTypeValues, highlightTypeOrder = interactionTypeValues, interactionTypeOrder
     -- Custom Proc Glow: shared glow controls over the proc glow keys. Shape Glow
     -- is internal-only (forced by custom button shapes at render time).
-    local function ProcP() return ABAR.db.profile end
+    local function ProcProfile() return ABAR.db.profile end
     local _procGlowPreview
     local UpdateProcGlowPreview
     local GO = CUI.GlowOptions
@@ -65,7 +65,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
         caps = { mode = true, params = true, bg = true },
         defaultColor = { r = 1, g = 0.776, b = 0.376 },
         isOff = function()
-            local p = ProcP()
+            local p = ProcProfile()
             return p.procGlowEnabled == false or p.procGlowType == 0
         end,
         onChange = function()
@@ -73,7 +73,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             UpdateProcGlowPreview(_procGlowPreview)
         end,
         get = function(f)
-            local p = ProcP()
+            local p = ProcProfile()
             if f == "style" then
                 return p.procGlowType or 1
             elseif f == "mode" then
@@ -90,7 +90,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             return CUI.GlowOptions.FlatGet(p, "procGlow", f)
         end,
         set = function(f, a, b2, c2)
-            local p = ProcP()
+            local p = ProcProfile()
             if f == "style" then
                 p.procGlowType = a
                 p.procGlowEnabled = (a ~= 0)
@@ -103,7 +103,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             end
         end,
         confirm = function(val, commit)
-            local p = ProcP()
+            local p = ProcProfile()
             if ((p.procGlowType == 0) or (p.procGlowEnabled == false)) and val ~= 0 then
                 CUI:ShowConfirmPopup({
                     title = "Custom Proc Glow Settings",
@@ -280,7 +280,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
     local function PaintHighlightPreview(f) UpdateInteractionPreview(f, "highlight") end
 
     -- Proc glow preview: supports FlipBook + procedural glow engines
-    local function GetNthActionButtonIcon(num)
+    local function NthActionIcon(num)
         -- Find the Nth action button with an assigned spell across bars 1-8
         num = num or 1
         local BAR_CONFIG = {
@@ -574,7 +574,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             local leftRegion = row._leftRegion
             _pushedPreview = CreatePreviewIcon(leftRegion)
             if _pushedPreview._icon then
-                _pushedPreview._icon:SetTexture(GetNthActionButtonIcon(1))
+                _pushedPreview._icon:SetTexture(NthActionIcon(1))
                 _pushedPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
             PaintPushedPreview(_pushedPreview)
@@ -617,7 +617,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             local rightRegion = row._rightRegion
             _highlightPreview = CreatePreviewIcon(rightRegion)
             if _highlightPreview._icon then
-                _highlightPreview._icon:SetTexture(GetNthActionButtonIcon(2))
+                _highlightPreview._icon:SetTexture(NthActionIcon(2))
                 _highlightPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
             PaintHighlightPreview(_highlightPreview)
@@ -754,7 +754,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             )
             leftRegion._lastInline = _procGlowPreview
             if _procGlowPreview._icon then
-                local iconTex = GetNthActionButtonIcon(3)
+                local iconTex = NthActionIcon(3)
                 _procGlowPreview._icon:SetTexture(iconTex)
                 _procGlowPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
@@ -845,7 +845,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             _assistGlowPreview:ClearAllPoints()
             Pix.Point(_assistGlowPreview, "RIGHT", leftRegion._control, "LEFT", -12, 0)
             if _assistGlowPreview._icon then
-                _assistGlowPreview._icon:SetTexture(GetNthActionButtonIcon(4))
+                _assistGlowPreview._icon:SetTexture(NthActionIcon(4))
                 _assistGlowPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
 

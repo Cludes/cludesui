@@ -77,18 +77,18 @@ end
 
 local function Cfg() return mod.AppsCfg() end
 
-local function Get(key, default)
+local function CfgGet(key, default)
     local cfg = Cfg()
     local val = cfg and cfg[key]
     if val == nil then return default end
     return val
 end
 
-local function On() return Get("enabled", false) == true end
+local function On() return CfgGet("enabled", false) == true end
 
 -- The picked bar texture's file, or nil for a flat colour.
 local function TexturePath()
-    local key = Get("texture", "none")
+    local key = CfgGet("texture", "none")
     if key == "none" then return nil end
     return CM.ResolveTexturePath((mod.BarTextureTables()), key)
 end
@@ -133,7 +133,7 @@ local cardFrame
 local TITLE_SIZE = 12
 
 local function Scope()
-    local s = Get("scope", "character")
+    local s = CfgGet("scope", "character")
     return VALID_SCOPE[s] and s or "character"
 end
 
@@ -243,7 +243,7 @@ local function RedrawCard()
     local sum = 0
     for index, seg in ipairs(SEGMENTS) do
         local val = c[seg.key]
-        shares[index] = Get(seg.cfg, true) and val or 0
+        shares[index] = CfgGet(seg.cfg, true) and val or 0
         sum = sum + shares[index]
     end
     local barFrame = cardFrame.bar

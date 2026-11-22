@@ -1546,14 +1546,14 @@ local function SFont()
     return FALLBACK_FONT
 end
 -- _CUMT_GetFontOptions removed: font dropdown deleted from options page.
-local function SOutline()
+local function OutlineFlag()
     if CUI.GetFontOutlineFlag then return CUI.GetFontOutlineFlag("mythicTimer") end
     return ""
 end
 local function SetFS(fontStr, size, flags)
     if not fontStr then return end
     local p = SFont()
-    flags = flags or SOutline()
+    flags = flags or OutlineFlag()
     fontStr:SetFont(p, size, flags)
     if not fontStr:GetFont() then fontStr:SetFont(FALLBACK_FONT, size, flags) end
 end
@@ -1572,7 +1572,7 @@ end
 local function SetTimerFS(fontStr, size, flags)
     if not fontStr then return end
     local p = TimerFont()
-    flags = flags or SOutline()
+    flags = flags or OutlineFlag()
     fontStr:SetFont(p, size, flags)
     if not fontStr:GetFont() then fontStr:SetFont(FALLBACK_FONT, size, flags) end
 end
@@ -1601,7 +1601,7 @@ local function SetFittedText(fontStr, textValue, maxWidth, preferredSize, minSiz
     textValue = textValue or ""
     preferredSize = preferredSize or 10
     minSize = minSize or 8
-    local outline = SOutline()
+    local outline = OutlineFlag()
     SetFS(fontStr, preferredSize, outline)
     ApplyShadow(fontStr)
     fontStr:SetText(textValue)
@@ -2111,7 +2111,7 @@ local function CreateStandaloneFrame()
     return frame
 end
 
-local function RenderStandalone()
+local function DrawStandalone()
     if not store or not store.profile.enabled then
         if soloFrame then soloFrame:Hide() end
         return
@@ -3417,7 +3417,7 @@ local function RenderStandalone()
     frame:Show()
 end
 
-_G._CUMT_StandaloneRefresh = RenderStandalone
+_G._CUMT_StandaloneRefresh = DrawStandalone
 _G._CUMT_GetStandaloneFrame = function() return CreateStandaloneFrame() end
 
 -- Forces a full rebuild by discarding the cached frame + its FontStrings
@@ -3431,7 +3431,7 @@ _G._CUMT_RebuildStandalone = function()
     soloFrame = nil
     standaloneCreated = false
     wipe(objRows)
-    RenderStandalone()
+    DrawStandalone()
 end
 
 -- One-time migration of legacy TOPLEFT-stored position into stable centerX/Y offsets
@@ -3670,13 +3670,13 @@ function EMT:OnEnable()
             -- anchor-derived spot on every unlock open/close.
             local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("EMT_MythicTimer")
             if unlockLayoutActive then
-                RenderStandalone()
+                DrawStandalone()
                 if not anchored then PlaceStandalone() end
             else
                 if not store.profile.showPreview and not activeRun.active and not activeRun.completed then
                     if soloFrame then soloFrame:Hide() end
                 else
-                    RenderStandalone()
+                    DrawStandalone()
                 end
                 if not anchored then PlaceStandalone() end
             end

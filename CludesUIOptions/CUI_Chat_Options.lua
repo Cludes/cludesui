@@ -410,7 +410,7 @@ CUI.AtOptionsLogin(function()
                 if not CUI._prebuilding then
                     local region = borderRow._rightRegion
                     local control = region._control
-                    local function ApplyMode(mode)
+                    local function SetBorderMode(mode)
                         ChatSet("panelBorderColorMode", mode)
                         if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                         CUI:RefreshPage()
@@ -429,7 +429,7 @@ CUI.AtOptionsLogin(function()
                         20
                     )
                     Pix.Point(classSwatch, "RIGHT", control, "LEFT", -8, 0)
-                    classSwatch:SetScript("OnClick", function() ApplyMode("class") end)
+                    classSwatch:SetScript("OnClick", function() SetBorderMode("class") end)
                     classSwatch:SetScript(
                         "OnEnter",
                         function() CUI.ShowWidgetTooltip(classSwatch, "Class Color") end
@@ -445,7 +445,7 @@ CUI.AtOptionsLogin(function()
                         20
                     )
                     Pix.Point(accentSwatch, "RIGHT", classSwatch, "LEFT", -8, 0)
-                    accentSwatch:SetScript("OnClick", function() ApplyMode("accent") end)
+                    accentSwatch:SetScript("OnClick", function() SetBorderMode("accent") end)
                     accentSwatch:SetScript(
                         "OnEnter",
                         function() CUI.ShowWidgetTooltip(accentSwatch, "Accent Color") end
@@ -472,7 +472,7 @@ CUI.AtOptionsLogin(function()
                     local customClick = customSwatch:GetScript("OnClick")
                     customSwatch:SetScript("OnClick", function(self, ...)
                         if (ChatCfg("panelBorderColorMode") or "custom") ~= "custom" then
-                            ApplyMode("custom")
+                            SetBorderMode("custom")
                             return
                         end
                         if customClick then customClick(self, ...) end

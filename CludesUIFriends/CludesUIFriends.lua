@@ -113,7 +113,7 @@ local ApplyAll -- forward declaration
 -- Keyed queue entry: repeat requests before regen collapse into one apply.
 local function QueueApplyAll() mod.CombatQueue.Defer("ApplyAll", ApplyAll) end
 
-local function StripTextures(frame)
+local function StripArt(frame)
     if not frame then return end
     local regions = { frame:GetRegions() }
     for i = 1, #regions do
@@ -1071,7 +1071,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
         return SCROLL_STEP / totalH
     end
 
-    local function StopScrollDrag()
+    local function EndScrollDrag()
         if not isDragging then return end
         isDragging = false
         knob:SetScript("OnUpdate", nil)
@@ -1103,7 +1103,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
 
     local function ScrollThumbOnUpdate(self)
         if not IsMouseButtonDown("LeftButton") then
-            StopScrollDrag()
+            EndScrollDrag()
             return
         end
         local _, nextY = GetCursorPosition()
@@ -1127,7 +1127,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
     end)
     knob:SetScript("OnMouseUp", function(_, mouseBtn)
         if mouseBtn ~= "LeftButton" then return end
-        StopScrollDrag()
+        EndScrollDrag()
     end)
 
     hitbox:SetScript("OnMouseDown", function(_, mouseBtn)
@@ -1150,7 +1150,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
     end)
     hitbox:SetScript("OnMouseUp", function(_, mouseBtn)
         if mouseBtn ~= "LeftButton" then return end
-        StopScrollDrag()
+        EndScrollDrag()
     end)
 
     if scrollBar.RegisterCallback then scrollBar:RegisterCallback("OnScroll", SyncThumb) end
@@ -1164,7 +1164,7 @@ local function SkinBottomButton(button)
 
     local fontFile = CUI.GetFontPath("friends") or STANDARD_TEXT_FONT
 
-    StripTextures(button)
+    StripArt(button)
 
     GetFFD(button).bg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
     GetFFD(button).bg:SetColorTexture(0.025, 0.035, 0.045, 0.92)
@@ -1313,7 +1313,7 @@ end
 -- the style-refresh gate below compares against it.
 local chromePainted = {}
 
-local function PaintChrome()
+local function PaintFriendsChrome()
     local widget = FriendsFrame
     if not (friendsSkinned and widget) or LegacyFriendsRetired() then return end
     local ws = SkinEngine()
@@ -1456,7 +1456,7 @@ local function OnChromeStylesChanged()
         local red, green, blue, a = ws.GetModernBG()
         if red == seen.r and green == seen.g and blue == seen.b and a == seen.a then return end
     end
-    PaintChrome()
+    PaintFriendsChrome()
 end
 
 -- Options: the Border rows stand down while a window skin draws the frame.
@@ -1528,13 +1528,13 @@ local function SkinFriendsFrame()
                 frame:ClearAllPoints()
                 frame:SetPoint("TOPLEFT", widget, "TOPLEFT", LIST_LEFT, LIST_TOP)
                 frame:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", LIST_RIGHT, LIST_BOTTOM)
-                StripTextures(frame)
+                StripArt(frame)
                 if frame.Bg then frame.Bg:Hide() end
                 if frame.NineSlice then frame.NineSlice:Hide() end
                 if frame.List then
                     frame.List:ClearAllPoints()
                     frame.List:SetAllPoints(frame)
-                    StripTextures(frame.List)
+                    StripArt(frame.List)
                     if frame.List.ScrollBox then
                         frame.List.ScrollBox:ClearAllPoints()
                         frame.List.ScrollBox:SetAllPoints(frame.List)
@@ -1547,7 +1547,7 @@ local function SkinFriendsFrame()
             if raFrame and raFrame.List then
                 local raidBar = raFrame.List.ScrollBar or raFrame.ScrollBar
                 if raidBar then
-                    StripTextures(raidBar)
+                    StripArt(raidBar)
                     if raidBar.Background then raidBar.Background:Hide() end
                     if raidBar.Back then
                         raidBar.Back:SetAlpha(0)
@@ -1595,7 +1595,7 @@ local function SkinFriendsFrame()
                 raf:ClearAllPoints()
                 raf:SetPoint("TOPLEFT", widget, "TOPLEFT", LIST_LEFT, -20)
                 raf:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", LIST_RIGHT, LIST_BOTTOM - 20)
-                StripTextures(raf)
+                StripArt(raf)
                 if raf.Bg then raf.Bg:Hide() end
                 if raf.NineSlice then raf.NineSlice:Hide() end
             end
@@ -1975,7 +1975,7 @@ local function SkinFriendsFrame()
 
     local bnetPanel = _G.FriendsFrameBattlenetFrame
     if bnetPanel then
-        StripTextures(bnetPanel)
+        StripArt(bnetPanel)
         local childList = { bnetPanel:GetChildren() }
         for i = 1, #childList do
             local childFrame = childList[i]
@@ -2037,8 +2037,8 @@ local function SkinFriendsFrame()
             details.blizTab:SetHeight(1)
             details.blizTab:EnableMouse(false)
         end
-        StripTextures(tabHeader)
-        if tabSystem then StripTextures(tabSystem) end
+        StripArt(tabHeader)
+        if tabSystem then StripArt(tabSystem) end
 
         local function SyncSubTabs()
             local fp3 = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
@@ -2284,7 +2284,7 @@ local function SkinFriendsFrame()
     do
         local barFrame = FriendsListFrame and FriendsListFrame.ScrollBar
         if barFrame then
-            StripTextures(barFrame)
+            StripArt(barFrame)
             if barFrame.Background then barFrame.Background:Hide() end
             -- Collapse arrows to zero height so track fills full length
             if barFrame.Back then
@@ -2705,11 +2705,11 @@ local function SkinFriendsFrame()
     ---------------------------------------------------------------------------
     local function StripFrameChrome(frame)
         if not frame then return end
-        StripTextures(frame)
+        StripArt(frame)
         if frame.NineSlice then frame.NineSlice:Hide() end
         if frame.Bg then frame.Bg:Hide() end
         if frame.Inset then
-            StripTextures(frame.Inset)
+            StripArt(frame.Inset)
             if frame.Inset.NineSlice then frame.Inset.NineSlice:Hide() end
             if frame.Inset.Bg then frame.Inset.Bg:Hide() end
         end
@@ -2726,10 +2726,10 @@ local function SkinFriendsFrame()
 
             local whoPanel = _G.WhoFrameListInset
             if whoPanel then
-                StripTextures(whoPanel)
+                StripArt(whoPanel)
                 if whoPanel.Bg then whoPanel.Bg:Hide() end
                 if whoPanel.NineSlice then
-                    StripTextures(whoPanel.NineSlice)
+                    StripArt(whoPanel.NineSlice)
                     whoPanel.NineSlice:Hide()
                 end
                 whoPanel:SetClipsChildren(true)
@@ -2773,7 +2773,7 @@ local function SkinFriendsFrame()
             for i = 1, 4 do
                 local colour = _G["WhoFrameColumnHeader" .. i]
                 if colour then
-                    StripTextures(colour)
+                    StripArt(colour)
                     local textValue = colour:GetFontString()
                     if textValue then
                         textValue:SetFont(fontFile, 10, "")
@@ -2819,7 +2819,7 @@ local function SkinFriendsFrame()
 
             local editBox = _G.WhoFrameEditBox
             if editBox then
-                StripTextures(editBox)
+                StripArt(editBox)
                 editBox:SetScale(0.9)
                 local firstPoint, relTo, p2, ox, oy = editBox:GetPoint(1)
                 if firstPoint then editBox:SetPoint(firstPoint, relTo, p2, (ox or 0) - 1, (oy or 0) + 3) end
@@ -2884,7 +2884,7 @@ local function SkinFriendsFrame()
                     local button = _G["WhoFrameButton" .. i]
                     if button and not GetFFD(button).skinned then
                         GetFFD(button).skinned = true
-                        StripTextures(button)
+                        StripArt(button)
                         local hover2 = button:CreateTexture(nil, "HIGHLIGHT")
                         hover2:SetAllPoints()
                         hover2:SetColorTexture(1, 1, 1, 0.04)
@@ -3007,7 +3007,7 @@ local function SkinFriendsFrame()
         local btnAccent = fp8 and fp8.accentColors ~= false
         for _, button in ipairs({ addBtn, messageBtn }) do
             if button then
-                StripTextures(button)
+                StripArt(button)
                 local textValue = button:GetFontString()
                 if textValue then
                     textValue:SetFont(btnFont, 9, "")
@@ -3124,7 +3124,7 @@ local function SkinFriendsFrame()
 
     local closeButton = widget.CloseButton or _G.FriendsFrameCloseButton
     if closeButton then
-        StripTextures(closeButton)
+        StripArt(closeButton)
         GetFFD(widget).closeBtn = closeButton
         GetFFD(closeButton).x = closeButton:CreateFontString(nil, "OVERLAY")
         GetFFD(closeButton).x:SetFont(fontFile, 14, "")
@@ -3177,7 +3177,7 @@ local function StyleFriends()
 
     -- Backdrop, frame border, tabs, panes, inputs and close glyph for the
     -- current window-skin look (this module's own flat look when none applies).
-    PaintChrome()
+    PaintFriendsChrome()
 
     local scrollList = FriendsListFrame and FriendsListFrame.ScrollBox
     if scrollList then
@@ -3256,7 +3256,7 @@ function SKIN:OnInitialize()
         return CUI.VisWantsMouseover(p2, "visibility")
     end
     local visRegistered = false
-    local function RegisterVis()
+    local function RegisterVisibility()
         if visRegistered then return end
         visRegistered = true
         CUI.RegisterVisibilityUpdater(UpdateFriendsVisibility)
@@ -3271,12 +3271,12 @@ function SKIN:OnInitialize()
         end
     end
     if FriendsFrame then
-        hooksecurefunc(FriendsFrame, "Show", RegisterVis)
+        hooksecurefunc(FriendsFrame, "Show", RegisterVisibility)
         hooksecurefunc(FriendsFrame, "Hide", UnregisterVis)
-        if FriendsFrame:IsShown() then RegisterVis() end
+        if FriendsFrame:IsShown() then RegisterVisibility() end
     else
         -- Frame not created yet (load-on-demand): stay registered; closures early-out safely until it exists.
-        RegisterVis()
+        RegisterVisibility()
     end
 end
 
@@ -3322,7 +3322,7 @@ function SKIN:OnEnable()
         else
             if SKIN.db.profile.friends.enabled and not friendsSkinned then
                 SkinFriendsFrame()
-                PaintChrome()
+                PaintFriendsChrome()
             end
         end
     end

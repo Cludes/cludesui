@@ -788,7 +788,7 @@ end
 -- Whether the icon's cooldown is still running. The modeled cooldowns are
 -- plain numbers. A ghost counts as on cooldown until the driver lets it go
 -- (Ghosts.Tick), so it never sorts among the ready icons meanwhile.
-local function CdRunning(b)
+local function CooldownRunning(b)
     return b.cdStart ~= nil and b.cdDur ~= nil and (b.isGhost or b.cdStart + b.cdDur > GetTime())
 end
 
@@ -1016,7 +1016,7 @@ local function LayoutPlate(unitToken)
     local ready = 0
     for i = 1, num do
         local b = entries[i]
-        b.rdy = not CdRunning(b)
+        b.rdy = not CooldownRunning(b)
         if b.rdy then ready = ready + 1 end
     end
     for i = 2, num do
@@ -1211,7 +1211,7 @@ end
 -- Desaturate on Cooldown: the icon texture and the paw grey while a cooldown
 -- runs (the inline class icon string cannot be greyed). Painted with the
 -- cooldown, taken off when the widget runs it out (OnCooldownDone).
-local function PaintDesat(b, running)
+local function PaintGrey(b, running)
     local on = (running and sDesat) and true or false
     b.d.icon:SetDesaturated(on)
     b.paw:SetDesaturated(on)
@@ -1247,7 +1247,7 @@ local function PaintCooldown(b, start, duration)
             skinData.duration:SetText("")
         end
     end
-    PaintDesat(b, CdRunning(b))
+    PaintGrey(b, CooldownRunning(b))
     ReadinessMoved(b)
 end
 
@@ -1529,7 +1529,7 @@ local function BuildIcon(hostFrame)
     -- The cooldown ran out: the greyed icon comes back (a cell of ours), and
     -- its plate's icons take their places again (a ready kick moves up).
     skinData.cooldown:SetScript("OnCooldownDone", function()
-        PaintDesat(b, false)
+        PaintGrey(b, false)
         ReadinessMoved(b)
     end)
 
@@ -1547,7 +1547,7 @@ local function BuildIcon(hostFrame)
     return b
 end
 
-local function EnsurePool()
+local function MakePool()
     if parked then return end
     -- The park is born with the aspect that lets an object anchor to an aura
     -- container (a side row carries UntrustedLayoutScriptExecution once it
@@ -1603,8 +1603,8 @@ end
 -- Shows an icon for `key` on a plate, painting the kicker and the cooldown.
 -- The pool, and a style current for UIParent's scale: a UI scale change since
 -- the last icon re-sizes the style and restyles from here on.
-local function Ready()
-    EnsurePool()
+local function PlatesReady()
+    MakePool()
     if MatchScale() then
         RegisterPlateStyle()
         AK.Restyle(STYLE)
@@ -1612,7 +1612,7 @@ local function Ready()
 end
 
 local function ShowIcon(key, kicker, unitToken, owner, isCUI, classFile, texture, start, duration, preview)
-    Ready()
+    PlatesReady()
     local widget = icons[key] or Acquire(key, kicker)
     isDetached[key] = nil
     widget.preview = preview
@@ -2049,7 +2049,7 @@ function GhostPool.Show(t, unitToken, owner, isCUI, units, before, after)
         end
     end
     if num == 0 then return end
-    Ready()
+    PlatesReady()
     local free = GhostPool.free
     local g = free[#free]
     if g then
@@ -2201,7 +2201,7 @@ function GhostPool.Dress(g)
             texture = nil
         end
         PaintKicker(cellFrame, cellFrame.kClass, texture)
-        PaintDesat(cellFrame, CdRunning(cellFrame))
+        PaintGrey(cellFrame, CooldownRunning(cellFrame))
     end
 end
 
@@ -2930,7 +2930,7 @@ LayoutRail = function(track, R, L, entries)
     for i = 1, #kickers do
         local k, laneRec = kickers[i], lanes[i]
         laneRec.shown = laneRec.kicker ~= nil and not MarkRails.liveHidden[k.unit]
-        if laneRec.shown and not CdRunning(laneRec.cell) then
+        if laneRec.shown and not CooldownRunning(laneRec.cell) then
             local num = readyBy[k.marker] or 0
             laneRec.slotNo = R + 1 + num
             readyBy[k.marker] = num + 1
@@ -2947,7 +2947,7 @@ LayoutRail = function(track, R, L, entries)
     for i = 1, #kickers do
         local k, laneRec = kickers[i], lanes[i]
         if laneRec.shown then
-            if CdRunning(laneRec.cell) then
+            if CooldownRunning(laneRec.cell) then
                 local num = cdBy[k.marker] or 0
                 laneRec.slotNo = L + 1 + (readyBy[k.marker] or 0) + num
                 cdBy[k.marker] = num + 1
@@ -2987,7 +2987,7 @@ LayoutRail = function(track, R, L, entries)
         laneRec.clip:ClearAllPoints()
         if not laneRec.shown then
             laneRec.clip:SetPoint(inner, track, inner, 0, 0)
-        elseif CdRunning(laneRec.cell) then
+        elseif CooldownRunning(laneRec.cell) then
             local num = laneRec.slotNo - L - 1 - (readyBy[k.marker] or 0)
             laneRec.clip:SetPoint(inner, ef, ep, eo + result * num * pitch, 0)
         else
@@ -3090,7 +3090,7 @@ function MarkRails.SyncPlate(unitToken)
         MarkRails.Release(unitToken)
         return
     end
-    Ready()
+    PlatesReady()
     local track = MarkRails.railOf[unitToken] or AcquireRail(unitToken)
     if track.styleGen ~= styleStamp or track.kickGen ~= MarkRails.gen then StyleRail(track) end
     DressRail(track)
@@ -3442,7 +3442,7 @@ local function RestyleLive()
                     texture = PreviewTexture(b.kClass)
                 end
                 PaintKicker(b, b.kClass, texture)
-                PaintDesat(b, CdRunning(b))
+                PaintGrey(b, CooldownRunning(b))
             else
                 PlateGone(b.unit)
             end
@@ -3753,14 +3753,14 @@ function mod.KT_PaintSampleIcon(owner)
         -- Off: KT_Refresh left the snapshot and the style stale.
         ReadSettings(conf)
         if not RegisterPlateStyle() then return nil end
-        EnsurePool()
+        MakePool()
         MatchScale(true)
         AK.Restyle(STYLE)
     else
         -- On: KT_Refresh registered the style on the last write.
         AK = AK or CludesUI.AuraKit
         if not AK then return nil end
-        EnsurePool()
+        MakePool()
         if MatchScale() then
             RegisterPlateStyle()
             AK.Restyle(STYLE)

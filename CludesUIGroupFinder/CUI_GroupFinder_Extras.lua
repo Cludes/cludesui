@@ -786,7 +786,7 @@ end
 -- instance art by map id: keystone background, else the journal's
 local ART_CROP = { 0.205, 0.795, 0.25, 0.50 } -- a strip clear of the art's frame
 local artOf = {}
-local function Art(mapID)
+local function MapArt(mapID)
     if not mapID or Secret(mapID) then return nil end
     local a = artOf[mapID]
     if a ~= nil then return a or nil end
@@ -826,12 +826,12 @@ local FADE_MASK = "Interface\\AddOns\\" .. FOLDER .. "\\media\\masks\\fade.png"
 function mod.RowArtFor(resultID)
     if not RowArtOn() then return nil end
     local ai = Activity(resultID)
-    return ai and Art(ai.mapID)
+    return ai and MapArt(ai.mapID)
 end
 -- the same for an instance's map id (the settings preview)
 function mod.RowArtForMap(mapID)
     if not RowArtOn() then return nil end
-    return Art(mapID)
+    return MapArt(mapID)
 end
 mod.ROW_ART = { crop = ART_CROP, share = ART_SHARE, alpha = ART_ALPHA, mask = FADE_MASK }
 
@@ -839,7 +839,7 @@ mod.ROW_ART = { crop = ART_CROP, share = ART_SHARE, alpha = ART_ALPHA, mask = FA
 local function RowArt(record, profile)
     local art = RowArtOn() and record.resultID
     local ai = art and Activity(record.resultID)
-    art = ai and Art(ai.mapID)
+    art = ai and MapArt(ai.mapID)
     if not art then
         if profile.art then profile.art:Hide() end
         return

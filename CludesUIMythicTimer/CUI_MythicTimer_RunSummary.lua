@@ -157,7 +157,7 @@ end
 --------------------------------------------------------------------------------
 local function MeterAvailableIsTrue() return C_DamageMeter.IsDamageMeterAvailable() == true end
 
-local function MeterReady()
+local function DamageMeterReady()
     if not (C_DamageMeter and C_DamageMeter.GetCombatSessionFromType) then return false end
     if SESSION_OVERALL == nil then return false end
     if not C_DamageMeter.IsDamageMeterAvailable then return true end
@@ -297,7 +297,7 @@ local segRec
 local previousRun -- { record, rst, ord, base, baseDur, based, seg, awaitingMeter, lootArmed, settled }
 
 -- Collecting-phase state only. The finished run lives in lastRun.
-local function ResetCollector()
+local function ClearCollector()
     collectingNow = false
     roster = {}
     rosterOrder = {}
@@ -307,7 +307,7 @@ local function ResetCollector()
     inspectPending = nil
     segRec = { bank = {}, snap = {}, bankDur = 0, unbanked = false, gaps = false }
 end
-ResetCollector()
+ClearCollector()
 
 local function EnsureMember(unitGuid)
     local runRec = roster[unitGuid]
@@ -696,13 +696,13 @@ end
 -- reload lost the key start. Sampling a baseline there would bank the finished
 -- run's own totals and make every delta zero; with none, the deltas are the
 -- Overall session, which is the closest honest answer available.
-local function StartCollecting(skipBaseline)
+local function BeginCollecting(skipBaseline)
     -- A new key supersedes anything the previous one was still waiting for.
     previousRun = nil
-    ResetCollector()
+    ClearCollector()
     collectingNow = true
     ScanRoster(true)
-    if not skipBaseline and MeterReady() then
+    if not skipBaseline and DamageMeterReady() then
         local allRead = true
         for _, m in ipairs(METRICS) do
             local t = {}
@@ -737,7 +737,7 @@ end
 -- for the meter to declassify. It holds its own roster snapshot, so the wipe
 -- below cannot reach it.
 local function StopCollecting()
-    ResetCollector()
+    ClearCollector()
     SyncSummaryEvents()
 end
 
@@ -753,7 +753,7 @@ local function HarvestInto(runRecord, runState, base, baseDur, based, segment)
     if baseDur == nil then baseDur = baseDuration end
     if based == nil then based = hasBaseline end
     segment = segment or segRec
-    if not MeterReady() then
+    if not DamageMeterReady() then
         -- Must be recorded here too, or the panel shows empty combat columns
         -- with no word of why the meter had nothing to give.
         runRecord.meterAvailable = false
@@ -856,7 +856,7 @@ end
 -- pull only counts as banked once the damage rows came back readable (or the
 -- meter is simply empty). rst is the roster the seg belongs to.
 local function Checkpoint(segment, runState)
-    if not MeterReady() then return end
+    if not DamageMeterReady() then return end
     local readable = false
     for _, m in ipairs(METRICS) do
         wipe(scratchTotals)
@@ -1046,7 +1046,7 @@ end
 
 -- Party members' rating is pushed by the server after the key and has no event
 -- of its own, so it is re-read on the settling events that do fire.
-local function RefreshScores()
+local function SyncScores()
     local lastSummary = previousRun
     if not (lastSummary and not lastSummary.settled) then return end
     ApplyScores(lastSummary.record, lastSummary.rst, lastSummary.ord)
@@ -1163,7 +1163,7 @@ local function EndSettling()
     local lastSummary = previousRun
     if not (lastSummary and not lastSummary.settled) then return end
     FinishHarvest()
-    RefreshScores()
+    SyncScores()
     if lastSummary.lootArmed then ShowQueuedSummary() end
     lastSummary.awaitingMeter = false
     lastSummary.settled = true
@@ -1216,7 +1216,7 @@ end
 --------------------------------------------------------------------------------
 local function OnEvent(_, evt, ...)
     if evt == "CHALLENGE_MODE_START" then
-        StartCollecting()
+        BeginCollecting()
     elseif evt == "CHALLENGE_MODE_RESET" then
         StopCollecting()
     elseif evt == "CHALLENGE_MODE_COMPLETED" then
@@ -1228,7 +1228,7 @@ local function OnEvent(_, evt, ...)
         if not collectingNow then
             -- Reloading mid key loses the key start; collect what is still
             -- readable rather than dropping the run entirely.
-            StartCollecting(true)
+            BeginCollecting(true)
         end
         FinishRun()
         ArmLootWait()
@@ -1314,7 +1314,7 @@ local function OnEvent(_, evt, ...)
     elseif evt == "LOOT_CLOSED" then
         if previousRun and previousRun.lootArmed then ShowQueuedSummary() end
         FinishHarvest()
-        RefreshScores()
+        SyncScores()
         SweepInspects()
     elseif evt == "ADDON_RESTRICTION_STATE_CHANGED" then
         -- The combat restriction's edges (see ResetScope): switching on means
@@ -1355,7 +1355,7 @@ local function OnEvent(_, evt, ...)
     elseif evt == "CHALLENGE_MODE_MEMBER_INFO_UPDATED" or evt == "GROUP_ROSTER_UPDATE" then
         if collectingNow then ScanRoster(true) end
         SweepInspects()
-        RefreshScores()
+        SyncScores()
     end
 end
 
@@ -1387,7 +1387,7 @@ function mod.RS_Apply()
             and C_ChallengeMode.IsChallengeModeActive
             and C_ChallengeMode.IsChallengeModeActive()
         then
-            StartCollecting()
+            BeginCollecting()
         end
         -- Unlock Mode entry intentionally not registered for now; the panel is
         -- moved by dragging its header. RegisterUnlock is kept for later.

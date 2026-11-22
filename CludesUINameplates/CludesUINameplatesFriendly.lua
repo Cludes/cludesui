@@ -201,7 +201,7 @@ end
 -- nothing is looked up per plate. The memo is the family's whole key.
 local subTexts = {} -- every built subText1, in build order (pooled plates are never freed)
 local _sfFile, _sfSize, _sfFlags
-local function ApplySubtitleFont()
+local function StyleSubtitleFont()
     local file = GetFont()
     local px = GetSubTextSize()
     local fontFlags = (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
@@ -213,7 +213,7 @@ local function ApplySubtitleFont()
 end
 
 local _ffFile, _ffSize
-local function ApplyFriendlyFontOverride(force)
+local function OverrideFriendlyFont(force)
     SaveOriginalFonts()
     local font = GetFont()
     local px = GetFriendlyNameSize()
@@ -362,7 +362,7 @@ end
 -- font object; the name FontStrings inherit it on the next render.
 function mod.RefreshFriendlyNameSize()
     if NameOnlyOn() then
-        ApplyFriendlyFontOverride()
+        OverrideFriendlyFont()
         -- Blizzard's per-instance name height overrides the font object, so the
         -- visible plates need the new size stamped on directly.
         if ReanchorAllPlayerNames then ReanchorAllPlayerNames() end
@@ -391,7 +391,7 @@ local function ScheduleNameSizeReapply(force)
         local forced = _nameSizeReapplyForce
         _nameSizeReapplyForce = false
         if not NameOnlyOn() then return end
-        ApplyFriendlyFontOverride(forced)
+        OverrideFriendlyFont(forced)
         -- Blizzard's own ApplyFrameOptions pass re-anchors the name (that is
         -- what fires this), so re-collapse it here rather than from a
         -- SetPoint hook, which would re-enter UpdateAnchors mid-pass. Rides
@@ -973,7 +973,7 @@ end
 -- NAME_PLATE_UNIT_ADDED/REMOVED handlers (the name-only Y-offset feature sweeps it the
 -- same way). C_NamePlate.GetNamePlates does not return friendly player plates, so it
 -- cannot drive this sweep.
-local function SweepPlayerSubText()
+local function SweepSubText()
     if not NameOnlyOn() then return end
     local pending = mod.pendingUnits
     if not pending then return end
@@ -1373,7 +1373,7 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
     -- Listed for ApplySubtitleFont, which re-applies the subtitle family on
     -- a size / font / slug change; its first font is the current one.
     backing.subText1 = backing:CreateFontString(nil, "OVERLAY")
-    ApplySubtitleFont()
+    StyleSubtitleFont()
     subTexts[#subTexts + 1] = backing.subText1
     CUI.SetFontFamily(backing.subText1, _sfFile, _sfSize, _sfFlags, false)
     -- Anchored in UpdateSubText against the HEALTH BAR with the same computed number
@@ -1965,7 +1965,7 @@ end
 -- options panel, in whichever friendly mode is active.
 function mod.RefreshFriendlyBelowName()
     -- Size / font / slug: the subtitle family on every built sub text.
-    ApplySubtitleFont()
+    StyleSubtitleFont()
     mod.NP_FriendlyLevelWatch()
     -- Full-plate mode: repaint the name (the title is part of it now) plus
     -- the guild line and name lift on live plates.
@@ -1974,7 +1974,7 @@ function mod.RefreshFriendlyBelowName()
     end
     -- Name-only mode: recompose the name text on visible player plates
     -- (self-gated; a no-op outside name-only mode).
-    SweepPlayerSubText()
+    SweepSubText()
     -- The names now show these settings (the Name Format sync's record).
     StampFriendlyNames()
 end
@@ -2102,7 +2102,7 @@ function mod.UpdateFriendlyNameplateSystem()
 
     -- Re-derive the subtitle font (login profile load, profile switches,
     -- slug toggles). Value-memoized, near-free when unchanged.
-    ApplySubtitleFont()
+    StyleSubtitleFont()
     mod.NP_FriendlyLevelWatch()
 
     -- In follower dungeons, force-hide friendly nameplates via CVars. In instances
@@ -2261,13 +2261,13 @@ function mod.UpdateFriendlyNameplateSystem()
         )
     end
     if nameOnly and showFriendly then
-        ApplyFriendlyFontOverride()
+        OverrideFriendlyFont()
         -- (nameplate sizing handled by Blizzard in name-only mode)
         -- Sweep name-only plates. NPCs: suppress health bars and color names green,
         -- gated per-unit so Blizzard's "NPC Names" filter is respected -- widgets-only
         -- NPCs are left to Blizzard instead of getting our overlay. Players ride
         -- SweepPlayerSubText (protected-plate list) for the Below Name sub text.
-        local function SweepNameOnlyPlates()
+        local function SweepNameOnly()
             local allPlates = C_NamePlate.GetNamePlates()
             if allPlates then
                 for _, plateFrame in ipairs(allPlates) do
@@ -2286,13 +2286,13 @@ function mod.UpdateFriendlyNameplateSystem()
                     end
                 end
             end
-            SweepPlayerSubText()
+            SweepSubText()
         end
-        SweepNameOnlyPlates()
+        SweepNameOnly()
         -- Delayed sweep: Blizzard creates NPC plates asynchronously after
         -- the CVar changes, so sweep again after a short delay.
-        C_Timer.After(0.1, SweepNameOnlyPlates)
-        C_Timer.After(0.5, SweepNameOnlyPlates)
+        C_Timer.After(0.1, SweepNameOnly)
+        C_Timer.After(0.5, SweepNameOnly)
     elseif not shouldEnable then
         -- Not in health-bar mode — restore fonts (covers disabled + name-only-off)
         RestoreFriendlyFontOverride()
@@ -2386,7 +2386,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             end
             -- Player Below Name sub text: attach to plates present at zone-in
             -- (self-gated on name-only mode + the Subtitle Text setting).
-            SweepPlayerSubText()
+            SweepSubText()
         end)
     end
 end)

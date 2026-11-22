@@ -249,7 +249,7 @@ local function QuestTextMeasure(textValue, size, font, outline)
     if not (hgt and hgt > 0) then hgt = size end
     return math.ceil(wid), math.ceil(hgt)
 end
-local function QuestTextTypeIconHide(self)
+local function HideQuestTypeIcon(self)
     local frame = self.questTextFrame
     local iconTex = self.questTextTypeIcon
     if iconTex and iconTex:IsShown() then iconTex:Hide() end
@@ -274,7 +274,7 @@ function mod.NP_QuestTypeIconLayout(counterW, counterH, fontSize, scale)
 end
 -- Hides the frame; the name width, the target arrows and the slot's other elements follow.
 local function QuestTextHide(self, chainParent)
-    if self.questTextTypeIcon then QuestTextTypeIconHide(self) end
+    if self.questTextTypeIcon then HideQuestTypeIcon(self) end
     local frame = self.questTextFrame
     if not (frame and frame:IsShown()) then return end
     frame:Hide()
@@ -381,12 +381,12 @@ function NameplateFrame:UpdateQuestText(chainParent)
             typeTex:Show()
             wid, hgt = fullW, fullH
         elseif self.questTextTypeIcon then
-            QuestTextTypeIconHide(self)
+            HideQuestTypeIcon(self)
         end
         self.questTextIcon:Hide()
         fontStr:Show()
     else
-        if self.questTextTypeIcon then QuestTextTypeIconHide(self) end
+        if self.questTextTypeIcon then HideQuestTypeIcon(self) end
         wid, hgt = iconSz, iconSz
         self.questText:Hide()
         self.questTextIcon:Show()

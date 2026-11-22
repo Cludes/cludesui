@@ -874,7 +874,7 @@ end
 
 -- Full refresh including repositioning of elements above the health bar.
 -- Called on target change and settings change (not on every power tick).
-local function RefreshClassPowerFull()
+local function SyncClassPowerFull()
     -- Form check (e.g. Druid combo points only in cat form)
     local formHidden = formRequired and GetShapeshiftFormID() ~= formRequired
     -- PERF: only the target plate shows pips; only it needs reposition for cpPush
@@ -968,7 +968,7 @@ local function EnableClassPowerWatcher()
                 DisableClassPowerWatcher()
                 ApplyClassPowerSetting()
             elseif evt == "PLAYER_TARGET_CHANGED" then
-                RefreshClassPowerFull()
+                SyncClassPowerFull()
             elseif evt == "PLAYER_REGEN_ENABLED" then
                 SyncClassPower()
             else
@@ -996,13 +996,13 @@ local function EnableClassPowerWatcher()
                 DisableClassPowerWatcher()
                 ApplyClassPowerSetting()
             elseif evt == "PLAYER_TARGET_CHANGED" or evt == "UPDATE_SHAPESHIFT_FORM" then
-                RefreshClassPowerFull()
+                SyncClassPowerFull()
             else
                 SyncClassPower()
             end
         end)
     end
-    RefreshClassPowerFull()
+    SyncClassPowerFull()
 end
 
 DisableClassPowerWatcher = function()
@@ -1033,7 +1033,7 @@ ApplyClassPowerSetting = function()
     end
 end
 mod.ApplyClassPowerSetting = ApplyClassPowerSetting
-mod.RefreshClassPower = RefreshClassPowerFull
+mod.RefreshClassPower = SyncClassPowerFull
 local function DarkenColor(red, green, blue, factor)
     factor = factor or 0.60
     return red * factor, green * factor, blue * factor

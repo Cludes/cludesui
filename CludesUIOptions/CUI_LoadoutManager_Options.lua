@@ -58,7 +58,7 @@ CUI.AtOptionsLogin(function()
     local TXT_PICK_SAVED = Dimmed(CUI.L("pick a saved instance"))
 
     -- One assignment slot as "gear / talents", or "not set".
-    local function PairSummary(gearName, talentStored)
+    local function PairLabel(gearName, talentStored)
         local talentName = mod.TalentDisplayName(talentStored)
         if not gearName and not talentName then return TXT_NOT_SET end
         return (gearName and Accent(gearName) or TXT_NO_GEAR)
@@ -251,7 +251,7 @@ CUI.AtOptionsLogin(function()
 
     -- This instance's assignment slot in the scope being edited, under the
     -- key the module writes for it. Returns inside, gear, talent.
-    local function InstanceSlot(perDifficulty)
+    local function InstanceSlotFor(perDifficulty)
         local context = mod.GetContext()
         if not context.inInstance or not context.instanceID then return false end
         local key = mod.AssignmentKey(context, perDifficulty)
@@ -713,9 +713,9 @@ CUI.AtOptionsLogin(function()
 
         for _, perDiff in ipairs({ false, true }) do
             local regionFrame = perDiff and instRow._rightRegion or instRow._leftRegion
-            local function Inside() return (InstanceSlot(perDiff)) and true or false end
+            local function Inside() return (InstanceSlotFor(perDiff)) and true or false end
             local function Saved()
-                local inside, g, t = InstanceSlot(perDiff)
+                local inside, g, t = InstanceSlotFor(perDiff)
                 return inside and (g ~= nil or t ~= nil)
             end
 
@@ -746,12 +746,12 @@ CUI.AtOptionsLogin(function()
                 regionFrame,
                 perDiff and CUI.L("This Difficulty") or CUI.L("Any Difficulty"),
                 function()
-                    local inside, g, t = InstanceSlot(perDiff)
+                    local inside, g, t = InstanceSlotFor(perDiff)
                     if not inside then return TXT_OUTSIDE end
                     if perDiff then
-                        return Dimmed("(" .. DifficultyName() .. ")") .. "  " .. PairSummary(g, t)
+                        return Dimmed("(" .. DifficultyName() .. ")") .. "  " .. PairLabel(g, t)
                     end
-                    return PairSummary(g, t)
+                    return PairLabel(g, t)
                 end
             )
         end
@@ -801,7 +801,7 @@ CUI.AtOptionsLogin(function()
         local nothingSaved = Dimmed(CUI.Lf("nothing saved for %1$s", scopeName))
         AddLiveLabel(savedRow._rightRegion, CUI.L("Assignment"), function()
             local e = PickedSavedEntry()
-            if e then return PairSummary(e.gear, e.talent) end
+            if e then return PairLabel(e.gear, e.talent) end
             if #savedOrder <= 1 then return nothingSaved end
             return TXT_PICK_SAVED
         end)
@@ -851,7 +851,7 @@ CUI.AtOptionsLogin(function()
             )
             AddLiveLabel(regionFrame, typeName, function()
                 local g, t = TypeSlot(key)
-                return PairSummary(g, t)
+                return PairLabel(g, t)
             end)
         end
 

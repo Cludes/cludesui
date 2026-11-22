@@ -1699,7 +1699,7 @@ CUI.AtOptionsLogin(function()
 
                         -- Helper: resolve current glow color and restart preview if active
                         local pvKey = assignmentKey .. "_" .. aIdx
-                        local function RefreshPreviewGlow()
+                        local function SyncPreviewGlow()
                             if not _bgPreviewGlowActive[pvKey] then return end
                             local shade = _bgPreviewGlowOverlays[pvKey]
                             if not shade then return end
@@ -1757,7 +1757,7 @@ CUI.AtOptionsLogin(function()
                             setValue = function(val)
                                 record.glowStyle = tonumber(val) or 1
                                 ApplyCDM()
-                                RefreshPreviewGlow()
+                                SyncPreviewGlow()
                                 CUI:RefreshPage()
                             end,
                         })
@@ -1922,7 +1922,7 @@ CUI.AtOptionsLogin(function()
                                                 if mod.RequestBarGlowUpdate then
                                                     mod.RequestBarGlowUpdate()
                                                 end
-                                                RefreshPreviewGlow()
+                                                SyncPreviewGlow()
                                             end,
                                         },
                                     },
@@ -1988,7 +1988,7 @@ CUI.AtOptionsLogin(function()
                                         hasClassColor = true,
                                         onChange = function()
                                             ApplyCDM()
-                                            RefreshPreviewGlow()
+                                            SyncPreviewGlow()
                                             CUI:RefreshPage()
                                         end,
                                         overrideSize = 20,
@@ -2328,7 +2328,7 @@ CUI.AtOptionsLogin(function()
             local region = kbRow._rightRegion
             local kbFonts, kbFontOrder = CUI.BuildFontDropdownData()
             kbFonts.__global = { text = "CDM Font" }
-            local function OffTip()
+            local function DisabledTip()
                 local tipText = lockTip and lockTip()
                 if tipText then return tipText end
                 if BD().showKeybind ~= true then return "Show Keybind" end
@@ -2336,8 +2336,8 @@ CUI.AtOptionsLogin(function()
 
             CUI.BuildInlineCog(region, {
                 title = "Keybind Text Settings",
-                disabled = function() return OffTip() ~= nil end,
-                disabledTooltip = OffTip,
+                disabled = function() return DisabledTip() ~= nil end,
+                disabledTooltip = DisabledTip,
                 rows = {
                     {
                         type = "dropdown",
@@ -2544,13 +2544,13 @@ CUI.AtOptionsLogin(function()
 
             local swatchBlock = CUI.NewSwatchBlocker(kbSwatch)
             swatchBlock:SetScript("OnEnter", function()
-                local tipText = OffTip()
+                local tipText = DisabledTip()
                 if tipText then CUI.ShowWidgetTooltip(kbSwatch, CUI.DisabledTooltip(tipText)) end
             end)
             swatchBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             local function SwatchState()
                 updateKbSwatch()
-                local on = OffTip() == nil
+                local on = DisabledTip() == nil
                 kbSwatch:SetAlpha(on and 1 or 0.3)
                 swatchBlock:SetShown(not on)
             end
@@ -2785,18 +2785,18 @@ CUI.AtOptionsLogin(function()
     local _buffBarOverlay
     local function ShowBuffBarOverlay() end
 
-    local function HideBuffBarOverlay()
+    local function HideBarOverlay()
         if _buffBarOverlay then _buffBarOverlay:Hide() end
     end
     mod.ShowBuffBarOverlay = ShowBuffBarOverlay
-    mod.HideBuffBarOverlay = HideBuffBarOverlay
+    mod.HideBuffBarOverlay = HideBarOverlay
 
     -- Hook: show tip when CDM Bars page first renders with a preview visible
     local _cdmButtonTipQueued = false
     CUI:RegisterOnHide(function()
         HideCdmTip()
         -- Hide overlay and custom aura preview when panel closes
-        HideBuffBarOverlay()
+        HideBarOverlay()
         mod._cdmBarsPageOpen = false
         if mod.UpdateCustomBuffBars then mod.UpdateCustomBuffBars() end
     end)
@@ -2847,7 +2847,7 @@ CUI.AtOptionsLogin(function()
                 -- Page closed: reanchor so buff-bar injected custom/preset buffs
                 -- that were shown for configuration (cdmPageOpen) hide unless active.
                 if mod.QueueReanchor then mod.QueueReanchor() end
-                HideBuffBarOverlay()
+                HideBarOverlay()
                 HideCdmTip()
             end
             if pageTitle == PAGE_CDM_BARS then
@@ -2918,7 +2918,7 @@ CUI.AtOptionsLogin(function()
                 -- Page closed: reanchor so buff-bar injected custom/preset buffs
                 -- that were shown for configuration (cdmPageOpen) hide unless active.
                 if mod.QueueReanchor then mod.QueueReanchor() end
-                HideBuffBarOverlay()
+                HideBarOverlay()
                 HideCdmTip()
             end
             if pageTitle == PAGE_BUFF_BARS then

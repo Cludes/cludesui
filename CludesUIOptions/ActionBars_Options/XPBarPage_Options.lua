@@ -629,15 +629,15 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         return kind, legacy, render
     end
     local scratch = {}
-    local function Shows(stem, i) return SlotChoices(stem, i, scratch) ~= nil end
+    local function SlotShows(stem, i) return SlotChoices(stem, i, scratch) ~= nil end
     local function FreeIndex(stem)
         for i = 1, TEXTS_PER_POS do
-            if not Shows(stem, i) then return i end
+            if not SlotShows(stem, i) then return i end
         end
     end
     -- Takes a text off: its value, Show Rested and its own size and offsets
     -- (the bar text: "none", its placement is the bar text's own).
-    local function ClearSlot(stem, i)
+    local function ClearBarSlot(stem, i)
         local s, key = BarCfg(), SlotKey(stem, i)
         s[key .. "Rested"] = nil
         if IsBarText(stem, i) then
@@ -663,7 +663,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         local rested = s[from .. "Rested"]
         local carry = not IsBarText(stem, i)
         local size, ox, oy = s[from .. "Size"], s[from .. "XOffset"], s[from .. "YOffset"]
-        ClearSlot(stem, i)
+        ClearBarSlot(stem, i)
         s[to] = val
         s[to .. "Rested"] = rested
         if not IsBarText(toStem, jdx) then
@@ -680,7 +680,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         local position = FreeIndex(stem)
         if not position then return end
         local s, key = BarCfg(), SlotKey(stem, position)
-        if not IsBarText(stem, position) then ClearSlot(stem, position) end
+        if not IsBarText(stem, position) then ClearBarSlot(stem, position) end
         s[key] = "pct"
         s[key .. "Rested"] = true
         addedKey = key
@@ -690,7 +690,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- Room for another text: any free place, or on a vertical bar the bar
     -- text's own place (the only text a vertical bar draws).
     local function AddRoom()
-        if IsVertical() then return not Shows("Center", 1) end
+        if IsVertical() then return not SlotShows("Center", 1) end
         for _, p in ipairs(POSITIONS) do
             if FreeIndex(p.stem) then return true end
         end
@@ -703,7 +703,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     for _, p in ipairs(POSITIONS) do
         local rank = 0
         for i = 1, TEXTS_PER_POS do
-            if Shows(p.stem, i) then
+            if SlotShows(p.stem, i) then
                 rank = rank + 1
                 entries[#entries + 1] = { pos = p, i = i, rank = rank }
             end
@@ -865,7 +865,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     emptied = nil
                     -- the row's slot, read before the write and the rebuild
                     local snap = CUI._SOAttribution(region)
-                    ClearSlot(stem, i)
+                    ClearBarSlot(stem, i)
                     CUI._NotifySettingWrite(region, snap)
                     RelayoutBar()
                 end,
@@ -890,11 +890,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     if SlotChoices(stem, i, own) == "top" then WriteChecked(sequence) end
                 end,
                 onClose = function()
-                    if emptied and not Shows(stem, i) then
+                    if emptied and not SlotShows(stem, i) then
                         emptied = nil
                         -- the row's slot, read before the write and the rebuild
                         local snap = CUI._SOAttribution(region)
-                        ClearSlot(stem, i)
+                        ClearBarSlot(stem, i)
                         CUI._NotifySettingWrite(region, snap)
                         RelayoutBar()
                     end
@@ -1048,7 +1048,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         -- never over the text's own name.
         local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
-        local function EnsureMenu()
+        local function MakeSlotMenu()
             if dropMenu then return dropMenu end
             local refresh
             dropMenu, _, refresh = CUI.BuildDropdownMenu(
@@ -1089,7 +1089,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         button:SetScript("OnClick", function()
             if EntryOff(e) then return end
             CUI.HideWidgetTooltip()
-            local m = EnsureMenu()
+            local m = MakeSlotMenu()
             if m:IsShown() then
                 m:Hide()
             else
@@ -1117,7 +1117,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local dropMenu
-        local function EnsureMenu()
+        local function MakeSlotMenu()
             if dropMenu then return dropMenu end
             local refresh
             dropMenu, _, refresh = CUI.BuildDropdownMenu(
@@ -1132,7 +1132,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 function(val)
                     if IsVertical() then
                         if val ~= "Center" then return CUI.DisabledTooltip("Horizontal Orientation") end
-                        if Shows("Center", 1) then return true end
+                        if SlotShows("Center", 1) then return true end
                         return nil
                     end
                     if not FreeIndex(val) then return true end
@@ -1158,7 +1158,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             return dropMenu
         end
         addOpen = function()
-            local m = EnsureMenu()
+            local m = MakeSlotMenu()
             if m:IsShown() then
                 m:Hide()
             else
@@ -1311,12 +1311,12 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         if f and fillVals[f] then return f end
         return GRAD_KEY[BarCfg().fillGradient] or "custom"
     end
-    local function FillKind()
+    local function FillKindOf()
         local keyName = FillKey()
         if keyName == "custom" then return "custom" end
         return GRAD_DIR[keyName] and "gradient" or "flip"
     end
-    local function Custom() return FillKind() == "custom" end
+    local function Custom() return FillKindOf() == "custom" end
     -- Rested Color: the rested XP shown ahead of the fill (dark blue at half
     -- opacity until set).
     local fillRow
@@ -1330,13 +1330,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         rawTooltip = true,
         getValue = FillKey,
         setValue = function(val)
-            local was = FillKind()
+            local was = FillKindOf()
             local cfg = BarCfg()
             cfg.fillGradient = GRAD_DIR[val]
             cfg.fvFill = (val ~= "custom" and not GRAD_DIR[val]) and val or nil
             mod.ApplyDataBarLayout(XP)
             -- Another kind needs its own inline control: rebuild.
-            if FillKind() ~= was then
+            if FillKindOf() ~= was then
                 CUI:RefreshPage(true)
             else
                 CUI:RefreshPage()
@@ -1368,7 +1368,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 K.ColorSwatches(XP),
                 { size = 20, disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
             )
-        elseif FillKind() == "gradient" then
+        elseif FillKindOf() == "gradient" then
             CUI.BuildInlineSwatches(region, {
                 {
                     tooltip = "Gradient Start Color",

@@ -1108,7 +1108,7 @@ end
 -- instanced PvP and the glow needs no per-aura signal (the machinery #1509
 -- deleted). The Dispel Glow setting never touches these filters -- it is only
 -- the style the "np" group wears, so every shown dispellable buff glows.
-local function BuffMode()
+local function BuffFilterMode()
     local m = ProfileVal("npEnemyBuffFilter")
     if m == "dispellable" or m == "showall" then return m end
     return "important"
@@ -1117,7 +1117,7 @@ end
 -- Important or Only Dispellable with "Dispellable By Me" on (retail only;
 -- Show All never reads it).
 local function BuffDispelByMe()
-    local mode = BuffMode()
+    local mode = BuffFilterMode()
     return not CludesUI.IS_FOREVER
         and RAID_DISPELLABLE ~= nil
         and mode ~= "showall"
@@ -1128,7 +1128,7 @@ local function BuffFilterGlow()
     local t = { "HELPFUL", "INCLUDE_NAME_PLATE_ONLY" }
     -- Stale-client shape only: without the DISPELLABLE token the union cannot
     -- be expressed, so Important mode keeps the old curated single group.
-    if BuffMode() == "important" and IMPORTANT and not DISPELLABLE then t[#t + 1] = IMPORTANT end
+    if BuffFilterMode() == "important" and IMPORTANT and not DISPELLABLE then t[#t + 1] = IMPORTANT end
     if DISPELLABLE then t[#t + 1] = BuffDispelByMe() and RAID_DISPELLABLE or DISPELLABLE end
     return t
 end
@@ -1137,7 +1137,7 @@ end
 -- without the DISPELLABLE token, where no complement can be expressed).
 -- Important narrows the remainder to IMPORTANT; Show All keeps all of it.
 local function BuffFilterPlain()
-    local mode = BuffMode()
+    local mode = BuffFilterMode()
     if mode == "dispellable" or not DISPELLABLE then return nil end
     local t = { "HELPFUL", "INCLUDE_NAME_PLATE_ONLY" }
     if mode == "important" and IMPORTANT then t[#t + 1] = IMPORTANT end
@@ -2423,7 +2423,7 @@ local function CfgFP()
     return FP(
         ProfileVal("maxDebuffs"),
         ProfileVal("showAllDebuffs"),
-        BuffMode(),
+        BuffFilterMode(),
         PlateBuffs.Split(),
         ProfileVal("debuffIncludeCC"),
         mod.NPF_FP(),

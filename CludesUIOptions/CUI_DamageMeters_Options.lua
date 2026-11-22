@@ -2336,7 +2336,7 @@ CUI.AtOptionsLogin(function()
         hostFrame._showRowDivider = true
 
         local iconOff = function() return not SpellHistoryDB().iconEnabled end
-        local barOff = function() return not SpellHistoryDB().barEnabled end
+        local barsOff = function() return not SpellHistoryDB().barEnabled end
 
         -- =====================================================================
         --  ICON HISTORY
@@ -2459,7 +2459,7 @@ CUI.AtOptionsLogin(function()
         -- bar window, so it stays usable whenever either display is on).
         if not CUI._prebuilding then
             local region = shSizeRow._leftRegion
-            local shZoomOff = function() return iconOff() and barOff() end
+            local shZoomOff = function() return iconOff() and barsOff() end
             CUI.BuildInlineCog(region, {
                 title = "Icon Zoom",
                 rows = {
@@ -2579,7 +2579,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Visibility Options",
-            disabled = barOff,
+            disabled = barsOff,
             disabledTooltip = "Bar History",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
@@ -2615,7 +2615,7 @@ CUI.AtOptionsLogin(function()
             min = 0,
             max = 1,
             step = 0.01,
-            disabled = barOff,
+            disabled = barsOff,
             disabledTooltip = "Bar History",
             getValue = function() return SpellHistoryDB().bgAlpha or 0.25 end,
             setValue = function(val)
@@ -2625,7 +2625,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Hide Top Bar",
-            disabled = barOff,
+            disabled = barsOff,
             disabledTooltip = "Bar History",
             getValue = function() return SpellHistoryDB().hideTopBar end,
             setValue = function(val)
@@ -2667,7 +2667,7 @@ CUI.AtOptionsLogin(function()
             )
             block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             CUI.RegisterWidgetRefresh(function()
-                local off = barOff()
+                local off = barsOff()
                 colorSwatch:SetAlpha(off and 0.3 or 1)
                 if off then
                     block:Show()
@@ -2676,7 +2676,7 @@ CUI.AtOptionsLogin(function()
                 end
                 swatchRefresh()
             end)
-            local initOff = barOff()
+            local initOff = barsOff()
             colorSwatch:SetAlpha(initOff and 0.3 or 1)
             if initOff then
                 block:Show()
@@ -2692,7 +2692,7 @@ CUI.AtOptionsLogin(function()
             min = 12,
             max = 32,
             step = 1,
-            disabled = barOff,
+            disabled = barsOff,
             disabledTooltip = "Bar History",
             getValue = function() return SpellHistoryDB().shBarHeight or 18 end,
             setValue = function(val)
@@ -2706,7 +2706,7 @@ CUI.AtOptionsLogin(function()
             min = 1,
             max = 10,
             step = 1,
-            disabled = barOff,
+            disabled = barsOff,
             disabledTooltip = "Bar History",
             getValue = function() return SpellHistoryDB().maxBars or 5 end,
             setValue = function(val)
@@ -2724,7 +2724,7 @@ CUI.AtOptionsLogin(function()
             DMBlizzGate({
                 type = "dropdown",
                 text = "Bar Texture",
-                disabled = barOff,
+                disabled = barsOff,
                 disabledTooltip = "Bar History",
                 values = matchTexValues,
                 order = matchTexOrder,
@@ -2740,7 +2740,7 @@ CUI.AtOptionsLogin(function()
                 min = 8,
                 max = 16,
                 step = 1,
-                disabled = barOff,
+                disabled = barsOff,
                 disabledTooltip = "Bar History",
                 getValue = function() return SpellHistoryDB().textSize or 11 end,
                 setValue = function(val)
@@ -2755,7 +2755,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Bar Color",
-            disabled = barOff,
+            disabled = barsOff,
             disabledTooltip = "Bar History",
             swatches = {
                 {
@@ -2829,7 +2829,7 @@ CUI.AtOptionsLogin(function()
             min = 0.1,
             max = 1,
             step = 0.01,
-            disabled = barOff,
+            disabled = barsOff,
             disabledTooltip = "Bar History",
             getValue = function() return SpellHistoryDB().barOpacity or 1 end,
             setValue = function(val)
@@ -2910,7 +2910,7 @@ CUI.AtOptionsLogin(function()
             local function refreshTextSwatches()
                 updateCustom()
                 updateAccent()
-                local off = barOff()
+                local off = barsOff()
                 local accentOn = SpellHistoryDB().textColorUseAccent
                 customColorSwatch:SetAlpha(off and 0.3 or (accentOn and 0.3 or 1))
                 accentColorSwatch:SetAlpha(off and 0.3 or (accentOn and 1 or 0.3))
