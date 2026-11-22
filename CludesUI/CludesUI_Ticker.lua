@@ -63,11 +63,11 @@ CUI.Tick = Tick
 -- here: everything still works, but the work is billed to the parent.
 local function NewDriver(frame)
     if not frame then frame = CreateFrame("Frame") end
-    local reg = {} -- dense array of keys
-    local regFn = {} -- parallel array of tick functions
-    local index = {} -- key -> position in reg
+    local keys = {} -- dense array of keys
+    local ticks = {} -- parallel array of tick functions
+    local slotOf = {} -- key -> position in reg
     local count = 0
-    local drv = {}
+    local driver = {}
 
     frame:Hide()
     frame:SetScript("OnUpdate", function(self, elapsed)
@@ -77,52 +77,52 @@ local function NewDriver(frame)
         -- rather than advancing past the entry that moved into it.
         local i = 1
         while i <= count do
-            local key = reg[i]
-            local fn = regFn[i]
+            local key = keys[i]
+            local fn = ticks[i]
             if fn then fn(elapsed) end
-            if reg[i] == key then i = i + 1 end
+            if keys[i] == key then i = i + 1 end
         end
         if count == 0 then self:Hide() end
     end)
 
     -- Register (or replace) the tick function for a key. Arms the driver on
     -- the 0 -> 1 transition.
-    function drv.Add(key, fn)
+    function driver.Add(key, fn)
         if not key or type(fn) ~= "function" then return end
-        local i = index[key]
+        local i = slotOf[key]
         if i then
-            regFn[i] = fn
+            ticks[i] = fn
             return
         end
         count = count + 1
-        reg[count] = key
-        regFn[count] = fn
-        index[key] = count
+        keys[count] = key
+        ticks[count] = fn
+        slotOf[key] = count
         if count == 1 then frame:Show() end
     end
 
     -- Unregister a key. Swap-removes so churn stays O(1). Hides the driver
     -- once the last subscriber leaves, which is what makes idle free.
-    function drv.Remove(key)
-        local i = index[key]
+    function driver.Remove(key)
+        local i = slotOf[key]
         if not i then return end
-        local lastKey = reg[count]
-        reg[i] = lastKey
-        regFn[i] = regFn[count]
-        index[lastKey] = i
-        reg[count] = nil
-        regFn[count] = nil
+        local lastKey = keys[count]
+        keys[i] = lastKey
+        ticks[i] = ticks[count]
+        slotOf[lastKey] = i
+        keys[count] = nil
+        ticks[count] = nil
         count = count - 1
-        index[key] = nil
+        slotOf[key] = nil
         if count == 0 then frame:Hide() end
     end
 
-    function drv.Has(key) return index[key] ~= nil end
+    function driver.Has(key) return slotOf[key] ~= nil end
 
     -- Number of live subscribers. Zero means no per-frame code is running.
-    function drv.Count() return count end
+    function driver.Count() return count end
 
-    return drv
+    return driver
 end
 
 Tick.NewDriver = NewDriver
@@ -172,13 +172,13 @@ local function QueueErrorHandler(err) return geterrorhandler()(err) end
 
 function CUI.NewCombatQueue(frame)
     if not frame then frame = CreateFrame("Frame") end
-    local fns, index, count = {}, {}, 0
+    local pending, slotOf, count = {}, {}, 0
     local q = {}
 
     frame:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_REGEN_ENABLED")
-        local runFns, n = fns, count
-        fns, index, count = {}, {}, 0
+        local runFns, n = pending, count
+        pending, slotOf, count = {}, {}, 0
         for i = 1, n do
             xpcall(runFns[i], QueueErrorHandler)
         end
@@ -186,18 +186,18 @@ function CUI.NewCombatQueue(frame)
 
     function q.Defer(key, fn)
         if not key or type(fn) ~= "function" then return end
-        local i = index[key]
+        local i = slotOf[key]
         if i then
-            fns[i] = fn
+            pending[i] = fn
             return
         end
         count = count + 1
-        fns[count] = fn
-        index[key] = count
+        pending[count] = fn
+        slotOf[key] = count
         if count == 1 then frame:RegisterEvent("PLAYER_REGEN_ENABLED") end
     end
 
-    function q.Has(key) return index[key] ~= nil end
+    function q.Has(key) return slotOf[key] ~= nil end
 
     return q
 end
