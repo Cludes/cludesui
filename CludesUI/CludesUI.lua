@@ -37,6 +37,7 @@ end
 local THEME_PRESETS = {
     ["CludesUI"] = { r = 76 / 255, g = 201 / 255, b = 240 / 255 }, -- #4CC9F0
     ["CludesUI Original"] = { r = 76 / 255, g = 201 / 255, b = 240 / 255 }, -- #4CC9F0 (not listed; kept for saved settings)
+    ["CludesUI Clean"] = { r = 76 / 255, g = 201 / 255, b = 240 / 255 }, -- #4CC9F0, flat frame art
     ["CludesUI Forever"] = { r = 220 / 255, g = 167 / 255, b = 127 / 255 }, -- #DCA77F soft bronze
     ["Horde"] = { r = 255 / 255, g = 90 / 255, b = 31 / 255 }, -- #FF5A1F
     ["Alliance"] = { r = 63 / 255, g = 167 / 255, b = 255 / 255 }, -- #3FA7FF
@@ -56,6 +57,7 @@ local THEME_PRESETS = {
 local THEME_ORDER = {
     "CludesUI",
     "CludesUI Forever",
+    "CludesUI Clean",
     "Horde",
     "Alliance",
     "Faction (Auto)",
@@ -80,6 +82,8 @@ local THEME_BG_FILES = {
     ["CludesUI"] = "backgrounds\\cui-bg-new.png",
     ["CludesUI Original"] = "backgrounds\\cui-bg-new.png",
     ["CludesUI Forever"] = "backgrounds\\cui-bg-forever-compressed.png",
+    -- Flat frame: square corners, 1px rules, no glow line or ornaments.
+    ["CludesUI Clean"] = "backgrounds\\cui-bg-clean.png",
     ["Horde"] = "backgrounds\\cui-bg-new.png",
     ["Alliance"] = "backgrounds\\cui-bg-new.png",
     ["Midnight"] = "backgrounds\\cui-bg-new.png",
@@ -137,6 +141,28 @@ CludesUI.THEME_CLOSE_BOX = {
         rr = 0.324,
         rg = 0.345,
         rb = 0.363,
+    },
+    ["backgrounds\\cui-bg-clean.png"] = {
+        x = 1345,
+        y = 115,
+        w = 44,
+        h = 43,
+        gx = 1367,
+        gy = 136,
+        bx = 1345,
+        by = 115,
+        bw = 44,
+        bh = 43,
+        bd = 1,
+        r = 0.784,
+        g = 0.8,
+        b = 0.816,
+        sh = 0.5,
+        ex = 118,
+        ey = 110,
+        rr = 0.29,
+        rg = 0.314,
+        rb = 0.333,
     },
     ["backgrounds\\cui-bg-forever-compressed.png"] = {
         x = 1346,
@@ -5512,10 +5538,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 CUI.SpellIDOn() and KeyMatchesModifier(entryKey, saved.spellIDModifier or "none")
             )
                 or (
-                    saved.showItemMaxStacks and KeyMatchesModifier(
-                        entryKey,
-                        saved.itemStackModifier or "none"
-                    )
+                    saved.showItemMaxStacks
+                    and KeyMatchesModifier(entryKey, saved.itemStackModifier or "none")
                 )
             if not relevant then return end
             if GameTooltip and GameTooltip:IsShown() and GameTooltip.RefreshData then

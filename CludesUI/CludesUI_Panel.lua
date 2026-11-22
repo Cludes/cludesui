@@ -306,7 +306,12 @@ local function BuildFrame()
     -- returns nil for those, else the vertex colour of the desaturated art.
     function titleBoxes.TintColor(skinName, red, green, blue)
         -- CludesUI Forever has its own frame art (bronze, its own logo), also as drawn.
-        if skinName == "CludesUI" or skinName == "CludesUI Original" or skinName == "CludesUI Forever" then
+        if
+            skinName == "CludesUI"
+            or skinName == "CludesUI Original"
+            or skinName == "CludesUI Forever"
+            or skinName == "CludesUI Clean"
+        then
             return nil
         end
         local minBright = 1.10
@@ -2274,7 +2279,11 @@ local function BuildSidebar()
         -- anchors change, so the thumb is re-placed on the next frame.
         local function Layout()
             local skinName = CUI.GetActiveTheme()
-            horizontal = (skinName == "CludesUI" or skinName == "CludesUI Forever")
+            horizontal = (
+                skinName == "CludesUI"
+                or skinName == "CludesUI Forever"
+                or skinName == "CludesUI Clean"
+            )
             opacityPanel:ClearAllPoints()
             rail:ClearAllPoints()
             trackFrame:ClearAllPoints()
@@ -3987,9 +3996,8 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
                     text
                     and text ~= ""
                     and (
-                        text:find(textValue, 1, true) or (
-                            locText ~= textValue and text:find(locText, 1, true)
-                        )
+                        text:find(textValue, 1, true)
+                        or (locText ~= textValue and text:find(locText, 1, true))
                     )
                 then
                     return regionObj
