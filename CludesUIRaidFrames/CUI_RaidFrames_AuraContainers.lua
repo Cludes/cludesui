@@ -1154,7 +1154,7 @@ end
 -- button never reaches ComputeClassFlags, so styles built at login can predate a
 -- settings change; PrimeClassFP compares against these and rebuilds what differs.
 local builtFP = {}
-local function StoreDispelStyle(keyName, s, fp)
+local function SaveDispelStyle(keyName, s, fp)
     AK.styles[keyName] = BuildDispelStyle(
         s,
         keyName ~= "rf:dispel:extra" and mod.RF_CompactOn(s, keyName == "rf:dispel:party")
@@ -1201,7 +1201,7 @@ local function PrimeClassFP(lookKey, s)
     end
     local dispelStyleKey = lookKey:gsub("debuff", "dispel")
     if AK and AK.styles[dispelStyleKey] and builtFP[dispelStyleKey] ~= dfp then
-        StoreDispelStyle(dispelStyleKey, s, dfp)
+        SaveDispelStyle(dispelStyleKey, s, dfp)
         AK.RestyleSoon(dispelStyleKey)
     end
 end
@@ -1331,7 +1331,7 @@ end
 -- value for the style, the slot SetSize and the chain flow math.
 function mod.RFC_BmSize(indicator, iconScale) return mod.RFC_SnapSize((indicator.size or 18) * iconScale) end
 
-local function BmIndicators(d)
+local function BuffManagerIndicators(d)
     -- Buff Manager v2 (spell -> filter -> indicator): the adapter returns legacy-
     -- shaped indicators with resolved spell unions. d: the button asking; its
     -- frame kind applies each indicator's Show In (party header buttons are party,
@@ -3076,7 +3076,7 @@ end
 -- them drawing nothing until the next reload (slots cannot be removed).
 local function DispelSlotSpecs(btnFrame, healthBar, d, s)
     local dispelStyleKey = StyleKeyOf(d):gsub("debuff", "dispel")
-    if not AK.styles[dispelStyleKey] then StoreDispelStyle(dispelStyleKey, s) end
+    if not AK.styles[dispelStyleKey] then SaveDispelStyle(dispelStyleKey, s) end
     local specs = {}
     for i = 1, #DISPEL_SLOTS do
         local defaults = DISPEL_SLOTS[i]
@@ -3104,7 +3104,7 @@ local function DispelSlotSpecs(btnFrame, healthBar, d, s)
 end
 
 local function CreateBmContainer(btnFrame, healthBar, d, unitToken)
-    local inds, specKey, mode = BmIndicators(d)
+    local inds, specKey, mode = BuffManagerIndicators(d)
     -- Party Frames kit: every buff icon joins one run right of the frame.
     if d.kit and inds and mod.RF_KitBmView then inds = mod.RF_KitBmView(inds) end
     local sig = BmSignature(inds, specKey, mode)
@@ -3319,7 +3319,7 @@ end
 -- strings 40x in raids). The cls table is cached by the caller for one RFC_ReloadAll pass.
 local function BmClassPass(d)
     local classFile = {}
-    classFile.inds, classFile.specKey, classFile.mode = BmIndicators(d)
+    classFile.inds, classFile.specKey, classFile.mode = BuffManagerIndicators(d)
     -- (Same frame-kind filter and kit view as CreateBmContainer, so the
     -- signatures agree.)
     if d.kit and classFile.inds and mod.RF_KitBmView then
@@ -3497,7 +3497,7 @@ local function CreateButtonShells(btnFrame, healthBar, d)
     end
     if not d.rfcBmShellPool then
         d.rfcBmShellPool = {}
-        local inds = BmIndicators()
+        local inds = BuffManagerIndicators()
         if inds then
             for i = 1, #inds do
                 local indicator = inds[i]
@@ -3692,7 +3692,7 @@ function mod.RFC_SetupButton(btnFrame, healthBar, d)
         local lookKey = StyleKeyOf(d)
         if not AK.styles[lookKey] then StoreDebuffStyles(lookKey, s) end
         local dispelStyleKey = lookKey:gsub("debuff", "dispel")
-        if not AK.styles[dispelStyleKey] then StoreDispelStyle(dispelStyleKey, s) end
+        if not AK.styles[dispelStyleKey] then SaveDispelStyle(dispelStyleKey, s) end
     end
 
     d.rfcHealthRef = healthBar
@@ -3787,7 +3787,7 @@ end
 -- gate engages or ends (d.rfcDispelGated tracks it); each write marks the container
 -- for one rebuild on its next pass. The engine copies the candidate tables.
 local NO_DISPEL_TYPES = { includeDispelTypes = {} }
-local function GateDispelSlots(d, hide)
+local function GateDispelFilters(d, hide)
     local c = d.rfcDispel or (d.rfcDispelInDebuff and d.rfcDebuffShell)
     if not (c and c.SetAuraSlotCandidateFilters) or (d.rfcDispelGated or false) == hide then return end
     d.rfcDispelGated = hide or nil
@@ -3818,7 +3818,7 @@ local function ApplyAssistGate(btnFrame, d, unitToken)
     -- login hot path -- the normal build owns first content).
     local wasDenied = d.rfcAssist == false
     d.rfcAssist = assist
-    GateDispelSlots(d, not assist)
+    GateDispelFilters(d, not assist)
     if d.rfcBm then d.rfcBm:SetShown(assist) end
     if d.rfcBmChain then
         for _, classColor in pairs(d.rfcBmChain) do
@@ -3993,7 +3993,7 @@ local function ComputeClassFlags(lookKey, s)
     if state.dispelStyle ~= val then
         state.dispelStyle = val
         local dispelStyleKey = lookKey:gsub("debuff", "dispel")
-        StoreDispelStyle(dispelStyleKey, s, val)
+        SaveDispelStyle(dispelStyleKey, s, val)
         AK.RestyleSoon(dispelStyleKey)
     end
     local parts = DispelSlotFilters(s)
@@ -4092,7 +4092,7 @@ function mod.RFC_ReloadAll()
                     d.rfcDispelInDebuff = true
                     d.rfcDispel = boxHolder
                     -- Joining while the assist gate hides: they start hidden too.
-                    if d.rfcAssist == false then GateDispelSlots(d, true) end
+                    if d.rfcAssist == false then GateDispelFilters(d, true) end
                 elseif d.rfcDispel and flags.dispelFilter then
                     for jdx = 1, #DISPEL_SLOTS do
                         d.rfcDispel:SetAuraSlotFilterString(DISPEL_SLOTS[jdx].key, flags.dispelFilter[jdx])

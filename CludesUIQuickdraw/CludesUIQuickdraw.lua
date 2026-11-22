@@ -471,7 +471,7 @@ mod.Profile = P
 -- ALREADY LIVE needs asking: the login pass runs before the defaults are merged
 -- and can simply test the destination for emptiness, while a live destination
 -- always holds the whole defaults table and would never read as empty.
-local function HasPalettes(blob)
+local function BlobHasPalettes(blob)
     local palettes = type(blob) == "table" and blob.palettes
     if type(palettes) ~= "table" then return false end
     for _, palette in pairs(palettes) do
@@ -502,7 +502,7 @@ local function MigrateLegacyProfile(prof, live)
         local legacy = addons[key]
         if type(legacy) == "table" then
             if live then
-                if HasPalettes(legacy) and not HasPalettes(live) then
+                if BlobHasPalettes(legacy) and not BlobHasPalettes(live) then
                     wipe(live)
                     for key, val in pairs(legacy) do
                         live[key] = val

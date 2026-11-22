@@ -157,7 +157,7 @@ local function ReadWatched()
     end
 end
 
-local function Snapshot()
+local function SnapshotQuestLog()
     wipe(logList)
     wipe(logInfo)
     wipe(logHeader)
@@ -452,7 +452,7 @@ end
 -- For our tracker, which reads only: one snapshot per pass, then area,
 -- filters and sorting against it. No watch edits.
 function TrackerNS.QuestLogSnapshot()
-    Snapshot()
+    SnapshotQuestLog()
     return logList, logHeader
 end
 TrackerNS.QuestInArea = InArea
@@ -514,7 +514,7 @@ local function WatchPass()
     watchList:UnregisterEvent("ENCOUNTER_END")
     -- The log is not loaded yet (a loading screen): nothing to go on.
     if C_QuestLog.GetNumQuestLogEntries() == 0 then return end
-    Snapshot()
+    SnapshotQuestLog()
     ApplyFilter()
     ApplyAutoTrack()
     -- The tools were turned off: back to quest log order once, after the

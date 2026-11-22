@@ -113,7 +113,7 @@ local function ByRank(a, b)
 end
 
 -- Stable sort of order by listRank, lowest first.
-local function SortByRank()
+local function SortByListRank()
     wipe(listPos)
     for index, questId in ipairs(sequence) do
         listPos[questId] = index
@@ -166,7 +166,7 @@ local function BuildList()
         for _, questId in ipairs(sequence) do
             listRank[questId] = pinned[questId] and 0 or 1
         end
-        SortByRank()
+        SortByListRank()
     end
     if not TrackerCfg("customGroupByZone") then return end
     -- Zones in order of their first quest.
@@ -180,7 +180,7 @@ local function BuildList()
         end
         listRank[questId] = zoneRank[z]
     end
-    SortByRank()
+    SortByListRank()
 end
 
 -------------------------------------------------------------------------------
@@ -827,7 +827,7 @@ local itemList, itemWant, itemN = {}, {}, 0 -- itemWant: pooled, first itemN in 
 local cdRegistered = false
 
 -- Tooltip side facing the screen centre, away from the edge.
-local function TooltipSide()
+local function TooltipAnchorSide()
     local cx = widget:GetCenter()
     local onLeft = cx
         and cx * widget:GetEffectiveScale() < UIParent:GetWidth() * UIParent:GetEffectiveScale() / 2
@@ -863,7 +863,7 @@ local function ItemButton(index)
     widget:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
     widget:SetScript("OnEnter", function(self)
         SyncHover()
-        GameTooltip:SetOwner(self, TooltipSide())
+        GameTooltip:SetOwner(self, TooltipAnchorSide())
         local logIndex = C_QuestLog.GetLogIndexForQuestID(self.questID)
         if logIndex then GameTooltip:SetQuestLogSpecialItem(logIndex) end
         GameTooltip:Show()
@@ -1417,7 +1417,7 @@ function OnLineEnter(self)
     end
     if self.kind ~= "quest" then return end
     ShowOverlay(self)
-    GameTooltip:SetOwner(self, TooltipSide())
+    GameTooltip:SetOwner(self, TooltipAnchorSide())
     if IsInGroup() then
         GameTooltip:SetQuestPartyProgress(self.id)
     else

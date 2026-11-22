@@ -1568,7 +1568,7 @@ end
 -- table on ObjectiveTrackerFrame; fall back to named globals so late-loaded
 -- sub-trackers are still caught.
 -------------------------------------------------------------------------------
-local function EachTracker(func)
+local function ForEachTracker(func)
     local seenSet = {}
 
     local objectiveTracker = _G.ObjectiveTrackerFrame
@@ -1596,7 +1596,7 @@ end
 -- that Blizzard assigns when the player clicks a quest on the map.
 TrackerNS._SuppressAllPOIs = function()
     local mouseOff = TrackerNS._trackerMouseOff
-    EachTracker(function(trackerFrame)
+    ForEachTracker(function(trackerFrame)
         -- Shared-widget-pool trackers have no quest POI buttons and touching
         -- their blocks taints the tooltip widget pool (see SharesWidgetPool).
         if SharesWidgetPool(trackerFrame) then return end
@@ -1666,7 +1666,7 @@ TrackerNS.ApplyTrackerMouse = function(enabled)
     end
     if TrackerNS._trackerMouseOff then return end
     TrackerNS._trackerMouseOff = true
-    EachTracker(TrackerMouseOff)
+    ForEachTracker(TrackerMouseOff)
     ApplyScenarioMouse(_G.ScenarioObjectiveTracker)
     local objectiveTracker = _G.ObjectiveTrackerFrame
     local mainTracker = objectiveTracker and (objectiveTracker.HeaderMenu or objectiveTracker.Header)
@@ -1700,7 +1700,7 @@ function TrackerNS.MuteBlizzardTracker()
             if questBlock then ApplyBlockMouse(questBlock) end
         end)
     end
-    EachTracker(hook)
+    ForEachTracker(hook)
     if objectiveTracker.AddModule then
         hooksecurefunc(objectiveTracker, "AddModule", function(_, module)
             if not module then return end
@@ -1788,7 +1788,7 @@ function TrackerNS.InitSkin()
         end
     end
 
-    EachTracker(HookTracker)
+    ForEachTracker(HookTracker)
 
     -- otf.modules is still empty here (Blizzard registers its container after
     -- PLAYER_ENTERING_WORLD) and addons add their modules at any time, so hook
@@ -1852,7 +1852,7 @@ function TrackerNS.InitSkin()
 
     TrackerNS.RestyleAll = function()
         -- Clear skin stamps so the full strip+restyle runs again
-        EachTracker(function(tbl)
+        ForEachTracker(function(tbl)
             if tbl.usedBlocks then
                 for _, templateMap in pairs(tbl.usedBlocks) do
                     if type(templateMap) == "table" then

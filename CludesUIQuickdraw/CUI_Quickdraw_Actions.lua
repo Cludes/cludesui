@@ -50,7 +50,7 @@ end
 
 -- The spell a spell entry casts: exactly its stored rank when picked from a
 -- lower one (slot.rankPinned, Forever only), the highest known rank otherwise.
-local function SlotRank(slot)
+local function SlotSpellRank(slot)
     if slot.rankPinned and CUI.IS_FOREVER and type(slot.id) == "number" then return slot.id end
     return TopRank(slot.id)
 end
@@ -124,12 +124,12 @@ do
         local kit = class and REZ_BY_CLASS[class]
         if not kit then return nil end
         local bank = Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
-        local function Known(ident)
+        local function KnownRank(ident)
             if not ident then return nil end
             -- A rank list (Forever) answers with the first rank in the book.
             if type(ident) == "table" then
                 for index = 1, #ident do
-                    local hit = Known(ident[index])
+                    local hit = KnownRank(ident[index])
                     if hit then return hit end
                 end
                 return nil
@@ -143,7 +143,7 @@ do
             end
             return ident
         end
-        return Known(kit.battle), Known(kit.single), Known(kit.group)
+        return KnownRank(kit.battle), KnownRank(kit.single), KnownRank(kit.group)
     end
 
     -- A corpse worth casting the single-target rez at. UnitIsDeadOrGhost rather
@@ -330,7 +330,7 @@ do
     -- resurrection this class has none of. Everything else (items, toys,
     -- mounts, pets, markers, nested menus) is account-wide or self-resolving
     -- and stays.
-    local function SlotUsable(slot)
+    local function SlotIsUsable(slot)
         local key = slot and slot.kind
         if key == "spec" or key == "dynamicspec" then
             return SpecIndexFor(slot) ~= nil
@@ -369,7 +369,7 @@ do
         local cp = Inner.PA(childFrame)
         local all = cp and cp.hideUnusable == false
         for _, slot in ipairs(palette.slots) do
-            if slot.kind ~= "palette" and (all or SlotUsable(slot)) then return true end
+            if slot.kind ~= "palette" and (all or SlotIsUsable(slot)) then return true end
         end
         return false
     end
@@ -395,7 +395,7 @@ do
                 local childFrame = ChildIndex(slot)
                 keep = not childFrame or (mod.PaletteActive(childFrame) and NestOffersAny(childFrame))
             else
-                keep = all or SlotUsable(slot)
+                keep = all or SlotIsUsable(slot)
             end
             if not keep then
                 if not result then
@@ -435,7 +435,7 @@ local function ResolveAction(slot, profile)
 
     if key == "spell" then
         if type(slot.id) ~= "number" then return nil end
-        return "spell", "spell", SlotRank(slot)
+        return "spell", "spell", SlotSpellRank(slot)
     elseif key == "dynamicprofession" then
         -- Resolved to the CURRENT position's spell every time the
         -- attributes are written, then fired the same way any other spell
@@ -711,7 +711,7 @@ local function SlotDisplay(slot)
     local key = slot.kind
 
     if key == "spell" then
-        local ident = SlotRank(slot)
+        local ident = SlotSpellRank(slot)
         local details = C_Spell.GetSpellInfo(ident)
         if details then
             local name = details.name
@@ -925,7 +925,7 @@ mod.SlotDisplay = SlotDisplay
 local function SlotSpellID(slot)
     if not slot then return nil end
     if slot.kind == "spell" then
-        return type(slot.id) == "number" and SlotRank(slot) or nil
+        return type(slot.id) == "number" and SlotSpellRank(slot) or nil
     elseif slot.kind == "dynamicrez" then
         return Rez.SpellNow()
     elseif slot.kind == "dynamicprofession" then
