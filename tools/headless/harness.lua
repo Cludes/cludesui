@@ -599,6 +599,22 @@ local FUNCTION_VERBS = { "Get", "Set", "Is", "Has", "Can", "Create", "Update", "
 local enumCounter = 0
 local EnumNS = { __index = function(t, k) enumCounter = enumCounter + 1; rawset(t, k, enumCounter); return enumCounter end }
 G.Enum = setmetatable({}, { __index = function(t, k) local ns = setmetatable({}, EnumNS); rawset(t, k, ns); return ns end })
+-- The tooltip data processor keeps what the addons register at load (a scenario runs a
+-- handler by hand: TooltipDataProcessor.postCalls = { { kind, fn }, ... }).
+G.TooltipDataProcessor = { postCalls = {} }
+function G.TooltipDataProcessor.AddTooltipPostCall(kind, fn)
+    local list = G.TooltipDataProcessor.postCalls
+    list[#list + 1] = { kind, fn }
+end
+-- The client's English level formats (the GlobalStrings table): the tooltip skin builds
+-- its level-line patterns from them, so the generic "NAME" global string would never match.
+G.TOOLTIP_UNIT_LEVEL = "Level %s"
+G.TOOLTIP_UNIT_LEVEL_RACE = "Level %s %s"
+G.TOOLTIP_UNIT_LEVEL_TYPE = "Level %s (%s)"
+G.UNIT_TYPE_LEVEL_TEMPLATE = "Level %d %s"
+G.UNIT_TYPE_PLUS_LEVEL_TEMPLATE = "Level %d Elite %s"
+G.UNIT_LETHAL_LEVEL_TEMPLATE = "Level ??"
+G.UNIT_TYPE_LETHAL_LEVEL_TEMPLATE = "Level ?? %s"
 G.Constants = setmetatable({ CharacterNameSeparatorConsts = { CHARACTERNAME_SURNAME_SEPARATOR = " " } }, { __index = function(t, k) local ns = setmetatable({}, EnumNS); rawset(t, k, ns); return ns end })
 
 local function ApiFunction(name)

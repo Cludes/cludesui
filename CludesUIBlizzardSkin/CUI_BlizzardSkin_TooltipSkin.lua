@@ -762,10 +762,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD; -----------------------------------
             _LEVEL_PATTERNS[#_LEVEL_PATTERNS + 1] = pat
         end
     end
+    -- The game draws a hidden ("??") or hard level in a difficulty colour, so the line can
+    -- start with a colour escape ("|cffff2020Level ??|r Undead"); the patterns are anchored
+    -- at the start, so the escapes come off before matching.
     local function _isLevelText(textValue)
         if not textValue:find("[%d%?]") then return false end
+        local plain = textValue:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
         for _, pat in ipairs(_LEVEL_PATTERNS) do
-            if textValue:find(pat) then return true end
+            if plain:find(pat) then return true end
         end
         return false
     end
