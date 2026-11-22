@@ -908,7 +908,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         },
                     },
                 })
-                local function UpdateCogVis()
+                local function ShowBorderCog()
                     local rowCfg = rowConf()
                     local texture = rowCfg and rowCfg.borderTexture or "solid"
                     if texture == "solid" or mod.ERB_ClassicBorderRow() then
@@ -917,8 +917,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         cogBtn:Show()
                     end
                 end
-                CludesUI.RegisterWidgetRefresh(UpdateCogVis)
-                UpdateCogVis()
+                CludesUI.RegisterWidgetRefresh(ShowBorderCog)
+                ShowBorderCog()
             end
             -- Cross-bar sync icons: Simple page only
             if
@@ -1099,7 +1099,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
 
                 -- Position only: the texture-style dropdown adds/removes its own
                 -- inline elements, so the cog re-seats beside whichever is last.
-                local function UpdateCogPos()
+                local function PlaceBorderCog()
                     local rowCfg = rowConf()
                     local texture = rowCfg and rowCfg.borderTexture or "solid"
                     if texture == "solid" then
@@ -1108,8 +1108,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         Pix.Point(cogBtn, "RIGHT", lastInline, "LEFT", -8, 0)
                     end
                 end
-                CludesUI.RegisterWidgetRefresh(UpdateCogPos)
-                UpdateCogPos()
+                CludesUI.RegisterWidgetRefresh(PlaceBorderCog)
+                PlaceBorderCog()
             end
         end
 
@@ -1185,7 +1185,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     end
                 )
                 gapBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                local function UpdateGapSwatchState()
+                local function FadeGapSwatch()
                     local rowCfg = rowConf()
                     if rowCfg and rowCfg.gapColorEnabled then
                         gapSwatch:SetAlpha(1)
@@ -1195,8 +1195,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         gapBlock:Show()
                     end
                 end
-                CludesUI.RegisterWidgetRefresh(UpdateGapSwatchState)
-                UpdateGapSwatchState()
+                CludesUI.RegisterWidgetRefresh(FadeGapSwatch)
+                FadeGapSwatch()
                 CludesUI.BuildInlineToggle({
                     region = region,
                     getValue = ConfGetter("gapColorEnabled"),
@@ -2117,7 +2117,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         end
                     )
                     swatchBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                    local function UpdateRechargeSwatch()
+                    local function FadeRechargeSwatch()
                         local rowCfg = rowConf()
                         local off = not (rowCfg and rowCfg.enabled) or not rowCfg.runesCustomRecharge
                         if off then
@@ -2130,9 +2130,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     end
                     CludesUI.RegisterWidgetRefresh(function()
                         if updateSwatch then updateSwatch() end
-                        UpdateRechargeSwatch()
+                        FadeRechargeSwatch()
                     end)
-                    UpdateRechargeSwatch()
+                    FadeRechargeSwatch()
                 end
             end
             -- Retail only: WoW Forever hunters use mana and have no BM/MM specs.
@@ -2202,15 +2202,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     )
                     colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                     region._lastInline = colorSwatch
-                    local function UpdateEnhSwatchVis()
+                    local function FadeEnhanceSwatch()
                         local rowCfg = rowConf()
                         local off = not (rowCfg and rowCfg.enabled)
                             or not rowCfg.enhanceFiveBar
                             or not _enhSpecOK()
                         colorSwatch:SetAlpha(off and 0.3 or 1)
                     end
-                    CludesUI.RegisterWidgetRefresh(UpdateEnhSwatchVis)
-                    UpdateEnhSwatchVis()
+                    CludesUI.RegisterWidgetRefresh(FadeEnhanceSwatch)
+                    FadeEnhanceSwatch()
                 end
             end
         end

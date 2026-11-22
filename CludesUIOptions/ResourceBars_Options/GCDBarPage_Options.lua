@@ -450,7 +450,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 end
             )
             block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
-            local function UpdateSwatchState()
+            local function FadeGcdBorderSwatch()
                 local profile = DB()
                 local noBorder = not profile or (profile.gcdBar.borderSize or 0) == 0
                 if noBorder then
@@ -463,9 +463,9 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             end
             CUI.RegisterWidgetRefresh(function()
                 updateSwatch()
-                UpdateSwatchState()
+                FadeGcdBorderSwatch()
             end)
-            UpdateSwatchState()
+            FadeGcdBorderSwatch()
         end
         -- Offset cog on Border Style (left region), hidden for "solid"
         if not CUI._prebuilding then

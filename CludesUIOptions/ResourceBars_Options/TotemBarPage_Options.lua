@@ -313,7 +313,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 end
             )
             borderSwatchBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
-            local function UpdateBorderSwatchState()
+            local function FadeTotemBorderSwatch()
                 local sectionCfg = T()
                 local noBorder = not sectionCfg or (sectionCfg.borderSize or 0) == 0
                 if noBorder then
@@ -326,9 +326,9 @@ local function BuildTotemSection(hostFrame, cursorY, S)
             end
             CUI.RegisterWidgetRefresh(function()
                 updateBorderSwatch()
-                UpdateBorderSwatchState()
+                FadeTotemBorderSwatch()
             end)
-            UpdateBorderSwatchState()
+            FadeTotemBorderSwatch()
         end
 
         -- Border Options cog on Border Style (left region): hidden for "solid",

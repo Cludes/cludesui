@@ -1332,7 +1332,7 @@ local function BuildMiniTextAndSize(
                 CUI:RefreshPage()
             end)
             CUI.HoverTip(powerSw, "Power Colored Text")
-            local function UpdSwatches()
+            local function FadePowerPercentSwatches()
                 local isPower = UnitVal("powerPercentTextPowerColor", false)
                 customSw:SetAlpha(isPower and 0.3 or 1)
                 powerSw:SetAlpha(isPower and 1 or 0.3)
@@ -1340,9 +1340,9 @@ local function BuildMiniTextAndSize(
             RegisterWidgetRefresh(function()
                 customSwUp()
                 powerSwUp()
-                UpdSwatches()
+                FadePowerPercentSwatches()
             end)
-            UpdSwatches()
+            FadePowerPercentSwatches()
         end
         -- Size + X/Y offsets cog on Text Position (right)
         if not CUI._prebuilding then
@@ -1458,7 +1458,7 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
             order = { "2d", "class" },
             get = function() return unitSettings.portraitMode == "class" and "class" or "2d" end,
             set = function(value)
-                local function ApplyArt()
+                local function ApplyPortraitArt()
                     unitSettings.portraitMode = value
                     RebuildAndReload()
                     RepaintPreview()
@@ -1469,14 +1469,14 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
                     and unitSettings.portraitMirror
                     and not CUI.BlizzStyle.Get("unitframes")
                     and mod.UF_Ask2DMirroredPortraits(function()
-                        ApplyArt()
+                        ApplyPortraitArt()
                         CUI:RefreshPage()
                     end)
                 then
                     if portraitShow and portraitShow._popupFrame then portraitShow._popupFrame:Hide() end
                     return
                 end
-                ApplyArt()
+                ApplyPortraitArt()
             end,
         }
         rowList[#rowList + 1] = {
@@ -1538,7 +1538,7 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
             requireState = "disabled",
             get = function() return unitSettings.portraitMirror == true end,
             set = function(value)
-                local function ApplyMirror()
+                local function ApplyPortraitMirror()
                     unitSettings.portraitMirror = value or nil
                     mod.UF_RefreshPortraitMirror(unitName)
                     RepaintPreview()
@@ -1549,14 +1549,14 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
                     and unitSettings.portraitMode ~= "3d"
                     and unitSettings.portraitMode ~= "class"
                     and mod.UF_Ask2DMirroredPortraits(function()
-                        ApplyMirror()
+                        ApplyPortraitMirror()
                         CUI:RefreshPage()
                     end)
                 then
                     if portraitShow and portraitShow._popupFrame then portraitShow._popupFrame:Hide() end
                     return
                 end
-                ApplyMirror()
+                ApplyPortraitMirror()
             end,
         }
         rowList[#rowList + 1] = {
@@ -2189,16 +2189,16 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     -- button, centered above the first section). Disabled while Boss Frames are
     -- off: the in-game preview rides on the real (now-disabled) boss frames and renders broken.
     local activateBtnFrame, activateBtnLbl, activateButton
-    local function PreviewLabel()
+    local function BossPreviewLabel()
         return mod._bossPreviewActive and CUI.L("Deactivate Boss Preview")
             or CUI.L("Activate Boss Preview")
     end
     local function BossFramesDisabled() return mod.GetUnitFrameSource("boss") ~= "cui" end
-    activateBtnFrame, height = W:WideButton(hostFrame, PreviewLabel(), posY, function()
+    activateBtnFrame, height = W:WideButton(hostFrame, BossPreviewLabel(), posY, function()
         if BossFramesDisabled() then return end
         if not mod.SetBossPreview then return end
         mod.SetBossPreview(not mod._bossPreviewActive)
-        if activateBtnLbl then activateBtnLbl:SetText(PreviewLabel()) end
+        if activateBtnLbl then activateBtnLbl:SetText(BossPreviewLabel()) end
     end)
     posY = posY - height
     do
@@ -2229,7 +2229,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     end
     local function UpdateActivateBtn()
         local off = BossFramesDisabled()
-        if activateBtnLbl then activateBtnLbl:SetText(PreviewLabel()) end
+        if activateBtnLbl then activateBtnLbl:SetText(BossPreviewLabel()) end
         if activateButton then
             activateButton:SetAlpha(off and 0.4 or 1)
             activateButton:EnableMouse(not off)

@@ -326,7 +326,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             return profile and profile.swingTimer
         end
         local condShow
-        local function OpenTalents()
+        local function OpenTalentPicker()
             local popFrame = condShow and condShow._popupFrame
             if popFrame and popFrame:IsShown() then popFrame:Hide() end
             local g = STCfg()
@@ -358,7 +358,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         end
         local formRows = environ.FormToggleRows(STCfg, ApplySwingTimer, "barDisabledForms")
         if formRows then
-            formRows[#formRows + 1] = { type = "button", label = "Talent Conditions", action = OpenTalents }
+            formRows[#formRows + 1] = { type = "button", label = "Talent Conditions", action = OpenTalentPicker }
             _, condShow = CUI.BuildInlineCog(stShowRow._leftRegion, {
                 disabled = stOff,
                 disabledTooltip = SWING_TIP,
@@ -370,7 +370,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 disabled = stOff,
                 disabledTooltip = SWING_TIP,
                 tip = "Talent Conditions",
-                show = OpenTalents,
+                show = OpenTalentPicker,
             })
         end
     end

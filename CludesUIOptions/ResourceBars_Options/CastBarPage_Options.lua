@@ -184,20 +184,20 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local profile = DB()
             return profile and mod.ERB_CastIconFree(profile.castBar)
         end
-        local function IconOnPortrait()
+        local function CastIconOnPortrait()
             local profile = DB()
             return profile and mod.ERB_CastIconPortrait(profile.castBar) ~= nil
         end
         -- Embed in Player Portrait: nil while a player portrait can take the icon, else why
         -- not ("uf": the Unit Frames player cast bar already shows its icon there).
-        local function PortraitBlock()
+        local function PortraitBlockReason()
             local uf = CUI._ModuleNS["CludesUIUnitFrames"]
             if not (uf and uf.UF_GetPlayerCastPortrait) then return "portrait" end
             local edge, _, why = uf.UF_GetPlayerCastPortrait()
             if edge then return nil end
             return why or "portrait"
         end
-        local function PlayerPortraitOff() return PortraitBlock() ~= nil end
+        local function PlayerPortraitOff() return PortraitBlockReason() ~= nil end
         local function IconSlider(key, labelText, lo, hi, tooltip)
             return {
                 type = "slider",
@@ -206,9 +206,9 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 max = hi,
                 step = 1,
                 tooltip = tooltip,
-                disabled = function() return IconOnPortrait() or CUI.BlizzStyle.Get("castbar") end,
+                disabled = function() return CastIconOnPortrait() or CUI.BlizzStyle.Get("castbar") end,
                 disabledTooltip = function()
-                    if IconOnPortrait() then return "Embed in Player Portrait" end
+                    if CastIconOnPortrait() then return "Embed in Player Portrait" end
                     return CUI.BlizzStyle.Label("castbar")
                 end,
                 requireState = "disabled",
@@ -241,7 +241,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     tooltip = "Show the spell icon over the player portrait while casting.",
                     disabled = PlayerPortraitOff,
                     disabledTooltip = function()
-                        if PortraitBlock() == "uf" then
+                        if PortraitBlockReason() == "uf" then
                             return "This option can't be used while the Unit Frames player cast bar shows its icon on the portrait."
                         end
                         return "This option requires an enabled player portrait in Unit Frames."
@@ -262,7 +262,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Icon on Right",
                     tooltip = "Attach the spell icon to the right of the cast bar instead of the left.",
-                    disabled = IconOnPortrait,
+                    disabled = CastIconOnPortrait,
                     disabledTooltip = "Embed in Player Portrait",
                     requireState = "disabled",
                     get = Getter("iconOnRight"),
@@ -272,9 +272,9 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Show Icon Divider",
                     tooltip = "Draw a 1px divider between the spell icon and the cast bar, matching the border color.",
-                    disabled = function() return IconOnPortrait() or IconFree() end,
+                    disabled = function() return CastIconOnPortrait() or IconFree() end,
                     disabledTooltip = function()
-                        if IconOnPortrait() then
+                        if CastIconOnPortrait() then
                             return CUI.DisabledTooltip("Embed in Player Portrait", "disabled")
                         end
                         return FREE_TIP
@@ -293,13 +293,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local profile = DB()
                         if not profile then return true end
                         local checkBtn = profile.castBar
-                        return IconOnPortrait()
+                        return CastIconOnPortrait()
                             or not checkBtn.showIconDivider
                             or CUI.BlizzStyle.Get("castbar")
                             or not CUI.GetBorderCompanion(checkBtn.borderTexture, "sepV")
                     end,
                     disabledTooltip = function()
-                        if IconOnPortrait() then return "Embed in Player Portrait" end
+                        if CastIconOnPortrait() then return "Embed in Player Portrait" end
                         if CUI.BlizzStyle.Get("castbar") then
                             return CUI.DisabledTooltip(CUI.BlizzStyle.Label("castbar"), "disabled")
                         end
@@ -553,7 +553,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 end
             end)
             borderSwatchBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
-            local function UpdateBorderSwatchState()
+            local function FadeCastBorderSwatch()
                 local profile = DB()
                 local noBorder = not profile
                     or (profile.castBar.borderSize or 0) == 0
@@ -568,9 +568,9 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             end
             CUI.RegisterWidgetRefresh(function()
                 updateBorderSwatch()
-                UpdateBorderSwatchState()
+                FadeCastBorderSwatch()
             end)
-            UpdateBorderSwatchState()
+            FadeCastBorderSwatch()
         end
         if not CUI._prebuilding then
             local region = cbBsRow._leftRegion

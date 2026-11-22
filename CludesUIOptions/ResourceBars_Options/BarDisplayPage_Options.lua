@@ -63,7 +63,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         end
         -- A button the pool dressed again since (another page) is not this eye any more.
         local gen = CludesUI._Pool.Gen(eyeButton)
-        local function RefreshEye()
+        local function RedrawEyeButton()
             if CludesUI._Pool.Gen(eyeButton) ~= gen then return end
             local isBlocked = Blocked()
             local isShown = not isBlocked and not hidden[settingKey]
@@ -71,8 +71,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             eyeTex:SetTexture(isShown and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
             CludesUI.SetGlyphAlpha(eyeButton, isBlocked and 0.15 or 0.4)
         end
-        mod._erbPvEyes[settingKey] = RefreshEye
-        RefreshEye()
+        mod._erbPvEyes[settingKey] = RedrawEyeButton
+        RedrawEyeButton()
         eyeButton:SetScript("OnClick", function()
             if Blocked() then return end
             hidden[settingKey] = not hidden[settingKey] or nil
@@ -91,7 +91,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             )
         end)
         eyeButton:SetScript("OnLeave", function()
-            RefreshEye()
+            RedrawEyeButton()
             CludesUI.HideWidgetTooltip()
         end)
     end
