@@ -461,12 +461,12 @@ local PRIMARY_BY_ALT = {
 -- (Disc seeing Holy indicators) and cross-class collisions.
 local activeSpecKey_BM = nil
 
-local function DetectActiveSpecKey()
+local function TrackActiveSpec()
     -- By spec ID (locale-independent); nil for non-tracked specs clears tracking.
     activeSpecKey_BM = CurrentSpecKey()
 end
 
-DetectActiveSpecKey()
+TrackActiveSpec()
 
 -------------------------------------------------------------------------------
 --  Default indicator factory
@@ -683,7 +683,7 @@ local function RebuildLookup(saved)
         GetSpecIndicators(saved, specInfo.key)
     end
 
-    DetectActiveSpecKey()
+    TrackActiveSpec()
 
     -- Sync nextIndicatorId to highest existing id
     for _, specData in pairs(saved.profile.bmIndicators) do
@@ -3257,7 +3257,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end
                     -- Dynamic items: fresh per menu open. Spells already supplied by
                     -- CHECKED filters are excluded from Presets (redundant as extras); picked extras always show under Selected.
-                    local function ByLabel(a, b) return a.label < b.label end
+                    local function LabelBefore(a, b) return a.label < b.label end
                     -- Custom Spell ID: a typed ID is tracked as that aura alone,
                     -- one already picked from Presets included, and the closed
                     -- dropdown names it at once.
@@ -3299,8 +3299,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                 rest[#rest + 1] = SpellEntry(ident)
                             end
                         end
-                        table.sort(selList, ByLabel)
-                        table.sort(rest, ByLabel)
+                        table.sort(selList, LabelBefore)
+                        table.sort(rest, LabelBefore)
                         local eItems = { idAction }
                         if #selList > 0 then
                             eItems[#eItems + 1] = { isHeader = true, label = "Selected" }
@@ -3798,7 +3798,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
         end
 
         -- Helper: build a DualRow inside leftFrame
-        local function SettingsRow(leftCfg, rightCfg)
+        local function AddDualSettingsRow(leftCfg, rightCfg)
             local row
             row, hgt = W:DualRow(leftFrame, sy, leftCfg, rightCfg)
             sy = sy - hgt
@@ -3807,7 +3807,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
 
         -- Own Only is per-INDICATOR (no per-source dropdown).
         local function BuildOwnOnlyRow()
-            SettingsRow({
+            AddDualSettingsRow({
                 type = "toggle",
                 text = "Own Only",
                 tooltip = "Only show buffs cast by you.",
@@ -3831,7 +3831,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
         -- THRESHOLD TEXT (after DISPLAY, for placed types icon/square/bar): recolors
         -- duration text below the threshold via the engine color curve (secret-safe);
         -- default OFF so existing indicators are unchanged.
-        local function BuildThresholdRow()
+        local function BuildThresholdSection()
             _, hgt = W:SectionHeader(leftFrame, "THRESHOLD TEXT", sy)
             sy = sy - hgt
 
@@ -3839,7 +3839,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
             local thOff = function() return not indicator.thresholdEnabled end
 
             -- The engine color curve is the only threshold display the duration bindings support.
-            local thRow = SettingsRow({
+            local thRow = AddDualSettingsRow({
                 type = "toggle",
                 text = "Enable Threshold Text",
                 getValue = function() return indicator.thresholdEnabled or false end,
@@ -4067,8 +4067,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
             }
             local row1, posRow, perRgn
-            posRow = SettingsRow(posCfg, growCfg)
-            row1 = SettingsRow(ownCfg, perRowCfg or { type = "label", text = "" })
+            posRow = AddDualSettingsRow(posCfg, growCfg)
+            row1 = AddDualSettingsRow(ownCfg, perRowCfg or { type = "label", text = "" })
             if perRowCfg then perRgn = row1._rightRegion end
             if perRgn then
                 CludesUI.BuildInlineCog(perRgn, {
@@ -4168,7 +4168,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
             sy = sy - hgt
 
             local IconHidden = function() return indicatorType == "icon" and indicator.hideIcon == true end
-            local sizeRow = SettingsRow({
+            local sizeRow = AddDualSettingsRow({
                 type = "slider",
                 text = "Size",
                 min = 4,
@@ -4218,7 +4218,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 })
             end
 
-            SettingsRow({
+            AddDualSettingsRow({
                 type = "slider",
                 text = "Opacity",
                 min = 0,
@@ -4254,7 +4254,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 IconHidden
             )
 
-            local durRow = SettingsRow({
+            local durRow = AddDualSettingsRow({
                 type = "toggle",
                 text = "Duration Text",
                 getValue = function() return indicator.showDurationText or false end,
@@ -4396,7 +4396,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
             )
             -- The color swatches take the free right half.
             local mdRow =
-                SettingsRow(GO.DropdownSpec(glowDesc, "Icon Glow"), { type = "label", text = "Glow Color" })
+                AddDualSettingsRow(GO.DropdownSpec(glowDesc, "Icon Glow"), { type = "label", text = "Glow Color" })
             if not CludesUI._prebuilding then
                 local region = mdRow._leftRegion
                 GO.AttachInline(region, glowDesc, mdRow._rightRegion)
@@ -4427,7 +4427,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 }
             local extraRow
             if indicatorType ~= "icon" or CludesUI.IS_FOREVER then
-                extraRow = SettingsRow(extraCfg, CludesUI.BlankRowCfg())
+                extraRow = AddDualSettingsRow(extraCfg, CludesUI.BlankRowCfg())
             end
 
             -- Per-ability color swatches (square only), right-to-left like every inline
@@ -4533,7 +4533,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         or (indicator.indBorderSize or 1) <= 0
                         or not CludesUI.ResolveBorderTexture(tex)
                 end
-                local pandemicRow = SettingsRow({
+                local pandemicRow = AddDualSettingsRow({
                     type = "toggle",
                     text = "Pandemic Border",
                     tooltip = "Shows a colored border on these icons while the buff can be refreshed without losing time.",
@@ -4606,7 +4606,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
             end
 
             -- THRESHOLD section
-            BuildThresholdRow()
+            BuildThresholdSection()
         elseif typeInfo and typeInfo.placed then
             if indicatorType == "bar" then
                 -----------------------------------------------------------
@@ -4615,7 +4615,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
                 sy = sy - hgt
 
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "dropdown",
                     text = "Orientation",
                     values = ORIENT_VALUES,
@@ -4639,7 +4639,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                 })
 
-                local posRow = SettingsRow({
+                local posRow = AddDualSettingsRow({
                     type = "dropdown",
                     text = "Position",
                     values = POSITION_VALUES,
@@ -4713,7 +4713,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
 
                 -- Labels flip with orientation so each slot always names the
                 -- on-screen axis; each slider disables while its Full toggle is on.
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "slider",
                     text = isVert and "Height" or "Width",
                     min = 5,
@@ -4745,7 +4745,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
 
                 -- Labels flip with orientation like the sliders above; RefreshPage()
                 -- so the Width/Height disabled state updates live.
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "toggle",
                     text = isVert and "Full Height Bar" or "Full Width Bar",
                     getValue = function() return indicator.barFullWidth or false end,
@@ -4765,7 +4765,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                 })
 
-                local barBgRow = SettingsRow({
+                local barBgRow = AddDualSettingsRow({
                     type = "slider",
                     text = "Color",
                     min = 0,
@@ -4831,12 +4831,12 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end
 
                 -- THRESHOLD section
-                BuildThresholdRow()
+                BuildThresholdSection()
             elseif indicatorType == "square" then
                 -- Unreachable: square is handled by the icon/square path above.
             else
                 -- Other placed types (future): Position + cog
-                local posRow = SettingsRow({
+                local posRow = AddDualSettingsRow({
                     type = "dropdown",
                     text = "Position",
                     values = POSITION_VALUES,
@@ -4892,7 +4892,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
                 sy = sy - hgt
 
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "dropdown",
                     text = "Show When",
                     values = SHOW_WHEN_VALUES_EFFECT,
@@ -4957,7 +4957,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         end,
                     }
                 else
-                    local function BwStyle()
+                    local function BorderStyleNoSweep()
                         local s = indicator.borderStyle or "solid"
                         if s == "sweepcw" or s == "sweepccw" then s = "solid" end
                         return s
@@ -4967,10 +4967,10 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         trackWidth = 120,
                         getStep = function()
                             local bw = indicator.borderWidth or 2
-                            return (BwStyle() == "solid") and bw or math.min(bw, 4)
+                            return (BorderStyleNoSweep() == "solid") and bw or math.min(bw, 4)
                         end,
                         setStep = function(v) indicator.borderWidth = v end,
-                        getTex = BwStyle,
+                        getTex = BorderStyleNoSweep,
                         getPx = function() return indicator.borderWidthPx end,
                         setPx = function(v) indicator.borderWidthPx = v end,
                         apply = RebuildAndReload,
@@ -4978,7 +4978,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     -- This surface never allowed 0 (the dashed style would inherit it).
                     bwSlot.min = 1
                 end
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "dropdown",
                     text = "Border Style",
                     values = bsVals,
@@ -5014,7 +5014,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 else
                     dashesSlot = { type = "label", text = "" }
                 end
-                local bdrColorRow = SettingsRow({
+                local bdrColorRow = AddDualSettingsRow({
                     type = "slider",
                     text = "Color",
                     min = 0,
@@ -5055,7 +5055,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
                 sy = sy - hgt
 
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "dropdown",
                     text = "Show When",
                     values = SHOW_WHEN_VALUES_EFFECT,
@@ -5083,7 +5083,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 _, hgt = W:SectionHeader(leftFrame, "DISPLAY", sy)
                 sy = sy - hgt
 
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "colorpicker",
                     text = "Color",
                     hasAlpha = false,
@@ -5115,7 +5115,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
                 sy = sy - hgt
 
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "dropdown",
                     text = "Show When",
                     values = SHOW_WHEN_VALUES,
@@ -5142,7 +5142,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 _, hgt = W:SectionHeader(leftFrame, "DISPLAY", sy)
                 sy = sy - hgt
 
-                SettingsRow({
+                AddDualSettingsRow({
                     type = "slider",
                     text = "Alpha",
                     min = 5,

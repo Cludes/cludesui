@@ -809,7 +809,7 @@ end
 -- binding signature. They belong in it: a combination the player later binds to
 -- something else has to be handed straight back, and UPDATE_BINDINGS is the
 -- only notice of that arriving.
-local function ModifierSig(key)
+local function FreeModifierSignature(key)
     if not key then return "" end
     local base, result = BaseKey(key), "|"
     for i = 1, #MOD_COMBOS do
@@ -820,7 +820,7 @@ end
 
 -- `claimed` carries the keys already spoken for across the whole pass, so no
 -- palette's variant can land on top of a key another palette was given.
-local function BindWithModifiers(name, key, claimed)
+local function BindKeyVariants(name, key, claimed)
     if not key then return end
     local base = BaseKey(key)
     -- What the player is already holding to press this key at all. Only
@@ -857,7 +857,7 @@ end
 -- (Assign to Spec); while it does not, the first palette that shares its keys
 -- and loads, if any -- the options page shares a key only between palettes
 -- that never load together. nil: the keys open nothing this spec.
-local function KeyTarget(i, count)
+local function KeyOwnerSlot(i, count)
     if mod.PaletteActive(i) then return i end
     for jdx = 1, count do
         if jdx ~= i and mod.ShareOwner(jdx) == i and mod.PaletteActive(jdx) then return jdx end
@@ -885,9 +885,9 @@ function mod.UpdateBindings()
     for i = 1, count do
         local k1, k2 = GetBindingKey(BINDING_PREFIX .. i)
         sig = sig .. "|" .. (k1 or "") .. "/" .. (k2 or "")
-        sig = sig .. ModifierSig(k1) .. ModifierSig(k2)
+        sig = sig .. FreeModifierSignature(k1) .. FreeModifierSignature(k2)
         -- Which palette the keys open this spec
-        if k1 or k2 then sig = sig .. ">" .. (KeyTarget(i, count) or 0) end
+        if k1 or k2 then sig = sig .. ">" .. (KeyOwnerSlot(i, count) or 0) end
     end
     if sig == bindingSig then return end
 
@@ -931,7 +931,7 @@ function mod.UpdateBindings()
     local claimed, targets = {}, {}
     for i = 1, count do
         local k1, k2 = GetBindingKey(BINDING_PREFIX .. i)
-        local target = (k1 or k2) and KeyTarget(i, count)
+        local target = (k1 or k2) and KeyOwnerSlot(i, count)
         if target then
             targets[i] = target
             built = built or not secureButtons[target]
@@ -951,8 +951,8 @@ function mod.UpdateBindings()
         if target then
             local k1, k2 = GetBindingKey(BINDING_PREFIX .. i)
             local name = secureButtons[target]:GetName()
-            BindWithModifiers(name, k1, claimed)
-            BindWithModifiers(name, k2, claimed)
+            BindKeyVariants(name, k1, claimed)
+            BindKeyVariants(name, k2, claimed)
         end
     end
 
