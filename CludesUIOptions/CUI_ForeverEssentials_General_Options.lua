@@ -3858,5 +3858,68 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
     end
 
+    -- GUIDE WINDOW (CludesUIForeverEssentials_GuideWindow.lua).
+    local GUIDE = CUI._GuideWindow
+    if GUIDE then
+        local function gwOff() return not GUIDE.Get("enabled") end
+        local function GWSet(key, val, refresh)
+            GUIDE.Cfg()[key] = val
+            GUIDE.Apply()
+            if refresh then CUI:RefreshPage() end
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        local gwHeading
+        gwHeading, height = W:SectionHeader(hostFrame, "GUIDE WINDOW", cursorY)
+        cursorY = cursorY - height
+        CUI.BuildSectionUnlockJump(gwHeading, { key = "CUI_GuideWindow", disabled = gwOff, disabledTooltip = "Guide Window" })
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "RestedXP Guide Window",
+            tooltip = "Shows your RestedXP levelling guide in a CludesUI window in place of RestedXP's own: the guide and its progress, the active steps with their objectives, and the next steps. Shift-click a step to skip it or go to it; right-click for RestedXP's menu. Needs RestedXP with its V2 interface turned on.",
+            getValue = function() return GUIDE.Get("enabled") end,
+            setValue = function(val) GWSet("enabled", val and true or false, true) end,
+        }, {
+            type = "dropdown",
+            text = "Skipping Steps",
+            disabled = gwOff,
+            values = { shift = "Shift-click", click = "Click", off = "Off" },
+            order = { "shift", "click", "off" },
+            getValue = function() return GUIDE.Get("skip") end,
+            setValue = function(val) GWSet("skip", val) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "slider",
+            text = "Width",
+            min = 260,
+            max = 640,
+            step = 10,
+            isPercent = false,
+            disabled = gwOff,
+            getValue = function() return GUIDE.Get("width") end,
+            setValue = function(val) GWSet("width", math.floor(val + 0.5)) end,
+        }, {
+            type = "slider",
+            text = "Next Steps Shown",
+            min = 0,
+            max = 12,
+            step = 1,
+            isPercent = false,
+            disabled = gwOff,
+            getValue = function() return GUIDE.Get("steps") end,
+            setValue = function(val) GWSet("steps", math.floor(val + 0.5)) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Lock Window",
+            disabled = gwOff,
+            getValue = function() return GUIDE.Get("lock") == true end,
+            setValue = function(val) GWSet("lock", val and true or false) end,
+        }, { type = "label", text = "" })
+        cursorY = cursorY - height
+    end
+
     return math.abs(cursorY)
 end
