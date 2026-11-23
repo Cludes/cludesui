@@ -86,6 +86,14 @@ function Data.Own()
     return true
 end
 
+-- Whose profession a trade link opened ("" when the game gives no name), or nil.
+function Data.Linked()
+    local T = C_TradeSkillUI
+    if not T.IsTradeSkillLinked or (T.IsTradeSkillGuild and T.IsTradeSkillGuild()) then return end
+    local linked, name = T.IsTradeSkillLinked()
+    if linked then return name or "" end
+end
+
 -- The profession on show: its id, name, skill and cap (a child profession
 -- such as a specialisation counts when it has a cap of its own).
 function Data.Profession()
@@ -389,6 +397,7 @@ end
 -- yellow, grey for a recipe you know, only when the data agrees with the
 -- colour the game gives it (the game is right when they differ).
 function SkillUps.Levels(info)
+    if state.linked then return end
     local _, yellow, grey = SkillUps.Range(info.recipeID, info.maxTrivialLevel)
     local skill = SkillUps.Skill()
     if not (yellow and skill) then return end
@@ -398,6 +407,7 @@ function SkillUps.Levels(info)
 end
 
 function SkillUps.ForRecipe(info)
+    if state.linked then return end
     if info.relativeDifficulty == 0 then return 1, 0 end
     if info.relativeDifficulty == 3 then return 0, 3 end
     local _, _, chance = SkillUps.Levels(info)
@@ -861,6 +871,7 @@ local function BuildCraftFooter(pane)
         end
     end, "essentials")
     pane.track:SetPoint("BOTTOMLEFT", foot, "TOPLEFT", 0, 22)
+    pane.foot, pane.footRule = foot, rule
 end
 
 local function BuildDetail()
@@ -1349,8 +1360,11 @@ function Window.RenderDetail()
             row:Hide()
         end
     end
+    -- Another player's recipe: nothing to create here.
+    pane.foot:SetShown(not state.linked)
+    pane.footRule:SetShown(not state.linked)
     local okTrack, tracked = pcall(C_TradeSkillUI.IsRecipeTracked, info.recipeID, false)
-    pane.track:SetShown(okTrack and C_TradeSkillUI.SetRecipeTracked ~= nil)
+    pane.track:SetShown(okTrack and C_TradeSkillUI.SetRecipeTracked ~= nil and not state.linked)
     pane.track:SetChecked(okTrack and tracked == true)
     pane.createAll.count = allowed
     pane.createAll:SetText(("Create All (%d)"):format(allowed))
@@ -1430,16 +1444,48 @@ function Window.RenderRight()
     Window.RenderDetail()
 end
 
+-- Buttons on the title bar, right to left from the close button by order.
+-- spec = { text, width, order, tip, onClick(button), shown() }
+local titleSpecs = {}
+function Window.AddTitleButton(spec)
+    titleSpecs[#titleSpecs + 1] = spec
+    table.sort(titleSpecs, function(lhs, rhs) return lhs.order < rhs.order end)
+end
+
+local function LayoutTitleButtons()
+    local anchor = win.close
+    for _, spec in ipairs(titleSpecs) do
+        if not spec.button then
+            spec.button = Kit.Button(
+                win.head,
+                spec.text,
+                spec.width or 64,
+                24,
+                function() spec.onClick(spec.button) end,
+                { key = "essentials", tip = spec.tip }
+            )
+        end
+        local show = not spec.shown or spec.shown()
+        spec.button:SetShown(show)
+        if show then
+            spec.button:ClearAllPoints()
+            spec.button:SetPoint("RIGHT", anchor, "LEFT", -8, 0)
+            anchor = spec.button
+        end
+    end
+end
+
 function Window.RenderHeader(prof)
-    win.title:SetText(prof.name)
+    win.title:SetText(state.linked and (state.linked ~= "" and (state.linked .. "'s " .. prof.name)) or prof.name)
     win.rankTitle:SetText(RANK_TITLE[prof.max] or "")
+    LayoutTitleButtons()
     local r, g, b = Kit.Accent()
     win.logo:SetVertexColor(r, g, b)
     win.skillBar:SetStatusBarColor(r, g, b, 0.85)
     win.skillBar:SetMinMaxValues(0, math.max(prof.max, 1))
     win.skillBar:SetValue(prof.skill)
     win.skillBar.text:SetText(("%d / %d"):format(prof.skill, prof.max))
-    local ready = state.line and Prof.RankReady(state.line, prof.skill, prof.max, prof.name)
+    local ready = state.line and not state.linked and Prof.RankReady(state.line, prof.skill, prof.max, prof.name)
     local banner = win.banner
     banner.npc = ready and ready.npc
     banner:SetShown(ready ~= nil and Get("rankAlert") ~= false)
@@ -1459,6 +1505,7 @@ end
 
 function Window.RenderTabs()
     local r, g, b = Kit.Accent()
+    win.tabs[2]:SetShown(not state.linked)
     for _, tab in ipairs(win.tabs) do
         local on = tab.key == state.tab
         Paint(tab.text, on and { 1, 1, 1 } or COLOUR.muted)
@@ -1482,11 +1529,15 @@ function Window.Render()
         or state.prof.id ~= prof.id
         or state.prof.skill ~= prof.skill
         or state.prof.max ~= prof.max
+        or state.readFor ~= state.linked
     then
         state.stale = false
+        state.readFor = state.linked
         state.line = Data.Line(prof)
         state.categories = Data.Collect()
         state.unlearned, state.payload = Data.Unlearned(state.line, prof)
+        -- Someone else's recipes: what they have not learned is not yours to know.
+        if state.linked then state.unlearned = {} end
         state.spellIndex = nil
         wipe(Data.reagents)
     end
@@ -1698,6 +1749,14 @@ end
 
 local function Update()
     if not (On() and ProfessionsFrame and ProfessionsFrame:IsShown()) then return Deactivate() end
+    local linked = Data.Linked()
+    if linked then
+        if not Data.Profession() then return Deactivate() end
+        if state.linked ~= linked then state.selected, state.offset = nil, 0 end
+        state.linked, state.tab = linked, "learned"
+        return Activate("craft")
+    end
+    state.linked = nil
     if not Data.Own() then return Deactivate() end
     if BookOpen() then return Activate("book") end
     if Data.Profession() then return Activate("craft") end

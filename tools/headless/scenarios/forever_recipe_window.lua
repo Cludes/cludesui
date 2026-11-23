@@ -104,6 +104,10 @@ Set("IsRecipeTracked", function() return false end)
 Set("SetRecipeTracked", function() return true end)
 Set("SetRecipeFavorite", function() end)
 Set("GetRecipeLink", function(id) return "[" .. id .. "]" end)
+local LINK = "|cffffd000|Htrade:Player-1-00000001:2018:164|h[Blacksmithing]|h|r"
+local linkedTo
+Set("CanTradeSkillListLink", function() return linkedTo == nil end)
+Set("GetTradeSkillListLink", function() return LINK end)
 Set("CraftRecipe", function(id, count) crafted[#crafted + 1] = id .. "x" .. tostring(count) end)
 rawset(
     C_Item,
@@ -258,12 +262,77 @@ OUT:write(
     )
 )
 
--- The overview page: Blacksmithing 95/150 and Mining 51/150 learned.
 rawset(_G, "GetProfessions", function() return 1, 2 end)
 rawset(_G, "GetProfessionInfo", function(i)
     if i == 1 then return "Blacksmithing", 136241, 95, 150, 0, 0, 164, 0 end
     return "Mining", 136248, 51, 150, 0, 0, 186, 0
 end)
+
+-- Title buttons: Link on your own profession; opening it saves your link for
+-- your alts; Alts shows once another character on this realm has saved one.
+local function Buttons(label)
+    local shown = {}
+    for _, child in ipairs({ win.head:GetChildren() }) do
+        if child:IsShown() and child.GetText and child:GetText() then shown[#shown + 1] = child:GetText() end
+    end
+    OUT:write(("== %s: title=%s buttons=[%s]\n"):format(label, tostring(win.title:GetText()), table.concat(shown, ", ")))
+end
+win.tabs[1]:GetScript("OnClick")(win.tabs[1])
+HARNESS_FIRE_EVENT("TRADE_SKILL_LIST_UPDATE")
+HARNESS_ADVANCE(0.5)
+Buttons("own")
+local saved = {}
+for guid, alt in pairs(CludesUIDB.professions.profLinks or {}) do
+    for id, link in pairs(alt.links) do
+        saved[#saved + 1] = tostring(guid ~= nil) .. " " .. tostring(alt.name) .. " " .. id .. " " .. tostring(link.name)
+    end
+end
+OUT:write("== saved links: " .. table.concat(saved, "; ") .. "\n")
+CludesUIDB.professions.profLinks["Player-1-00000002"] = {
+    name = "Ironhide",
+    class = "WARRIOR",
+    realm = GetRealmName(),
+    faction = UnitFactionGroup("player"),
+    links = { [164] = { link = LINK, name = "Blacksmithing" } },
+}
+W.Render()
+Buttons("with an alt")
+local alts = {}
+for _, alt in ipairs(RW.Alts.List()) do
+    alts[#alts + 1] = alt.who .. " - " .. alt.prof
+end
+OUT:write("== alts: " .. table.concat(alts, "; ") .. "\n")
+local refs = {}
+local realRef = rawget(_G, "SetItemRef")
+rawset(_G, "SetItemRef", function(target, _, button) refs[#refs + 1] = tostring(target) .. " " .. tostring(button) end)
+RW.Alts.Open(RW.Alts.List()[1])
+rawset(_G, "SetItemRef", realRef)
+OUT:write("== open alt: " .. table.concat(refs, "; ") .. "\n")
+
+-- Someone's Blacksmithing from a trade link: their name on the title, no
+-- Not learned tab, no Create footer, no skill-up numbers, no Link button.
+linkedTo = "Thrall"
+Set("IsTradeSkillLinked", function() return true, linkedTo end)
+HARNESS_FIRE_EVENT("TRADE_SKILL_DATA_SOURCE_CHANGED")
+HARNESS_ADVANCE(0.5)
+Buttons("linked")
+Chances("linked chances")
+OUT:write(
+    ("== linked: shown=%s tab2=%s footer=%s track=%s selected=%s\n"):format(
+        tostring(win:IsShown()),
+        tostring(win.tabs[2]:IsShown()),
+        tostring(win.detail.foot:IsShown()),
+        tostring(win.detail.track:IsShown()),
+        tostring(S.selected)
+    )
+)
+linkedTo = nil
+Set("IsTradeSkillLinked", function() return false end)
+HARNESS_FIRE_EVENT("TRADE_SKILL_DATA_SOURCE_CHANGED")
+HARNESS_ADVANCE(0.5)
+Buttons("own again")
+
+-- The overview page: Blacksmithing 95/150 and Mining 51/150 learned.
 local book = CreateFrame("Frame", nil, frame)
 book.ProfessionsContentFrame = CreateFrame("Frame", nil, book)
 frame.BookPage = book

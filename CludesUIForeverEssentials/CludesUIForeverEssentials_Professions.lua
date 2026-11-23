@@ -29,6 +29,7 @@ local F =
         skillUpChances = true,
         skillThresholds = true,
         sortSkillUps = false,
+        altProfessions = true,
     })
 local Get, On = F.Get, F.Enabled
 

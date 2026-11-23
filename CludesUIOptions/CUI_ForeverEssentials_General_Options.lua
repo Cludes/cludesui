@@ -2350,6 +2350,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             tooltip = "The picked recipe shows the skill where it turns yellow, green and grey, and your chance now.",
             getValue = function() return PF.Get("skillThresholds") end,
             setValue = function(val) Set("skillThresholds", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Alts' Professions",
+            disabled = function() return pOff() or not PF.Get("craftWindow") end,
+            tooltip = "An Alts button on the recipe window opens your other characters' professions on this realm. Each one shows once that character has opened it.",
+            getValue = function() return PF.Get("altProfessions") end,
+            setValue = function(val) Set("altProfessions", val and true or false) end,
         })
         cursorY = cursorY - height
     end
