@@ -80,6 +80,7 @@ local function Read(unitToken)
         ilvl = ilvl,
         bare = BareSlots(unitToken),
         when = GetTime(),
+        score = module.GearScore and CludesUI._GearScore.Get("enabled") and module.GearScore.Unit(unitToken) or nil,
     }
 end
 
@@ -204,6 +205,9 @@ Refresh = function()
                 c.level or 0,
                 c.ilvl and ("ilvl %.1f"):format(c.ilvl) or "|cff9aa6b2ilvl ?|r"
             )
+            if c.score then
+                textValue = textValue .. "  score " .. (module.GearScore.Text(c.score, c.level))
+            end
             if #c.bare > 0 then
                 textValue = textValue .. "  |cffffb040no enchant: " .. table.concat(c.bare, ", ") .. "|r"
             end

@@ -1298,6 +1298,46 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  GEAR SCORE
+    ---------------------------------------------------------------------------
+    local GS = CUI._GearScore
+    if GS then
+        local function gOff() return not GS.Get("enabled") end
+        local function Set(key, val)
+            GS.Cfg()[key] = val
+            GS.Apply()
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "GEAR SCORE", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Gear Score",
+            tooltip = "One number for a character's gear on the item level scale: 26.4 is worth a full set of level 26 epics. Coloured by how close it is to dungeon blues five levels over their level. Shown under your level on the character sheet, under item level on the inspect sheet, and in Group Inspect.",
+            getValue = function() return not gOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "On Player Tooltips",
+            disabled = gOff,
+            tooltip = "Player tooltips show their Gear Score: yours from your gear, others' once they have been inspected.",
+            getValue = function() return GS.Get("tooltip") end,
+            setValue = function(val) Set("tooltip", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Inspect Players You Hover",
+            disabled = gOff,
+            tooltip = "The player you hover is inspected in the background (one at a time, in range, out of combat), so their tooltip gets a score. Never while your own Inspect window is open.",
+            getValue = function() return GS.Get("hoverInspect") end,
+            setValue = function(val) Set("hoverInspect", val and true or false) end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  COMBAT EXTRAS
     ---------------------------------------------------------------------------
     local CE = CUI._CombatExtras

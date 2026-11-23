@@ -930,9 +930,15 @@ local function SkinInspectSheet()
             local summary = C_PlayerInfo.GetPlayerMythicPlusRatingSummary(inspectUnit)
             if summary and summary.currentSeasonScore then mpScore = summary.currentSeasonScore end
         end
+        -- No Mythic+ on WoW Forever: the line shows the Gear Score there
+        -- (CludesUIForeverEssentials_GearScore.lua) when it is on.
+        local gearLine = mpScore <= 0 and CUI.GearScoreLine and CUI.GearScoreLine(inspectUnit)
         if mpScore > 0 then
             local hex = mod.GetMPScoreHex(mpScore)
             GetFFD(widget).mPlusScoreText:SetFormattedText("M+ Score: |cff%s%d|r", hex, math.floor(mpScore))
+            GetFFD(widget).mPlusScoreText:Show()
+        elseif gearLine then
+            GetFFD(widget).mPlusScoreText:SetText(gearLine)
             GetFFD(widget).mPlusScoreText:Show()
         else
             GetFFD(widget).mPlusScoreText:Hide()
