@@ -2,8 +2,8 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_PvPAurasData.lua  (WoW Forever only)
---  PvP Auras' spells by ID (CludesUIForeverEssentials_PvPAuras.lua), from
---  Naowh Forever 1.2.28 (used with permission; game build 1.60.1.70790).
+--  PvP Auras' spells by ID (CludesUIForeverEssentials_PvPAuras.lua), from game
+--  build 1.60.1.70790.
 --    crowdControl       one entry per ability: every rank and the same spell
 --                       from items and creatures (ids), its icon and label.
 --    otherCrowdControl  crowd control outside those abilities (creatures).

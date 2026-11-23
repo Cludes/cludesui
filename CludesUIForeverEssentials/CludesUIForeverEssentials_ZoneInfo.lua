@@ -13,8 +13,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --                       yours (only the gathering skills you have, by default)
 --  The data is CludesUI's own: Show Zone Levels' ranges and fishing, Map
 --  Markers' places, Town Map's flight masters and Glimmer's spots; nothing
---  needs those features switched on. From Naowh Forever's Zone Info (with
---  permission), redrawn. Shown only on a zone's map, never in combat changes.
+--  needs those features switched on. Shown only on a zone's map.
 -------------------------------------------------------------------------------
 local _, module = ...
 

@@ -12,7 +12,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  assignments. A red number counts who is missing it, the minutes show the
 --  shortest one left.
 --  Plans are shared with the group's other paladins over addon messages, in
---  the format Naowh Forever uses, and PallyPower users' plans are read too.
+--  a shared format other addons use too, and PallyPower users' plans are read.
 --  /cbless opens the assignments: every paladin's blessing per class and
 --  aura, Auto-Assign, a saved preset and a report to chat. Key bindings:
 --  Next Blessing and Next Greater Blessing (CludesUI in Key Bindings).
@@ -671,7 +671,7 @@ local RefreshPage, AskPallyPower, Changed
 local PREFIX, Send, Channel, BroadcastSoon, Sender, OnMessage, SendPlan, SyncSoon, AfterCombat
 do
     -------------------------------------------------------------------------------
-    --  Plans shared with the group's paladins (Naowh Forever's format)
+    --  Plans shared with the group's paladins (the shared message format)
     -------------------------------------------------------------------------------
     PREFIX = "NaowhBless"
     local NONE_CODE = "-"

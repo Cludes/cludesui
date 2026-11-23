@@ -2,8 +2,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GlimmerData.lua  (WoW Forever only)
---  Glimmer's data (CludesUIForeverEssentials_Glimmer.lua), from Naowh Forever
---  1.2.28 (used with permission):
+--  Glimmer's data (CludesUIForeverEssentials_Glimmer.lua):
 --    GLIMMER_NODES         object ID = { kind ("ore"/"herb"/"chest"), skill, name }
 --    GLIMMER_SPOTS_PACKED  where every herb and vein grows, by world map: a
 --                          Base64 Deflate CBOR list mapID, { id, x, y, ... }

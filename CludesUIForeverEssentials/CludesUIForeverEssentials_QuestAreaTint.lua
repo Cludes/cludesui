@@ -8,8 +8,8 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  yellow. The areas are Blizzard's quest blob pins; only their fill and
 --  edge textures and alphas change (the pin's own setters), on each map
 --  change and when the map opens, so pins made later are tinted too. Off,
---  the game's own textures go back. Textures from Naowh Forever (with
---  permission): CludesUI/media/questarea/<colour>_fill / _edge.
+--  the game's own textures go back. Textures:
+--  CludesUI/media/questarea/<colour>_fill / _edge.
 -------------------------------------------------------------------------------
 local _, module = ...
 

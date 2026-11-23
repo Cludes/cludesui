@@ -60,6 +60,7 @@ local SOLO_ITEMS = {
     { key = "levelingIn", label = "Leveling In" },
     { key = "timeLevel", label = "Time This Level" },
     { key = "timeSession", label = "Time This Session" },
+    { key = "timePlayed", label = "Played Time" },
 }
 local ITEM_LABEL = {}
 for _, list in ipairs({ TOP_ITEMS, SOLO_ITEMS }) do

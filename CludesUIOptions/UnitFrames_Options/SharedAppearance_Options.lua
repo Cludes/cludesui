@@ -1947,7 +1947,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                             ["pixels-textured"] = "Pixels Textured Ring",
                             ["pixels-shadow"] = "Pixels Ring Shadow",
                             ["pixels-textured-shadow"] = "Pixels Textured Ring Shadow",
-                            ["thin-border"] = "Naowh Thin Circle",
+                            ["thin-border"] = "Thin Circle",
                         },
                         order = {
                             "none",

@@ -129,7 +129,7 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Global Settings",
                 title = "A whole new look",
-                desc = "The settings window has been rebuilt to look like CludesUI and nothing else: a clean, flat frame with square corners, no glowing lines or ornaments, and the CludesUI logo drawn in your own accent colour.",
+                desc = "The settings window in the CludesUI style: a clean, flat frame with square corners, simple lines, and the CludesUI logo drawn in your own accent colour.",
             },
             {
                 module = "Bags",
@@ -140,8 +140,8 @@ CUI._WHATSNEW_PATCHES = {
         features = {
             {
                 module = "Global Settings",
-                title = "Friendlier names",
-                desc = "Pages and settings have clearer names, such as Edit Layout, Core Settings, What's New, Group Frames, Buff Checks, Quality of Life, Also Show When and Show Empty Slots. Search still finds them by their old names.",
+                title = "Clear names",
+                desc = "Pages and settings say what they do: Edit Layout, Core Settings, What's New, Group Frames, Buff Checks, Quality of Life, Also Show When, Show Empty Slots and more.",
             },
             {
                 module = "Global Settings",
@@ -162,8 +162,8 @@ CUI._WHATSNEW_PATCHES = {
         heroes = {
             {
                 module = "Global Settings",
-                title = "A look of its own",
-                desc = "Every page groups its settings into cards, every setting has a short description under its name, and corners are square throughout. Tabs, the sidebar and the footer were restyled to match.",
+                title = "Cards and descriptions",
+                desc = "Every page groups its settings into cards, every setting has a short description under its name, and corners are square throughout, with tabs, sidebar and footer to match.",
             },
             {
                 module = "Layout Mode",
@@ -178,7 +178,7 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Global Settings",
                 title = "New icons and colours",
-                desc = "A fresh set of interface icons, a cool slate for pop-ups, menus and input boxes, and pop-ups with the title on the left and buttons on the right.",
+                desc = "CludesUI's own interface icons, a cool slate for pop-ups, menus and input boxes, and pop-ups with the title on the left and buttons on the right.",
             },
             {
                 module = "Global Settings",
@@ -198,7 +198,7 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Raid Frames",
                 title = "Frame Bindings",
-                desc = "HoverCast is now Frame Bindings. Global and spec bindings share one column on the left, with their options right beside them.",
+                desc = "Click and key bindings on your group frames. Global and spec bindings share one column on the left, with their options right beside them.",
             },
             {
                 module = "Raid Frames",
@@ -429,7 +429,7 @@ CUI._WHATSNEW_PATCHES = {
                 module = "Forever Tools",
                 forever = true,
                 title = "XP per Hour and Group XP",
-                desc = "XP per hour, time to level and how long each level took, plus XP bars for your group (Naowh Forever users included).",
+                desc = "XP per hour, time to level and how long each level took, plus XP bars for your group.",
             },
             {
                 module = "Forever Tools",
@@ -459,7 +459,7 @@ CUI._WHATSNEW_PATCHES = {
                 module = "Forever Tools",
                 forever = true,
                 title = "Blessing Bar",
-                desc = "For paladins: a button per class that blesses whoever needs it next, your aura, seal and Righteous Fury, and /cbless for every paladin's assignments. Works with Naowh Forever and PallyPower users.",
+                desc = "For paladins: a button per class that blesses whoever needs it next, your aura, seal and Righteous Fury, and /cbless for every paladin's assignments. Works with PallyPower users too.",
             },
             {
                 module = "Forever Tools",
@@ -492,17 +492,12 @@ CUI._WHATSNEW_PATCHES = {
             },
             {
                 module = "Global Settings",
-                title = "Expressway is the default font",
-                desc = "Change it under Fonts. Barlow Condensed and the rest are still in the list.",
-            },
-            {
-                module = "Profiles",
-                title = "Import older profile strings",
-                desc = "Import Profile also accepts strings in the older format and converts them as it goes.",
+                title = "Expressway font",
+                desc = "Expressway is the default font. Change it under Fonts, with Barlow Condensed and many more to pick from.",
             },
             {
                 module = "Global Settings",
-                title = "Shorter slash commands",
+                title = "Slash commands",
                 desc = "/cui opens the panel and /ce the core settings. Each addon has its own shortcut too, such as /cab, /cuf, /crf and /cnp.",
             },
         },

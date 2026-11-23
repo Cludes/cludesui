@@ -12,8 +12,8 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --                  as it leaves;
 --    a dockmaster  the Zephras Isle skycutter's arrival call;
 --    others        with Share Timings on, CludesUI users in your group and
---                  guild (the "NaowhShips" message, which Naowh Forever uses
---                  too) and ForeverTransport and NauticusClassic users nearby.
+--                  guild (the shared "NaowhShips" message) and ForeverTransport
+--                  and NauticusClassic users nearby.
 --                  A shared timing is never sent on again.
 --    the schedule  until then, a starting timing from a ride on Forever.
 --  Timings are kept per realm, on the server clock.

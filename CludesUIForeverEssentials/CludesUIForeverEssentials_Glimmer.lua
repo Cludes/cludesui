@@ -3,7 +3,7 @@ local CUI = CludesUI
 if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Glimmer.lua  (WoW Forever only)
---  Glimmer, from Naowh Forever (with permission), redrawn as CludesUI:
+--  Glimmer:
 --    Object Highlights  herbs, ore, chests, quest objects, quest givers, your
 --                       fishing bobber and lootable corpses light up as you
 --                       walk up to them (glow, sparkles, ring, beam or

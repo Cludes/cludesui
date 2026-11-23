@@ -1068,7 +1068,7 @@ local XP_ITEM_TOP = {
     questPct = true,
     level = true,
 }
-local XP_ITEM_SOLO = { xpPerHour = true, levelingIn = true, timeLevel = true, timeSession = true }
+local XP_ITEM_SOLO = { xpPerHour = true, levelingIn = true, timeLevel = true, timeSession = true, timePlayed = true }
 local XP_ITEM_LEGACY = {
     xp = { "curMax" },
     xpRemaining = { "curMaxRem" },
@@ -1084,7 +1084,7 @@ local XP_ITEM_RESTED = { pct = true, cur = true, curMax = true }
 -- The items each tracker serves (the clock: every time-based one).
 local XP_ITEM_QUEST = { questVal = true, questPct = true }
 local XP_ITEM_RATE = { xpPerHour = true, levelingIn = true }
-local XP_ITEM_CLOCK = { xpPerHour = true, levelingIn = true, timeLevel = true, timeSession = true }
+local XP_ITEM_CLOCK = { xpPerHour = true, levelingIn = true, timeLevel = true, timeSession = true, timePlayed = true }
 
 -- A text's value as its items (out, refilled). Returns "top", "solo" (the
 -- item in out[1]) or nil for nothing, then true for the old Default text,
@@ -1149,6 +1149,9 @@ local xpLoginAt -- GetTime() at this session's login (nil after a /reload)
 -- counts on and every level-up resets it), so turning the content off and on
 -- again needs no second /played.
 local xpLvl, xpLvlBase, xpLvlStamp
+-- Played Time: the character's total time played as of xpTotalStamp (both nil
+-- until a /played reply or the time saved at the last logout).
+local xpTotalBase, xpTotalStamp
 local xpLvlAsked -- /played was requested this session
 local xpWorldSeen -- this load's first PLAYER_ENTERING_WORLD was handled
 local xpClock -- the minute clock: its aligning timer, then the ticker
@@ -1321,6 +1324,12 @@ local function XPItemText(widget, ident, current, mx, rested, level, nowTime, re
         local entry = XPCharEntry(false)
         local start = entry and entry.sStart or xpLoginAt
         return format(CUI.L("Time this session: %s"), start and FmtDur(nowTime - start) or "--")
+    elseif ident == "timePlayed" then
+        return format(
+            CUI.L("Played: %s (this level %s)"),
+            xpTotalBase and FmtDur(xpTotalBase + (nowTime - xpTotalStamp)) or "--",
+            xpLvlBase and FmtDur(xpLvlBase + (nowTime - xpLvlStamp)) or "--"
+        )
     end
     return ""
 end
@@ -1544,8 +1553,9 @@ local function XPBarCanShow(cfg)
 end
 
 -- The time played this level, as of now: stored, then shown.
-local function XPSetLevelTime(levelTime)
+local function XPSetLevelTime(levelTime, totalTime)
     xpLvl, xpLvlBase, xpLvlStamp = UnitLevel("player"), levelTime, GetTime()
+    if type(totalTime) == "number" then xpTotalBase, xpTotalStamp = totalTime, xpLvlStamp end
     local widget = dataBarFrames.XPBar
     if widget then
         XPSyncLevelEvents(widget)
@@ -1561,11 +1571,11 @@ local function XPRequestPlayed(widget)
     -- Not before the load's first PLAYER_ENTERING_WORLD has read the time
     -- saved at the last logout.
     if xpLvlAsked or not xpWorldSeen or not widget._xpNeedLevelTime then return end
-    if xpLvlBase and xpLvl == UnitLevel("player") then return end
+    if xpLvlBase and xpTotalBase and xpLvl == UnitLevel("player") then return end
     if mod.XPBarAtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled()) then return end
     xpLvlAsked = true
-    local _, levelTime = CUI.RequestTimePlayed()
-    if levelTime then XPSetLevelTime(levelTime) end
+    local totalTime, levelTime = CUI.RequestTimePlayed()
+    if levelTime then XPSetLevelTime(levelTime, totalTime) end
 end
 
 -- PLAYER_LEVEL_UP (the bar's own event frame): the new level starts at no
@@ -1616,7 +1626,7 @@ local function XPTextTake(record, kindName, legacy, cfg, restedKey, render)
         if XP_ITEM_QUEST[ident] then nq = true end
         if XP_ITEM_RATE[ident] then nr = true end
         if XP_ITEM_CLOCK[ident] then nc = true end
-        if ident == "timeLevel" then nl = true end
+        if ident == "timeLevel" or ident == "timePlayed" then nl = true end
     end
     record.nq, record.nr, record.nc, record.nl = nq, nr, nc, nl
 end
@@ -1811,6 +1821,12 @@ local function XPOnFirstWorld(isInitialLogin)
             if not isInitialLogin and type(at) == "number" and at <= nowTime then t = t + (nowTime - at) end
             xpLvl, xpLvlBase, xpLvlStamp = entry.lvl, t, nowTime
         end
+        local tot, totAt = entry.totTime, entry.totAt
+        entry.totTime, entry.totAt = nil, nil
+        if type(tot) == "number" then
+            if not isInitialLogin and type(totAt) == "number" and totAt <= nowTime then tot = tot + (nowTime - totAt) end
+            xpTotalBase, xpTotalStamp = tot, nowTime
+        end
     end
     if widget then
         if widget._xpNeedLevelTime then XPSyncLevelEvents(widget) end
@@ -1828,7 +1844,7 @@ xpTextEv:SetScript("OnEvent", function(self, evt, arg1, arg2)
     if evt == "TIME_PLAYED_MSG" then
         -- arg2: the time played this level, as of now.
         if type(arg2) ~= "number" then return end
-        XPSetLevelTime(arg2)
+        XPSetLevelTime(arg2, arg1)
     elseif evt == "PLAYER_LOGOUT" then
         -- Also fires on /reload, before SavedVariables are written.
         if xpLvlBase then
@@ -1836,6 +1852,7 @@ xpTextEv:SetScript("OnEvent", function(self, evt, arg1, arg2)
             if entry then
                 local nowTime = GetTime()
                 entry.lvl, entry.lvlTime, entry.lvlAt = xpLvl, xpLvlBase + (nowTime - xpLvlStamp), nowTime
+                if xpTotalBase then entry.totTime, entry.totAt = xpTotalBase + (nowTime - xpTotalStamp), nowTime end
             end
         end
     else

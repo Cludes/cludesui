@@ -14,7 +14,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  a point the game reports as undiscovered still reminds you, and the card
 --  says to open a flight master's map. Saved per character in
 --  CludesUIDB.flightPointsKnown["Name-Realm"]. Hidden in combat and on
---  flights. From Naowh Forever's reminder (with permission), redrawn.
+--  flights.
 -------------------------------------------------------------------------------
 local _, module = ...
 

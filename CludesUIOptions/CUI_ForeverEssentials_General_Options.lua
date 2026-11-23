@@ -2842,7 +2842,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 gx,
                 "enabled",
                 "Group XP",
-                "A bar per group member with their level and XP. They need CludesUI or Naowh Forever, which share the same message."
+                "A bar per group member with their level and XP. They need CludesUI (or another addon that shares group XP)."
             ),
             Tog(gx, "showSelf", "Show Yourself", nil, gOff)
         )

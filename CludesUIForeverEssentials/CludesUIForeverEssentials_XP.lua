@@ -9,8 +9,8 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  /cxp start, pause or reset. Hidden at max level and, if you like, while
 --  resting.
 --  Group XP: a bar per group member with their level and XP. It needs them to
---  run CludesUI or Naowh Forever: both send the same "NaowhGroupXP" message,
---  so each sees the other's bars. Members without either show "no addon".
+--  run an addon that sends the shared "NaowhGroupXP" message (CludesUI does),
+--  so each sees the other's bars. Members without one show "no addon".
 -------------------------------------------------------------------------------
 local _, module = ...
 
