@@ -44,6 +44,7 @@ CludesUIBlizzardSkin_BagBarForever.lua
 # WoW Forever only: the Progress Legacy window (LegacySystemFrame)
 CludesUIBlizzardSkin_LegacySystemForever.lua
 CludesUIBlizzardSkin_PlayerSpellsForever.lua
+CludesUIBlizzardSkin_QuestLogForever.lua
 CludesUIBlizzardSkin_SkinAPI.lua
 
 # Options
