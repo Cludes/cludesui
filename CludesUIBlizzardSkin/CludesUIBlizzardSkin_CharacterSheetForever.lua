@@ -1060,6 +1060,51 @@ local function SkinFrame()
     if Skin.CommonChrome then Skin.CommonChrome(widget, "CharacterFrame", true) end
     if Skin.RemovePortrait then Skin.RemovePortrait(widget) end
 
+    -- The mode tabs down the right edge (Character, Reputation, Skills, PvP,
+    -- Currency, Statistics) as the house's flat squares.
+    if Skin.SideTab then
+        for index = 1, 6 do
+            Skin.SideTab(_G["CharacterFrameModeTab" .. index])
+        end
+    end
+    -- The paper doll's sidebar buttons over the stats (stats, titles,
+    -- equipment sets): their gold frame goes, the icon sits in a 1 px border,
+    -- the shown one in the accent.
+    for index = 1, 4 do
+        local tab = _G["PaperDollSidebarTab" .. index]
+        if tab and not GetFFD(tab).flat then
+            GetFFD(tab).flat = true
+            for _, region in ipairs({ tab:GetRegions() }) do
+                if region ~= tab.Icon and region.GetAtlas and region:GetAtlas() == "UI-Character-Info-StatTab" then
+                    region:SetAlpha(0)
+                end
+            end
+            local checked = tab.GetCheckedTexture and tab:GetCheckedTexture()
+            if checked then checked:SetAlpha(0) end
+            if tab.Icon then
+                tab.Icon:ClearAllPoints()
+                tab.Icon:SetPoint("TOPLEFT", 4, -4)
+                tab.Icon:SetPoint("BOTTOMRIGHT", -4, 4)
+                tab.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            end
+            local function Paint()
+                local Pix = CUI.PanelPP or CUI.PP
+                local on = tab:GetChecked()
+                local red, green, blue = 0, 0, 0
+                if on and Skin.AccentBarColor then red, green, blue = Skin.AccentBarColor() end
+                if not GetFFD(tab).edge and Skin.AddBorder then
+                    GetFFD(tab).edge = true
+                    Skin.AddBorder(tab, red, green, blue, 1)
+                elseif Pix and Pix.SetBorderColor then
+                    Pix.SetBorderColor(tab, red, green, blue, 1)
+                end
+            end
+            hooksecurefunc(tab, "SetChecked", Paint)
+            tab:HookScript("OnClick", Paint)
+            Paint()
+        end
+    end
+
     -- The right-pane collapse arrow goes. The pane it toggles is kept open:
     -- with the arrow gone a sheet collapsed from an earlier session (the
     -- state is a cvar, read once at load) could never be opened again.

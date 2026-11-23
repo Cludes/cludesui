@@ -2036,24 +2036,65 @@ function Skin.HookShow(widget, func)
     widget:HookScript("OnShow", func)
 end
 
--- A common-sidetab side tab (the WoW Forever Looking For Group and Progress
--- Legacy windows): the gold frame and glow go, the icon stays. A black copy of
--- the hover art is the idle border; hover (gold) and active (soft white) draw over it.
+-- A common-sidetab side tab (WoW Forever's character sheet mode tabs, Looking
+-- For Group, Progress Legacy): a flat square. The gold ring, its mask and glow
+-- go; the cropped icon sits on a dark square with a 1 px border, the accent
+-- border and a faint accent fill on the selected tab, a faint light on hover.
+-- The square is a child frame: nothing is written onto the game's tab.
+local SIDE_TAB_SIZE, SIDE_TAB_INSET = 36, 4
+local function PaintSideTab(tabBtn)
+    local square = GetFFD(tabBtn).sideSquare
+    if not square then return end
+    local st = tabBtn.SelectedTexture
+    local checked = st and st:IsShown()
+    if st then st:SetAlpha(0) end
+    local red, green, blue = Skin.AccentBarColor()
+    local edge = checked and { red, green, blue } or { 0, 0, 0 }
+    local Pix = CUI and (CUI.PanelPP or CUI.PP)
+    if not GetFFD(square).border then
+        AddBorder(square, edge[1], edge[2], edge[3], 1)
+    elseif Pix and Pix.SetBorderColor then
+        Pix.SetBorderColor(square, edge[1], edge[2], edge[3], 1)
+    end
+    if checked then
+        square.fill:SetColorTexture(red, green, blue, 0.15)
+    else
+        square.fill:SetColorTexture(Theme.bgR or 0.08, Theme.bgG or 0.08, Theme.bgB or 0.08, 0.95)
+    end
+    local icon = tabBtn.Icon
+    if icon then
+        icon:ClearAllPoints()
+        icon:SetPoint("TOPLEFT", square, "TOPLEFT", SIDE_TAB_INSET, -SIDE_TAB_INSET)
+        icon:SetPoint("BOTTOMRIGHT", square, "BOTTOMRIGHT", -SIDE_TAB_INSET, SIDE_TAB_INSET)
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    end
+end
 function Skin.SideTab(tabBtn)
-    if not tabBtn then return end
+    if not tabBtn or (tabBtn.IsForbidden and tabBtn:IsForbidden()) then return end
     if tabBtn.Background then tabBtn.Background:SetAlpha(0) end
     if tabBtn.TabGlow then tabBtn.TabGlow:SetAlpha(0) end
-    local st = tabBtn.SelectedTexture
-    if not st then return end
     local skinData = GetFFD(tabBtn)
-    if not skinData.tabBorder then
-        local button = tabBtn:CreateTexture(nil, "OVERLAY", nil, -1)
-        button:SetAtlas("common-sidetab-hover")
-        button:SetAllPoints(st)
-        button:SetVertexColor(0, 0, 0)
-        skinData.tabBorder = button
+    if not skinData.sideSquare then
+        local square = CreateFrame("Frame", nil, tabBtn)
+        square:SetSize(SIDE_TAB_SIZE, SIDE_TAB_SIZE)
+        square:SetPoint("LEFT", tabBtn, "LEFT", 2, 0)
+        square:SetFrameLevel(math.max(0, tabBtn:GetFrameLevel() - 1))
+        square.fill = square:CreateTexture(nil, "BACKGROUND")
+        square.fill:SetAllPoints()
+        skinData.sideSquare = square
+        if tabBtn.Mask and tabBtn.Icon and tabBtn.Icon.RemoveMaskTexture then
+            tabBtn.Icon:RemoveMaskTexture(tabBtn.Mask)
+        end
+        if tabBtn.HighlightTexture then
+            tabBtn.HighlightTexture:SetColorTexture(1, 1, 1, 0.08)
+            tabBtn.HighlightTexture:ClearAllPoints()
+            tabBtn.HighlightTexture:SetAllPoints(square)
+        end
+        if tabBtn.SetChecked then hooksecurefunc(tabBtn, "SetChecked", PaintSideTab) end
+        -- The press nudges the icon: back into the square after.
+        tabBtn:HookScript("OnMouseUp", PaintSideTab)
     end
-    st:SetVertexColor(0.90, 0.90, 0.92)
+    PaintSideTab(tabBtn)
 end
 
 -- Debounce: collapse many hook fires in one frame into a single pass.
