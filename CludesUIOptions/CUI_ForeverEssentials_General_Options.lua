@@ -566,6 +566,56 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         end,
     })
     cursorY = cursorY - height
+
+    -- Quest Area Tint (CludesUIForeverEssentials_QuestAreaTint.lua) | blank.
+    local QT = CUI._QuestAreaTint
+    if QT then
+        local tintRow
+        tintRow, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Quest Area Tint",
+            tooltip = "Colors the quest objective areas on the world map, with a glowing edge. The colors need a full game restart the first time.",
+            getValue = function() return QT.Get("enabled") end,
+            setValue = function(val)
+                QT.Cfg().enabled = val and true or false
+                QT.Apply()
+                CUI:RefreshPage()
+            end,
+        }, CUI.BlankRowCfg())
+        cursorY = cursorY - height
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(tintRow._leftRegion, {
+                disabled = function() return not QT.Get("enabled") end,
+                disabledTooltip = "Quest Area Tint",
+                title = "Quest Area Tint",
+                rows = {
+                    {
+                        type = "dropdown",
+                        label = "Quest Area Color",
+                        values = { blue = "Blue", violet = "Violet", green = "Green", gold = "Gold", red = "Red" },
+                        order = { "blue", "violet", "green", "gold", "red" },
+                        get = function() return QT.Get("color") end,
+                        set = function(val)
+                            QT.Cfg().color = val
+                            QT.Apply()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Quest Area Opacity",
+                        min = 10,
+                        max = 90,
+                        step = 5,
+                        get = function() return math.floor(QT.Get("fill") * 100 + 0.5) end,
+                        set = function(val)
+                            QT.Cfg().fill = val / 100
+                            QT.Apply()
+                        end,
+                    },
+                },
+            })
+        end
+    end
     if not CUI._prebuilding then
         CUI.BuildInlineCog(revealRow._leftRegion, {
             title = "Reveal Unexplored Areas Settings",
