@@ -10,6 +10,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --           them, and picking one opens it here as a linked view
 --    Link   posts the open profession's trade link to party, raid, guild,
 --           your target, or into the chat box
+--    Skill-up Plan  the fewest crafts from your skill to your cap
 --    Orders on someone else's profession: an order column (recipes, crafts,
 --           the materials you bring, one tip) and Ask / Invite
 -------------------------------------------------------------------------------
@@ -606,8 +607,242 @@ table.insert(RW.Window.hooks.detail, Panel.Detail)
 table.insert(RW.Window.hooks.render, Panel.Render)
 
 -------------------------------------------------------------------------------
+--  Skill-up Plan: the fewest crafts from your skill to your cap, from the
+--  recipes you know plus trainer recipes you can learn on the way (no
+--  cooldown recipes). Each point takes the recipe likeliest to raise it,
+--  fewer materials breaking ties; a pick holds until another is clearly
+--  (10%) better, so the plan does not flip back and forth.
+-------------------------------------------------------------------------------
+local Plan = {}
+local STICKY = 0.9
+
+local function MaterialCount(recipeID)
+    local n = 0
+    for _, reagent in ipairs(RW.Data.Reagents(recipeID)) do
+        n = n + reagent.need
+    end
+    return n
+end
+
+local function HasCooldown(recipeID)
+    local ok, cooldown, isDaily, charges = pcall(C_TradeSkillUI.GetRecipeCooldown, recipeID)
+    return ok and ((cooldown or 0) > 0 or isDaily == true or (charges or 0) > 0)
+end
+
+function Plan.Candidates()
+    local list, SU = {}, RW.SkillUps
+    for _, cat in ipairs(RW.State.categories or {}) do
+        for _, info in ipairs(cat.recipes) do
+            local learn, yellow, grey = SU.Range(info.recipeID, info.maxTrivialLevel)
+            if yellow and not HasCooldown(info.recipeID) then
+                list[#list + 1] = {
+                    id = info.recipeID,
+                    name = info.name,
+                    icon = info.icon,
+                    from = learn or 0,
+                    yellow = yellow,
+                    grey = grey,
+                    mats = MaterialCount(info.recipeID),
+                }
+            end
+        end
+    end
+    local max = RW.State.prof and RW.State.prof.max or 0
+    for _, entry in ipairs(RW.State.unlearned or {}) do
+        local r = entry.r
+        if (r.source == "trainer" or r.source == "teacher") and r.yellow and r.grey and entry.need < max then
+            list[#list + 1] = {
+                spell = r.spell,
+                name = C_Spell.GetSpellName(r.spell) or ("Recipe " .. r.spell),
+                icon = C_Spell.GetSpellTexture(r.spell),
+                from = entry.need,
+                yellow = r.yellow,
+                grey = r.grey,
+                mats = 0,
+                train = true,
+            }
+        end
+    end
+    return list
+end
+
+-- { steps = { {c, from, to, crafts, band} }, crafts, skill, max, stuck }
+function Plan.Build()
+    local prof = RW.State.prof
+    local skill, max = RW.SkillUps.Skill(), prof.max
+    local plan = { steps = {}, crafts = 0, skill = skill, max = max }
+    local candidates, pick, pickScore = Plan.Candidates(), nil, nil
+    for at = skill, max - 1 do
+        local best, bestScore
+        for _, c in ipairs(candidates) do
+            if c.from <= at and at < c.grey then
+                local chance = RW.SkillUps.Chance(at, c.yellow, c.grey)
+                local score = 1 / chance + c.mats * 0.001
+                if not bestScore or score < bestScore then best, bestScore = c, score end
+            end
+        end
+        if pick and pick.from <= at and at < pick.grey then
+            pickScore = 1 / RW.SkillUps.Chance(at, pick.yellow, pick.grey) + pick.mats * 0.001
+            if bestScore and bestScore >= pickScore * STICKY then best, bestScore = pick, pickScore end
+        end
+        if not best then
+            plan.stuck = at
+            break
+        end
+        pick = best
+        local chance, band = RW.SkillUps.Chance(at, best.yellow, best.grey)
+        local step = plan.steps[#plan.steps]
+        if not (step and step.c == best) then
+            step = { c = best, from = at, to = at, crafts = 0, band = band }
+            plan.steps[#plan.steps + 1] = step
+        end
+        step.to = at + 1
+        step.crafts = step.crafts + 1 / chance
+        plan.crafts = plan.crafts + 1 / chance
+    end
+    return plan
+end
+
+local PLAN_ROWS, PLAN_ROW = 18, 22
+
+local function BuildPlanPane()
+    local win = RW.Window.Win()
+    local pane = CreateFrame("Frame", nil, win)
+    pane:SetPoint("TOPLEFT", win.aside, "TOPRIGHT", 0, 0)
+    pane:SetPoint("BOTTOMRIGHT", -1, 1)
+    pane:Hide()
+    pane.title = Label(pane, 18, TEXT)
+    pane.title:SetPoint("TOPLEFT", 18, -18)
+    pane.title:SetText("Skill-up Plan")
+    pane.sub = Label(pane, 12.5, MUTED)
+    pane.sub:SetPoint("TOPLEFT", pane.title, "BOTTOMLEFT", 0, -5)
+    pane.close = CUI.Kit.Button(pane, "Back", 64, 24, function()
+        Plan.open = false
+        Changed()
+    end, { key = "essentials" })
+    pane.close:SetPoint("TOPRIGHT", -18, -18)
+    pane.rows = {}
+    for index = 1, PLAN_ROWS do
+        local row = CreateFrame("Button", nil, pane)
+        row:SetHeight(PLAN_ROW)
+        row:SetPoint("TOPLEFT", 12, -66 - (index - 1) * PLAN_ROW)
+        row:SetPoint("TOPRIGHT", -12, -66 - (index - 1) * PLAN_ROW)
+        row.hover = row:CreateTexture(nil, "HIGHLIGHT")
+        row.hover:SetAllPoints()
+        row.hover:SetColorTexture(1, 1, 1, 0.04)
+        row.icon = row:CreateTexture(nil, "ARTWORK")
+        row.icon:SetSize(17, 17)
+        row.icon:SetPoint("LEFT", 6, 0)
+        row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        row.crafts = Label(row, 12.5, TEXT)
+        row.crafts:SetPoint("RIGHT", -6, 0)
+        row.crafts:SetWidth(44)
+        row.crafts:SetJustifyH("RIGHT")
+        row.range = Label(row, 12, MUTED)
+        row.range:SetPoint("RIGHT", row.crafts, "LEFT", -8, 0)
+        row.range:SetWidth(64)
+        row.range:SetJustifyH("RIGHT")
+        row.name = Label(row, 13, TEXT)
+        row.name:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
+        row.name:SetPoint("RIGHT", row.range, "LEFT", -8, 0)
+        row.name:SetJustifyH("LEFT")
+        row:SetScript("OnClick", function(self)
+            if self.step and self.step.c.id then
+                Plan.open = false
+                RW.State.selected = self.step.c.id
+                Changed()
+            end
+        end)
+        pane.rows[index] = row
+    end
+    pane.more = Label(pane, 12, MUTED)
+    pane.more:SetPoint("TOPLEFT", pane.rows[PLAN_ROWS], "BOTTOMLEFT", 6, -4)
+    pane.total = Label(pane, 13, TEXT)
+    pane.total:SetPoint("BOTTOMLEFT", 18, 38)
+    pane.note = Label(pane, 11.5, MUTED)
+    pane.note:SetPoint("BOTTOMLEFT", 18, 18)
+    pane.note:SetText("Crafts are averages: the game rolls each skill-up.")
+    Plan.pane = pane
+    return pane
+end
+
+function Plan.Shown()
+    return Plan.open and RW.State.prof and not RW.State.linked and RW.State.tab == "learned"
+end
+
+function Plan.Render()
+    if not Plan.Shown() then
+        if Plan.pane then Plan.pane:Hide() end
+        return
+    end
+    local win = RW.Window.Win()
+    local pane = Plan.pane or BuildPlanPane()
+    win.detail:Hide()
+    win.learn:Hide()
+    win.empty:Hide()
+    pane:Show()
+    local plan, colours = Plan.Build(), RW.Colour.difficulty
+    if plan.skill >= plan.max then
+        pane.sub:SetText(("At your cap of %d."):format(plan.max))
+    elseif plan.stuck and #plan.steps == 0 then
+        pane.sub:SetText(("Nothing you know or can train raises you past %d."):format(plan.stuck))
+    else
+        pane.sub:SetText(("From %d to your cap of %d"):format(plan.skill, plan.max))
+    end
+    for index, row in ipairs(pane.rows) do
+        local step = plan.steps[index]
+        row.step = step
+        row:SetShown(step ~= nil)
+        if step then
+            local c = step.c
+            row.icon:SetTexture(c.icon or 134400)
+            if c.train then
+                local ready = c.from <= plan.skill
+                row.name:SetText((ready and "Train: " or ("Train at %d: "):format(c.from)) .. c.name)
+                local colour = ready and { 0.37, 0.77, 0.42 } or MUTED
+                row.name:SetTextColor(colour[1], colour[2], colour[3])
+            else
+                row.name:SetText(c.name)
+                local colour = colours[step.band] or TEXT
+                row.name:SetTextColor(colour[1], colour[2], colour[3])
+            end
+            row.range:SetText(step.from .. "-" .. step.to)
+            row.crafts:SetText("x" .. math.ceil(step.crafts))
+        end
+    end
+    local extra = #plan.steps - PLAN_ROWS
+    pane.more:SetText(extra > 0 and ("+%d more steps"):format(extra) or "")
+    local reach = plan.stuck or plan.max
+    pane.total:SetText(
+        #plan.steps == 0 and ""
+            or ("%d skill-ups: about %d crafts%s"):format(
+                reach - plan.skill,
+                math.ceil(plan.crafts),
+                plan.stuck and (", then stuck at " .. plan.stuck) or ""
+            )
+    )
+end
+
+table.insert(RW.Window.hooks.render, Plan.Render)
+
+-------------------------------------------------------------------------------
 --  Title buttons and events
 -------------------------------------------------------------------------------
+RW.Window.AddTitleButton({
+    text = "Skill-up Plan",
+    width = 100,
+    order = 5,
+    tip = "The fewest crafts from your skill to your cap, with the trainer recipes to learn on the way.",
+    onClick = function()
+        Plan.open = not Plan.open
+        RW.State.tab = "learned"
+        Changed()
+    end,
+    shown = function()
+        local prof = RW.State.prof
+        return Get("skillUpPlan") ~= false and not RW.State.linked and prof ~= nil and prof.skill < prof.max
+    end,
+})
 RW.Window.AddTitleButton({
     text = "Link",
     width = 54,
@@ -631,4 +866,4 @@ for _, event in ipairs({ "TRADE_SKILL_SHOW", "TRADE_SKILL_DATA_SOURCE_CHANGED", 
 end
 events:SetScript("OnEvent", function() Alts.Save() end)
 
-RW.Alts, RW.Link, RW.Orders = Alts, Link, Orders
+RW.Alts, RW.Link, RW.Orders, RW.Plan = Alts, Link, Orders, Plan

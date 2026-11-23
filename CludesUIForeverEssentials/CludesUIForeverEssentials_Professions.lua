@@ -31,6 +31,7 @@ local F =
         sortSkillUps = false,
         altProfessions = true,
         craftOrders = true,
+        skillUpPlan = true,
     })
 local Get, On = F.Get, F.Enabled
 

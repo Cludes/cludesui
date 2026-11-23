@@ -1867,6 +1867,8 @@ CUI._RecipeWindow = {
     State = state,
     Data = Data,
     Window = Window,
+    SkillUps = SkillUps,
+    Colour = COLOUR,
 }
 
 local boot = CreateFrame("Frame")

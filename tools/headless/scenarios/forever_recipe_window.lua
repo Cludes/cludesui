@@ -399,6 +399,32 @@ HARNESS_FIRE_EVENT("TRADE_SKILL_DATA_SOURCE_CHANGED")
 HARNESS_ADVANCE(0.5)
 Buttons("own again")
 
+-- Skill-up Plan: 95 to 150 from the axe and the trainer recipes in the data.
+local planButton
+for _, child in ipairs({ win.head:GetChildren() }) do
+    if child.GetText and child:GetText() == "Skill-up Plan" then planButton = child end
+end
+planButton:GetScript("OnClick")(planButton)
+local plan = RW.Plan.pane
+local steps = {}
+for _, r in ipairs(plan.rows) do
+    if r:IsShown() then
+        steps[#steps + 1] = r.name:GetText() .. " " .. r.range:GetText() .. " " .. r.crafts:GetText()
+    end
+end
+OUT:write(
+    ("== plan: shown=%s detail=%s | %s | %s | %s\n   %s\n"):format(
+        tostring(plan:IsShown()),
+        tostring(win.detail:IsShown()),
+        tostring(plan.sub:GetText()),
+        tostring(plan.total:GetText()),
+        tostring(plan.more:GetText()),
+        table.concat(steps, "\n   ")
+    )
+)
+planButton:GetScript("OnClick")(planButton)
+OUT:write("== plan closed: " .. tostring(plan:IsShown()) .. " detail=" .. tostring(win.detail:IsShown()) .. "\n")
+
 -- The overview page: Blacksmithing 95/150 and Mining 51/150 learned.
 local book = CreateFrame("Frame", nil, frame)
 book.ProfessionsContentFrame = CreateFrame("Frame", nil, book)
