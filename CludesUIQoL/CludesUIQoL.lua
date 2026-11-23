@@ -1772,6 +1772,27 @@ qolFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
 
     ---------------------------------------------------------------------------
+    --  Hide Zone Text: the zone and subzone names that fade in mid-screen as
+    --  you travel (ZoneTextFrame / SubZoneTextFrame, both clients). Hooked on
+    --  first use, nothing before; while the option is on each one is closed as
+    --  it shows. Off again, the next zone change shows them as before.
+    ---------------------------------------------------------------------------
+    do
+        local zoneTextHooked = false
+        local function CloseZoneText(shownText)
+            if CludesUIDB and CludesUIDB.hideZoneText then shownText:Hide() end
+        end
+        CUI._applyHideZoneText = function()
+            if zoneTextHooked or not (CludesUIDB and CludesUIDB.hideZoneText) then return end
+            zoneTextHooked = true
+            for _, textFrame in ipairs({ ZoneTextFrame, SubZoneTextFrame }) do
+                if textFrame and textFrame.HookScript then textFrame:HookScript("OnShow", CloseZoneText) end
+            end
+        end
+        CUI._applyHideZoneText()
+    end
+
+    ---------------------------------------------------------------------------
     --  Hide Talking Head Frame (the NPC dialogue rectangle during quests/dungeons)
     --  and Talking Head Audio (its voice lines), each on its own; not on WoW
     --  Forever: the block, its hooks and its options rows do not exist there.

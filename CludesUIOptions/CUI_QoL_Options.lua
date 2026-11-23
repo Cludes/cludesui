@@ -685,6 +685,17 @@ CUI.AtOptionsLogin(function()
                 end,
             }
             itemList[#itemList + 1] = {
+                key = "hideZoneText",
+                label = "Zone Text",
+                alias = "Hide Zone Text",
+                tooltip = "Hides the zone and subzone names that appear in the middle of the screen as you travel.",
+                read = function() return CludesUIDB and CludesUIDB.hideZoneText or false end,
+                write = function(val)
+                    QDB().hideZoneText = val
+                    if CUI._applyHideZoneText then CUI._applyHideZoneText() end
+                end,
+            }
+            itemList[#itemList + 1] = {
                 key = "hideErrorMessages",
                 label = "Error Messages",
                 alias = "Hide Error Messages",
@@ -2791,6 +2802,28 @@ CUI.AtOptionsLogin(function()
             setValue = function(val)
                 Account().trainAllButton = val
                 if CUI._applyTrainAllButton then CUI._applyTrainAllButton() end
+            end,
+        })
+        cursorY = cursorY - height
+
+        -- Console Variables window | Put Back Pinned at Login
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "labeledButton",
+            text = "Console Variables",
+            buttonText = "Open",
+            width = 90,
+            tooltip = "Every console variable the game lets you change, with its value beside its default: search, change, reset, export and import them, and pin the ones to keep. You can also type /ccvar.",
+            onClick = function()
+                if CUI.OpenConsoleVariables then CUI.OpenConsoleVariables() end
+            end,
+        }, {
+            type = "toggle",
+            text = "Put Back Pinned at Login",
+            tooltip = "Sets each console variable you pinned in the Console Variables window back to its pinned value every time you log in.",
+            getValue = function() return CludesUIDB and CludesUIDB.cvarPinsOn == true end,
+            setValue = function(val)
+                Account().cvarPinsOn = val and true or false
+                if val and CUI._ConsoleVariablesPutBack then CUI._ConsoleVariablesPutBack() end
             end,
         })
         cursorY = cursorY - height
