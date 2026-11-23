@@ -2398,6 +2398,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             tooltip = "Green, blue and purple gear says about what it disenchants into is worth at your auction prices, and the Enchanting skill it needs (red when yours is lower).",
             getValue = function() return PF.Get("disenchantTooltip") end,
             setValue = function(val) Set("disenchantTooltip", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Trade Enchants",
+            disabled = pOff,
+            tooltip = "While you trade with Enchanting open: beside the trade window, your enchants that go on the item in the \"Will not be traded\" slot, the ones they linked to you first. Enchant casts it in one click.",
+            getValue = function() return PF.Get("tradeEnchants") end,
+            setValue = function(val) Set("tradeEnchants", val and true or false) end,
         })
         cursorY = cursorY - height
     end
