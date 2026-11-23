@@ -1010,6 +1010,35 @@ CUI.AtOptionsLogin(function()
                         set = AccountField("autoGossipShiftSkip"),
                     },
                     {
+                        type = "dropdown",
+                        label = "Modifier Key",
+                        tooltip = "The key the setting above listens to.",
+                        values = { SHIFT = "Shift", CTRL = "Ctrl", ALT = "Alt" },
+                        order = { "SHIFT", "CTRL", "ALT" },
+                        disabled = function() return CludesUIDB and CludesUIDB.autoGossipShiftSkip == false end,
+                        disabledTooltip = "Hold Shift to Skip",
+                        get = function() return CludesUIDB and CludesUIDB.autoGossipModifier or "SHIFT" end,
+                        set = AccountField("autoGossipModifier"),
+                    },
+                    {
+                        type = "dropdown",
+                        label = "Modifier Does",
+                        tooltip = "Skips: it picks unless you hold the key. Triggers: it picks only while you hold it.",
+                        values = { SKIP = "Skips", TRIGGER = "Triggers" },
+                        order = { "SKIP", "TRIGGER" },
+                        disabled = function() return CludesUIDB and CludesUIDB.autoGossipShiftSkip == false end,
+                        disabledTooltip = "Hold Shift to Skip",
+                        get = function() return CludesUIDB and CludesUIDB.autoGossipModifierMode or "SKIP" end,
+                        set = AccountField("autoGossipModifierMode"),
+                    },
+                    {
+                        type = "toggle",
+                        label = "Only Service NPCs",
+                        tooltip = "Pick the lone option only at a vendor, trainer, banker, auctioneer or stable master: never one that costs money or takes you somewhere.",
+                        get = function() return CludesUIDB and CludesUIDB.autoGossipServiceOnly == true end,
+                        set = AccountField("autoGossipServiceOnly"),
+                    },
+                    {
                         type = "toggle",
                         label = "Disable in Instances",
                         get = function()
@@ -3088,6 +3117,9 @@ CUI.AtOptionsLogin(function()
                 CludesUIDB.autoGossipShiftSkip = nil
                 CludesUIDB.autoGossipDisableInstance = nil
                 CludesUIDB.autoGossipIgnoreTrivial = nil
+                CludesUIDB.autoGossipModifier = nil
+                CludesUIDB.autoGossipModifierMode = nil
+                CludesUIDB.autoGossipServiceOnly = nil
                 CludesUIDB.skipCinematics = false
                 CludesUIDB.skipCinematicsAuto = false
                 CludesUIDB.autoFillDelete = false

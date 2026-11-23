@@ -1534,10 +1534,37 @@ qolFrame:SetScript("OnEvent", function(self)
         -- ends): each is picked once, so two single-option pages that lead to
         -- each other cannot flip back and forth.
         local picked = {}
+        -- The modifier (Hold Shift to Skip, with its key and what it does):
+        -- autoGossipModifier SHIFT / CTRL / ALT, autoGossipModifierMode SKIP
+        -- (holding it stops the pick) or TRIGGER (only holding it picks).
+        local MOD_DOWN = { SHIFT = "IsShiftKeyDown", CTRL = "IsControlKeyDown", ALT = "IsAltKeyDown" }
+        -- Only Service NPCs (autoGossipServiceOnly): the lone option must be a
+        -- vendor's, trainer's, banker's, auctioneer's or stable master's, by
+        -- its gossip icon; nothing that costs money or takes you anywhere.
+        local SERVICE_ICONS = { "VendorGossipIcon", "TrainerGossipIcon", "BankerGossipIcon", "AuctioneerGossipIcon", "StableMasterGossipIcon" }
+        local serviceIcons
+
+        local function ServiceOption(option)
+            if not serviceIcons then
+                serviceIcons = {}
+                for _, iconName in ipairs(SERVICE_ICONS) do
+                    local ident = GetFileIDFromPath and GetFileIDFromPath("Interface\\GossipFrame\\" .. iconName)
+                    if ident and ident ~= 0 then serviceIcons[ident] = true end
+                end
+            end
+            return option.icon ~= nil and serviceIcons[option.icon] == true
+        end
 
         local function OnGossipShow()
             local store = CludesUIDB
-            if store.autoGossipShiftSkip ~= false and IsShiftKeyDown() then return end
+            if store.autoGossipShiftSkip ~= false then
+                local held = _G[MOD_DOWN[store.autoGossipModifier or "SHIFT"] or "IsShiftKeyDown"]()
+                if store.autoGossipModifierMode == "TRIGGER" then
+                    if not held then return end
+                elseif held then
+                    return
+                end
+            end
             if store.autoGossipDisableInstance ~= false and IsInInstance() then return end
 
             local options = C_GossipInfo.GetOptions()
@@ -1545,6 +1572,7 @@ qolFrame:SetScript("OnEvent", function(self)
             local option = options[1]
             -- A locked or unavailable option would only fail again.
             if option.status ~= Enum.GossipOptionStatus.Available then return end
+            if store.autoGossipServiceOnly and not ServiceOption(option) then return end
             local settingKey = (C_GossipInfo.GetText() or "")
                 .. "\0"
                 .. (option.gossipOptionID or option.name)
