@@ -104,6 +104,10 @@ HARNESS_FIRE_EVENT("PLAYER_REGEN_ENABLED")
 Fill("combat over, still secret: no read")
 secret = false
 HARNESS_FIRE_EVENT("PLAYER_REGEN_ENABLED")
+-- The retry after a same-frame restricted answer (a second advance: one
+-- advance can spend its whole timer budget on a chain of zero-delay timers).
+HARNESS_ADVANCE(0.3)
+HARNESS_ADVANCE(0.01)
 Fill("combat over, readable: Command found")
 buffs[1] = nil
 HARNESS_FIRE_EVENT("UNIT_AURA", "player", { removedAuraInstanceIDs = { 9 } })

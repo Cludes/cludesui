@@ -1377,7 +1377,11 @@ local function SealEndsIn(secs)
     SwingState.sealTimer = C_Timer.NewTimer(math.max(secs, 0), SealRanOut)
 end
 
+-- AuraKit's test (the secrecy flag, then a probe read that fails while the
+-- auras are restricted), else the flag alone.
 local function AurasSecret()
+    local AK = CludesUI.AuraKit
+    if AK and AK.AurasRestricted then return AK.AurasRestricted() end
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() and true or false
 end
 
@@ -1987,8 +1991,11 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3, _a4, a5)
         -- a3 = spellID
         SealCast(a3)
     elseif evt == "PLAYER_REGEN_ENABLED" then
-        -- Combat over: auras readable again, re-read what changed meanwhile.
+        -- Combat over: auras readable again, re-read what changed meanwhile;
+        -- once more a moment later, as a restricted answer can hold for the
+        -- rest of the frame it was read in.
         ScanSeal()
+        C_Timer.After(0.2, ScanSeal)
     elseif evt == "UNIT_SPELLCAST_STOP" or evt == "UNIT_SPELLCAST_CHANNEL_STOP" then
         SwingState.castEnd = nil
         CastTick(conf)
