@@ -16,7 +16,7 @@ local CUI = _G.CludesUI
 local ABAR = mod.EAB
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local MEDIA = "Interface\\AddOns\\CludesUI\\Media\\"
+local MEDIA = "Interface\\AddOns\\CludesUI\\media\\"
 local STRIPES = MEDIA .. "xp-stripes.tga"
 local STAR = MEDIA .. "xp-star.tga"
 
