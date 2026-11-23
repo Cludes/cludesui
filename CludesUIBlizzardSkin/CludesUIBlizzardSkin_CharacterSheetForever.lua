@@ -1081,12 +1081,8 @@ local function SkinFrame()
             end
             local checked = tab.GetCheckedTexture and tab:GetCheckedTexture()
             if checked then checked:SetAlpha(0) end
-            if tab.Icon then
-                tab.Icon:ClearAllPoints()
-                tab.Icon:SetPoint("TOPLEFT", 4, -4)
-                tab.Icon:SetPoint("BOTTOMRIGHT", -4, 4)
-                tab.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            end
+            -- The icons keep the game's own crop: the titles and equipment set
+            -- icons are pieces of one sheet the game positions itself.
             local function Paint()
                 local Pix = CUI.PanelPP or CUI.PP
                 local on = tab:GetChecked()

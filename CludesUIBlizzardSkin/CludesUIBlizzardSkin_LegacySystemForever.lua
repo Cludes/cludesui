@@ -33,6 +33,13 @@ do
         "legacy-tree-frame-level-circle",
         "legacy-tree-frame-card",
         "talents-square-box",
+        -- The Progress Track and Challenges: the bar's bronze frame and its
+        -- trough, the challenge cards' art, ribbons and date plates, the
+        -- icons' bronze frames.
+        "legacy-progressbar-frame",
+        "legacy-progressbar-bg",
+        "legacy-challenge-cards",
+        "legacy-tree-frame-icon-frame",
     }
     local SIDE_TABS = { "LegacyRewardTrackTab", "LegacyChallengeTab", "LegacyTreeTab" }
     -- Content pages the tabs swap between; each repaints the window when shown.
@@ -52,6 +59,49 @@ do
             end
         end
         if page.SearchBox then Skin.EditBox(page.SearchBox) end
+    end
+
+    -- Legacy progress bars: a flat accent fill on a dark trough with a 1 px
+    -- border (the bronze frame and trough are faded by the list above).
+    local function SkinBar(bar)
+        if not (bar and bar.SetStatusBarTexture) or Skin.GetFFD(bar).cuiBar then return end
+        Skin.GetFFD(bar).cuiBar = true
+        bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        if Skin.ApplyBarFill then Skin.ApplyBarFill(bar) end
+        local trough = bar:CreateTexture(nil, "BACKGROUND", nil, -7)
+        trough:SetAllPoints()
+        trough:SetColorTexture(0, 0, 0, 0.5)
+        if Skin.AddBorder then Skin.AddBorder(bar, 0, 0, 0, 1) end
+    end
+
+    -- The cards the pages build as they show (reward cards, challenge cards):
+    -- their art goes and each is a flat house panel; bars inside are skinned.
+    local function SkinCards(found, depth)
+        if depth > 6 or not found or found:IsForbidden() then return end
+        if found.RewardCardBG or (found.Background and found.TitleBar) or found.ProgressBarFrame then
+            if found.RewardCardBG then
+                found.RewardCardBG:SetAlpha(0)
+                if found.LevelSquare then found.LevelSquare:SetAlpha(0) end
+                if found.IconBorder then found.IconBorder:SetAlpha(0) end
+            end
+            if found.ProgressBarFrame then
+                SkinBar(found)
+            elseif not Skin.GetFFD(found).cuiCard then
+                -- A flat backdrop and 1 px border under the card's own icon
+                -- and text (Skin.Panel would fade the reward's icon too).
+                Skin.GetFFD(found).cuiCard = true
+                local back = found:CreateTexture(nil, "BACKGROUND", nil, -7)
+                back:SetAllPoints()
+                back:SetColorTexture(0, 0, 0, 0.35)
+                if Skin.AddBorder then Skin.AddBorder(found) end
+            end
+        end
+        if found.LegacyRewardProgressBar then SkinBar(found.LegacyRewardProgressBar) end
+        if found.ProgressBar and found.ProgressBar.SetStatusBarTexture then SkinBar(found.ProgressBar) end
+        local children = { found:GetChildren() }
+        for idx = 1, #children do
+            SkinCards(children[idx], depth + 1)
+        end
     end
 
     local function FadeArt(found, depth)
@@ -119,6 +169,9 @@ do
             if frame[pn] then FontKids(frame[pn], 0) end
         end
         SkinTreePage(frame.TreePage)
+        for _, pn in ipairs(PAGES) do
+            if frame[pn] then SkinCards(frame[pn], 0) end
+        end
     end)
 
     -- Re-skin on show and when a tab swaps a content page in (HookShow hooks each
