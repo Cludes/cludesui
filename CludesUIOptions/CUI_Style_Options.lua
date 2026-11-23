@@ -1061,9 +1061,12 @@ end
 -- its own, whose first visit skins every window as the CludesUI look's
 -- does but the micro menu and the bag bar (Blizz Default); a window look
 -- recorded before that slot existed stays as it is.
+-- CludesUI also puts every window skin on (CludesUI.CludesUIWindowsAllOn):
+-- a window left at Blizz Default is reason enough to prompt.
 local function WholeUIWindowsPending(styleKey)
     local swap = CUI.SwapWindowSkinStyle
-    return swap ~= nil and swap(styleKey, true, GuessStockStyle())
+    if swap ~= nil and swap(styleKey, true, GuessStockStyle()) then return true end
+    return styleKey == "cui" and CUI.CludesUIWindowsAllOn ~= nil and CUI.CludesUIWindowsAllOn(true)
 end
 local function ApplyWholeUIWindows(styleKey, legacy)
     local swap = CUI.SwapWindowSkinStyle
@@ -1071,6 +1074,7 @@ local function ApplyWholeUIWindows(styleKey, legacy)
     swap(styleKey, false, legacy or GuessStockStyle())
     local prof = CUI.GetActiveProfileData()
     if prof then prof.windowSkinLook = styleKey end
+    if styleKey == "cui" and CUI.CludesUIWindowsAllOn then CUI.CludesUIWindowsAllOn() end
 end
 
 -- Every loaded module taking part in first-install, no prompt: the first-install
