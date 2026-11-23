@@ -52,7 +52,16 @@ local _warbandOnly = false -- true when opened via portable warbank (AccountBank
 local _catSel = nil
 local _catIndex = nil -- rebuilt every refresh; see BuildBankCategoryIndex
 
+-- Modern display (as the bags' CUI_Bags_Modern.lua): no sidebar; its entries
+-- show as a row of chips in a strip under the header (ModernBankChips).
+local STRIP_H, CHIP_H, CHIP_GAP, CHIP_PAD = 32, 22, 6, 10
+local function ModernBank() return CUI_Bags.IsModernMode and CUI_Bags.IsModernMode() == true end
+-- Where the slots start: under the header, and the chip strip when it shows.
+local function ContentTop() return HEADER_H + (ModernBank() and STRIP_H or 0) end
+
+local bankLeftInset = 0 -- the Forever frame's left edge, set where it is skinned
 local function GetBankSidebarWidth()
+    if ModernBank() then return bankLeftInset end
     local navCollapsed = BagsProfile().bankSidebarCollapsed
     return navCollapsed and SIDEBAR_W_COLLAPSED or SIDEBAR_W
 end
@@ -1075,7 +1084,7 @@ end
 -------------------------------------------------------------------------------
 local sideBar = CreateFrame("Frame", nil, BankWin)
 sideBar._leftInset = 0
-local function GetBankSidebarContentWidth() return GetBankSidebarWidth() - sideBar._leftInset end
+local function GetBankSidebarContentWidth() return math.max(0, GetBankSidebarWidth() - sideBar._leftInset) end
 sideBar:SetPoint("TOPLEFT", headerBar, "BOTTOMLEFT", 0, 0)
 sideBar:SetPoint("BOTTOMLEFT", BankWin, "BOTTOMLEFT", 0, FOOTER_H)
 sideBar:SetWidth(GetBankSidebarContentWidth())
@@ -1195,7 +1204,7 @@ local _sidebarBtns = {}
 --  Scroll Frame + Scrollbar
 -------------------------------------------------------------------------------
 local scrollFrame = CreateFrame("ScrollFrame", nil, BankWin)
-scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", GetBankSidebarWidth(), -HEADER_H)
+scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", GetBankSidebarWidth(), -ContentTop())
 scrollFrame:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -1, FOOTER_H)
 scrollFrame:EnableMouseWheel(true)
 local childFrame = CreateFrame("Frame", nil, scrollFrame)
@@ -2273,9 +2282,13 @@ function BankWin:RefreshBank()
     -- Update sidebar and scroll frame widths
     local sidebarW = GetBankSidebarWidth()
     sideBar:SetWidth(GetBankSidebarContentWidth())
+    sideBar:SetShown(not ModernBank())
     local rightInset = forever and 7 or 1
+    track:ClearAllPoints()
+    track:SetPoint("TOPRIGHT", BankWin, "TOPRIGHT", -rightInset, -(ContentTop() + (forever and 0 or 1)))
+    track:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -rightInset, FOOTER_H)
     scrollFrame:ClearAllPoints()
-    scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", sidebarW, -HEADER_H)
+    scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", sidebarW, -ContentTop())
     scrollFrame:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -rightInset, FOOTER_H)
 
     local gridPadX = 10
@@ -2673,8 +2686,8 @@ function BankWin:RefreshBank()
         listRowW = math.max(100, gridWidth + contentPad - listX - (BagsProfile().bagListGapR or 23))
         _layout, nextY = ToListLayout(_layout, startX, listX)
         listCols = mod.ListLayoutColumns(listRowW)
-        local hdrH = mod.UpdateListHeaderBar(BankWin, listCols, sidebarW, -HEADER_H, listX)
-        scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", sidebarW, -(HEADER_H + hdrH))
+        local hdrH = mod.UpdateListHeaderBar(BankWin, listCols, sidebarW, -ContentTop(), listX)
+        scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", sidebarW, -(ContentTop() + hdrH))
     elseif BankWin.IsCompactMode() then
         -- Compact: the same entries as blocks, each under a thin label band.
         -- The window drops the remainder its widest band leaves short of the
@@ -3246,7 +3259,116 @@ local function BeginDrag(button)
 end
 -- closing the bank mid-drag hides the rows, so the drop just goes nowhere
 
+-------------------------------------------------------------------------------
+--  Modern display: the sidebar's entries (views, tabs, Buy, categories) as
+--  one row of chips under the header, the bags' Modern chip look. The rows
+--  are the sidebar's own buttons moved into the strip, so clicks, right-click
+--  tab settings and the secure Buy overlay work as they do there. Entries that
+--  do not fit the row are left off; the first always shows.
+-------------------------------------------------------------------------------
+local bankStrip = CreateFrame("Frame", nil, BankWin)
+bankStrip:SetHeight(STRIP_H)
+bankStrip:Hide()
+do
+    local shade = bankStrip:CreateTexture(nil, "BACKGROUND")
+    shade:SetAllPoints()
+    shade:SetColorTexture(0, 0, 0, 0.25)
+    local Pix = CUI and CUI.PP
+    local rule = bankStrip:CreateTexture(nil, "ARTWORK")
+    rule:SetHeight((Pix and Pix.mult) or 1)
+    rule:SetPoint("BOTTOMLEFT")
+    rule:SetPoint("BOTTOMRIGHT")
+    rule:SetColorTexture(0.15, 0.15, 0.15, 1)
+end
+BankWin._modernStrip = bankStrip
+
+local function Unchip(button)
+    if not button._chip then return end
+    button._chip = false
+    if CUI.PanelPP then CUI.PanelPP.SetBorderColor(button, 1, 1, 1, 0) end
+    button:SetHeight(SIDEBAR_BTN_H)
+    button._icon:Show()
+    button._label:ClearAllPoints()
+    button._label:SetPoint("LEFT", button._icon, "RIGHT", 6, 0)
+    button._label:SetPoint("RIGHT", button, "RIGHT", -30, 0)
+    button._count:ClearAllPoints()
+    button._count:SetPoint("RIGHT", button, "RIGHT", -6, 0)
+end
+
+local function ModernBankChips(count)
+    bankStrip:ClearAllPoints()
+    bankStrip:SetPoint("TOPLEFT", BankWin, "TOPLEFT", bankLeftInset + 1, -HEADER_H)
+    bankStrip:SetPoint("TOPRIGHT", BankWin, "TOPRIGHT", -1, -HEADER_H)
+    bankStrip:Show()
+    local accR, accG, accB = GetAccentRGB()
+    local room = BankWin:GetWidth() - bankLeftInset - 2 - CHIP_GAP
+    local posX = CHIP_GAP
+    for index = 1, count do
+        local button = _sidebarBtns[index]
+        if button and button:IsShown() then
+            if button._chip == nil and CUI.PanelPP then
+                CUI.PanelPP.CreateBorder(button, 1, 1, 1, 0.12, 1, "OVERLAY", 7)
+            elseif CUI.PanelPP then
+                CUI.PanelPP.SetBorderColor(button, 1, 1, 1, 0.12)
+            end
+            button._chip = true
+            button:SetParent(bankStrip)
+            button:SetHeight(CHIP_H)
+            button._icon:Hide()
+            button._indicator:Hide()
+            button._label:Show()
+            button._label:SetText(button._entryName or "")
+            button._label:ClearAllPoints()
+            button._label:SetPoint("LEFT", button, "LEFT", CHIP_PAD, 0)
+            button._label:SetPoint("RIGHT", button, "RIGHT", -CHIP_PAD, 0)
+            local hasCount = not button._isPurchaseTab and (button._entryCount or 0) > 0
+            local countW = 0
+            button._count:SetShown(hasCount)
+            if hasCount then
+                button._count:SetText(tostring(button._entryCount))
+                countW = math.ceil(button._count:GetStringWidth()) + 5
+                button._count:ClearAllPoints()
+                button._count:SetPoint("RIGHT", button, "RIGHT", -CHIP_PAD, 0)
+                button._label:SetPoint("RIGHT", button, "RIGHT", -CHIP_PAD - countW, 0)
+            end
+            local width = math.ceil(button._label:GetStringWidth()) + countW + 2 * CHIP_PAD
+            if index > 1 and posX + width > room then
+                button:Hide()
+            else
+                button:SetWidth(width)
+                button:ClearAllPoints()
+                button:SetPoint("LEFT", bankStrip, "LEFT", posX, 0)
+                posX = posX + width + CHIP_GAP
+                if button._isSelected then
+                    button._bg:SetColorTexture(accR, accG, accB, 1)
+                    button._label:SetTextColor(0.04, 0.05, 0.06, 1)
+                    button._count:SetTextColor(0.04, 0.05, 0.06, 0.7)
+                else
+                    button._bg:SetColorTexture(1, 1, 1, 0)
+                    button._label:SetTextColor(0.78, 0.80, 0.84, button._isPurchaseTab and 0.6 or 1)
+                    button._count:SetTextColor(0.5, 0.5, 0.5)
+                end
+            end
+            -- The secure Buy overlay follows its chip into the strip.
+            for _, secure in ipairs({ _purchaseBtnChar, _purchaseBtnWarband }) do
+                if secure._visualBtn == button and secure:IsShown() then
+                    secure:SetParent(bankStrip)
+                    secure:SetAllPoints(button)
+                    secure:SetFrameLevel(button:GetFrameLevel() + 20)
+                    secure:SetShown(button:IsShown())
+                end
+            end
+        end
+    end
+end
+
 function BuildBankSidebar()
+    if not ModernBank() then
+        bankStrip:Hide()
+        for _, button in pairs(_sidebarBtns) do
+            Unchip(button)
+        end
+    end
     local navCollapsed = BagsProfile().bankSidebarCollapsed
     local sidebarW = GetBankSidebarContentWidth()
     local posY = 0
@@ -3822,6 +3944,7 @@ function BuildBankSidebar()
 
     -- Set scroll child height so scrolling works when content overflows
     sideChild:SetHeight(math.abs(posY) + 4)
+    if ModernBank() then ModernBankChips(btnCount) end
 end
 
 -------------------------------------------------------------------------------
@@ -4046,14 +4169,14 @@ loader:SetScript("OnEvent", function(self)
         mod.LayoutForeverBagHeader(headerBar)
         HEADER_H = headerBar:GetHeight() + 1
         local inset = mod.ForeverBagSidebarInset(BankWin)
-        sideBar._leftInset = inset
+        sideBar._leftInset, bankLeftInset = inset, inset
         sideBar:SetPoint("TOPLEFT", BankWin, "TOPLEFT", inset, -headerBar:GetHeight())
         sideBar:SetPoint("BOTTOMLEFT", BankWin, "BOTTOMLEFT", inset, FOOTER_H)
         sideBar:SetWidth(GetBankSidebarContentWidth())
         sideChild:SetWidth(GetBankSidebarContentWidth())
-        scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", GetBankSidebarWidth(), -HEADER_H)
+        scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", GetBankSidebarWidth(), -ContentTop())
         scrollFrame:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -7, FOOTER_H)
-        track:SetPoint("TOPRIGHT", BankWin, "TOPRIGHT", -7, -HEADER_H)
+        track:SetPoint("TOPRIGHT", BankWin, "TOPRIGHT", -7, -ContentTop())
         track:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -7, FOOTER_H)
         hdrBg:Hide()
         headerBar.separator:Hide()
