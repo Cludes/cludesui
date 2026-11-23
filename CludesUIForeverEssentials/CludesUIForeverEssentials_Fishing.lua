@@ -11,6 +11,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  Double-Click     a pole in hand: a quick second right-click on the world
 --                   casts (its own Apply Lure in its cog).
 --  Fishing Sounds   music and ambience down, effects up, for the session.
+--  Auto Loot        auto loot on for the session, the game's setting after.
 --
 --  Every action is a real key press or click on a secure button, bound out
 --  of combat only. A session starts with a cast and ends on moving, combat
@@ -30,6 +31,7 @@ local F = module.Feature("fishing", {
     doubleClick = false,
     clickLure = false,
     sound = false,
+    autoLoot = false,
 }, { point = "CENTER", relPoint = "CENTER", x = 0, y = -180 })
 
 -- The Fishing ranks, highest first.
@@ -60,11 +62,16 @@ local SOUND_CVARS = {
     Sound_SFXVolume = function(before) return math.max(before, 0.8) end,
     Sound_EnableSoundWhenGameIsInBG = function() return 1 end,
 }
+-- Auto Loot While Fishing: the catch loots itself, then the game's own
+-- setting comes back.
+local LOOT_CVARS = {
+    autoLootDefault = function() return 1 end,
+}
 
 local function KeyOn() return F.Get("key") ~= nil end
 local function ReelOn() return KeyOn() and F.Get("reel") end
 local function IndicatorOn() return ReelOn() and F.Get("indicator") end
-local function AnyOn() return KeyOn() or F.Get("doubleClick") or F.Get("sound") end
+local function AnyOn() return KeyOn() or F.Get("doubleClick") or F.Get("sound") or F.Get("autoLoot") end
 
 local eventFrame = CreateFrame("Frame")
 local clickOwner = CreateFrame("Frame") -- holds the double-click's binding
@@ -289,6 +296,7 @@ end
 local function StartSession()
     if ReelOn() then Hold("reel", REEL_CVARS) end
     if F.Get("sound") then Hold("sound", SOUND_CVARS) end
+    if F.Get("autoLoot") then Hold("loot", LOOT_CVARS) end
     if inSession then return end
     inSession = true
     eventFrame:RegisterEvent("PLAYER_STARTED_MOVING")
@@ -299,6 +307,7 @@ local function EndSession()
     StopReel()
     Release("reel")
     Release("sound")
+    Release("loot")
     if not inSession then return end
     inSession = false
     eventFrame:UnregisterEvent("PLAYER_STARTED_MOVING")

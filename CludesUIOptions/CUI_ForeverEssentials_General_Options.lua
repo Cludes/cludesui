@@ -201,7 +201,6 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     local W = CUI.Widgets
     local SU, CS, CT = CUI._SpellUprank, CUI._ClassicSpellbook, CUI._ClassicTalents
     local MT = CUI._MapTravel
-    local BLANK = CUI.BlankRowCfg
     local cursorY = yOffset
     local _, height, heading
     hostFrame._showRowDivider = true
@@ -3583,7 +3582,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         tooltip = "While you fish: music and ambience down, effects up, sound on in the background.",
         getValue = function() return FI.Get("sound") end,
         setValue = function(val) SetFish("sound", val) end,
-    }, BLANK())
+    }, {
+        type = "toggle",
+        text = "Auto Loot While Fishing",
+        tooltip = "While you fish, the catch loots itself; your own auto loot setting comes back when you stop.",
+        getValue = function() return FI.Get("autoLoot") end,
+        setValue = function(val) SetFish("autoLoot", val) end,
+    })
     cursorY = cursorY - height
 
     return math.abs(cursorY)
