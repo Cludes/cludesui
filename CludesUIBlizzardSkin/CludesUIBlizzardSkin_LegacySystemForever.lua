@@ -25,10 +25,34 @@ do
         "toptilestreaks",
         "gamepad-uiframemetal",
         "legacy-rewards-tracker-background",
+        -- The Legacy Tree page: its parchment, divider, points bar, level
+        -- circle, the category cards down its left and the nodes' boxes.
+        "legacy-tree-frame-background",
+        "legacy-tree-frame-divider",
+        "legacy-tree-frame-points-bar",
+        "legacy-tree-frame-level-circle",
+        "legacy-tree-frame-card",
+        "talents-square-box",
     }
     local SIDE_TABS = { "LegacyRewardTrackTab", "LegacyChallengeTab", "LegacyTreeTab" }
     -- Content pages the tabs swap between; each repaints the window when shown.
-    local PAGES = { "RewardTrackPage", "ChallengesPage" }
+    local PAGES = { "RewardTrackPage", "ChallengesPage", "TreePage" }
+
+    -- The Tree page's controls: Apply Changes and the search box in the house
+    -- look, a flat panel behind the tree.
+    local function SkinTreePage(page)
+        if not page then return end
+        local panel = page.LegacyTreeTraitPanel
+        if panel then
+            if panel.ApplyButton then Skin.Button(panel.ApplyButton) end
+            if panel.SearchBox then Skin.EditBox(panel.SearchBox) end
+            if not Skin.GetFFD(panel).cuiPanel then
+                Skin.GetFFD(panel).cuiPanel = true
+                Skin.Panel(panel)
+            end
+        end
+        if page.SearchBox then Skin.EditBox(page.SearchBox) end
+    end
 
     local function FadeArt(found, depth)
         if depth > 5 or not found or found:IsForbidden() then return end
@@ -94,6 +118,7 @@ do
         for _, pn in ipairs(PAGES) do
             if frame[pn] then FontKids(frame[pn], 0) end
         end
+        SkinTreePage(frame.TreePage)
     end)
 
     -- Re-skin on show and when a tab swaps a content page in (HookShow hooks each
