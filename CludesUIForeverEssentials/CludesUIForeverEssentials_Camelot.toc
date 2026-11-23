@@ -62,6 +62,7 @@ CludesUIForeverEssentials_TownMapData.lua
 CludesUIForeverEssentials_TownMap.lua
 CludesUIForeverEssentials_GlimmerData.lua
 CludesUIForeverEssentials_Glimmer.lua
+CludesUIForeverEssentials_ZoneInfo.lua
 CludesUIForeverEssentials_Blessings.xml
 CludesUIForeverEssentials_Blessings.lua
 CludesUIForeverEssentials_DiscoveryData.lua

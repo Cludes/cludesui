@@ -1084,6 +1084,27 @@ CUI._Glimmer = {
     Gathered = Gathered,
     -- The effect frame and its line (tests).
     Fx = function() return fx, line end,
+    -- For Zone Info: the herbs and ore that grow in a zone, each once, by
+    -- skill: { kind, need, name } (nil while the spots cannot be read yet).
+    ZoneNodes = function(mapID)
+        if not LoadSpots() then return nil end
+        local list, seen = {}, {}
+        local all = SPOTS[mapID]
+        for i = 1, all and #all or 0, 3 do
+            local node = NODES[all[i]]
+            local key = node and (node[1] .. ":" .. node[3])
+            if node and (node[1] == "herb" or node[1] == "ore") and not seen[key] then
+                seen[key] = true
+                list[#list + 1] = { kind = node[1], need = node[2], name = node[3] }
+            end
+        end
+        table.sort(list, function(a, b)
+            if a.need ~= b.need then return a.need < b.need end
+            return a.name < b.name
+        end)
+        return list
+    end,
+    Skill = Skill,
 }
 
 F.Start(Apply)

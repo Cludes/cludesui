@@ -494,9 +494,17 @@ local function Refresh(force)
     end
 end
 
+-- The places (transports, exits, instances), built on first use.
+local function Places()
+    if not payload and module.MapTravelData then
+        payload = module.MapTravelData()
+        module.MapTravelData = nil
+    end
+    return payload
+end
+
 local function Build()
-    payload = module.MapTravelData()
-    module.MapTravelData = nil
+    Places()
 
     layer = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer.Child)
     layer:SetAllPoints()
@@ -564,6 +572,7 @@ CUI._MapTravel = {
     On = FeatureOn,
     Cfg = F.Cfg,
     Apply = Apply,
+    Places = Places, -- for Zone Info
 }
 
 F.Start(Apply)

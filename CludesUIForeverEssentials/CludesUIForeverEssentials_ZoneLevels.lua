@@ -277,6 +277,14 @@ CUI._ZoneLevels = {
     Get = F.Get,
     Cfg = F.Cfg,
     Apply = Apply,
+    -- For Zone Info: a zone's level range { low, high }, and the fishing
+    -- skill it needs (the lowest that catches, the lowest no fish escape).
+    Levels = function(mapID) return LEVELS[mapID] end,
+    Fishing = function(mapID)
+        local base = FISHING[mapID]
+        if not base then return end
+        return math.max(base, 1), base + NO_GETAWAY
+    end,
 }
 
 F.Start(Apply)

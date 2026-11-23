@@ -567,9 +567,25 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
 
-    -- Quest Area Tint (CludesUIForeverEssentials_QuestAreaTint.lua) | blank.
+    -- Quest Area Tint (CludesUIForeverEssentials_QuestAreaTint.lua) | Zone Info
+    -- (CludesUIForeverEssentials_ZoneInfo.lua).
     local QT = CUI._QuestAreaTint
+    local ZI = CUI._ZoneInfo
     if QT then
+        local zoneCfg = CUI.BlankRowCfg()
+        if ZI then
+            zoneCfg = {
+                type = "toggle",
+                text = "Zone Info",
+                tooltip = "A panel beside the world map for the zone it shows: its levels against yours, its dungeons, the fishing skill it needs, its flight masters, boats and roads, and the herbs and ore that grow there.",
+                getValue = function() return ZI.Get("enabled") end,
+                setValue = function(val)
+                    ZI.Cfg().enabled = val and true or false
+                    ZI.Apply()
+                    CUI:RefreshPage()
+                end,
+            }
+        end
         local tintRow
         tintRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
@@ -581,8 +597,33 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 QT.Apply()
                 CUI:RefreshPage()
             end,
-        }, CUI.BlankRowCfg())
+        }, zoneCfg)
         cursorY = cursorY - height
+        if ZI and not CUI._prebuilding then
+            local function ZTog(key, label)
+                return {
+                    type = "toggle",
+                    label = label,
+                    get = function() return ZI.Get(key) == true end,
+                    set = function(val)
+                        ZI.Cfg()[key] = val
+                        ZI.Apply()
+                    end,
+                }
+            end
+            CUI.BuildInlineCog(tintRow._rightRegion, {
+                disabled = function() return not ZI.Get("enabled") end,
+                disabledTooltip = "Zone Info",
+                title = "Zone Info",
+                rows = {
+                    ZTog("dungeons", "Dungeons & Raids"),
+                    ZTog("fishing", "Fishing"),
+                    ZTog("travel", "Travel"),
+                    ZTog("gathering", "Herbs & Mining"),
+                    ZTog("onlyMyProfessions", "Only My Gathering Skills"),
+                },
+            })
+        end
         if not CUI._prebuilding then
             CUI.BuildInlineCog(tintRow._leftRegion, {
                 disabled = function() return not QT.Get("enabled") end,
