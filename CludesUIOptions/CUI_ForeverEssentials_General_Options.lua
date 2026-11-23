@@ -2434,6 +2434,22 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             setValue = function(val) Set("capture", val and true or false) end,
         })
         cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Market Panel",
+            disabled = mOff,
+            tooltip = "A panel beside the auction house. Sell: your bags most valuable first, each priced one step under the cheapest listing that is not yours, with quantity, duration and Post. My Auctions: your auctions checked against the listings, undercut ones first, with Cancel.",
+            getValue = function() return MK.Get("panel") end,
+            setValue = function(val) Set("panel", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Undercut Alert",
+            disabled = function() return mOff() or not MK.Get("panel") end,
+            tooltip = "A chat line at the auction house when someone lists for less than your auctions.",
+            getValue = function() return MK.Get("undercutAlert") end,
+            setValue = function(val) Set("undercutAlert", val and true or false) end,
+        })
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------

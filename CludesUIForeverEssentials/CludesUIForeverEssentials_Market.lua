@@ -13,7 +13,16 @@ if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local F = module.Feature("market", { enabled = false, tooltip = true, autoScan = false, autoMinutes = 30, capture = true })
+local F = module.Feature("market", {
+    enabled = false,
+    tooltip = true,
+    autoScan = false,
+    autoMinutes = 30,
+    capture = true,
+    panel = true,
+    undercutAlert = true,
+    duration = 2,
+})
 local Get, On = F.Get, F.Enabled
 
 local COOLDOWN, TIMEOUT, CHUNK = 900, 60, 1000
@@ -59,6 +68,13 @@ function Market.Price(itemID)
     local price = house and house.prices[itemID]
     if not price then return end
     return price, house.seen and house.seen[itemID] or house.time
+end
+
+-- A price seen just now (the Market panel's listings): this house's price.
+function Market.Seen(itemID, price)
+    local house = Market.House(true)
+    house.seen = house.seen or {}
+    house.prices[itemID], house.seen[itemID] = price, GetServerTime()
 end
 
 function Market.Listed(itemID)
@@ -299,6 +315,7 @@ events:SetScript("OnEvent", function(_, event)
 end)
 
 local function Apply()
+    if CUI._MarketPanel then CUI._MarketPanel.Apply() end
     events:UnregisterAllEvents()
     if button then button:SetShown(On() and state.open == true) end
     if not On() then return end
