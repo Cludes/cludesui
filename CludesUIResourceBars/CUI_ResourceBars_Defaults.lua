@@ -627,6 +627,16 @@ local DEFAULTS = {
             aimG = 0.82,
             aimB = 0.25,
             aimA = 0.6, -- STILL: amber, translucent so the fill shows through
+            -- Seal Colors (paladin): melee rows take the active seal's colour.
+            -- Per-seal colours (sealRighteousR/G/B/A, ...) are unset by default (built-in colours).
+            sealColors = true,
+            -- Swing Window: the last swingWindowTime seconds of each melee swing
+            -- (+ one latency with windowLatency); windowR/G/B/A unset = white 35%.
+            swingWindow = false,
+            swingWindowTime = 0.4,
+            windowLatency = false,
+            -- Cast Clip: a Main Hand tick where the current cast ends (castOk.. / castBad.. unset = white / red).
+            castClip = false,
             borderSize = 1,
             borderR = 0,
             borderG = 0,

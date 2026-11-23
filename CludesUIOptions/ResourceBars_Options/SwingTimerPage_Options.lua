@@ -1286,8 +1286,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             },
         })
     end
-    -- Row: Movement Guide (+ GO / STILL colors and Text Cue cog) | (blank: last
-    -- row of the section)
+    -- Row: Movement Guide (+ GO / STILL colors and Text Cue cog) | Swing Window
+    -- (+ length, latency and color cog)
     local guideRow
     guideRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
@@ -1299,8 +1299,139 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         order = { "off", "segments", "windup" },
         getValue = Getter("moveGuide", "off"),
         setValue = Setter("moveGuide", true),
-    }, CUI.BlankRowCfg())
+    }, {
+        type = "toggle",
+        text = "Swing Window",
+        tooltip = "Mark the last moments of each melee swing: the time left to queue an attack onto it.",
+        disabled = stOff,
+        disabledTooltip = SWING_TIP,
+        getValue = function()
+            local profile = DB()
+            return profile and profile.swingTimer.swingWindow == true
+        end,
+        setValue = Setter("swingWindow"),
+    })
     cursorY = cursorY - height
+    local windowOff = function()
+        local profile = DB()
+        return not profile or profile.swingTimer.swingWindow ~= true
+    end
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(guideRow._rightRegion, {
+            disabled = function() return stOff() or windowOff() end,
+            disabledTooltip = function()
+                if stOff() then return SWING_TIP end
+                return "Swing Window"
+            end,
+            title = "Swing Window",
+            rows = {
+                {
+                    type = "slider",
+                    label = "Window Length",
+                    min = 0.1,
+                    max = 1.5,
+                    step = 0.05,
+                    tooltip = "Seconds at the end of each melee swing.",
+                    get = function()
+                        local profile = DB()
+                        return profile and profile.swingTimer.swingWindowTime or 0.4
+                    end,
+                    set = function(val)
+                        local profile = DB()
+                        if not profile then return end
+                        profile.swingTimer.swingWindowTime = val
+                        ApplySwingTimer()
+                    end,
+                },
+                {
+                    type = "toggle",
+                    label = "Add Latency",
+                    tooltip = "Widen the window by your current latency.",
+                    get = function()
+                        local profile = DB()
+                        return profile and profile.swingTimer.windowLatency == true
+                    end,
+                    set = Setter("windowLatency"),
+                },
+                ColorRow("Window", "window", { 1, 1, 1, 0.35 }, "The swing window's color."),
+            },
+        })
+    end
+
+    -- Row: Seal Colors (+ per-seal colors cog; paladins only) | Cast Clip
+    -- (+ colors cog)
+    local _, playerClass = UnitClass("player")
+    local notPaladin = playerClass ~= "PALADIN"
+    local PALADIN_TIP = "This option is for paladins."
+    local sealOff = function()
+        local profile = DB()
+        return notPaladin or not profile or profile.swingTimer.sealColors == false
+    end
+    local clipOff = function()
+        local profile = DB()
+        return not profile or profile.swingTimer.castClip ~= true
+    end
+    local sealRow
+    sealRow, height = W:DualRow(hostFrame, cursorY, {
+        type = "toggle",
+        text = "Seal Colors",
+        tooltip = "Color the melee rows by the seal you have up.",
+        disabled = function() return stOff() or notPaladin end,
+        disabledTooltip = function()
+            if stOff() then return SWING_TIP end
+            return PALADIN_TIP
+        end,
+        getValue = function()
+            local profile = DB()
+            return profile and profile.swingTimer.sealColors ~= false
+        end,
+        setValue = Setter("sealColors"),
+    }, {
+        type = "toggle",
+        text = "Cast Clip",
+        tooltip = "Mark where your cast ends on the Main Hand row. It turns red when the cast runs past the swing and delays it.",
+        disabled = stOff,
+        disabledTooltip = SWING_TIP,
+        getValue = function()
+            local profile = DB()
+            return profile and profile.swingTimer.castClip == true
+        end,
+        setValue = Setter("castClip"),
+    })
+    cursorY = cursorY - height
+    if not CUI._prebuilding then
+        CUI.BuildInlineCog(sealRow._leftRegion, {
+            disabled = function() return stOff() or sealOff() end,
+            disabledTooltip = function()
+                if stOff() then return SWING_TIP end
+                if notPaladin then return PALADIN_TIP end
+                return "Seal Colors"
+            end,
+            title = "Seal Colors",
+            rows = {
+                ColorRow("Righteousness", "sealRighteous", { 0.95, 0.85, 0.40, 1 }, "Seal of Righteousness."),
+                ColorRow("Crusader", "sealCrusader", { 0.95, 0.55, 0.20, 1 }, "Seal of the Crusader."),
+                ColorRow("Command", "sealCommand", { 0.75, 0.35, 0.95, 1 }, "Seal of Command."),
+                ColorRow("Justice", "sealJustice", { 0.60, 0.65, 0.75, 1 }, "Seal of Justice."),
+                ColorRow("Light", "sealLight", { 1, 0.95, 0.70, 1 }, "Seal of Light."),
+                ColorRow("Wisdom", "sealWisdom", { 0.35, 0.65, 1, 1 }, "Seal of Wisdom."),
+                ColorRow("Fury", "sealFury", { 0.95, 0.25, 0.20, 1 }, "Seal of Fury."),
+                ColorRow("Martyrdom", "sealMartyrdom", { 0.90, 0.40, 0.70, 1 }, "Seal of Martyrdom."),
+            },
+        })
+        CUI.BuildInlineCog(sealRow._rightRegion, {
+            disabled = function() return stOff() or clipOff() end,
+            disabledTooltip = function()
+                if stOff() then return SWING_TIP end
+                return "Cast Clip"
+            end,
+            title = "Cast Clip",
+            rows = {
+                ColorRow("In Time", "castOk", { 1, 1, 1, 1 }, "The cast ends before the swing."),
+                ColorRow("Delays Swing", "castBad", { 1, 0.15, 0.15, 1 }, "The cast runs past the swing."),
+            },
+        })
+    end
     if not CUI._prebuilding then
         CUI.BuildInlineCog(guideRow._leftRegion, {
             disabled = function() return stOff() or guideOff() end,

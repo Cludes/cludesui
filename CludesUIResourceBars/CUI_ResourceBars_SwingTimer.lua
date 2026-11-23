@@ -134,6 +134,48 @@ local AIM_TIME = 0.5
 local AIM_CLASS = { PRIEST = true, MAGE = true, WARLOCK = true, HUNTER = true }
 local AIM_COLOR = { r = 1, g = 0.82, b = 0.25 }
 
+-- Seal Colors (paladin): while a seal is up the melee rows take its colour
+-- (sealRighteousR/G/B/A, ...), so the swing that carries it is visible. Seals
+-- are matched by name, so every rank counts; names resolve once per session,
+-- for a paladin only. The aura is followed through UNIT_AURA's update info
+-- (added / updated / removed, by auraInstanceID) whenever the client lets
+-- auras be read, combat included; a seal cast while they are secret is taken
+-- from UNIT_SPELLCAST_SUCCEEDED and runs out on a timer of its last known
+-- length (SEAL_TIME until one is read).
+local SEALS = {
+    { id = 20154, key = "sealRighteous", r = 0.95, g = 0.85, b = 0.40 }, -- Seal of Righteousness
+    { id = 21082, key = "sealCrusader", r = 0.95, g = 0.55, b = 0.20 }, -- Seal of the Crusader
+    { id = 20375, key = "sealCommand", r = 0.75, g = 0.35, b = 0.95 }, -- Seal of Command
+    { id = 20164, key = "sealJustice", r = 0.60, g = 0.65, b = 0.75 }, -- Seal of Justice
+    { id = 20165, key = "sealLight", r = 1, g = 0.95, b = 0.70 }, -- Seal of Light
+    { id = 20166, key = "sealWisdom", r = 0.35, g = 0.65, b = 1 }, -- Seal of Wisdom
+    { id = 1311649, key = "sealFury", r = 0.95, g = 0.25, b = 0.20 }, -- Seal of Fury
+    { id = 407798, key = "sealMartyrdom", r = 0.90, g = 0.40, b = 0.70 }, -- Seal of Martyrdom
+}
+local SEAL_TIME = 30
+local MAX_AURAS = 40
+
+-- Swing Window: the last swingWindowTime seconds of each melee swing (plus one
+-- latency with windowLatency), the time left to queue an attack onto it.
+local WINDOW_TIME = 0.4
+local WINDOW_COLOR = { r = 1, g = 1, b = 1, a = 0.35 }
+
+-- Cast Clip: a tick on the Main Hand row where the cast in progress ends; it
+-- turns red when the cast runs past the swing (the swing waits for it).
+local CAST_OK = { r = 1, g = 1, b = 1 }
+local CAST_BAD = { r = 1, g = 0.15, b = 0.15 }
+local TICK_WIDTH = 2
+local CAST_EVENTS = {
+    "UNIT_SPELLCAST_START",
+    "UNIT_SPELLCAST_DELAYED",
+    "UNIT_SPELLCAST_STOP",
+    "UNIT_SPELLCAST_FAILED",
+    "UNIT_SPELLCAST_INTERRUPTED",
+    "UNIT_SPELLCAST_CHANNEL_START",
+    "UNIT_SPELLCAST_CHANNEL_UPDATE",
+    "UNIT_SPELLCAST_CHANNEL_STOP",
+}
+
 -- Shell at FILE SCOPE (attribution rule, see _erbEventFrame in the main file):
 -- the OnEvent work bills ResourceBars. Children stay lazy.
 local shellFrame = CreateFrame("Frame", "ERB_SwingTimerFrame", UIParent)
@@ -148,7 +190,11 @@ shellFrame:Hide()
 -- on, from the edges), seeded (both read since the highlight came on), active
 -- (the state painted), aimClass (this class's AIM_CLASS),
 -- moveEvents / moving (the movement edges registered / the player moving),
--- ruled (the form or talents ruled the timer out at the last apply, RuledOut).
+-- ruled (the form or talents ruled the timer out at the last apply, RuledOut),
+-- sealByName (this paladin's seals by name), seal (the SEALS entry painted,
+-- false = none), sealInst / sealTimer / sealSecs (its aura instance, run-out
+-- timer and last known length), sealEvents / castEvents (registered), castEnd
+-- (when the player's cast or channel ends, nil = none).
 -- Per row, _rtt (the latency read for its swing) and, on a guide row, _aimAt
 -- (its Stop by point), _aiming and _aimFrom (an aim phase running, and from
 -- when).
@@ -163,6 +209,8 @@ local SwingState = {
     meleeOn = false,
     repeatOn = false,
     active = { melee = false, ranged = false },
+    sealByName = {},
+    seal = false,
 }
 
 -------------------------------------------------------------------------------
@@ -565,6 +613,7 @@ local function HideZones(swingRow)
     if zoneList then
         HideSwingZone(zoneList.lat)
         HideSwingZone(zoneList.aim)
+        HideSwingZone(zoneList.win)
     end
 end
 
@@ -653,6 +702,11 @@ local function WindRow(swingRow, conf) return conf.moveGuide == "windup" and Gui
 
 local function StillRow(swingRow, conf) return conf.moveGuide == "segments" and GuideRow(swingRow, conf) end
 
+-- Swing Window: melee rows only, not a combined off hand (only its spark shows).
+local function WindowRow(swingRow, conf)
+    return conf.swingWindow == true and swingRow._def.melee and not swingRow._merged
+end
+
 local function StyleZones(swingRow, conf, texPath)
     StyleZone(
         swingRow,
@@ -679,6 +733,19 @@ local function StyleZones(swingRow, conf, texPath)
         6,
         -1
     )
+    local wc = WINDOW_COLOR
+    StyleZone(
+        swingRow,
+        "win",
+        WindowRow(swingRow, conf),
+        texPath,
+        conf.windowR or wc.r,
+        conf.windowG or wc.g,
+        conf.windowB or wc.b,
+        conf.windowA or wc.a,
+        5,
+        -2
+    )
 end
 
 -- Both zones on a swing, from the latency read at its start (_rtt). A Wind-Up
@@ -703,6 +770,73 @@ local function UpdateZones(swingRow, conf, dur)
             HideSwingZone(aimTex)
         end
     end
+    local win = zoneList.win
+    if win then
+        if WindowRow(swingRow, conf) then
+            local secs = conf.swingWindowTime or WINDOW_TIME
+            if conf.windowLatency then secs = secs + rtt end
+            PlaceZone(swingRow, win, conf, secs, dur, conf.depleteFill)
+        else
+            HideSwingZone(win)
+        end
+    end
+end
+
+-- Cast Clip (Main Hand row): where the player's cast or channel ends against
+-- the running swing. The tick is built on first use, over the fill; hidden
+-- while the row is not mid-swing, waiting, aiming, or shows its sample.
+local function CastTick(conf)
+    local swingRow = SwingState.byType[SWING.MainHand]
+    if not swingRow then return end
+    local tick = swingRow._tick
+    local castEnd = SwingState.castEnd
+    local start, e = swingRow._start, swingRow._end
+    if
+        not (
+            conf
+            and conf.castClip == true
+            and castEnd
+            and swingRow._live
+            and start
+            and e
+            and e > start
+            and not swingRow._waiting
+            and not swingRow._aiming
+            and not SwingState.sample
+        )
+    then
+        if tick then tick:Hide() end
+        return
+    end
+    if not tick then
+        tick = swingRow._sparkFrame:CreateTexture(nil, "OVERLAY", nil, 2)
+        swingRow._tick = tick
+    end
+    local frac = (castEnd - start) / (e - start)
+    if frac > 1 then
+        frac = 1
+    elseif frac < 0 then
+        frac = 0
+    end
+    if conf.depleteFill then frac = 1 - frac end
+    local wid = swingRow._clip:GetWidth()
+    if not (wid and wid > 0) then wid = conf.width or 220 end
+    local bad = castEnd > e
+    local key, def = bad and "castBad" or "castOk", bad and CAST_BAD or CAST_OK
+    tick:SetColorTexture(conf[key .. "R"] or def.r, conf[key .. "G"] or def.g, conf[key .. "B"] or def.b, conf[key .. "A"] or 1)
+    tick:ClearAllPoints()
+    tick:SetPoint("TOP", swingRow._clip, "TOPLEFT", wid * frac, 0)
+    tick:SetPoint("BOTTOM", swingRow._clip, "BOTTOMLEFT", wid * frac, 0)
+    tick:SetWidth(TICK_WIDTH)
+    tick:Show()
+end
+
+-- The player's cast or channel end, in seconds (GetTime's clock); nil when
+-- there is none or the answer is restricted.
+local function ReadCast()
+    local e = select(5, UnitCastingInfo("player"))
+    if IsPlainVal(e) and not e then e = select(5, UnitChannelInfo("player")) end
+    SwingState.castEnd = (IsPlainVal(e) and type(e) == "number" and e > 0) and e / 1000 or nil
 end
 
 -- GO at the end of an aim phase, which runs opposite to the swing.
@@ -769,6 +903,7 @@ local function IdleRow(swingRow, conf)
     SyncTimeText(swingRow, conf)
     swingRow._time:SetText("")
     HideZones(swingRow)
+    if swingRow._tick then swingRow._tick:Hide() end
 end
 
 -- Defined below the waiting state; ArmEdges schedules it at a swing's edges.
@@ -937,6 +1072,7 @@ local function StartRow(swingRow, dur, conf)
         conf.depleteFill and DIR.RemainingTime or DIR.ElapsedTime
     )
     UpdateZones(swingRow, conf, dur)
+    if swingRow._def.type == SWING.MainHand then CastTick(conf) end
     ArmEdges(swingRow, conf)
     SyncTimeText(swingRow, conf)
     if conf.hideWhenIdle and SwingState.live == 1 and mod.ST_UpdateVisibility then
@@ -967,6 +1103,7 @@ local function EnterWaiting(swingRow, conf)
         (conf.moveCue and conf.showTime ~= false and GuideRow(swingRow, conf)) and CludesUI.L("Still") or ""
     )
     HideZones(swingRow)
+    if swingRow._tick then swingRow._tick:Hide() end
     UpdateSpark(swingRow, conf)
     ApplyRowFill(swingRow, conf)
 end
@@ -993,6 +1130,7 @@ local function EnterAim(swingRow, conf, from, to)
         conf.depleteFill and DIR.ElapsedTime or DIR.RemainingTime
     )
     HideZones(swingRow)
+    if swingRow._tick then swingRow._tick:Hide() end
     PlaceAimLatency(swingRow, conf, from, to)
     UpdateSpark(swingRow, conf)
     ApplyRowFill(swingRow, conf)
@@ -1050,7 +1188,8 @@ end
 --  Layout + look
 -------------------------------------------------------------------------------
 
--- Fill colour: the row's own (or class) colour; the On colour while its auto
+-- Fill colour: the row's own (or class) colour; the seal's colour on a melee
+-- row while a paladin seal is up (Seal Colors); the On colour while its auto
 -- attack is on (Attack State Full); the queued attack's own colour on a melee
 -- row while an on-next-swing attack is queued (not with Attack State Off); the
 -- Still colour (opaque) in an aim phase; the Waiting colour while the row waits
@@ -1067,6 +1206,7 @@ function ApplyRowFill(swingRow, conf)
     local aimTex = not pend and swingRow._aiming
     local q = not (pend or aimTex) and QueueRow(defaults, conf) and SwingState.queued
     local act = not (pend or aimTex or q) and SwingState.active[defaults.melee and "melee" or "ranged"]
+    local sl = not (pend or aimTex or q or act) and defaults.melee and SwingState.seal
     local fR, fG, fB, fA
     if pend then
         local color = PENDING_COLOR
@@ -1085,10 +1225,14 @@ function ApplyRowFill(swingRow, conf)
         local color = ACTIVE_COLOR
         fR, fG, fB, fA =
             conf.activeR or color.r, conf.activeG or color.g, conf.activeB or color.b, conf.activeA or 1
+    elseif sl then
+        local k = sl.key
+        fR, fG, fB, fA =
+            conf[k .. "R"] or sl.r, conf[k .. "G"] or sl.g, conf[k .. "B"] or sl.b, conf[k .. "A"] or 1
     else
         fR, fG, fB, fA = RowColor(conf, defaults)
     end
-    if conf.gradientEnabled and not (pend or aimTex or q or act) then
+    if conf.gradientEnabled and not (pend or aimTex or q or act or sl) then
         mod.ApplyBarGradient(
             fillTex,
             conf.gradientDir or "HORIZONTAL",
@@ -1153,6 +1297,130 @@ local function PaintQueue(conf)
             ApplyRowTag(swingRow, conf)
         end
     end
+end
+
+-- Seal Colors: on for a paladin unless switched off (sealColors ~= false).
+local function SealOn(conf) return conf.sealColors ~= false and next(SwingState.sealByName) ~= nil end
+
+local function StopSealTimer()
+    local timer = SwingState.sealTimer
+    if timer then
+        timer:Cancel()
+        SwingState.sealTimer = nil
+    end
+end
+
+-- Delta paint: touches the melee rows only when the seal changed.
+local function SetSeal(entry)
+    if not entry then
+        StopSealTimer()
+        SwingState.sealInst = nil
+    end
+    if entry == SwingState.seal then return end
+    SwingState.seal = entry
+    local conf = P()
+    if not (conf and SwingState.built) then return end
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
+        if swingRow._def.melee then ApplyRowFill(swingRow, conf) end
+    end
+end
+
+local function SealRanOut()
+    SwingState.sealTimer = nil
+    SetSeal(false)
+end
+
+local function SealEndsIn(secs)
+    StopSealTimer()
+    SwingState.sealTimer = C_Timer.NewTimer(math.max(secs, 0), SealRanOut)
+end
+
+local function AurasSecret()
+    return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() and true or false
+end
+
+-- The SEALS entry an aura is, or nil; a seal also leaves its instance, length
+-- and run-out time behind.
+local function SealFromAura(aura)
+    local name = aura and aura.name
+    if not (IsPlainVal(name) and name) then return nil end
+    local entry = SwingState.sealByName[name]
+    if not entry then return nil end
+    local inst, dur, ends = aura.auraInstanceID, aura.duration, aura.expirationTime
+    SwingState.sealInst = IsPlainVal(inst) and inst or nil
+    if IsPlainVal(dur) and type(dur) == "number" and dur > 0 then SwingState.sealSecs = dur end
+    if IsPlainVal(ends) and type(ends) == "number" and ends > 0 then
+        SealEndsIn(ends - GetTime())
+    else
+        StopSealTimer()
+    end
+    return entry
+end
+
+-- Full read of the player's buffs (enable, a full update).
+local function ScanSeal()
+    if AurasSecret() or not (C_UnitAuras and C_UnitAuras.GetAuraDataByIndex) then return end
+    local found = false
+    for i = 1, MAX_AURAS do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+        if not aura then break end
+        local entry = SealFromAura(aura)
+        if entry then
+            found = entry
+            break
+        end
+    end
+    SetSeal(found)
+end
+
+-- UNIT_AURA's update info: the tracked seal removed, a seal added, or the
+-- tracked seal refreshed (a new run-out time).
+local function SealAuraUpdate(info)
+    if type(info) ~= "table" or info.isFullUpdate then return ScanSeal() end
+    if AurasSecret() then return end
+    local removed, inst = info.removedAuraInstanceIDs, SwingState.sealInst
+    if removed and inst then
+        for i = 1, #removed do
+            if IsPlainVal(removed[i]) and removed[i] == inst then
+                SetSeal(false)
+                break
+            end
+        end
+    end
+    local added = info.addedAuras
+    if added then
+        for i = 1, #added do
+            local entry = SealFromAura(added[i])
+            if entry then
+                SetSeal(entry)
+                break
+            end
+        end
+    end
+    local updated = info.updatedAuraInstanceIDs
+    inst = SwingState.sealInst
+    if updated and inst and C_UnitAuras and C_UnitAuras.GetAuraDataByAuraInstanceID then
+        for i = 1, #updated do
+            if IsPlainVal(updated[i]) and updated[i] == inst then
+                SealFromAura(C_UnitAuras.GetAuraDataByAuraInstanceID("player", inst))
+                break
+            end
+        end
+    end
+end
+
+-- A seal cast: shown at once, running out after its last known length, unless
+-- its aura already reported it (then the aura's own times hold).
+local function SealCast(spellID)
+    if not (IsPlainVal(spellID) and spellID and C_Spell and C_Spell.GetSpellName) then return end
+    local name = C_Spell.GetSpellName(spellID)
+    local entry = IsPlainVal(name) and name and SwingState.sealByName[name]
+    if not entry then return end
+    if entry == SwingState.seal and SwingState.sealInst then return end
+    SwingState.sealInst = nil
+    SetSeal(entry)
+    SealEndsIn(SwingState.sealSecs or SEAL_TIME)
 end
 
 -- One-shot read of both states, for the edges this frame was not listening
@@ -1610,6 +1878,18 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
             SetRangeCheck(swingRow._def.type, wantRange and swingRow:IsShown())
         end
         SyncAllRanges()
+    elseif evt == "UNIT_AURA" then
+        -- a2 = updateInfo
+        SealAuraUpdate(a2)
+    elseif evt == "UNIT_SPELLCAST_SUCCEEDED" then
+        -- a3 = spellID
+        SealCast(a3)
+    elseif evt == "UNIT_SPELLCAST_STOP" or evt == "UNIT_SPELLCAST_CHANNEL_STOP" then
+        SwingState.castEnd = nil
+        CastTick(conf)
+    elseif evt:find("^UNIT_SPELLCAST_") then
+        ReadCast()
+        CastTick(conf)
     else
         -- WEAPON_SLOT_CHANGED / PLAYER_EQUIPMENT_CHANGED (off hand slot only) /
         -- UNIT_ATTACK_SPEED / PLAYER_ENTERING_WORLD
@@ -1678,9 +1958,52 @@ local function ApplyActiveEvents(conf)
     end
 end
 
+-- Seal Colors: the player's aura and cast-success edges, only for a paladin
+-- with the option on.
+local function ApplySealEvents(conf)
+    if not SwingState.events then return end
+    if SealOn(conf) then
+        if not SwingState.sealEvents then
+            SwingState.sealEvents = true
+            shellFrame:RegisterUnitEvent("UNIT_AURA", "player")
+            shellFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+        end
+        ScanSeal()
+    else
+        if SwingState.sealEvents then
+            SwingState.sealEvents = nil
+            shellFrame:UnregisterEvent("UNIT_AURA")
+            shellFrame:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+        end
+        SetSeal(false)
+    end
+end
+
+-- Cast Clip: the player's cast edges, only while the option is on.
+local function ApplyCastEvents(conf)
+    if not SwingState.events then return end
+    local on = conf.castClip == true
+    if on ~= (SwingState.castEvents or false) then
+        SwingState.castEvents = on or nil
+        for i = 1, #CAST_EVENTS do
+            if on then
+                shellFrame:RegisterUnitEvent(CAST_EVENTS[i], "player")
+            else
+                shellFrame:UnregisterEvent(CAST_EVENTS[i])
+            end
+        end
+    end
+    if on then
+        ReadCast()
+    else
+        SwingState.castEnd = nil
+    end
+end
+
 local function UnregisterEvents()
     if not SwingState.events then return end
     SwingState.events = nil
+    SwingState.sealEvents, SwingState.castEvents = nil, nil
     SwingState.moveEvents, SwingState.moving = nil, false
     shellFrame:UnregisterAllEvents()
 end
@@ -1717,6 +2040,13 @@ local function EnsureBuilt()
                     name = name,
                 }
             end
+        end
+    end
+    -- Seal names, once per session, for a paladin.
+    if class == "PALADIN" and C_Spell and C_Spell.GetSpellName then
+        for i = 1, #SEALS do
+            local name = C_Spell.GetSpellName(SEALS[i].id)
+            if IsPlainVal(name) and name then SwingState.sealByName[name] = SEALS[i] end
         end
     end
     -- Mouseover hover-reveal: same plain-table proxy the class/power/health bars
@@ -1763,6 +2093,8 @@ local function Arm(conf)
     ApplyQueueEvents(conf)
     ApplyActiveEvents(conf)
     ApplyShieldEvents(conf)
+    ApplySealEvents(conf)
+    ApplyCastEvents(conf)
     -- Highlight turned off with an attack queued: the paint below must clear it.
     if not QueueOn(conf) then SwingState.queued = false end
     -- Attack state: read once per enable, kept by the edges while on.
@@ -1837,6 +2169,7 @@ local function PaintRows(conf)
             IdleRow(swingRow, conf)
         end
     end
+    CastTick(conf)
 end
 
 -- Back from a park (a shapeshift or talent edit that no longer rules the timer
