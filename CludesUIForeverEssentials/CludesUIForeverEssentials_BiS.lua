@@ -387,4 +387,27 @@ SlashCmdList.CUIBIS = function(message)
     end
 end
 
-F.Start(function() end)
+-- The character sheet: a small star on a worn item that is on your list.
+local function SlotStar(slot)
+    if not (slot and slot.GetID) then return end
+    local itemId = GetInventoryItemID("player", slot:GetID())
+    local on = Get("enabled") and itemId and module.BisSlotOf(itemId) ~= nil
+    local star = slot._cuiBisStar
+    if not star then
+        if not on then return end
+        star = slot:CreateTexture(nil, "OVERLAY", nil, 7)
+        star:SetSize(12, 12)
+        star:SetPoint("TOPRIGHT", -1, -1)
+        star:SetTexture("Interface\\COMMON\\ReputationStar")
+        star:SetTexCoord(0, 0.5, 0, 0.5)
+        slot._cuiBisStar = star
+    end
+    star:SetShown(on == true)
+end
+module.BisSlotStar = SlotStar
+
+F.Start(function()
+    if type(_G.PaperDollItemSlotButton_Update) == "function" then
+        hooksecurefunc("PaperDollItemSlotButton_Update", SlotStar)
+    end
+end)

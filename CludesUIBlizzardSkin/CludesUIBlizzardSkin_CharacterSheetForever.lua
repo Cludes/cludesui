@@ -368,6 +368,9 @@ local WEAPON_SLOT = {
     CharacterSecondaryHandSlot = true,
     CharacterRangedSlot = true,
 }
+-- The slots Group Inspect checks for a permanent enchant (by slot ID): chest,
+-- legs, feet, wrists, hands, back, main hand. An empty one says "No enchant".
+local ENCHANTABLE = { [5] = true, [7] = true, [8] = true, [9] = true, [10] = true, [15] = true, [16] = true }
 
 -- C_Item.GetItemStats keys in tie order (an earlier key wins a tie), with our
 -- own short labels. Main stat: the largest of the first three (the
@@ -748,8 +751,17 @@ local function DrawSlotText(slot)
     -- retail, less Blizz Default's extra inset on each side (so the two
     -- columns' enchants keep a gap in the middle).
     local name = SavedVal("showEnchants") ~= false and EnchantName(slotID) or ""
+    -- An enchantable slot with none says so, in amber.
+    local missing = name == "" and SavedVal("showEnchants") ~= false and ENCHANTABLE[slotID]
+    if missing then name = "No enchant" end
     ench:SetText(name)
-    if name ~= "" then
+    if missing then
+        ench:SetFont(FontPath(), SavedVal("charSheetEnchantSize") or 9, "")
+        ench:SetTextColor(1, 0.7, 0.25, 0.9)
+        local head, hands = _G.CharacterHeadSlot, _G.CharacterHandsSlot
+        local lr, rl = head and head:GetRight(), hands and hands:GetLeft()
+        ench:SetWidth((lr and rl and rl > lr) and (rl - lr - 2 * (EX - EX_LOOK)) * 0.45 or 0)
+    elseif name ~= "" then
         local size = SavedVal("charSheetEnchantSize") or 9
         if SavedVal("charSheetEnchantNames") then
             ench:SetFont(FontPath(), size, CUI.SlugFlag("OUTLINE, SLUG"))
