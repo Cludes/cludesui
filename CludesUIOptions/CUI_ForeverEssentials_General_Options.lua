@@ -1300,12 +1300,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  GEAR SCORE
     ---------------------------------------------------------------------------
-    local GS = CUI._GearScore
-    if GS then
-        local function gOff() return not GS.Get("enabled") end
+    local GSC = CUI._GearScore
+    if GSC then
+        local function gOff() return not GSC.Get("enabled") end
         local function Set(key, val)
-            GS.Cfg()[key] = val
-            GS.Apply()
+            GSC.Cfg()[key] = val
+            GSC.Apply()
         end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
@@ -1322,7 +1322,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "On Player Tooltips",
             disabled = gOff,
             tooltip = "Player tooltips show their Gear Score: yours from your gear, others' once they have been inspected.",
-            getValue = function() return GS.Get("tooltip") end,
+            getValue = function() return GSC.Get("tooltip") end,
             setValue = function(val) Set("tooltip", val and true or false) end,
         })
         cursorY = cursorY - height
@@ -1331,7 +1331,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Inspect Players You Hover",
             disabled = gOff,
             tooltip = "The player you hover is inspected in the background (one at a time, in range, out of combat), so their tooltip gets a score. Never while your own Inspect window is open.",
-            getValue = function() return GS.Get("hoverInspect") end,
+            getValue = function() return GSC.Get("hoverInspect") end,
             setValue = function(val) Set("hoverInspect", val and true or false) end,
         })
         cursorY = cursorY - height
