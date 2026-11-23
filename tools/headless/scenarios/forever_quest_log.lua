@@ -43,8 +43,7 @@ countText:SetTextColor(1, 0.82, 0)
 
 QLF.Rows()
 local function A(t) return string.format("%.2f", t:GetAlpha()) end
-OUT:write(("== checkbox square=%s highlight=%s tick=%s desat=%s\n"):format(A(square), A(hl), A(row.Checkbox.CheckMark),
-    tostring(row.Checkbox.CheckMark:IsDesaturated())))
+OUT:write(("== checkbox square=%s highlight=%s tick=%s\n"):format(A(square), A(hl), A(row.Checkbox.CheckMark)))
 SNAP("checkbox", row.Checkbox)
 header.CollapseButton:UpdateCollapsedState(true)
 OUT:write(("== collapse after toggle: %s\n"):format(table.concat({ header.CollapseButton.Icon:GetVertexColor() }, ",")))

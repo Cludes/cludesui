@@ -1043,6 +1043,41 @@ local function SidebarPanel(widget, topBar)
     GetFFD(widget).sidebar = panelFrame
 end
 
+-- The model's zoom / rotate / reset buttons: Blizzard's grey square art goes;
+-- a flat 22 px plate with a 1 px border (the buttons overlap by 6 px, so not
+-- the full 32), the icon white, a faint light on hover.
+local MODEL_BUTTONS = { "zoomInButton", "zoomOutButton", "rotateLeftButton", "rotateRightButton", "resetButton" }
+local function ModelButtons(Skin)
+    local scene = _G.CharacterModelScene
+    local control = scene and scene.ControlFrame
+    if not control then return end
+    for _, key in ipairs(MODEL_BUTTONS) do
+        local button = control[key]
+        if button and not GetFFD(button).cuiPlate then
+            for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetHighlightTexture" }) do
+                local t = button[getter] and button[getter](button)
+                if t then t:SetAlpha(0) end
+            end
+            local plate = CreateFrame("Frame", nil, button)
+            plate:SetPoint("TOPLEFT", 5, -5)
+            plate:SetPoint("BOTTOMRIGHT", -5, 5)
+            plate:SetFrameLevel(math.max(0, button:GetFrameLevel() - 1))
+            local fill = plate:CreateTexture(nil, "BACKGROUND")
+            fill:SetAllPoints()
+            fill:SetColorTexture(0.08, 0.08, 0.08, 0.95)
+            Skin.AddBorder(plate, 0, 0, 0, 1)
+            local hover = button:CreateTexture(nil, "HIGHLIGHT")
+            hover:SetAllPoints(plate)
+            hover:SetColorTexture(1, 1, 1, 0.1)
+            if button.Icon then
+                button.Icon:SetDesaturated(true)
+                button.Icon:SetVertexColor(1, 1, 1, 1)
+            end
+            GetFFD(button).cuiPlate = plate
+        end
+    end
+end
+
 local function SkinFrame()
     local widget = _G.CharacterFrame
     local Skin = mod.WSkin
@@ -1145,6 +1180,7 @@ local function SkinFrame()
     local shell = Skin.GetFFD and Skin.GetFFD(widget)
     local topBar = shell and shell.topBar
     ModelBackdrop(widget, topBar)
+    ModelButtons(Skin)
     SidebarPanel(widget, topBar)
 
     -- Item slots: frames off, icons cropped, a grey square and a quality
