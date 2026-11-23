@@ -521,8 +521,10 @@ G.UnitLevel = function() return FLAVOR == "forever" and 34 or 90 end
 G.UnitExists = function(u) return u == "player" end
 G.UnitHealth = function() return 100 end
 G.UnitHealthMax = function() return 100 end
-G.UnitPower = function() return 100 end
-G.UnitPowerMax = function() return 100 end
+-- A scenario sets HARNESS_POWER = { cur, max } to move these (files that cache
+-- UnitPower as a local at load still see it).
+G.UnitPower = function() local p = rawget(realG, "HARNESS_POWER") return p and p[1] or 100 end
+G.UnitPowerMax = function() local p = rawget(realG, "HARNESS_POWER") return p and p[2] or 100 end
 G.UnitPowerType = function() return 0, "MANA" end
 G.GetSpecialization = function() return 1 end
 -- Chat: CludesUI.Print writes here; each line goes to the run's output.

@@ -1704,11 +1704,106 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         size = 20,
                     })
                 end
+                -- Powershifting (on the mana bar): what shifting back into the
+                -- form costs, the shifts left, and the mana still needed.
+                local function ShiftOff()
+                    if DruidManaOff() then return true end
+                    local druidMana = FdmCfg()
+                    return not (druidMana and druidMana.powershift ~= false)
+                end
+                local function ShiftToggle(key, label, tip)
+                    return {
+                        type = "toggle",
+                        label = label,
+                        tooltip = tip,
+                        get = function()
+                            local druidMana = FdmCfg()
+                            return druidMana and druidMana[key] ~= false
+                        end,
+                        set = function(value)
+                            local druidMana = FdmCfg()
+                            if not druidMana then return end
+                            druidMana[key] = value
+                            ApplyDruidMana()
+                        end,
+                    }
+                end
+                local function ShiftColor(prefix, label, tip, def)
+                    return {
+                        type = "colorpicker",
+                        label = label,
+                        tooltip = tip,
+                        get = function()
+                            local druidMana = FdmCfg()
+                            if not druidMana then return def[1], def[2], def[3], 1 end
+                            return druidMana[prefix .. "R"] or def[1],
+                                druidMana[prefix .. "G"] or def[2],
+                                druidMana[prefix .. "B"] or def[3],
+                                1
+                        end,
+                        set = function(red, green, blue)
+                            local druidMana = FdmCfg()
+                            if not druidMana then return end
+                            druidMana[prefix .. "R"], druidMana[prefix .. "G"], druidMana[prefix .. "B"] = red, green, blue
+                            ApplyDruidMana()
+                        end,
+                    }
+                end
+                local shiftCfg = {
+                    type = "toggle",
+                    text = "Powershifting",
+                    tooltip = "On the mana bar: what shifting back into your form costs, how many shifts you have, and the mana you still need.",
+                    disabled = DruidManaOff,
+                    disabledTooltip = FdmOffTip,
+                    getValue = function()
+                        local druidMana = FdmCfg()
+                        return druidMana and druidMana.powershift ~= false or false
+                    end,
+                    setValue = function(value)
+                        local druidMana = FdmCfg()
+                        if not druidMana then return end
+                        druidMana.powershift = value
+                        ApplyDruidMana()
+                        CludesUI:RefreshPage()
+                    end,
+                }
+                local shiftLine
                 if SCP then
                     local costLine
-                    costLine, height = W:DualRow(hostFrame, cursorY, costCfg, CludesUI.BlankRowCfg())
+                    costLine, height = W:DualRow(hostFrame, cursorY, costCfg, shiftCfg)
                     cursorY = cursorY - height
                     CostSwatch(costLine._leftRegion)
+                    shiftLine = costLine._rightRegion
+                else
+                    local row
+                    row, height = W:DualRow(hostFrame, cursorY, shiftCfg, CludesUI.BlankRowCfg())
+                    cursorY = cursorY - height
+                    shiftLine = row._leftRegion
+                end
+                if not CludesUI._prebuilding then
+                    CludesUI.BuildInlineCog(shiftLine, {
+                        disabled = ShiftOff,
+                        disabledTooltip = function()
+                            if DruidManaOff() then return FdmOffTip() end
+                            return "Powershifting"
+                        end,
+                        title = "Powershifting",
+                        rows = {
+                            ShiftToggle(
+                                "shiftMark",
+                                "Shift Cost",
+                                "Mark the end of your mana a shift would spend."
+                            ),
+                            ShiftToggle("shiftsLeft", "Shifts Left", "How many shifts your mana covers."),
+                            ShiftToggle(
+                                "warnLow",
+                                "Missing Mana",
+                                "Below one shift, mark the mana you still need in red."
+                            ),
+                            ShiftColor("shift", "Shift Cost Color", "The shift cost mark.", { 0.94, 0.54, 0.14 }),
+                            ShiftColor("miss", "Missing Mana Color", "The missing mana mark.", { 0.9, 0.15, 0.15 }),
+                        },
+                    })
                 end
             elseif CludesUI.ManaRegenSpark then
                 if SCP then

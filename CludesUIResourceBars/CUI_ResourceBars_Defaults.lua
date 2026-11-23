@@ -259,6 +259,13 @@ local DEFAULTS = {
                 textFillG = 1,
                 textFillB = 1,
                 textFillA = 1,
+                -- Powershifting: the form's shift cost marked at the end of the mana
+                -- (shiftR/G/B), the shifts left, and below one shift the mana still
+                -- needed (missR/G/B); colours unset = orange / red.
+                powershift = true,
+                shiftMark = true,
+                shiftsLeft = true,
+                warnLow = true,
             } or nil,
         },
         secondary = {

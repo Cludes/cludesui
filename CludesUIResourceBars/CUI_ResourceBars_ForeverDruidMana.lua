@@ -49,7 +49,10 @@ local evf = CreateFrame("Frame")
 -- registered), cur / mx (last painted values), texPath (fill file last set),
 -- textOn / fmt / suffix (text settings as last applied), extSide / extSig
 -- (the Power Bar side this bar extends and its layout, nil for Inside),
--- extLast (the extent last cascaded).
+-- extLast (the extent last cascaded); Powershifting: cost (the current form's
+-- mana cost, nil = none or unreadable), cfg (the settings last applied), ori
+-- (the bar's orientation), shiftTex / missTex / shifts (the cost mark, the
+-- missing-mana mark and the shifts-left text).
 local DruidMana = { enabled = false, shown = false, live = false, pbVis = true, parked = false }
 
 -- Let the unit frame aura reserve see this bar when it floats below the stack
@@ -84,6 +87,79 @@ local function ManaColor()
     local pc = _G._CURB_PowerColors[MANA]
     if pc then return pc[1], pc[2], pc[3] end
     return 1, 1, 1
+end
+
+-- Powershifting: the mana the current form's spell costs (shifting back into
+-- it), nil out of a form or while the cost cannot be read.
+local function ShiftCost()
+    local index = GetShapeshiftForm()
+    if not (Plain(index) and type(index) == "number" and index > 0) then return nil end
+    local _, _, _, spellID = GetShapeshiftFormInfo(index)
+    if not (Plain(spellID) and spellID and C_Spell and C_Spell.GetSpellPowerCost) then return nil end
+    local costs = C_Spell.GetSpellPowerCost(spellID)
+    if not Plain(costs) or type(costs) ~= "table" or (issecrettable and issecrettable(costs)) then return nil end
+    for i = 1, #costs do
+        local kind, amount = costs[i].type, costs[i].cost
+        if not (Plain(kind) and Plain(amount)) then return nil end
+        if kind == MANA and type(amount) == "number" and amount > 0 then return amount end
+    end
+    return nil
+end
+
+-- A mark over the bar from fraction `from` to `to` of its length, along the
+-- fill's direction (a vertical bar grows up, or down when reversed).
+local function PlaceMark(tex, from, to)
+    local scrollBar = DruidMana.sb
+    local ori = DruidMana.ori
+    local vertical = ori == "VERTICAL_UP" or ori == "VERTICAL_DOWN"
+    local len = vertical and scrollBar:GetHeight() or scrollBar:GetWidth()
+    local size = len * (to - from)
+    if not (len and len > 0) or size < 1 then
+        tex:Hide()
+        return
+    end
+    tex:ClearAllPoints()
+    if not vertical then
+        tex:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", len * from, 0)
+        tex:SetPoint("BOTTOMLEFT", scrollBar, "BOTTOMLEFT", len * from, 0)
+        tex:SetWidth(size)
+    elseif ori == "VERTICAL_DOWN" then
+        tex:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", 0, -len * from)
+        tex:SetPoint("TOPRIGHT", scrollBar, "TOPRIGHT", 0, -len * from)
+        tex:SetHeight(size)
+    else
+        tex:SetPoint("BOTTOMLEFT", scrollBar, "BOTTOMLEFT", 0, len * from)
+        tex:SetPoint("BOTTOMRIGHT", scrollBar, "BOTTOMRIGHT", 0, len * from)
+        tex:SetHeight(size)
+    end
+    tex:Show()
+end
+
+-- Powershifting paint, from plain mana (nil = unreadable: everything hides).
+-- With a shift's worth or more, Shift Cost marks the end of the fill a shift
+-- would spend; below it, Missing Mana marks what is still needed up to one
+-- shift. Shifts Left counts the shifts the mana covers.
+local function DrawShift(current, mx)
+    local cfg, cost = DruidMana.cfg, DruidMana.cost
+    local on = cfg and cfg.powershift ~= false and cost and current and mx and mx > 0
+    local enough = on and current >= cost
+    if enough and cfg.shiftMark ~= false then
+        PlaceMark(DruidMana.shiftTex, math.max(current - cost, 0) / mx, current / mx)
+    else
+        DruidMana.shiftTex:Hide()
+    end
+    if on and not enough and cfg.warnLow ~= false then
+        PlaceMark(DruidMana.missTex, current / mx, math.min(cost / mx, 1))
+    else
+        DruidMana.missTex:Hide()
+    end
+    if on and cfg.shiftsLeft ~= false then
+        local n = math.floor(current / cost)
+        DruidMana.shifts:SetText(n == 1 and CUI.L("1 shift") or CUI.Lf("%1$d shifts", n))
+        DruidMana.shifts:Show()
+    else
+        DruidMana.shifts:Hide()
+    end
 end
 
 -- BorderReach for a bar wearing the Power Bar's border settings: l, r, t, b
@@ -186,6 +262,11 @@ local function DrawMana(force)
     else
         scrollBar:SetValue(current)
     end
+    if curPlain and mxPlain then
+        DrawShift(current, mx)
+    else
+        DrawShift(nil, nil)
+    end
 
     if not DruidMana.textOn then return end
     local fmt = DruidMana.fmt
@@ -253,7 +334,13 @@ local function Refresh()
         DruidMana.shown = isShown
         DruidMana.host:SetShown(isShown)
     end
+    -- A new form costs its own shift (Cat and Bear differ): repaint when live.
+    local cost = isShown and ShiftCost() or nil
+    local costChanged = cost ~= DruidMana.cost
+    DruidMana.cost = cost
+    local wasLive = DruidMana.live
     UpdateLive()
+    if costChanged and wasLive and DruidMana.live then DrawMana(true) end
     ReportExtent()
 end
 
@@ -299,6 +386,18 @@ local function EnsureBuilt(pb)
     local textValue = textFrame:CreateFontString(nil, "OVERLAY")
     mod.SetRBFont(textValue, mod.GetRBFont(), 8)
     textValue:SetWordWrap(false)
+    -- Powershifting: the two marks over the fill, the shifts-left count at
+    -- the bar's far end.
+    local shiftTex = scrollBar:CreateTexture(nil, "ARTWORK", nil, 2)
+    shiftTex:Hide()
+    local missTex = scrollBar:CreateTexture(nil, "ARTWORK", nil, 2)
+    missTex:Hide()
+    local shifts = textFrame:CreateFontString(nil, "OVERLAY")
+    mod.SetRBFont(shifts, mod.GetRBFont(), 8)
+    shifts:SetWordWrap(false)
+    shifts:SetPoint("RIGHT", owner, "RIGHT", -2, 0)
+    shifts:Hide()
+    DruidMana.shiftTex, DruidMana.missTex, DruidMana.shifts = shiftTex, missTex, shifts
     owner._sb, owner._bg = scrollBar, backdrop
     DruidMana.host, DruidMana.sb, DruidMana.bg, DruidMana.border, DruidMana.textFrame, DruidMana.text =
         owner, scrollBar, backdrop, border, textFrame, textValue
@@ -495,7 +594,7 @@ end
 local function Teardown()
     if not DruidMana.enabled then return end
     DruidMana.enabled, DruidMana.shown, DruidMana.live = false, false, false
-    DruidMana.cur, DruidMana.mx = nil, nil
+    DruidMana.cur, DruidMana.mx, DruidMana.cost = nil, nil, nil
     evf:UnregisterAllEvents()
     DruidMana.host:Hide()
     ReportExtent()
@@ -532,6 +631,11 @@ function mod.FDM_Apply(pb, pp, g)
     ApplyBorder(pp, inside)
     local red, green, blue = ApplyLook(pp, g, profile, ori)
     ApplyText(c, red, green, blue)
+    -- Powershifting look: its two mark colours and the count in the text's size.
+    DruidMana.cfg, DruidMana.ori = c, ori
+    DruidMana.shiftTex:SetColorTexture(c.shiftR or 0.94, c.shiftG or 0.54, c.shiftB or 0.14, 1)
+    DruidMana.missTex:SetColorTexture(c.missR or 0.9, c.missG or 0.15, c.missB or 0.15, 1)
+    mod.SetRBFont(DruidMana.shifts, mod.GetRBFont(), c.textSize or 8)
     local wasLive = DruidMana.live
     Refresh()
     -- Already live: the new look and text settings paint now (an edge into
