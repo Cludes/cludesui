@@ -85,13 +85,28 @@ Fill("Seal of Command removed")
 secret = true
 HARNESS_FIRE_EVENT("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", 20154)
 Fill("Righteousness cast (auras secret)")
-HARNESS_FIRE_EVENT("UNIT_AURA", "player", { removedAuraInstanceIDs = { 99 } })
+-- A secret payload: the swing timer must not read it at all (a truth test on
+-- its secret isFullUpdate errors in the client); this one errors on any read.
+-- Handed to the swing timer only: other modules read secret fields safely
+-- through issecretvalue, which this stand-in cannot imitate.
+local secretInfo = setmetatable({}, { __index = function() error("secret payload read") end })
+local onEvent = _G.ERB_SwingTimerFrame:GetScript("OnEvent")
+local okRead, readErr = pcall(onEvent, _G.ERB_SwingTimerFrame, "UNIT_AURA", "player", secretInfo)
+OUT:write("== secret payload untouched: " .. tostring(okRead) .. (okRead and "" or (" " .. tostring(readErr))) .. "\n")
 Fill("secret aura update ignored")
 Wait(29)
 Fill("29s later")
 Wait(2)
 Fill("31s later: ran out")
+-- Combat ends with a seal up that was never seen: the rescan finds it.
+buffs[1] = { name = "Seal of Command", auraInstanceID = 9, duration = 30, expirationTime = GetTime() + 20 }
+HARNESS_FIRE_EVENT("PLAYER_REGEN_ENABLED")
+Fill("combat over, still secret: no read")
 secret = false
+HARNESS_FIRE_EVENT("PLAYER_REGEN_ENABLED")
+Fill("combat over, readable: Command found")
+buffs[1] = nil
+HARNESS_FIRE_EVENT("UNIT_AURA", "player", { removedAuraInstanceIDs = { 9 } })
 
 -- A seal already up when the timer turns on (full scan); then the toggle off.
 buffs[1] = { name = "Seal of Righteousness", auraInstanceID = 8, duration = 30, expirationTime = GetTime() + 30 }

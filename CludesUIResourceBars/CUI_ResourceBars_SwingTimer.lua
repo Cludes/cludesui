@@ -1416,10 +1416,12 @@ local function ScanSeal()
 end
 
 -- UNIT_AURA's update info: the tracked seal removed, a seal added, or the
--- tracked seal refreshed (a new run-out time).
+-- tracked seal refreshed (a new run-out time). While auras are secret the
+-- whole payload is too (a truth test on its isFullUpdate errors), so nothing
+-- in it is touched then; the combat-end scan catches up.
 local function SealAuraUpdate(info)
-    if type(info) ~= "table" or info.isFullUpdate then return ScanSeal() end
     if AurasSecret() then return end
+    if type(info) ~= "table" or info.isFullUpdate then return ScanSeal() end
     local removed, inst = info.removedAuraInstanceIDs, SwingState.sealInst
     if removed and inst then
         for i = 1, #removed do
@@ -1984,6 +1986,9 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3, _a4, a5)
     elseif evt == "UNIT_SPELLCAST_SUCCEEDED" then
         -- a3 = spellID
         SealCast(a3)
+    elseif evt == "PLAYER_REGEN_ENABLED" then
+        -- Combat over: auras readable again, re-read what changed meanwhile.
+        ScanSeal()
     elseif evt == "UNIT_SPELLCAST_STOP" or evt == "UNIT_SPELLCAST_CHANNEL_STOP" then
         SwingState.castEnd = nil
         CastTick(conf)
@@ -2067,6 +2072,7 @@ local function ApplySealEvents(conf)
             SwingState.sealEvents = true
             shellFrame:RegisterUnitEvent("UNIT_AURA", "player")
             shellFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+            shellFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
         end
         ScanSeal()
     else
@@ -2074,6 +2080,7 @@ local function ApplySealEvents(conf)
             SwingState.sealEvents = nil
             shellFrame:UnregisterEvent("UNIT_AURA")
             shellFrame:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+            shellFrame:UnregisterEvent("PLAYER_REGEN_ENABLED")
         end
         SetSeal(false)
     end
