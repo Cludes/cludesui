@@ -326,6 +326,73 @@ OUT:write(
         tostring(S.selected)
     )
 )
+
+-- A craft order to Thrall: 2x the bracers bringing the Copper Bar, 1x the
+-- belt bringing nothing, a 2g 50s tip; Ask whispers (not grouped), Invite.
+local sent = {}
+local function Record(message, channel, _, to)
+    sent[#sent + 1] = channel .. (to and (">" .. to) or "") .. ": " .. message:gsub("|", "!")
+end
+if C_ChatInfo then rawset(C_ChatInfo, "SendChatMessage", Record) end
+rawset(_G, "SendChatMessage", Record)
+local invited = {}
+if C_PartyInfo then rawset(C_PartyInfo, "InviteUnit", function(who) invited[#invited + 1] = who end) end
+rawset(_G, "InviteUnit", function(who) invited[#invited + 1] = who end)
+local pane, col = win.detail, nil
+row = RowNamed("Runed Copper Bracers")
+if row then row:GetScript("OnClick")(row, "LeftButton") end
+OUT:write(
+    ("== order foot: shown=%s add=%s bankHead=%s\n"):format(
+        tostring(pane.orderFoot and pane.orderFoot:IsShown()),
+        tostring(pane.orderFoot and pane.orderFoot.add:GetText()),
+        tostring(pane.reagents.bankHead:GetText())
+    )
+)
+pane.orderFoot.qty:SetText("2")
+pane.orderFoot.qty:GetScript("OnTextChanged")(pane.orderFoot.qty, true)
+local check = pane.reagents.rows[1].bringCheck
+check:GetScript("PreClick")(check)
+check:GetScript("OnClick")(check)
+pane.orderFoot.add:GetScript("OnClick")(pane.orderFoot.add)
+row = RowNamed("Copper Chain Belt")
+if row then row:GetScript("OnClick")(row, "LeftButton") end
+pane.orderFoot.add:GetScript("OnClick")(pane.orderFoot.add)
+col = win:GetParent() and nil
+for _, child in ipairs({ win:GetChildren() }) do
+    if child.invite then col = child end
+end
+local function Column(label)
+    local rows = {}
+    for _, r in ipairs(col.rows) do
+        if r:IsShown() then rows[#rows + 1] = r.name:GetText() .. " (" .. r.sub:GetText() .. ")" end
+    end
+    OUT:write(
+        ("== %s: shown=%s title=%s ask=%s rows=[%s] empty=%s\n"):format(
+            label,
+            tostring(col:IsShown()),
+            tostring(col.title:GetText()),
+            tostring(col.ask:GetText()),
+            table.concat(rows, "; "),
+            tostring(col.empty:IsShown() and col.empty:GetText())
+        )
+    )
+end
+Column("order")
+col.tip:SetText("2g 50s")
+col.tip:GetScript("OnEditFocusLost")(col.tip)
+OUT:write("== tip: " .. tostring(col.tip:GetText()) .. "\n")
+col.ask:GetScript("OnClick")(col.ask)
+for _ = 1, 10 do HARNESS_ADVANCE(0.2) end
+OUT:write("== sent:\n   " .. table.concat(sent, "\n   ") .. "\n")
+Column("after ask")
+col.invite:GetScript("OnClick")(col.invite)
+OUT:write("== invited: " .. table.concat(invited, ", ") .. " / " .. tostring(sent[#sent]) .. "\n")
+-- An alt's profession: no order column.
+linkedTo = "Ironhide"
+HARNESS_FIRE_EVENT("TRADE_SKILL_DATA_SOURCE_CHANGED")
+HARNESS_ADVANCE(0.5)
+OUT:write("== alt linked: column=" .. tostring(col:IsShown()) .. " title=" .. tostring(win.title:GetText()) .. "\n")
+
 linkedTo = nil
 Set("IsTradeSkillLinked", function() return false end)
 HARNESS_FIRE_EVENT("TRADE_SKILL_DATA_SOURCE_CHANGED")

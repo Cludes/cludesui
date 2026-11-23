@@ -490,6 +490,12 @@ G.GetBuildInfo = function() return FLAVOR == "forever" and "1.60.1" or "12.1.5",
 G.WOW_PROJECT_ID, G.WOW_PROJECT_MAINLINE, G.WOW_PROJECT_CLASSIC = 1, 1, 2
 G.GetLocale = function() return "enUS" end
 G.GetRealmName = function() return "TestRealm" end
+-- "Name-Realm": "short" drops any realm, "none" drops only your own.
+G.Ambiguate = function(name, context)
+    if type(name) ~= "string" then return name end
+    if context == "short" then return (name:gsub("%-.*$", "")) end
+    return (name:gsub("%-TestRealm$", ""))
+end
 G.GetNormalizedRealmName = function() return "TestRealm" end
 G.GetCurrentRegion = function() return 1 end
 G.GetCurrentRegionName = function() return "US" end

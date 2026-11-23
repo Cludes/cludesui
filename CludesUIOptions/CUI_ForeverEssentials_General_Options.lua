@@ -2359,6 +2359,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             setValue = function(val) Set("altProfessions", val and true or false) end,
         })
         cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Craft Orders",
+            disabled = function() return pOff() or not PF.Get("craftWindow") end,
+            tooltip = "On someone else's profession (from a trade link), an order column: pick recipes, how many, the materials you bring and a tip, then ask them in party chat or by whisper.",
+            getValue = function() return PF.Get("craftOrders") end,
+            setValue = function(val) Set("craftOrders", val and true or false) end,
+        })
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------

@@ -518,7 +518,10 @@ end
 -------------------------------------------------------------------------------
 --  Window parts
 -------------------------------------------------------------------------------
-local Window = {}
+-- hooks.detail(info) runs after the picked recipe is drawn, hooks.render()
+-- after the whole window (CludesUIForeverEssentials_CraftWindowPlus.lua).
+local Window = { hooks = { detail = {}, render = {} } }
+function Window.Win() return win end
 
 local function SetTip(frame, fill)
     frame:HookScript("OnEnter", function(self)
@@ -774,7 +777,7 @@ local function BuildReagents(pane)
     local title = NewText(card, 11, COLOUR.muted)
     title:SetPoint("TOPLEFT", 12, -9)
     title:SetText("REAGENTS")
-    Column("BANK", -12)
+    card.bankHead = Column("BANK", -12)
     Column("BAGS", -68)
     Column("NEED", -124)
     local rule = Fill(card, COLOUR.line, 1, "BORDER")
@@ -1372,6 +1375,9 @@ function Window.RenderDetail()
     pane.create:SetEnabled(not unmet)
     pane.createAll:SetAlpha((not unmet and allowed > 0) and 1 or 0.45)
     pane.create:SetAlpha(not unmet and 1 or 0.45)
+    for _, hook in ipairs(Window.hooks.detail) do
+        hook(info)
+    end
 end
 
 -- A recipe not learned yet: what it needs, and the source lines /cprof shows.
@@ -1547,6 +1553,9 @@ function Window.Render()
     Window.RenderTabs()
     Window.RenderList()
     Window.RenderRight()
+    for _, hook in ipairs(Window.hooks.render) do
+        hook()
+    end
 end
 
 function Window.RenderBook()
