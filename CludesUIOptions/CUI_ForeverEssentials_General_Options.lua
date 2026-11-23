@@ -3641,5 +3641,181 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     })
     cursorY = cursorY - height
 
+    -- GLIMMER (CludesUIForeverEssentials_Glimmer.lua).
+    local GL = CUI._Glimmer
+    if GL then
+        local function glOff() return not GL.Get("enabled") end
+        local function GLSet(key, val, refresh)
+            GL.Cfg()[key] = val
+            GL.Apply()
+            if refresh then CUI:RefreshPage() end
+        end
+        local function Tog(key, textValue, tipText, off, refresh)
+            return {
+                type = "toggle",
+                text = textValue,
+                tooltip = tipText,
+                disabled = off,
+                getValue = function() return GL.Get(key) == true end,
+                setValue = function(val) GLSet(key, val and true or false, refresh) end,
+            }
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "GLIMMER", cursorY)
+        cursorY = cursorY - height
+        local lookRow
+        lookRow, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog(
+                "enabled",
+                "Object Highlights",
+                "Herbs, ore, chests, quest objects and quest givers light up as you walk up to them, herbs and ore in the color of your chance to raise your skill, with a line under them. It turns the game's soft interact targeting on while it is on, and puts your settings back when you turn it off. Rests in combat.",
+                nil,
+                true
+            ),
+            {
+                type = "dropdown",
+                text = "Effect",
+                disabled = glOff,
+                values = { glow = "Glow", sparkles = "Sparkles", ring = "Ring", beam = "Beam", brackets = "Brackets" },
+                order = { "glow", "sparkles", "ring", "beam", "brackets" },
+                getValue = function() return GL.Get("style") end,
+                setValue = function(val) GLSet("style", val) end,
+            }
+        )
+        cursorY = cursorY - height
+        if not CUI._prebuilding then
+            CUI.BuildInlineCog(lookRow._rightRegion, {
+                disabled = glOff,
+                disabledTooltip = "Object Highlights",
+                title = "Glimmer Look",
+                rows = {
+                    {
+                        type = "slider",
+                        label = "Size",
+                        min = 60,
+                        max = 160,
+                        step = 5,
+                        get = function() return math.floor(GL.Get("size") * 100 + 0.5) end,
+                        set = function(val) GLSet("size", val / 100) end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Brightness",
+                        min = 30,
+                        max = 150,
+                        step = 5,
+                        get = function() return math.floor(GL.Get("brightness") * 100 + 0.5) end,
+                        set = function(val) GLSet("brightness", val / 100) end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Reach (yards)",
+                        min = 5,
+                        max = 15,
+                        step = 1,
+                        get = function() return GL.Get("range") end,
+                        set = function(val) GLSet("range", math.floor(val + 0.5)) end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Skill-up Colors",
+                        get = function() return GL.Get("skillColors") == true end,
+                        set = function(val) GLSet("skillColors", val) end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Line Under It",
+                        tooltip = "Skill-up chance, the skill needed, or the quest objective.",
+                        get = function() return GL.Get("showLine") == true end,
+                        set = function(val) GLSet("showLine", val) end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Hide in Dungeons",
+                        get = function() return GL.Get("hideInstance") == true end,
+                        set = function(val) GLSet("hideInstance", val) end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Hide What You Cannot Gather",
+                        get = function() return GL.Get("hideLocked") == true end,
+                        set = function(val) GLSet("hideLocked", val) end,
+                    },
+                },
+            })
+        end
+        local NAMES = {
+            ore = "Ore",
+            herb = "Herbs",
+            quest = "Quest Objects",
+            giver = "Quest Givers",
+            chest = "Chests",
+            bobber = "Fishing Bobber",
+            corpse = "Lootable Corpses",
+        }
+        local cats = GL.Categories
+        for idx = 1, #cats, 2 do
+            local function Cat(key)
+                if not key then return { type = "label", text = "" } end
+                return Tog(key, NAMES[key], nil, glOff)
+            end
+            local catRow
+            catRow, height = W:DualRow(hostFrame, cursorY, Cat(cats[idx]), Cat(cats[idx + 1]))
+            cursorY = cursorY - height
+            if not CUI._prebuilding then
+                for side, key in pairs({ _leftRegion = cats[idx], _rightRegion = cats[idx + 1] }) do
+                    CUI.BuildInlineSwatches(catRow[side], {
+                        {
+                            tooltip = NAMES[key] .. " Color",
+                            getValue = function() return GL.Get(key .. "R"), GL.Get(key .. "G"), GL.Get(key .. "B"), 1 end,
+                            setValue = function(red, green, blue)
+                                local c = GL.Cfg()
+                                c[key .. "R"], c[key .. "G"], c[key .. "B"] = red, green, blue
+                                GL.Apply()
+                            end,
+                        },
+                    }, { disabled = glOff, disabledTooltip = "Object Highlights" })
+                end
+            end
+        end
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog(
+                "minimapIcons",
+                "Herb and Ore Spots on the Minimap",
+                "Every spot herbs and ore grow near you, on the minimap, ringed in your skill-up color. With Find Herbs or Find Minerals on, the game's own dot shows inside the ring when the node is up.",
+                glOff
+            ),
+            Tog(
+                "gatheredPins",
+                "Gathered on the World Map",
+                "Each herb and vein you gather goes on the world map, with how many times you have gathered it.",
+                glOff
+            )
+        )
+        cursorY = cursorY - height
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog("myProfessions", "Only My Gathering Skills", "Minimap spots only for Herbalism or Mining you have.", glOff),
+            {
+                type = "slider",
+                text = "Minimap Spot Size",
+                min = 10,
+                max = 24,
+                step = 1,
+                isPercent = false,
+                disabled = glOff,
+                getValue = function() return GL.Get("minimapSize") end,
+                setValue = function(val) GLSet("minimapSize", math.floor(val + 0.5)) end,
+            }
+        )
+        cursorY = cursorY - height
+    end
+
     return math.abs(cursorY)
 end
