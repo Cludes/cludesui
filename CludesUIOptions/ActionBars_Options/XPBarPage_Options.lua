@@ -1603,6 +1603,63 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         })
     end
 
+    _, height = W:Spacer(hostFrame, cursorY, 12)
+    cursorY = cursorY - height
+
+    -------------------------------------------------------------------
+    --  EFFECTS (CUI_ActionBars_XPBarFX.lua; nil = on, showInPvP nil = hidden)
+    -------------------------------------------------------------------
+    _, height = W:SectionHeader(hostFrame, "EFFECTS", cursorY)
+    cursorY = cursorY - height
+
+    local function Effect(key, text, tooltip)
+        return {
+            type = "toggle",
+            text = text,
+            tooltip = tooltip,
+            disabled = _blizzDis,
+            disabledTooltip = BLIZZ_DIS_TIP,
+            rawTooltip = true,
+            getValue = function() return BarCfg()[key] ~= false end,
+            setValue = function(val)
+                BarCfg()[key] = (not val) and false or nil
+                mod.ApplyDataBarLayout(XP)
+            end,
+        }
+    end
+    local effectRows = {
+        {
+            Effect("fxShine", "Shine", "A soft shine on the fill and a spark where your XP ends."),
+            Effect("fxStripes", "Rested Stripes", "Fine stripes and a bright edge on the rested band."),
+        },
+        {
+            Effect("fxPulse", "Quest XP Pulse", "A handed-in quest's XP flashes on the bar and its amount rises off it."),
+            Effect("fxReady", "Ready to Level", "A glow and a star when handing in your completed quests would level you."),
+        },
+        {
+            Effect("fxLevelFlash", "Level-Up Flash", "The bar flashes in your accent colour and drains away when you level."),
+            Effect("fxBreakdown", "Hover Breakdown", "Adds completed and in-progress quest XP and about how many kills are left to the tooltip."),
+        },
+    }
+    for _, pair in ipairs(effectRows) do
+        _, height = W:DualRow(hostFrame, cursorY, pair[1], pair[2])
+        cursorY = cursorY - height
+    end
+    _, height = W:DualRow(hostFrame, cursorY, {
+        type = "toggle",
+        text = "Show in Battlegrounds",
+        tooltip = "Off: the bar hides in battlegrounds and arenas.",
+        disabled = _blizzDis,
+        disabledTooltip = BLIZZ_DIS_TIP,
+        rawTooltip = true,
+        getValue = function() return BarCfg().showInPvP end,
+        setValue = function(val)
+            BarCfg().showInPvP = val or nil
+            mod.ApplyDataBarLayout(XP)
+        end,
+    }, CUI.BlankRowCfg())
+    cursorY = cursorY - height
+
     return math.abs(cursorY)
 end
 

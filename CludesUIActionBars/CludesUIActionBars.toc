@@ -37,6 +37,7 @@ CUI_ActionBars_DataBars.lua
 CUI_ActionBars_ExtraBars.lua
 CUI_ActionBars_QuickKeybind.lua
 CUI_ActionBars_XPBar.lua
+CUI_ActionBars_XPBarFX.lua
 CUI_ActionBars_Flyout.lua
 
 # Options
