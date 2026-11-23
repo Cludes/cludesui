@@ -1338,6 +1338,47 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  TALENT BUILDS
+    ---------------------------------------------------------------------------
+    local TB = CUI._TalentBuilds
+    if TB then
+        local function tOff() return not TB.Get("enabled") end
+        local function Set(key, val)
+            TB.Cfg()[key] = val
+            TB.Apply()
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "TALENT BUILDS", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Talent Builds",
+            tooltip = "/cbuilds: talent builds as the order you spend points, per class on this account. Save your talents now, import and export them as a line, follow one: its next talent lights up in CludesUI's talent window, and Learn spends your unspent points along it.",
+            getValue = function() return not tOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        }, {
+            type = "labeledButton",
+            text = "Builds Window",
+            buttonText = "Open",
+            width = 90,
+            disabled = tOff,
+            tooltip = "Opens the Talent Builds window. Also /cbuilds.",
+            onClick = function() TB.Builds.Toggle() end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Next Talent on Level-Up",
+            disabled = tOff,
+            tooltip = "Each level-up, a chat line names the next talent of the build you follow.",
+            getValue = function() return TB.Get("levelUpLine") end,
+            setValue = function(val) Set("levelUpLine", val and true or false) end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  COMBAT EXTRAS
     ---------------------------------------------------------------------------
     local CE = CUI._CombatExtras

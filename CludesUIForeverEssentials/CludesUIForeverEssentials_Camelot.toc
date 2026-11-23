@@ -73,6 +73,7 @@ CludesUIForeverEssentials_Disenchant.lua
 CludesUIForeverEssentials_EnchantSlots.lua
 CludesUIForeverEssentials_TradeEnchants.lua
 CludesUIForeverEssentials_GearScore.lua
+CludesUIForeverEssentials_TalentBuilds.lua
 CludesUIForeverEssentials_QuestRewards.lua
 
 # Travel (flight timer)

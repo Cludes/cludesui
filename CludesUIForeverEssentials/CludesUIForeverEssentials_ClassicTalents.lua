@@ -169,6 +169,17 @@ local function FillTalent(widget, nodeID, cell)
     widget.rank:SetText(rank)
     widget.rank:SetShown(open)
     widget.rankBorder:SetShown(open)
+    -- The followed talent build's next talent (CludesUIForeverEssentials_TalentBuilds.lua).
+    local builds = CUI._TalentBuilds
+    local isNext = builds and builds.Builds.FollowNext() == nodeID
+    if isNext and not widget.buildNext then
+        widget.buildNext = widget:CreateTexture(nil, "OVERLAY", nil, 7)
+        widget.buildNext:SetPoint("TOPLEFT", -3, 3)
+        widget.buildNext:SetPoint("BOTTOMRIGHT", 3, -3)
+        widget.buildNext:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+        widget.buildNext:SetBlendMode("ADD")
+    end
+    if widget.buildNext then widget.buildNext:SetShown(isNext == true) end
     widget:Show()
 end
 
