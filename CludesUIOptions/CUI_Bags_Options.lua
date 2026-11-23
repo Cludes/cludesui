@@ -1367,6 +1367,28 @@ CUI.AtOptionsLogin(function()
                     CUI.RegisterWidgetRefresh(junkDDRefresh)
                 end
 
+                -- Bank Marker | what opening the bank does with marked items
+                _, height = W:DualRow(hostFrame, cursorY, {
+                    type = "toggle",
+                    text = "Bank Marker",
+                    tooltip = "Alt + Left Click a bag item to mark it for the bank (every copy, on every character); again to unmark. A small banker icon shows on marked items.",
+                    getValue = function() return saved.profile.bankMarker ~= false end,
+                    setValue = function(val)
+                        saved.profile.bankMarker = val and true or false
+                        if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then _G.CUI_Bags:RefreshInventory() end
+                    end,
+                }, {
+                    type = "dropdown",
+                    text = "When the Bank Opens",
+                    tooltip = "What happens to marked items in your bags when you open your bank: deposited by themselves, after asking, or nothing.",
+                    values = { move = "Deposit Them", ask = "Ask First", none = "Nothing" },
+                    order = { "move", "ask", "none" },
+                    disabled = function() return saved.profile.bankMarker == false end,
+                    getValue = function() return saved.profile.bankMarkerMode or "move" end,
+                    setValue = function(val) saved.profile.bankMarkerMode = val end,
+                })
+                cursorY = cursorY - height
+
                 -- Bag Top Bar Icons (+ inline cog: Sort to Bottom) | Gold Tracking and History
                 local iconsRow
                 iconsRow, height = W:DualRow(hostFrame, cursorY, {

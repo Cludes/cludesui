@@ -31,6 +31,7 @@ CludesUIBags_List.lua
 CludesUIBags_Compact.lua
 CludesUIBags_Bank.lua
 CludesUIBags_QuickActions.lua
+CludesUIBags_BankMarker.lua
 CludesUIBags_Offline.lua
 CludesUIBags_OfflineView.lua
 CludesUIBags_AutoGold.lua

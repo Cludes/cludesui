@@ -93,6 +93,7 @@ local function GetOrCreateSlot(position)
     -- Right-click deposit routing to the selected bank tab (see BankRoutePreClick)
     button:HookScript("PreClick", mod.BankRoutePreClick)
     button:HookScript("OnClick", mod.BankRouteOnClick)
+    button:HookScript("OnClick", function(self, mouse) mod.BankMarkerOnClick(self, mouse) end)
 
     button:HookScript("OnMouseUp", SlotMiddleClick)
 
@@ -234,6 +235,7 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
         if button._fvQuestBorder then button._fvQuestBorder:Hide() end
         if button._questMarker then button._questMarker:Hide() end
         if button._junkCoin then button._junkCoin:Hide() end
+        if button._bankMark then button._bankMark:Hide() end
         if button.Cooldown then button.Cooldown:Clear() end
         if button.ItemLevelText then button.ItemLevelText:SetText("") end
         if button.KeystoneText then button.KeystoneText:SetText("") end
@@ -259,6 +261,7 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
             payload.info,
             junkOn and CUI_CategoryManager:IsJunk(payload.info.itemID, quality)
         )
+        if mod.PaintBankMark then mod.PaintBankMark(button, payload.info.itemID) end
 
         -- Search misses, and a pinned item in a OneBag / MultiBag bag section
         -- (the interactive slot sections) while Dim Items in OneBag/MultiBag

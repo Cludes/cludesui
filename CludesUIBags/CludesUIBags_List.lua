@@ -293,6 +293,7 @@ local function GetOrCreateRow(position)
     button:HookScript("OnMouseUp", mod.SlotMiddleClick)
     button:HookScript("PreClick", mod.BankRoutePreClick)
     button:HookScript("OnClick", mod.BankRouteOnClick)
+    button:HookScript("OnClick", function(self, mouse) mod.BankMarkerOnClick(self, mouse) end)
     button:HookScript(
         "PostClick",
         function(self)
