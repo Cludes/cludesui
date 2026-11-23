@@ -583,6 +583,52 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     _, height = W:SectionHeader(hostFrame, "CORE TEXT POSITIONS", cursorY)
     cursorY = cursorY - height
 
+    -- Show Time to Level: the Leveling In text (time to level at your XP per
+    -- hour) in the first free Bottom Left slot (else Bottom Right); off takes
+    -- every Leveling In text away. It reads as on while any text shows it.
+    do
+        local LEVELING = "levelingIn"
+        local STEMS = { "BottomLeft", "BottomRight" }
+        local function LevelKey(stem, i) return "textSlot" .. stem .. (i > 1 and i or "") end
+        local function LevelingShown()
+            local s = BarCfg()
+            for k, v in pairs(s) do
+                if type(k) == "string" and k:find("^textSlot") and v == LEVELING then return true end
+            end
+            return false
+        end
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Show Time to Level",
+            tooltip = "Shows how long until your next level at your current XP per hour, under the bar. The same as picking Leveling In for a text below.",
+            getValue = LevelingShown,
+            setValue = function(val)
+                local s = BarCfg()
+                if val then
+                    if LevelingShown() then return end
+                    for _, stem in ipairs(STEMS) do
+                        for i = 1, 3 do
+                            local key = LevelKey(stem, i)
+                            if s[key] == nil or s[key] == "none" then
+                                s[key] = LEVELING
+                                mod.ApplyDataBarLayout(XP)
+                                CUI:RefreshPage()
+                                return
+                            end
+                        end
+                    end
+                else
+                    for k, v in pairs(s) do
+                        if type(k) == "string" and k:find("^textSlot") and v == LEVELING then s[k] = "none" end
+                    end
+                    mod.ApplyDataBarLayout(XP)
+                    CUI:RefreshPage()
+                end
+            end,
+        }, CUI.BlankRowCfg())
+        cursorY = cursorY - height
+    end
+
     -- The bar's texts, one slot each: only the ones that show something, two
     -- to a row, then Add Text Slot, which asks where the new text goes. Up to
     -- TEXTS_PER_POS texts share a position:
