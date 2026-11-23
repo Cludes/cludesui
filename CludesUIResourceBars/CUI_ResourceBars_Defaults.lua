@@ -566,6 +566,10 @@ local DEFAULTS = {
             rG = 0.729,
             rB = 0.898,
             rA = 1, -- Ranged
+            tgtR = 0.85,
+            tgtG = 0.20,
+            tgtB = 0.20,
+            tgtA = 1, -- Target Swing
             gradientEnabled = false,
             gradientR = 0.20,
             gradientG = 0.20,
@@ -586,6 +590,7 @@ local DEFAULTS = {
             showMH = true, -- per-row toggles (a row also needs a weapon in the slot)
             showOH = true,
             showR = true,
+            showTGT = false, -- Target Swing: the current hostile target's own swing (its hits on you start it)
             alwaysShowRows = false, -- true = every row whose toggle is on shows, with or without a weapon in the slot
             hideLabelNoWeapon = false, -- true = with Always Show Rows, a row with no weapon in its slot shows no label
             shieldRow = false, -- true = an equipped shield shows the Off Hand row, labelled Shield

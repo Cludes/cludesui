@@ -80,7 +80,30 @@ local ROWS = {
     { type = SWING.MainHand, key = "mh", tag = "MH", show = "showMH", melee = true, queue = true },
     { type = SWING.OffHand, key = "oh", tag = "OH", show = "showOH", melee = true },
     { type = SWING.Ranged, key = "r", tag = "R", show = "showR" },
+    -- Target Swing (off by default, showTGT): the current hostile target's own
+    -- swing, started by its physical hits landing on the player (UNIT_COMBAT,
+    -- while the player is its target) and sped up by its parries. No range
+    -- check, attack state, seal or window: none of them are the player's.
+    { type = "target", key = "tgt", tag = "TGT", show = "showTGT", target = true },
 }
+
+-- Target Swing: the hits that mark the target's swing (UNIT_COMBAT actions on
+-- the player, physical school only) and the parry haste rule: a parry with
+-- more than PARRY_HIGH of the swing left takes PARRY_CUT of the swing off it,
+-- with more than PARRY_LOW left it cuts it to PARRY_LOW, else nothing.
+local TARGET_HITS = {
+    WOUND = true,
+    MISS = true,
+    DODGE = true,
+    PARRY = true,
+    BLOCK = true,
+    DEFLECT = true,
+    ABSORB = true,
+    IMMUNE = true,
+    EVADE = true,
+}
+local PHYSICAL = 1
+local PARRY_HIGH, PARRY_CUT, PARRY_LOW = 0.6, 0.4, 0.2
 
 -- On-next-swing attacks: CludesUI.FOREVER_NEXT_SWING (Warrior Heroic Strike
 -- / Cleave, Druid Maul, Hunter Raptor Strike). While one is queued the melee
@@ -279,6 +302,15 @@ local function IsPlainVal(val) return not (issecretvalue and issecretvalue(val))
 -- nil ("unknown"), never "no weapon".
 local function CanSwing(swingType)
     if swingType == SWING.MainHand then return true end
+    if swingType == "target" then
+        -- Target Swing: a living target the player can attack, with a speed.
+        local hostile, dead = UnitCanAttack("player", "target"), UnitIsDead("target")
+        if not (IsPlainVal(hostile) and IsPlainVal(dead)) then return nil end
+        if not hostile or dead then return false end
+        local speed = UnitAttackSpeed("target")
+        if not IsPlainVal(speed) then return nil end
+        return type(speed) == "number" and speed > 0
+    end
     local _, oh, ranged = UnitAttackSpeed("player")
     local swingSpeed
     if swingType == SWING.OffHand then
@@ -318,6 +350,11 @@ end
 -- Show Rows shows every ticked row; row._canSwing keeps the real answer.
 local function RowWanted(defaults, conf, swingRow)
     if conf and conf[defaults.show] == false then return false end
+    if defaults.target then
+        -- Opt-in, and shown with its sample while the movers are up.
+        if not (conf and conf.showTGT == true) then return false end
+        if SwingState.sample then return true end
+    end
     local canSwing = CanSwing(defaults.type)
     if canSwing == nil then
         canSwing = swingRow and swingRow._canSwing or false
@@ -550,8 +587,10 @@ end
 -- flips it on its edges too (its Edit Mode toggle sends false for the slot), so
 -- this never dedupes: every row refresh and every target change re-asserts our
 -- answer, and a flip from the other frame can never leave a row undimmed.
--- S.rangeOn is the memo UpdateRangeRow reads, not a send gate.
+-- S.rangeOn is the memo UpdateRangeRow reads, not a send gate. The Target
+-- Swing row is not a swing type: it never checks range.
 local function SetRangeCheck(swingType, enabled)
+    if swingType == "target" then return end
     enabled = enabled and true or false
     SwingState.rangeOn[swingType] = enabled
     C_SwingTimer.EnableRangeCheck(swingType, enabled)
@@ -871,6 +910,7 @@ local function ShouldWait(swingRow, conf)
     return swingRow:IsShown()
             and swingRow._canSwing ~= false
             and not swingRow._merged
+            and not swingRow._def.target
             and AttackOn(swingRow._def)
             and (StateFull(conf) or GuideRow(swingRow, conf))
             and true
@@ -1043,7 +1083,7 @@ local function StartRow(swingRow, dur, conf)
     local nowTime = GetTime()
     local start = nowTime
     local due = swingRow._due
-    if GuideOn(conf) and due then
+    if GuideOn(conf) and due and not swingRow._def.target then
         local late = nowTime - due
         if late > -SMOOTH_TOL and late < SMOOTH_TOL then start = due + late * SMOOTH_GAIN end
     end
@@ -1205,7 +1245,8 @@ function ApplyRowFill(swingRow, conf)
     local pend = swingRow._waiting and StateFull(conf)
     local aimTex = not pend and swingRow._aiming
     local q = not (pend or aimTex) and QueueRow(defaults, conf) and SwingState.queued
-    local act = not (pend or aimTex or q) and SwingState.active[defaults.melee and "melee" or "ranged"]
+    local act = not (pend or aimTex or q or defaults.target)
+        and SwingState.active[defaults.melee and "melee" or "ranged"]
     local sl = not (pend or aimTex or q or act) and defaults.melee and SwingState.seal
     local fR, fG, fB, fA
     if pend then
@@ -1423,6 +1464,53 @@ local function SealCast(spellID)
     SealEndsIn(SwingState.sealSecs or SEAL_TIME)
 end
 
+-- Target Swing parry haste: the running swing moved earlier, re-armed the way
+-- a settings pass re-arms a running row.
+local function ParryHaste(swingRow, conf)
+    local nowTime, dur = GetTime(), swingRow._dur
+    local rem = swingRow._end - nowTime
+    if rem > PARRY_HIGH * dur then
+        rem = rem - PARRY_CUT * dur
+    elseif rem > PARRY_LOW * dur then
+        rem = PARRY_LOW * dur
+    else
+        return
+    end
+    swingRow._end = nowTime + rem
+    swingRow._due = swingRow._end
+    swingRow._start = swingRow._end - dur
+    local object = swingRow._durObj
+    object:SetTimeFromStart(swingRow._start, dur)
+    swingRow._bar:SetTimerDuration(object, IMMEDIATE, conf.depleteFill and DIR.RemainingTime or DIR.ElapsedTime)
+    ArmEdges(swingRow, conf)
+    SyncTimeText(swingRow, conf)
+end
+
+-- UNIT_COMBAT for the Target Swing row: the target's physical hit (or miss,
+-- dodge, parry...) on the player starts its swing, read while the player is
+-- its target; the target parrying hastes it. Restricted answers do nothing.
+local function TargetCombat(conf, unit, action, school)
+    local swingRow = SwingState.byType.target
+    if not (swingRow and swingRow:IsShown()) or SwingState.sample then return end
+    if not (IsPlainVal(unit) and IsPlainVal(action) and IsPlainVal(school)) then return end
+    if unit == "player" then
+        if school ~= PHYSICAL or not TARGET_HITS[action] then return end
+        local onMe = UnitIsUnit("targettarget", "player")
+        if not (IsPlainVal(onMe) and onMe) then return end
+        local speed = UnitAttackSpeed("target")
+        if IsPlainVal(speed) and type(speed) == "number" and speed > 0 then StartRow(swingRow, speed, conf) end
+    elseif unit == "target" and action == "PARRY" and swingRow._live and swingRow._end and swingRow._dur then
+        ParryHaste(swingRow, conf)
+    end
+end
+
+-- The Target Swing row shows or hides with the target (hostile, alive): the
+-- stack re-lays out only when that answer changed.
+local function TargetRowChanged(conf)
+    local swingRow = SwingState.byType.target
+    return swingRow and (RowWanted(swingRow._def, conf, swingRow) and true or false) ~= swingRow:IsShown()
+end
+
 -- One-shot read of both states, for the edges this frame was not listening
 -- to: the action bars' own auto-repeat test, and Auto Attack as the current
 -- spell. The edges keep them current from here.
@@ -1457,7 +1545,8 @@ local function PaintActive(conf)
     A.melee, A.ranged = melee, ranged
     for i = 1, #SwingState.rows do
         local swingRow = SwingState.rows[i]
-        if (swingRow._def.melee and dMelee) or (not swingRow._def.melee and dRanged) then
+        local defaults = swingRow._def
+        if (defaults.melee and dMelee) or (not defaults.melee and not defaults.target and dRanged) then
             ApplyRowFill(swingRow, conf)
         end
     end
@@ -1803,7 +1892,7 @@ local function ApplyMoveEvents(conf)
     end
 end
 
-shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
+shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3, _a4, a5)
     local conf = P()
     if not (conf and conf.enabled and SwingState.built) then return end
     if evt == "PLAYER_SWING" then
@@ -1878,6 +1967,17 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
             SetRangeCheck(swingRow._def.type, wantRange and swingRow:IsShown())
         end
         SyncAllRanges()
+        -- A new target: the Target Swing row starts over, shown or not by it.
+        local tgtRow = conf.showTGT == true and SwingState.byType.target
+        if tgtRow then
+            if tgtRow._live then IdleRow(tgtRow, conf) end
+            if RefreshRows(conf) then RestyleMarked(conf) end
+        end
+    elseif evt == "UNIT_COMBAT" then
+        -- a1 = unit, a2 = action, a5 = school
+        TargetCombat(conf, a1, a2, a5)
+    elseif evt == "UNIT_FACTION" or evt == "UNIT_FLAGS" then
+        if TargetRowChanged(conf) and RefreshRows(conf) then RestyleMarked(conf) end
     elseif evt == "UNIT_AURA" then
         -- a2 = updateInfo
         SealAuraUpdate(a2)
@@ -1979,6 +2079,24 @@ local function ApplySealEvents(conf)
     end
 end
 
+-- Target Swing: the combat edges of the player and target, and the target's
+-- hostility edges, only while the row is ticked.
+local function ApplyTargetEvents(conf)
+    if not SwingState.events then return end
+    local on = conf.showTGT == true
+    if on == (SwingState.tgtEvents or false) then return end
+    SwingState.tgtEvents = on or nil
+    if on then
+        shellFrame:RegisterUnitEvent("UNIT_COMBAT", "player", "target")
+        shellFrame:RegisterUnitEvent("UNIT_FACTION", "target")
+        shellFrame:RegisterUnitEvent("UNIT_FLAGS", "target")
+    else
+        shellFrame:UnregisterEvent("UNIT_COMBAT")
+        shellFrame:UnregisterEvent("UNIT_FACTION")
+        shellFrame:UnregisterEvent("UNIT_FLAGS")
+    end
+end
+
 -- Cast Clip: the player's cast edges, only while the option is on.
 local function ApplyCastEvents(conf)
     if not SwingState.events then return end
@@ -2003,7 +2121,7 @@ end
 local function UnregisterEvents()
     if not SwingState.events then return end
     SwingState.events = nil
-    SwingState.sealEvents, SwingState.castEvents = nil, nil
+    SwingState.sealEvents, SwingState.castEvents, SwingState.tgtEvents = nil, nil, nil
     SwingState.moveEvents, SwingState.moving = nil, false
     shellFrame:UnregisterAllEvents()
 end
@@ -2095,6 +2213,7 @@ local function Arm(conf)
     ApplyShieldEvents(conf)
     ApplySealEvents(conf)
     ApplyCastEvents(conf)
+    ApplyTargetEvents(conf)
     -- Highlight turned off with an attack queued: the paint below must clear it.
     if not QueueOn(conf) then SwingState.queued = false end
     -- Attack state: read once per enable, kept by the edges while on.

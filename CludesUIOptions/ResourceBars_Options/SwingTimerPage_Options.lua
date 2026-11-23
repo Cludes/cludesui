@@ -786,6 +786,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             RowSwatch("mh", "Main Hand Color"),
             RowSwatch("oh", "Off Hand Color"),
             RowSwatch("r", "Ranged Color"),
+            RowSwatch("tgt", "Target Color"),
             {
                 tooltip = "Class Colored",
                 getValue = function()
@@ -983,6 +984,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         SparkColorRow("Main Hand", "mh"),
                         SparkColorRow("Off Hand", "oh"),
                         SparkColorRow("Ranged", "r"),
+                        SparkColorRow("Target", "tgt"),
                     },
                 },
             },
@@ -997,6 +999,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             { key = "showMH", label = "Main Hand" },
             { key = "showOH", label = "Off Hand" },
             { key = "showR", label = "Ranged" },
+            { key = "showTGT", label = "Target" },
         }
         local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             region,
@@ -1106,7 +1109,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     }, {
         type = "toggle",
         text = "Show Weapon Label",
-        tooltip = "Tag each row with its weapon slot: MH (Main Hand), OH (Off Hand), R (Ranged).",
+        tooltip = "Tag each row with its weapon slot: MH (Main Hand), OH (Off Hand), R (Ranged), TGT (your target's swing).",
         disabled = stOff,
         disabledTooltip = SWING_TIP,
         getValue = function()

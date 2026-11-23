@@ -151,4 +151,53 @@ conf.castClip, conf.depleteFill = nil, nil
 cast = nil
 mod.ST_Apply()
 
+-- Target Swing: off by default; ticked, it shows for a hostile living target,
+-- starts on the target's physical hit on the player, parries haste it, a
+-- spell or another unit's target does nothing, a new target resets it.
+local tgt
+for _, c in ipairs({ shell:GetChildren() }) do
+    if c._def and c._def.tag == "TGT" then tgt = c end
+end
+local hostile, dead, onMe = true, false, true
+UnitCanAttack = function() return hostile end
+UnitIsDead = function() return dead end
+UnitIsUnit = function() return onMe end
+UnitAttackSpeed = function(unit) if unit == "target" then return 2.5 end return 2.0, nil, nil end
+local function Tgt(tag)
+    OUT:write(("== %s: tgt shown=%s live=%s end=%s height=%s\n"):format(tag, tostring(tgt:IsShown()),
+        tostring(tgt._live or false), tgt._end and F(tgt._end - GetTime()) or "-", F(shell:GetHeight())))
+end
+Tgt("off by default")
+conf.showTGT = true
+mod.ST_Apply()
+Tgt("ticked, hostile target")
+HARNESS_FIRE_EVENT("UNIT_COMBAT", "player", "WOUND", "", 120, 1)
+Tgt("target hits me")
+HARNESS_FIRE_EVENT("UNIT_COMBAT", "player", "WOUND", "", 120, 4)
+Tgt("a fire spell (no restart)")
+HARNESS_ADVANCE(0.5)
+HARNESS_FIRE_EVENT("UNIT_COMBAT", "target", "PARRY", "", 0, 1)
+Tgt("0.5s later the target parries (2.0 left -> 1.0)")
+HARNESS_FIRE_EVENT("UNIT_COMBAT", "target", "PARRY", "", 0, 1)
+Tgt("parries again (1.0 left -> 0.5)")
+onMe = false
+HARNESS_FIRE_EVENT("UNIT_COMBAT", "player", "WOUND", "", 120, 1)
+Tgt("hit while it targets someone else (no restart)")
+onMe = true
+HARNESS_FIRE_EVENT("PLAYER_TARGET_CHANGED")
+Tgt("new target")
+hostile = false
+HARNESS_FIRE_EVENT("UNIT_FLAGS", "target")
+Tgt("target turns friendly")
+hostile = true
+HARNESS_FIRE_EVENT("UNIT_FACTION", "target")
+Tgt("hostile again")
+dead = true
+HARNESS_FIRE_EVENT("PLAYER_TARGET_CHANGED")
+Tgt("dead target")
+dead = false
+conf.showTGT = false
+mod.ST_Apply()
+Tgt("unticked")
+
 SNAP("swing timer", shell)
