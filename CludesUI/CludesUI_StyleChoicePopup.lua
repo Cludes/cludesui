@@ -92,9 +92,9 @@ local function ShowStyleChoicePopup()
     local ACC = CLUDES_GREEN
     -- Wide enough for the card row (four cards on the WoW Forever client).
     local POPUP_W, POPUP_H = math.max(700, CUI.STYLE_CARDS_W + 32), 480
-    -- The DEFAULT card: CludesUI, or on the WoW Forever client WoW
-    -- Forever, the look a fresh install there starts on.
-    local defaultKey = CUI.IS_FOREVER and "forever" or "cui"
+    -- The DEFAULT card: CludesUI, the look a fresh install starts on (on
+    -- WoW Forever too, since 23 Nov 2026).
+    local defaultKey = "cui"
     -- The look this session renders, read from the modules: its card closes
     -- the popup with nothing written. The default while no styleable module
     -- is loaded; none while the loaded modules render different looks

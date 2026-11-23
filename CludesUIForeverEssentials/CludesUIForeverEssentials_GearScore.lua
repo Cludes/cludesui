@@ -194,7 +194,13 @@ local function PaintSheet()
     local level = rawget(_G, "CharacterLevelText")
     if not level then return end
     if not sheetLine then
-        sheetLine = level:GetParent():CreateFontString(nil, "OVERLAY")
+        -- On a layer of its own over the slot buttons (the sheet's slots
+        -- otherwise draw over its left end).
+        local host = level:GetParent()
+        local layer = CreateFrame("Frame", nil, host)
+        layer:SetAllPoints(host)
+        layer:SetFrameLevel(host:GetFrameLevel() + 30)
+        sheetLine = layer:CreateFontString(nil, "OVERLAY")
         CUI.Kit.Font(sheetLine, CUI.Kit.TEXT_SIZE, "essentials")
         sheetLine:SetPoint("TOP", level, "BOTTOM", 0, -3)
     end

@@ -272,6 +272,58 @@ do
         styleMap.charsheet = "blizzard"
     end
 
+    -- Once per account (owner 23 Nov 2026: "reskin it all"): every window in
+    -- the CludesUI look. A profile on another whole-UI look (WoW Forever,
+    -- Blizzard Style, Classic) goes to the CludesUI look through the Style
+    -- page's own Apply to All; then the kill switch is cleared, every window
+    -- skin is on and every per-window style is CludesUI. Skins install at load,
+    -- so it offers the reload. An account already there is only marked.
+    local function CludesUILookEverywhere(store)
+        if store.cuiLookEverywhereV1 then return end
+        local profileTbl = CUI.GetActiveProfileData()
+        local look = CUI.ProfileWindowSkinLook(profileTbl, store.fonts)
+        local styleMap = store.blizzWindowSkinStyles
+        local needed = (look ~= nil and look ~= "cui") or CUI.BlizzWindowSkinsKilled()
+            or (type(styleMap) == "table" and next(styleMap) ~= nil)
+        for windowKey, engineKey in pairs(WINDOW_ENABLE_KEYS) do
+            if not EnabledValue(windowKey, store[engineKey]) then needed = true end
+        end
+        if not needed then
+            store.cuiLookEverywhereV1 = true
+            return
+        end
+        if InCombatLockdown() then return end -- the next login
+        if look and look ~= "cui" then
+            local loaded = C_AddOns.LoadAddOn("CludesUIOptions")
+            if not (loaded and CUI.BlizzStyle and CUI.BlizzStyle.ApplyAll) then return end
+            CUI.BlizzStyle.ApplyAll("cui")
+        end
+        profileTbl = CUI.GetActiveProfileData()
+        if type(profileTbl) == "table" then
+            profileTbl.disableWindowSkins = nil
+            profileTbl.windowSkinLook = "cui"
+        end
+        for windowKey, engineKey in pairs(WINDOW_ENABLE_KEYS) do
+            store[engineKey] = OnValue(windowKey)
+        end
+        store.blizzWindowSkinStyles = nil
+        local slots = store.windowSkinStyleSlots
+        if type(slots) == "table" then
+            slots.active = "cui"
+            slots.cui = nil
+        end
+        store.cuiLookEverywhereV1 = true
+        CUI:ShowConfirmPopup({
+            title = "The CludesUI Look",
+            message = "Every window now uses the CludesUI look: the character sheet, spellbook and talents, quest log, guild, group finder, Legacy and the rest. Reload to see it.",
+            confirmText = "Reload",
+            cancelText = "Later",
+            reload = true,
+        })
+    end
+
+    CUI._CludesUILookEverywhere = CludesUILookEverywhere
+
     local seedFrame = CreateFrame("Frame")
     seedFrame:RegisterEvent("ADDON_LOADED")
     -- Registered here, first among this addon's frames, so the login pass
@@ -282,6 +334,7 @@ do
         if evt == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
             CUI.ReconcileWindowSkinLook()
+            C_Timer.After(2, function() CludesUILookEverywhere(CludesUIDB) end)
             return
         end
         if name ~= ADDON_NAME then return end
