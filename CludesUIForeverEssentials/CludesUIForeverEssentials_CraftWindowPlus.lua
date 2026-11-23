@@ -173,7 +173,7 @@ local INVITE = {
     "Hey, sending an invite: I'd like to order some crafts from you.",
     "Hi there, invite on its way. Got a small crafting order for you if you're free.",
 }
-local MUTED, TEXT = { 0.64, 0.68, 0.71 }, { 0.9, 0.91, 0.92 }
+local MUTED, TEXT = CUI.Kit.Palette.muted, CUI.Kit.Palette.text
 
 local picks = {}
 local function Pick(lines)

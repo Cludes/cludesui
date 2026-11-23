@@ -25,13 +25,13 @@ local Kit = CUI.Kit
 local F = Prof.F
 local Get = F.Get
 
-local LAYOUT = { W = 844, H = 620, HEAD = 52, LEFT = 318, ROW = 22, PAD = 12, REAGENT = 34, MAX_REAGENTS = 8 }
+local LAYOUT = { W = 844, H = 620, HEAD = 52, LEFT = 318, ROW = Kit.ROW_H, PAD = 12, REAGENT = 34, MAX_REAGENTS = 8 }
 local COLOUR = {
-    muted = { 0.64, 0.68, 0.71 },
-    text = { 0.9, 0.91, 0.92 },
-    red = { 1, 0.38, 0.38 },
-    green = { 0.37, 0.77, 0.42 },
-    line = { 0.2, 0.22, 0.24 },
+    muted = Kit.Palette.muted,
+    text = Kit.Palette.text,
+    red = Kit.Palette.red,
+    green = Kit.Palette.green,
+    line = Kit.Palette.line,
     panel = { 0.11, 0.12, 0.135 },
     sidebar = { 0.085, 0.093, 0.105 },
     -- the game's recipe difficulty colours: optimal, medium, easy, trivial

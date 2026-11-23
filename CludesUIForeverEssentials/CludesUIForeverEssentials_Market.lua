@@ -234,7 +234,7 @@ local function ShowButton()
         })
         button.age = button:CreateFontString(nil, "OVERLAY")
         CUI.Kit.Font(button.age, 11, "essentials")
-        button.age:SetTextColor(0.64, 0.68, 0.71)
+        button.age:SetTextColor(unpack(CUI.Kit.Palette.muted))
         button.age:SetPoint("LEFT", button, "RIGHT", 8, 0)
     end
     button:ClearAllPoints()

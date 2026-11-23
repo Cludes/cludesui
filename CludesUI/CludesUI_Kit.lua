@@ -11,7 +11,10 @@ local CUI = CludesUI
 --    Kit.Panel(frame[, alpha])             dark fill and a black 1 px border
 --    Kit.Window(name, w, h, title, opts)   a movable window: Panel, accent
 --                                          title, flat close glyph, Escape
+--    Kit.Header(frame, title, onClose[, opts])        Window's title bar
+--    Kit.Palette, Kit.ROW_H, Kit.TEXT_SIZE, Kit.SMALL_SIZE  shared look
 --    Kit.Button(parent, text, w, h, onClick[, opts])  flat square button
+--    Kit.SecureButton(parent, name, text, w, h[, opts])  the same, secure
 --    Kit.Glyph(parent, text, onClick[, tip])          bare header glyph
 --    Kit.Check(parent, label, onClick)     square checkbox
 --    Kit.Input(parent, w, h[, placeholder])           flat edit box
@@ -119,35 +122,73 @@ function Kit.Window(name, wid, hgt, title, options)
     window:SetScript("OnDragStart", window.StartMoving)
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     Kit.Panel(window)
-    window.title = window:CreateFontString(nil, "OVERLAY")
-    Kit.Font(window.title, 15, options.key)
-    window.title:SetPoint("TOPLEFT", 10, -8)
-    window.title:SetText(title or "")
-    window.header = window:CreateTexture(nil, "ARTWORK")
-    window.header:SetHeight(1)
-    window.header:SetPoint("TOPLEFT", 1, -28)
-    window.header:SetPoint("TOPRIGHT", -1, -28)
-    window.close = Kit.Glyph(window, "x", function()
+    Kit.Header(window, title, function()
         if options.onClose then options.onClose() end
         window:Hide()
-    end, nil, options.key)
-    window.close:SetPoint("TOPRIGHT", -5, -5)
-    local function Paint()
-        local red, green, blue = Kit.Accent()
-        window.title:SetTextColor(red, green, blue)
-        window.header:SetColorTexture(red, green, blue, 0.35)
-    end
-    Paint()
-    window:HookScript("OnShow", Paint)
+    end, options)
     if name and options.special ~= false then tinsert(UISpecialFrames, name) end
     return window
 end
 
+--- Kit.Window's title bar on any panel: an accent title, the accent line
+--- under it (Kit.HEADER_H tall) and the close glyph (onClose; nil: none).
+--- Sets frame.title, frame.header, frame.close. opts.key: the font key.
+Kit.HEADER_H = 28
+function Kit.Header(frame, title, onClose, options)
+    options = options or {}
+    frame.title = frame:CreateFontString(nil, "OVERLAY")
+    Kit.Font(frame.title, 15, options.key)
+    frame.title:SetPoint("TOPLEFT", 10, -8)
+    frame.title:SetText(title or "")
+    frame.header = frame:CreateTexture(nil, "ARTWORK")
+    frame.header:SetHeight(1)
+    frame.header:SetPoint("TOPLEFT", 1, -Kit.HEADER_H)
+    frame.header:SetPoint("TOPRIGHT", -1, -Kit.HEADER_H)
+    if onClose then
+        frame.close = Kit.Glyph(frame, "x", onClose, options.closeTip, options.key)
+        frame.close:SetPoint("TOPRIGHT", -5, -5)
+    end
+    local function Paint()
+        local red, green, blue = Kit.Accent()
+        frame.title:SetTextColor(red, green, blue)
+        frame.header:SetColorTexture(red, green, blue, 0.35)
+    end
+    Paint()
+    frame:HookScript("OnShow", Paint)
+end
+
+--- The colours tool windows share (their text, hints, good and bad
+--- numbers, warnings, rules), so every window reads the same.
+Kit.Palette = {
+    text = { 0.9, 0.91, 0.92 },
+    muted = { 0.64, 0.68, 0.71 },
+    green = { 0.37, 0.77, 0.42 },
+    red = { 1, 0.38, 0.38 },
+    amber = { 1, 0.7, 0.25 },
+    line = { 0.2, 0.22, 0.24 },
+}
+-- Tool window list rows and text sizes.
+Kit.ROW_H = 22
+Kit.TEXT_SIZE, Kit.SMALL_SIZE = 12.5, 11.5
+
 --- A flat square button. opts: key (font), size (text size), tip. Methods:
 --- SetText, GetText, GetTextWidth, SetActive(bool) (the picked tab).
+local StyleButton
 function Kit.Button(hostFrame, textValue, wid, hgt, onClick, options)
+    return StyleButton(CreateFrame("Button", nil, hostFrame), textValue, wid, hgt, onClick, options)
+end
+
+--- Kit.Button's look on a SecureActionButtonTemplate button (for actions
+--- only the game's secure buttons may do: casting on an item, a macro). The
+--- caller sets its attributes and PreClick / PostClick.
+function Kit.SecureButton(hostFrame, name, textValue, wid, hgt, options)
+    local widget = CreateFrame("Button", name, hostFrame, "SecureActionButtonTemplate")
+    widget:RegisterForClicks("LeftButtonUp")
+    return StyleButton(widget, textValue, wid, hgt, nil, options)
+end
+
+function StyleButton(widget, textValue, wid, hgt, onClick, options)
     options = options or {}
-    local widget = CreateFrame("Button", nil, hostFrame)
     widget:SetSize(wid or 90, hgt or 22)
     local backdrop = widget:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()

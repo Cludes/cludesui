@@ -15,9 +15,10 @@ local RW = CUI._RecipeWindow
 if not (Prof and Slots and RW) then return end
 local F = Prof.F
 local Get = F.Get
+local PALETTE = CUI.Kit.Palette
 
 local ENCHANTING = 333
-local MAX_ROWS, ROW = 8, 30
+local MAX_ROWS, ROW = 8, 28
 local CHAT = {
     "CHAT_MSG_WHISPER",
     "CHAT_MSG_PARTY",
@@ -118,20 +119,10 @@ local function NewRow(index)
     row.icon:SetSize(20, 20)
     row.icon:SetPoint("LEFT", 2, 0)
     row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    local button = CreateFrame("Button", nil, row, "SecureActionButtonTemplate")
-    button:SetSize(64, 22)
+    local button = CUI.Kit.SecureButton(row, nil, "Enchant", 64, 22, { key = "essentials" })
     button:SetPoint("RIGHT")
-    button:RegisterForClicks("LeftButtonUp")
     button:SetAttribute("clickbutton", rawget(_G, "TradeRecipientItem7ItemButton"))
     button:SetScript("PreClick", PreClick)
-    local bg = button:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.12, 0.13, 0.14, 1)
-    CUI.Kit.Border(button, CUI.Kit.Accent())
-    button.label = button:CreateFontString(nil, "OVERLAY")
-    CUI.Kit.Font(button.label, 12, "essentials")
-    button.label:SetPoint("CENTER")
-    button.label:SetText("Enchant")
     button:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine("Casts this enchant on the item they put in the trade window.", 1, 1, 1, true)
@@ -140,11 +131,11 @@ local function NewRow(index)
     button:HookScript("OnLeave", GameTooltip_Hide)
     row.button = button
     row.note = row:CreateFontString(nil, "OVERLAY")
-    CUI.Kit.Font(row.note, 11, "essentials")
+    CUI.Kit.Font(row.note, CUI.Kit.SMALL_SIZE, "essentials")
     row.note:SetPoint("RIGHT", button, "LEFT", -6, 0)
     row.note:SetTextColor(CUI.Kit.Accent())
     row.name = row:CreateFontString(nil, "OVERLAY")
-    CUI.Kit.Font(row.name, 12.5, "essentials")
+    CUI.Kit.Font(row.name, CUI.Kit.TEXT_SIZE, "essentials")
     row.name:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
     row.name:SetPoint("RIGHT", row.note, "LEFT", -6, 0)
     row.name:SetJustifyH("LEFT")
@@ -160,19 +151,13 @@ local function Build()
     panel:EnableMouse(true)
     panel:EnableMouseWheel(true)
     CUI.Kit.Panel(panel, 0.97)
-    panel.title = panel:CreateFontString(nil, "OVERLAY")
-    CUI.Kit.Font(panel.title, 14, "essentials")
-    panel.title:SetPoint("TOPLEFT", 10, -9)
-    panel.title:SetText("Trade Enchants")
-    panel.title:SetTextColor(CUI.Kit.Accent())
-    panel.close = CUI.Kit.Glyph(panel, "x", function()
+    CUI.Kit.Header(panel, "Trade Enchants", function()
         panel.dismissed = true
         panel:Hide()
-    end, "Hides this until the next trade.", "essentials")
-    panel.close:SetPoint("TOPRIGHT", -6, -6)
+    end, { key = "essentials", closeTip = "Hides this until the next trade." })
     panel.note = panel:CreateFontString(nil, "OVERLAY")
-    CUI.Kit.Font(panel.note, 11.5, "essentials")
-    panel.note:SetTextColor(0.64, 0.68, 0.71)
+    CUI.Kit.Font(panel.note, CUI.Kit.SMALL_SIZE, "essentials")
+    panel.note:SetTextColor(unpack(PALETTE.muted))
     panel.note:SetJustifyH("LEFT")
     panel.note:SetWordWrap(true)
     panel.rows = {}
@@ -204,7 +189,7 @@ function TE.Render()
         row.note:SetText(TE.Asked(state.partner, info.recipeID) and "asked for" or "")
         row.button.recipeID = info.recipeID
         local ready = RW.Data.Craftable(info) > 0
-        row.name:SetTextColor(ready and 0.9 or 0.5, ready and 0.91 or 0.5, ready and 0.92 or 0.5)
+        row.name:SetTextColor(unpack(ready and PALETTE.text or PALETTE.muted))
         row.button:SetEnabled(ready)
         row.button:SetAlpha(ready and 1 or 0.45)
         row:Show()

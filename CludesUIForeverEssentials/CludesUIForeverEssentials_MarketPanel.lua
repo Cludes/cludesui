@@ -20,10 +20,11 @@ local MK = CUI._Market
 if not (Market and MK) then return end
 local Get = MK.Get
 
-local W, H, PAD, ROW = 340, 660, 10, 22
+local W, H, PAD, ROW = 340, 660, 10, CUI.Kit.ROW_H
 local PAGE_H = H - 100 -- the space under the tabs and above the message line
-local MUTED, TEXT = { 0.64, 0.68, 0.71 }, { 0.9, 0.91, 0.92 }
-local GREEN, RED, AMBER = { 0.37, 0.77, 0.42 }, { 1, 0.38, 0.38 }, { 1, 0.7, 0.25 }
+local PALETTE = CUI.Kit.Palette
+local MUTED, TEXT = PALETTE.muted, PALETTE.text
+local GREEN, RED, AMBER = PALETTE.green, PALETTE.red, PALETTE.amber
 local CUT = 0.95
 local SEARCH_TIMEOUT, POST_TIMEOUT = 6, 10
 local DURATIONS = { { 1, "12h" }, { 2, "24h" }, { 3, "48h" } }
@@ -692,7 +693,7 @@ BuildDeals = function(page)
     end, "essentials")
     page.mineOnly:SetPoint("LEFT", page.find, "RIGHT", 12, 0)
     page.mineOnly:SetChecked(true)
-    page.status = Label(page, 12, MUTED)
+    page.status = Label(page, CUI.Kit.SMALL_SIZE, MUTED)
     page.status:SetPoint("TOPLEFT", PAD, -36)
     page.status:SetPoint("RIGHT", -PAD, 0)
     page.status:SetWordWrap(true)
@@ -754,10 +755,10 @@ local function NewRow(parent, index, top, onClick)
     row.icon:SetSize(16, 16)
     row.icon:SetPoint("LEFT", 4, 0)
     row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    row.right = Label(row, 12, TEXT)
+    row.right = Label(row, CUI.Kit.TEXT_SIZE, TEXT)
     row.right:SetPoint("RIGHT", -4, 0)
     row.right:SetJustifyH("RIGHT")
-    row.name = Label(row, 12.5, TEXT)
+    row.name = Label(row, CUI.Kit.TEXT_SIZE, TEXT)
     row.name:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
     row.name:SetPoint("RIGHT", row.right, "LEFT", -6, 0)
     row:SetScript("OnClick", onClick)
@@ -785,15 +786,15 @@ local function BuildSell(page)
     card.name = Label(card, 14, TEXT)
     card.name:SetPoint("TOPLEFT", card.icon, "TOPRIGHT", 10, -2)
     card.name:SetPoint("RIGHT", -PAD, 0)
-    card.sub = Label(card, 11.5, MUTED)
+    card.sub = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
     card.sub:SetPoint("TOPLEFT", card.name, "BOTTOMLEFT", 0, -4)
     card.sub:SetPoint("RIGHT", -PAD, 0)
-    card.reason = Label(card, 12, MUTED)
+    card.reason = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
     card.reason:SetPoint("TOPLEFT", card.icon, "BOTTOMLEFT", 0, -10)
     card.reason:SetPoint("RIGHT", -PAD, 0)
     card.reason:SetWordWrap(true)
 
-    local priceLabel = Label(card, 12, MUTED)
+    local priceLabel = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
     priceLabel:SetPoint("TOPLEFT", PAD, -96)
     priceLabel:SetText("Price each")
     card.price = K.Input(card, 120, 24, nil, "essentials")
@@ -805,7 +806,7 @@ local function BuildSell(page)
         Panel.Render()
     end)
 
-    local qtyLabel = Label(card, 12, MUTED)
+    local qtyLabel = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
     qtyLabel:SetPoint("TOPLEFT", PAD, -128)
     qtyLabel:SetText("Quantity")
     card.qty = K.Input(card, 50, 24, nil, "essentials")
@@ -836,14 +837,14 @@ local function BuildSell(page)
         b.duration = d[1]
         card.durations[index], prev = b, b
     end
-    card.deposit = Label(card, 11.5, MUTED)
+    card.deposit = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
     card.deposit:SetPoint("TOPLEFT", PAD, -160)
     card.post = K.Button(card, "Post", 90, 28, function() Sell.Post() end, { key = "essentials", size = 13 })
     card.post:SetPoint("TOPRIGHT", -PAD, -156)
     card.post:SetActive(true)
     card.skip = K.Button(card, "Skip", 60, 28, function() Sell.Next() end, { key = "essentials" })
     card.skip:SetPoint("RIGHT", card.post, "LEFT", -6, 0)
-    card.empty = Label(card, 12.5, MUTED)
+    card.empty = Label(card, CUI.Kit.TEXT_SIZE, MUTED)
     card.empty:SetPoint("TOPLEFT", PAD, -14)
     card.empty:SetPoint("RIGHT", -PAD, 0)
     card.empty:SetWordWrap(true)
@@ -877,7 +878,7 @@ end
 
 local function BuildMine(page)
     local K = Kit()
-    page.summary = Label(page, 12.5, TEXT)
+    page.summary = Label(page, CUI.Kit.TEXT_SIZE, TEXT)
     page.summary:SetPoint("TOPLEFT", PAD, -8)
     page.summary:SetPoint("RIGHT", -150, 0)
     page.next = K.Button(page, "Cancel Next Undercut", 140, 24, function() Mine.CancelNext() end, {
@@ -897,14 +898,10 @@ local function Build()
     panel:SetWidth(W)
     panel:EnableMouse(true)
     K.Panel(panel, 0.97)
-    panel.title = Label(panel, 15, TEXT)
-    panel.title:SetPoint("TOPLEFT", PAD + 2, -12)
-    panel.title:SetText("The Market")
-    panel.close = K.Glyph(panel, "x", function()
+    K.Header(panel, "The Market", function()
         Panel.closed = true
         panel:Hide()
-    end, "Hides the panel until your next visit.", "essentials")
-    panel.close:SetPoint("TOPRIGHT", -8, -10)
+    end, { key = "essentials", closeTip = "Hides the panel until your next visit." })
     panel.tabs = {}
     local prev
     local widths = { sell = 70, mine = 120, deals = 90 }
@@ -918,7 +915,7 @@ local function Build()
         tab.key, prev = t[1], tab
         panel.tabs[#panel.tabs + 1] = tab
     end
-    panel.message = Label(panel, 11.5, MUTED)
+    panel.message = Label(panel, CUI.Kit.SMALL_SIZE, MUTED)
     panel.message:SetPoint("BOTTOMLEFT", PAD, 10)
     panel.message:SetPoint("RIGHT", -PAD, 0)
     for _, key in ipairs({ "sell", "mine", "deals" }) do
