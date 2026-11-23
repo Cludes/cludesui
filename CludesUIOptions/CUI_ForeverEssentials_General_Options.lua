@@ -2382,6 +2382,22 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             tooltip = "Under a recipe's reagents: what one craft sells for after the auction cut, its materials and the profit. Needs auction prices (The Market's Auction Prices, or Auctionator).",
             getValue = function() return PF.Get("craftProfit") end,
             setValue = function(val) Set("craftProfit", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Disenchant Window",
+            disabled = pOff,
+            tooltip = "/cde, or the Disenchant button on the recipe window while Enchanting is open: everything in your bags Disenchant can take. Right-click keeps one, Shift-right-click every copy; Disenchant All does one per click.",
+            getValue = function() return PF.Get("disenchant") end,
+            setValue = function(val) Set("disenchant", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Disenchant on Tooltips",
+            disabled = function() return pOff() or not PF.Get("disenchant") end,
+            tooltip = "Green, blue and purple gear says about what it disenchants into is worth at your auction prices, and the Enchanting skill it needs (red when yours is lower).",
+            getValue = function() return PF.Get("disenchantTooltip") end,
+            setValue = function(val) Set("disenchantTooltip", val and true or false) end,
         })
         cursorY = cursorY - height
     end

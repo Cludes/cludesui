@@ -33,6 +33,8 @@ local F =
         craftOrders = true,
         skillUpPlan = true,
         craftProfit = true,
+        disenchant = true,
+        disenchantTooltip = true,
     })
 local Get, On = F.Get, F.Enabled
 
@@ -747,6 +749,7 @@ end)
 local function Apply()
     eventFrame:UnregisterAllEvents()
     if CUI._RecipeWindow then CUI._RecipeWindow.Apply() end
+    if CUI._Disenchant then CUI._Disenchant.Apply() end
     if not On() then
         if window then window:Hide() end
         return

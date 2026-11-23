@@ -69,6 +69,7 @@ CludesUIForeverEssentials_CraftWindow.lua
 CludesUIForeverEssentials_CraftWindowPlus.lua
 CludesUIForeverEssentials_Market.lua
 CludesUIForeverEssentials_MarketPanel.lua
+CludesUIForeverEssentials_Disenchant.lua
 CludesUIForeverEssentials_QuestRewards.lua
 
 # Travel (flight timer)
