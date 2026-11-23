@@ -176,10 +176,15 @@ function mod.AuctionAPI()
     return api and api.GetAuctionPriceByItemLink and api or nil
 end
 
--- What Auctionator last saw one of the item listed for, when it has a price.
+-- What Auctionator last saw one of the item listed for, when it has a price;
+-- without Auctionator, the Market's own scan (The Market on).
 function mod.AuctionPrice(itemLink)
     local api = mod.AuctionAPI()
-    if not api then return end
+    if not api then
+        local market = mod.Market
+        local itemID = market and CUI._Market.Get("enabled") and itemLink and C_Item.GetItemInfoInstant(itemLink)
+        return itemID and market.Price(itemID) or nil
+    end
     local success, price = pcall(api.GetAuctionPriceByItemLink, "CludesUI", itemLink)
     if success and type(price) == "number" and price > 0 then return price end
 end

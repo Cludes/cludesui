@@ -2378,6 +2378,56 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  THE MARKET
+    ---------------------------------------------------------------------------
+    local MK = CUI._Market
+    if MK then
+        local function mOff() return not MK.Get("enabled") end
+        local function Set(key, val)
+            MK.Cfg()[key] = val
+            MK.Apply()
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "THE MARKET", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Auction Prices",
+            tooltip = function()
+                return "A Scan Prices button on the auction house: it reads every listing and keeps each item's lowest buyout for this realm and faction (the game allows one full scan every 15 minutes). Your own searches keep prices fresh too. Loot Feed, Junk Items and the recipe window use these prices when Auctionator is not installed.\n\n"
+                    .. MK.Market.Summary()
+            end,
+            getValue = function() return not mOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Prices on Tooltips",
+            disabled = mOff,
+            tooltip = "Item tooltips show the lowest buyout and how old it is. Off while Auctionator is installed, which shows its own.",
+            getValue = function() return MK.Get("tooltip") end,
+            setValue = function(val) Set("tooltip", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Scan on Opening",
+            disabled = mOff,
+            tooltip = "Scans by itself when you open the auction house and your last scan is over 30 minutes old.",
+            getValue = function() return MK.Get("autoScan") end,
+            setValue = function(val) Set("autoScan", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Keep Other Addons' Scans",
+            disabled = mOff,
+            tooltip = "Also keeps the prices from full scans that other addons start.",
+            getValue = function() return MK.Get("capture") end,
+            setValue = function(val) Set("capture", val and true or false) end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
     local MA = CUI._MailAlts
