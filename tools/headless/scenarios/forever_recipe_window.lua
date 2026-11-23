@@ -186,6 +186,21 @@ win.detail.qty:SetText("3")
 win.detail.create:GetScript("OnClick")(win.detail.create)
 OUT:write("== crafted: " .. table.concat(crafted, ", ") .. "\n")
 Report("after create")
+-- Auction prices from The Market: the bracers lose 41s 50c a craft.
+CludesUIDB.market = {
+    enabled = true,
+    houses = {
+        [GetRealmName() .. "-" .. UnitFactionGroup("player")] = {
+            time = GetServerTime(),
+            prices = { [2840] = 800, [3470] = 300, [2854] = 5000, [2851] = 20000 },
+            listed = {},
+        },
+    },
+}
+W.Render()
+local profitText = tostring(win.detail.profit and win.detail.profit:GetText())
+profitText = profitText:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("\n", " / ")
+OUT:write("== profit: " .. profitText .. "\n")
 
 -- Pick the one with a cooldown.
 row = RowNamed("Copper Chain Belt")
@@ -378,6 +393,7 @@ local function Column(label)
     )
 end
 Column("order")
+OUT:write("== suggested: " .. tostring(col.tip.hint:GetText()) .. "\n")
 col.tip:SetText("2g 50s")
 col.tip:GetScript("OnEditFocusLost")(col.tip)
 OUT:write("== tip: " .. tostring(col.tip:GetText()) .. "\n")

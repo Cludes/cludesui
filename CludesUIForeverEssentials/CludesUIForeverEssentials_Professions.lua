@@ -32,6 +32,7 @@ local F =
         altProfessions = true,
         craftOrders = true,
         skillUpPlan = true,
+        craftProfit = true,
     })
 local Get, On = F.Get, F.Enabled
 

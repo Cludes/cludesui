@@ -2375,6 +2375,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             setValue = function(val) Set("skillUpPlan", val and true or false) end,
         })
         cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Craft Profit",
+            disabled = function() return pOff() or not PF.Get("craftWindow") end,
+            tooltip = "Under a recipe's reagents: what one craft sells for after the auction cut, its materials and the profit. Needs auction prices (The Market's Auction Prices, or Auctionator).",
+            getValue = function() return PF.Get("craftProfit") end,
+            setValue = function(val) Set("craftProfit", val and true or false) end,
+        })
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------

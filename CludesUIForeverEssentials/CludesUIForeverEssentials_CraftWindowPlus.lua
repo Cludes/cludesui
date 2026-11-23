@@ -304,14 +304,66 @@ function Orders.Messages(o, prefix)
         elseif #d.reagents > 0 then
             pieces[#pieces + 1] = "Your materials, please."
         end
-        if index == #o.list and o.tip and o.tip > 0 then
-            pieces[#pieces + 1] = ("Tip: %s%s."):format(Orders.Money(o.tip), #o.list > 1 and " for the lot" or "")
+        local tip = o.tip or Orders.Suggest(o)
+        if index == #o.list and tip and tip > 0 then
+            pieces[#pieces + 1] = ("Tip: %s%s."):format(Orders.Money(tip), #o.list > 1 and " for the lot" or "")
         end
         for _, message in ipairs(Split(pieces)) do
             messages[#messages + 1] = message
         end
     end
     return messages
+end
+
+-------------------------------------------------------------------------------
+--  Prices (The Market's scan, or Auctionator's): a craft's value after the
+--  auction house's 5% cut, its materials, and an order's suggested tip
+-------------------------------------------------------------------------------
+local Prices = { CUT = 0.95 }
+
+function Prices.Of(itemID)
+    if not module.AuctionAPI() then
+        local market = CUI._Market
+        return market and market.Get("enabled") and (market.Market.Price(itemID)) or nil
+    end
+    local link = select(2, C_Item.GetItemInfo(itemID)) or ("item:" .. itemID)
+    return module.AuctionPrice(link)
+end
+
+-- value (after the cut, nil when unpriced), materials you pay for (skip:
+-- items you bring), unpriced materials, every material's cost.
+function Prices.Craft(recipeID, crafts, skip)
+    crafts = crafts or 1
+    local cost, unpriced, all = 0, 0, 0
+    for _, reagent in ipairs(RW.Data.Reagents(recipeID)) do
+        local each = Prices.Of(reagent.itemID)
+        if each then
+            local spent = each * reagent.need * crafts
+            all = all + spent
+            if not (skip and skip[reagent.itemID]) then cost = cost + spent end
+        else
+            unpriced = unpriced + 1
+        end
+    end
+    local output, made = RW.Data.Output(recipeID)
+    local each = output and Prices.Of(output)
+    return each and math.floor(each * made * crafts * Prices.CUT), cost, unpriced, all
+end
+
+-- Their materials plus 10% of what the crafts are worth (of all the
+-- materials when nothing is made or priced), at least 1s, rounded to 1s
+-- under 1g, 10s under 10g, else 1g. nil with nothing priced.
+function Orders.Suggest(o)
+    local pay, priced = 0, false
+    for _, d in ipairs(o.list) do
+        local value, theirs, _, all = Prices.Craft(d.recipeID, d.crafts, d.bring)
+        local base = value or (all > 0 and all) or nil
+        if base or theirs > 0 then priced = true end
+        pay = pay + theirs + (base and math.max(100, base * 0.1) or 0)
+    end
+    if not priced then return end
+    local step = pay < 10000 and 100 or pay < 100000 and 1000 or 10000
+    return math.max(step, math.floor(pay / step + 0.5) * step)
 end
 
 -- PARTY (or INSTANCE_CHAT) when the crafter is in your party, else WHISPER.
@@ -439,9 +491,40 @@ local function BringCheck(row)
     return check
 end
 
+-- Under the reagents, for your own recipes: what one craft sells for after
+-- the cut, its materials, and the profit when everything is priced.
+local function Profit(pane, info)
+    if not pane.profit then
+        pane.profit = Label(pane, 12.5, TEXT)
+        pane.profit:SetPoint("TOPLEFT", pane.reagents, "BOTTOMLEFT", 2, -10)
+        pane.profit:SetJustifyH("LEFT")
+        pane.profit:SetWordWrap(true)
+        pane.profit:SetSpacing(4)
+    end
+    local value, cost, unpriced = nil, 0, 0
+    local on = not RW.State.linked and Get("craftProfit") ~= false
+    if on then value, cost, unpriced = Prices.Craft(info.recipeID) end
+    if not (on and (value or cost > 0)) then return pane.profit:SetText("") end
+    local function Muted(text) return "|cffa3adb5" .. text .. "|r" end
+    local lines = {
+        value and (Muted("Sells for ") .. Orders.Money(value) .. Muted(" after the auction cut"))
+            or Muted("No auction price for what it makes"),
+        Muted("Materials ") .. Orders.Money(cost) .. (unpriced > 0 and Muted((" (+%d unpriced)"):format(unpriced)) or ""),
+    }
+    if value and unpriced == 0 then
+        local gain = value - cost
+        lines[#lines + 1] = Muted("Profit ")
+            .. (gain >= 0 and "|cff5ec46b+" or "|cffff6161-")
+            .. Orders.Money(math.abs(gain))
+            .. "|r"
+    end
+    pane.profit:SetText(table.concat(lines, "\n"))
+end
+
 function Panel.Detail(info)
     local pane = RW.Window.Win().detail
     if not pane.orderFoot then BuildFooter(pane) end
+    Profit(pane, info)
     local d = Orders.On() and Orders.Draft(info) or nil
     pane.orderFoot:SetShown(d ~= nil)
     pane.footRule:SetShown(d ~= nil or not RW.State.linked)
@@ -597,6 +680,8 @@ function Panel.Render()
         col.empty:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
     end
     if not col.tip:HasFocus() then col.tip:SetText(o.tip and Orders.Money(o.tip) or "") end
+    local suggest = #o.list > 0 and Orders.Suggest(o)
+    col.tip.hint:SetText(suggest and ("suggested " .. Orders.Money(suggest)) or "e.g. 2g 50s")
     local channel = Orders.Channel(o)
     col.ask:SetText(channel == "WHISPER" and "Ask by Whisper" or channel == "PARTY" and "Ask in Party" or "Ask in Instance")
     col.ask:SetEnabled(#o.list > 0)
