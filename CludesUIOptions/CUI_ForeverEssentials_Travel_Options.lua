@@ -556,5 +556,45 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         }, { disabled = off, disabledTooltip = "Flight Timer" })
     end
 
+    -- Flight Point Reminder (CludesUIForeverEssentials_FlightPoints.lua).
+    local FP = CUI._FlightPoints
+    if FP then
+        local function fpOff() return not FP.Get("enabled") end
+        local function FPSet(key, val)
+            FP.Cfg()[key] = val
+            FP.Apply()
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        local fpHeading
+        fpHeading, height = W:SectionHeader(hostFrame, "FLIGHT POINT REMINDER", cursorY)
+        cursorY = cursorY - height
+        CUI.BuildSectionUnlockJump(
+            fpHeading,
+            { key = "CUI_FlightPoints", disabled = fpOff, disabledTooltip = "Flight Point Reminder" }
+        )
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Flight Point Reminder",
+            tooltip = "Reminds you to learn a flight point when you reach a town whose flight master you have not spoken to, and for a few seconds as you enter a zone that has one. Open a flight master's map once per continent so it knows the points you have.",
+            getValue = function() return not fpOff() end,
+            setValue = function(val)
+                FPSet("enabled", val and true or false)
+                CUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Text Size",
+            min = 10,
+            max = 24,
+            step = 1,
+            isPercent = false,
+            disabled = fpOff,
+            getValue = function() return FP.Get("textSize") end,
+            setValue = function(val) FPSet("textSize", math.floor(val + 0.5)) end,
+        })
+        cursorY = cursorY - height
+    end
+
     return math.abs(cursorY)
 end

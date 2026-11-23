@@ -81,6 +81,7 @@ CludesUIForeverEssentials_QuestRewards.lua
 # Travel (flight timer)
 CludesUIForeverEssentials_FlightTimerData.lua
 CludesUIForeverEssentials_FlightTimer.lua
+CludesUIForeverEssentials_FlightPoints.lua
 
 # World map zone levels
 CludesUIForeverEssentials_ZoneLevels.lua

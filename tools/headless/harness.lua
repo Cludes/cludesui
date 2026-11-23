@@ -607,6 +607,11 @@ local FUNCTION_VERBS = { "Get", "Set", "Is", "Has", "Can", "Create", "Update", "
 local enumCounter = 0
 local EnumNS = { __index = function(t, k) enumCounter = enumCounter + 1; rawset(t, k, enumCounter); return enumCounter end }
 G.Enum = setmetatable({}, { __index = function(t, k) local ns = setmetatable({}, EnumNS); rawset(t, k, ns); return ns end })
+-- Enums whose order code compares (a map walks up while its type is past the
+-- one wanted): the client's own values.
+G.Enum.UIMapType = setmetatable({ Cosmic = 0, World = 1, Continent = 2, Zone = 3, Dungeon = 4, Micro = 5, Orphan = 6 }, EnumNS)
+G.Enum.FlightPathFaction = setmetatable({ Neutral = 0, Horde = 1, Alliance = 2 }, EnumNS)
+G.Enum.FlightPathState = setmetatable({ Current = 0, Reachable = 1, Unreachable = 2 }, EnumNS)
 -- The tooltip data processor keeps what the addons register at load (a scenario runs a
 -- handler by hand: TooltipDataProcessor.postCalls = { { kind, fn }, ... }).
 G.TooltipDataProcessor = { postCalls = {} }
