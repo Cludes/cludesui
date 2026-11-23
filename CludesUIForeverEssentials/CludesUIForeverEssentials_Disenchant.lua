@@ -518,7 +518,7 @@ local function Apply()
     end
 end
 
-CUI._Disenchant = { Apply = Apply, Window = Window, D = D, Values = Values }
+CUI._Disenchant = { Apply = Apply, On = On, Window = Window, D = D, Values = Values }
 
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")

@@ -126,6 +126,27 @@ CUI.Print = realPrint
 Report("refused")
 OUT:write("== said: " .. table.concat(said, " / ") .. "\n")
 
+-- DE Deals over the scan: the sword listed at 30s is worth ~44s 88c, but
+-- needs 25 (this enchanter has 20): only with "only what I can disenchant" off.
+local Deals = CUI._MarketPanel and CUI._MarketPanel.Deals
+if Deals then
+    local prices = CludesUIDB.market.houses[GetRealmName() .. "-" .. UnitFactionGroup("player")].prices
+    prices[15210], prices[15295] = 3000, 50000
+    rawset(C_Item, "RequestLoadItemDataByID", function() end)
+    local function Run(mine)
+        Deals.mine = mine
+        Deals.Find()
+        for _ = 1, 5 do HARNESS_ADVANCE(0.05) end
+        local list = {}
+        for _, d in ipairs(Deals.list) do
+            list[#list + 1] = ("%s %d -> %d (+%d) needs %s"):format(d.name, d.price, d.value, d.profit, tostring(d.need))
+        end
+        OUT:write(("== deals (mine=%s): %s [%s]\n"):format(tostring(mine), tostring(Deals.state), table.concat(list, "; ")))
+    end
+    Run(true)
+    Run(false)
+end
+
 -- Tooltip lines.
 for _, id in ipairs({ 15210, 15295, 45 }) do
     local left, right = DE.Values.TooltipLine(id)

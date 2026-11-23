@@ -29,6 +29,7 @@ local SEARCH_TIMEOUT, POST_TIMEOUT = 6, 10
 local DURATIONS = { { 1, "12h" }, { 2, "24h" }, { 3, "48h" } }
 
 local Panel = { page = "sell" }
+local Deals, RenderDeals, BuildDeals -- DE Deals, further down
 local panel
 
 local function Kit() return CUI.Kit end
@@ -579,6 +580,162 @@ function Mine.Start()
 end
 
 -------------------------------------------------------------------------------
+--  DE Deals (Disenchant tools on, Disenchant known): items in your last scan
+--  whose average disenchant value after the cut beats their price, best
+--  profit first. A click searches it in the game's Buy tab.
+-------------------------------------------------------------------------------
+Deals = { list = {}, gen = 0, mine = true }
+local DEALS_CHUNK, DEALS_TOP = 300, 40
+
+function Deals.On()
+    local DE = CUI._Disenchant
+    return DE ~= nil and DE.On() and DE.D.Known()
+end
+
+local function DealsSkill()
+    for _, index in pairs({ GetProfessions() }) do
+        local _, _, rank, _, _, _, line, modifier = GetProfessionInfo(index)
+        if line == 333 then return (rank or 0) + (modifier or 0) end
+    end
+end
+
+-- Works through the price list a chunk a frame (item info is the slow part).
+function Deals.Find()
+    local DE = CUI._Disenchant
+    local house = Market.House(false)
+    wipe(Deals.list)
+    Deals.gen = Deals.gen + 1
+    local gen = Deals.gen
+    if not (DE and house and house.prices) then
+        Deals.state = "noscan"
+        return Panel.Render()
+    end
+    local V, skill = DE.Values, DealsSkill()
+    local ids = {}
+    for itemID in pairs(house.prices) do
+        ids[#ids + 1] = itemID
+    end
+    Deals.state, Deals.loading, Deals.done, Deals.total = "working", 0, 0, #ids
+    local index = 0
+    local function Step()
+        if gen ~= Deals.gen then return end
+        local last = math.min(index + DEALS_CHUNK, #ids)
+        for at = index + 1, last do
+            local itemID = ids[at]
+            local name, link, quality, level, _, _, _, _, equip, icon, _, classID = C_Item.GetItemInfo(itemID)
+            if not name then
+                local _, _, _, instantEquip, _, instantClass = C_Item.GetItemInfoInstant(itemID)
+                if instantClass == 2 or instantClass == 4 then
+                    Deals.loading = Deals.loading + 1
+                    C_Item.RequestLoadItemDataByID(itemID)
+                end
+            elseif V.Takes(itemID, classID, quality, equip) then
+                local outcomes = V.Outcomes(classID, quality, level)
+                local worth = outcomes and V.Expected(outcomes, function(id) return house.prices[id] end)
+                local need = V.Skill(level, quality)
+                if worth and not (Deals.mine and skill and need and need > skill) then
+                    local price = house.prices[itemID]
+                    local value = math.floor(worth * CUT)
+                    if value > price then
+                        Deals.list[#Deals.list + 1] = {
+                            itemID = itemID,
+                            name = name,
+                            link = link,
+                            icon = icon,
+                            price = price,
+                            value = value,
+                            profit = value - price,
+                            need = need,
+                        }
+                    end
+                end
+            end
+        end
+        index, Deals.done = last, last
+        if index < #ids then
+            C_Timer.After(0, Step)
+        else
+            table.sort(Deals.list, function(lhs, rhs)
+                if lhs.profit ~= rhs.profit then return lhs.profit > rhs.profit end
+                return lhs.itemID < rhs.itemID
+            end)
+            for at = #Deals.list, DEALS_TOP + 1, -1 do
+                Deals.list[at] = nil
+            end
+            Deals.state = "done"
+        end
+        Panel.Render()
+    end
+    Step()
+end
+
+-- The game's Buy tab, searching this item by name.
+function Deals.Search(deal)
+    local house = rawget(_G, "AuctionHouseFrame")
+    local bar = house and house.SearchBar
+    if not (bar and bar.SetSearchText and bar.StartSearch) then return end
+    bar:SetSearchText(deal.name)
+    bar:StartSearch()
+end
+
+BuildDeals = function(page)
+    local K = Kit()
+    page.find = K.Button(page, "Find Deals", 110, 24, function() Deals.Find() end, {
+        key = "essentials",
+        tip = "Goes through your last price scan for gear whose disenchant is worth more, after the cut, than it costs.",
+    })
+    page.find:SetPoint("TOPLEFT", PAD, -4)
+    page.find:SetActive(true)
+    page.mineOnly = K.Check(page, "Only what I can disenchant", function(self)
+        Deals.mine = self:GetChecked()
+        Deals.Find()
+    end, "essentials")
+    page.mineOnly:SetPoint("LEFT", page.find, "RIGHT", 12, 0)
+    page.mineOnly:SetChecked(true)
+    page.status = Label(page, 12, MUTED)
+    page.status:SetPoint("TOPLEFT", PAD, -36)
+    page.status:SetPoint("RIGHT", -PAD, 0)
+    page.status:SetWordWrap(true)
+    page.rows = {}
+end
+
+RenderDeals = function()
+    local page = panel.deals
+    local status
+    if Deals.state == "noscan" then
+        status = "Scan Prices first: deals come from your last scan."
+    elseif Deals.state == "working" then
+        status = ("Working through %d of %d prices..."):format(Deals.done or 0, Deals.total or 0)
+    elseif Deals.state == "done" then
+        status = (#Deals.list == 0 and "No deals in your last scan." or ("%d deals, best first."):format(#Deals.list))
+            .. ((Deals.loading or 0) > 0 and (" %d items still loading: Find again in a moment."):format(Deals.loading) or "")
+    else
+        status = "Find Deals goes through your last price scan."
+    end
+    page.status:SetText(status)
+    local shown = math.max(0, math.floor((PAGE_H - 70) / ROW))
+    for index = 1, math.max(shown, #page.rows) do
+        local deal = index <= shown and Deals.list[index] or nil
+        local row = page.rows[index]
+        if not row and deal then
+            row = NewRow(page, index, -64, function(self)
+                if self.deal then Deals.Search(self.deal) end
+            end)
+            page.rows[index] = row
+        end
+        if row then
+            row.deal, row.link = deal, deal and deal.link
+            row:SetShown(deal ~= nil)
+            if deal then
+                row.icon:SetTexture(deal.icon)
+                row.name:SetText(deal.name)
+                row.right:SetText(("%s  |cff5ec46b+%s|r"):format(Money(deal.price), Money(deal.profit)))
+            end
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
 --  The panel
 -------------------------------------------------------------------------------
 local function NewRow(parent, index, top, onClick)
@@ -750,10 +907,11 @@ local function Build()
     panel.close:SetPoint("TOPRIGHT", -8, -10)
     panel.tabs = {}
     local prev
-    for _, t in ipairs({ { "sell", "Sell" }, { "mine", "My Auctions" } }) do
-        local tab = K.Button(panel, t[2], t[1] == "sell" and 70 or 120, 26, function()
+    local widths = { sell = 70, mine = 120, deals = 90 }
+    for _, t in ipairs({ { "sell", "Sell" }, { "mine", "My Auctions" }, { "deals", "DE Deals" } }) do
+        local tab = K.Button(panel, t[2], widths[t[1]], 26, function()
             Panel.page = t[1]
-            if t[1] == "mine" then Mine.Start() else Sell.Read() end
+            if t[1] == "mine" then Mine.Start() elseif t[1] == "sell" then Sell.Read() end
             Panel.Render()
         end, { key = "essentials" })
         if prev then tab:SetPoint("LEFT", prev, "RIGHT", 6, 0) else tab:SetPoint("TOPLEFT", PAD, -38) end
@@ -763,7 +921,7 @@ local function Build()
     panel.message = Label(panel, 11.5, MUTED)
     panel.message:SetPoint("BOTTOMLEFT", PAD, 10)
     panel.message:SetPoint("RIGHT", -PAD, 0)
-    for _, key in ipairs({ "sell", "mine" }) do
+    for _, key in ipairs({ "sell", "mine", "deals" }) do
         local page = CreateFrame("Frame", nil, panel)
         page:SetPoint("TOPLEFT", 0, -72)
         page:SetPoint("BOTTOMRIGHT", 0, 28)
@@ -771,6 +929,7 @@ local function Build()
     end
     BuildSell(panel.sell)
     BuildMine(panel.mine)
+    BuildDeals(panel.deals)
 end
 
 local function QueueRows(page)
@@ -925,7 +1084,16 @@ function Panel.Render()
     panel.tabs[2]:SetText(undercut > 0 and ("My Auctions (" .. undercut .. ")") or "My Auctions")
     panel.sell:SetShown(Panel.page == "sell")
     panel.mine:SetShown(Panel.page == "mine")
-    if Panel.page == "sell" then RenderSell() else RenderMine() end
+    panel.deals:SetShown(Panel.page == "deals")
+    panel.tabs[3]:SetShown(Deals.On())
+    if Panel.page == "deals" and not Deals.On() then Panel.page = "sell" end
+    if Panel.page == "sell" then
+        RenderSell()
+    elseif Panel.page == "mine" then
+        RenderMine()
+    else
+        RenderDeals()
+    end
     panel.message:SetText(Panel.message or ("Posted this visit: " .. Money(Panel.posted or 0)))
 end
 
@@ -997,7 +1165,7 @@ local function Apply()
     end
 end
 
-CUI._MarketPanel = { Apply = Apply, Panel = Panel, Sell = Sell, Mine = Mine, Listings = Listings }
+CUI._MarketPanel = { Apply = Apply, Panel = Panel, Sell = Sell, Mine = Mine, Listings = Listings, Deals = Deals }
 
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
