@@ -225,8 +225,73 @@ local function WaySection(W, host, y)
             CUI:RefreshPage()
             AskReload("/way command")
         end,
-    }, CUI.BlankRowCfg())
+    }, {
+        type = "toggle",
+        text = "Waypoint Pin",
+        tooltip = "Draws the spot you are heading to (a map pin, a quest, your corpse) in the CludesUI look: a flat pin with what it is, its distance, arrows over it and a quest's objectives left.",
+        getValue = function()
+            local P = CUI._WaypointPin
+            return P and P.Get("enabled") == true
+        end,
+        setValue = function(val)
+            local P = CUI._WaypointPin
+            if not P then return end
+            P.Cfg().enabled = val and true or false
+            P.Apply()
+            CUI:RefreshPage()
+        end,
+    })
     y = y - h
+    local function PinGet(key)
+        local P = CUI._WaypointPin
+        return P and P.Get(key)
+    end
+    local function PinSet(key)
+        return function(val)
+            local P = CUI._WaypointPin
+            if not P then return end
+            P.Cfg()[key] = val
+            P.Apply()
+        end
+    end
+    CUI.BuildInlineCog(row._rightRegion, {
+        title = "Waypoint Pin",
+        disabled = function() return PinGet("enabled") ~= true end,
+        disabledTooltip = "Waypoint Pin",
+        rows = {
+            {
+                type = "dropdown",
+                label = "Pin Shape",
+                values = { diamond = "Diamond", square = "Square", dot = "Dot" },
+                order = { "diamond", "square", "dot" },
+                get = function() return PinGet("shape") end,
+                set = PinSet("shape"),
+            },
+            {
+                type = "slider",
+                label = "Pin Size",
+                min = 50,
+                max = 200,
+                step = 5,
+                get = function() return math.floor((PinGet("size") or 1) * 100 + 0.5) end,
+                set = function(val) PinSet("size")(val / 100) end,
+            },
+            {
+                type = "toggle",
+                label = "Downward Arrows",
+                tooltip = "Three arrows pointing down at the pin.",
+                get = function() return PinGet("arrows") == true end,
+                set = PinSet("arrows"),
+            },
+            {
+                type = "toggle",
+                label = "Quest Objectives",
+                tooltip = "A tracked quest's unfinished objectives above the pin.",
+                get = function() return PinGet("objectives") == true end,
+                set = PinSet("objectives"),
+            },
+        },
+    })
     -- Arrival at hand-placed pins (off by default). The runtime listens for
     -- arrivals only while this or a /way list needs them, so it re-syncs.
     CUI.BuildInlineCog(row._leftRegion, {

@@ -19,6 +19,7 @@ CludesUIQoL_AutoLogging.lua
 CludesUIQoL_Keys.lua
 CludesUIQoL_TeleportPrompt.lua
 CludesUIQoL_Waypoint.lua
+CludesUIQoL_WaypointPin.lua
 CludesUIQoL_Shifter.lua
 CludesUIQoL_ConsoleVariables.lua
 CludesUIQoL_MovementAlert.lua
