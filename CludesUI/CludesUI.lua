@@ -3939,6 +3939,9 @@ end
 --  Slash commands
 -------------------------------------------------------------------------------
 CUI.VERSION = "1.1.3"
+-- The newest entry in the Patch Notes (CUI._WHATSNEW_PATCHES, CUI__General_Options.lua):
+-- raise it with each new entry, and the Patch Notes dot lights once for everyone.
+CUI.NOTES_VERSION = "1.2.0"
 
 -- Register this addon's version into a shared global table (taint-free at load time)
 if not _G._CUI_AddonVersions then _G._CUI_AddonVersions = {} end
@@ -3954,8 +3957,12 @@ do
     frame:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_LOGIN")
         if not CludesUIDB then CludesUIDB = {} end
-        local prev = CludesUIDB.lastLoginVersion
-        if prev and prev ~= CUI.VERSION then CludesUIDB.patchDotPending = true end
+        -- Every push is a release, so the dot follows the Patch Notes' own newest
+        -- version (CUI.NOTES_VERSION), not the build number: it lights only when
+        -- there is something new to read.
+        local prev = CludesUIDB.lastNotesVersion
+        if prev and prev ~= CUI.NOTES_VERSION then CludesUIDB.patchDotPending = true end
+        CludesUIDB.lastNotesVersion = CUI.NOTES_VERSION
         CludesUIDB.lastLoginVersion = CUI.VERSION
         if CUI._UpdatePatchDot then CUI._UpdatePatchDot() end
     end)
