@@ -1,6 +1,7 @@
 name: Release
 
-# Every push to master that changes the addons becomes a release: the next
+# A push to master that changes the addons, once some commit since the last
+# tag carries a "Player: ..." line (see the Version step), becomes a release: the next
 # patch version after the newest vX.Y.Z tag is tagged on that commit and
 # published as CludesUI-vX.Y.Z.zip (every addon folder, with that version
 # stamped into each .toc and CludesUI.VERSION) with notes listing each change
@@ -52,6 +53,15 @@ jobs:
             exit 0
           fi
           last=$(git tag --list 'v*' --sort=-v:refname | head -1)
+          # A push releases only once a commit since the last tag says what players
+          # get (a "Player: ..." body line); until then its changes wait for the
+          # next one. A hand run (workflow_dispatch) always releases.
+          paths=". :!tools :!.github :!*.md :!.stylua.toml :!.gitignore"
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && ! git log --format=%B "$last..HEAD" -- $paths | grep -q '^Player:'; then
+            echo "No Player: line since $last; no release."
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           IFS=. read -r major minor patch <<< "${last#v}"
           tag="v$major.$minor.$((patch + 1))"
           git tag "$tag" HEAD
