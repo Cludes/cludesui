@@ -2170,6 +2170,92 @@ local function BuildSidebar()
         end
         RegAccent({ type = "callback", fn = PaintSwatches })
 
+        -- Section status: each module of the picked section with whether it is
+        -- on and its recent CPU time (refreshed every 2s while shown), above
+        -- the foot. The list above shrinks to make room.
+        local STATUS_ROW = 18
+        local status = CreateFrame("Frame", nil, chrome)
+        status:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18, FOOT_H + 12)
+        status:SetWidth(SIDEBAR_W - listX - 36)
+        local statusTitle = MakeFont(status, 10, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.8)
+        statusTitle:SetPoint("TOPLEFT", status, "TOPLEFT", 0, 0)
+        statusTitle:SetText(CUI.L("Section Status"):upper())
+        local statusCpuHead = MakeFont(status, 10, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.8)
+        statusCpuHead:SetPoint("TOPRIGHT", status, "TOPRIGHT", 0, 0)
+        statusCpuHead:SetText(CUI.L("CPU"))
+        local statusRule = SolidTex(status, "ARTWORK", 1, 1, 1, 0.07)
+        statusRule:SetHeight(1)
+        statusRule:SetPoint("TOPLEFT", status, "TOPLEFT", 0, -16)
+        statusRule:SetPoint("TOPRIGHT", status, "TOPRIGHT", 0, -16)
+        local statusRows, statusMembers = {}, {}
+        local profiler = C_AddOnProfiler and C_AddOnProfiler.GetAddOnMetric and Enum and Enum.AddOnProfilerMetric
+        local function StatusRow(index)
+            local row = statusRows[index]
+            if row then return row end
+            row = CreateFrame("Frame", nil, status)
+            row:SetHeight(STATUS_ROW)
+            row:SetPoint("TOPLEFT", status, "TOPLEFT", 0, -20 - (index - 1) * STATUS_ROW)
+            row:SetPoint("RIGHT", status, "RIGHT", 0, 0)
+            row.dot = SolidTex(row, "ARTWORK", 1, 1, 1, 1)
+            row.dot:SetSize(6, 6)
+            row.dot:SetPoint("LEFT", row, "LEFT", 0, 0)
+            row.name = MakeFont(row, 11, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+            row.name:SetPoint("LEFT", row.dot, "RIGHT", 7, 0)
+            row.name:SetJustifyH("LEFT")
+            row.name:SetWordWrap(false)
+            row.cpu = MakeFont(row, 11, nil, 0.84, 0.86, 0.88, 1)
+            row.cpu:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+            row.cpu:SetJustifyH("RIGHT")
+            row.name:SetPoint("RIGHT", row.cpu, "LEFT", -6, 0)
+            statusRows[index] = row
+            return row
+        end
+        local function PaintStatus()
+            for index, moduleKey in ipairs(statusMembers) do
+                local row = StatusRow(index)
+                local navInfo = CUI_NS.navInfo[moduleKey]
+                local on = navInfo and (navInfo.alwaysLoaded or IsAddonLoaded(navInfo.folder)) and true or false
+                row.name:SetText(CUI.L(navInfo and navInfo.display or moduleKey))
+                if on then
+                    row.dot:SetColorTexture(0.37, 0.77, 0.42, 1)
+                    local ms = profiler and C_AddOnProfiler.GetAddOnMetric(navInfo.folder, Enum.AddOnProfilerMetric.RecentAverageTime)
+                    row.cpu:SetText(ms and ("%.3f ms"):format(ms) or "--")
+                    row.cpu:SetTextColor(0.84, 0.86, 0.88, 1)
+                else
+                    row.dot:SetColorTexture(0.45, 0.47, 0.5, 1)
+                    row.cpu:SetText(CUI.L("Off"))
+                    row.cpu:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.6)
+                end
+                row:Show()
+            end
+            for index = #statusMembers + 1, #statusRows do
+                statusRows[index]:Hide()
+            end
+        end
+        status:SetScript("OnUpdate", function(self, elapsed)
+            self.wait = (self.wait or 0) - elapsed
+            if self.wait > 0 then return end
+            self.wait = 2
+            PaintStatus()
+        end)
+        -- Shows the status for a section's members (nil hides it); returns its height.
+        local function ShowStatus(members)
+            if not members or #members == 0 then
+                status:Hide()
+                return 0
+            end
+            wipe(statusMembers)
+            for i, moduleKey in ipairs(members) do
+                statusMembers[i] = moduleKey
+            end
+            local height = 20 + #members * STATUS_ROW
+            status:SetHeight(height)
+            status.wait = 0
+            status:Show()
+            PaintStatus()
+            return height + 12
+        end
+
         local function PaintRail(button, on)
             local EG = CLUDES_GREEN
             if on then
@@ -2333,13 +2419,49 @@ local function BuildSidebar()
                 end
                 for _, moduleKey in ipairs(navGroup.members) do
                     local row = sidebarButtons[moduleKey]
-                    if row and row._label and row._labelX ~= childX then
+                    if row and row._label and (row._labelX ~= childX or (not on and row._labelY ~= 0)) then
                         row._labelX = childX
+                        row._labelY = 0
                         row._label:SetPoint("LEFT", row, "LEFT", childX, 0)
                     end
+                    if row and row._desc and not on then row._desc:Hide() end
                 end
             end
             if not on then return listW end
+            -- The picked section's status under its list (not while a page list shows).
+            local members
+            if not moduleView then
+                for _, navGroup in ipairs(CUI_NS.navGroups) do
+                    if navGroup.key == CUI_NS.railKey then members = navGroup.members end
+                end
+            end
+            addonScroller:SetHeight(CLICK_H - LIST_TOP - FOOT_H - 8 - ShowStatus(members))
+            -- Each module row reads two lines: its name, and under it what it does.
+            for _, navGroup in ipairs(CUI_NS.navGroups) do
+                for _, moduleKey in ipairs(navGroup.members) do
+                    local row = sidebarButtons[moduleKey]
+                    if row and row._label then
+                        if not row._desc then
+                            row._desc = MakeFont(row, 10, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.6)
+                            row._desc:SetPoint("LEFT", row, "LEFT", childX, -9)
+                            row._desc:SetPoint("RIGHT", row, "RIGHT", -46, -9)
+                            row._desc:SetJustifyH("LEFT")
+                            row._desc:SetWordWrap(false)
+                            row._desc:SetMaxLines(1)
+                        end
+                        local config = moduleList[moduleKey]
+                        local text = config and config.description and CUI.L(config.description) or ""
+                        if not config then text = CUI.L("Switched off") end
+                        row._desc:SetText(text)
+                        row._desc:SetShown(text ~= "")
+                        local y = text ~= "" and 7 or 0
+                        if row._labelY ~= y then
+                            row._labelY = y
+                            row._label:SetPoint("LEFT", row, "LEFT", childX, y)
+                        end
+                    end
+                end
+            end
             local present = {}
             for index, navGroup in ipairs(CUI_NS.navGroups) do
                 local button = railButtons[navGroup.key] or NewRailButton(navGroup)
@@ -6164,7 +6286,7 @@ function CUI_NS.SetRailGroup(entryKey)
 end
 
 -- Command Rail row heights (the long list keeps CludesUI.SIDEBAR_*_ROW_H).
-CUI_NS.RAIL_GROUP_H, CUI_NS.RAIL_CHILD_H = 44, 44
+CUI_NS.RAIL_GROUP_H, CUI_NS.RAIL_CHILD_H = 44, 40
 
 -- Command Rail: the open module's pages as rows in the list (under its row,
 -- or under its title when it is in no group). A click opens that page.

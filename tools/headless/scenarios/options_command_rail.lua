@@ -52,3 +52,20 @@ CUI.RefreshSidebarLayout()
 List("core settings")
 CUI:SelectModule("CludesUIActionBars")
 List("action bars pages")
+-- Two-line rows and the section status under the list.
+local function Status()
+    local out = {}
+    for _, kid in ipairs({ CUI._sidebar:GetChildren() }) do
+        for _, f in ipairs({ kid:GetChildren() }) do
+            for _, r in ipairs({ f:GetChildren() }) do
+                if r.name and r.cpu and r:IsShown() then out[#out + 1] = r.name:GetText() .. "=" .. r.cpu:GetText() end
+            end
+        end
+    end
+    return table.concat(out, ", ")
+end
+local first = CUI._addonScrollChild and select(2, CUI._addonScrollChild:GetChildren())
+OUT:write("== status: " .. Status() .. "\n")
+for _, kid in ipairs({ CUI._addonScrollChild:GetChildren() }) do
+    if kid._desc and kid:IsShown() then OUT:write("== row: " .. tostring(kid._label:GetText()) .. " | " .. tostring(kid._desc:GetText()) .. "\n") break end
+end
