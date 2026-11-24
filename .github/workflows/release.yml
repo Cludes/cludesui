@@ -83,9 +83,17 @@ jobs:
             echo
             echo "## Changes"
             echo
-            # Only commits that change the addons (the same paths that trigger a release).
-            changes=$(git log --no-merges --reverse --format='- %s' ${prev:+$prev..}"$TAG" -- . ':!tools' ':!.github' ':!*.md' ':!.stylua.toml' ':!.gitignore' | grep -v '^- Release v' || true)
-            echo "${changes:-- No addon changes since $prev.}"
+            # Only commits that change the addons (the same paths that trigger a
+            # release), and of those only their "Player: ..." body lines: the
+            # change in players' words. A commit without one stays out.
+            range=${prev:+$prev..}"$TAG"
+            paths=". :!tools :!.github :!*.md :!.stylua.toml :!.gitignore"
+            if [ -z "$(git log --no-merges --format=%h "$range" -- $paths)" ]; then
+              echo "- No addon changes since $prev."
+            else
+              changes=$(git log --no-merges --reverse --format=%B "$range" -- $paths | sed -n 's/^Player: *\(.*[^ ]\) *$/- \1/p')
+              echo "${changes:-- Fixes and polish.}"
+            fi
             echo
             echo "## Install"
             echo

@@ -93,3 +93,13 @@ sections[2]:GetScript("OnClick")(sections[2])
 List("browsing a section")
 sections[1]:GetScript("OnClick")(sections[1])
 List("core settings clicked again")
+-- A Section Status row opens its module.
+sections[2]:GetScript("OnClick")(sections[2])
+for _, kid in ipairs({ CUI._sidebar:GetChildren() }) do
+    for _, f in ipairs({ kid:GetChildren() }) do
+        for _, r in ipairs({ f:GetChildren() }) do
+            if r.name and r.cpu and r:IsShown() and r.name:GetText() == "Nameplates" then r:GetScript("OnClick")(r) end
+        end
+    end
+end
+List("after status click")

@@ -2240,10 +2240,19 @@ local function BuildSidebar()
         local function StatusRow(index)
             local row = statusRows[index]
             if row then return row end
-            row = CreateFrame("Frame", nil, status)
+            -- A click opens that module, the same as its row in the list.
+            row = CreateFrame("Button", nil, status)
             row:SetHeight(STATUS_ROW)
             row:SetPoint("TOPLEFT", status, "TOPLEFT", 0, -20 - (index - 1) * STATUS_ROW)
             row:SetPoint("RIGHT", status, "RIGHT", 0, 0)
+            local hover = SolidTex(row, "HIGHLIGHT", 1, 1, 1, 0.05)
+            hover:SetPoint("TOPLEFT", row, "TOPLEFT", -4, 0)
+            hover:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 4, 0)
+            row:SetScript("OnClick", function(self)
+                local button = sidebarButtons[self._key]
+                local click = button and button:GetScript("OnClick")
+                if click then click(button, "LeftButton") end
+            end)
             row.dot = SolidTex(row, "ARTWORK", 1, 1, 1, 1)
             row.dot:SetSize(6, 6)
             row.dot:SetPoint("LEFT", row, "LEFT", 0, 0)
@@ -2261,6 +2270,7 @@ local function BuildSidebar()
         local function PaintStatus()
             for index, moduleKey in ipairs(statusMembers) do
                 local row = StatusRow(index)
+                row._key = moduleKey
                 local navInfo = CUI_NS.navInfo[moduleKey]
                 local on = navInfo and (navInfo.alwaysLoaded or IsAddonLoaded(navInfo.folder)) and true or false
                 row.name:SetText(CUI.L(navInfo and navInfo.display or moduleKey))
