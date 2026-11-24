@@ -83,7 +83,9 @@ jobs:
             echo
             echo "## Changes"
             echo
-            git log --no-merges --reverse --format='- %s' ${prev:+$prev..}"$TAG" | grep -v '^- Release v' || true
+            # Only commits that change the addons (the same paths that trigger a release).
+            changes=$(git log --no-merges --reverse --format='- %s' ${prev:+$prev..}"$TAG" -- . ':!tools' ':!.github' ':!*.md' ':!.stylua.toml' ':!.gitignore' | grep -v '^- Release v' || true)
+            echo "${changes:-- No addon changes since $prev.}"
             echo
             echo "## Install"
             echo
