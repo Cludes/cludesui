@@ -45,22 +45,29 @@ local THEME_PRESETS = {
     ["Midnight"] = { r = 120 / 255, g = 65 / 255, b = 200 / 255 }, -- #7841C8  deep purple void
     ["Dark"] = { r = 1, g = 1, b = 1 }, -- white accent
     ["Pixels"] = { r = 1, g = 1, b = 1 }, -- white accent
-    ["Ember"] = { r = 255 / 255, g = 122 / 255, b = 26 / 255 }, -- #FF7A1A warm orange
+    ["Ember"] = { r = 242 / 255, g = 163 / 255, b = 58 / 255 }, -- #F2A33A warm amber
     ["Blood"] = { r = 215 / 255, g = 38 / 255, b = 61 / 255 }, -- #D7263D crimson
     ["Frost"] = { r = 76 / 255, g = 201 / 255, b = 240 / 255 }, -- #4CC9F0 ice blue (now the house colour; not listed, kept for saved settings)
-    ["Arcane"] = { r = 155 / 255, g = 107 / 255, b = 255 / 255 }, -- #9B6BFF bright violet
+    ["Arcane"] = { r = 169 / 255, g = 139 / 255, b = 255 / 255 }, -- #A98BFF soft violet
+    ["Fel"] = { r = 93 / 255, g = 211 / 255, b = 158 / 255 }, -- #5DD39E fel green
     ["Gold"] = { r = 230 / 255, g = 180 / 255, b = 80 / 255 }, -- #E6B450 muted gold
     ["Toxic"] = { r = 166 / 255, g = 226 / 255, b = 46 / 255 }, -- #A6E22E lime green
     ["Class Colored"] = nil, -- resolved at runtime from player class
     ["Custom Color"] = nil, -- user-chosen via color picker
 }
--- The themes offered: the flat CludesUI frame, with the Forever client's bronze
--- accent as its own entry there. Older theme names stay valid in saved settings
--- (THEME_BG_FILES maps them all to the flat frame).
+-- The themes offered: the flat CludesUI frame in four accents (CludesUI is
+-- Frost), with the Forever client's bronze accent as its own entry there. Older
+-- theme names stay valid in saved settings (THEME_BG_FILES maps them all to the
+-- flat frame).
 local THEME_ORDER = {
     "CludesUI",
     "CludesUI Forever",
+    "Ember",
+    "Arcane",
+    "Fel",
 }
+-- Names shown in the theme picker where they differ from the saved name.
+CludesUI.THEME_LABELS = { ["CludesUI"] = "Frost (CludesUI)" }
 -- "CludesUI Forever" is the WoW Forever look: only that client lists it.
 if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
 -- The theme in force when none was chosen: the Forever client opens on its bronze
@@ -87,6 +94,7 @@ for _, name in ipairs({
     "Blood",
     "Frost",
     "Arcane",
+    "Fel",
     "Gold",
     "Toxic",
     "Class Colored",

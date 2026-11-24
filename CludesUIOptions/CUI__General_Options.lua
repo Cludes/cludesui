@@ -888,7 +888,7 @@ CUI.AtOptionsLogin(function()
 
         local themeValues = {}
         for _, name in ipairs(CUI.THEME_ORDER) do
-            themeValues[name] = name
+            themeValues[name] = CUI.THEME_LABELS and CUI.THEME_LABELS[name] or name
         end
 
         -- Row 1: CUI Options Theme | UI Accent Color (the accent follows the theme)
