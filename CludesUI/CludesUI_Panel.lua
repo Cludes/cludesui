@@ -6029,6 +6029,8 @@ local function SyncNavStates()
     local moduleView = railOn and currentModule and not CUI_NS.GroupOf(currentModule) and not CUI_NS.railBrowsing
         and true or false
     local listW = CUI_NS.LayoutRail and CUI_NS.LayoutRail(railOn, currentModule, moduleView) or nil
+    -- The rail's list has the column to itself: roomier rows.
+    if railOn then GROUP_H, CHILD_H = CUI_NS.RAIL_GROUP_H, CUI_NS.RAIL_CHILD_H end
     CUI_NS.ResetPageRows()
     local rowY = 0
     local afterRows = false
@@ -6040,6 +6042,7 @@ local function SyncNavStates()
         local header = groupHeaders[navGroup.key]
         if header then
             header:ClearAllPoints()
+            header:SetHeight(GROUP_H)
             if listW then header:SetWidth(listW) end
             header:SetShown(not away)
             local toggleBtn = header._toggle
@@ -6061,6 +6064,7 @@ local function SyncNavStates()
             local button = navInfo and sidebarButtons[moduleKey]
             if button then
                 button:ClearAllPoints()
+                button:SetHeight(CHILD_H)
                 if listW then button:SetWidth(listW) end
                 if shut then
                     button:Hide()
@@ -6159,10 +6163,13 @@ function CUI_NS.SetRailGroup(entryKey)
     SyncNavStates()
 end
 
+-- Command Rail row heights (the long list keeps CludesUI.SIDEBAR_*_ROW_H).
+CUI_NS.RAIL_GROUP_H, CUI_NS.RAIL_CHILD_H = 44, 44
+
 -- Command Rail: the open module's pages as rows in the list (under its row,
 -- or under its title when it is in no group). A click opens that page.
 do
-    local PAGE_H = 26
+    local PAGE_H = 32
     local pool, used, title = {}, 0, nil
 
     function CUI_NS.ResetPageRows()
@@ -6234,7 +6241,7 @@ do
     function CUI_NS.ModuleView(moduleKey, listW)
         if not title then
             title = CreateFrame("Frame", nil, CUI._addonScrollChild)
-            title:SetHeight(CUI.SIDEBAR_GROUP_ROW_H)
+            title:SetHeight(CUI_NS.RAIL_GROUP_H)
             title._label = MakeFont(title, 15, nil, 1, 1, 1, 1)
             title._label:SetPoint("LEFT", title, "LEFT", 14, 0)
         end
@@ -6245,7 +6252,7 @@ do
         title:SetPoint("TOPLEFT", CUI._addonScrollChild, "TOPLEFT", 0, 0)
         title:SetWidth(listW or SIDEBAR_W)
         title:Show()
-        return CUI_NS.PageRows(moduleKey, CUI.SIDEBAR_GROUP_ROW_H, listW)
+        return CUI_NS.PageRows(moduleKey, CUI_NS.RAIL_GROUP_H, listW)
     end
 end
 
