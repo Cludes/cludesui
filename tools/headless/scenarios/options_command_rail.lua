@@ -79,3 +79,18 @@ OUT:write("== tabs shown (rail on): " .. TabsShown() .. "\n")
 CludesUIDB.sidebarRail = false
 CUI.RefreshSidebarLayout()
 OUT:write("== tabs shown (rail off): " .. TabsShown() .. "\n")
+-- Window Skins' Window Mover row says it opens Quality of Life; Core Settings
+-- clicked while it is already open (after browsing a section) shows its pages.
+CludesUIDB.sidebarRail = nil
+CUI.RefreshSidebarLayout()
+CUI:SelectModule("CludesUIBlizzardSkin")
+for _, kid in ipairs({ CUI._addonScrollChild:GetChildren() }) do
+    if kid._note and kid:IsShown() and kid._note:GetText() ~= "" then
+        OUT:write("== link row: " .. kid._label:GetText() .. " | " .. kid._note:GetText() .. "\n")
+    end
+end
+CUI:SelectModule("_CUIGlobal")
+sections[2]:GetScript("OnClick")(sections[2])
+List("browsing a section")
+sections[1]:GetScript("OnClick")(sections[1])
+List("core settings clicked again")
