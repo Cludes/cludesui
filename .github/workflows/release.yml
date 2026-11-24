@@ -68,7 +68,7 @@ jobs:
           cp -r CludesUI*/ out/
           # Line endings kept: only the number changes.
           sed -i "s/^\(## Version: *\)[0-9][0-9.]*/\1$version/" out/*/*.toc
-          sed -i "s/^\(CUI\.VERSION =\"\)[0-9.]*\"/\1$version\"/" out/CludesUI/CludesUI.lua
+          sed -i "s/^\(CUI\.VERSION = \"\)[0-9.]*\"/\1$version\"/" out/CludesUI/CludesUI.lua
           (cd out && zip -r -q "../CludesUI-$TAG.zip" .)
 
       - name: Release notes
