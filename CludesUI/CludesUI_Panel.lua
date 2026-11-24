@@ -2067,21 +2067,107 @@ local function BuildSidebar()
     end
     -----------------------------------------------------------------------
     --  Command Rail (Global Settings > Command Rail Sidebar, on by default):
-    --  one icon per sidebar group down the left edge, and the list beside it
-    --  shows only the picked group's modules. SyncNavStates calls LayoutRail.
+    --  a full-height icon rail (the logo, one icon per sidebar group, then
+    --  Layout Mode, Patch Notes, Profiles and Global Settings at its foot),
+    --  and beside it a list column: the wordmark, the search box, the picked
+    --  group's modules, and the options themes and version at its foot.
+    --  SyncNavStates calls LayoutRail; off brings the one long list back.
     -----------------------------------------------------------------------
     do
-        local RAIL_W, RAIL_BTN, RAIL_GAP = 54, 40, 6
+        local RAIL_W, RAIL_BTN, RAIL_GAP = 60, 44, 8
+        local LIST_HEAD_H, LIST_TOP, FOOT_H = 76, 128, 100
+        local SIDEBAR_BG = { 0.118, 0.129, 0.141 } -- the frame art's sidebar colour
         local RAIL_ICONS = { combat = true, group = true, interface = true, tools = true }
+        local listX = RAIL_W
+
         local rail = CreateFrame("Frame", nil, navBar)
-        rail:SetPoint("TOPLEFT", navBar, "TOPLEFT", 0, ADDON_NAV_TOP)
-        rail:SetSize(RAIL_W, ADDON_SCROLL_H)
-        rail:SetFrameLevel(addonScroller:GetFrameLevel() + 2)
+        rail:SetPoint("TOPLEFT", navBar, "TOPLEFT", 0, 0)
+        rail:SetSize(RAIL_W, CLICK_H)
+        rail:SetFrameLevel(navBar:GetFrameLevel() + 6)
+        local railBg = SolidTex(rail, "BACKGROUND", 0.075, 0.084, 0.094, 1)
+        railBg:SetAllPoints()
         local divider = SolidTex(rail, "ARTWORK", 1, 1, 1, 0.06)
         divider:SetWidth(1)
         divider:SetPoint("TOPRIGHT", rail, "TOPRIGHT", 0, 0)
         divider:SetPoint("BOTTOMRIGHT", rail, "BOTTOMRIGHT", 0, 0)
-        local railButtons = {}
+        local logo = rail:CreateTexture(nil, "ARTWORK")
+        logo:SetTexture(ICONS_PATH .. "sidebar\\rail-logo.png")
+        logo:SetSize(38, 38)
+        logo:SetPoint("TOP", rail, "TOP", 0, -19)
+        logo:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
+        RegAccent({ type = "vertex", obj = logo })
+        local railButtons, footButtons = {}, {}
+
+        -- The list column's own pieces: a cover over the painted wordmark, the
+        -- wordmark, the rule and node under it, and the foot (themes, version).
+        local chrome = CreateFrame("Frame", nil, navBar)
+        chrome:SetAllPoints(navBar)
+        chrome:SetFrameLevel(navBar:GetFrameLevel() + 1)
+        local cover = SolidTex(chrome, "BACKGROUND", SIDEBAR_BG[1], SIDEBAR_BG[2], SIDEBAR_BG[3], 1)
+        cover:SetPoint("TOPLEFT", chrome, "TOPLEFT", 0, 0)
+        cover:SetPoint("TOPRIGHT", chrome, "TOPLEFT", SIDEBAR_W, 0)
+        cover:SetHeight(LIST_HEAD_H + 16)
+        local word = MakeFont(chrome, 24, nil, 0.95, 0.96, 0.97, 1)
+        word:SetPoint("LEFT", chrome, "TOPLEFT", listX + 18, -LIST_HEAD_H / 2)
+        local function PaintWord()
+            word:SetText("Cludes" .. CUI.HexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b) .. "UI|r")
+        end
+        PaintWord()
+        RegAccent({ type = "callback", fn = PaintWord })
+        local headRule = SolidTex(chrome, "ARTWORK", 1, 1, 1, 0.07)
+        headRule:SetHeight(1)
+        headRule:SetPoint("TOPLEFT", chrome, "TOPLEFT", listX, -LIST_HEAD_H)
+        headRule:SetPoint("TOPRIGHT", chrome, "TOPLEFT", SIDEBAR_W, -LIST_HEAD_H)
+        local node = SolidTex(chrome, "OVERLAY", CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
+        node:SetSize(8, 8)
+        node:SetPoint("CENTER", chrome, "TOPLEFT", SIDEBAR_W, -LIST_HEAD_H)
+        node:SetRotation(math.rad(45))
+        RegAccent({ type = "solid", obj = node, a = 1 })
+        local footRule = SolidTex(chrome, "ARTWORK", 1, 1, 1, 0.07)
+        footRule:SetHeight(1)
+        footRule:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX, FOOT_H)
+        footRule:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMLEFT", SIDEBAR_W, FOOT_H)
+        local themeLabel = MakeFont(chrome, 11, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.8)
+        themeLabel:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18, FOOT_H - 22)
+        themeLabel:SetText(CUI.L("Options theme"))
+        local themeName = MakeFont(chrome, 11, nil, 0.84, 0.86, 0.88, 1)
+        themeName:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMLEFT", SIDEBAR_W - 18, FOOT_H - 22)
+        local swatches = {}
+        local function PaintSwatches()
+            local active = CUI.GetActiveTheme()
+            themeName:SetText((CUI.THEME_LABELS and CUI.THEME_LABELS[active]) or active)
+            for _, swatch in ipairs(swatches) do
+                local on = swatch._theme == active
+                CUI.PanelPP.SetBorderColor(swatch, on and 1 or 0, on and 1 or 0, on and 1 or 0, 1)
+            end
+        end
+        for index, name in ipairs(CUI.THEME_ORDER or {}) do
+            local preset = CUI.THEME_PRESETS and CUI.THEME_PRESETS[name]
+            if preset then
+                local swatch = CreateFrame("Button", nil, chrome)
+                swatch:SetSize(22, 22)
+                swatch:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18 + (index - 1) * 28, 42)
+                local fill = SolidTex(swatch, "ARTWORK", preset.r, preset.g, preset.b, 1)
+                fill:SetAllPoints()
+                CUI.PanelPP.CreateBorder(swatch, 0, 0, 0, 1, 1, "OVERLAY", 7)
+                swatch._theme = name
+                swatch:SetScript("OnClick", function(self)
+                    CUI.SetActiveTheme(self._theme)
+                    if CUI.RefreshAccent then CUI.RefreshAccent() else CUI:RefreshPage() end
+                    PaintSwatches()
+                end)
+                swatch:SetScript("OnEnter", function(self)
+                    if CUI.ShowWidgetTooltip then
+                        CUI.ShowWidgetTooltip(self, (CUI.THEME_LABELS and CUI.THEME_LABELS[name]) or name)
+                    end
+                end)
+                swatch:SetScript("OnLeave", function()
+                    if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+                end)
+                swatches[#swatches + 1] = swatch
+            end
+        end
+        RegAccent({ type = "callback", fn = PaintSwatches })
 
         local function PaintRail(button, on)
             local EG = CLUDES_GREEN
@@ -2090,55 +2176,125 @@ local function BuildSidebar()
             else
                 button._tint(1, 1, 1, button:IsMouseOver() and 0.85 or 0.45)
             end
-            button._bar:SetShown(on)
             button._wash:SetShown(on)
+            CUI.PanelPP.SetBorderColor(button, EG.r, EG.g, EG.b, on and 0.45 or 0)
         end
 
-        local function NewRailButton(navGroup)
+        -- A rail square: an icon (or a letter) over a soft accent wash, with
+        -- an accent outline when picked.
+        local function NewRailSquare(iconPath, iconW, iconH, letter, tip, onClick, isPicked)
             local EG = CLUDES_GREEN
             local button = CreateFrame("Button", nil, rail)
             button:SetSize(RAIL_BTN, RAIL_BTN)
             button._wash = SolidTex(button, "BACKGROUND", EG.r, EG.g, EG.b, 0.12)
             button._wash:SetAllPoints()
             RegAccent({ type = "solid", obj = button._wash, a = 0.12 })
-            button._bar = SolidTex(button, "ARTWORK", EG.r, EG.g, EG.b, 1)
-            button._bar:SetWidth(2)
-            button._bar:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-            button._bar:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
-            RegAccent({ type = "solid", obj = button._bar, a = 1 })
-            if RAIL_ICONS[navGroup.key] then
+            CUI.PanelPP.CreateBorder(button, EG.r, EG.g, EG.b, 0, 1, "OVERLAY", 7)
+            if iconPath then
                 local icon = button:CreateTexture(nil, "ARTWORK")
-                icon:SetSize(22, 22)
+                icon:SetSize(iconW, iconH)
                 icon:SetPoint("CENTER", button, "CENTER", 0, 0)
-                icon:SetTexture(ICONS_PATH .. "sidebar\\rail-" .. navGroup.key .. ".png")
+                icon:SetTexture(iconPath)
                 button._tint = function(...) icon:SetVertexColor(...) end
             else
-                -- A section with no icon of its own (a plugin's): its first letter.
-                local letter = MakeFont(button, 16, nil, 1, 1, 1, 1)
-                letter:SetPoint("CENTER", button, "CENTER", 0, 0)
-                letter:SetText(tostring(CUI.L(navGroup.label)):sub(1, 1):upper())
-                button._tint = function(...) letter:SetTextColor(...) end
+                local glyph = MakeFont(button, 16, nil, 1, 1, 1, 1)
+                glyph:SetPoint("CENTER", button, "CENTER", 0, 0)
+                glyph:SetText(letter)
+                button._tint = function(...) glyph:SetTextColor(...) end
             end
-            local entryKey = navGroup.key
+            button._picked = isPicked
             button:SetScript("OnEnter", function(self)
-                PaintRail(self, CUI_NS.railKey == entryKey)
-                if CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, CUI.L(navGroup.label)) end
+                PaintRail(self, self._picked())
+                if CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, tip) end
             end)
             button:SetScript("OnLeave", function(self)
-                PaintRail(self, CUI_NS.railKey == entryKey)
+                PaintRail(self, self._picked())
                 if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
             end)
-            button:SetScript("OnClick", function() CUI_NS.SetRailGroup(entryKey) end)
+            button:SetScript("OnClick", onClick)
             return button
         end
 
-        -- Shows or hides the rail, moves the list beside it, and returns the
-        -- list's width.
-        function CUI_NS.LayoutRail(on)
+        local function NewRailButton(navGroup)
+            local entryKey = navGroup.key
+            local label = tostring(CUI.L(navGroup.label))
+            local path = RAIL_ICONS[entryKey] and (ICONS_PATH .. "sidebar\\rail-" .. entryKey .. ".png")
+            return NewRailSquare(path, 22, 22, label:sub(1, 1):upper(), label,
+                function() CUI_NS.SetRailGroup(entryKey) end,
+                function() return CUI_NS.railKey == entryKey end)
+        end
+
+        -- The fixed rows become rail squares at the foot; a click runs the row's own click.
+        local FOOT = {
+            { key = "_CUIGlobal", icon = "settings-ig-2.png", tip = "Global Settings" },
+            { key = "_CUIProfiles", icon = "profiles-off.png", tip = "Profiles" },
+            { key = "_CUIPatchNotes", icon = "notes-off.png", tip = "Patch Notes" },
+            { key = "_unlock", icon = "unlockmode-ig.png", tip = "Layout Mode" },
+        }
+        local function FixedRow(key)
+            if key == "_unlock" then return CUI._unlockSidebarBtn end
+            return sidebarButtons[key]
+        end
+        for index, entry in ipairs(FOOT) do
+            local button = NewRailSquare(ICONS_PATH .. "sidebar\\" .. entry.icon, 30, 21, nil, CUI.L(entry.tip),
+                function()
+                    local row = FixedRow(entry.key)
+                    local click = row and row:GetScript("OnClick")
+                    if click then click(row, "LeftButton") end
+                end,
+                function() return CUI_NS.railModule == entry.key end)
+            button:SetPoint("BOTTOM", rail, "BOTTOM", 0, 16 + (index - 1) * (RAIL_BTN + RAIL_GAP))
+            footButtons[#footButtons + 1] = button
+        end
+
+        -- Moves the sidebar between the two layouts (only when it changes).
+        local railShown
+        local function Chrome(on)
+            if railShown == on then return end
+            railShown = on
             rail:SetShown(on)
+            chrome:SetShown(on)
+            for _, entry in ipairs(FOOT) do
+                local row = FixedRow(entry.key)
+                if row then row:SetShown(not on) end
+            end
+            if CUI_NS.sidebarClassArt then CUI_NS.sidebarClassArt:SetShown(not on) end
+            if CUI._addonScrollArrow then CUI._addonScrollArrow:SetShown(not on) end
+            sidebarSearchFrame:ClearAllPoints()
+            local version = CUI_NS.sidebarVersion
+            if on then
+                sidebarSearchFrame:SetPoint("TOPLEFT", navBar, "TOPLEFT", listX + 12, -(LIST_HEAD_H + 12))
+                sidebarSearchFrame:SetWidth(SIDEBAR_W - listX - 24)
+                addonScroller:SetHeight(CLICK_H - LIST_TOP - FOOT_H - 8)
+                if version then
+                    version:ClearAllPoints()
+                    version:SetPoint("BOTTOMLEFT", navBar, "BOTTOMLEFT", listX + 18, 18)
+                end
+            else
+                sidebarSearchFrame:SetPoint("TOPLEFT", navBar, "TOPLEFT", SB_SIDE_INSET + 2, ORIG_ADDON_NAV_TOP - SB_TOP_PAD)
+                sidebarSearchFrame:SetWidth(SIDEBAR_W - SB_SIDE_INSET * 2)
+                addonScroller:SetHeight(ADDON_SCROLL_H)
+                if version then
+                    version:ClearAllPoints()
+                    version:SetPoint("BOTTOMLEFT", navBar, "BOTTOMLEFT", 18, 18)
+                end
+            end
+            if CUI._layoutOpacitySlider then CUI._layoutOpacitySlider() end
+            PaintSwatches()
+        end
+
+        -- Lays the sidebar out for the setting, and returns the list's width.
+        -- openModule lights its foot square (Global Settings, Profiles, Patch Notes).
+        function CUI_NS.LayoutRail(on, openModule)
+            Chrome(on)
+            CUI_NS.railModule = openModule
             local listW = on and (SIDEBAR_W - RAIL_W) or SIDEBAR_W
             addonScroller:ClearAllPoints()
-            addonScroller:SetPoint("TOPLEFT", navBar, "TOPLEFT", on and RAIL_W or 0, ADDON_NAV_TOP)
+            if on then
+                addonScroller:SetPoint("TOPLEFT", navBar, "TOPLEFT", RAIL_W, -LIST_TOP)
+            else
+                addonScroller:SetPoint("TOPLEFT", navBar, "TOPLEFT", 0, ADDON_NAV_TOP)
+            end
             addonScroller:SetWidth(listW)
             addonScrollChild:SetWidth(listW)
             -- The rail already sets the list in: its labels sit closer to the edge.
@@ -2164,12 +2320,15 @@ local function BuildSidebar()
                 railButtons[navGroup.key] = button
                 present[navGroup.key] = true
                 button:ClearAllPoints()
-                button:SetPoint("TOPLEFT", rail, "TOPLEFT", (RAIL_W - RAIL_BTN) / 2, -(index - 1) * (RAIL_BTN + RAIL_GAP))
+                button:SetPoint("TOP", rail, "TOP", 0, -76 - (index - 1) * (RAIL_BTN + RAIL_GAP))
                 button:Show()
                 PaintRail(button, CUI_NS.railKey == navGroup.key)
             end
             for entryKey, button in pairs(railButtons) do
                 if not present[entryKey] then button:Hide() end
+            end
+            for _, button in ipairs(footButtons) do
+                PaintRail(button, button._picked())
             end
             return listW
         end
@@ -2240,6 +2399,7 @@ local function BuildSidebar()
         classArt:SetSize(156, 145)
         classArt:SetPoint("BOTTOM", navBar, "BOTTOM", 10, 200)
         classArt:SetAlpha(1)
+        CUI_NS.sidebarClassArt = classArt
     end
 
     -- Version text
@@ -2247,6 +2407,7 @@ local function BuildSidebar()
     versionText:SetPoint("BOTTOMLEFT", navBar, "BOTTOMLEFT", 18, 18)
     versionText:SetText("v" .. (CUI.VERSION or "1.0"))
     versionText:SetAlpha(0.5)
+    CUI_NS.sidebarVersion = versionText
 
     ---------------------------------------------------------------------------
     --  Build deferred opacity slider: vertical above versionText in the
@@ -2368,12 +2529,8 @@ local function BuildSidebar()
         -- Orientation from the active theme. Sizes resolve a frame after the
         -- anchors change, so the thumb is re-placed on the next frame.
         local function Layout()
-            local skinName = CUI.GetActiveTheme()
-            horizontal = (
-                skinName == "CludesUI"
-                or skinName == "CludesUI Forever"
-                or skinName == "CludesUI Clean"
-            )
+            -- Every theme draws the flat frame, whose slider runs beside the version.
+            horizontal = true
             opacityPanel:ClearAllPoints()
             rail:ClearAllPoints()
             trackFrame:ClearAllPoints()
@@ -5794,7 +5951,7 @@ local function SyncNavStates()
             CUI_NS.railKey = CUI_NS.GroupOf(currentModule) or (CUI_NS.navGroups[1] and CUI_NS.navGroups[1].key)
         end
     end
-    local listW = CUI_NS.LayoutRail and CUI_NS.LayoutRail(railOn) or nil
+    local listW = CUI_NS.LayoutRail and CUI_NS.LayoutRail(railOn, currentModule) or nil
     local rowY = 0
     local afterRows = false
     for _, navGroup in ipairs(CUI_NS.navGroups) do

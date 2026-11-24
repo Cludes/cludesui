@@ -24,17 +24,24 @@ end
 List("open")
 SNAP("rail sidebar", CUI._sidebar)
 local NS = CUI._NS
--- Rail buttons sit on the sidebar beside the scroll frame: click the last one.
+-- The rail: a full-height 60 wide column; section squares hang from its top,
+-- the Global Settings / Profiles / Patch Notes / Layout Mode squares from its foot.
 local rail
 for _, kid in ipairs({ CUI._sidebar:GetChildren() }) do
-    if kid:GetWidth() == 54 then rail = kid end
+    if kid:GetWidth() == 60 then rail = kid end
 end
-local buttons = rail and { rail:GetChildren() } or {}
-OUT:write("== rail buttons " .. #buttons .. "\n")
-if buttons[#buttons] then buttons[#buttons]:GetScript("OnClick")(buttons[#buttons]) end
+local sections, foot = {}, {}
+for _, kid in ipairs(rail and { rail:GetChildren() } or {}) do
+    local point = kid:GetPoint(1)
+    if point == "TOP" then sections[#sections + 1] = kid elseif point == "BOTTOM" then foot[#foot + 1] = kid end
+end
+OUT:write(("== rail: %d sections, %d foot squares, fixed Layout Mode row shown %s\n"):format(#sections, #foot,
+    tostring(CUI._unlockSidebarBtn and CUI._unlockSidebarBtn:IsShown())))
+if sections[#sections] then sections[#sections]:GetScript("OnClick")(sections[#sections]) end
 List("last group")
 CUI:SelectModule("CludesUIActionBars")
 List("search to action bars")
 CludesUIDB.sidebarRail = false
 CUI.RefreshSidebarLayout()
 List("rail off")
+OUT:write("== rail off: rail shown " .. tostring(rail and rail:IsShown()) .. ", Layout Mode row shown " .. tostring(CUI._unlockSidebarBtn and CUI._unlockSidebarBtn:IsShown()) .. "\n")
