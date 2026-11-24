@@ -2065,6 +2065,116 @@ local function BuildSidebar()
             end
         end
     end
+    -----------------------------------------------------------------------
+    --  Command Rail (Global Settings > Command Rail Sidebar, on by default):
+    --  one icon per sidebar group down the left edge, and the list beside it
+    --  shows only the picked group's modules. SyncNavStates calls LayoutRail.
+    -----------------------------------------------------------------------
+    do
+        local RAIL_W, RAIL_BTN, RAIL_GAP = 54, 40, 6
+        local RAIL_ICONS = { combat = true, group = true, interface = true, tools = true }
+        local rail = CreateFrame("Frame", nil, navBar)
+        rail:SetPoint("TOPLEFT", navBar, "TOPLEFT", 0, ADDON_NAV_TOP)
+        rail:SetSize(RAIL_W, ADDON_SCROLL_H)
+        rail:SetFrameLevel(addonScroller:GetFrameLevel() + 2)
+        local divider = SolidTex(rail, "ARTWORK", 1, 1, 1, 0.06)
+        divider:SetWidth(1)
+        divider:SetPoint("TOPRIGHT", rail, "TOPRIGHT", 0, 0)
+        divider:SetPoint("BOTTOMRIGHT", rail, "BOTTOMRIGHT", 0, 0)
+        local railButtons = {}
+
+        local function PaintRail(button, on)
+            local EG = CLUDES_GREEN
+            if on then
+                button._tint(EG.r, EG.g, EG.b, 1)
+            else
+                button._tint(1, 1, 1, button:IsMouseOver() and 0.85 or 0.45)
+            end
+            button._bar:SetShown(on)
+            button._wash:SetShown(on)
+        end
+
+        local function NewRailButton(navGroup)
+            local EG = CLUDES_GREEN
+            local button = CreateFrame("Button", nil, rail)
+            button:SetSize(RAIL_BTN, RAIL_BTN)
+            button._wash = SolidTex(button, "BACKGROUND", EG.r, EG.g, EG.b, 0.12)
+            button._wash:SetAllPoints()
+            RegAccent({ type = "solid", obj = button._wash, a = 0.12 })
+            button._bar = SolidTex(button, "ARTWORK", EG.r, EG.g, EG.b, 1)
+            button._bar:SetWidth(2)
+            button._bar:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+            button._bar:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
+            RegAccent({ type = "solid", obj = button._bar, a = 1 })
+            if RAIL_ICONS[navGroup.key] then
+                local icon = button:CreateTexture(nil, "ARTWORK")
+                icon:SetSize(22, 22)
+                icon:SetPoint("CENTER", button, "CENTER", 0, 0)
+                icon:SetTexture(ICONS_PATH .. "sidebar\\rail-" .. navGroup.key .. ".png")
+                button._tint = function(...) icon:SetVertexColor(...) end
+            else
+                -- A section with no icon of its own (a plugin's): its first letter.
+                local letter = MakeFont(button, 16, nil, 1, 1, 1, 1)
+                letter:SetPoint("CENTER", button, "CENTER", 0, 0)
+                letter:SetText(tostring(CUI.L(navGroup.label)):sub(1, 1):upper())
+                button._tint = function(...) letter:SetTextColor(...) end
+            end
+            local entryKey = navGroup.key
+            button:SetScript("OnEnter", function(self)
+                PaintRail(self, CUI_NS.railKey == entryKey)
+                if CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, CUI.L(navGroup.label)) end
+            end)
+            button:SetScript("OnLeave", function(self)
+                PaintRail(self, CUI_NS.railKey == entryKey)
+                if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+            end)
+            button:SetScript("OnClick", function() CUI_NS.SetRailGroup(entryKey) end)
+            return button
+        end
+
+        -- Shows or hides the rail, moves the list beside it, and returns the
+        -- list's width.
+        function CUI_NS.LayoutRail(on)
+            rail:SetShown(on)
+            local listW = on and (SIDEBAR_W - RAIL_W) or SIDEBAR_W
+            addonScroller:ClearAllPoints()
+            addonScroller:SetPoint("TOPLEFT", navBar, "TOPLEFT", on and RAIL_W or 0, ADDON_NAV_TOP)
+            addonScroller:SetWidth(listW)
+            addonScrollChild:SetWidth(listW)
+            -- The rail already sets the list in: its labels sit closer to the edge.
+            local childX, headX = on and 20 or CHILD_INDENT_X, on and 14 or NAV_LEFT
+            for _, navGroup in ipairs(CUI_NS.navGroups) do
+                local header = CUI_NS.sidebarGroupButtons[navGroup.key]
+                if header and header._label and header._labelX ~= headX then
+                    header._labelX = headX
+                    header._label:SetPoint("LEFT", header, "LEFT", headX, 0)
+                end
+                for _, moduleKey in ipairs(navGroup.members) do
+                    local row = sidebarButtons[moduleKey]
+                    if row and row._label and row._labelX ~= childX then
+                        row._labelX = childX
+                        row._label:SetPoint("LEFT", row, "LEFT", childX, 0)
+                    end
+                end
+            end
+            if not on then return listW end
+            local present = {}
+            for index, navGroup in ipairs(CUI_NS.navGroups) do
+                local button = railButtons[navGroup.key] or NewRailButton(navGroup)
+                railButtons[navGroup.key] = button
+                present[navGroup.key] = true
+                button:ClearAllPoints()
+                button:SetPoint("TOPLEFT", rail, "TOPLEFT", (RAIL_W - RAIL_BTN) / 2, -(index - 1) * (RAIL_BTN + RAIL_GAP))
+                button:Show()
+                PaintRail(button, CUI_NS.railKey == navGroup.key)
+            end
+            for entryKey, button in pairs(railButtons) do
+                if not present[entryKey] then button:Hide() end
+            end
+            return listW
+        end
+    end
+
     -- Row factories for plugin sections registered after the panel is built
     -- (the plugin registry creates their header and rows on the fly; positions
     -- come from the next RefreshSidebarStates).
@@ -5671,17 +5781,31 @@ local function SyncNavStates()
     -- The gap between groups follows only a group that shows rows, so collapsed
     -- headers stack at the row pitch.
     local collapsed = CludesUIDB and CludesUIDB.sidebarCollapsed
+    -- Command Rail: only the picked group shows (its header, then its rows);
+    -- collapsing does not apply. The pick starts on the open module's group.
+    local railOn = CUI_NS.RailOn()
+    if railOn then
+        local known = false
+        for _, navGroup in ipairs(CUI_NS.navGroups) do
+            if navGroup.key == CUI_NS.railKey then known = true end
+        end
+        if not known then
+            CUI_NS.railKey = CUI_NS.GroupOf(currentModule) or (CUI_NS.navGroups[1] and CUI_NS.navGroups[1].key)
+        end
+    end
+    local listW = CUI_NS.LayoutRail and CUI_NS.LayoutRail(railOn) or nil
     local rowY = 0
     local afterRows = false
     for _, navGroup in ipairs(CUI_NS.navGroups) do
+        local away = railOn and navGroup.key ~= CUI_NS.railKey
         if afterRows then rowY = rowY + GROUP_GAP end
         afterRows = false
-        local shut = collapsed and collapsed[navGroup.key] and true or false
+        local shut = away or (not railOn and collapsed and collapsed[navGroup.key]) and true or false
         local header = groupHeaders[navGroup.key]
         if header then
             header:ClearAllPoints()
-            header:SetPoint("TOPLEFT", contentChild, "TOPLEFT", 0, -rowY)
-            header:Show()
+            if listW then header:SetWidth(listW) end
+            header:SetShown(not away)
             local toggleBtn = header._toggle
             if toggleBtn then
                 toggleBtn:SetAtlas(
@@ -5689,14 +5813,19 @@ local function SyncNavStates()
                         or "ui-questtrackerbutton-secondary-collapse"
                 )
                 toggleBtn:SetDesaturated(true)
+                toggleBtn:SetAlpha(railOn and 0 or 1)
             end
-            rowY = rowY + GROUP_H
+            if not away then
+                header:SetPoint("TOPLEFT", contentChild, "TOPLEFT", 0, -rowY)
+                rowY = rowY + GROUP_H
+            end
         end
         for _, moduleKey in ipairs(navGroup.members) do
             local navInfo = infoByFolder[moduleKey]
             local button = navInfo and sidebarButtons[moduleKey]
             if button then
                 button:ClearAllPoints()
+                if listW then button:SetWidth(listW) end
                 if shut then
                     button:Hide()
                 else
@@ -5773,10 +5902,33 @@ local function SyncNavStates()
     if CUI.RefreshSidebarOverrideLocks then CUI.RefreshSidebarOverrideLocks() end
 end
 
+-- Command Rail Sidebar (Global Settings): on unless switched off.
+function CUI_NS.RailOn() return not (CludesUIDB and CludesUIDB.sidebarRail == false) end
+
+-- The sidebar group a module is listed in.
+function CUI_NS.GroupOf(moduleKey)
+    for _, navGroup in ipairs(CUI_NS.navGroups) do
+        for _, member in ipairs(navGroup.members) do
+            if member == moduleKey then return navGroup.key end
+        end
+    end
+end
+
+-- A rail icon click: that group's modules in the list.
+function CUI_NS.SetRailGroup(entryKey)
+    CUI_NS.railKey = entryKey
+    SyncNavStates()
+end
+
+-- The Command Rail Sidebar setting changed.
+function CUI.RefreshSidebarLayout()
+    if panelFrame then SyncNavStates() end
+end
+
 -- Collapse or expand a sidebar group (header click). The state is account-wide,
 -- in CludesUIDB.sidebarCollapsed keyed by group key (true = collapsed).
 function CUI_NS.ToggleSidebarGroup(entryKey)
-    if not CludesUIDB then return end
+    if not CludesUIDB or CUI_NS.RailOn() then return end
     local c = CludesUIDB.sidebarCollapsed
     if not c then
         c = {}
@@ -5790,6 +5942,15 @@ end
 -- selected row shows (Global Search, link tabs and slash commands select
 -- modules the player cannot see).
 function CUI_NS.RevealSidebarRow(moduleKey)
+    -- Command Rail: the rail follows the module picked (a search, a link).
+    if CUI_NS.RailOn() then
+        local entryKey = CUI_NS.GroupOf(moduleKey)
+        if entryKey and entryKey ~= CUI_NS.railKey then
+            CUI_NS.railKey = entryKey
+            SyncNavStates()
+        end
+        return
+    end
     local c = CludesUIDB and CludesUIDB.sidebarCollapsed
     if not (c and next(c)) then return end
     for _, navGroup in ipairs(CUI_NS.navGroups) do

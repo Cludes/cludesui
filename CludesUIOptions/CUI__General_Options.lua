@@ -956,6 +956,19 @@ CUI.AtOptionsLogin(function()
         })
         cursorY = cursorY - height
 
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Command Rail Sidebar",
+            tooltip = "The sidebar shows one icon per section down its left edge, and only the picked section's modules beside it. Off: every section in one long list.",
+            getValue = function() return not (CludesUIDB and CludesUIDB.sidebarRail == false) end,
+            setValue = function(val)
+                if not CludesUIDB then return end
+                CludesUIDB.sidebarRail = (not val) and false or nil
+                if CUI.RefreshSidebarLayout then CUI.RefreshSidebarLayout() end
+            end,
+        })
+        cursorY = cursorY - height
+
         -- CUI Options Language (Row 2's right slot): options-panel display language (auto-detects the client; untranslated text falls back to English).
         local langCfg
         do
