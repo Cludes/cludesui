@@ -68,6 +68,15 @@ local THEME_ORDER = {
 }
 -- Names shown in the theme picker where they differ from the saved name.
 CludesUI.THEME_LABELS = { ["CludesUI"] = "Frost (CludesUI)" }
+-- Each listed theme also tints the window: the frame art goes grey, then takes
+-- this colour (a multiplier on its shade), and the rail and sidebar fills follow.
+CludesUI.THEME_TINTS = {
+    ["CludesUI"] = { 0.82, 0.94, 1.00 }, -- cool slate
+    ["CludesUI Forever"] = { 1.00, 0.86, 0.70 }, -- warm bronze
+    ["Ember"] = { 1.00, 0.78, 0.58 }, -- smoked amber
+    ["Arcane"] = { 0.88, 0.76, 1.00 }, -- dusk violet
+    ["Fel"] = { 0.74, 1.00, 0.84 }, -- deep green
+}
 -- "CludesUI Forever" is the WoW Forever look: only that client lists it.
 if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
 -- The theme in force when none was chosen: the Forever client opens on its bronze
@@ -3524,6 +3533,8 @@ if not CUI.ResolveActiveAccent then
         local saved = CludesUIDB
         local p = saved and saved.profiles and saved.profiles[saved.activeProfile or "Default"]
         local accent = p and p.cuiAccent
+        -- 0) the profile's accent follows the theme (set when a theme is picked)
+        if accent and accent.followTheme then return themeR, themeG, themeB end
         -- 1) per-profile cuiAccent
         if accent and accent.useClass then
             local color = (CUI.GetRawClassColor and CUI.GetRawClassColor(playerClass))

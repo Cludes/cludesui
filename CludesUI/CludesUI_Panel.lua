@@ -303,7 +303,10 @@ local function BuildFrame()
     -- Every theme's frame art is drawn as is: the flat frame is neutral and takes the
     -- theme's accent through its logo overlay and the controls, and CludesUI Forever
     -- has its own bronze art. So no layer is desaturated or tinted.
-    function titleBoxes.TintColor() return nil end
+    function titleBoxes.TintColor(skinName)
+        local tint = CUI.THEME_TINTS and CUI.THEME_TINTS[skinName]
+        if tint then return tint[1], tint[2], tint[3] end
+    end
     local function ApplyBgTintToLayer(layer, skinName, red, green, blue)
         local fr, fg, fb = titleBoxes.TintColor(skinName, red, green, blue)
         if fr then
@@ -633,6 +636,7 @@ local function BuildFrame()
 
         -- The sidebar opacity slider's orientation follows the theme.
         if CUI._layoutOpacitySlider then CUI._layoutOpacitySlider() end
+        CUI_NS.PaintThemeSolids()
     end
 
     -- For tint-only updates (Custom Color picker dragging), update the front layer directly
@@ -655,6 +659,21 @@ local function BuildFrame()
     CUI._bgTexture = bgA
     CUI._applyBgTint = ApplyBgTint
     CUI._applyThemeBG = ApplyThemeBG
+
+    -- Flat fills that sit on the art (the rail, the wordmark cover) take the
+    -- theme's tint the same way the art does.
+    local themeSolids = {}
+    function CUI_NS.ThemeSolid(tex, r, g, b)
+        themeSolids[#themeSolids + 1] = { tex = tex, r = r, g = g, b = b }
+        CUI_NS.PaintThemeSolids()
+    end
+    function CUI_NS.PaintThemeSolids()
+        local skinName = titleBoxes.Theme()
+        for _, s in ipairs(themeSolids) do
+            local r, g, b = titleBoxes.Tinted(skinName, nil, nil, nil, s.r, s.g, s.b)
+            s.tex:SetColorTexture(r, g, b, 1)
+        end
+    end
 
     -----------------------------------------------------------------------
     --  Click area  (1300x946, centred)
@@ -2087,6 +2106,7 @@ local function BuildSidebar()
         rail:SetFrameLevel(navBar:GetFrameLevel() + 6)
         local railBg = SolidTex(rail, "BACKGROUND", 0.075, 0.084, 0.094, 1)
         railBg:SetAllPoints()
+        CUI_NS.ThemeSolid(railBg, 0.075, 0.084, 0.094)
         local divider = SolidTex(rail, "ARTWORK", 1, 1, 1, 0.06)
         divider:SetWidth(1)
         divider:SetPoint("TOPRIGHT", rail, "TOPRIGHT", 0, 0)
@@ -2108,6 +2128,7 @@ local function BuildSidebar()
         cover:SetPoint("TOPLEFT", chrome, "TOPLEFT", 0, 0)
         cover:SetPoint("TOPRIGHT", chrome, "TOPLEFT", SIDEBAR_W, 0)
         cover:SetHeight(LIST_HEAD_H + 16)
+        CUI_NS.ThemeSolid(cover, SIDEBAR_BG[1], SIDEBAR_BG[2], SIDEBAR_BG[3])
         local word = MakeFont(chrome, 24, nil, 0.95, 0.96, 0.97, 1)
         word:SetPoint("LEFT", chrome, "TOPLEFT", listX + 18, -LIST_HEAD_H / 2)
         local function PaintWord()
@@ -5816,7 +5837,7 @@ end
 -- Pass force=true to bypass the fast refresh path (e.g. when widget layout changes).
 -- Command Rail: a page change (a tab, a list row, a search) relights the list's page rows.
 hooksecurefunc(CUI, "SelectPage", function()
-    if panelFrame and panelFrame:IsShown() and CUI_NS.RailOn() then SyncNavStates() end
+    if panelFrame and panelFrame:IsShown() and CUI_NS.RailOn() then CUI.RefreshSidebarLayout() end
 end)
 
 function CUI:RefreshPage(force)

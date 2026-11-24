@@ -601,6 +601,11 @@ CUI.SetActiveTheme = function(skinName)
     if not CludesUIDB then CludesUIDB = {} end
     CludesUIDB.activeTheme = skinName
     CLUDES_GREEN._themeEnabled = true
+    -- Picking a theme takes its accent too: the profile's accent follows the
+    -- theme until the accent swatch picks another (SetActiveProfileAccent).
+    CUI.SetActiveProfileAccent(nil, nil)
+    local profile = CUI.GetActiveProfileData()
+    if profile and profile.cuiAccent then profile.cuiAccent.followTheme = true end
     local red, green, blue = ResolveThemeColor(skinName)
 
     if CUI._applyThemeBG then CUI._applyThemeBG(skinName, red, green, blue) end
@@ -643,6 +648,7 @@ function CUI.SetActiveProfileAccent(custom, useClass)
         saved.profiles[label] = p
     end
     p.cuiAccent = p.cuiAccent or {}
+    p.cuiAccent.followTheme = nil
     if custom ~= nil then p.cuiAccent.custom = custom end
     if useClass ~= nil then p.cuiAccent.useClass = useClass end
 end
@@ -651,6 +657,10 @@ end
 function CUI.GetActiveAccentState()
     local p = CUI.GetActiveProfileData()
     local accent = p and p.cuiAccent
+    if accent and accent.followTheme then
+        local r, g, b = ResolveThemeColor(CUI.GetActiveTheme())
+        return false, { r = r, g = g, b = b }
+    end
     local useClass
     if accent and accent.useClass ~= nil then
         useClass = accent.useClass
@@ -665,6 +675,8 @@ end
 function CUI.ResolveProfileAccent(profileData)
     local themeR, themeG, themeB = ResolveThemeColor(CUI.GetActiveTheme())
     local accent = profileData and profileData.cuiAccent
+    -- 0) following the theme
+    if accent and accent.followTheme then return false, themeR, themeG, themeB end
     -- 1) per-profile
     if accent and accent.useClass then
         local color = CUI.GetRawClassColor(CUI._playerClass)
