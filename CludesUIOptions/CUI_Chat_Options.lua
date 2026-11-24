@@ -1958,15 +1958,11 @@ CUI.AtOptionsLogin(function()
         and CUI.BlizzStyle.Active("chat") == "blizzard"
         and not CUI.BlizzStyle.Forever("chat")
     local chatPages = blizzTabsStyle and { "Chat", "Sidebar" } or { "Chat", "Tabs", "Sidebar" }
-    -- Chat Bubbles live in Blizzard Skins+: this tab links straight there, so it
-    -- is offered only while that module is loaded.
-    if CUI._ModuleNS["CludesUIBlizzardSkin"] then chatPages[#chatPages + 1] = "Chat Bubbles" end
 
     CUI:RegisterModule("CludesUIChat", {
         title = "Chat",
         description = "Chat frame reskin, clickable URLs, copy chat, sidebar icons.",
         pages = chatPages,
-        pageLinks = { ["Chat Bubbles"] = { module = "CludesUIBlizzardSkin", page = "Chat Bubbles" } },
         buildPage = function(pageName, p, yOffset) return BuildPage(pageName, p, yOffset) end,
         searchTerms = "chat tabs border spacing background sidebar friends voice url copy whisper channel abbreviate shortened class color names timestamps timestamp all messages font size",
         onReset = function()

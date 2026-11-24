@@ -518,6 +518,7 @@ G.UnitRace = function() return "Human", "Human", 1 end
 G.UnitSex = function() return 2 end
 G.UnitFactionGroup = function() return "Alliance", "Alliance" end
 G.UnitLevel = function() return FLAVOR == "forever" and 34 or 90 end
+G.UnitEffectiveLevel = G.UnitLevel
 G.UnitExists = function(u) return u == "player" end
 G.UnitHealth = function() return 100 end
 G.UnitHealthMax = function() return 100 end

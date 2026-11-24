@@ -6326,12 +6326,9 @@ do
         row._bar = SolidTex(row, "ARTWORK", 1, 1, 1, 1)
         row._bar:SetSize(2, 14)
         row._bar:SetPoint("LEFT", row, "LEFT", 22, 0)
-        row._note = MakeFont(row, 10, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.6)
-        row._note:SetPoint("RIGHT", row, "RIGHT", -14, 0)
-        row._note:SetJustifyH("RIGHT")
         row._label = MakeFont(row, 13, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
         row._label:SetPoint("LEFT", row, "LEFT", 32, 0)
-        row._label:SetPoint("RIGHT", row._note, "LEFT", -6, 0)
+        row._label:SetPoint("RIGHT", row, "RIGHT", -12, 0)
         row._label:SetJustifyH("LEFT")
         row._label:SetWordWrap(false)
         row:SetScript("OnClick", function(self)
@@ -6359,9 +6356,6 @@ do
             row:SetPoint("TOPLEFT", CUI._addonScrollChild, "TOPLEFT", 0, -rowY)
             row:SetWidth(listW or SIDEBAR_W)
             row._label:SetText(CUI.L(CUI_NS.GetTabLabel(moduleKey, page)))
-            local link = type(config.pageLinks) == "table" and config.pageLinks[page]
-            local target = link and CUI:GetModuleTitle(link.module)
-            row._note:SetText(target and (CUI.L("in") .. " " .. CUI.L(target)) or "")
             local on = currentModule == moduleKey and activePage == page
             row._bar:SetColorTexture(EG.r, EG.g, EG.b, 1)
             row._bar:SetShown(on)

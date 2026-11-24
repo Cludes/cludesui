@@ -9,14 +9,11 @@ local PAGE_WINDOWSKINS = "Blizzard Window Skins"
 local PAGE_TOOLTIPS = "Tooltips, Menus & Popups"
 local PAGE_DRAGONRIDING = "Dragon Riding"
 local PAGE_CHATBUBBLES = "Chat Bubbles"
--- A link tab: opens Quality of Life's Shifter (see pageLinks below).
-local PAGE_WINDOWMOVER = "Window Mover"
 -- Display-only tab labels: the page names above stay the pages' identities
 -- (nav links, Unlock Mode, saved state).
 CUI.TAB_LABEL_OVERRIDES[PAGE_WINDOWSKINS] = "Window Skins"
 CUI.TAB_LABEL_OVERRIDES[PAGE_TOOLTIPS] = "Tooltips & Menus"
 CUI.TAB_LABEL_OVERRIDES[PAGE_DRAGONRIDING] = "Skyriding"
-CUI.TAB_LABEL_OVERRIDES[PAGE_WINDOWMOVER] = "Window Mover"
 
 -- The account-wide settings table (these tabs' settings live at its top
 -- level), made if it is not there yet, for a write.
@@ -5457,11 +5454,8 @@ CUI.AtOptionsLogin(function()
 
     -- WoW Forever has no skyriding: the Dragon Riding tab is not registered there
     -- (its resident file returns at load, so the page would have no DB to read).
-    -- Window Mover, right after Window Skins, links to Quality of Life's Shifter,
-    -- so it is offered only while Quality of Life is loaded.
     local pages = CUI.IS_FOREVER and { PAGE_WINDOWSKINS, PAGE_TOOLTIPS, PAGE_CHATBUBBLES }
         or { PAGE_WINDOWSKINS, PAGE_TOOLTIPS, PAGE_CHATBUBBLES, PAGE_DRAGONRIDING }
-    if CUI._ModuleNS["CludesUIQoL"] then table.insert(pages, 2, PAGE_WINDOWMOVER) end
     -- Panel shown, or unfolded from its mini window (no page callback runs then): a shown
     -- sample catches up on writes it skipped while hidden (Unlock Mode, other pages). Each
     -- repaint checks that its own sample is the one on screen.
@@ -5481,7 +5475,6 @@ CUI.AtOptionsLogin(function()
             or "Themed Blizzard frames: window skins, tooltips, menus, popups, chat bubbles, Dragon Riding HUD.",
         searchTerms = "blizzard skin character sheet tooltip menu popup dragon riding skyriding window skins lfg group finder premade queue pause game menu great vault inspect collections mounts pets toys spellbook talents adventure guide encounter journal professions guild communities calendar achievements mail catalyst gem socket item upgrade upgrades crest loot window loot toast you received popup micro menu modern delves companion brann loot roll need greed pass disenchant loot rolls pending rolls group invite invited to a group role chat bubbles bubble speech balloon",
         pages = pages,
-        pageLinks = { [PAGE_WINDOWMOVER] = { module = "CludesUIQoL", page = "Shifter" } },
         buildPage = function(pageTitle, hostFrame, yOffset)
             if pageTitle == PAGE_WINDOWSKINS then
                 return BuildWindowSkinsPage(pageTitle, hostFrame, yOffset)
