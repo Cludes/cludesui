@@ -755,6 +755,38 @@ local function ObjectiveName(text)
     return name ~= "" and name or nil
 end
 
+local QUEST_ITEM = 12 -- Enum.ItemClass.Questitem
+
+-- One RestedXP step line that wants an item (.buy or .collect): its item and
+-- count from the line's own fields, else from its text ("Gorilla Fang: 8/10").
+-- nil when it wants nothing or has it all; "loading" while the game loads it.
+local function GuideItem(element)
+    local tag = type(element.tag) == "string" and element.tag or ""
+    if not (tag:find("^buy") or tag:find("^collect")) then return end
+    local id = tonumber(element.id or element.itemId or element.itemID)
+    local need = tonumber(element.qty or element.count)
+    local have
+    if not (id and need) then
+        local fs = element.frame and element.frame.text
+        local shown = fs and fs.GetText and fs:GetText() or element.text
+        if type(shown) ~= "string" then return end
+        shown = shown:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T[^|]*|t", ""):gsub("|H[^|]*|h", ""):gsub("|h", "")
+        local name, got, want = shown:match("^%s*(.-):%s*(%d+)%s*/%s*(%d+)%s*$")
+        if not name then return end
+        name = name:gsub("^%[", ""):gsub("%]$", "")
+        id, have, need = C_Item.GetItemInfoInstant(name), tonumber(got), tonumber(want)
+        if not id then return end
+    end
+    have = C_Item.GetItemCount(id) or have or 0
+    if have >= need then return end
+    local name, link, _, _, _, _, _, _, _, icon = C_Item.GetItemInfo(id)
+    if not name then
+        C_Item.RequestLoadItemDataByID(id)
+        return "loading"
+    end
+    return { name = name, link = link, icon = icon, have = have, need = need, from = "Guide" }
+end
+
 function Shop.Read()
     local list, seen = {}, {}
     Shop.loading = 0
@@ -769,18 +801,11 @@ function Shop.Read()
     for _, step in ipairs(type(steps) == "table" and steps or {}) do
         if step.active then
             for _, element in ipairs(step.elements or {}) do
-                if type(element.tag) == "string" and element.tag:find("^buy") and type(element.id) == "number"
-                    and type(element.qty) == "number" and not element.skip then
-                    local have = C_Item.GetItemCount(element.id) or 0
-                    if have < element.qty then
-                        local name, link, _, _, _, _, _, _, _, icon = C_Item.GetItemInfo(element.id)
-                        if name then
-                            Add({ name = name, link = link, icon = icon, have = have, need = element.qty, from = "Guide" })
-                        else
-                            Shop.loading = Shop.loading + 1
-                            C_Item.RequestLoadItemDataByID(element.id)
-                        end
-                    end
+                local entry = not element.skip and GuideItem(element)
+                if entry == "loading" then
+                    Shop.loading = Shop.loading + 1
+                elseif entry then
+                    Add(entry)
                 end
             end
         end
@@ -790,10 +815,12 @@ function Shop.Read()
         if info and not info.isHeader and info.questID then
             for _, objective in ipairs(C_QuestLog.GetQuestObjectives(info.questID) or {}) do
                 local name = objective.type == "item" and not objective.finished and ObjectiveName(objective.text)
-                if name then
-                    local itemID, _, _, _, icon = C_Item.GetItemInfoInstant(name)
-                    local link = itemID and select(2, C_Item.GetItemInfo(itemID))
-                    Add({ name = name, link = link, icon = icon or 134400, have = objective.numFulfilled or 0,
+                -- Only items the auction house can sell: quest-only items (a head,
+                -- a letter) and items the game does not know yet are left out.
+                local itemID, _, _, _, icon, classID = C_Item.GetItemInfoInstant(name or "")
+                if name and itemID and classID ~= QUEST_ITEM then
+                    local link = select(2, C_Item.GetItemInfo(itemID))
+                    Add({ name = name, link = link, icon = icon, have = objective.numFulfilled or 0,
                         need = objective.numRequired or 0, from = "Quest" })
                 end
             end
