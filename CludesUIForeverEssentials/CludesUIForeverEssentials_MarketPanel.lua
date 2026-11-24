@@ -20,7 +20,7 @@ local MK = CUI._Market
 if not (Market and MK) then return end
 local Get = MK.Get
 
-local W, H, PAD, ROW = 340, 660, 10, CUI.Kit.ROW_H
+local W, H, PAD, ROW = 340, 716, 10, CUI.Kit.ROW_H
 local PAGE_H = H - 100 -- the space under the tabs and above the message line
 local PALETTE = CUI.Kit.Palette
 local MUTED, TEXT = PALETTE.muted, PALETTE.text
@@ -777,7 +777,7 @@ local function BuildSell(page)
     local card = CreateFrame("Frame", nil, page)
     card:SetPoint("TOPLEFT", 0, 0)
     card:SetPoint("TOPRIGHT", 0, 0)
-    card:SetHeight(196)
+    card:SetHeight(248)
     page.card = card
     card.icon = card:CreateTexture(nil, "ARTWORK")
     card.icon:SetSize(36, 36)
@@ -825,6 +825,10 @@ local function BuildSell(page)
         Panel.Render()
     end, { key = "essentials" })
     card.all:SetPoint("LEFT", card.qty, "RIGHT", 6, 0)
+    -- Duration: its own row under Quantity (12h, 24h, 48h left to right).
+    local durLabel = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
+    durLabel:SetPoint("TOPLEFT", PAD, -160)
+    durLabel:SetText("Duration")
     card.durations = {}
     local prev
     for index = #DURATIONS, 1, -1 do
@@ -833,14 +837,15 @@ local function BuildSell(page)
             MK.Cfg().duration = d[1]
             Panel.Render()
         end, { key = "essentials", tip = "How long the auction runs. Longer costs a bigger deposit." })
-        if prev then b:SetPoint("RIGHT", prev, "LEFT", -4, 0) else b:SetPoint("TOPRIGHT", -PAD, -124) end
+        if prev then b:SetPoint("RIGHT", prev, "LEFT", -4, 0) else b:SetPoint("LEFT", durLabel, "LEFT", 74 + 2 * 44, 0) end
         b.duration = d[1]
         card.durations[index], prev = b, b
     end
     card.deposit = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
-    card.deposit:SetPoint("TOPLEFT", PAD, -160)
+    card.deposit:SetPoint("TOPLEFT", PAD, -192)
+    card.deposit:SetPoint("RIGHT", -PAD, 0)
     card.post = K.Button(card, "Post", 90, 28, function() Sell.Post() end, { key = "essentials", size = 13 })
-    card.post:SetPoint("TOPRIGHT", -PAD, -156)
+    card.post:SetPoint("TOPRIGHT", -PAD, -212)
     card.post:SetActive(true)
     card.skip = K.Button(card, "Skip", 60, 28, function() Sell.Next() end, { key = "essentials" })
     card.skip:SetPoint("RIGHT", card.post, "LEFT", -6, 0)
@@ -850,12 +855,12 @@ local function BuildSell(page)
     card.empty:SetWordWrap(true)
 
     local head = Label(page, 11, MUTED)
-    head:SetPoint("TOPLEFT", PAD, -206)
+    head:SetPoint("TOPLEFT", PAD, -258)
     head:SetText("LISTINGS")
     page.listHead = head
     page.listings = {}
     for index = 1, 5 do
-        local row = NewRow(page, index, -222, function(self)
+        local row = NewRow(page, index, -274, function(self)
             local entry = Sell.Focus()
             if entry and self.listing then
                 local l = self.listing
@@ -870,7 +875,7 @@ local function BuildSell(page)
         page.listings[index] = row
     end
     local queueHead = Label(page, 11, MUTED)
-    queueHead:SetPoint("TOPLEFT", PAD, -340)
+    queueHead:SetPoint("TOPLEFT", PAD, -392)
     queueHead:SetText("YOUR BAGS")
     page.queueHead = queueHead
     page.queue = {}
@@ -930,7 +935,7 @@ local function Build()
 end
 
 local function QueueRows(page)
-    return math.max(0, math.floor((PAGE_H - 356) / ROW))
+    return math.max(0, math.floor((PAGE_H - 408) / ROW))
 end
 
 local function RenderSell()
@@ -1002,7 +1007,7 @@ local function RenderSell()
         local row = page.queue[index]
         local e = index <= shown and Sell.queue[index]
         if not row and e then
-            row = NewRow(page, index, -356, function(self)
+            row = NewRow(page, index, -408, function(self)
                 if self.entry then Sell.Pick(self.entry.key) end
             end)
             page.queue[index] = row
