@@ -3347,6 +3347,7 @@ local function BuildFooter(rightW, rightX)
         function() CUI.RequestReload(CUI.L("Reload UI"), CUI.L("Reload the UI now?")) end
     )
     footerBar._reloadBtn = reloadBtn
+    CUI._footerBar = footerBar -- Changed here (CludesUI_ChangedHere.lua) sits beside Reload UI
 
     -- Per-module Reset visibility: suite pages and pages with no onReset hide Reset and
     -- slide Reload UI left into its slot. Called from SelectModule.
