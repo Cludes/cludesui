@@ -2093,11 +2093,14 @@ local function BuildSidebar()
     --  SyncNavStates calls LayoutRail; off brings the one long list back.
     -----------------------------------------------------------------------
     do
-        local RAIL_W, RAIL_BTN, RAIL_GAP = 60, 44, 8
-        local LIST_HEAD_H, LIST_TOP, FOOT_H = 76, 128, 116
+        local RAIL_W, RAIL_BTN, RAIL_GAP, RAIL_NAME_H = 60, 40, 8, 14
+        local RAIL_STEP = RAIL_BTN + RAIL_NAME_H + RAIL_GAP
+        local LIST_HEAD_H, LIST_TOP, FOOT_H = 76, 128, 60
         local SIDEBAR_BG = { 0.118, 0.129, 0.141 } -- the frame art's sidebar colour
         local RAIL_ICONS = { combat = true, group = true, interface = true, tools = true, forever = true }
-        local SECTIONS_TOP = -76 - (RAIL_BTN + RAIL_GAP) - 13 -- under the logo and Core Settings
+        local SECTIONS_TOP = -76 - RAIL_STEP - 13 -- under the logo and Core Settings
+        -- Short names under the rail squares (a section's full name is its tooltip).
+        local RAIL_NAMES = { group = "Group" }
         -- One line under each module row (the full description is its tooltip).
         local RAIL_BLURBS = {
             CludesUIActionBars = "Bar layout, look and behaviour",
@@ -2140,14 +2143,14 @@ local function BuildSidebar()
         divider:SetPoint("BOTTOMRIGHT", rail, "BOTTOMRIGHT", 0, 0)
         local logo = rail:CreateTexture(nil, "ARTWORK")
         logo:SetTexture(ICONS_PATH .. "sidebar\\rail-logo.png")
-        logo:SetSize(38, 38)
-        logo:SetPoint("TOP", rail, "TOP", 0, -19)
+        logo:SetSize(40, 40)
+        logo:SetPoint("TOP", rail, "TOP", 0, -18)
         logo:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
         RegAccent({ type = "vertex", obj = logo })
         local railButtons, footButtons = {}, {}
 
         -- The list column's own pieces: a cover over the painted wordmark, the
-        -- wordmark, the rule and node under it, and the foot (themes, version).
+        -- wordmark, the rule and node under it, and the foot (CPU, version).
         local chrome = CreateFrame("Frame", nil, navBar)
         chrome:SetAllPoints(navBar)
         chrome:SetFrameLevel(navBar:GetFrameLevel() + 1)
@@ -2156,13 +2159,18 @@ local function BuildSidebar()
         cover:SetPoint("TOPRIGHT", chrome, "TOPLEFT", SIDEBAR_W, 0)
         cover:SetHeight(LIST_HEAD_H + 16)
         CUI_NS.ThemeSolid(cover, SIDEBAR_BG[1], SIDEBAR_BG[2], SIDEBAR_BG[3])
-        local word = MakeFont(chrome, 24, nil, 0.95, 0.96, 0.97, 1)
-        word:SetPoint("LEFT", chrome, "TOPLEFT", listX + 18, -LIST_HEAD_H / 2)
-        local function PaintWord()
-            word:SetText("Cludes" .. CUI.HexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b) .. "UI|r")
-        end
-        PaintWord()
-        RegAccent({ type = "callback", fn = PaintWord })
+        -- The wordmark art (tools/art/banner.html): "Cludes" in white, and its
+        -- "UI" and underline bar on a second layer in the live accent.
+        local word = chrome:CreateTexture(nil, "ARTWORK")
+        word:SetTexture(ICONS_PATH .. "sidebar\\banner-word.png")
+        word:SetSize(220, 44)
+        word:SetPoint("LEFT", chrome, "TOPLEFT", listX + 14, -LIST_HEAD_H / 2 + 2)
+        word:SetVertexColor(0.95, 0.96, 0.97, 1)
+        local wordAccent = chrome:CreateTexture(nil, "ARTWORK", nil, 1)
+        wordAccent:SetTexture(ICONS_PATH .. "sidebar\\banner-accent.png")
+        wordAccent:SetAllPoints(word)
+        wordAccent:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
+        RegAccent({ type = "vertex", obj = wordAccent })
         local headRule = SolidTex(chrome, "ARTWORK", 1, 1, 1, 0.07)
         headRule:SetHeight(1)
         headRule:SetPoint("TOPLEFT", chrome, "TOPLEFT", listX, -LIST_HEAD_H)
@@ -2176,47 +2184,6 @@ local function BuildSidebar()
         footRule:SetHeight(1)
         footRule:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX, FOOT_H)
         footRule:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMLEFT", SIDEBAR_W, FOOT_H)
-        local themeLabel = MakeFont(chrome, 11, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.8)
-        themeLabel:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18, FOOT_H - 26)
-        themeLabel:SetText(CUI.L("Options theme"))
-        local themeName = MakeFont(chrome, 11, nil, 0.84, 0.86, 0.88, 1)
-        themeName:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMLEFT", SIDEBAR_W - 18, FOOT_H - 26)
-        local swatches = {}
-        local function PaintSwatches()
-            local active = CUI.GetActiveTheme()
-            themeName:SetText((CUI.THEME_LABELS and CUI.THEME_LABELS[active]) or active)
-            for _, swatch in ipairs(swatches) do
-                local on = swatch._theme == active
-                CUI.PanelPP.SetBorderColor(swatch, on and 1 or 0, on and 1 or 0, on and 1 or 0, 1)
-            end
-        end
-        for index, name in ipairs(CUI.THEME_ORDER or {}) do
-            local preset = CUI.THEME_PRESETS and CUI.THEME_PRESETS[name]
-            if preset then
-                local swatch = CreateFrame("Button", nil, chrome)
-                swatch:SetSize(22, 22)
-                swatch:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18 + (index - 1) * 30, FOOT_H - 56)
-                local fill = SolidTex(swatch, "ARTWORK", preset.r, preset.g, preset.b, 1)
-                fill:SetAllPoints()
-                CUI.PanelPP.CreateBorder(swatch, 0, 0, 0, 1, 1, "OVERLAY", 7)
-                swatch._theme = name
-                swatch:SetScript("OnClick", function(self)
-                    CUI.SetActiveTheme(self._theme)
-                    if CUI.RefreshAccent then CUI.RefreshAccent() else CUI:RefreshPage() end
-                    PaintSwatches()
-                end)
-                swatch:SetScript("OnEnter", function(self)
-                    if CUI.ShowWidgetTooltip then
-                        CUI.ShowWidgetTooltip(self, (CUI.THEME_LABELS and CUI.THEME_LABELS[name]) or name)
-                    end
-                end)
-                swatch:SetScript("OnLeave", function()
-                    if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
-                end)
-                swatches[#swatches + 1] = swatch
-            end
-        end
-        RegAccent({ type = "callback", fn = PaintSwatches })
 
         -- Section status: each module of the picked section with whether it is
         -- on and its recent CPU time (refreshed every 2s while shown), above
@@ -2318,8 +2285,10 @@ local function BuildSidebar()
             local EG = CLUDES_GREEN
             if on then
                 button._tint(EG.r, EG.g, EG.b, 1)
+                button._name:SetTextColor(EG.r, EG.g, EG.b, 1)
             else
                 button._tint(1, 1, 1, button:IsMouseOver() and 0.85 or 0.45)
+                button._name:SetTextColor(1, 1, 1, button:IsMouseOver() and 0.85 or 0.5)
             end
             button._wash:SetShown(on)
             CUI.PanelPP.SetBorderColor(button, EG.r, EG.g, EG.b, on and 0.45 or 0)
@@ -2327,10 +2296,13 @@ local function BuildSidebar()
 
         -- A rail square: an icon (or a letter) over a soft accent wash, with
         -- an accent outline when picked.
-        local function NewRailSquare(iconPath, iconW, iconH, letter, tip, onClick, isPicked)
+        local function NewRailSquare(iconPath, iconW, iconH, letter, tip, onClick, isPicked, name)
             local EG = CLUDES_GREEN
             local button = CreateFrame("Button", nil, rail)
             button:SetSize(RAIL_BTN, RAIL_BTN)
+            button._name = MakeFont(button, 9, nil, 1, 1, 1, 1)
+            button._name:SetPoint("TOP", button, "BOTTOM", 0, -3)
+            button._name:SetText(name or tip)
             button._wash = SolidTex(button, "BACKGROUND", EG.r, EG.g, EG.b, 0.12)
             button._wash:SetAllPoints()
             RegAccent({ type = "solid", obj = button._wash, a = 0.12 })
@@ -2366,14 +2338,15 @@ local function BuildSidebar()
             local path = RAIL_ICONS[entryKey] and (ICONS_PATH .. "sidebar\\rail-" .. entryKey .. ".png")
             return NewRailSquare(path, 22, 22, label:sub(1, 1):upper(), label,
                 function() CUI_NS.SetRailGroup(entryKey) end,
-                function() return not CUI_NS.railModuleView and CUI_NS.railKey == entryKey end)
+                function() return not CUI_NS.railModuleView and CUI_NS.railKey == entryKey end,
+                RAIL_NAMES[entryKey] and CUI.L(RAIL_NAMES[entryKey]) or label)
         end
 
         -- The fixed rows become rail squares at the foot; a click runs the row's own click.
         local FOOT = {
-            { key = "_CUIProfiles", icon = "profiles-off.png", tip = "Profiles" },
-            { key = "_CUIPatchNotes", icon = "notes-off.png", tip = "Patch Notes" },
-            { key = "_unlock", icon = "unlockmode-ig.png", tip = "Layout Mode" },
+            { key = "_CUIProfiles", icon = "profiles-off.png", tip = "Profiles", name = "Profiles" },
+            { key = "_CUIPatchNotes", icon = "notes-off.png", tip = "Patch Notes", name = "Notes" },
+            { key = "_unlock", icon = "unlockmode-ig.png", tip = "Layout Mode", name = "Layout" },
         }
         local function FixedRow(key)
             if key == "_unlock" then return CUI._unlockSidebarBtn end
@@ -2389,17 +2362,17 @@ local function BuildSidebar()
         -- Core Settings heads the rail, above the sections, with a short rule under it.
         local core = NewRailSquare(ICONS_PATH .. "sidebar\\settings-ig-2.png", 30, 21, nil, CUI.L("Core Settings"),
             function() ClickRow("_CUIGlobal") end,
-            function() return CUI_NS.railModuleView and CUI_NS.railModule == "_CUIGlobal" end)
+            function() return CUI_NS.railModuleView and CUI_NS.railModule == "_CUIGlobal" end, CUI.L("Core"))
         core:SetPoint("TOP", rail, "TOP", 0, -76)
         footButtons[#footButtons + 1] = core
         local coreRule = SolidTex(rail, "ARTWORK", 1, 1, 1, 0.08)
         coreRule:SetSize(24, 1)
-        coreRule:SetPoint("TOP", core, "BOTTOM", 0, -9)
+        coreRule:SetPoint("TOP", core, "BOTTOM", 0, -RAIL_NAME_H - 6)
         for index, entry in ipairs(FOOT) do
             local button = NewRailSquare(ICONS_PATH .. "sidebar\\" .. entry.icon, 30, 21, nil, CUI.L(entry.tip),
                 function() ClickRow(entry.key) end,
-                function() return CUI_NS.railModuleView and CUI_NS.railModule == entry.key end)
-            button:SetPoint("BOTTOM", rail, "BOTTOM", 0, 16 + (index - 1) * (RAIL_BTN + RAIL_GAP))
+                function() return CUI_NS.railModuleView and CUI_NS.railModule == entry.key end, CUI.L(entry.name))
+            button:SetPoint("BOTTOM", rail, "BOTTOM", 0, 12 + RAIL_NAME_H + (index - 1) * RAIL_STEP)
             footButtons[#footButtons + 1] = button
         end
 
@@ -2452,7 +2425,6 @@ local function BuildSidebar()
                 end
             end
             if CUI._layoutOpacitySlider then CUI._layoutOpacitySlider() end
-            PaintSwatches()
         end
 
         -- Lays the sidebar out for the setting, and returns the list's width.
@@ -2539,7 +2511,7 @@ local function BuildSidebar()
                 railButtons[navGroup.key] = button
                 present[navGroup.key] = true
                 button:ClearAllPoints()
-                button:SetPoint("TOP", rail, "TOP", 0, SECTIONS_TOP - (index - 1) * (RAIL_BTN + RAIL_GAP))
+                button:SetPoint("TOP", rail, "TOP", 0, SECTIONS_TOP - (index - 1) * RAIL_STEP)
                 button:Show()
                 PaintRail(button, button._picked())
             end

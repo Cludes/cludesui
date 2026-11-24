@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- Options-window banner art (CludesUI_Panel.lua rail header). Rendered by
+     tools/art/make_banner.ps1: ?layer=logo | word | accent, each white on
+     transparent; the game tints logo and accent with the live UI accent. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "XB"; src: url("../../CludesUI/media/fonts/Expressway%20Bold.ttf"); }
+  html, body { margin: 0; background: transparent; }
+  .word { position: absolute; left: 0; top: 0; width: 440px; height: 88px; font: 58px/1 "XB"; color: #fff; }
+  .word .t { position: absolute; left: 2px; top: 10px; letter-spacing: 1px; white-space: nowrap; }
+  .word .bar { position: absolute; left: 4px; top: 76px; height: 4px; width: 0; background: #fff; }
+  .hide { color: transparent !important; }
+</style>
+</head>
+<body>
+<svg id="logo" width="128" height="128" viewBox="0 0 128 128" style="display:none">
+  <!-- An open C ring (gap on the right) with a diamond core and a diamond at each tip. -->
+  <path d="M 98.5 34.6 A 46 46 0 1 0 98.5 93.4" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="butt"/>
+  <rect x="52" y="52" width="24" height="24" fill="#fff" transform="rotate(45 64 64)"/>
+  <rect x="96" y="27" width="11" height="11" fill="#fff" transform="rotate(45 101.5 32.5)"/>
+  <rect x="96" y="90" width="11" height="11" fill="#fff" transform="rotate(45 101.5 95.5)"/>
+</svg>
+<div id="word" class="word" style="display:none">
+  <div class="t"><span id="c">Cludes</span><span id="u">UI</span></div>
+  <div class="bar" id="bar"></div>
+</div>
+<script>
+  var layer = (location.search.match(/layer=(\w+)/) || [])[1] || "word";
+  if (layer === "logo") {
+    document.getElementById("logo").style.display = "block";
+  } else {
+    document.getElementById("word").style.display = "block";
+    var c = document.getElementById("c"), u = document.getElementById("u"), bar = document.getElementById("bar");
+    // The accent layer: "UI" and a bar under the whole wordmark; the word layer: "Cludes".
+    if (layer === "accent") { c.className = "hide"; bar.style.width = (c.offsetWidth + u.offsetWidth - 2) * 0.32 + "px"; }
+    else { u.className = "hide"; }
+  }
+</script>
+</body>
+</html>
