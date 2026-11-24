@@ -543,8 +543,9 @@ local function ShowBar()
     barOwner = nil
 end
 
--- A corpse's plate: its health bar and level step aside under the effect
--- (only where the plate is the game's own).
+-- A unit's plate (a corpse, a quest giver): the game shows it only because
+-- the soft target's plate is on, so its health bar and level step aside and
+-- just the name stays over the effect (only where the plate is the game's own).
 local function HideBar(to)
     local unitFrame = to.UnitFrame
     if not unitFrame then return end
@@ -600,7 +601,7 @@ local function Attach(to, info)
     if fx.SetIgnoreParentAlpha then fx:SetIgnoreParentAlpha(true) end
     fx:ClearAllPoints()
     fx:SetPoint("CENTER", to, "CENTER", 0, PLATE_Y)
-    if info.category == "corpse" then HideBar(to) end
+    if info.category == "corpse" or info.category == "giver" then HideBar(to) end
     line:ClearAllPoints()
     line:SetPoint("TOP", to, "BOTTOM", 0, LINE_Y)
     plate, shown = to, { ready = info.ready }
