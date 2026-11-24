@@ -671,9 +671,9 @@ local RefreshPage, AskPallyPower, Changed
 local PREFIX, Send, Channel, BroadcastSoon, Sender, OnMessage, SendPlan, SyncSoon, AfterCombat
 do
     -------------------------------------------------------------------------------
-    --  Plans shared with the group's paladins (the shared message format)
+    --  Plans shared with the group's paladins (our message format)
     -------------------------------------------------------------------------------
-    PREFIX = "NaowhBless"
+    PREFIX = "CludesBless"
     local NONE_CODE = "-"
     local PLAYER_BATCH, MAX_PLAYER_CHOICES, MAX_SYMBOLS, BATCH_DELAY = 200, 40, 9999, 1
     local pending = {}

@@ -341,6 +341,11 @@ do
         local db = CludesUIDB
         local saved = db and db.fctFont
         if not saved or type(saved) ~= "string" or saved == "" then return end
+        -- Avant Garde's file was renamed: point a saved path at the new one.
+        if saved:find("Avant Garde %a+%.ttf$") then
+            saved = saved:gsub("Avant Garde %a+%.ttf$", "Avant Garde.ttf")
+            db.fctFont = saved
+        end
         if not CUI.CombatTextFontCoversLocale(saved) then return end
         local fontFile = saved
         local smName = saved:match("^smf:(.+)")

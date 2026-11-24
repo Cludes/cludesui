@@ -9,7 +9,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  /cxp start, pause or reset. Hidden at max level and, if you like, while
 --  resting.
 --  Group XP: a bar per group member with their level and XP. It needs them to
---  run an addon that sends the shared "NaowhGroupXP" message (CludesUI does),
+--  run an addon that sends the "CludesGroupXP" message (CludesUI does),
 --  so each sees the other's bars. Members without one show "no addon".
 -------------------------------------------------------------------------------
 local _, module = ...
@@ -332,7 +332,7 @@ local G = module.Feature(
     { enabled = false, showSelf = true, raid = false, width = 260, size = 12 },
     { point = "LEFT", relPoint = "LEFT", x = 40, y = 120 }
 )
-local PREFIX = "NaowhGroupXP"
+local PREFIX = "CludesGroupXP"
 local ASK = "R"
 local MESSAGE = "2 %s %d %d %d"
 local MESSAGE_PATTERN = "^2 (%S+) (%d+) (%d+) (%d+)$"

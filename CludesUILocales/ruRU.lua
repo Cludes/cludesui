@@ -8810,7 +8810,6 @@ L["Change health visibility out of combat"] = "Измените видимост
 L["Pixels Textured Ring"] = "Кольцо «Пиксели с текстурой»"
 L["Pixels Ring Shadow"] = "Тень кольца «Пиксели»"
 L["Pixels Textured Ring Shadow"] = "Тень кольца «Пиксели с текстурой»"
-L["Naowh Thin Circle"] = "Тонкий круг Naowh"
 L["Adds a second ring around a round portrait; Match Frame Border follows your frame border style."] = "Добавляет второе кольцо вокруг круглого портрета; «Как рамка» следует стилю вашей рамки."
 L["This option requires a Circle or Pixels Circle Shape."] = "Для этого параметра нужна форма «Круг» или «Круг „Пиксели“»."
 L["Outer Ring Size"] = "Размер внешнего кольца"

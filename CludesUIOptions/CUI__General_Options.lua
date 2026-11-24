@@ -1297,9 +1297,9 @@ CUI.AtOptionsLogin(function()
                 text = "Expressway",
                 font = FCT_FONT_DIR .. "Expressway.TTF",
             },
-            [FCT_FONT_DIR .. "Avant Garde Naowh.ttf"] = {
+            [FCT_FONT_DIR .. "Avant Garde.ttf"] = {
                 text = "Avant Garde",
-                font = FCT_FONT_DIR .. "Avant Garde Naowh.ttf",
+                font = FCT_FONT_DIR .. "Avant Garde.ttf",
             },
             [FCT_FONT_DIR .. "Arial Bold.TTF"] = {
                 text = "Arial Bold",
@@ -1374,7 +1374,7 @@ CUI.AtOptionsLogin(function()
         local fctFontOrder = {
             "default",
             FCT_FONT_DIR .. "Expressway.TTF",
-            FCT_FONT_DIR .. "Avant Garde Naowh.ttf",
+            FCT_FONT_DIR .. "Avant Garde.ttf",
             FCT_FONT_DIR .. "Arial Bold.TTF",
             FCT_FONT_DIR .. "Poppins.ttf",
             FCT_FONT_DIR .. "FiraSans Medium.ttf",

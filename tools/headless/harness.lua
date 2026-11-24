@@ -599,7 +599,7 @@ for _, n in ipairs({ "ElvUI", "Details", "BigWigs", "DBM", "WeakAuras", "Plater"
     "Baganator", "Syndicator", "Cell", "Grid2", "VuhDo", "HealBot", "ShadowUF", "PitBull4", "Tukui", "NDui", "AceLibrary",
     "ACP", "RaiderIO", "Leatrix_Plus", "Leatrix_Maps", "Postal", "Bagnon", "AdiBags", "ArkInventory", "Hekili", "KuiNameplates",
     "TidyPlates", "NeatPlates", "Kui_Nameplates", "SexyMap", "MBB", "Prat", "Chattynator", "Glass", "XPerl", "oUF", "LibDBIcon",
-    "ClickCastFrames", "ClickCastHeader", "NSRT", "NorthernSkyRaidTools", "NaowhQOL", "Elles" .. "mereUI", "Elles" .. "mereUIDB", "MethodRaidTools", "Narcissus", "TRP3_API" }) do ABSENT[n] = true end
+    "ClickCastFrames", "ClickCastHeader", "NSRT", "NorthernSkyRaidTools", "Elles" .. "mereUI", "Elles" .. "mereUIDB", "MethodRaidTools", "Narcissus", "TRP3_API" }) do ABSENT[n] = true end
 
 local FRAME_SUFFIX = { "Frame", "Button", "Tooltip", "Bar", "Container", "Manager", "Parent", "Minimap", "EditBox", "Panel", "Tracker", "Cluster", "Anchor", "Flyout", "Menu" }
 local FUNCTION_VERBS = { "Get", "Set", "Is", "Has", "Can", "Create", "Update", "Toggle", "Show", "Hide", "Close", "Open",

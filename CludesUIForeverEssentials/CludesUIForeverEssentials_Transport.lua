@@ -12,7 +12,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --                  as it leaves;
 --    a dockmaster  the Zephras Isle skycutter's arrival call;
 --    others        with Share Timings on, CludesUI users in your group and
---                  guild (the shared "NaowhShips" message) and ForeverTransport
+--                  guild (the "CludesShips" message) and ForeverTransport
 --                  and NauticusClassic users nearby.
 --                  A shared timing is never sent on again.
 --    the schedule  until then, a starting timing from a ride on Forever.
@@ -290,9 +290,9 @@ local function CallsWatch(map)
 end
 
 -------------------------------------------------------------------------------
---  Sharing: our own (NaowhShips) and ForeverTransport / NauticusClassic users
+--  Sharing: our own (CludesShips) and ForeverTransport / NauticusClassic users
 -------------------------------------------------------------------------------
-local PREFIX, ASK = "NaowhShips", "Q"
+local PREFIX, ASK = "CludesShips", "Q"
 local TIMING_FORMAT = "T %s %.3f %.3f %s"
 local TIMING_PATTERN = "^T (Player%-%d+%-%x+) (%d+%.?%d*) (%d+%.?%d*) (.+)$"
 local SHARE_CHANNELS = { PARTY = true, RAID = true, INSTANCE_CHAT = true, GUILD = true }

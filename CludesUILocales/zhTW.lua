@@ -2549,7 +2549,6 @@ L["More than this can show with some filters."] = "使用某些篩選器時，�
 L["Name > Target"]                 = "名稱 > 目標"
 L["Name | Level"]                  = "名稱 | 等級"
 -- Default names for a custom PAB bar created without typing one (PAB_AddCustom*Bar).
-L["Naowh Thin Circle"]             = "Naowh 細圓環"
 L["New Buff Bar"]                  = "新的增益效果條"
 L["New Debuff Bar"]                = "新的減益效果列"
 L["No Border on Debuffs"]          = "減益效果無邊框"
