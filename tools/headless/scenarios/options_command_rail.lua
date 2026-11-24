@@ -45,3 +45,10 @@ CludesUIDB.sidebarRail = false
 CUI.RefreshSidebarLayout()
 List("rail off")
 OUT:write("== rail off: rail shown " .. tostring(rail and rail:IsShown()) .. ", Layout Mode row shown " .. tostring(CUI._unlockSidebarBtn and CUI._unlockSidebarBtn:IsShown()) .. "\n")
+-- Back on: Core Settings shows its own pages in the list; a module shows its pages under its row.
+CludesUIDB.sidebarRail = nil
+CUI:SelectModule("_CUIGlobal")
+CUI.RefreshSidebarLayout()
+List("core settings")
+CUI:SelectModule("CludesUIActionBars")
+List("action bars pages")

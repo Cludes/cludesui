@@ -2075,9 +2075,10 @@ local function BuildSidebar()
     -----------------------------------------------------------------------
     do
         local RAIL_W, RAIL_BTN, RAIL_GAP = 60, 44, 8
-        local LIST_HEAD_H, LIST_TOP, FOOT_H = 76, 128, 100
+        local LIST_HEAD_H, LIST_TOP, FOOT_H = 76, 128, 116
         local SIDEBAR_BG = { 0.118, 0.129, 0.141 } -- the frame art's sidebar colour
-        local RAIL_ICONS = { combat = true, group = true, interface = true, tools = true }
+        local RAIL_ICONS = { combat = true, group = true, interface = true, tools = true, forever = true }
+        local SECTIONS_TOP = -76 - (RAIL_BTN + RAIL_GAP) - 13 -- under the logo and Core Settings
         local listX = RAIL_W
 
         local rail = CreateFrame("Frame", nil, navBar)
@@ -2128,10 +2129,10 @@ local function BuildSidebar()
         footRule:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX, FOOT_H)
         footRule:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMLEFT", SIDEBAR_W, FOOT_H)
         local themeLabel = MakeFont(chrome, 11, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.8)
-        themeLabel:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18, FOOT_H - 22)
+        themeLabel:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18, FOOT_H - 26)
         themeLabel:SetText(CUI.L("Options theme"))
         local themeName = MakeFont(chrome, 11, nil, 0.84, 0.86, 0.88, 1)
-        themeName:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMLEFT", SIDEBAR_W - 18, FOOT_H - 22)
+        themeName:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMLEFT", SIDEBAR_W - 18, FOOT_H - 26)
         local swatches = {}
         local function PaintSwatches()
             local active = CUI.GetActiveTheme()
@@ -2146,7 +2147,7 @@ local function BuildSidebar()
             if preset then
                 local swatch = CreateFrame("Button", nil, chrome)
                 swatch:SetSize(22, 22)
-                swatch:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18 + (index - 1) * 28, 42)
+                swatch:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", listX + 18 + (index - 1) * 30, FOOT_H - 56)
                 local fill = SolidTex(swatch, "ARTWORK", preset.r, preset.g, preset.b, 1)
                 fill:SetAllPoints()
                 CUI.PanelPP.CreateBorder(swatch, 0, 0, 0, 1, 1, "OVERLAY", 7)
@@ -2221,12 +2222,11 @@ local function BuildSidebar()
             local path = RAIL_ICONS[entryKey] and (ICONS_PATH .. "sidebar\\rail-" .. entryKey .. ".png")
             return NewRailSquare(path, 22, 22, label:sub(1, 1):upper(), label,
                 function() CUI_NS.SetRailGroup(entryKey) end,
-                function() return CUI_NS.railKey == entryKey end)
+                function() return not CUI_NS.railModuleView and CUI_NS.railKey == entryKey end)
         end
 
         -- The fixed rows become rail squares at the foot; a click runs the row's own click.
         local FOOT = {
-            { key = "_CUIGlobal", icon = "settings-ig-2.png", tip = "Global Settings" },
             { key = "_CUIProfiles", icon = "profiles-off.png", tip = "Profiles" },
             { key = "_CUIPatchNotes", icon = "notes-off.png", tip = "Patch Notes" },
             { key = "_unlock", icon = "unlockmode-ig.png", tip = "Layout Mode" },
@@ -2235,14 +2235,24 @@ local function BuildSidebar()
             if key == "_unlock" then return CUI._unlockSidebarBtn end
             return sidebarButtons[key]
         end
+        local function ClickRow(key)
+            local row = FixedRow(key)
+            local click = row and row:GetScript("OnClick")
+            if click then click(row, "LeftButton") end
+        end
+        -- Core Settings heads the rail, above the sections, with a short rule under it.
+        local core = NewRailSquare(ICONS_PATH .. "sidebar\\settings-ig-2.png", 30, 21, nil, CUI.L("Core Settings"),
+            function() ClickRow("_CUIGlobal") end,
+            function() return CUI_NS.railModuleView and CUI_NS.railModule == "_CUIGlobal" end)
+        core:SetPoint("TOP", rail, "TOP", 0, -76)
+        footButtons[#footButtons + 1] = core
+        local coreRule = SolidTex(rail, "ARTWORK", 1, 1, 1, 0.08)
+        coreRule:SetSize(24, 1)
+        coreRule:SetPoint("TOP", core, "BOTTOM", 0, -9)
         for index, entry in ipairs(FOOT) do
             local button = NewRailSquare(ICONS_PATH .. "sidebar\\" .. entry.icon, 30, 21, nil, CUI.L(entry.tip),
-                function()
-                    local row = FixedRow(entry.key)
-                    local click = row and row:GetScript("OnClick")
-                    if click then click(row, "LeftButton") end
-                end,
-                function() return CUI_NS.railModule == entry.key end)
+                function() ClickRow(entry.key) end,
+                function() return CUI_NS.railModuleView and CUI_NS.railModule == entry.key end)
             button:SetPoint("BOTTOM", rail, "BOTTOM", 0, 16 + (index - 1) * (RAIL_BTN + RAIL_GAP))
             footButtons[#footButtons + 1] = button
         end
@@ -2254,8 +2264,8 @@ local function BuildSidebar()
             railShown = on
             rail:SetShown(on)
             chrome:SetShown(on)
-            for _, entry in ipairs(FOOT) do
-                local row = FixedRow(entry.key)
+            for _, key in ipairs({ "_CUIGlobal", "_CUIProfiles", "_CUIPatchNotes", "_unlock" }) do
+                local row = FixedRow(key)
                 if row then row:SetShown(not on) end
             end
             if CUI_NS.sidebarClassArt then CUI_NS.sidebarClassArt:SetShown(not on) end
@@ -2268,7 +2278,7 @@ local function BuildSidebar()
                 addonScroller:SetHeight(CLICK_H - LIST_TOP - FOOT_H - 8)
                 if version then
                     version:ClearAllPoints()
-                    version:SetPoint("BOTTOMLEFT", navBar, "BOTTOMLEFT", listX + 18, 18)
+                    version:SetPoint("BOTTOMLEFT", navBar, "BOTTOMLEFT", listX + 18, 16)
                 end
             else
                 sidebarSearchFrame:SetPoint("TOPLEFT", navBar, "TOPLEFT", SB_SIDE_INSET + 2, ORIG_ADDON_NAV_TOP - SB_TOP_PAD)
@@ -2279,15 +2289,31 @@ local function BuildSidebar()
                     version:SetPoint("BOTTOMLEFT", navBar, "BOTTOMLEFT", 18, 18)
                 end
             end
+            -- The CPU readout: one line above the version (rail), or its own
+            -- three-line block at the sidebar's foot.
+            local cpu = CUI_NS.sidebarCpu
+            if cpu then
+                cpu.perf:SetShown(not on)
+                cpu.divider:SetShown(not on)
+                cpu.text:ClearAllPoints()
+                cpu.label:ClearAllPoints()
+                if on then
+                    cpu.label:SetPoint("BOTTOMLEFT", navBar, "BOTTOMLEFT", listX + 18, 36)
+                    cpu.text:SetPoint("LEFT", cpu.label, "RIGHT", 4, 0)
+                else
+                    cpu.text:SetPoint("BOTTOMRIGHT", navBar, "BOTTOMRIGHT", -20, 18)
+                    cpu.label:SetPoint("BOTTOMRIGHT", cpu.text, "TOPRIGHT", 0, 3)
+                end
+            end
             if CUI._layoutOpacitySlider then CUI._layoutOpacitySlider() end
             PaintSwatches()
         end
 
         -- Lays the sidebar out for the setting, and returns the list's width.
         -- openModule lights its foot square (Global Settings, Profiles, Patch Notes).
-        function CUI_NS.LayoutRail(on, openModule)
+        function CUI_NS.LayoutRail(on, openModule, moduleView)
             Chrome(on)
-            CUI_NS.railModule = openModule
+            CUI_NS.railModule, CUI_NS.railModuleView = openModule, moduleView
             local listW = on and (SIDEBAR_W - RAIL_W) or SIDEBAR_W
             addonScroller:ClearAllPoints()
             if on then
@@ -2320,9 +2346,9 @@ local function BuildSidebar()
                 railButtons[navGroup.key] = button
                 present[navGroup.key] = true
                 button:ClearAllPoints()
-                button:SetPoint("TOP", rail, "TOP", 0, -76 - (index - 1) * (RAIL_BTN + RAIL_GAP))
+                button:SetPoint("TOP", rail, "TOP", 0, SECTIONS_TOP - (index - 1) * (RAIL_BTN + RAIL_GAP))
                 button:Show()
-                PaintRail(button, CUI_NS.railKey == navGroup.key)
+                PaintRail(button, button._picked())
             end
             for entryKey, button in pairs(railButtons) do
                 if not present[entryKey] then button:Hide() end
@@ -2636,6 +2662,7 @@ local function BuildSidebar()
     resDivider:SetHeight(1)
     resDivider:SetPoint("BOTTOMRIGHT", resPerfLabel, "BOTTOMRIGHT", 0, -5)
     resDivider:SetPoint("BOTTOMLEFT", resPerfLabel, "BOTTOMLEFT", 0, -5)
+    CUI_NS.sidebarCpu = { text = resCpuText, label = resCpuLabel, perf = resPerfLabel, divider = resDivider }
 
     local RES_UPDATE_INTERVAL = 5
     local UpdateResourceText
@@ -5653,6 +5680,11 @@ end
 
 -- Rebuild the current page content without resetting scroll position
 -- Pass force=true to bypass the fast refresh path (e.g. when widget layout changes).
+-- Command Rail: a page change (a tab, a list row, a search) relights the list's page rows.
+hooksecurefunc(CUI, "SelectPage", function()
+    if panelFrame and panelFrame:IsShown() and CUI_NS.RailOn() then SyncNavStates() end
+end)
+
 function CUI:RefreshPage(force)
     if not currentModule or not activePage then return end
     -- Panel hidden: a rebuild here would run buildPage with nothing on screen, firing page-open
@@ -5992,11 +6024,16 @@ local function SyncNavStates()
             CUI_NS.railKey = CUI_NS.GroupOf(currentModule) or (CUI_NS.navGroups[1] and CUI_NS.navGroups[1].key)
         end
     end
-    local listW = CUI_NS.LayoutRail and CUI_NS.LayoutRail(railOn, currentModule) or nil
+    -- Core Settings, Profiles and Patch Notes are in no group: while one is
+    -- open (and no rail section was clicked since) the list shows its pages.
+    local moduleView = railOn and currentModule and not CUI_NS.GroupOf(currentModule) and not CUI_NS.railBrowsing
+        and true or false
+    local listW = CUI_NS.LayoutRail and CUI_NS.LayoutRail(railOn, currentModule, moduleView) or nil
+    CUI_NS.ResetPageRows()
     local rowY = 0
     local afterRows = false
     for _, navGroup in ipairs(CUI_NS.navGroups) do
-        local away = railOn and navGroup.key ~= CUI_NS.railKey
+        local away = railOn and (moduleView or navGroup.key ~= CUI_NS.railKey)
         if afterRows then rowY = rowY + GROUP_GAP end
         afterRows = false
         local shut = away or (not railOn and collapsed and collapsed[navGroup.key]) and true or false
@@ -6032,6 +6069,8 @@ local function SyncNavStates()
                     button:Show()
                     rowY = rowY + CHILD_H
                     afterRows = true
+                    -- Command Rail: the open module's pages, under its row.
+                    if railOn and moduleKey == currentModule then rowY = CUI_NS.PageRows(moduleKey, rowY, listW) end
                 end
 
                 local loaded = navInfo.alwaysLoaded or IsAddonLoaded(navInfo.folder)
@@ -6080,6 +6119,7 @@ local function SyncNavStates()
         end
     end
 
+    if moduleView then rowY = CUI_NS.ModuleView(currentModule, listW) end
     if contentChild.SetHeight then contentChild:SetHeight(math.max(CHILD_H, rowY)) end
 
     -- Default to Global Settings if no module is active
@@ -6115,8 +6155,98 @@ end
 
 -- A rail icon click: that group's modules in the list.
 function CUI_NS.SetRailGroup(entryKey)
-    CUI_NS.railKey = entryKey
+    CUI_NS.railKey, CUI_NS.railBrowsing = entryKey, true
     SyncNavStates()
+end
+
+-- Command Rail: the open module's pages as rows in the list (under its row,
+-- or under its title when it is in no group). A click opens that page.
+do
+    local PAGE_H = 26
+    local pool, used, title = {}, 0, nil
+
+    function CUI_NS.ResetPageRows()
+        for i = 1, #pool do
+            pool[i]:Hide()
+        end
+        used = 0
+        if title then title:Hide() end
+    end
+
+    local function NextRow()
+        used = used + 1
+        local row = pool[used]
+        if row then return row end
+        row = CreateFrame("Button", nil, CUI._addonScrollChild)
+        row:SetHeight(PAGE_H)
+        row:SetFrameLevel(CUI._addonScrollChild:GetFrameLevel() + 1)
+        local hover = SolidTex(row, "HIGHLIGHT", 1, 1, 1, 0.04)
+        hover:SetAllPoints()
+        row._bar = SolidTex(row, "ARTWORK", 1, 1, 1, 1)
+        row._bar:SetSize(2, 14)
+        row._bar:SetPoint("LEFT", row, "LEFT", 22, 0)
+        row._label = MakeFont(row, 13, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        row._label:SetPoint("LEFT", row, "LEFT", 32, 0)
+        row._label:SetPoint("RIGHT", row, "RIGHT", -12, 0)
+        row._label:SetJustifyH("LEFT")
+        row._label:SetWordWrap(false)
+        row:SetScript("OnClick", function(self)
+            if self._disabled then return end
+            if currentModule ~= self._module then CUI:SelectModule(self._module) end
+            CUI:SelectPage(self._page)
+        end)
+        pool[used] = row
+        return row
+    end
+
+    function CUI_NS.PageRows(moduleKey, rowY, listW)
+        local config = moduleList[moduleKey]
+        local pages = config and config.pages
+        if type(pages) ~= "table" or #pages < 2 then return rowY end
+        local off = {}
+        for _, name in ipairs(config.disabledPages or {}) do
+            off[name] = true
+        end
+        local EG = CLUDES_GREEN
+        for _, page in ipairs(pages) do
+            local row = NextRow()
+            row._module, row._page, row._disabled = moduleKey, page, off[page]
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", CUI._addonScrollChild, "TOPLEFT", 0, -rowY)
+            row:SetWidth(listW or SIDEBAR_W)
+            row._label:SetText(CUI.L(CUI_NS.GetTabLabel(moduleKey, page)))
+            local on = currentModule == moduleKey and activePage == page
+            row._bar:SetColorTexture(EG.r, EG.g, EG.b, 1)
+            row._bar:SetShown(on)
+            if on then
+                row._label:SetTextColor(1, 1, 1, 1)
+            elseif off[page] then
+                row._label:SetTextColor(1, 1, 1, 0.25)
+            else
+                row._label:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+            end
+            row:Show()
+            rowY = rowY + PAGE_H
+        end
+        return rowY + 4
+    end
+
+    function CUI_NS.ModuleView(moduleKey, listW)
+        if not title then
+            title = CreateFrame("Frame", nil, CUI._addonScrollChild)
+            title:SetHeight(CUI.SIDEBAR_GROUP_ROW_H)
+            title._label = MakeFont(title, 15, nil, 1, 1, 1, 1)
+            title._label:SetPoint("LEFT", title, "LEFT", 14, 0)
+        end
+        local EG = CLUDES_GREEN
+        title._label:SetTextColor(EG.r, EG.g, EG.b, 1)
+        title._label:SetText(CUI.L(CUI:GetModuleTitle(moduleKey) or ""))
+        title:ClearAllPoints()
+        title:SetPoint("TOPLEFT", CUI._addonScrollChild, "TOPLEFT", 0, 0)
+        title:SetWidth(listW or SIDEBAR_W)
+        title:Show()
+        return CUI_NS.PageRows(moduleKey, CUI.SIDEBAR_GROUP_ROW_H, listW)
+    end
 end
 
 -- The Command Rail Sidebar setting changed.
@@ -6144,10 +6274,9 @@ function CUI_NS.RevealSidebarRow(moduleKey)
     -- Command Rail: the rail follows the module picked (a search, a link).
     if CUI_NS.RailOn() then
         local entryKey = CUI_NS.GroupOf(moduleKey)
-        if entryKey and entryKey ~= CUI_NS.railKey then
-            CUI_NS.railKey = entryKey
-            SyncNavStates()
-        end
+        if entryKey then CUI_NS.railKey = entryKey end
+        CUI_NS.railBrowsing = false
+        SyncNavStates()
         return
     end
     local c = CludesUIDB and CludesUIDB.sidebarCollapsed

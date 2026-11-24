@@ -1042,6 +1042,17 @@ CludesUI.ADDON_GROUPS = {
     },
 }
 
+-- WoW Forever: Forever Tools gets a sidebar section of its own, second, with
+-- its pages listed under it in the Command Rail.
+if CUI_CLIENT_FOREVER == true then
+    for _, set in ipairs(CludesUI.ADDON_GROUPS) do
+        for mi = #set.members, 1, -1 do
+            if set.members[mi] == "CludesUIForeverEssentials" then table.remove(set.members, mi) end
+        end
+    end
+    table.insert(CludesUI.ADDON_GROUPS, 2, { key = "forever", label = "Forever", members = { "CludesUIForeverEssentials" } })
+end
+
 -- STANDALONE: the bundled module is the only roster entry containing "Standalone"
 -- (rename yields "CUICoreStandalone<X>" refs; installed folder is "CUIStandalone<X>").
 -- Keep the full sidebar, prepend a "Standalone" category with this module, and remove
