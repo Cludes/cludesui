@@ -2695,6 +2695,42 @@ local function BuildContent()
     headerDesc:SetJustifyH("LEFT")
     headerFrame._desc = headerDesc
 
+    -- The rule under the title: a line that steps down partway along, its
+    -- start in the accent, a solid node where it leaves the sidebar and a
+    -- hollow one on its lower run.
+    do
+        local HIGH_Y, LOW_Y, BEND_X, LEAD_W = -108, -124, 560, 200
+        local step = LOW_Y - HIGH_Y
+        local function Rule(red, green, blue, a, x1, x2, y)
+            local line = SolidTex(headerFrame, "ARTWORK", red, green, blue, a)
+            line:SetHeight(1)
+            line:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", x1, y)
+            line:SetPoint("TOPRIGHT", headerFrame, "TOPLEFT", x2, y)
+            return line
+        end
+        Rule(1, 1, 1, 0.10, LEAD_W, BEND_X, HIGH_Y)
+        Rule(1, 1, 1, 0.10, BEND_X - step, rightW, LOW_Y)
+        local lead = Rule(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.8, 0, LEAD_W, HIGH_Y)
+        RegAccent({ type = "solid", obj = lead, a = 0.8 })
+        local slope = SolidTex(headerFrame, "ARTWORK", 1, 1, 1, 0.10)
+        slope:SetSize(math.sqrt(2) * -step, 1)
+        slope:SetPoint("CENTER", headerFrame, "TOPLEFT", BEND_X - step / 2, HIGH_Y + step / 2)
+        slope:SetRotation(math.rad(-45))
+        local function Node(size, red, green, blue, a, x, y)
+            local node = SolidTex(headerFrame, "OVERLAY", red, green, blue, a)
+            node:SetSize(size, size)
+            node:SetPoint("CENTER", headerFrame, "TOPLEFT", x, y)
+            node:SetRotation(math.rad(45))
+            return node
+        end
+        local solid = Node(9, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1, 0, HIGH_Y)
+        RegAccent({ type = "solid", obj = solid, a = 1 })
+        local ring = Node(13, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1, rightW - 186, LOW_Y)
+        RegAccent({ type = "solid", obj = ring, a = 1 })
+        local hole = Node(8, 0.157, 0.173, 0.188, 1, rightW - 186, LOW_Y) -- the header band's colour
+        hole:SetDrawLayer("OVERLAY", 1)
+    end
+
     -----------------------------------------------------------------------
     --  Tab bar  (sits below the header, above scrollable content)
     -----------------------------------------------------------------------
@@ -3789,8 +3825,8 @@ CreateTabButton = function(index, name)
         button:SetFrameLevel(tabStrip:GetFrameLevel() + 1)
 
         -- A tab is a squared chip, 6px inside the bar top and bottom: a faint
-        -- plate always, and for the active tab an accent wash with an accent cap
-        -- along its top edge.
+        -- plate always, and for the active tab an accent wash with an accent bar
+        -- along its foot.
         local chip = SolidTex(button, "BACKGROUND", 1, 1, 1, 0.045)
         chip:SetPoint("TOPLEFT", button, "TOPLEFT", 0, -6)
         chip:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 6)
@@ -3806,11 +3842,16 @@ CreateTabButton = function(index, name)
         navLabel:SetPoint("CENTER", 0, 0)
         button._label = navLabel
 
-        -- Accent cap on the active tab (kept under the old field name).
+        -- A 1px edge round every tab, and an accent bar along the active
+        -- tab's foot (kept under the old field name).
+        local edge = CreateFrame("Frame", nil, button)
+        edge:SetPoint("TOPLEFT", chip, "TOPLEFT", 0, 0)
+        edge:SetPoint("BOTTOMRIGHT", chip, "BOTTOMRIGHT", 0, 0)
+        PanelPP.CreateBorder(edge, 1, 1, 1, 0.08, 1, "OVERLAY", 7)
         local underline = SolidTex(button, "ARTWORK", CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
         underline:SetHeight(2)
-        underline:SetPoint("TOPLEFT", chip, "TOPLEFT", 0, 0)
-        underline:SetPoint("TOPRIGHT", chip, "TOPRIGHT", 0, 0)
+        underline:SetPoint("BOTTOMLEFT", chip, "BOTTOMLEFT", 0, 0)
+        underline:SetPoint("BOTTOMRIGHT", chip, "BOTTOMRIGHT", 0, 0)
         button._underline = underline
         RegAccent({ type = "solid", obj = underline, a = 1 })
 
