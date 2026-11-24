@@ -4044,6 +4044,15 @@ CreateTabButton = function(index, name)
     return button
 end
 
+-- Command Rail: the list on the left already names every page, so the tab
+-- buttons hide (the search box and the buttons beside it stay).
+function CUI_NS.ApplyTabs()
+    local shown = not CUI_NS.RailOn()
+    for _, button in ipairs(tabStrip._tabButtons) do
+        button:SetShown(shown)
+    end
+end
+
 BuildTabs = function(pageNames, disabledPages, disabledTooltips)
     ClearTabs()
     if not pageNames or #pageNames == 0 then
@@ -4072,6 +4081,7 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             button._tip = disabledTooltips and disabledTooltips[name] or nil
         end
     end
+    CUI_NS.ApplyTabs()
 
     ---------------------------------------------------------------------------
     --  Inline search EditBox  (right-aligned in tab bar, always visible)
@@ -6380,7 +6390,10 @@ end
 
 -- The Command Rail Sidebar setting changed.
 function CUI.RefreshSidebarLayout()
-    if panelFrame then SyncNavStates() end
+    if panelFrame then
+        SyncNavStates()
+        if tabStrip then CUI_NS.ApplyTabs() end
+    end
 end
 
 -- Collapse or expand a sidebar group (header click). The state is account-wide,

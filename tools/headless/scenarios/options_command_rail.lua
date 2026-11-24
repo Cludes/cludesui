@@ -69,3 +69,13 @@ OUT:write("== status: " .. Status() .. "\n")
 for _, kid in ipairs({ CUI._addonScrollChild:GetChildren() }) do
     if kid._desc and kid:IsShown() then OUT:write("== row: " .. tostring(kid._label:GetText()) .. " | " .. tostring(kid._desc:GetText()) .. "\n") break end
 end
+-- The tabs hide while the rail lists the pages.
+local function TabsShown()
+    local n = 0
+    for _, b in ipairs(CUI._tabBar._tabButtons) do if b:IsShown() then n = n + 1 end end
+    return n .. " of " .. #CUI._tabBar._tabButtons
+end
+OUT:write("== tabs shown (rail on): " .. TabsShown() .. "\n")
+CludesUIDB.sidebarRail = false
+CUI.RefreshSidebarLayout()
+OUT:write("== tabs shown (rail off): " .. TabsShown() .. "\n")
