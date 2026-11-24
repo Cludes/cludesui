@@ -21,6 +21,7 @@ local F = module.Feature("market", {
     capture = true,
     panel = true,
     undercutAlert = true,
+    shopping = true,
     duration = 2,
 })
 local Get, On = F.Get, F.Enabled

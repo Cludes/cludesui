@@ -2644,6 +2644,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             setValue = function(val) Set("undercutAlert", val and true or false) end,
         })
         cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Shopping Tab",
+            disabled = function() return mOff() or not MK.Get("panel") end,
+            tooltip = "A Shopping tab on the Market panel: the items your current RestedXP steps tell you to buy and the items your quests still need, with how many you have. Click one to search for it.",
+            getValue = function() return MK.Get("shopping") end,
+            setValue = function(val) Set("shopping", val and true or false) end,
+        })
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------

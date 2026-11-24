@@ -13,6 +13,8 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --    My Auctions  your auctions, each checked against the listings, one
 --                 search at a time: undercut ones first, with Cancel, and a
 --                 chat line saying how many are undercut.
+--    DE Deals     gear worth more disenchanted than it costs.
+--    Shopping     what your RestedXP steps and quest log still want.
 -------------------------------------------------------------------------------
 local _, module = ...
 local Market = module.Market
@@ -31,6 +33,7 @@ local DURATIONS = { { 1, "12h" }, { 2, "24h" }, { 3, "48h" } }
 
 local Panel = { page = "sell" }
 local Deals, RenderDeals, BuildDeals -- DE Deals, further down
+local Shop, NewRow
 local panel
 
 local function Kit() return CUI.Kit end
@@ -737,9 +740,116 @@ RenderDeals = function()
 end
 
 -------------------------------------------------------------------------------
+--  Shopping (Shopping Tab on): what the current RestedXP steps and your quest
+--  log still want, so it can be bought here. A click searches it in the
+--  game's Buy tab.
+-------------------------------------------------------------------------------
+Shop = { list = {} }
+
+function Shop.On() return Get("shopping") ~= false end
+
+-- "Linen Cloth: 3/10" or "3/10 Linen Cloth" -> "Linen Cloth".
+local function ObjectiveName(text)
+    if type(text) ~= "string" then return end
+    local name = text:gsub("%d+%s*/%s*%d+", ""):gsub("^[%s:]+", ""):gsub("[%s:]+$", "")
+    return name ~= "" and name or nil
+end
+
+function Shop.Read()
+    local list, seen = {}, {}
+    Shop.loading = 0
+    local function Add(entry)
+        local key = entry.name:lower()
+        if seen[key] then return end
+        seen[key] = true
+        list[#list + 1] = entry
+    end
+    local rxp = rawget(_G, "RXP")
+    local steps = rxp and rxp.RXPFrame and rxp.RXPFrame.activeSteps
+    for _, step in ipairs(type(steps) == "table" and steps or {}) do
+        if step.active then
+            for _, element in ipairs(step.elements or {}) do
+                if type(element.tag) == "string" and element.tag:find("^buy") and type(element.id) == "number"
+                    and type(element.qty) == "number" and not element.skip then
+                    local have = C_Item.GetItemCount(element.id) or 0
+                    if have < element.qty then
+                        local name, link, _, _, _, _, _, _, _, icon = C_Item.GetItemInfo(element.id)
+                        if name then
+                            Add({ name = name, link = link, icon = icon, have = have, need = element.qty, from = "Guide" })
+                        else
+                            Shop.loading = Shop.loading + 1
+                            C_Item.RequestLoadItemDataByID(element.id)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    for index = 1, C_QuestLog.GetNumQuestLogEntries() do
+        local info = C_QuestLog.GetInfo(index)
+        if info and not info.isHeader and info.questID then
+            for _, objective in ipairs(C_QuestLog.GetQuestObjectives(info.questID) or {}) do
+                local name = objective.type == "item" and not objective.finished and ObjectiveName(objective.text)
+                if name then
+                    local itemID, _, _, _, icon = C_Item.GetItemInfoInstant(name)
+                    local link = itemID and select(2, C_Item.GetItemInfo(itemID))
+                    Add({ name = name, link = link, icon = icon or 134400, have = objective.numFulfilled or 0,
+                        need = objective.numRequired or 0, from = "Quest" })
+                end
+            end
+        end
+    end
+    Shop.list = list
+    -- Guide items the game had not loaded yet: read again once it has.
+    if Shop.loading > 0 and not Shop.retry then
+        Shop.retry = true
+        C_Timer.After(1, function()
+            Shop.retry = false
+            if Panel.page == "shop" then Panel.Render() end
+        end)
+    end
+end
+
+local function BuildShop(page)
+    page.status = Label(page, CUI.Kit.SMALL_SIZE, MUTED)
+    page.status:SetPoint("TOPLEFT", PAD, -8)
+    page.status:SetPoint("RIGHT", -PAD, 0)
+    page.status:SetWordWrap(true)
+    page.rows = {}
+end
+
+local function RenderShop()
+    local page = panel.shop
+    Shop.Read()
+    page.status:SetText(#Shop.list == 0
+        and "Nothing to buy: no RestedXP buy step or quest item is waiting."
+        or ("%d to buy for your guide and quests. Click one to search for it."):format(#Shop.list))
+    local shown = math.max(0, math.floor((PAGE_H - 40) / ROW))
+    for index = 1, math.max(shown, #page.rows) do
+        local entry = index <= shown and Shop.list[index] or nil
+        local row = page.rows[index]
+        if not row and entry then
+            row = NewRow(page, index, -34, function(self)
+                if self.entry then Deals.Search(self.entry) end
+            end)
+            page.rows[index] = row
+        end
+        if row then
+            row.entry, row.link = entry, entry and entry.link
+            row:SetShown(entry ~= nil)
+            if entry then
+                row.icon:SetTexture(entry.icon)
+                row.name:SetText(entry.name)
+                row.right:SetText(("|cff8a8f98%s|r  %d/%d"):format(entry.from, entry.have, entry.need))
+            end
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
 --  The panel
 -------------------------------------------------------------------------------
-local function NewRow(parent, index, top, onClick)
+NewRow = function(parent, index, top, onClick)
     local row = CreateFrame("Button", nil, parent)
     row:SetHeight(ROW)
     row:SetPoint("TOPLEFT", PAD, top - (index - 1) * ROW)
@@ -909,8 +1019,8 @@ local function Build()
     end, { key = "essentials", closeTip = "Hides the panel until your next visit." })
     panel.tabs = {}
     local prev
-    local widths = { sell = 70, mine = 120, deals = 90 }
-    for _, t in ipairs({ { "sell", "Sell" }, { "mine", "My Auctions" }, { "deals", "DE Deals" } }) do
+    local widths = { sell = 52, mine = 110, deals = 72, shop = 70 }
+    for _, t in ipairs({ { "sell", "Sell" }, { "mine", "My Auctions" }, { "deals", "DE Deals" }, { "shop", "Shopping" } }) do
         local tab = K.Button(panel, t[2], widths[t[1]], 26, function()
             Panel.page = t[1]
             if t[1] == "mine" then Mine.Start() elseif t[1] == "sell" then Sell.Read() end
@@ -923,7 +1033,7 @@ local function Build()
     panel.message = Label(panel, CUI.Kit.SMALL_SIZE, MUTED)
     panel.message:SetPoint("BOTTOMLEFT", PAD, 10)
     panel.message:SetPoint("RIGHT", -PAD, 0)
-    for _, key in ipairs({ "sell", "mine", "deals" }) do
+    for _, key in ipairs({ "sell", "mine", "deals", "shop" }) do
         local page = CreateFrame("Frame", nil, panel)
         page:SetPoint("TOPLEFT", 0, -72)
         page:SetPoint("BOTTOMRIGHT", 0, 28)
@@ -932,6 +1042,7 @@ local function Build()
     BuildSell(panel.sell)
     BuildMine(panel.mine)
     BuildDeals(panel.deals)
+    BuildShop(panel.shop)
 end
 
 local function QueueRows(page)
@@ -1086,13 +1197,28 @@ function Panel.Render()
     panel.tabs[2]:SetText(undercut > 0 and ("My Auctions (" .. undercut .. ")") or "My Auctions")
     panel.sell:SetShown(Panel.page == "sell")
     panel.mine:SetShown(Panel.page == "mine")
-    panel.deals:SetShown(Panel.page == "deals")
     panel.tabs[3]:SetShown(Deals.On())
-    if Panel.page == "deals" and not Deals.On() then Panel.page = "sell" end
+    panel.tabs[4]:SetShown(Shop.On())
+    if (Panel.page == "deals" and not Deals.On()) or (Panel.page == "shop" and not Shop.On()) then Panel.page = "sell" end
+    -- Line the shown tabs up, so a hidden one leaves no gap.
+    local prev
+    for _, tab in ipairs(panel.tabs) do
+        if tab:IsShown() then
+            tab:ClearAllPoints()
+            if prev then tab:SetPoint("LEFT", prev, "RIGHT", 6, 0) else tab:SetPoint("TOPLEFT", PAD, -38) end
+            prev = tab
+        end
+    end
+    panel.sell:SetShown(Panel.page == "sell")
+    panel.mine:SetShown(Panel.page == "mine")
+    panel.deals:SetShown(Panel.page == "deals")
+    panel.shop:SetShown(Panel.page == "shop")
     if Panel.page == "sell" then
         RenderSell()
     elseif Panel.page == "mine" then
         RenderMine()
+    elseif Panel.page == "shop" then
+        RenderShop()
     else
         RenderDeals()
     end
@@ -1116,6 +1242,7 @@ local EVENTS = {
     "OWNED_AUCTIONS_UPDATED",
     "AUCTION_CANCELED",
     "BAG_UPDATE_DELAYED",
+    "QUEST_LOG_UPDATE",
 }
 
 local function PanelOn() return Get("enabled") and Get("panel") ~= false end
@@ -1147,7 +1274,11 @@ events:SetScript("OnEvent", function(_, event, arg1, arg2)
         if Panel.page == "sell" and not posting.waiting then
             Sell.Read()
             Panel.Render()
+        elseif Panel.page == "shop" then
+            Panel.Render()
         end
+    elseif event == "QUEST_LOG_UPDATE" then
+        if Panel.page == "shop" then Panel.Render() end
     elseif event == "AUCTION_HOUSE_THROTTLED_SYSTEM_READY" then
         if Mine.wanted then Mine.Request() end
         Listings.OnEvent(event)
@@ -1167,7 +1298,7 @@ local function Apply()
     end
 end
 
-CUI._MarketPanel = { Apply = Apply, Panel = Panel, Sell = Sell, Mine = Mine, Listings = Listings, Deals = Deals }
+CUI._MarketPanel = { Apply = Apply, Panel = Panel, Sell = Sell, Mine = Mine, Listings = Listings, Deals = Deals, Shop = Shop }
 
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
