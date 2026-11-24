@@ -45,7 +45,7 @@ local THEME_PRESETS = {
     ["Midnight"] = { r = 120 / 255, g = 65 / 255, b = 200 / 255 }, -- #7841C8  deep purple void
     ["Dark"] = { r = 1, g = 1, b = 1 }, -- white accent
     ["Pixels"] = { r = 1, g = 1, b = 1 }, -- white accent
-    ["Ember"] = { r = 242 / 255, g = 163 / 255, b = 58 / 255 }, -- #F2A33A warm amber
+    ["Ember"] = { r = 240 / 255, g = 100 / 255, b = 60 / 255 }, -- #F0643C glowing ember (red-orange, apart from Forever's bronze)
     ["Blood"] = { r = 215 / 255, g = 38 / 255, b = 61 / 255 }, -- #D7263D crimson
     ["Frost"] = { r = 76 / 255, g = 201 / 255, b = 240 / 255 }, -- #4CC9F0 ice blue (now the house colour; not listed, kept for saved settings)
     ["Arcane"] = { r = 169 / 255, g = 139 / 255, b = 255 / 255 }, -- #A98BFF soft violet
@@ -73,7 +73,7 @@ CludesUI.THEME_LABELS = { ["CludesUI"] = "Frost (CludesUI)" }
 CludesUI.THEME_TINTS = {
     ["CludesUI"] = { 0.82, 0.94, 1.00 }, -- cool slate
     ["CludesUI Forever"] = { 1.00, 0.86, 0.70 }, -- warm bronze
-    ["Ember"] = { 1.00, 0.78, 0.58 }, -- smoked amber
+    ["Ember"] = { 1.00, 0.74, 0.62 }, -- smoked ember
     ["Arcane"] = { 0.88, 0.76, 1.00 }, -- dusk violet
     ["Fel"] = { 0.74, 1.00, 0.84 }, -- deep green
 }

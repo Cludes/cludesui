@@ -1013,13 +1013,13 @@ local function BuildSidebar()
         local EG = CLUDES_GREEN
         button._indicator = SolidTex(button, "ARTWORK", EG.r, EG.g, EG.b, 1)
         button._indicator:SetWidth(3)
-        button._indicator:SetPoint("TOPLEFT", button, "TOPLEFT", -1, 0)
-        button._indicator:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", -1, 0)
+        button._indicator:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+        button._indicator:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
         button._indicator:Hide()
         RegAccent({ type = "solid", obj = button._indicator, a = 1 })
 
-        button._glow = MakeNavGradient(button, EG.r, EG.g, EG.b, 0.13)
-        RegAccent({ type = "solid", obj = button._glow, a = 0.13 })
+        button._glow = MakeNavGradient(button, EG.r, EG.g, EG.b, 0.22)
+        RegAccent({ type = "solid", obj = button._glow, a = 0.22 })
         button._glowTop = MakeNavEdgeLine(button, "TOP")
         button._glowBot = MakeNavEdgeLine(button, "BOTTOM")
 
@@ -2098,6 +2098,33 @@ local function BuildSidebar()
         local SIDEBAR_BG = { 0.118, 0.129, 0.141 } -- the frame art's sidebar colour
         local RAIL_ICONS = { combat = true, group = true, interface = true, tools = true, forever = true }
         local SECTIONS_TOP = -76 - (RAIL_BTN + RAIL_GAP) - 13 -- under the logo and Core Settings
+        -- One line under each module row (the full description is its tooltip).
+        local RAIL_BLURBS = {
+            CludesUIActionBars = "Bar layout, look and behaviour",
+            CludesUIUnitFrames = "Player, target and boss frames",
+            CludesUINameplates = "Nameplate look and behaviour",
+            CludesUIRaidFrames = "Party and raid frames",
+            CludesUICooldownManager = "Cooldown bars, glows, buff bars",
+            CludesUIResourceBars = "Class resource, health, mana",
+            CludesUIAuraBuffReminders = "Missing buffs and consumables",
+            CludesUIDamageMeters = "Damage and healing meters",
+            CludesUIMythicTimer = "Timer, kicks and cast bars",
+            CludesUIRaidLead = "Raid sorting and aura sounds",
+            CludesUITank = "Co-tank health and taunts",
+            CludesUITitleLine = "Your rating vs the title lines",
+            CludesUIGroupFinder = "Premade filters and applicants",
+            CludesUILoadoutManager = "Gear and talents per instance",
+            CludesUIBlizzardSkin = "Skins for the game's windows",
+            CludesUIMinimap = "Minimap skin and layout",
+            CludesUIChat = "Chat skin, links and copy",
+            CludesUIBags = "Bags, categories, item levels",
+            CludesUIQuestTracker = "Tracker skin and quest helpers",
+            CludesUIFriends = "Friends with groups and notes",
+            CludesUIDataBars = "Info bars: clock, gold, XP",
+            CludesUIQoL = "Small fixes and the cursor",
+            CludesUIQuickdraw = "Hold a key for an action menu",
+            CludesUIForeverEssentials = "Market, crafting, levelling",
+        }
         local listX = RAIL_W
 
         local rail = CreateFrame("Frame", nil, navBar)
@@ -2471,10 +2498,21 @@ local function BuildSidebar()
                             row._desc:SetJustifyH("LEFT")
                             row._desc:SetWordWrap(false)
                             row._desc:SetMaxLines(1)
+                            row:HookScript("OnEnter", function(self)
+                                if self._fullDesc and self._desc:IsShown() and CUI.ShowWidgetTooltip then
+                                    CUI.ShowWidgetTooltip(self, self._fullDesc)
+                                end
+                            end)
+                            row:HookScript("OnLeave", function(self)
+                                if self._fullDesc and CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+                            end)
                         end
                         local config = moduleList[moduleKey]
-                        local text = config and config.description and CUI.L(config.description) or ""
-                        if not config then text = CUI.L("Switched off") end
+                        local full = config and config.description and CUI.L(config.description) or nil
+                        local blurb = RAIL_BLURBS[moduleKey]
+                        local text = blurb and CUI.L(blurb) or full or ""
+                        if not config then text, full = CUI.L("Switched off"), nil end
+                        row._fullDesc = full
                         row._desc:SetText(text)
                         row._desc:SetShown(text ~= "")
                         local y = text ~= "" and 7 or 0
@@ -6370,13 +6408,17 @@ do
             off[name] = true
         end
         local EG = CLUDES_GREEN
+        local ownerRow = sidebarButtons[moduleKey]
+        local owner = ownerRow and ownerRow._label and ownerRow._label:GetText()
+            or CUI.L(CUI:GetModuleTitle(moduleKey) or "")
         for _, page in ipairs(pages) do
             local row = NextRow()
             row._module, row._page, row._disabled = moduleKey, page, off[page]
             row:ClearAllPoints()
             row:SetPoint("TOPLEFT", CUI._addonScrollChild, "TOPLEFT", 0, -rowY)
             row:SetWidth(listW or SIDEBAR_W)
-            row._label:SetText(CUI.L(CUI_NS.GetTabLabel(moduleKey, page)))
+            local label = CUI.L(CUI_NS.GetTabLabel(moduleKey, page))
+            row._label:SetText(label == owner and CUI.L("General") or label)
             local on = currentModule == moduleKey and activePage == page
             row._bar:SetColorTexture(EG.r, EG.g, EG.b, 1)
             row._bar:SetShown(on)
