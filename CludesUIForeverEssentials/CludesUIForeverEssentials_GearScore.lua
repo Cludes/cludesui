@@ -120,6 +120,14 @@ end
 --  Others' scores: from every inspect answer, kept by GUID
 -------------------------------------------------------------------------------
 local known = {} -- guid -> { score, level, complete, when }
+
+-- A unit's GUID, or nil while the game hands it back as a secret value (those
+-- can be neither compared nor used as a table key).
+local function Guid(unit)
+    local guid = unit and UnitGUID(unit)
+    if guid and issecretvalue and issecretvalue(guid) then return nil end
+    return guid
+end
 local inspecting -- { guid, unit, at } our own background inspect
 
 function Score.Known(guid)
@@ -128,8 +136,8 @@ function Score.Known(guid)
 end
 
 local function Remember(unit)
-    local guid = UnitGUID(unit)
-    if not guid or (issecretvalue and issecretvalue(guid)) then return end
+    local guid = Guid(unit)
+    if not guid then return end
     local score, complete = Score.Unit(unit)
     known[guid] = { score = score, level = UnitLevel(unit), complete = complete, when = GetTime() }
     return known[guid]
@@ -145,7 +153,7 @@ local function Hovered(unit)
     local inspect = rawget(_G, "InspectFrame")
     if inspect and inspect:IsShown() then return end
     if inspecting or GetTime() - lastAsk < INSPECT_GAP then return end
-    local guid = UnitGUID(unit)
+    local guid = Guid(unit)
     if not guid or Score.Known(guid) then return end
     lastAsk = GetTime()
     inspecting = { guid = guid, unit = unit }
@@ -163,7 +171,7 @@ local function TooltipLine(tooltip, unit)
     if UnitIsUnit(unit, "player") then
         text, share = Score.Text(Score.Unit("player"), UnitLevel("player"))
     else
-        local entry = Score.Known(UnitGUID(unit))
+        local entry = Score.Known(Guid(unit))
         if entry then
             text, share = Score.Text(entry.score, entry.level)
         else
@@ -229,21 +237,21 @@ events:SetScript("OnEvent", function(_, event, arg)
         local unit = inspecting and inspecting.guid == arg and inspecting.unit
         if not unit then
             for _, token in ipairs({ "target", "mouseover", "focus" }) do
-                if UnitGUID(token) == arg then unit = token end
+                if Guid(token) == arg then unit = token end
             end
         end
-        if unit and UnitGUID(unit) == arg then Remember(unit) end
+        if unit and Guid(unit) == arg then Remember(unit) end
         if inspecting and inspecting.guid == arg then
             inspecting = nil
             -- Our background ask: the game's inspect data is released for the next.
             if ClearInspectPlayer and not (rawget(_G, "InspectFrame") and InspectFrame:IsShown()) then ClearInspectPlayer() end
             if GameTooltip:IsShown() then
                 local _, hovered = GameTooltip:GetUnit()
-                if hovered and UnitGUID(hovered) == arg then GameTooltip:SetUnit(hovered) end
+                if hovered and Guid(hovered) == arg then GameTooltip:SetUnit(hovered) end
             end
         end
     elseif event == "UNIT_INVENTORY_CHANGED" then
-        local guid = arg and UnitGUID(arg)
+        local guid = Guid(arg)
         if guid then known[guid] = nil end
         if arg == "player" and sheetLine then PaintSheet() end
     elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_LEVEL_UP" then
