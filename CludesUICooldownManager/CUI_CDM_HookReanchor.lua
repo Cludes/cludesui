@@ -2098,7 +2098,27 @@ local function CollectAndReanchor()
                 -- Legacy profiles carry nil barType on default bars; resolve
                 -- the family through the shared helper, never the raw field.
                 local bdType = mod.GetBarType and mod.GetBarType(edge) or edge.barType
+                -- No Overflow To: Max Icons simply caps the bar (the tail goes unused,
+                -- so the excess-icon cleanup below hides it).
                 if
+                    edge.enabled
+                    and cap
+                    and cap > 0
+                    and not tKey
+                    and not edge.isGhostBar
+                    and edge.key ~= mod.FOCUSKICK_BAR_KEY
+                    and bdType ~= "buffs"
+                    and bdType ~= "custom_buff"
+                    and edge.key ~= "buffs"
+                    and not mod.CdmBarHasShiftCdState(edge.key)
+                then
+                    local srcList = cdFrames[edge.key]
+                    if srcList and #srcList > cap then
+                        for i = #srcList, cap + 1, -1 do
+                            srcList[i] = nil
+                        end
+                    end
+                elseif
                     edge.enabled
                     and cap
                     and cap > 0

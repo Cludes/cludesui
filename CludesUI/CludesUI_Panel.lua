@@ -2100,6 +2100,7 @@ local function BuildSidebar()
         local RAIL_ICONS = { combat = true, group = true, interface = true, tools = true, forever = true }
         local SECTIONS_TOP = -76 - RAIL_STEP - 13 -- under the logo and Core Settings
         -- Short names under the rail squares (a section's full name is its tooltip).
+        -- Kept as written: the display renames (CUI.L) would lengthen them (Profiles).
         local RAIL_NAMES = { group = "Group" }
         -- One line under each module row (the full description is its tooltip).
         local RAIL_BLURBS = {
@@ -2339,7 +2340,7 @@ local function BuildSidebar()
             return NewRailSquare(path, 22, 22, label:sub(1, 1):upper(), label,
                 function() CUI_NS.SetRailGroup(entryKey) end,
                 function() return not CUI_NS.railModuleView and CUI_NS.railKey == entryKey end,
-                RAIL_NAMES[entryKey] and CUI.L(RAIL_NAMES[entryKey]) or label)
+                RAIL_NAMES[entryKey] or label)
         end
 
         -- The fixed rows become rail squares at the foot; a click runs the row's own click.
@@ -2362,7 +2363,7 @@ local function BuildSidebar()
         -- Core Settings heads the rail, above the sections, with a short rule under it.
         local core = NewRailSquare(ICONS_PATH .. "sidebar\\settings-ig-2.png", 30, 21, nil, CUI.L("Core Settings"),
             function() ClickRow("_CUIGlobal") end,
-            function() return CUI_NS.railModuleView and CUI_NS.railModule == "_CUIGlobal" end, CUI.L("Core"))
+            function() return CUI_NS.railModuleView and CUI_NS.railModule == "_CUIGlobal" end, "Core")
         core:SetPoint("TOP", rail, "TOP", 0, -76)
         footButtons[#footButtons + 1] = core
         local coreRule = SolidTex(rail, "ARTWORK", 1, 1, 1, 0.08)
@@ -2371,7 +2372,7 @@ local function BuildSidebar()
         for index, entry in ipairs(FOOT) do
             local button = NewRailSquare(ICONS_PATH .. "sidebar\\" .. entry.icon, 30, 21, nil, CUI.L(entry.tip),
                 function() ClickRow(entry.key) end,
-                function() return CUI_NS.railModuleView and CUI_NS.railModule == entry.key end, CUI.L(entry.name))
+                function() return CUI_NS.railModuleView and CUI_NS.railModule == entry.key end, entry.name)
             button:SetPoint("BOTTOM", rail, "BOTTOM", 0, 12 + RAIL_NAME_H + (index - 1) * RAIL_STEP)
             footButtons[#footButtons + 1] = button
         end

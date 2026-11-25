@@ -999,7 +999,6 @@ BuildAllCDMBars = function()
             and barInfo.enabled
             and barInfo.maxIcons
             and barInfo.maxIcons > 0
-            and barInfo.overflowTarget
         then
             mod._cdmAnyOverflowCfg = true
         end
