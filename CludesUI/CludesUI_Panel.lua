@@ -2003,7 +2003,13 @@ local function BuildSidebar()
                 end
                 return
             end
-            if self._notEnabled then return end
+            if self._notEnabled then
+                -- Switched off: a click offers to turn it on.
+                if self._pwrBtn and CUI.ShowWidgetTooltip then
+                    CUI.ShowWidgetTooltip(self, CUI.L("Switched off. Click to turn it on (reloads the UI)."))
+                end
+                return
+            end
             hoverFill:SetAlpha(0.06)
             if currentModule ~= self._folder then
                 self._hoverGlow:Show()
@@ -2030,7 +2036,10 @@ local function BuildSidebar()
             if self._comingSoon then return end
             if self._maintenance then return end
             if self._ovLocked then return end
-            if self._notEnabled then return end
+            if self._notEnabled then
+                if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+                return
+            end
             hoverFill:SetAlpha(0)
             self._hoverGlow:Hide()
             self._hoverIndicator:Hide()
@@ -2056,7 +2065,11 @@ local function BuildSidebar()
             if self._comingSoon then return end
             if self._maintenance then return end
             if self._ovLocked then return end
-            if self._notEnabled then return end
+            if self._notEnabled then
+                -- The power button's own Enable & Reload ask.
+                if self._pwrBtn then self._pwrBtn:GetScript("OnClick")(self._pwrBtn) end
+                return
+            end
             if self._loaded and moduleList[self._folder] then CUI:SelectModule(self._folder) end
         end)
 
