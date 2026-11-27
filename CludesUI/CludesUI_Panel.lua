@@ -213,6 +213,24 @@ local function BuildFrame()
     panelFrame:Hide()
     panelFrame:EnableMouse(false)
     panelFrame:SetMovable(true)
+    -- Ctrl+F: to the settings search. Every other key (Escape too) reaches the
+    -- game as before; the window never shows in combat, where these calls are
+    -- restricted, but each is still guarded.
+    if not InCombatLockdown() then
+        panelFrame:EnableKeyboard(true)
+        panelFrame:SetPropagateKeyboardInput(true)
+    end
+    panelFrame:SetScript("OnKeyDown", function(self, key)
+        if InCombatLockdown() then return end
+        local box = CUI._sidebarSearchBox
+        if key == "F" and IsControlKeyDown() and box then
+            self:SetPropagateKeyboardInput(false)
+            box:SetFocus()
+            box:HighlightText()
+        else
+            self:SetPropagateKeyboardInput(true)
+        end
+    end)
     panelFrame:SetScript("OnShow", function()
         -- Recalculate pixel-perfect base scale on every open so resolution / UIParent scale changes apply
         local physW2 = (GetPhysicalScreenSize())

@@ -4537,7 +4537,7 @@ SLASH_CUIOPTIONS3 = "/cludesui"
 -- "/cui help": the main commands, each only while it is registered (a module
 -- switched off, or /rl and /way owned by another addon, drop out).
 local HELP_COMMANDS = {
-    { "CUIOPTIONS", "/cui", "Open the settings. Add words to search them: /cui nameplate colors" },
+    { "CUIOPTIONS", "/cui", "Open the settings (Ctrl+F there searches them). Add words to search straight away: /cui nameplate colors" },
     { "CUIUNLOCK", "/unlock", "Edit Layout: move and resize frames" },
     { "RL", "/rl", "Reload the UI" },
     { "EABQUICKKEYBIND", "/kb", "Quick keybind mode" },
