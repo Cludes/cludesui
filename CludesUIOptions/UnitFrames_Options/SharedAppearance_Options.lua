@@ -1346,6 +1346,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
         CUI.BlizzStyle.Gate("unitframes", {
             type = "dropdown",
             text = "Portrait Mode",
+            tooltip = "Whether the portrait shows, and how it sits with the frame.",
             values = portraitModeValues2,
             order = portraitModeOrder2,
             getValue = function()
@@ -1395,6 +1396,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
         {
             type = "dropdown",
             text = "Art Style",
+            tooltip = "How the portrait is drawn.",
             values = portraitArtValues,
             order = portraitArtOrder,
             -- Blizzard Style renders the portrait whatever the saved mode says.
@@ -1676,6 +1678,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
         }, {
             type = "dropdown",
             text = "Position",
+            tooltip = "Where the portrait sits.",
             values = portraitLocationValues,
             order = portraitLocationOrder,
             itemDisabled = function(value)
@@ -2478,6 +2481,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         btbTextRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Left Text",
+            tooltip = "What the text bar shows on its left.",
             values = BtbValues("btbLeft", SetBtbLeft),
             order = btbTextOrder,
             disabled = function() return not ReadSetting("bottomTextBar", false) end,
@@ -2487,6 +2491,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         }, {
             type = "dropdown",
             text = "Right Text",
+            tooltip = "What the text bar shows on its right.",
             values = BtbValues("btbRight", SetBtbRight),
             order = btbTextOrder,
             disabled = function() return not ReadSetting("bottomTextBar", false) end,

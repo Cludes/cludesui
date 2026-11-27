@@ -263,6 +263,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
     }, {
         type = "slider",
         text = "Bar Background",
+        tooltip = "How visible the bar's background is.",
         min = 0,
         max = 100,
         step = 1,
@@ -666,6 +667,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
         cfg = {
             type = "dropdown",
             text = "Left Text",
+            tooltip = "What the health bar shows on its left.",
             values = healthTextValues,
             order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
                 or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
@@ -998,6 +1000,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
         cfg = {
             type = "dropdown",
             text = "Right Text",
+            tooltip = "What the health bar shows on its right.",
             values = healthTextValues,
             order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
                 or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
@@ -2061,6 +2064,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         powerLeftCfg = {
             type = "slider",
             text = "Power Bar Height",
+            tooltip = "How tall the power bar is.",
             min = 0,
             max = 100,
             step = 1,
@@ -2080,6 +2084,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         CUI.BlizzStyle.Gate("unitframes", {
             type = "dropdown",
             text = "Bar Position",
+            tooltip = "Where the power bar sits on the frame.",
             values = ppPosValues,
             order = ppPosOrder,
             getValue = function() return blizzPower and "below" or ReadSetting("powerPosition", "below") end,
@@ -2232,6 +2237,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
     sharedPowerRow2, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Power Text",
+        tooltip = "How the power amount is written.",
         values = ppTextFmtValues,
         order = ppTextFmtOrder,
         getValue = function() return CUI.PowerTextFormat(ReadSetting("powerTextFormat", "perpp")) end,
@@ -2397,6 +2403,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
     }, {
         type = "slider",
         text = "Bar Background",
+        tooltip = "How visible the power bar's background is.",
         min = 0,
         max = 100,
         step = 1,
@@ -2584,6 +2591,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
     sharedPowerRow4, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Text Position",
+        tooltip = "Where the power text sits.",
         values = ppTextValues,
         order = ppTextOrder,
         getValue = SValRow("powerPercentText", "none"),
@@ -2595,6 +2603,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
     }, {
         type = "multiSwatch",
         text = "Text Color",
+        tooltip = "The power text's color.",
         swatches = {
             {
                 tooltip = "Custom Text Color",
@@ -3555,6 +3564,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
             row, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Position",
+                tooltip = "Where the class resource sits on the frame.",
                 values = classPowerPosValues,
                 order = classPowerPosOrder,
                 disabled = function() return ClassPowerStyle() ~= "modern" end,

@@ -466,6 +466,7 @@ local function BuildMiniTextAndSize(
             rightSlot2 = {
                 type = "slider",
                 text = "Bar Background",
+                tooltip = "How visible the bar's background is.",
                 min = 0,
                 max = 100,
                 step = 1,
@@ -627,6 +628,7 @@ local function BuildMiniTextAndSize(
         bgRow, height = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Background",
+            tooltip = "How visible the bar's background is.",
             min = 0,
             max = 100,
             step = 1,
@@ -1038,6 +1040,7 @@ local function BuildMiniTextAndSize(
             CUI.BlizzStyle.Gate("unitframes", {
                 type = "slider",
                 text = "Power Bar Height",
+                tooltip = "How tall the power bar is.",
                 min = 0,
                 max = 100,
                 step = 1,
@@ -1079,6 +1082,7 @@ local function BuildMiniTextAndSize(
         pwrRow2, height = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Background",
+            tooltip = "How visible the power bar's background is.",
             min = 0,
             max = 100,
             step = 1,
@@ -1211,6 +1215,7 @@ local function BuildMiniTextAndSize(
         pwrTextRow, height = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Power Text",
+            tooltip = "How the power amount is written.",
             values = mod.UFO_CustomTextValues({
                 ["none"] = "None",
                 ["smart"] = "Smart Text",
@@ -1241,6 +1246,7 @@ local function BuildMiniTextAndSize(
         }, {
             type = "dropdown",
             text = "Text Position",
+            tooltip = "Where the power text sits.",
             values = { ["none"] = "None", ["left"] = "Left", ["right"] = "Right", ["center"] = "Center" },
             order = { "none", "---", "left", "right", "center" },
             getValue = MValRow("powerPercentText", "none"),
@@ -1819,6 +1825,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                 posRow, hh = Ww:DualRow(profile, rowY, {
                     type = "segmented",
                     text = "Position",
+                    tooltip = "Where the happiness icon sits.",
                     values = { left = "Left", right = "Right", top = "Top" },
                     order = { "left", "right", "top" },
                     disabled = happyOff,
@@ -4274,6 +4281,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             }, {
                 type = "slider",
                 text = "Bar Background",
+                tooltip = "How visible the cast bar's background is.",
                 min = 0,
                 max = 100,
                 step = 1,

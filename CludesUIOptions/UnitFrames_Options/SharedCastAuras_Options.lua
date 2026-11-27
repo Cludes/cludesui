@@ -515,6 +515,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         }, {
             type = "slider",
             text = "Bar Background",
+            tooltip = "How visible the cast bar's background is.",
             min = 0,
             max = 100,
             step = 1,
