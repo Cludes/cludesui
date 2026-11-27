@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: Modern action bars built for performance and clarity.
 ## Author: Cludes
-## Version: 1.2.0
+## Version: 1.3.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIActionBarsDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga

@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: A beautiful visual refresh of Blizzard Bags with intuitive organization.
 ## Author: Cludes
-## Version: 1.2.0
+## Version: 1.3.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIBagsDB, CludesUIBagsInventoryDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
