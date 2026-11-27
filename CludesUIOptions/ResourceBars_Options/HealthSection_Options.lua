@@ -66,6 +66,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
     healthEnableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Health Bar",
+        tooltip = "Shows a health bar.",
         getValue = ConfGetter("enabled"),
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CUI.DependentSetValue(function()
@@ -1271,6 +1272,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
         }, {
             type = "multiSwatch",
             text = "Text Color",
+            tooltip = "The text's color.",
             disabled = healthTextDis,
             disabledTooltip = healthTextDisTip,
             swatches = {

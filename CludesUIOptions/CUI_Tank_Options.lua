@@ -369,6 +369,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "dropdown",
                 text = "Stack Count Position",
+                tooltip = "Where the stack count sits.",
                 values = posValues,
                 order = posOrder,
                 getValue = function() return DB().stackCountPos or "BR_IN" end,
@@ -410,6 +411,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "segmented",
                 text = "Timer Position",
+                tooltip = "Where the timer sits.",
                 values = { icon = "On Icon", above = "Above Icon" },
                 order = { "icon", "above" },
                 getValue = function() return DB().cdAbove and "above" or "icon" end,
@@ -500,6 +502,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "dropdown",
                 text = "Grow Direction",
+                tooltip = "Which way new icons are added.",
                 values = growValues,
                 order = growOrder,
                 getValue = function() return DB().privateAuraGrowDir or "LEFT" end,
@@ -619,6 +622,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Alert Text Size",
+            tooltip = "How big the alert text is.",
             min = 12,
             max = 48,
             step = 1,

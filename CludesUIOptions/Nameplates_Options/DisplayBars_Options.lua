@@ -45,6 +45,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     healthBarHeightRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Health Bar Width",
+        tooltip = "How wide the health bar is.",
         min = 100,
         max = BAR_W + 100,
         step = 1,
@@ -111,6 +112,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     castBarHeightRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Cast Bar Height",
+        tooltip = "How tall the cast bar is.",
         min = 10,
         max = 40,
         step = 1,
@@ -128,6 +130,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     }, {
         type = "toggle",
         text = "Spell Icon",
+        tooltip = "Shows the spell's icon on the cast bar.",
         getValue = function()
             local saved = DB()
             if saved and saved.showCastIcon ~= nil then return saved.showCastIcon end
@@ -307,6 +310,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         mod.NP_BlizzOnlyGate({
             type = "slider",
             text = "Cast Background",
+            tooltip = "The background behind the cast bar.",
             min = 0,
             max = 100,
             step = 1,
@@ -396,6 +400,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     castTimerRow, height = W:DualRow(hostFrame, cursorY, {
         type = "segmented",
         text = "Cast Timer",
+        tooltip = "Shows the time left on the cast.",
         values = { none = "None", right = "Right", left = "Left" },
         order = { "none", "right", "left" },
         getValue = function()
@@ -509,6 +514,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     castColorRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Cast Color",
+        tooltip = "The cast bar's color.",
         swatches = {
             mod.NP_BlizzOnlyGate({
                 tooltip = "Interruptible Cast",
@@ -916,6 +922,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     targetGlowRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Target Effect",
+        tooltip = "The effect on your target's nameplate.",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
         getValue = function() return "__placeholder" end,
@@ -923,6 +930,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     }, {
         type = "dropdown",
         text = "Target Arrows",
+        tooltip = "Arrows beside your target's nameplate.",
         values = arrowVals,
         order = arrowOrd,
         getValue = function()
@@ -1364,6 +1372,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     targetColorRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Target Color",
+        tooltip = "Colors your target's nameplate.",
         getValue = function()
             local saved = DB()
             if saved and saved.targetColorEnabled ~= nil then return saved.targetColorEnabled end
@@ -1386,6 +1395,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     }, {
         type = "toggle",
         text = "Enable Focus Color",
+        tooltip = "Colors your focus's nameplate.",
         getValue = function()
             local saved = DB()
             if saved and saved.focusColorEnabled ~= nil then return saved.focusColorEnabled end
@@ -1510,6 +1520,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     textureDualRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Target Texture",
+        tooltip = "The texture on your target's nameplate.",
         values = ovtValues,
         getValue = function() return DbValue("targetOverlayTexture") or defaultSet.targetOverlayTexture end,
         setValue = function(val)
@@ -1522,6 +1533,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     }, {
         type = "dropdown",
         text = "Focus Texture",
+        tooltip = "The texture on your focus's nameplate.",
         values = ovtValues,
         getValue = function() return DbValue("focusOverlayTexture") or defaultSet.focusOverlayTexture end,
         setValue = function(val)
@@ -1851,6 +1863,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         }, {
             type = "dropdown",
             text = "Hover Effect",
+            tooltip = "The effect on the nameplate under your mouse.",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
             getValue = function() return "__placeholder" end,
@@ -2104,6 +2117,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     classResourceToggleRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Class Resource",
+        tooltip = "Shows your class resource.",
         getValue = function() return DbValue("showClassPower") == true end,
         -- DependentSetValue: Rows 2-4 below are hidden while class resource is off; the flip forces the full rebuild.
         setValue = CUI.DependentSetValue(
@@ -2245,6 +2259,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             type = "slider",
             pixel = true,
             text = "Bar Spacing",
+            tooltip = "The gap between bars.",
             min = -5,
             max = 10,
             step = 1,
@@ -2257,6 +2272,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         }, {
             type = "colorpicker",
             text = "Background Color",
+            tooltip = "The background's color.",
             hasAlpha = true,
             getValue = function()
                 local color = (DB() and DB().classPowerBgColor) or defaultSet.classPowerBgColor
@@ -2406,6 +2422,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local durationTypes = {
             debuff = {
                 text = "Debuff Duration",
+                tooltip = "The time left on debuff icons.",
                 title = "Debuff Duration Settings",
                 key = "debuffTimerPosition",
             },
@@ -2510,6 +2527,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         durationRow2, height = W:DualRow(hostFrame, cursorY, DurationDropdown("cc"), {
             type = "dropdown",
             text = "Aura Stacks",
+            tooltip = "The stack count text on aura icons.",
             values = timerPosValues,
             getValue = function() return DbValue("auraStackTextPosition") or asFallback end,
             setValue = function(val)
@@ -2602,6 +2620,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     spellNameRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Spell Name",
+        tooltip = "Shows the spell's name on the cast bar.",
         values = castTextPosValues,
         order = castTextPosOrder,
         getValue = function() return (DB() and DB().castNameSide) or defaultSet.castNameSide end,
@@ -2618,6 +2637,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     }, {
         type = "dropdown",
         text = "Spell Target",
+        tooltip = "Shows who the spell is aimed at.",
         values = castTextPosValues,
         order = castTextPosOrder,
         disabled = function() return DbValue("castCombineNameTarget") == true end,

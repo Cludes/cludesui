@@ -291,6 +291,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
     classEnableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Class Resource",
+        tooltip = "Shows your class resource.",
         getValue = ConfGetter("enabled"),
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CludesUI.DependentSetValue(function()
@@ -1122,6 +1123,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 type = "slider",
                 pixel = true,
                 text = "Bar Spacing",
+                tooltip = "The gap between bars.",
                 min = 0,
                 max = 20,
                 step = 1,
@@ -1533,6 +1535,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
         classColorRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Resource Text",
+            tooltip = "Shows your class resource as text.",
             disabled = classBarOff,
             disabledTooltip = "Class Resource",
             getValue = function()

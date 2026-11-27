@@ -452,6 +452,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     }, {
         type = "multiSwatch",
         text = "Guild Text Color",
+        tooltip = "The color of the guild name.",
         disabled = guildSubtitleOff,
         disabledTooltip = function()
             if friendlyOff() then return "Show CludesUI Friendly Player Nameplates" end
@@ -523,6 +524,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     npcRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Friendly NPC Nameplates",
+        tooltip = "Shows nameplates on friendly NPCs.",
         getValue = DBValIs("showFriendlyNPCs"),
         setValue = function(val)
             DB().showFriendlyNPCs = val
@@ -746,6 +748,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     stackingRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Stacking Nameplates",
+        tooltip = "Stacks nameplates so they do not overlap.",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
         getValue = function() return "__placeholder" end,
@@ -1143,6 +1146,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Hash Line on Target at Percent",
+        tooltip = "A line on your target's health bar at this health percent.",
         getValue = DBValOr("hashLineEnabled", false),
         setValue = function(val)
             DB().hashLineEnabled = val
@@ -1153,6 +1157,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     }, {
         type = "slider",
         text = "Hash Line Location",
+        tooltip = "Where the hash line sits.",
         min = 0,
         max = 100,
         step = 1,

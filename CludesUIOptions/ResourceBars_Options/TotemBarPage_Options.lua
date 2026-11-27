@@ -132,6 +132,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
     }, {
         type = "toggle",
         text = "Show Timer",
+        tooltip = "Shows the time left on each totem.",
         disabled = totemOff,
         disabledTooltip = req,
         rawTooltip = raw,

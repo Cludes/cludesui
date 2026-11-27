@@ -64,6 +64,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
     powerEnableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Power Bar",
+        tooltip = "Shows a power bar.",
         getValue = ConfGetter("enabled"),
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CUI.DependentSetValue(function()
@@ -1086,6 +1087,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         powerTextSizeRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Power Text",
+            tooltip = "How the power amount is written.",
             disabled = powerBarOff,
             disabledTooltip = powerDisTip,
             values = {
@@ -1106,6 +1108,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         }, {
             type = "multiSwatch",
             text = "Text Color",
+            tooltip = "The text's color.",
             disabled = powerTextDis,
             disabledTooltip = powerTextDisTip,
             swatches = {

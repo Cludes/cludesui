@@ -866,6 +866,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Title",
+            tooltip = "Shows the dungeon name.",
             disabled = ModOff,
             disabledTooltip = "the module",
             getValue = NotOff("showTitle"),
@@ -873,6 +874,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Title Size",
+            tooltip = "How big the title is.",
             min = 8,
             max = 24,
             step = 1,
@@ -939,6 +941,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Affix",
+            tooltip = "Shows this week's affixes.",
             disabled = ModOff,
             disabledTooltip = "the module",
             getValue = NotOff("showAffixes"),
@@ -946,6 +949,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Title/Affix Position",
+            tooltip = "Where the title and affixes sit.",
             disabled = ModOff,
             disabledTooltip = "the module",
             values = titleAffixPositionValues,
@@ -1065,6 +1069,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Timer Format",
+            tooltip = "How the time is written.",
             disabled = ModOff,
             disabledTooltip = "the module",
             values = timerDisplayValues,
@@ -1077,6 +1082,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Timer Font",
+            tooltip = "The timer's font.",
             disabled = ModOff,
             disabledTooltip = "the module",
             values = timerFontValues,
@@ -1092,6 +1098,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Timer Bar",
+            tooltip = "Shows a bar for the time left.",
             disabled = ModOff,
             disabledTooltip = "the module",
             getValue = NotOff("showTimerBar"),
@@ -1099,6 +1106,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Move Timer Inside Bar",
+            tooltip = "Puts the timer text inside the timer bar.",
             disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
             getValue = IsTrue("timerInBar"),
@@ -1175,6 +1183,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Timer Bar Texture",
+            tooltip = "The texture the timer bar is filled with.",
             disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
             values = texValues,
@@ -1348,6 +1357,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Ticks / Gaps",
+            tooltip = "How the +2 and +3 points are marked on the timer bar.",
             disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
             values = timerBarStyleValues,
@@ -1423,6 +1433,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Enemy Forces",
+            tooltip = "Shows the enemy forces bar.",
             disabled = ModOff,
             disabledTooltip = "the module",
             getValue = NotOff("showEnemyBar"),
@@ -1430,6 +1441,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Forces Bar Height",
+            tooltip = "How tall the enemy forces bar is.",
             disabled = _forcesOff,
             disabledTooltip = ModuleOr("Show Enemy Forces"),
             min = 4,
@@ -1447,6 +1459,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Enemy Text Format",
+            tooltip = "How enemy forces are written: percent, count or both.",
             disabled = _forcesOff,
             disabledTooltip = ModuleOr("Show Enemy Forces"),
             values = forcesTextValues,
@@ -1514,6 +1527,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Enemy Forces Position",
+            tooltip = "Where the enemy forces bar sits.",
             disabled = _forcesOff,
             disabledTooltip = ModuleOr("Show Enemy Forces"),
             values = { BOTTOM = "Bottom", UNDER_BAR = "Under Timer Bar" },
@@ -1625,6 +1639,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Boss Objectives",
+            tooltip = "Lists the bosses.",
             disabled = ModOff,
             disabledTooltip = "the module",
             getValue = NotOff("showObjectives"),
@@ -1632,6 +1647,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Objectives Size",
+            tooltip = "How big the objective text is.",
             disabled = OffWith("showObjectives"),
             disabledTooltip = ModuleOr("Show Boss Objectives"),
             min = 8,
@@ -1676,6 +1692,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Objective Times",
+            tooltip = "Shows when each boss was killed.",
             disabled = OffWith("showObjectives"),
             disabledTooltip = ModuleOr("Show Boss Objectives"),
             getValue = NotOff("showObjectiveTimes"),
@@ -1708,6 +1725,7 @@ CUI.AtOptionsLogin(function()
             type = "slider",
             pixel = true,
             text = "Objective Spacing",
+            tooltip = "The gap between objectives.",
             disabled = OffWith("showObjectives"),
             disabledTooltip = ModuleOr("Show Boss Objectives"),
             min = 0,
@@ -1719,6 +1737,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Split Compare",
+            tooltip = "Compares each boss time against a past run.",
             disabled = OffWith("showObjectives"),
             disabledTooltip = ModuleOr("Show Boss Objectives"),
             values = compareModeValues,
@@ -2208,6 +2227,7 @@ CUI.AtOptionsLogin(function()
             Gated({
                 type = "multiSwatch",
                 text = "Background Color",
+                tooltip = "The background's color.",
                 swatches = {
                     {
                         tooltip = "Background Color",
@@ -2538,6 +2558,7 @@ CUI.AtOptionsLogin(function()
         Row({
             type = "multiSwatch",
             text = "Cast Color",
+            tooltip = "The cast bar's color.",
             disabled = SharedOff,
             disabledTooltip = SHARED_REQ,
             swatches = CastColorSwatches(S, "castColor"),

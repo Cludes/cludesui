@@ -872,6 +872,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         {
             type = "dropdown",
             text = "Absorb Style",
+            tooltip = "How shields are drawn on the health bar.",
             values = absorbStyleValues,
             order = absorbStyleOrder,
             getValue = function() return DbValue("absorbStyle") or "blizzard" end,
@@ -1048,6 +1049,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         mod.NP_BlizzOnlyGate({
             type = "dropdown",
             text = "Cast Bar Texture",
+            tooltip = "The texture the cast bar is filled with.",
             values = hbtValues,
             order = hbtOrder,
             getValue = function() return DbValue("castBarTexture") or "none" end,

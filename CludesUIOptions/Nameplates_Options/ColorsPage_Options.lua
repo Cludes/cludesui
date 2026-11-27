@@ -1645,6 +1645,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     enemyTypesRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Enemy Types",
+        tooltip = "Health colors for enemies by type, in and out of combat.",
         swatches = {
             {
                 tooltip = "Enemies",
@@ -1767,6 +1768,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     neutralMiniRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Neutral & Mini Enemies",
+        tooltip = "The health color for neutral enemies.",
         swatches = {
             {
                 tooltip = "Neutral",
@@ -1981,6 +1983,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     }, {
         type = "multiSwatch",
         text = "Tank Threat",
+        tooltip = "Threat colors while you are tanking.",
         disabled = noThreat,
         disabledTooltip = "Show Threat Colors",
         swatches = {
@@ -2061,6 +2064,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     nonTankRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Non-Tank Threat",
+        tooltip = "Threat colors while you are not tanking.",
         disabled = noThreat,
         disabledTooltip = "Show Threat Colors",
         swatches = {
@@ -2348,6 +2352,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     local chanCfg = {
         type = "dropdown",
         text = "Show Threat On",
+        tooltip = "Which parts of the nameplate show threat.",
         disabled = noThreat,
         disabledTooltip = "Show Threat Colors",
         values = { __placeholder = "..." },

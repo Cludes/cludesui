@@ -229,6 +229,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         {
             type = "dropdown",
             text = "Smooth Bars",
+            tooltip = "Bars slide smoothly instead of jumping.",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
             getValue = function() return "__placeholder" end,
@@ -290,6 +291,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
     bgRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Dark Mode Class Resource",
+        tooltip = "Draws the class resource in dark mode.",
         getValue = function()
             local profile = DB()
             if not profile then return false end
@@ -532,6 +534,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
     textureRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Texture",
+        tooltip = "The texture the bars are filled with.",
         values = hbtValues,
         order = hbtOrder,
         getValue = function()

@@ -634,6 +634,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         }, {
             type = "slider",
             text = "Bar Spacing",
+            tooltip = "The gap between bars.",
             min = 0,
             max = 20,
             step = 1,

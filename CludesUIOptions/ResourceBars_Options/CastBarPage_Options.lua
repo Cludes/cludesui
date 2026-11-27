@@ -110,6 +110,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     castEnableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Player Cast Bar",
+        tooltip = "Shows your own cast bar.",
         getValue = Getter("enabled"),
         setValue = Setter("enabled", true),
     }, {
@@ -160,6 +161,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     iconRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Spell Icon",
+        tooltip = "Shows the spell's icon.",
         disabled = castBarOff,
         disabledTooltip = "Player Cast Bar",
         getValue = function()
@@ -170,6 +172,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     }, {
         type = "toggle",
         text = "Show Spark",
+        tooltip = "A bright spark at the cast bar's moving edge.",
         disabled = castBarOff,
         disabledTooltip = "Player Cast Bar",
         getValue = Getter("showSpark"),
@@ -1086,6 +1089,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     textRow, height = W:DualRow(hostFrame, cursorY, castTexCfg, {
         type = "dropdown",
         text = "Spell Text",
+        tooltip = "Shows the spell's name.",
         disabled = castBarOff,
         disabledTooltip = "Player Cast Bar",
         values = { none = "None", left = "Left", right = "Right", center = "Center" },
@@ -1208,6 +1212,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     timerRow, height = W:DualRow(hostFrame, cursorY, {
         type = "segmented",
         text = "Duration Text",
+        tooltip = "Shows the time left on the cast.",
         disabled = castBarOff,
         disabledTooltip = "Player Cast Bar",
         values = { none = "None", right = "Right", left = "Left" },
@@ -1402,6 +1407,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     marksRow1, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Tick Markers",
+        tooltip = "Marks each tick of channelled spells.",
         disabled = castBarOff,
         disabledTooltip = "Player Cast Bar",
         getValue = Getter("showChannelTicks"),
