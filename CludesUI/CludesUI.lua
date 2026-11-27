@@ -4514,13 +4514,25 @@ SLASH_CUIOPTIONS3 = "/cludesui"
 -- tainted after any addon slash command; on a whisper to a secret-named
 -- target its header math then errors (ChatFrameEditBox UpdateHeader), which
 -- no handler-side change can prevent.
-SlashCmdList.CUIOPTIONS = function()
+-- "/cui <words>" opens the window with those words in the settings search
+-- (Enter goes to the top result, Tab steps through them).
+SlashCmdList.CUIOPTIONS = function(msg)
+    local query = type(msg) == "string" and msg:match("^%s*(.-)%s*$") or ""
     C_Timer.After(0, function()
         if InCombatLockdown() then
             CUI.PrintError("Cannot open options during combat.")
             return
         end
-        CUI:Toggle()
+        if query == "" then
+            CUI:Toggle()
+            return
+        end
+        CUI:Show()
+        local box = CUI._sidebarSearchBox
+        if box then
+            box:SetText(query)
+            box:SetFocus()
+        end
     end)
 end
 
