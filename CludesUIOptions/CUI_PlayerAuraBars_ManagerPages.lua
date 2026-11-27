@@ -524,6 +524,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, startY, rowConf, apply
     ffRow, hh = W:DualRow(widget, startY, {
         type = "dropdown",
         text = "Filters",
+        tooltip = "Which auras this bar shows, picked from your filters.",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
         getValue = function() return "__placeholder" end,
@@ -531,6 +532,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, startY, rowConf, apply
     }, {
         type = "dropdown",
         text = "Extra Spells",
+        tooltip = "Spell IDs this bar shows as well, whatever the filters say.",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
         getValue = function() return "__placeholder" end,
@@ -871,6 +873,7 @@ local function BuildAssignedDebuffsFields(widget, fontFile, startY, rowConf, app
         {
             type = "dropdown",
             text = "Filters",
+            tooltip = "Which auras this bar shows, picked from your filters.",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
             getValue = function() return "__placeholder" end,
@@ -1119,6 +1122,7 @@ local function BuildCoreFields(widget, fontFile, startY, rowConf, applyFn, buffB
     sizeRow, hh = W:DualRow(widget, startY, {
         type = "slider",
         text = "Icon Size",
+        tooltip = "How big each icon is.",
         min = 16,
         max = 400,
         step = 1,
@@ -1128,6 +1132,7 @@ local function BuildCoreFields(widget, fontFile, startY, rowConf, applyFn, buffB
     }, {
         type = "dropdown",
         text = "Growth Direction",
+        tooltip = "Which way new icons are added.",
         values = GROW_DIR_VALUES,
         order = GROW_DIR_ORDER,
         getValue = ConfFieldOr("growDirection", "LEFT"),
@@ -1152,6 +1157,7 @@ local function BuildCoreFields(widget, fontFile, startY, rowConf, applyFn, buffB
     _, hh = W:DualRow(widget, startY, {
         type = "dropdown",
         text = "Sort Method",
+        tooltip = "How the icons are ordered.",
         values = SORT_METHOD_VALUES,
         order = SORT_METHOD_ORDER,
         getValue = ConfFieldOr("sortMethod", "Default"),
@@ -1159,6 +1165,7 @@ local function BuildCoreFields(widget, fontFile, startY, rowConf, applyFn, buffB
     }, {
         type = "dropdown",
         text = "Sort Direction",
+        tooltip = "Normal or reversed order.",
         values = SORT_DIR_VALUES,
         order = SORT_DIR_ORDER,
         getValue = ConfFieldOr("sortDirection", "Normal"),
@@ -1222,11 +1229,13 @@ local function BuildCoreFields(widget, fontFile, startY, rowConf, applyFn, buffB
     dsRow, hh = W:DualRow(widget, startY, {
         type = "toggle",
         text = "Duration",
+        tooltip = "Shows the time left on each icon.",
         getValue = function() return rowConf.durationShow ~= false end,
         setValue = ConfFieldThen("durationShow"),
     }, {
         type = "toggle",
         text = "Stacks",
+        tooltip = "Shows the stack count on each icon.",
         getValue = function() return rowConf.stackShow ~= false end,
         setValue = ConfFieldThen("stackShow"),
     })
@@ -1394,6 +1403,7 @@ local function FontOutlineField(rowConf, applyFn)
     return {
         type = "dropdown",
         text = "Font Outline",
+        tooltip = "The outline on the duration and stack text.",
         values = FONT_OUTLINE_VALUES,
         order = FONT_OUTLINE_ORDER,
         getValue = ConfFieldOr("fontOutline", "default"),
@@ -1435,6 +1445,7 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
         sizeCfg = {
             type = "dropdown",
             text = "Border Size",
+            tooltip = "How thick the border around each icon is.",
             values = BORDER_SIZE_VALUES,
             order = BORDER_SIZE_LEVELS,
             itemDisabled = function(val)
@@ -1450,6 +1461,7 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
     else
         sizeCfg = CludesUI.BorderPxSliderCfg({
             text = "Border Size",
+            tooltip = "How thick the border around each icon is.",
             trackWidth = 120,
             -- The step BuildStyle renders with (cfg.borderSize or 1), as a number.
             getStep = function() return rowConf.borderSize or 1 end,
@@ -1467,6 +1479,7 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
         CludesUI.BlizzStyle.Gate("playerauras", {
             type = "dropdown",
             text = "Border Style",
+            tooltip = "The look of the border around each icon.",
             disabled = function() return IsMaskShape(rowConf.iconShape) end,
             disabledTooltip = "This option requires a non-custom shape to be selected",
             rawTooltip = true,
@@ -1690,6 +1703,7 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
     rowRow, hh = W:DualRow(widget, startY, {
         type = "slider",
         text = "Icons Per Row",
+        tooltip = "How many icons sit in a row before the next row starts.",
         min = 1,
         max = 20,
         step = 1,
@@ -1699,6 +1713,7 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
     }, {
         type = "slider",
         text = "Spacing",
+        tooltip = "The gap between icons.",
         min = -5,
         max = 20,
         step = 1,
@@ -1864,6 +1879,7 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
         {
             type = "dropdown",
             text = "Icon Shape",
+            tooltip = "The shape each icon is cut to.",
             values = SHAPE_VALUES,
             order = SHAPE_ORDER,
             itemDisabled = function(val)
@@ -1898,6 +1914,7 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
             -- Blizzard Style draws the whole icon (zoom 0).
             type = "slider",
             text = "Icon Zoom",
+            tooltip = "Zooms into each icon's artwork to trim its edges.",
             min = 0,
             max = 15,
             step = 0.5,
@@ -2002,6 +2019,7 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
     swipeRow, hh = W:DualRow(widget, startY, {
         type = "toggle",
         text = "Show Duration Swipe",
+        tooltip = "The shading that sweeps across an icon as its aura runs out.",
         getValue = function() return rowConf.showSwipe ~= false end,
         setValue = ConfFieldThen("showSwipe"),
     }, {
