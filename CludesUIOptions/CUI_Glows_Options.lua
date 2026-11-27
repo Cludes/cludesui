@@ -866,7 +866,9 @@ function _G._CUI_BuildGlowsPage(pageName, hostFrame, yOffset)
     local tpl = TemplateDesc()
     local sites = CollectSites()
     local tplRow
-    tplRow, height = W:DualRow(hostFrame, cursorY, GO.DropdownSpec(tpl, "Glow Style"), CUI.BlankRowCfg())
+    local styleSpec = GO.DropdownSpec(tpl, "Glow Style")
+    styleSpec.tooltip = styleSpec.tooltip or "The glow template's effect: its shape and animation."
+    tplRow, height = W:DualRow(hostFrame, cursorY, styleSpec, CUI.BlankRowCfg())
     cursorY = cursorY - height
     if not CUI._prebuilding then
         local lrgn = tplRow._leftRegion
