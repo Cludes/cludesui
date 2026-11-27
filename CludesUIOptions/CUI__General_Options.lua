@@ -147,7 +147,7 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Global Settings",
                 title = "Search from chat",
-                desc = "Type /cui and a setting's name, such as /cui nameplate colors, to open the settings searching for it.",
+                desc = "Type /cui and a setting's name, such as /cui nameplate colors, to open the settings searching for it. In the window, Ctrl+F jumps to the search, and /cui help lists the main commands.",
             },
             {
                 module = "Global Settings",
@@ -168,6 +168,11 @@ CUI._WHATSNEW_PATCHES = {
                 module = "Global Settings",
                 title = "Easier to read",
                 desc = "Hover a cut-off description to read all of it, the Section Status list opens a module when clicked, a switched-off module offers to turn on, and some pages have clearer names, such as Window Mover.",
+            },
+            {
+                module = "Layout Mode",
+                title = "Faster nudging",
+                desc = "In Edit Layout, Ctrl + arrow keys move the selected element 10px, between the arrow keys' 1px and Shift's 100px.",
             },
             {
                 module = "Cooldown Manager",
