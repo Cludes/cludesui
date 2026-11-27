@@ -2080,6 +2080,9 @@ CUI.AtOptionsLogin(function()
         title = "Profiles",
         description = "Import, export, and switch CludesUI profiles and presets.",
         pages = { PAGE_PROFILES, PAGE_OVERRIDES, PAGE_FULLEXPORT },
+        -- Shown name: "Profiles" itself reads "Profiles & Sharing" (the module's
+        -- own name), which the page list would show as General.
+        tabLabels = { [PAGE_PROFILES] = "My Profiles" },
         buildPage = function(page, hostFrame, yOffset)
             -- _G._CUI_BuildProfilesPage bypasses `parent` and builds onto the live shared _scrollFrame, and first checks the active profile against the
             -- current spec -- it can call SwitchProfile/RefreshAllAddons and pop a "Reload Required" confirmation. None of that is safe from a
