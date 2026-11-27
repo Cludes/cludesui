@@ -1983,7 +1983,7 @@ CUI.AtOptionsLogin(function()
         _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Item Levels",
-            tooltip = "Shows the item level on each item in the character sheet gear flyout (the popup of same-slot bag items that appears when hovering an equipped slot), coloured by quality.",
+            tooltip = "Shows the item level on each item in the character sheet gear flyout (the popup of same-slot bag items that appears when hovering an equipped slot), colored by quality.",
             getValue = function() return CludesUIDB and CludesUIDB.flyoutItemLevels or false end,
             setValue = AccountField("flyoutItemLevels"),
         }, flyoutStatsCfg or CUI.BlankRowCfg())

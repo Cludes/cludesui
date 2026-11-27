@@ -482,7 +482,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Upcoming Ability Bars",
-                tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Each phase runs from when it really began, read from the boss's timeline; phases still to come are estimates, shown faded. Move them in Edit Layout.",
+                tooltip = "During a Midnight raid boss, the next abilities as countdown bars, colored by kind of mechanic. Each phase runs from when it really began, read from the boss's timeline; phases still to come are estimates, shown faded. Move them in Edit Layout.",
                 getValue = function() return tl.bars end,
                 setValue = function(val) tl.bars = val and true or false end,
             }, {

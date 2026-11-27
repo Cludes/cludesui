@@ -601,7 +601,7 @@ local function Draw()
                         tipText:SetSpellByID(region.spell)
                     end
                     tipText:AddLine(
-                        ("Yellow at %d, green at %d, grey at %d."):format(
+                        ("Yellow at %d, green at %d, gray at %d."):format(
                             region.yellow or region.skill,
                             math.floor(((region.yellow or region.skill) + (region.grey or 0)) / 2),
                             region.grey or 0
@@ -648,7 +648,7 @@ local function Draw()
                     )
                     if region.yellow and region.grey then
                         tipText:AddLine(
-                            ("Yellow at %d, green at %d, grey at %d."):format(
+                            ("Yellow at %d, green at %d, gray at %d."):format(
                                 region.yellow,
                                 math.floor((region.yellow + region.grey) / 2),
                                 region.grey

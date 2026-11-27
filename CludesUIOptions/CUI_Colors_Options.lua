@@ -435,7 +435,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         }, {
             type = "dropdown",
             text = "Pull Colors From",
-            tooltip = "Copies this section's colours from another profile.",
+            tooltip = "Copies this section's colors from another profile.",
             values = pullValues,
             order = profileOrder,
             disabled = function() return not CUI.ColorSectionApplyAll(section) end,

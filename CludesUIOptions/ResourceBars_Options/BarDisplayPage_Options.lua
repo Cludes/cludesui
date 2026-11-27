@@ -1998,7 +1998,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Countdown Format",
-            tooltip = "Seconds counts the time down in tenths. GCD Count counts whole global cooldowns instead, so inside Arcane Soul it reads as the number of Arcane Barrages that still fit, ending on a coloured LAST. Seconds + GCD in Soul mixes the two: tenths counting down to the window, Barrage count once it opens.",
+            tooltip = "Seconds counts the time down in tenths. GCD Count counts whole global cooldowns instead, so inside Arcane Soul it reads as the number of Arcane Barrages that still fit, ending on a colored LAST. Seconds + GCD in Soul mixes the two: tenths counting down to the window, Barrage count once it opens.",
             disabled = asOff,
             disabledTooltip = AS_TIP,
             values = asFormatValues,

@@ -1404,7 +1404,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Gear Score",
-            tooltip = "One number for a character's gear on the item level scale: 26.4 is worth a full set of level 26 epics. Coloured by how close it is to dungeon blues five levels over their level. Shown under your level on the character sheet, under item level on the inspect sheet, and in Group Inspect.",
+            tooltip = "One number for a character's gear on the item level scale: 26.4 is worth a full set of level 26 epics. Colored by how close it is to dungeon blues five levels over their level. Shown under your level on the character sheet, under item level on the inspect sheet, and in Group Inspect.",
             getValue = function() return not gOff() end,
             setValue = function(val) Set("enabled", val and true or false) end,
         }, {
@@ -1586,7 +1586,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             setValue = function(val) QASet("enabled", val) end,
         }, {
             type = "toggle",
-            text = "Skip Grey Quests",
+            text = "Skip Gray Quests",
             disabled = qaOff,
             tooltip = "Leave quests far below your level alone.",
             getValue = function() return QA.Get("skipGrey") end,
@@ -2377,7 +2377,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Quest Giver Pins",
                 "A ! on the world map at each quest giver with a quest you can take now. Green for dungeon quests, blue for repeatable ones."
             ),
-            Tog("pinGrey", "Low Level Quests", "Pins givers whose quests are grey to you too.")
+            Tog("pinGrey", "Low Level Quests", "Pins givers whose quests are gray to you too.")
         )
         cursorY = cursorY - height
         _, height = W:DualRow(
@@ -2518,7 +2518,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Skill-up Levels",
             disabled = function() return pOff() or not PF.Get("craftWindow") end,
-            tooltip = "The picked recipe shows the skill where it turns yellow, green and grey, and your chance now.",
+            tooltip = "The picked recipe shows the skill where it turns yellow, green and gray, and your chance now.",
             getValue = function() return PF.Get("skillThresholds") end,
             setValue = function(val) Set("skillThresholds", val and true or false) end,
         }, {
@@ -3024,7 +3024,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 lk,
                 "enabled",
                 "Lockpicking Skill",
-                "Lockbox tooltips show the Lockpicking needed to open them, coloured by yours."
+                "Lockbox tooltips show the Lockpicking needed to open them, colored by yours."
             ),
             Tog(
                 tp,

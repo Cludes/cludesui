@@ -1256,7 +1256,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 sum = "Globals",
                 enabled = stringHasGlobals,
                 offTip = "This profile string does not carry any global settings.",
-                tip = "Apply the sharer's fonts, custom colours, dark mode, accent colour and UI scale. Off = keep your own global look and scale; only the selected modules' settings come in.",
+                tip = "Apply the sharer's fonts, custom colors, dark mode, accent color and UI scale. Off = keep your own global look and scale; only the selected modules' settings come in.",
                 get = function() return includeGlobalsImport end,
                 set = function() includeGlobalsImport = not includeGlobalsImport end,
             },
@@ -2248,7 +2248,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             {
                 label = "Global Settings",
                 sum = "Globals",
-                tip = "Include fonts, custom colours, dark mode, accent colour and UI scale with this export. Off = only the selected modules' own settings export, keeping the recipient's global look.",
+                tip = "Include fonts, custom colors, dark mode, accent color and UI scale with this export. Off = only the selected modules' own settings export, keeping the recipient's global look.",
                 get = function() return includeGlobalsExport end,
                 set = function() includeGlobalsExport = not includeGlobalsExport end,
             },

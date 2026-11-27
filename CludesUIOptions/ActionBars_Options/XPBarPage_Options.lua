@@ -1684,7 +1684,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             Effect("fxReady", "Ready to Level", "A glow and a star when handing in your completed quests would level you."),
         },
         {
-            Effect("fxLevelFlash", "Level-Up Flash", "The bar flashes in your accent colour and drains away when you level."),
+            Effect("fxLevelFlash", "Level-Up Flash", "The bar flashes in your accent color and drains away when you level."),
             Effect("fxBreakdown", "Hover Breakdown", "Adds completed and in-progress quest XP and about how many kills are left to the tooltip."),
         },
     }

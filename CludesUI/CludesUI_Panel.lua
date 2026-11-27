@@ -2140,9 +2140,9 @@ local function BuildSidebar()
         local RAIL_NAMES = { group = "Group" }
         -- One line under each module row (the full description is its tooltip).
         local RAIL_BLURBS = {
-            CludesUIActionBars = "Bar layout, look and behaviour",
+            CludesUIActionBars = "Bar layout, look and behavior",
             CludesUIUnitFrames = "Player, target and boss frames",
-            CludesUINameplates = "Nameplate look and behaviour",
+            CludesUINameplates = "Nameplate look and behavior",
             CludesUIRaidFrames = "Party and raid frames",
             CludesUICooldownManager = "Cooldown bars, glows, buff bars",
             CludesUIResourceBars = "Class resource, health, mana",

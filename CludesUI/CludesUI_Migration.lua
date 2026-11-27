@@ -2843,7 +2843,7 @@ CUI.RegisterMigration({
 CUI.RegisterMigration({
     id = "global_colors_per_profile_seed_v1",
     scope = "global",
-    description = "Seed every profile's customColors from the global table for the opt-in per-profile colours mode.",
+    description = "Seed every profile's customColors from the global table for the opt-in per-profile colors mode.",
     body = function(context)
         local saved = context.db
         if not saved or type(saved.customColors) ~= "table" or type(saved.profiles) ~= "table" then return end

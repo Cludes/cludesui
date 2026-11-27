@@ -384,7 +384,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             rowConf.tooltip =
                 "On Party Frames style the name keeps the frame's own spot; its offsets still apply."
         elseif tbl.kind == "level" then
-            rowConf.tooltip = "Drawn in the name's colour."
+            rowConf.tooltip = "Drawn in the name's color."
         end
         rowConf.values = CustomText.Values(MODE_VALUES[tbl.kind], tbl.kind == "custom" and function()
             CustomText.Edit(tbl.fmt, CustomText.Color(tbl), function()

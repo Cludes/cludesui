@@ -162,8 +162,8 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(
             hostFrame,
             cursorY,
-            Colour("Name Colour", "nameTextColor", mod.RefreshAllFonts),
-            Colour("Health Text Colour", "hpTextColor", mod.RefreshAllFonts)
+            Colour("Name Color", "nameTextColor", mod.RefreshAllFonts),
+            Colour("Health Text Color", "hpTextColor", mod.RefreshAllFonts)
         )
         cursorY = cursorY - height
 
@@ -258,9 +258,9 @@ CUI.AtOptionsLogin(function()
                 K.STACK_HIGHLIGHT_MAX,
                 1,
                 IconsChanged,
-                "A debuff that reaches this many stacks gets a coloured border. 0 turns it off."
+                "A debuff that reaches this many stacks gets a colored border. 0 turns it off."
             ),
-            Colour("Highlight Colour", "stackHighlightColor", IconsChanged)
+            Colour("Highlight Color", "stackHighlightColor", IconsChanged)
         )
         cursorY = cursorY - height
 
@@ -273,7 +273,7 @@ CUI.AtOptionsLogin(function()
                 IconsChanged,
                 "Shows the alert text on screen when a debuff reaches the highlight stack count."
             ),
-            Toggle("Colour Borders by Debuff Type", "debuffTypeBorders", IconsChanged)
+            Toggle("Color Borders by Debuff Type", "debuffTypeBorders", IconsChanged)
         )
         cursorY = cursorY - height
 
@@ -450,8 +450,8 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(
             hostFrame,
             cursorY,
-            Colour("Stack Count Colour", "stackCountColor", mod.RefreshAllFonts),
-            Colour("Timer Colour", "timerTextColor", mod.RefreshAllFonts)
+            Colour("Stack Count Color", "stackCountColor", mod.RefreshAllFonts),
+            Colour("Timer Color", "timerTextColor", mod.RefreshAllFonts)
         )
         cursorY = cursorY - height
 

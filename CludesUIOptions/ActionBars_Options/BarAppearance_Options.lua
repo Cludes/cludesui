@@ -1624,7 +1624,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
 
     -- Out of Range Coloring | Cooldown Swipe Opacity
     AddRowSearch("Cooldown Swipe Opacity", {
-        "Opacity of the cooldown swipe (the dark radial sweep); use the swatch to set its colour.",
+        "Opacity of the cooldown swipe (the dark radial sweep); use the swatch to set its color.",
         "CD Swipe Opacity",
     })
     local rangeSwipeRow
@@ -1643,7 +1643,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         max = 100,
         step = 5,
         trackWidth = 120,
-        tooltip = "Opacity of the cooldown swipe (the dark radial sweep); use the swatch to set its colour.",
+        tooltip = "Opacity of the cooldown swipe (the dark radial sweep); use the swatch to set its color.",
         getValue = function() return ABAR.db.profile.cdSwipeAlpha or 80 end,
         setValue = function(value)
             ABAR.db.profile.cdSwipeAlpha = value

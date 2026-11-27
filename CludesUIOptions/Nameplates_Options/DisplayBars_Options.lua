@@ -675,7 +675,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 {
                     type = "toggle",
                     label = "Important Cast Color",
-                    tooltip = "Tint the cast bar with the Important colour when the enemy casts a spell the game flags as important.",
+                    tooltip = "Tint the cast bar with the Important color when the enemy casts a spell the game flags as important.",
                     get = function()
                         local saved = DB()
                         if saved and saved.importantCastColorEnabled ~= nil then
@@ -861,7 +861,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 region._lastInline = colorSwatch
                 colorSwatch:SetScript(
                     "OnEnter",
-                    function(s) CUI.ShowWidgetTooltip(s, "Interrupted Flash Colour") end
+                    function(s) CUI.ShowWidgetTooltip(s, "Interrupted Flash Color") end
                 )
                 colorSwatch:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 -- Blizzard Style uses the stock interrupted fill art, so the flash colour is

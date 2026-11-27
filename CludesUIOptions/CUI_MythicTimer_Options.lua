@@ -2309,7 +2309,7 @@ CUI.AtOptionsLogin(function()
                 {
                     type = "toggle",
                     label = "Important Cast Color",
-                    tooltip = "Tint the bar with the Important colour when the enemy casts a spell the game flags as important.",
+                    tooltip = "Tint the bar with the Important color when the enemy casts a spell the game flags as important.",
                     get = A.IsOn("importantEnabled"),
                     set = A.Flag("importantEnabled", true),
                 },
@@ -2586,7 +2586,7 @@ CUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Important Cast Color",
-                        tooltip = "Tint the cast bar with the Important colour when the unit casts a spell the game flags as important. Your interrupt being on cooldown still takes priority.",
+                        tooltip = "Tint the cast bar with the Important color when the unit casts a spell the game flags as important. Your interrupt being on cooldown still takes priority.",
                         get = S.IsOn("importantEnabled"),
                         set = S.Flag("importantEnabled", true),
                     },
@@ -2783,7 +2783,7 @@ CUI.AtOptionsLogin(function()
             Switch(
                 "Item Level",
                 "colItemLevel",
-                "Shown in grey next to each name. Item levels are read by inspecting party members during the run, so a member who stayed out of range shows none."
+                "Shown in gray next to each name. Item levels are read by inspecting party members during the run, so a member who stayed out of range shows none."
             )
         )
         Row(

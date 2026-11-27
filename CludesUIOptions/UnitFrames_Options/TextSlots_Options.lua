@@ -156,7 +156,7 @@ function mod.UF_CoreTextRows(prefixText, contentDefault, get, set, rowList)
     rowList[#rowList + 1] = {
         type = "toggle",
         label = "Level Text: Difficulty Color",
-        tooltip = "Colors level text by difficulty, from grey (trivial) through green, yellow and orange to red (5+ levels above you).",
+        tooltip = "Colors level text by difficulty, from gray (trivial) through green, yellow and orange to red (5+ levels above you).",
         get = function() return get("levelDifficultyColor", false) == true end,
         set = function(val)
             set("levelDifficultyColor", val)

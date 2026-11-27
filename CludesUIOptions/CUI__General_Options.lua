@@ -197,7 +197,7 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Global Settings",
                 title = "A whole new look",
-                desc = "The settings window in the CludesUI style: a clean, flat frame with square corners, simple lines, and the CludesUI logo drawn in your own accent colour.",
+                desc = "The settings window in the CludesUI style: a clean, flat frame with square corners, simple lines, and the CludesUI logo drawn in your own accent color.",
             },
             {
                 module = "Bags",
@@ -213,15 +213,15 @@ CUI._WHATSNEW_PATCHES = {
             },
             {
                 module = "Global Settings",
-                title = "One frame, your colour",
-                desc = "Every theme now shares the same clean frame, and your colour comes from UI Accent Color on Core Settings. WoW Forever keeps its warm bronze.",
+                title = "One frame, your color",
+                desc = "Every theme now shares the same clean frame, and your color comes from UI Accent Color on Core Settings. WoW Forever keeps its warm bronze.",
             },
         },
         fixes = {
             {
                 module = "Forever Tools",
                 forever = true,
-                text = "A player whose level shows ?? now shows their known level in the tooltip, even when the game colours that line.",
+                text = "A player whose level shows ?? now shows their known level in the tooltip, even when the game colors that line.",
             },
         },
     },
@@ -245,7 +245,7 @@ CUI._WHATSNEW_PATCHES = {
         features = {
             {
                 module = "Global Settings",
-                title = "New icons and colours",
+                title = "New icons and colors",
                 desc = "CludesUI's own interface icons, a cool slate for pop-ups, menus and input boxes, and pop-ups with the title on the left and buttons on the right.",
             },
             {
@@ -963,7 +963,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "CUI Options Theme",
-            tooltip = "The look of this options window: its frame art and colours.",
+            tooltip = "The look of this options window: its frame art and colors.",
             values = themeValues,
             order = CUI.THEME_ORDER,
             getValue = function() return CUI.GetActiveTheme() end,

@@ -181,7 +181,7 @@ local ICON_EFFECTS = {
     {
         key = "desaturate",
         label = "Desaturate on Cooldown",
-        tooltip = "Grey the icon while the kicker's interrupt is on cooldown.",
+        tooltip = "Gray the icon while the kicker's interrupt is on cooldown.",
     },
 }
 
