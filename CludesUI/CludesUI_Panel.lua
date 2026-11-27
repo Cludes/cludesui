@@ -2250,8 +2250,24 @@ local function BuildSidebar()
                 if on then
                     row.dot:SetColorTexture(0.37, 0.77, 0.42, 1)
                     local ms = profiler and C_AddOnProfiler.GetAddOnMetric(navInfo.folder, Enum.AddOnProfilerMetric.RecentAverageTime)
-                    row.cpu:SetText(ms and ("%.3f ms"):format(ms) or "--")
-                    row.cpu:SetTextColor(0.84, 0.86, 0.88, 1)
+                    -- Readable at a glance: next to nothing reads "<0.01 ms" dimmed,
+                    -- a module costing real time turns amber (0.5 ms) or red (2 ms).
+                    if not ms then
+                        row.cpu:SetText("--")
+                        row.cpu:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.6)
+                    elseif ms < 0.01 then
+                        row.cpu:SetText("<0.01 ms")
+                        row.cpu:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.6)
+                    else
+                        row.cpu:SetText(("%.2f ms"):format(ms))
+                        if ms >= 2 then
+                            row.cpu:SetTextColor(1, 0.42, 0.42, 1)
+                        elseif ms >= 0.5 then
+                            row.cpu:SetTextColor(1, 0.76, 0.32, 1)
+                        else
+                            row.cpu:SetTextColor(0.84, 0.86, 0.88, 1)
+                        end
+                    end
                 else
                     row.dot:SetColorTexture(0.45, 0.47, 0.5, 1)
                     row.cpu:SetText(CUI.L("Off"))
