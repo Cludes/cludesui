@@ -9703,7 +9703,7 @@ L["Show nine source points after clicking Anchor in Edit Layout. Choose a source
 L["Shows the fishing skill a zone needs under its name on the world map: red, too low; yellow, fish still get away; green, none do."] = "Mostra, sob o nome de uma zona no mapa-múndi, a perícia de pesca que ela exige: vermelho, baixa demais; amarelo, ainda escapam peixes; verde, nenhum escapa."
 L["This element's position is not available yet"] = "A posição deste elemento ainda não está disponível"
 L["This point anchor is unavailable or would create a circular anchor"] = "Esta âncora de ponto está indisponível ou criaria uma âncora circular"
-L["UNLOCK MODE"] = "MODO DE DESBLOQUEIO"
+L["EDIT LAYOUT"] = "MODO DE DESBLOQUEIO"
 
 -- == Unlock Mode point anchoring / overlap cycling (9.6.2) =============
 L["Point Anchoring"] = "Ancoragem por Ponto"

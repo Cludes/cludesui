@@ -1024,7 +1024,8 @@ local function JoinBreadcrumb(...)
     local parts = {}
     for idx = 1, select("#", ...) do
         local val = select(idx, ...)
-        if val and val ~= "" then parts[#parts + 1] = val end
+        -- A page named like its module (Objective Tracker > Objective Tracker) once.
+        if val and val ~= "" and val ~= parts[#parts] then parts[#parts + 1] = val end
     end
     return table.concat(parts, BREADCRUMB_ARROW)
 end
@@ -1192,7 +1193,15 @@ local function EnsureSearchUI()
         -- SetLessCommonSearchActive in CludesUI_Widgets.lua).
         if CUI.SetLessCommonSearchActive then CUI.SetLessCommonSearchActive(searchText ~= "") end
         if searchText ~= "" then StartPrebuild() end
-        results = SearchIndex(searchText, MAX_VISIBLE_RESULTS)
+        -- Old names still find what was renamed (Layout Mode is Edit Layout now).
+        local typed = searchText:lower():match("^%s*(.-)%s*$")
+        local QUERY_ALIASES = {
+            ["layout mode"] = "edit layout",
+            ["unlock mode"] = "edit layout",
+            ["move frames"] = "edit layout",
+            ["unlock frames"] = "edit layout",
+        }
+        results = SearchIndex(QUERY_ALIASES[typed] or searchText, MAX_VISIBLE_RESULTS)
         -- Accent-colored "Page:"/"Section:" prefixes. Hex is computed per
         -- search, so a live accent change is picked up on the next keystroke.
         local ACC = CUI.CLUDES_GREEN

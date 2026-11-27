@@ -1266,7 +1266,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
 
-        _, height = W:SectionHeader(hostFrame, "UNLOCK MODE", cursorY)
+        _, height = W:SectionHeader(hostFrame, "EDIT LAYOUT", cursorY)
         cursorY = cursorY - height
         local pointAnchorRow
         pointAnchorRow, height = W:DualRow(hostFrame, cursorY, {
