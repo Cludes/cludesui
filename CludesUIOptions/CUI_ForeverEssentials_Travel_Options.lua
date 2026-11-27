@@ -290,6 +290,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     }, {
         type = "dropdown",
         text = "Background Texture",
+        tooltip = "The texture behind the window.",
         values = texValues,
         order = texOrder,
         disabled = off,

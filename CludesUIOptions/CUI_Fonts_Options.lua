@@ -1000,6 +1000,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
         TabFontGate({
             type = "dropdown",
             text = "Tab Font",
+            tooltip = "The tabs' font.",
             values = fontValues,
             order = fontOrder,
             getValue = function()
@@ -1017,6 +1018,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
         TabFontGate({
             type = "slider",
             text = "Tab Font Size",
+            tooltip = "How big the tab text is.",
             min = 8,
             max = 24,
             step = 1,
@@ -1037,6 +1039,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Edit Box Font",
+        tooltip = "The font of the box you type in.",
         values = ebValues,
         order = ebOrder,
         getValue = function()
@@ -1052,6 +1055,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
     }, {
         type = "slider",
         text = "Edit Box Font Size",
+        tooltip = "How big the text you type is.",
         min = 8,
         max = 24,
         step = 1,
@@ -1692,6 +1696,7 @@ local function TileCombatText(hostFrame, cursorY, W, tile)
     local _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Combat Text Size",
+        tooltip = "How big the combat text is.",
         min = 0.5,
         max = 2.5,
         step = 0.1,
@@ -1988,6 +1993,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
     globalFontRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Global Font",
+        tooltip = "The font used across CludesUI.",
         values = fontDropValues,
         order = fontDropOrder,
         getValue = function()

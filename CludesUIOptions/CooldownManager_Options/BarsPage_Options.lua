@@ -1646,6 +1646,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Max Icons (0 = Off)",
+                tooltip = "The most icons the bar shows; 0 shows all.",
                 min = 0,
                 max = 20,
                 step = 1,
@@ -1672,6 +1673,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             }, {
                 type = "dropdown",
                 text = "Overflow To",
+                tooltip = "The bar icons past Max Icons move to.",
                 values = ofVals,
                 order = ofOrder,
                 -- Recipient bars cannot pick a fresh target (third door); one with a stale target set stays enabled so it can be cleared back to None.
@@ -1717,6 +1719,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local vertOrientCfg = {
             type = "toggle",
             text = "Vertical Orientation",
+            tooltip = "Lays the icons out in a column instead of a row.",
             getValue = BDFieldGet("verticalOrientation"),
             setValue = function(value)
                 local edge = BarList()
@@ -2415,6 +2418,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         scaleAnimRow, height = W:DualRow(hostFrame, cursorY, row1Left, {
             type = "slider",
             text = "Icon Scale",
+            tooltip = "Makes the icons bigger or smaller.",
             min = 16,
             max = 100,
             step = 1,
@@ -2495,6 +2499,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             CUI.BlizzStyle.Gate("cdmicons", {
                 type = "dropdown",
                 text = "Custom Icon Shape",
+                tooltip = "The shape icons are cut to.",
                 values = SHAPE_VALUES,
                 order = SHAPE_ORDER,
                 itemDisabled = function(value)
@@ -2887,6 +2892,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         scaleAnimRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Icon Scale",
+            tooltip = "Makes the icons bigger or smaller.",
             min = 16,
             max = 100,
             step = 1,
@@ -3337,6 +3343,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             CUI.BlizzStyle.Gate("cdmicons", {
                 type = "dropdown",
                 text = "Custom Icon Shape",
+                tooltip = "The shape icons are cut to.",
                 values = SHAPE_VALUES,
                 order = SHAPE_ORDER,
                 itemDisabled = function(value)
@@ -3406,6 +3413,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     durationRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Duration Size",
+        tooltip = "How big the duration text is.",
         min = 6,
         max = 30,
         step = 1,
@@ -3420,6 +3428,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     }, {
         type = "slider",
         text = "Charge/Stack Size",
+        tooltip = "How big the charge and stack text is.",
         min = 6,
         max = 30,
         step = 1,
@@ -3963,6 +3972,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local _, tth = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Tooltip on Hover",
+                tooltip = "Shows the spell's tooltip when you hover an icon.",
                 getValue = BDFieldIs("showTooltip"),
                 setValue = function(value)
                     BarList().showTooltip = value
@@ -3976,6 +3986,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             kbRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Tooltip on Hover",
+                tooltip = "Shows the spell's tooltip when you hover an icon.",
                 getValue = BDFieldIs("showTooltip"),
                 setValue = function(value)
                     BarList().showTooltip = value
@@ -3985,6 +3996,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             }, {
                 type = "toggle",
                 text = "Show Keybind",
+                tooltip = "Shows each icon's keybind.",
                 getValue = BDFieldIs("showKeybind"),
                 setValue = function(value)
                     local barData = BarList()

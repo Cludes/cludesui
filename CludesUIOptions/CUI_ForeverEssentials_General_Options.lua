@@ -1507,6 +1507,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         }, {
             type = "toggle",
             text = "Alert Sound",
+            tooltip = "The sound the alert plays.",
             disabled = Off(CE.alert),
             getValue = function() return CE.alert.Get("sound") end,
             setValue = function(val) Set(CE.alert, "sound", val and true or false) end,

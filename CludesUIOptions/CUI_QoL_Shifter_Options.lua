@@ -110,6 +110,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Shifter",
+        tooltip = "Lets you move Blizzard windows.",
         getValue = function() return CludesUIDB and CludesUIDB.shifterEnabled or false end,
         setValue = function(val)
             Account().shifterEnabled = val
@@ -122,6 +123,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
     }, {
         type = "dropdown",
         text = "Reset Specific Window",
+        tooltip = "Puts one moved window back where it was.",
         values = ddValues,
         order = ddOrder,
         getValue = function() return "" end,

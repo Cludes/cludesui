@@ -368,6 +368,7 @@ local function LoggingSection(W, host, y)
     }, {
         type = "dropdown",
         text = "Auto-Log Triggers",
+        tooltip = "Where combat logging switches on by itself.",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
         getValue = function() return "__placeholder" end,

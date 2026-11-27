@@ -400,6 +400,7 @@ CUI.AtOptionsLogin(function()
             buttons, height = Widg:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Button Border Style",
+                tooltip = "The look of the buttons' border.",
                 disabled = popupOff,
                 values = texValues,
                 order = texOrder,
@@ -429,6 +430,7 @@ CUI.AtOptionsLogin(function()
         _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "colorpicker",
             text = "Button Background",
+            tooltip = "The buttons' background.",
             hasAlpha = true,
             disabled = popupOff,
             getValue = function()
@@ -609,6 +611,7 @@ CUI.AtOptionsLogin(function()
         ttShowRow, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Reskin Tooltip",
+            tooltip = "Restyles tooltips.",
             getValue = function() return not CludesUIDB or CludesUIDB.customTooltips ~= false end,
             setValue = function(val)
                 Account().customTooltips = val
@@ -625,6 +628,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Show Tooltips",
+            tooltip = "Shows tooltips when you hover.",
             disabled = tipReskinOff,
             disabledTooltip = "Reskin Tooltip",
             values = {
@@ -788,6 +792,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "dropdown",
                 text = "Tooltip Extras",
+                tooltip = "Extra lines added to tooltips.",
                 values = { __placeholder = "..." },
                 order = { "__placeholder" },
                 getValue = function() return "__placeholder" end,
@@ -799,6 +804,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Spell ID on Tooltip",
+                tooltip = "Adds spell IDs to tooltips.",
                 getValue = function() return CUI.SpellIDOn() end,
                 setValue = function(val)
                     Account().showSpellID = val
@@ -1002,6 +1008,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Show Player Buffs",
+                tooltip = "Shows your buffs.",
                 disabled = tipReskinOff,
                 disabledTooltip = "Reskin Tooltip",
                 getValue = function() return CludesUIDB and CludesUIDB.tooltipShowBuffs or false end,
@@ -1308,6 +1315,7 @@ CUI.AtOptionsLogin(function()
                 and {
                     type = "toggle",
                     text = "Reskin Extra Action Buttons",
+                    tooltip = "Restyles the extra action and zone ability buttons.",
                     getValue = function()
                         -- DEFAULT OFF: opt-in, so nil reads as unchecked.
                         return CludesUIDB and CludesUIDB.reskinExtraActionButton == true
@@ -1339,6 +1347,7 @@ CUI.AtOptionsLogin(function()
         local timerCfg = {
             type = "toggle",
             text = "Show Queue Timer",
+            tooltip = "Shows how long you have been queued.",
             getValue = function() return not CludesUIDB or CludesUIDB.showQueueTimer ~= false end,
             setValue = function(val)
                 Account().showQueueTimer = val
@@ -2499,6 +2508,7 @@ CUI.AtOptionsLogin(function()
             tileGate({
                 type = "dropdown",
                 text = "Class Icon Theme",
+                tooltip = "The look of the class icons.",
                 values = Kit.ICON_STYLE_VALUES,
                 order = Kit.ICON_STYLE_ORDER,
                 getValue = function() return mod.FriendsCardGet("iconStyle") end,
@@ -4260,6 +4270,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Bar Fill Opacity",
+            tooltip = "How see-through the bars' fill is.",
             min = 10,
             max = 100,
             step = 1,
@@ -4278,6 +4289,7 @@ CUI.AtOptionsLogin(function()
         _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Link Color",
+            tooltip = "The color of links.",
             swatches = {
                 {
                     tooltip = "Accent Color",
@@ -4567,6 +4579,7 @@ CUI.AtOptionsLogin(function()
         _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Hide Chat Bubbles in Instances",
+            tooltip = "Hides chat bubbles in dungeons and raids.",
             getValue = function() return CBVal("hideInInstances") == true end,
             setValue = function(val) CBSet("hideInInstances", val) end,
             disabled = SkinsOff,
@@ -4591,6 +4604,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Maximum Width",
+            tooltip = "The widest it can get.",
             min = 120,
             max = 500,
             step = 10,
@@ -4714,6 +4728,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Vertical Offset",
+            tooltip = "Moves it up or down.",
             min = -80,
             max = 80,
             step = 2,
@@ -4914,6 +4929,7 @@ CUI.AtOptionsLogin(function()
         _, height = Widg:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Skyriding Bar",
+            tooltip = "Shows the skyriding vigor bar.",
             getValue = function() return DragonRidingCfg("enabled") == true end,
             -- DependentSetValue: everything below Row 1 is hidden while the
             -- bar is off; the flip forces the full rebuild.
@@ -4927,6 +4943,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Hide in Combat",
+            tooltip = "Hides it during combat.",
             disabled = function() return DragonRidingCfg("enabled") ~= true end,
             disabledTooltip = "Skyriding Bar",
             getValue = function() return DragonRidingCfg("hideInCombat") == true end,

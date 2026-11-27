@@ -179,6 +179,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Enable BattleRes Icon",
+        tooltip = "Shows an icon for the group's battle resurrections.",
         values = VIS_VALUES,
         order = VIS_ORDER,
         getValue = function() return ResCfg("visibility") or "MPLUS_AND_RAID" end,
@@ -257,6 +258,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Duration Size",
+        tooltip = "How big the duration text is.",
         disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
         min = 8,
@@ -268,6 +270,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     }, {
         type = "slider",
         text = "Count Size",
+        tooltip = "How big the count text is.",
         disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
         min = 8,
@@ -395,6 +398,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Enable BattleRes Icon",
+        tooltip = "Shows an icon for the group's battle resurrections.",
         values = VIS_VALUES,
         order = VIS_ORDER,
         getValue = function() return ResCfg("visibility") or "MPLUS_AND_RAID" end,
@@ -485,6 +489,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Duration Size",
+            tooltip = "How big the duration text is.",
             disabled = ShowsText,
             disabledTooltip = ICON_ROWS_TIP,
             min = 8,
@@ -496,6 +501,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         }, {
             type = "slider",
             text = "Count Size",
+            tooltip = "How big the count text is.",
             disabled = ShowsText,
             disabledTooltip = ICON_ROWS_TIP,
             min = 8,
@@ -831,6 +837,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Enable Bloodlust Icon",
+        tooltip = "Shows an icon while Bloodlust or a similar effect is on you.",
         values = VIS_VALUES,
         order = VIS_ORDER,
         getValue = function() return LustCfg("visibility") or "NEVER" end,
@@ -918,6 +925,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Duration Size",
+            tooltip = "How big the duration text is.",
             min = 8,
             max = 30,
             step = 1,
@@ -930,6 +938,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         }, {
             type = "slider",
             text = "Count Size",
+            tooltip = "How big the count text is.",
             min = 8,
             max = 20,
             step = 1,

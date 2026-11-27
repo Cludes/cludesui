@@ -3535,6 +3535,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Enable Action Wheel",
+                tooltip = "Turns the Action Wheel on.",
                 getValue = function() return ProfileGet("enabled") == true end,
                 setValue = function(value)
                     ProfilePut("enabled", value)

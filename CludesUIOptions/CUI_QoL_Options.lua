@@ -371,6 +371,7 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
     }, {
         type = "slider",
         text = "Combat Text Size",
+        tooltip = "How big the combat text is.",
         min = 10,
         max = 48,
         step = 1,
@@ -1117,6 +1118,7 @@ CUI.AtOptionsLogin(function()
         fpsRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show FPS Counter",
+            tooltip = "Shows your frames per second.",
             getValue = function() return CUI.QoLExtrasGet("showFPS") or false end,
             setValue = function(val)
                 CUI.QoLExtrasSet("showFPS", val)

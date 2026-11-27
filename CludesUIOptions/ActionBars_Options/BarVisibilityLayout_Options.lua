@@ -685,6 +685,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             CUI.AddCaptureAccessor(region, {
                 type = "keybind",
                 text = "Toggle Action Bar",
+                tooltip = "A key that shows or hides this bar.",
                 getValue = function() return SB().toggleVisKey end,
                 setValue = function(value)
                     SB().toggleVisKey = value
@@ -1012,6 +1013,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             orientRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Vertical Orientation",
+                tooltip = "Lays the icons out in a column instead of a row.",
                 disabled = function() return not ABAR:BarSupportsOrientation(SelectedKey()) end,
                 disabledTooltip = "This option is not supported for this bar type",
                 rawTooltip = true,

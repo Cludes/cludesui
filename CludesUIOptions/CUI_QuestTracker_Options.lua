@@ -496,6 +496,7 @@ CludesUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Header Font Size",
+                tooltip = "How big the headers are.",
                 min = 8,
                 max = 24,
                 step = 1,
@@ -504,6 +505,7 @@ CludesUI.AtOptionsLogin(function()
             }, {
                 type = "slider",
                 text = "Title Font Size",
+                tooltip = "How big the quest titles are.",
                 min = 8,
                 max = 24,
                 step = 1,
@@ -518,6 +520,7 @@ CludesUI.AtOptionsLogin(function()
                 _, height = W:DualRow(hostFrame, cursorY, {
                     type = "slider",
                     text = "Objective Font Size",
+                    tooltip = "How big the objectives are.",
                     min = 8,
                     max = 24,
                     step = 1,
@@ -1135,6 +1138,7 @@ CludesUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Auto Accept Quests",
+            tooltip = "Accepts quests for you.",
             getValue = CfgOr("autoAccept", false),
             setValue = function(val)
                 Set("autoAccept", val)
@@ -1143,6 +1147,7 @@ CludesUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Auto Turn In Quests",
+            tooltip = "Turns in quests for you.",
             getValue = CfgOr("autoTurnIn", false),
             setValue = function(val)
                 Set("autoTurnIn", val)

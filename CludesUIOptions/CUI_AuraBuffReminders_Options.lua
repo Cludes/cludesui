@@ -1951,6 +1951,7 @@ CUI.AtOptionsLogin(function()
         local nameRow, h = W:DualRow(parent, y, {
             type = "toggle",
             text = "Show Name",
+            tooltip = "Shows the name.",
             getValue = Raw("showText"),
             setValue = Rebuilds("showText"),
         }, {
@@ -2056,6 +2057,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Frame Strata",
+            tooltip = "Which layer it draws on, above or below other frames.",
             values = _G._CUABR_STRATA_VALUES or { MEDIUM = "Medium" },
             order = _G._CUABR_STRATA_ORDER or { "MEDIUM" },
             getValue = Get("frameStrata", "MEDIUM"),

@@ -716,6 +716,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         CUI.BlizzStyle.Gate("actionbars", {
             type = "dropdown",
             text = "Custom Button Shape",
+            tooltip = "The shape the buttons are cut to.",
             disabled = BlizzLookOn,
             disabledTooltip = CUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
@@ -861,6 +862,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         CUI.BlizzStyle.Gate("actionbars", {
             type = "slider",
             text = "Icon Background",
+            tooltip = "Shows a background behind empty slots.",
             min = 0,
             max = 100,
             step = 1,
@@ -1631,6 +1633,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     rangeSwipeRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Out of Range Coloring",
+        tooltip = "Tints buttons red when the target is out of range.",
         getValue = function() return ReadSetting("outOfRangeColoring") or false end,
         setValue = function(value)
             WriteSetting("outOfRangeColoring", value, function() ABAR:ApplyRangeColoring() end)
@@ -1836,6 +1839,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     obaRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "One Button Assist Icon",
+        tooltip = "Shows the one-button rotation assist icon on its button.",
         getValue = function() return ABAR.db.profile.obaIconEnabled ~= false end,
         setValue = function(value)
             ABAR.db.profile.obaIconEnabled = value
@@ -1886,6 +1890,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         behaviorRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Click Through",
+            tooltip = "Clicks pass through the bar to whatever is behind it.",
             getValue = function() return ReadSetting("clickThrough") end,
             setValue = function(value)
                 WriteSetting("clickThrough", value, function(keyName) ABAR:ApplyClickThroughForBar(keyName) end)
@@ -1895,6 +1900,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         }, {
             type = "toggle",
             text = "Disable Tooltips",
+            tooltip = "Stops tooltips showing when you hover the buttons.",
             getValue = function() return ReadSetting("disableTooltips") or false end,
             setValue = function(value) WriteSetting("disableTooltips", value) end,
         })
@@ -2334,6 +2340,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     }, {
         type = "slider",
         text = "Cooldown Text Size",
+        tooltip = "How big the cooldown numbers are.",
         min = 6,
         max = 30,
         step = 1,
@@ -2452,6 +2459,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         {
             type = "slider",
             text = "Charge Text Size",
+            tooltip = "How big the charge count is.",
             min = 6,
             max = 30,
             step = 1,
@@ -2497,6 +2505,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Keybind Text",
+        tooltip = "Shows each button's keybind.",
         -- Shows the inverse of hideKeybind, the stored setting.
         getValue = function() return not ReadSetting("hideKeybind") end,
         setValue = function(value)
@@ -2506,6 +2515,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     }, {
         type = "slider",
         text = "Keybind Text Size",
+        tooltip = "How big the keybind text is.",
         min = 6,
         max = 30,
         step = 1,
@@ -2549,6 +2559,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     macroRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Macro Text",
+        tooltip = "Shows macro names on buttons.",
         -- Shows the inverse of hideMacroText, the stored setting.
         getValue = function() return not ReadSetting("hideMacroText") end,
         setValue = function(value)
@@ -2558,6 +2569,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     }, {
         type = "slider",
         text = "Macro Text Size",
+        tooltip = "How big the macro names are.",
         min = 6,
         max = 30,
         step = 1,

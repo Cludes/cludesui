@@ -283,6 +283,7 @@ CUI.AtOptionsLogin(function()
             shapeCfg = CUI.BlizzStyle.Gate("minimap", {
                 type = "dropdown",
                 text = "Shape",
+                tooltip = "The minimap's shape.",
                 values = {
                     square = "Square",
                     rectangular = "Rectangular",
@@ -784,6 +785,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Rotate Minimap",
+            tooltip = "Turns the map with you instead of keeping north up.",
             getValue = MapGetRow("rotateMinimap", false),
             setValue = MapSetRow("rotateMinimap"),
         })
@@ -839,6 +841,7 @@ CUI.AtOptionsLogin(function()
         ungroupRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Ungroup Minimap Buttons",
+            tooltip = "Shows addon buttons around the minimap instead of in one group.",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
             disabled = TooFewButtons,
@@ -962,6 +965,7 @@ CUI.AtOptionsLogin(function()
         extraBtnRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Show Extra Buttons",
+            tooltip = "Shows extra buttons beside the minimap.",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
             getValue = function() return "__placeholder" end,
@@ -1415,6 +1419,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Addon Compartment Scale",
+            tooltip = "Makes the addon list button bigger or smaller.",
             min = 0.5,
             max = 1.5,
             step = 0.05,
@@ -1500,6 +1505,7 @@ CUI.AtOptionsLogin(function()
         blizzRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Show Blizzard Elements",
+            tooltip = "Shows the game's own minimap buttons.",
             values = { ["_placeholder"] = "..." },
             order = { "_placeholder" },
             getValue = function() return "_placeholder" end,
@@ -1507,6 +1513,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Scroll to Zoom",
+            tooltip = "Zooms the minimap with the mouse wheel.",
             getValue = function()
                 local mapDB = MinimapDB()
                 return mapDB and mapDB.scrollZoom
@@ -1583,6 +1590,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "dropdown",
                 text = "Mail Position",
+                tooltip = "Where the mail icon sits.",
                 values = {
                     button = "Minimap Button",
                     TOPRIGHT = "Top Right",
@@ -1697,6 +1705,7 @@ CUI.AtOptionsLogin(function()
         clockRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Clock Style",
+            tooltip = "How the clock shows the time.",
             values = { none = "None", inside = "Inside Map", edge = "Edge Box" },
             order = { "none", "inside", "edge" },
             getValue = ClockMode,
@@ -1707,6 +1716,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Clock Position",
+            tooltip = "Where the clock sits.",
             values = MAP_POS_VALUES,
             order = MAP_POS_ORDER,
             disabled = function() return ClockMode() == "none" end,
@@ -1781,6 +1791,7 @@ CUI.AtOptionsLogin(function()
             CUI.BlizzStyle.Gate("minimap", {
                 type = "dropdown",
                 text = "Zone Position",
+                tooltip = "Where the zone name sits.",
                 values = MAP_POS_VALUES,
                 order = MAP_POS_ORDER,
                 disabled = function() return LocationMode() == "none" end,
@@ -1857,6 +1868,7 @@ CUI.AtOptionsLogin(function()
         coordsRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Show Coordinates",
+            tooltip = "Shows your map coordinates.",
             values = { never = "Never", hover = "On Hover", always = "Always" },
             order = { "never", "hover", "always" },
             getValue = CoordsMode,
@@ -1867,6 +1879,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Coordinates Position",
+            tooltip = "Where the coordinates sit.",
             values = MAP_POS_VALUES,
             order = MAP_POS_ORDER,
             disabled = function() return CoordsMode() == "never" end,
@@ -1932,6 +1945,7 @@ CUI.AtOptionsLogin(function()
         fpsRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show FPS/MS",
+            tooltip = "Shows frames per second and latency.",
             getValue = MapGetRow("showFPS", false),
             setValue = function(value)
                 if not MapSet("showFPS", value) then return end
@@ -1940,6 +1954,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "FPS/MS Position",
+            tooltip = "Where the FPS and latency text sits.",
             values = MAP_POS_VALUES,
             order = MAP_POS_ORDER,
             disabled = FpsHidden,
@@ -2024,6 +2039,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Show on FPS/MS Hover",
+            tooltip = "What hovering the FPS text shows.",
             values = HOVER_TT_VALUES,
             order = HOVER_TT_ORDER,
             disabled = FpsHidden,
@@ -2038,6 +2054,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Show on Clock Hover",
+            tooltip = "What hovering the clock shows.",
             values = HOVER_TT_VALUES,
             order = HOVER_TT_ORDER,
             disabled = function() return ClockMode() == "none" end,
@@ -2065,6 +2082,7 @@ CUI.AtOptionsLogin(function()
         diffRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Instance Difficulty as Text",
+            tooltip = "Writes the instance difficulty instead of showing its icon.",
             getValue = DiffTextOn,
             setValue = function(value)
                 local mapDB = MinimapDB()
@@ -2076,6 +2094,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Difficulty Position",
+            tooltip = "Where the instance difficulty sits.",
             values = MAP_POS_VALUES,
             order = MAP_POS_ORDER,
             disabled = function() return not DiffTextOn() end,

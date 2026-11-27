@@ -787,6 +787,7 @@ local function DataBarKit(hostFrame)
         return {
             type = "toggle",
             text = "Click Through",
+            tooltip = "Clicks pass through the bar to whatever is behind it.",
             getValue = function() return BarCfg().clickThrough end,
             setValue = function(val)
                 BarCfg().clickThrough = val

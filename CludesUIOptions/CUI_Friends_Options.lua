@@ -97,6 +97,7 @@ local function BuildPage(_, host, yOffset)
     _, h = W:DualRow(host, y, {
         type = "dropdown",
         text = "Class Icon Theme",
+        tooltip = "The look of the class icons.",
         values = CUI.FriendsKit.ICON_STYLE_VALUES, -- shared with the WoW Forever Friends card
         order = CUI.FriendsKit.ICON_STYLE_ORDER,
         getValue = iconGet,

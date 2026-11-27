@@ -632,6 +632,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     }, {
         type = "dropdown",
         text = "Icon Style",
+        tooltip = "How the icons are drawn.",
         values = ICON_STYLES,
         order = ICON_STYLE_ORDER,
         disabled = off,
@@ -765,6 +766,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             ThreatGate({
                 type = "slider",
                 text = "Header Bottom Border",
+                tooltip = "A line under the header.",
                 min = 0,
                 max = 4,
                 step = 1,
@@ -871,6 +873,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     fillRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Bar Color",
+        tooltip = "The bars' color.",
         values = BAR_COLORS,
         order = BAR_COLOR_ORDER,
         disabled = off,
@@ -1128,6 +1131,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
         ThreatGate({
             type = "dropdown",
             text = "Background Texture",
+            tooltip = "The texture behind the window.",
             values = texValues,
             order = texOrder,
             disabled = off,

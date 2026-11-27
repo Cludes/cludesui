@@ -101,6 +101,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "labeledButton",
             text = "Promote Assistants Now",
+            tooltip = "Gives assistant to the players on the list.",
             buttonText = "Promote",
             width = 90,
             onClick = function() mod.PromoteList(false) end,
@@ -129,6 +130,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Flag Durability Below",
+            tooltip = "Flags players whose gear durability is below this.",
             min = 0,
             max = 100,
             step = 5,
@@ -165,6 +167,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Sound When It Ends",
+            tooltip = "Plays a sound when the break ends.",
             getValue = function() return bt.sound end,
             setValue = function(val) bt.sound = val and true or false end,
         })
@@ -179,6 +182,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "labeledButton",
             text = "End the Break",
+            tooltip = "Ends the break for everyone.",
             buttonText = "End",
             width = 90,
             onClick = function() mod.StartBreak(0) end,
@@ -225,6 +229,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Sound on Your Turn",
+            tooltip = "Plays a sound when it is your turn.",
             getValue = function() return ks.sound end,
             setValue = function(val) ks.sound = val and true or false end,
         }, { type = "label", text = "" })
@@ -397,6 +402,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Alert Sound",
+            tooltip = "The sound the alert plays.",
             getValue = function() return hs.dropSound end,
             setValue = function(val) HSet("dropSound", val) end,
         })
@@ -510,6 +516,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Bars Shown",
+                tooltip = "How many bars show at once.",
                 min = 3,
                 max = 12,
                 step = 1,
@@ -519,6 +526,7 @@ CUI.AtOptionsLogin(function()
             }, {
                 type = "slider",
                 text = "Look Ahead (seconds)",
+                tooltip = "How far ahead upcoming abilities show.",
                 min = 10,
                 max = 60,
                 step = 5,
@@ -650,6 +658,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Show Seconds Before",
+            tooltip = "How many seconds early a reminder shows.",
             min = 1,
             max = 10,
             step = 1,
@@ -683,6 +692,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Reminder Sound",
+            tooltip = "The sound reminders play.",
             values = soundValues,
             order = soundOrder,
             getValue = function() return r.sound or "" end,

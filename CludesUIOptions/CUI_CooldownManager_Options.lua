@@ -1746,6 +1746,7 @@ CUI.AtOptionsLogin(function()
                         }, {
                             type = "dropdown",
                             text = "Glow Type",
+                            tooltip = "The glow's style.",
                             values = glowLabels,
                             order = glowOrder,
                             disabled = function() return BarHasCustomShape(curBar) end,

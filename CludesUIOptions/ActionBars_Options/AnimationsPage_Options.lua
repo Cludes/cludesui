@@ -952,6 +952,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Use Class Color",
+            tooltip = "Uses your class color.",
             disabled = function() return AssistOff() or not assistCustomSelected() end,
             disabledTooltip = "This option requires a custom Assisted Highlight glow to be selected",
             rawTooltip = true,

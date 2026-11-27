@@ -123,6 +123,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Cursor Circle",
+            tooltip = "Shows a circle around your cursor.",
             getValue = function()
                 local profile = DB()
                 return profile and (profile.enabled ~= false)
@@ -305,6 +306,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Circle Opacity",
+                tooltip = "How visible the circle is.",
                 min = 0,
                 max = 100,
                 step = 1,
@@ -321,6 +323,7 @@ CUI.AtOptionsLogin(function()
             }, {
                 type = "toggle",
                 text = "Cursor Trail",
+                tooltip = "A trail that follows your cursor.",
                 getValue = function()
                     local profile = DB()
                     return profile and profile.trail or false
@@ -338,6 +341,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only Show in Instances",
+                tooltip = "Shows it only in dungeons and raids.",
                 getValue = function()
                     local profile = DB()
                     return profile and profile.instanceOnly
@@ -423,6 +427,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable GCD Circle",
+            tooltip = "Shows the global cooldown as a circle at the cursor.",
             getValue = function() return GcdCfg().enabled or false end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
@@ -569,6 +574,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Circle Opacity",
+                tooltip = "How visible the circle is.",
                 min = 0,
                 max = 100,
                 step = 1,
@@ -593,6 +599,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only Show in Instances",
+                tooltip = "Shows it only in dungeons and raids.",
                 getValue = function() return GcdCfg().instanceOnly or false end,
                 setValue = function(val)
                     GcdCfg().instanceOnly = val
@@ -635,6 +642,7 @@ CUI.AtOptionsLogin(function()
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Cast Bar Circle",
+            tooltip = "Shows your cast progress as a circle at the cursor.",
             getValue = function() return CastCfg().enabled or false end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
@@ -804,6 +812,7 @@ CUI.AtOptionsLogin(function()
             row, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Circle Opacity",
+                tooltip = "How visible the circle is.",
                 min = 0,
                 max = 100,
                 step = 1,
@@ -828,6 +837,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only Show in Instances",
+                tooltip = "Shows it only in dungeons and raids.",
                 getValue = function() return CastCfg().instanceOnly or false end,
                 setValue = function(val)
                     CastCfg().instanceOnly = val

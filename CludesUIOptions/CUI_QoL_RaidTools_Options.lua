@@ -172,6 +172,7 @@ CUI.AtLogin(function()
             CUI.AddCaptureAccessor(region, {
                 type = "keybind",
                 text = "Toggle Raid Tools",
+                tooltip = "Shows or hides the raid tools.",
                 getValue = function() return RaidToolsCfg("toggleKey") end,
                 setValue = function(value)
                     Set("toggleKey", value)

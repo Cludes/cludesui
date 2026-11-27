@@ -374,6 +374,7 @@ CUI.AtOptionsLogin(function()
             W:DualRow(hostFrame, cursorY, fvBorderCfg or CUI.BlizzStyle.Gate("damagemeters", {
                 type = "dropdown",
                 text = "Background Texture",
+                tooltip = "The texture behind the window.",
                 values = textureValues,
                 order = dmTexOrder,
                 getValue = CfgOr("bgTexture", "none"),
@@ -511,6 +512,7 @@ CUI.AtOptionsLogin(function()
         hdrRow1, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Header Height",
+            tooltip = "How tall the header is.",
             min = 14,
             max = 40,
             step = 1,
@@ -568,6 +570,7 @@ CUI.AtOptionsLogin(function()
             CUI.BlizzStyle.Gate("damagemeters", {
                 type = "slider",
                 text = "Header Bottom Border",
+                tooltip = "A line under the header.",
                 min = 0,
                 max = 4,
                 step = 1,
@@ -989,6 +992,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Icon Style",
+            tooltip = "How the icons are drawn.",
             values = _G._CUDM_IconStyleValues or {},
             order = _G._CUDM_IconStyleOrder or {},
             getValue = CfgOr("iconStyle", "spec"),
@@ -1451,6 +1455,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Show Breakdown on Hover",
+                tooltip = "Hovering a bar shows that player's spell breakdown.",
                 getValue = function() return MeterGet("showHoverTooltip") ~= false end,
                 setValue = SetRow("showHoverTooltip"),
             },
@@ -1607,6 +1612,7 @@ CUI.AtOptionsLogin(function()
         hnRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Number Format",
+            tooltip = "How numbers are written.",
             values = { [0] = "DPS", [1] = "Damage", [2] = "Damage (DPS)", [3] = "Damage | DPS" },
             order = { 0, 1, 2, 3 },
             getValue = CfgOr("numberFormat", 2),
@@ -1658,6 +1664,7 @@ CUI.AtOptionsLogin(function()
         btRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Left Text Size",
+            tooltip = "How big the left text is.",
             min = 8,
             max = 18,
             step = 1,
@@ -1670,6 +1677,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Right Text Size",
+            tooltip = "How big the right text is.",
             min = 8,
             max = 18,
             step = 1,
@@ -1955,6 +1963,7 @@ CUI.AtOptionsLogin(function()
         satRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Standalone Combat Timer",
+            tooltip = "Shows the combat timer in its own frame.",
             getValue = CfgOr("standaloneTimer", false),
             setValue = CUI.SectionToggleSetValue(function(val)
                 MeterSet("standaloneTimer", val)
@@ -1970,6 +1979,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "multiSwatch",
             text = "Timer Text Color",
+            tooltip = "The timer text's color.",
             disabled = function() return not MeterGet("standaloneTimer") end,
             disabledTooltip = "Standalone Combat Timer",
             swatches = {
@@ -2522,6 +2532,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Animation Style",
+            tooltip = "How icons appear and leave.",
             disabled = iconOff,
             disabledTooltip = "Icon History",
             values = shAnimValues,
@@ -2625,6 +2636,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Hide Top Bar",
+            tooltip = "Hides the bar along the top of the window.",
             disabled = barsOff,
             disabledTooltip = "Bar History",
             getValue = function() return SpellHistoryDB().hideTopBar end,
@@ -2755,6 +2767,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Bar Color",
+            tooltip = "The bars' color.",
             disabled = barsOff,
             disabledTooltip = "Bar History",
             swatches = {

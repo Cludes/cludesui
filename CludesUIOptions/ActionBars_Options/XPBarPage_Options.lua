@@ -359,6 +359,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     visOpts.leftCfg = {
         type = "dropdown",
         text = "XP Bar Style",
+        tooltip = "The look of the experience bar.",
         values = styleValues,
         order = styleOrder,
         -- A frame art this client lacks shows as the CludesUI bar it draws.
@@ -390,6 +391,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     divRowTop, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Dividers",
+        tooltip = "Lines that split the bar into segments.",
         disabled = _blizzDis,
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
@@ -1289,6 +1291,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     textBgRow, height = W:DualRow(hostFrame, cursorY, K.TextSizeCfg(XP), {
         type = "toggle",
         text = "Text Background",
+        tooltip = "A background behind the text.",
         disabled = _blizzDis,
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
@@ -1392,6 +1395,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     }, {
         type = "colorpicker",
         text = "Rested Color",
+        tooltip = "The color of rested experience.",
         hasAlpha = true,
         disabled = _blizzDis,
         disabledTooltip = BLIZZ_DIS_TIP,

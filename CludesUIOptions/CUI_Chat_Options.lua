@@ -537,6 +537,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Enable Idle Fade",
+                tooltip = "Fades the chat out when nothing new arrives.",
                 getValue = function() return ChatCfg("idleFadeEnabled") ~= false end,
                 setValue = function(val)
                     ChatSet("idleFadeEnabled", val)
@@ -547,6 +548,7 @@ CUI.AtOptionsLogin(function()
             }, {
                 type = "slider",
                 text = "Fade Delay",
+                tooltip = "How long before the chat fades.",
                 min = 5,
                 max = 30,
                 step = 1,
@@ -564,6 +566,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Fade Strength",
+                tooltip = "How far the chat fades.",
                 min = 0,
                 max = 100,
                 step = 1,
@@ -627,6 +630,7 @@ CUI.AtOptionsLogin(function()
                 {
                     type = "dropdown",
                     text = "Sidebar Visibility",
+                    tooltip = "When the sidebar shows.",
                     values = sidebarVisValues,
                     order = sidebarVisOrder,
                     getValue = CfgOr("sidebarVisibility", "always"),
@@ -643,6 +647,7 @@ CUI.AtOptionsLogin(function()
                 end)({
                     type = "toggle",
                     text = "Hide Sidebar Background",
+                    tooltip = "Hides the sidebar's background.",
                     getValue = CfgOr("hideSidebarBg", false),
                     setValue = function(val)
                         ChatSet("hideSidebarBg", val)
@@ -674,6 +679,7 @@ CUI.AtOptionsLogin(function()
             sidebarLayoutRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Sidebar Width",
+                tooltip = "How wide the sidebar is.",
                 min = 30,
                 max = 100,
                 step = 1,
@@ -781,6 +787,7 @@ CUI.AtOptionsLogin(function()
                 {
                     type = "dropdown",
                     text = "Sidebar Icons",
+                    tooltip = "Which icons the sidebar shows.",
                     values = { __placeholder = "..." },
                     order = { "__placeholder" },
                     getValue = function() return "__placeholder" end,
@@ -838,6 +845,7 @@ CUI.AtOptionsLogin(function()
             sizeRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Sidebar Icon Size",
+                tooltip = "How big the sidebar icons are.",
                 min = 0.5,
                 max = 2.0,
                 step = 0.05,
@@ -951,6 +959,7 @@ CUI.AtOptionsLogin(function()
                 }, {
                     type = "slider",
                     text = "Tab Spacing",
+                    tooltip = "The gap between tabs.",
                     min = 0,
                     max = 10,
                     step = 1,
@@ -968,6 +977,7 @@ CUI.AtOptionsLogin(function()
                 _, height = W:DualRow(hostFrame, cursorY, {
                     type = "slider",
                     text = "Tab Height",
+                    tooltip = "How tall the tabs are.",
                     min = 18,
                     max = 40,
                     step = 1,
@@ -979,6 +989,7 @@ CUI.AtOptionsLogin(function()
                 }, {
                     type = "slider",
                     text = "Inner Padding X",
+                    tooltip = "The space between the text and the window's sides.",
                     min = 0,
                     max = 30,
                     step = 1,
@@ -998,6 +1009,7 @@ CUI.AtOptionsLogin(function()
                 _, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Tab Font",
+                    tooltip = "The tabs' font.",
                     values = fontValues,
                     order = fontOrder,
                     getValue = CfgOr("tabFont", "__global"),
@@ -1009,6 +1021,7 @@ CUI.AtOptionsLogin(function()
                 }, {
                     type = "slider",
                     text = "Tab Font Size",
+                    tooltip = "How big the tab text is.",
                     min = 8,
                     max = 24,
                     step = 1,
@@ -1152,10 +1165,12 @@ CUI.AtOptionsLogin(function()
                 tabBgRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "multiSwatch",
                     text = "Tab Background Color",
+                    tooltip = "The background of the tabs.",
                     swatches = InactiveTabBgSwatches(),
                 }, {
                     type = "multiSwatch",
                     text = "Tab Background Color Active",
+                    tooltip = "The background of the selected tab.",
                     swatches = ActiveTabBgSwatches(),
                 })
                 local function AttachTabBgOpacityCog(region, isActive)
@@ -1276,6 +1291,7 @@ CUI.AtOptionsLogin(function()
                 underlineRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Active Underline",
+                    tooltip = "A line under the selected tab.",
                     getValue = function() return ChatCfg("activeUnderline") ~= false end,
                     setValue = function(val)
                         ChatSet("activeUnderline", val)
@@ -1607,6 +1623,7 @@ CUI.AtOptionsLogin(function()
                 local ebHeightCfg = {
                     type = "slider",
                     text = "Edit Box Height",
+                    tooltip = "How tall the box you type in is.",
                     min = 10,
                     max = 60,
                     step = 1,
@@ -1622,6 +1639,7 @@ CUI.AtOptionsLogin(function()
                     _, height = W:DualRow(hostFrame, cursorY, {
                         type = "toggle",
                         text = "Input on Top",
+                        tooltip = "Puts the box you type in above the chat.",
                         getValue = CfgOr("inputOnTop", false),
                         setValue = function(val)
                             ChatSet("inputOnTop", val)
@@ -1639,6 +1657,7 @@ CUI.AtOptionsLogin(function()
                 _, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Edit Box Font",
+                    tooltip = "The font of the box you type in.",
                     values = fontValues,
                     order = fontOrder,
                     getValue = CfgOr("editBoxFont", "__chat"),
@@ -1649,6 +1668,7 @@ CUI.AtOptionsLogin(function()
                 }, {
                     type = "slider",
                     text = "Edit Box Font Size",
+                    tooltip = "How big the text you type is.",
                     min = 8,
                     max = 24,
                     step = 1,
@@ -1688,6 +1708,7 @@ CUI.AtOptionsLogin(function()
             }, {
                 type = "toggle",
                 text = "Hide Tooltip on Hover",
+                tooltip = "Stops tooltips showing when you hover links in chat.",
                 getValue = CfgOr("hideTooltipOnHover", false),
                 setValue = function(val) ChatSet("hideTooltipOnHover", val) end,
             })
@@ -1745,6 +1766,7 @@ CUI.AtOptionsLogin(function()
             local hideBordersCfg = {
                 type = "toggle",
                 text = "Hide Borders",
+                tooltip = "Hides the chat window's borders.",
                 getValue = CfgOr("hideBorders", false),
                 setValue = function(val)
                     ChatSet("hideBorders", val)
@@ -1882,6 +1904,7 @@ CUI.AtOptionsLogin(function()
                 }, {
                     type = "dropdown",
                     text = "Timestamps",
+                    tooltip = "Shows the time before each message.",
                     values = tsValues,
                     order = tsOrder,
                     getValue = CfgOr("timestampFormat", "%I:%M "),

@@ -3675,6 +3675,7 @@ CUI.AtOptionsLogin(function()
                 iconStyleCfg = {
                     type = "segmented",
                     text = "Icon Style",
+                    tooltip = "How the icons are drawn.",
                     values = { custom = "Custom", wow = "Blizzard" },
                     order = { "custom", "wow" },
                     -- Item Level shows its icon only as the "Icon" prefix.
