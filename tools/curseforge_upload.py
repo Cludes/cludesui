@@ -1,7 +1,7 @@
 """Uploads a release zip to the CludesUI CurseForge project (run by release.yml).
 
-Env: CF_API_KEY (CurseForge API token), TAG (vX.Y.Z). Reads notes.md (the
-GitHub release notes) as the changelog and CludesUI-<TAG>.zip as the file.
+Env: CF_API_KEY (CurseForge API token), TAG (vX.Y.Z). Reads cf_notes.md
+(tools/release_notes.py: the notes without the zip install steps) as the changelog and CludesUI-<TAG>.zip as the file.
 Game versions come from CludesUI.toc's ## Interface line (120105 -> 12.1.5),
 matched by name against CurseForge's list. Upload API:
 https://support.curseforge.com/en/support/solutions/articles/9000197321-curseforge-upload-api
@@ -53,7 +53,7 @@ def main():
         sys.exit("No game version matched. Newest on CurseForge: " + ", ".join(v.get("name", "?") for v in newest))
 
     metadata = {
-        "changelog": open("notes.md", encoding="utf-8").read(),
+        "changelog": open("cf_notes.md" if os.path.exists("cf_notes.md") else "notes.md", encoding="utf-8").read(),
         "changelogType": "markdown",
         "displayName": f"CludesUI {TAG}",
         "gameVersions": sorted({v["id"] for v in picked}),

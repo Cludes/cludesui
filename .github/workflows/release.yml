@@ -85,34 +85,9 @@ jobs:
         if: steps.version.outputs.skip != '1'
         env:
           TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          prev=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
-          day=$(git log -1 --format=%cd --date=format:'%-d %B %Y' "$TAG")
-          {
-            echo "Released $day."
-            echo
-            echo "## Changes"
-            echo
-            # Only commits that change the addons (the same paths that trigger a
-            # release), and of those only their "Player: ..." body lines: the
-            # change in players' words. A commit without one stays out.
-            range=${prev:+$prev..}"$TAG"
-            paths=". :!tools :!.github :!*.md :!.stylua.toml :!.gitignore"
-            if [ -z "$(git log --no-merges --format=%h "$range" -- $paths)" ]; then
-              echo "- No addon changes since $prev."
-            else
-              changes=$(git log --no-merges --reverse --format=%B "$range" -- $paths | sed -n 's/^Player: *\(.*[^ ]\) *$/- \1/p')
-              echo "${changes:-- Fixes and polish.}"
-            fi
-            echo
-            echo "## Install"
-            echo
-            echo "Unzip, then copy every \`CludesUI...\` folder into your game's \`Interface\\AddOns\` folder (Retail: \`World of Warcraft\\_retail_\\Interface\\AddOns\`) and restart the game."
-            if [ -n "$prev" ]; then
-              echo
-              echo "Full list of changes: https://github.com/$GITHUB_REPOSITORY/compare/$prev...$TAG"
-            fi
-          } > notes.md
+        # notes.md (GitHub) and cf_notes.md (CurseForge): the commits' Player: lines,
+        # grouped New and improved / Fixed (tools/release_notes.py).
+        run: python3 tools/release_notes.py
 
       - name: Publish
         if: steps.version.outputs.skip != '1'
