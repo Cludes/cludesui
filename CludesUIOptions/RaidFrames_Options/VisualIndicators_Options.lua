@@ -505,6 +505,7 @@ local function BuildVisualIndicators(
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Role Icons",
+        tooltip = "The look of the role icons.",
         values = roleStyleValues,
         order = roleStyleOrder,
         disabled = function() return SettingOr("roleText", false) end,
@@ -518,6 +519,7 @@ local function BuildVisualIndicators(
     }, {
         type = "dropdown",
         text = "Show Role",
+        tooltip = "Which roles show a role icon.",
         disabled = function()
             return not SettingOr("roleText", false) and SettingOr("roleIconStyle", "modern") == "none"
         end,
@@ -627,6 +629,7 @@ local function BuildVisualIndicators(
         mod.RF_PartyKitGate({
             type = "dropdown",
             text = "Role Position",
+            tooltip = "Where the role icon sits.",
             values = rolePositionValues,
             order = rolePositionOrder,
             disabled = function()
@@ -641,6 +644,7 @@ local function BuildVisualIndicators(
         {
             type = "slider",
             text = "Role Icon Size",
+            tooltip = "How big the role icon is.",
             min = 8,
             max = 30,
             step = 1,
@@ -710,6 +714,7 @@ local function BuildVisualIndicators(
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Marker Position",
+        tooltip = "Where the raid target marker sits.",
         values = markerPositionValues,
         order = markerPositionOrder,
         getValue = function()
@@ -796,6 +801,7 @@ local function BuildVisualIndicators(
             mod.RF_PartyKitGate({
                 type = "dropdown",
                 text = "Ready Check / Summon / Rez",
+                tooltip = "Where the ready check, summon and resurrection icons sit.",
                 values = readyCheckPositionValues,
                 order = readyCheckPositionOrder,
                 getValue = SValRow("readyCheckPosition", "center"),
@@ -885,6 +891,7 @@ local function BuildVisualIndicators(
         stRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Status Text",
+            tooltip = "Where status text such as Offline or Dead sits.",
             values = statusTextPositionValues,
             order = statusTextPositionOrder,
             getValue = SValRow("statusTextPosition", "center"),
@@ -977,6 +984,7 @@ local function BuildVisualIndicators(
         row, height = W:DualRow(hostFrame, cursorY, mod.RF_OptPartyKit() and {
             type = "segmented",
             text = "Leader Icon",
+            tooltip = "Shows the crown on the group leader.",
             values = { kit = "Party Frame", none = "None" },
             order = { "kit", "none" },
             getValue = function() return SettingOr("showLeaderIcon", false) and "kit" or "none" end,
@@ -987,6 +995,7 @@ local function BuildVisualIndicators(
         } or {
             type = "dropdown",
             text = "Leader Icon",
+            tooltip = "Shows the crown on the group leader.",
             values = leaderPositionValues,
             order = leaderPositionOrder,
             getValue = function()
@@ -1005,6 +1014,7 @@ local function BuildVisualIndicators(
         }, {
             type = "slider",
             text = "Leader Icon Size",
+            tooltip = "How big the leader icon is.",
             min = 8,
             max = 30,
             step = 1,
@@ -1092,6 +1102,7 @@ local function BuildVisualIndicators(
         ciRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Combat Icon",
+            tooltip = "Shows an icon on players who are in combat.",
             values = combatPositionValues,
             order = combatPositionOrder,
             getValue = function()
@@ -1111,6 +1122,7 @@ local function BuildVisualIndicators(
         }, {
             type = "slider",
             text = "Combat Icon Size",
+            tooltip = "How big the combat icon is.",
             min = 8,
             max = 40,
             step = 1,
@@ -1296,6 +1308,7 @@ local function BuildVisualIndicators(
         }, {
             type = "slider",
             text = "Ping Marker Size",
+            tooltip = "How big the ping marker is.",
             min = 10,
             max = 60,
             step = 1,
@@ -1432,6 +1445,7 @@ local function BuildVisualIndicators(
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Dispel Overlay",
+        tooltip = "How a frame is tinted when it has a debuff you can dispel.",
         values = dispelOverlayValues,
         order = dispelOverlayOrder,
         getValue = SValRow("dispelOverlay", "fill"),
@@ -1442,6 +1456,7 @@ local function BuildVisualIndicators(
     }, {
         type = "slider",
         text = "Overlay Opacity",
+        tooltip = "How strong the dispel tint is.",
         min = 5,
         max = 100,
         step = 1,
@@ -1479,6 +1494,7 @@ local function BuildVisualIndicators(
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Frame Border",
+        tooltip = "The border around each frame.",
         min = 0,
         max = 4,
         step = 1,
@@ -1487,6 +1503,7 @@ local function BuildVisualIndicators(
     }, {
         type = "dropdown",
         text = "Type Icon Position",
+        tooltip = "Where the debuff type icon sits.",
         values = dispelIconPositionValues,
         order = dispelIconPositionOrder,
         getValue = function()
@@ -1583,6 +1600,7 @@ local function BuildVisualIndicators(
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Dispel Colors",
+        tooltip = "The colors used for each dispellable debuff type.",
         -- Per-type alpha 0 hides that type's border/overlay entirely.
         swatches = {
             {
@@ -1654,6 +1672,7 @@ local function BuildVisualIndicators(
     }, {
         type = "toggle",
         text = "Only Show Dispellable",
+        tooltip = "Shows only debuffs you can dispel.",
         -- Inverse of dispelShowAll: ON = only-mine (dispelShowAll=false).
         getValue = function() return not SettingOr("dispelShowAll", true) end,
         setValue = function(val) WriteSetting("dispelShowAll", not val) end,
@@ -1678,6 +1697,7 @@ local function BuildVisualIndicators(
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Top Name Bar",
+            tooltip = "A separate bar above each frame that holds the name.",
             getValue = SValRow("topNameBarEnabled", false),
             setValue = CUI.SectionToggleSetValue(function(val) WriteSetting("topNameBarEnabled", val) end),
         }, TNBOff() and { type = "label", text = "" } or {
@@ -1929,6 +1949,7 @@ local function BuildVisualIndicators(
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "segmented",
             text = "Add Friendly Boss Group",
+            tooltip = "Adds friendly bosses you can heal as their own small group: never, for healers, or always.",
             values = { never = "Never", healers = "Healers", always = "Always" },
             order = { "never", "healers", "always" },
             getValue = function() return FriendlyBossCfg().display or "never" end,
@@ -2515,6 +2536,7 @@ local function BuildVisualIndicators(
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Out of Range Alpha",
+        tooltip = "How faded frames are when the player is out of range.",
         min = 10,
         max = 100,
         step = 1,
@@ -2614,6 +2636,7 @@ local function BuildVisualIndicators(
     }, {
         type = "multiSwatch",
         text = "Healer Mana Text Color",
+        tooltip = "The color of the healer mana text.",
         swatches = {
             {
                 tooltip = "Custom Colored",
@@ -2871,6 +2894,7 @@ local function BuildVisualIndicators(
         }, {
             type = "multiSwatch",
             text = "Group Label Text Color",
+            tooltip = "The text color of each group's label.",
             disabled = PGOff,
             disabledTooltip = "Player Group Label",
             swatches = PGModeSwatches("textColorMode", "textColor"),
@@ -2879,6 +2903,7 @@ local function BuildVisualIndicators(
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Group Label Background",
+            tooltip = "The background behind each group's label.",
             disabled = PGOff,
             disabledTooltip = "Player Group Label",
             swatches = {
@@ -2898,6 +2923,7 @@ local function BuildVisualIndicators(
         }, {
             type = "multiSwatch",
             text = "Group Label Border Color",
+            tooltip = "The border color of each group's label.",
             disabled = PGOff,
             disabledTooltip = "Player Group Label",
             swatches = PGModeSwatches("borderColorMode", "borderColor"),
@@ -3032,6 +3058,7 @@ local function BuildVisualIndicators(
     }, {
         type = "multiSwatch",
         text = "Status Colors",
+        tooltip = "Colors for offline, dead and similar states.",
         swatches = {
             {
                 tooltip = "Offline",

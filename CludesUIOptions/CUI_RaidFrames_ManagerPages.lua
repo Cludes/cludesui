@@ -1158,6 +1158,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     }, {
         type = "slider",
         text = "Max Debuffs",
+        tooltip = "The most debuffs shown on a frame.",
         min = 1,
         max = 10,
         step = 1,
@@ -1201,6 +1202,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     }, {
         type = "dropdown",
         text = "Growth Direction",
+        tooltip = "Which way new icons are added.",
         values = GROW_VALUES,
         order = GROW_ORDER,
         getValue = PFieldOr("debuffGrowDirection", "LEFT"),
@@ -1284,11 +1286,13 @@ local function BuildBaseDetailDM(widget, fontFile)
     dtRow, hh = W:DualRow(widget, sy, {
         type = "toggle",
         text = "Show Duration Text",
+        tooltip = "Shows the time left on each icon.",
         getValue = function() return profile.debuffShowDurText and true or false end,
         setValue = PFieldThen("debuffShowDurText"),
     }, {
         type = "toggle",
         text = "Show Stacks",
+        tooltip = "Shows the stack count on each icon.",
         getValue = function() return profile.debuffShowStacks ~= false end,
         setValue = PFieldThen("debuffShowStacks"),
     })
@@ -1391,6 +1395,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     tipRow, hh = W:DualRow(widget, sy, {
         type = "dropdown",
         text = "Tooltips",
+        tooltip = "When hovering a frame shows its tooltip.",
         values = TIP_VALUES,
         order = TIP_ORDER,
         getValue = function() return TipModeKey(profile.debuffHideTooltips) end,
@@ -1402,6 +1407,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     }, {
         type = "toggle",
         text = "Show Duration Swipe",
+        tooltip = "The shading that sweeps across an icon as its aura runs out.",
         getValue = function() return profile.debuffShowSwipe ~= false end,
         setValue = PFieldThen("debuffShowSwipe"),
     })
@@ -1552,6 +1558,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         }, {
             type = "slider",
             text = "Max Debuffs",
+            tooltip = "The most debuffs shown on a frame.",
             min = 1,
             max = 10,
             step = 1,
@@ -1594,6 +1601,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         }, {
             type = "dropdown",
             text = "Growth Direction",
+            tooltip = "Which way new icons are added.",
             values = GROW_VALUES,
             order = GROW_ORDER,
             getValue = TFieldOr("growDirection", "CENTER"),
@@ -1673,11 +1681,13 @@ local function BuildTileDetail(widget, fontFile, tbl)
         dtRow, hh = W:DualRow(widget, sy, {
             type = "toggle",
             text = "Show Duration Text",
+            tooltip = "Shows the time left on each icon.",
             getValue = function() return TBoolOff("showDurText", "debuffShowDurText") end,
             setValue = function(val) TSet("showDurText", val and true or false) end,
         }, {
             type = "toggle",
             text = "Show Stacks",
+            tooltip = "Shows the stack count on each icon.",
             getValue = function() return TBoolOn("showStacks", "debuffShowStacks") end,
             setValue = function(val) TSet("showStacks", val and true or false) end,
         })
@@ -1777,6 +1787,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         _, hh = W:DualRow(widget, sy, {
             type = "dropdown",
             text = "Tooltips",
+            tooltip = "When hovering a frame shows its tooltip.",
             values = TIP_VALUES,
             order = TIP_ORDER,
             getValue = function()
@@ -1788,6 +1799,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         }, {
             type = "toggle",
             text = "Show Duration Swipe",
+            tooltip = "The shading that sweeps across an icon as its aura runs out.",
             getValue = function() return TBoolOn("showSwipe", "debuffShowSwipe") end,
             setValue = function(val) TSet("showSwipe", val and true or false) end,
         })

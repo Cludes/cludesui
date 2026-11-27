@@ -426,6 +426,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     _, hgt = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "20 Man Frame Width",
+        tooltip = "Frame width in groups of up to 20.",
         min = 40,
         max = 300,
         step = 1,
@@ -434,6 +435,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     }, {
         type = "slider",
         text = "20 Man Frame Height",
+        tooltip = "Frame height in groups of up to 20.",
         min = 20,
         max = 150,
         step = 1,
@@ -856,6 +858,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         local autoResizeSlot = {
             type = "dropdown",
             text = "Auto Resize Icons",
+            tooltip = "Shrinks the icons to fit smaller frames.",
             values = { __placeholder = "All" },
             order = { "__placeholder" },
             getValue = function() return "__placeholder" end,
@@ -952,6 +955,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         type = "slider",
         pixel = true,
         text = "Group Spacing",
+        tooltip = "The gap between groups.",
         min = -5,
         max = 15,
         step = 1,
@@ -1405,6 +1409,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     growthRow, hgt = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Group Growth",
+        tooltip = "Which way new groups are added.",
         values = groupGrowthValues,
         order = groupGrowthOrder,
         disabledValues = GridFlowOff,
@@ -1426,6 +1431,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     }, {
         type = "dropdown",
         text = "Unit Growth",
+        tooltip = "Which way players are added within a group.",
         values = growthValues,
         order = allGrowthOrder,
         getValue = SValRow("unitGrowth", "DOWN"),
@@ -1472,6 +1478,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         sortRow, hgt = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Sort By",
+            tooltip = "How players are ordered.",
             values = { __placeholder = "Group" },
             order = { "__placeholder" },
             getValue = function() return "__placeholder" end,
@@ -1479,6 +1486,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         }, {
             type = "segmented",
             text = "Self Position",
+            tooltip = "Where your own frame sits in your group.",
             values = { none = "Default", first = "First", last = "Last" },
             order = { "none", "first", "last" },
             getValue = function()
@@ -1579,6 +1587,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         showGroupsRow, hgt = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Show Groups",
+            tooltip = "Which raid groups get frames.",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
             getValue = function() return "__placeholder" end,
@@ -1586,6 +1595,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         }, {
             type = "toggle",
             text = "Merge Groups",
+            tooltip = "Puts everyone in one block instead of a block per group.",
             getValue = SValRow("mergeGroups", false),
             -- Custom Group Order only applies to separated groups, so a flip that
             -- changes whether it applies rebuilds the Show Groups dropdown.
@@ -1991,6 +2001,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     syncRow, hgt = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Use Raid Settings For",
+        tooltip = "Sections the party copies from the raid settings instead of keeping its own.",
         values = { _placeholder = "..." },
         order = { "_placeholder" },
         getValue = function() return "_placeholder" end,
@@ -2123,6 +2134,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         mod.RF_PartyKitGate({
             type = "slider",
             text = "Frame Width",
+            tooltip = "How wide each frame is.",
             min = 40,
             max = 300,
             step = 1,
@@ -2132,6 +2144,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         mod.RF_PartyKitGate({
             type = "slider",
             text = "Frame Height",
+            tooltip = "How tall each frame is.",
             min = 20,
             max = 150,
             step = 1,
@@ -2148,6 +2161,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     pSortRow, hgt = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Horizontal Frames",
+        tooltip = "Lays the frames out side by side instead of stacked.",
         disabled = function()
             local profile = db.profile
             return profile.partyCompactMode
@@ -2173,6 +2187,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     }, {
         type = "dropdown",
         text = "Sort By",
+        tooltip = "How players are ordered.",
         values = { __placeholder = "Group" },
         order = { "__placeholder" },
         getValue = function() return "__placeholder" end,
@@ -2264,6 +2279,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     _, hgt = W:DualRow(hostFrame, cursorY, {
         type = "segmented",
         text = "Self Position",
+        tooltip = "Where your own frame sits in your group.",
         values = { none = "Default", first = "First", last = "Last" },
         order = { "none", "first", "last" },
         getValue = function()
@@ -2278,6 +2294,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     }, {
         type = "toggle",
         text = "Hide Self",
+        tooltip = "Leaves your own frame out of the party.",
         getValue = function() return db.profile.partyHideSelf or false end,
         -- RefreshPage re-reads Include Own Target's disabled state.
         setValue = function(value)
@@ -2296,6 +2313,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         {
             type = "dropdown",
             text = "Auto Resize Icons",
+            tooltip = "Shrinks the icons to fit smaller frames.",
             values = { __placeholder = "All" },
             order = { "__placeholder" },
             getValue = function() return "__placeholder" end,

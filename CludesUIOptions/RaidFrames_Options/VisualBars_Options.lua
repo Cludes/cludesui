@@ -555,6 +555,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     healPredRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Heal Prediction",
+        tooltip = "Shows incoming heals on the health bar.",
         getValue = SValRow("healPrediction", false),
         setValue = function(val)
             WriteSetting("healPrediction", val)
@@ -563,6 +564,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     }, {
         type = "slider",
         text = "Prediction Opacity",
+        tooltip = "How visible incoming heals are.",
         min = 5,
         max = 100,
         step = 1,
@@ -624,6 +626,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     }, {
         type = "slider",
         text = "Threat Borders",
+        tooltip = "Colors a frame's border by its threat.",
         min = 0,
         max = 4,
         step = 1,
@@ -747,6 +750,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     absorbRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Absorb Style",
+        tooltip = "How shields are drawn on the health bar.",
         values = absorbStyleValues,
         order = absorbStyleOrder,
         getValue = SValRow("absorbStyle", "none"),
@@ -775,6 +779,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     }, {
         type = "slider",
         text = "Absorb Opacity",
+        tooltip = "How visible the shield overlay is.",
         min = 5,
         max = 100,
         step = 1,
@@ -929,6 +934,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     absorbBarRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Absorb Bar",
+        tooltip = "Shows shields over the health bar.",
         values = {
             none = "None",
             aboveRight = "Above Frame Right",
@@ -1020,6 +1026,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     healAbsorbRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Heal Absorb Style",
+        tooltip = "How heal absorbs are drawn on the health bar.",
         values = absorbStyleValues,
         order = healAbsorbStyleOrder,
         getValue = SValRow("healAbsorbStyle", "clean"),
@@ -1035,6 +1042,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     }, {
         type = "slider",
         text = "Heal Absorb Opacity",
+        tooltip = "How visible the heal absorb overlay is.",
         min = 5,
         max = 100,
         step = 1,
@@ -1142,6 +1150,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         healAbsorbBarRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Heal Absorb Bar",
+            tooltip = "Shows heal absorbs over the health bar.",
             values = {
                 none = "None",
                 belowAbsorb = "Below Absorb Bar",
@@ -1252,6 +1261,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         maxHealthRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Max Health Style",
+            tooltip = "How lost maximum health is drawn at the end of the bar.",
             values = absorbStyleValues,
             order = maxHealthStyleOrder,
             getValue = SValRow("maxHealthStyle", "maxHealthStripes"),
@@ -1262,6 +1272,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         }, {
             type = "slider",
             text = "Max Health Opacity",
+            tooltip = "How visible the lost maximum health overlay is.",
             min = 5,
             max = 100,
             step = 1,
@@ -1500,6 +1511,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             mod.RF_PartyKitGate({
                 type = "dropdown",
                 text = "Show Power Bar For",
+                tooltip = "Which roles show a power bar.",
                 values = { __placeholder = "Healers, Tanks" },
                 order = { "__placeholder" },
                 getValue = function() return "__placeholder" end,
@@ -1727,6 +1739,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     pwBgRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Smooth Power Bars",
+        tooltip = "Power changes slide smoothly instead of jumping.",
         disabled = function() return IsPowerOff() end,
         disabledTooltip = "Show Power Bar For",
         getValue = SValRow("smoothPowerBars", true),
@@ -1831,6 +1844,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Name Format",
+            tooltip = "How names are shortened.",
             values = values,
             order = sequence,
             getValue = getValue,

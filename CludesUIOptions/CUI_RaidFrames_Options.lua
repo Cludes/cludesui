@@ -244,6 +244,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         {
             type = "dropdown",
             text = "Art Style",
+            tooltip = "How the portrait is drawn.",
             values = artValues,
             order = { "3d", "2d", "class" },
             disabled = function() return not kit and ProfileVal("partyPortraitStyle", "none") == "none" end,
