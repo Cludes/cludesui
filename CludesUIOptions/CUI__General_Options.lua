@@ -124,6 +124,33 @@ end
 -------------------------------------------------------------------------------
 CUI._WHATSNEW_PATCHES = {
     {
+        version = "1.4.0",
+        heroes = {
+            {
+                module = "Global Settings",
+                title = "Every setting explained",
+                desc = "Hundreds more settings have a short description under their name, across every module. Hover one that is cut short to read all of it.",
+            },
+        },
+        features = {
+            {
+                module = "Global Settings",
+                title = "Search that understands you",
+                desc = "Old names still work: Layout Mode finds Edit Layout. Player frame, pet frame, import, export and controller go straight to the right page, and results show each setting's current name.",
+            },
+            {
+                module = "Global Settings",
+                title = "One name for everything",
+                desc = "Tooltips and messages use the same names as the sidebar everywhere: Edit Layout, Core Settings, Group Frames, Window Styling and the rest, with CludesUI spelled out and one spelling throughout.",
+            },
+            {
+                module = "Profiles",
+                title = "My Profiles",
+                desc = "The Profiles section's first page is called My Profiles.",
+            },
+        },
+    },
+    {
         version = "1.3.0",
         heroes = {
             {
