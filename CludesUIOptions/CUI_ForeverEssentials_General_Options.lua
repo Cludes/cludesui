@@ -157,7 +157,7 @@ local function NameFormatSources()
             text = "Friendly Player Nameplates",
             tooltip = "Friendly player names on nameplates, in both modes.",
             disabled = function() return np.db.profile.showFriendlyPlayers == false end,
-            disabledTooltip = "Show CUI Friendly Player Nameplates",
+            disabledTooltip = "Show CludesUI Friendly Player Nameplates",
             get = function() return ModeOf(np.db.profile.friendlyNameFormat) end,
             set = function(val)
                 np.db.profile.friendlyNameFormat = Stored(val)

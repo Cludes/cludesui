@@ -847,7 +847,7 @@ CUI.AtLogin(function()
             textValue:SetFont(CUI.GetFontPath() or "Fonts\\FRIZQT__.TTF", 15, "")
             textValue:SetTextColor(1, 1, 1, 0.75)
             textValue:SetPoint("TOP", itemLink, "TOP", 0, 0)
-            textValue:SetText(CUI.L("Friends not running CUI? Download the standalone version here!"))
+            textValue:SetText(CUI.L("Friends not running CludesUI? Download the standalone version here!"))
 
             local width = textValue.GetStringWidth and textValue:GetStringWidth()
             if type(width) == "number" and not (issecretvalue and issecretvalue(width)) then

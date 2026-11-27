@@ -2797,7 +2797,7 @@ CUI.AtOptionsLogin(function()
         addLabel = CUI.L("+ Add Buff"),
     })
     local BUFF_HELP_TIP = "Recolor the bar while you have a buff. The first active buff in the list wins, so order = priority. Overrides threshold coloring while active.\n"
-        .. "You must be tracking the buff in Blizzard CDM, added to CUI CDM, and this only works with CDM trackable buffs."
+        .. "You must be tracking the buff in Blizzard's Cooldown Manager and have added it to the CludesUI Cooldown Manager. Only buffs the Cooldown Manager can track work."
 
     local ShowSpenderEditor = MakeColorListEditor({
         field = "spenderColors",

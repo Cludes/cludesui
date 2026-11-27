@@ -358,7 +358,7 @@ local function SetupAuraCVars()
         local showPlayers = (saved.showFriendlyPlayers ~= false)
         local showNPCs = (saved.showFriendlyNPCs == true)
         -- Friendly player CVars are written ONLY while CUI manages friendly player nameplates;
-        -- with "Show CUI Friendly Player Nameplates" off we relinquish them entirely to
+        -- with "Show CludesUI Friendly Player Nameplates" off we relinquish them entirely to
         -- Blizzard's own settings. Friendly NPC and enemy pet CVars are always managed.
         if showPlayers then
             CUI.SetCVar(

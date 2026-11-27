@@ -75,8 +75,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     local friendlyRow
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
-        text = "Show CUI Friendly Player Nameplates",
-        tooltip = "When disabled, CUI relinquishes full control of friendly player nameplates to Blizzard. Use Blizzard's own Nameplate settings (Esc > Options > Nameplates) to control them.",
+        text = "Show CludesUI Friendly Player Nameplates",
+        tooltip = "When off, CludesUI hands friendly player nameplates back to Blizzard. Use Blizzard's own Nameplate settings (Esc > Options > Nameplates) to control them.",
         getValue = function() return DbValue("showFriendlyPlayers") ~= false end,
         setValue = function(val)
             DB().showFriendlyPlayers = val
@@ -145,7 +145,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
         disabled = friendlyOff,
-        disabledTooltip = "Show CUI Friendly Player Nameplates",
+        disabledTooltip = "Show CludesUI Friendly Player Nameplates",
     })
     friendlyRow = _
     cursorY = cursorY - height
@@ -440,7 +440,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         text = "Subtitle Text",
         tooltip = "Show the player's title inline with their name, and/or their guild on a line below it, on friendly nameplates.",
         disabled = friendlyOff,
-        disabledTooltip = "Show CUI Friendly Player Nameplates",
+        disabledTooltip = "Show CludesUI Friendly Player Nameplates",
         values = { none = "None", title = "Player Title", guild = "Guild Name", both = "Title & Guild" },
         order = { "none", "title", "guild", "both" },
         getValue = DBValOr("friendlyBelowName", "none"),
@@ -454,7 +454,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         text = "Guild Text Color",
         disabled = guildSubtitleOff,
         disabledTooltip = function()
-            if friendlyOff() then return "Show CUI Friendly Player Nameplates" end
+            if friendlyOff() then return "Show CludesUI Friendly Player Nameplates" end
             return "This option requires Subtitle Text to include the Guild Name"
         end,
         rawTooltip = function() return not friendlyOff() end,
@@ -470,7 +470,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         CludesUI.BuildInlineCog(subtitleRow._leftRegion, {
             chain = false,
             disabled = friendlyOff,
-            disabledTooltip = "Show CUI Friendly Player Nameplates",
+            disabledTooltip = "Show CludesUI Friendly Player Nameplates",
             title = "Name Text Settings",
             rows = {
                 -- WoW Forever names it for players, as Forever Essentials' Name

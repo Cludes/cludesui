@@ -3987,7 +3987,7 @@ CUI.AtOptionsLogin(function()
         eyebrow:SetFont(FONT, 13, "")
         eyebrow:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
         Pix.Point(eyebrow, "TOP", owner, "TOP", 0, -122)
-        eyebrow:SetText(Loc("CUI FEATURE"))
+        eyebrow:SetText(Loc("CLUDESUI FEATURE"))
 
         local title = owner:CreateFontString(nil, "OVERLAY")
         title:SetFont(FONT, 25, "")
@@ -4009,7 +4009,7 @@ CUI.AtOptionsLogin(function()
         )
 
         local BULLETS = {
-            "Every major Blizzard window themed to match CUI",
+            "Every major Blizzard window themed to match CludesUI",
             "Recolor the theme to any color and opacity you like",
             "Scale any window larger or smaller with Shifter",
         }

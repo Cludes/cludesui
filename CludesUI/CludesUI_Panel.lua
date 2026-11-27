@@ -2873,7 +2873,7 @@ local function BuildSidebar()
     resPerfLabel:SetPoint("BOTTOMRIGHT", resCpuLabel, "TOPRIGHT", 0, 11)
     resPerfLabel:SetJustifyH("RIGHT")
     resPerfLabel:SetAlpha(0.5)
-    resPerfLabel:SetText(CUI.L("All CUI Addons"))
+    resPerfLabel:SetText(CUI.L("All CludesUI Addons"))
 
     local resDivider = navBar:CreateTexture(nil, "ARTWORK")
     resDivider:SetColorTexture(1, 1, 1, 0.15)

@@ -836,7 +836,7 @@ CUI.AtOptionsLogin(function()
             CUI:ShowConfirmPopup({
                 title = "Reset ALL Settings",
                 -- The wipe replaces the whole account store, profiles included.
-                message = "Are you sure you want to reset ALL CUI addon settings to their defaults? This deletes ALL of your profiles, not just the current one, and reloads your UI.",
+                message = "Are you sure you want to reset ALL CludesUI settings to their defaults? This deletes ALL of your profiles, not just the current one, and reloads your UI.",
                 disclaimer = "Every profile on this account is deleted. Export any profile you want to keep first.",
                 typeToConfirm = "Confirm",
                 confirmText = "Reset All & Reload",
@@ -844,7 +844,7 @@ CUI.AtOptionsLogin(function()
                 onConfirm = function()
                     CUI.RequestReload(
                         CUI.L("Reset ALL Settings"),
-                        CUI.L("Reload to finish resetting CUI."),
+                        CUI.L("Reload to finish resetting CludesUI."),
                         ResetAllNow
                     )
                 end,
@@ -864,7 +864,7 @@ CUI.AtOptionsLogin(function()
             end
             if not msg then return false end
             CUI:ShowConfirmPopup({
-                title = CUI.L("Uninstall CUI"),
+                title = CUI.L("Uninstall CludesUI"),
                 message = msg,
                 confirmText = CUI.L("OK"),
                 hideCancel = true,
@@ -879,9 +879,9 @@ CUI.AtOptionsLogin(function()
         local function ConfirmUninstall()
             if UninstallRefused() then return end
             local message = CUI.L(
-                "Puts back the game settings CUI changed, such as nameplate, action bar, chat and tooltip options, and turns CUI off for every character, then reloads the UI."
+                "Puts back the game settings CludesUI changed, such as nameplate, action bar, chat and tooltip options, and turns CludesUI off for every character, then reloads the UI."
             ) .. "\n\n" .. CUI.L(
-                "Your profiles are kept, so you can turn CUI back on later in the AddOns list."
+                "Your profiles are kept, so you can turn CludesUI back on later in the AddOns list."
             )
             if CludesUIDB and CludesUIDB.gfxBackup then
                 message = message
@@ -891,11 +891,11 @@ CUI.AtOptionsLogin(function()
                     )
             end
             CUI:ShowConfirmPopup({
-                title = CUI.L("Uninstall CUI"),
+                title = CUI.L("Uninstall CludesUI"),
                 message = message,
                 disclaimer = (not CUI.UninstallKnowsOriginals())
                         and CUI.L(
-                            "CUI was installed before it kept a record of your original settings, so the settings it still manages go back to the game's defaults."
+                            "CludesUI was installed before it kept a record of your original settings, so the settings it still manages go back to the game's defaults."
                         )
                     or nil,
                 confirmText = CUI.L("Uninstall & Reload"),
@@ -903,8 +903,8 @@ CUI.AtOptionsLogin(function()
                 onConfirm = function()
                     if UninstallRefused() then return end
                     CUI.RequestReload(
-                        CUI.L("Uninstall CUI"),
-                        CUI.L("Reload to finish uninstalling CUI."),
+                        CUI.L("Uninstall CludesUI"),
+                        CUI.L("Reload to finish uninstalling CludesUI."),
                         CUI.Uninstall
                     )
                 end,
@@ -1169,7 +1169,7 @@ CUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         -- Row 3: CUI Buttons (merged button toggles) | Disable Sync Icons (+ cog)
-        -- "CUI Buttons" merges the Pause Menu, Unlock Mode Menu and Minimap
+        -- "CludesUI Buttons" merges the Pause Menu, Unlock Mode Menu and Minimap
         -- toggles into one checkbox-dropdown over the SAME backend variables: front-end grouping only, settings/defaults unchanged.
         local cuiBtnItems = {
             {
@@ -1180,14 +1180,14 @@ CUI.AtOptionsLogin(function()
             {
                 key = "unlock",
                 label = "Hide Edit Layout Menu Button",
-                tooltip = "Hides the Edit Layout button from the game's Escape/pause menu. You can still toggle Edit Layout from the CUI options panel.",
+                tooltip = "Hides the Edit Layout button from the game's Escape/pause menu. You can still open Edit Layout from the CludesUI settings.",
             },
             { key = "minimap", label = "Show Minimap Button" },
         }
         local cuiBtnRow
         cuiBtnRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
-            text = "CUI Buttons",
+            text = "CludesUI Buttons",
             tooltip = "Toggle CludesUI's optional buttons: the Escape menu buttons and the minimap button.",
             values = { ["_placeholder"] = "..." },
             order = { "_placeholder" },
@@ -1700,10 +1700,10 @@ CUI.AtOptionsLogin(function()
                 end,
             }, {
                 type = "labeledButton",
-                text = "Uninstall CUI",
+                text = "Uninstall CludesUI",
                 buttonText = "Uninstall",
                 width = 110,
-                tooltip = "Revert CUI's changes to your game settings, turn it off for every character and reload. Your profiles are kept.",
+                tooltip = "Revert CludesUI's changes to your game settings, turn it off for every character and reload. Your profiles are kept.",
                 onClick = ConfirmUninstall,
             })
             cursorY = cursorY - height
