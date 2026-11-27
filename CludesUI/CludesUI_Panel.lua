@@ -5751,6 +5751,12 @@ function CUI:SelectPage(pageTitle)
 
     activePage = pageTitle
     _lastPagePerModule[currentModule] = pageTitle
+    -- Kept across reloads: the window reopens here, and each module on its last page.
+    if CludesUIDB then
+        CludesUIDB.optionsLastPages = CludesUIDB.optionsLastPages or {}
+        CludesUIDB.optionsLastPages[currentModule] = pageTitle
+        CludesUIDB.optionsLastModule = currentModule
+    end
     UpdateTabHighlight(pageTitle)
     -- A page that draws its own layout over the scroll frame (a manager page,
     -- config.noSearchPages) has nothing the inline search can filter: the box
@@ -6119,6 +6125,7 @@ function CUI:SelectModule(moduleFolder)
         if tabStrip._specOvBtn then tabStrip._specOvBtn:SetShown(core) end
     end
     local savedPage = _lastPagePerModule[moduleFolder]
+        or (CludesUIDB and CludesUIDB.optionsLastPages and CludesUIDB.optionsLastPages[moduleFolder])
     -- Validate saved page still exists in this module's page list
     local validPage = nil
     if savedPage and moduleConfig.pages then
@@ -6302,10 +6309,14 @@ local function SyncNavStates()
     if moduleView then rowY = CUI_NS.ModuleView(currentModule, listW) end
     if contentChild.SetHeight then contentChild:SetHeight(math.max(CHILD_H, rowY)) end
 
-    -- Default to Global Settings if no module is active
+    -- No module active yet: the one open when the window was last used (across
+    -- reloads), else Global Settings.
     if not currentModule then
         currentModule = nil
-        if moduleList["_CUIGlobal"] then
+        local last = CludesUIDB and CludesUIDB.optionsLastModule
+        if last and moduleList[last] then
+            CUI:SelectModule(last)
+        elseif moduleList["_CUIGlobal"] then
             CUI:SelectModule("_CUIGlobal")
         elseif firstLoaded and moduleList[firstLoaded] then
             CUI:SelectModule(firstLoaded)
