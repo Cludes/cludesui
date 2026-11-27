@@ -207,7 +207,7 @@ local function BuildFrame()
     panelFrame = CreateFrame("Frame", "CludesUIFrame", UIParent)
     CUI._mainFrame = panelFrame
     panelFrame:SetSize(BG_WIDTH, BG_HEIGHT)
-    panelFrame:SetPoint("CENTER")
+    panelFrame:SetPoint("CENTER") -- or where it was last dragged to (CUI_NS.ApplyPanelPoint, on show)
     panelFrame:SetFrameStrata("DIALOG")
     panelFrame:SetFrameLevel(100)
     panelFrame:Hide()
@@ -219,6 +219,7 @@ local function BuildFrame()
         local baseScale2 = GetScreenWidth() / physW2
         local userScale2 = (CludesUIDB and CludesUIDB.panelScale) or 1.0
         panelFrame:SetScale(baseScale2 * userScale2)
+        CUI_NS.ApplyPanelPoint()
         -- Re-sync PanelPP mult for the (possibly new) scale
         if CUI.PanelPP then CUI.PanelPP.UpdateMult() end
         -- The mini window was dragged and then closed: open with the panel on screen.
@@ -688,7 +689,10 @@ local function BuildFrame()
     hitArea:RegisterForDrag("LeftButton")
     -- No SetClampedToScreen: the whole window moves as one and drags freely off any edge.
     hitArea:SetScript("OnDragStart", function() panelFrame:StartMoving() end)
-    hitArea:SetScript("OnDragStop", function() panelFrame:StopMovingOrSizing() end)
+    hitArea:SetScript("OnDragStop", function()
+        panelFrame:StopMovingOrSizing()
+        CUI_NS.SavePanelPoint()
+    end)
     -- Shift + mouse wheel over any part of the panel without a wheel of its own (the
     -- header, the footer, the margins) scales it too; a plain wheel there does nothing.
     hitArea:EnableMouseWheel(true)
@@ -744,6 +748,7 @@ local function BuildFrame()
         miniBox:SetScript("OnDragStart", function() panelFrame:StartMoving() end)
         miniBox:SetScript("OnDragStop", function()
             panelFrame:StopMovingOrSizing()
+            CUI_NS.SavePanelPoint()
             CUI._panelNudge = true
         end)
         CUI._panelMini = miniBox
@@ -6383,6 +6388,29 @@ end
 function CUI_NS.SetRailGroup(entryKey)
     CUI_NS.railKey, CUI_NS.railBrowsing = entryKey, true
     SyncNavStates()
+end
+
+-- The window's place after a drag, kept for the next session: its centre's
+-- offset from the screen centre in screen units (CludesUIDB.panelPoint), so a
+-- later window scale keeps it in the same spot.
+function CUI_NS.SavePanelPoint()
+    if not (panelFrame and CludesUIDB) then return end
+    local cx, cy = panelFrame:GetCenter()
+    if not (cx and cy) or (issecretvalue and (issecretvalue(cx) or issecretvalue(cy))) then return end
+    local rel = panelFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    CludesUIDB.panelPoint = { cx * rel - UIParent:GetWidth() / 2, cy * rel - UIParent:GetHeight() / 2 }
+end
+
+-- Puts the window at its saved place (on every show, after its scale is set),
+-- unless that is off the screen now (a smaller resolution).
+function CUI_NS.ApplyPanelPoint()
+    local saved = CludesUIDB and CludesUIDB.panelPoint
+    local x, y = saved and tonumber(saved[1]), saved and tonumber(saved[2])
+    if not (panelFrame and x and y) then return end
+    if math.abs(x) > UIParent:GetWidth() / 2 or math.abs(y) > UIParent:GetHeight() / 2 then return end
+    local rel = panelFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    panelFrame:ClearAllPoints()
+    panelFrame:SetPoint("CENTER", UIParent, "CENTER", x / rel, y / rel)
 end
 
 -- The header's breadcrumb: SECTION / MODULE / PAGE (the page only when the
