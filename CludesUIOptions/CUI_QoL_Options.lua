@@ -3074,6 +3074,13 @@ CUI.AtOptionsLogin(function()
         title = "Utilities",
         description = "Quality of life features and custom cursor.",
         pages = pages,
+        -- Shown names (the page keys stay, so saved places and links still match).
+        tabLabels = {
+            [PAGE_QOL] = "General",
+            [PAGE_SHIFTER] = "Window Mover",
+            [PAGE_MOVEMENT] = "Movement Alerts",
+            [PAGE_UPGCALC] = "Upgrade Calculator",
+        },
         searchTerms = searchTerms,
         buildPage = function(page, hostFrame, yOffset)
             -- The Raid Tools settings preview ends when any OTHER QoL page

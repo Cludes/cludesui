@@ -2811,6 +2811,8 @@ CUI.AtOptionsLogin(function()
         -- Highlight there).
         pages = CUI.IS_FOREVER and { PAGE_CDM_BARS, PAGE_BAR_GLOWS, PAGE_BUFF_BARS }
             or { PAGE_CDM_BARS, PAGE_BAR_GLOWS, PAGE_BUFF_BARS, PAGE_ROTATION_ICON },
+        -- Shown name (the page key stays: links and saved places use it).
+        tabLabels = { [PAGE_CDM_BARS] = "Cooldown Bars" },
         disabledPages = {},
         disabledPageTooltips = {},
         buildPage = function(pageTitle, hostFrame, yOffset)
