@@ -4534,8 +4534,46 @@ SLASH_CUIOPTIONS3 = "/cludesui"
 -- no handler-side change can prevent.
 -- "/cui <words>" opens the window with those words in the settings search
 -- (Enter goes to the top result, Tab steps through them).
+-- "/cui help": the main commands, each only while it is registered (a module
+-- switched off, or /rl and /way owned by another addon, drop out).
+local HELP_COMMANDS = {
+    { "CUIOPTIONS", "/cui", "Open the settings. Add words to search them: /cui nameplate colors" },
+    { "CUIUNLOCK", "/unlock", "Edit Layout: move and resize frames" },
+    { "RL", "/rl", "Reload the UI" },
+    { "EABQUICKKEYBIND", "/kb", "Quick keybind mode" },
+    { "CUIKEYS", "/keys", "Your party's Mythic+ keystones" },
+    { "CUIMPLUS", "/ov", "Mythic+ run summary" },
+    { "CUIRAIDLEAD", "/raidlead", "Raid Lead: roles, split, undo" },
+    { "COTANKAURAS", "/ctank", "Tank Kit" },
+    { "TITLELINE", "/titleline", "Title Line" },
+    { "CUIWAY", "/way", "Set a map waypoint" },
+    { "CUIPERF", "/cuiperf", "CPU time of each CludesUI addon" },
+}
+local function PrintHelp()
+    CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI|r " .. CUI.L("commands:"))
+    for _, entry in ipairs(HELP_COMMANDS) do
+        if SlashCmdList[entry[1]] then
+            -- The command as registered (/way falls back to /cuiway when taken).
+            local shown = entry[2]
+            for i = 1, 4 do
+                local alias = _G["SLASH_" .. entry[1] .. i]
+                if alias == entry[2] then
+                    shown = alias
+                    break
+                end
+                if i == 1 then shown = alias or shown end
+            end
+            CUI.Print(("  %s%s|r  %s"):format(CUI.COLOR_CODES.BRAND, shown, CUI.L(entry[3])))
+        end
+    end
+end
+
 SlashCmdList.CUIOPTIONS = function(msg)
     local query = type(msg) == "string" and msg:match("^%s*(.-)%s*$") or ""
+    if query:lower() == "help" or query == "?" then
+        PrintHelp()
+        return
+    end
     local function Open(fromQueue)
         if query == "" and not fromQueue then
             CUI:Toggle()
