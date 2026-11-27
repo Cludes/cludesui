@@ -3411,6 +3411,26 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             })
             cursorY = cursorY - height
         end
+        local BK = CUI._BossKills
+        if BK then
+            _, height = W:DualRow(hostFrame, cursorY, {
+                type = "toggle",
+                text = "Boss Kill History",
+                tooltip = "Remembers each boss this character kills: how many times, when, how long the fight took and who was with you. The Journal and the Dungeon Map show it under each boss, and a fight faster than your best says so in chat.",
+                getValue = function() return BK.Get("enabled") end,
+                setValue = function(val)
+                    BK.Cfg().enabled = val and true or false
+                    BK.Apply()
+                end,
+            }, {
+                type = "labeledButton",
+                text = "Forget This Character's Kills",
+                buttonText = "Forget",
+                width = 90,
+                onClick = function() BK.Forget() end,
+            })
+            cursorY = cursorY - height
+        end
     end
 
     ---------------------------------------------------------------------------

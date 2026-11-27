@@ -109,6 +109,7 @@ local function PinEnter(pin)
     GameTooltip:AddLine(title, 1, 1, 1)
     if entry.tag then GameTooltip:AddLine(CUI.L(({ rare = "Rare", optional = "Optional", quest = "Quest boss", chest = "Chest" })[entry.tag]), Pal.muted[1], Pal.muted[2], Pal.muted[3]) end
     if killed[entry.boss.npc] then GameTooltip:AddLine(CUI.L("Killed this run"), Pal.green[1], Pal.green[2], Pal.green[3]) end
+    if module.BossKills then module.BossKills.AddToTooltip(GameTooltip, entry.boss) end
     GameTooltip:Show()
 end
 

@@ -349,6 +349,7 @@ local function PinEnter(pin)
     local tip = boss.npc and J.Tips and J.Tips[boss.npc]
     local ar, ag, ab = CUI.Kit.Accent()
     if tip then GameTooltip:AddLine(tip, ar, ag, ab, true) end
+    if module.BossKills then module.BossKills.AddToTooltip(GameTooltip, boss) end
     GameTooltip:Show()
 end
 
@@ -643,6 +644,8 @@ Show = function(skinData)
             Line((numbered and (count .. ". ") or "") .. boss.name .. tag, 14, 0, { 1, 1, 1 })
             local tip = boss.npc and J.Tips and J.Tips[boss.npc]
             if tip then Line(tip, 12, 14, { 0.6, 0.65, 0.7 }) end
+            local kills = module.BossKills and module.BossKills.Summary(boss)
+            if kills then Line(kills, 12, 14, { 0.4, 0.9, 0.5 }) end
             for i, id in ipairs(boss.loot or {}) do
                 ItemLine(id, boss.chance and boss.chance[i])
             end
