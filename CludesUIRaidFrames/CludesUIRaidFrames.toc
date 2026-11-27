@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: Incredibly light performance, modern raid and party frames with endless flexibility.
 ## Author: Cludes
-## Version: 1.4.0
+## Version: 1.5.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIRaidFramesDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga

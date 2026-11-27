@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: Modern chat enhancements with useful utilities.
 ## Author: Cludes
-## Version: 1.4.0
+## Version: 1.5.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIChatDB
 ## SavedVariablesPerCharacter: CludesUIChatScrollDB
