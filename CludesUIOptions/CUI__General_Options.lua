@@ -2083,6 +2083,12 @@ CUI.AtOptionsLogin(function()
         -- Shown name: "Profiles" itself reads "Profiles & Sharing" (the module's
         -- own name), which the page list would show as General.
         tabLabels = { [PAGE_PROFILES] = "My Profiles" },
+        -- The profile list builds on first visit only (never in the search
+        -- prebuild), so its page answers to these words instead.
+        pageSearchTerms = {
+            [PAGE_PROFILES] = "import export share copy switch new delete rename profile string",
+            [PAGE_FULLEXPORT] = "import export share account backup string",
+        },
         buildPage = function(page, hostFrame, yOffset)
             -- _G._CUI_BuildProfilesPage bypasses `parent` and builds onto the live shared _scrollFrame, and first checks the active profile against the
             -- current spec -- it can call SwitchProfile/RefreshAllAddons and pop a "Reload Required" confirmation. None of that is safe from a

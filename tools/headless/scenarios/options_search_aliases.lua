@@ -12,7 +12,7 @@ local function Rows(frame, out)
     end
     return out
 end
-for _, q in ipairs({ "layout mode", "unlock", "edit layout", "move frames", "reload" }) do
+for _, q in ipairs({ "layout mode", "unlock", "edit layout", "move frames", "reload", "import profile", "export", "theme" }) do
     box:SetText(q)
     box:GetScript("OnTextChanged")(box)
     HARNESS_ADVANCE(0.3)

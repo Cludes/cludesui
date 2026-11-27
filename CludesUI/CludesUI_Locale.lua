@@ -162,6 +162,9 @@ end
 -- Per-locale glyph font for callers that pin a font to a locale other than the
 -- active one (the language picker's native-script entries).
 CludesUI.LocaleGlyphFont = GlyphFont
+-- The settings show English (the client's, or picked under Settings Language):
+-- there a "translated" label is only a newer English name.
+CludesUI.IsEnglish = function() return effectiveLocale == nil or effectiveLocale == "enUS" end
 
 -- Display names: the English text a setting is known by in code (left) and the
 -- name the panel shows for it (right). A new name must not already be English

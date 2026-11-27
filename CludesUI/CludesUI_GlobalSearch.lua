@@ -240,6 +240,10 @@ local function BuildCoarseCandidates()
                 if mod.GetTabLabel(moduleFolder, pageEntry) ~= pageEntry then
                     pageText = pageCaption .. " " .. CUI.L(pageEntry)
                 end
+                -- Words a page answers to beyond its name (moduleConfig.pageSearchTerms),
+                -- for pages whose rows are not in the index until first opened.
+                local extra = type(moduleConfig.pageSearchTerms) == "table" and moduleConfig.pageSearchTerms[pageEntry]
+                if type(extra) == "string" and extra ~= "" then pageText = pageText .. " " .. extra end
                 _coarseCandidates[#_coarseCandidates + 1] = {
                     kind = "page",
                     -- Combined haystack so a query spanning both module and page words
@@ -1216,7 +1220,9 @@ local function EnsureSearchUI()
                     line._sub:SetText(record.moduleLabel)
                 elseif record.isSection then
                     local name = TitleCaseSection(record.label)
-                    if record.labelLoc then
+                    if record.labelLoc and CUI.IsEnglish and CUI.IsEnglish() then
+                        name = TitleCaseSection(record.labelLoc)
+                    elseif record.labelLoc then
                         name = name .. "  (" .. TitleCaseSection(record.labelLoc) .. ")"
                     end
                     line._label:SetText(accentHex .. CUI.L("Section") .. ":|r " .. name)
@@ -1228,7 +1234,9 @@ local function EnsureSearchUI()
                     )
                 else
                     line._label:SetText(
-                        record.labelLoc and (record.label .. "  (" .. record.labelLoc .. ")") or record.label
+                        (record.labelLoc and CUI.IsEnglish and CUI.IsEnglish()) and record.labelLoc
+                            or record.labelLoc and (record.label .. "  (" .. record.labelLoc .. ")")
+                            or record.label
                     )
                     line._sub:SetText(
                         JoinBreadcrumb(
