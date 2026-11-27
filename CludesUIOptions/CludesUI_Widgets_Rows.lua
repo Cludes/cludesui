@@ -97,6 +97,15 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         hit:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
         hit:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
         hit:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
+        -- The hint line under the name (often cut short) answers hover the same way.
+        local hintHit
+        if regionFrame._hint then
+            hintHit = CreateFrame("Frame", nil, regionFrame)
+            hintHit:SetPoint("TOPLEFT", regionFrame._hint, "TOPLEFT", -5, 2)
+            hintHit:SetPoint("BOTTOMRIGHT", regionFrame._hint, "BOTTOMRIGHT", 5, -4)
+            hintHit:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
+            hintHit:SetMouseClickEnabled(false)
+        end
         hit:SetScript("OnEnter", function()
             if rowConf.disabled and rowConf.disabled() and rowConf.disabledTooltip then
                 local reason = ResolveDisabledTip(rowConf)
@@ -113,6 +122,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         end)
         hit:SetScript("OnLeave", function() HideWidgetTooltip() end)
         hit:SetMouseClickEnabled(false)
+        if hintHit then
+            hintHit:SetScript("OnEnter", hit:GetScript("OnEnter"))
+            hintHit:SetScript("OnLeave", hit:GetScript("OnLeave"))
+        end
         if rowConf.disabled and rowConf.disabledTooltip then
             local function BlockWhileDisabled() hit:SetMouseClickEnabled(rowConf.disabled() and true or false) end
             RegisterWidgetRefresh(BlockWhileDisabled)
