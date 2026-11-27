@@ -3740,6 +3740,35 @@ local function BuildFooter(rightW, rightX)
     footerBar._reloadBtn = reloadBtn
     CUI._footerBar = footerBar -- Changed here (CludesUI_ChangedHere.lua) sits beside Reload UI
 
+    -- A reload put off (CUI.MarkReloadPending): an accent wash and a diamond on
+    -- Reload UI, and a tooltip saying why, until the UI reloads.
+    do
+        local EG = CLUDES_GREEN
+        local wash = SolidTex(reloadBtn, "BORDER", EG.r, EG.g, EG.b, 0.16)
+        wash:SetAllPoints()
+        wash:Hide()
+        RegAccent({ type = "solid", obj = wash, a = 0.16 })
+        local mark = SolidTex(reloadBtn, "OVERLAY", EG.r, EG.g, EG.b, 1)
+        mark:SetSize(6, 6)
+        mark:SetPoint("RIGHT", reloadBtn, "RIGHT", -12, 0)
+        mark:SetRotation(math.rad(45))
+        mark:Hide()
+        RegAccent({ type = "solid", obj = mark, a = 1 })
+        CUI._paintReloadPending = function()
+            wash:SetShown(CUI._reloadPending == true)
+            mark:SetShown(CUI._reloadPending == true)
+        end
+        CUI._paintReloadPending()
+        reloadBtn:HookScript("OnEnter", function(self)
+            if CUI._reloadPending and CUI.ShowWidgetTooltip then
+                CUI.ShowWidgetTooltip(self, CUI.L("A setting you changed takes effect after a reload."))
+            end
+        end)
+        reloadBtn:HookScript("OnLeave", function()
+            if CUI._reloadPending and CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+        end)
+    end
+
     -- Per-module Reset visibility: suite pages and pages with no onReset hide Reset and
     -- slide Reload UI left into its slot. Called from SelectModule.
     CUI._UpdateResetButtonVisible = function(hasReset)

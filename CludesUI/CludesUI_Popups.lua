@@ -671,7 +671,32 @@ function CUI.RequestReload(title, message, work)
     if work then work() end
 end
 
+-- A reload put off: "Later" on a reload ask means the change is saved and only
+-- the reload waits. The options footer's Reload UI button says so until the UI
+-- reloads (CludesUI_Panel.lua paints it).
+function CUI.MarkReloadPending()
+    CUI._reloadPending = true
+    if CUI._paintReloadPending then CUI._paintReloadPending() end
+end
+
 function CUI:ShowConfirmPopup(options)
+    if options.cancelText == "Later" then
+        local later = {}
+        for key, val in pairs(options) do
+            later[key] = val
+        end
+        local cancel, dismiss = options.onCancel, options.onDismiss
+        later.onCancel = function(...)
+            CUI.MarkReloadPending()
+            if cancel then return cancel(...) end
+        end
+        later.onDismiss = function(...)
+            CUI.MarkReloadPending()
+            if dismiss then return dismiss(...) end
+            if cancel then return cancel(...) end
+        end
+        options = later
+    end
     -- reload = true: confirming reloads the UI from the click (RequestReload),
     -- the caller's own onConfirm, if it has one, running after the reload is
     -- asked for as its pre-reload work. The caller's table is left as is.
