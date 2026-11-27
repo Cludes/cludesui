@@ -168,6 +168,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         local lines = {
             Line("Shift + Drag", "Move it on one axis only."),
             Line("Arrow Keys", "Move the selected element 1px."),
+            Line("Ctrl + Arrow Keys", "Move it 10px."),
             Line("Shift + Arrow Keys", "Move it 100px."),
             Line("Right Click", "Open the element's settings."),
             Line("Shift + Right Click", "Hide the element's overlay temporarily."),

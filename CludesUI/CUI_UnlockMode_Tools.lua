@@ -1136,16 +1136,23 @@ CUI_NS.unlockParts.Tools = function(LM)
             RIGHT = { 1, 0 },
         }
 
+        -- One arrow press in physical pixels: 1, Ctrl 10, Shift 100.
+        local function ArrowStep()
+            local PPs = CUI and CUI.PP
+            local px = PPs and PPs.mult or 1
+            if IsShiftKeyDown() then return 100 * px end
+            if IsControlKeyDown() then return 10 * px end
+            return px
+        end
+
         LM.arrowKeyFrame:SetScript("OnKeyDown", function(self, barKey)
             if not LM.isUnlocked or InCombatLockdown() then return end
             local direction = ARROW_DIRS[barKey]
             if not direction then return end
             -- A selected fallback ghost answers the arrow keys with the exact
-            -- same step math as movers (1 physical pixel; shift = 100).
+            -- same step math as movers (ArrowStep).
             if not LM.selectedMover and CUI._NudgeSelectedFallbackGhost then
-                local PPg = CUI and CUI.PP
-                local gStep = PPg and PPg.mult or 1
-                local gs = IsShiftKeyDown() and (100 * gStep) or gStep
+                local gs = ArrowStep()
                 if CUI._NudgeSelectedFallbackGhost(direction[1] * gs, direction[2] * gs) then
                     self:SetPropagateKeyboardInput(false)
                     return
@@ -1153,9 +1160,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             end
             -- A selected override-anchor ghost answers the same way.
             if not LM.selectedMover and CUI._NudgeSelectedOverrideGhost then
-                local PPo = CUI and CUI.PP
-                local oStep = PPo and PPo.mult or 1
-                local os = IsShiftKeyDown() and (100 * oStep) or oStep
+                local os = ArrowStep()
                 if CUI._NudgeSelectedOverrideGhost(direction[1] * os, direction[2] * os) then
                     self:SetPropagateKeyboardInput(false)
                     return
@@ -1163,10 +1168,8 @@ CUI_NS.unlockParts.Tools = function(LM)
             end
             if not LM.selectedMover then return end
             self:SetPropagateKeyboardInput(false)
-            -- Scale by physical pixel size so each press moves exactly 1px
-            local PPn = CUI and CUI.PP
-            local pxStep = PPn and PPn.mult or 1
-            local step = IsShiftKeyDown() and (100 * pxStep) or pxStep
+            -- Physical pixels (ArrowStep): 1px a press, Ctrl 10, Shift 100
+            local step = ArrowStep()
             -- When this element's cog/snap menu is open, keep the mover expanded
             -- (skipCollapse) so the open menu does not jump, then reanchor to the bar
             -- and refresh the cog X/Y boxes so they track the nudge.
