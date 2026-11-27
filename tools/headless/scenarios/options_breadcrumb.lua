@@ -1,0 +1,18 @@
+-- The content header's breadcrumb (CUI_NS.PaintCrumb): section / module / page.
+local CUI = rawget(_G, "CludesUI")
+CUI:Show()
+HARNESS_ADVANCE(0.2)
+local function Show(label)
+    OUT:write(("== %s: %s\n"):format(label, tostring(CUI._headerCrumb and CUI._headerCrumb:GetText())))
+end
+CUI:SelectModule("CludesUIUnitFrames")
+CUI:SelectPage("Boss Frames")
+Show("unit frames boss")
+CUI:SelectModule("_CUIGlobal")
+CUI:SelectPage("Fonts")
+Show("core fonts")
+CUI:SelectModule("CludesUIChat")
+CUI:SelectPage("Chat")
+Show("chat first page")
+CUI:SelectModule("CludesUIMinimap")
+Show("minimap single page")

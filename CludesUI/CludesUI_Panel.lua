@@ -2881,6 +2881,11 @@ local function BuildContent()
     local headerTitle = MakeFont(headerFrame, 36, "", 1, 1, 1)
     headerTitle:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", CONTENT_PAD, -35)
     headerFrame._title = headerTitle
+    -- Where you are, above the title: section / module / page (CUI_NS.PaintCrumb).
+    local headerCrumb = MakeFont(headerFrame, 11, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.75)
+    headerCrumb:SetPoint("BOTTOMLEFT", headerTitle, "TOPLEFT", 2, 4)
+    headerFrame._crumb = headerCrumb
+    CUI._headerCrumb = headerCrumb
 
     local headerDesc = MakeFont(headerFrame, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
     headerDesc:SetPoint("TOPLEFT", headerTitle, "BOTTOMLEFT", 2, -12)
@@ -5751,6 +5756,7 @@ function CUI:SelectPage(pageTitle)
 
     activePage = pageTitle
     _lastPagePerModule[currentModule] = pageTitle
+    CUI_NS.PaintCrumb()
     -- Kept across reloads: the window reopens here, and each module on its last page.
     if CludesUIDB then
         CludesUIDB.optionsLastPages = CludesUIDB.optionsLastPages or {}
@@ -6348,6 +6354,26 @@ end
 function CUI_NS.SetRailGroup(entryKey)
     CUI_NS.railKey, CUI_NS.railBrowsing = entryKey, true
     SyncNavStates()
+end
+
+-- The header's breadcrumb: SECTION / MODULE / PAGE (the page only when the
+-- module has several and it is not named like the module).
+function CUI_NS.PaintCrumb()
+    local crumb = headerFrame and headerFrame._crumb
+    if not crumb then return end
+    local parts = {}
+    local group = currentModule and CUI_NS.GroupOf(currentModule)
+    for _, navGroup in ipairs(CUI_NS.navGroups or {}) do
+        if navGroup.key == group then parts[#parts + 1] = CUI.L(navGroup.label) end
+    end
+    local title = currentModule and CUI.L(CUI:GetModuleTitle(currentModule) or "") or ""
+    if title ~= "" then parts[#parts + 1] = title end
+    local config = currentModule and moduleList[currentModule]
+    if activePage and config and type(config.pages) == "table" and #config.pages > 1 then
+        local page = CUI.L(CUI_NS.GetTabLabel(currentModule, activePage))
+        if page ~= title then parts[#parts + 1] = page end
+    end
+    crumb:SetText(table.concat(parts, "  /  "):upper())
 end
 
 -- Command Rail row heights (the long list keeps CludesUI.SIDEBAR_*_ROW_H).
