@@ -38,7 +38,7 @@ for toc in CludesUI*/*.toc; do
     fi
 done
 # The version the suite reports in game (version check, patch notes).
-sed -b -i "s/^CludesUI\.VERSION = \"[0-9.]*\"/CludesUI.VERSION = \"$new\"/" CludesUI/CludesUI.lua
+sed -b -i "s/^CUI\.VERSION = \"[0-9.]*\"/CUI.VERSION = \"$new\"/" CludesUI/CludesUI.lua
 git add CludesUI/CludesUI.lua
 if [ "$cur" != "$new" ]; then
     git commit -q -m "Release v$new"

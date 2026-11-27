@@ -124,6 +124,69 @@ end
 -------------------------------------------------------------------------------
 CUI._WHATSNEW_PATCHES = {
     {
+        version = "1.3.0",
+        heroes = {
+            {
+                module = "Global Settings",
+                title = "A new settings window",
+                desc = "A rail of named sections down the left, each module with a one-line summary and its pages listed right under it, and a breadcrumb above every page. It reopens on the page you left, wherever you dragged it.",
+            },
+            {
+                module = "Global Settings",
+                title = "Themes that change the whole window",
+                desc = "Frost, Ember, Arcane and Fel now tint the window itself, not just the accent, and picking one sets its accent too. Pick one under Window Theme.",
+                nav = { module = "_CUIGlobal", page = "General" },
+            },
+        },
+        features = {
+            {
+                module = "Global Settings",
+                title = "Changed here",
+                desc = "The button beside Reload UI lists every setting you changed on the page, old and new value, with Undo.",
+            },
+            {
+                module = "Global Settings",
+                title = "Search from chat",
+                desc = "Type /cui and a setting's name, such as /cui nameplate colors, to open the settings searching for it.",
+            },
+            {
+                module = "Global Settings",
+                title = "No more combat lockouts",
+                desc = "Ask for the settings or Edit Layout in combat and they open as soon as combat ends. If combat closes the window, it comes back where you were.",
+            },
+            {
+                module = "Global Settings",
+                title = "Reload reminders",
+                desc = "Choose Later when a setting asks for a reload and the Reload UI button reminds you until you reload.",
+            },
+            {
+                module = "Global Settings",
+                title = "In the addon list",
+                desc = "CludesUI sits in the minimap's addon list, even with its minimap button hidden. Left-click for the settings, right-click for Edit Layout.",
+            },
+            {
+                module = "Global Settings",
+                title = "Easier to read",
+                desc = "Hover a cut-off description to read all of it, the Section Status list opens a module when clicked, a switched-off module offers to turn on, and some pages have clearer names, such as Window Mover.",
+            },
+            {
+                module = "Cooldown Manager",
+                title = "Max Icons",
+                desc = "Max Icons now limits a bar on its own, with Overflow To left on None.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Shopping list",
+                desc = "The Market's Shopping tab lists what your RestedXP guide and quest log ask you to buy or collect.",
+            },
+        },
+        fixes = {
+            { module = "Forever Tools", forever = true, text = "Gear Score no longer causes Lua errors when inspecting or hovering players." },
+            { module = "Global Settings", text = "The open page is marked in the list again." },
+        },
+    },
+    {
         version = "1.2.0",
         heroes = {
             {
