@@ -1838,6 +1838,87 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  CREATURE SCOUT
+    ---------------------------------------------------------------------------
+    local SC = CUI._Scout
+    if SC then
+        local function Set(key, val)
+            SC.Cfg()[key] = val
+            SC.Apply()
+        end
+        local function sOff() return not SC.Get("enabled") end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "CREATURE SCOUT", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Creature Scout",
+            tooltip = "Adds what a creature can do to its tooltip: the spells it uses, its armor and how much of your physical damage that takes, and what it is immune to or resists.",
+            getValue = function() return not sOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Creature Abilities",
+            disabled = sOff,
+            tooltip = "The spells a creature is known to use, with their range and cast time.",
+            getValue = function() return SC.Get("abilities") end,
+            setValue = function(val) Set("abilities", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Armor and Damage Taken",
+            disabled = sOff,
+            tooltip = "Its armor (estimated from its level when not known) and how much of your physical damage it stops.",
+            getValue = function() return SC.Get("armor") end,
+            setValue = function(val) Set("armor", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Immunities and Resistances",
+            disabled = sOff,
+            tooltip = "The effects and spell schools it is immune to, and the schools it resists.",
+            getValue = function() return SC.Get("immunities") end,
+            setValue = function(val) Set("immunities", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "dropdown",
+            text = "Details Key",
+            disabled = sOff,
+            tooltip = "Hold it over a creature to read what each of its abilities does.",
+            values = { ctrl = "Ctrl", alt = "Alt", shift = "Shift" },
+            order = { "ctrl", "alt", "shift" },
+            getValue = function() return SC.Get("key") end,
+            setValue = function(val) Set("key", val) end,
+        }, {
+            type = "toggle",
+            text = "Key Hint",
+            disabled = sOff,
+            tooltip = "A line on the tooltip saying which key shows the details.",
+            getValue = function() return SC.Get("hint") end,
+            setValue = function(val) Set("hint", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Pet Family",
+            disabled = sOff,
+            tooltip = "Hunters see a beast's pet family, its attack speed and whether they can tame it yet.",
+            getValue = function() return SC.Get("family") end,
+            setValue = function(val) Set("family", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Also in Dungeons",
+            disabled = sOff,
+            tooltip = "Shows it inside dungeons and raids too.",
+            getValue = function() return SC.Get("instances") end,
+            setValue = function(val) Set("instances", val and true or false) end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  BOAT AND ZEPPELIN TIMERS
     ---------------------------------------------------------------------------
     local TR2 = CUI._Transport
