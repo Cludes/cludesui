@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: Information bar for CludesUI - clock, gold, reputation and more
 ## Author: Cludes
-## Version: 1.3.0
+## Version: 1.4.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIDataBarsDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga

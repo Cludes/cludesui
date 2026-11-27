@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: Custom Resource Bars with thresholds, hash lines and more.
 ## Author: Cludes
-## Version: 1.3.0
+## Version: 1.4.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIResourceBarsDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
