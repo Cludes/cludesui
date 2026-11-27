@@ -4790,12 +4790,10 @@ do
             text = NAME,
             icon = ICON_PATH,
             OnClick = function(_, btnFrame)
-                if InCombatLockdown() then return end
-                if btnFrame == "LeftButton" then
-                    CUI:Toggle()
-                elseif btnFrame == "RightButton" then
-                    CUI:EnsureUnlockCore()
-                    if CUI._openUnlockMode then CUI._openUnlockMode() end
+                if btnFrame == "LeftButton" or btnFrame == "RightButton" then
+                    CUI.LauncherClick(btnFrame)
+                elseif InCombatLockdown() then
+                    return
                 elseif btnFrame == "MiddleButton" then
                     CludesUIDB.showMinimapButton = false
                     CUI.HideMinimapButton()
@@ -4814,6 +4812,37 @@ do
         LDBIcon:Register(NAME, launcher, IconDB())
         return LDBIcon:GetMinimapButton(NAME)
     end
+
+    -- The minimap button's and the addon compartment's clicks: left the options,
+    -- right Edit Layout; asked in combat, they open once it ends.
+    function CUI.LauncherClick(button)
+        if InCombatLockdown() then
+            if button == "RightButton" then
+                CUI.AfterCombat(function() CUI.LauncherClick(button) end, "Edit Layout")
+            else
+                CUI.AfterCombat(function() CUI:Show() end, "Options")
+            end
+            return
+        end
+        if button == "RightButton" then
+            CUI:EnsureUnlockCore()
+            if CUI._openUnlockMode then CUI._openUnlockMode() end
+        else
+            CUI:Toggle()
+        end
+    end
+
+    -- The addon compartment (the minimap's addon list, CludesUI.toc's
+    -- AddonCompartmentFunc*): there even while the minimap button is hidden.
+    function CludesUI_OnAddonCompartmentClick(_, button) CUI.LauncherClick(button) end
+    function CludesUI_OnAddonCompartmentEnter(_, menuButton)
+        GameTooltip:SetOwner(menuButton, "ANCHOR_LEFT")
+        GameTooltip:AddLine("|cff4cc9f0CludesUI|r")
+        GameTooltip:AddLine(CUI.L("|cff4cc9f0Left-click:|r |cffE0E0E0Toggle CludesUI|r"))
+        GameTooltip:AddLine(CUI.L("|cff4cc9f0Right-click:|r |cffE0E0E0Enter Layout Mode|r"))
+        GameTooltip:Show()
+    end
+    function CludesUI_OnAddonCompartmentLeave() GameTooltip:Hide() end
 
     function CUI.ShowMinimapButton()
         if not LDBIcon then CUI.CreateMinimapButton() end

@@ -183,6 +183,7 @@ local ENGLISH_NAMES = {
     -- Sidebar (and the page titles and tabs that share these names).
     ["Layout Mode"] = "Edit Layout",
     ["LAYOUT MODE"] = "EDIT LAYOUT",
+    ["|cff4cc9f0Right-click:|r |cffE0E0E0Enter Layout Mode|r"] = "|cff4cc9f0Right-click:|r |cffE0E0E0Edit Layout|r",
     ["Global Settings"] = "Core Settings",
     ["Profiles"] = "Profiles & Sharing",
     ["Patch Notes"] = "What's New",

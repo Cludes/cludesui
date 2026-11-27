@@ -5,6 +5,9 @@
 ## Version: 1.2.0
 ## SavedVariables: CludesUIDB
 ## IconTexture: Interface\AddOns\CludesUI\media\HappyBufo
+## AddonCompartmentFunc: CludesUI_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: CludesUI_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: CludesUI_OnAddonCompartmentLeave
 ## X-License: All Rights Reserved (see license.txt)
 
 # Pre-12.1 client failsafe -- MUST load first (arms the per-file guard line)
