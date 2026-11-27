@@ -1,0 +1,692 @@
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
+if not (CUI and CUI.IS_FOREVER) then return end
+-------------------------------------------------------------------------------
+--  CludesUIForeverEssentials_LFGWindow.lua  (WoW Forever only)
+--  The Looking For Group window (/clfg), three tabs:
+--    Browse      Forever's listings for your level (or every dungeon, or
+--                one): leader, level, zone, the group's roles and size,
+--                the dungeon, and for CludesUI leaders their Gear Score,
+--                boss kills, quests and what they need. Apply sends your
+--                card; Whisper opens a whisper to any leader.
+--    Your Group  your listing and the CludesUI players who applied, best
+--                Gear Score first: Invite or Decline each.
+--    Create      list a dungeon in Forever's finder: the roles you still
+--                need, a minimum Gear Score, a style and a note.
+--  Opening it turns Looking For Group on. The rules are in
+--  CludesUIForeverEssentials_LFG.lua.
+-------------------------------------------------------------------------------
+local _, module = ...
+
+local GF = module.LFG
+if not GF then return end
+local LFG = CUI._LFG
+local Kit = CUI.Kit
+local Pal = Kit.Palette
+local Card, Comms, Listings, Search, Group, Browse = GF.Card, GF.Comms, GF.Listings, GF.Search, GF.Group, GF.Browse
+
+local WIN_W, WIN_H = 660, 480
+local PAD = 10
+local TAB_H = 22
+local BAR_H = 24
+local ROW_H = 42
+local TILE_COLS, TILE_H, TILE_GAP = 4, 40, 6
+local STYLES = { GROUP_FINDER_GENERAL_PLAYSTYLE1 or "Learning", GROUP_FINDER_GENERAL_PLAYSTYLE2 or "Relaxed",
+    GROUP_FINDER_GENERAL_PLAYSTYLE3 or "Competitive", GROUP_FINDER_GENERAL_PLAYSTYLE4 or "Carry Offered" }
+local SORT_NAMES = { newest = "Newest", score = "Gear Score", level = "Dungeon Level" }
+local SORT_ORDER = { "newest", "score", "level" }
+local ROLE_LETTERS = { { Card.TANK, "T" }, { Card.HEALER, "H" }, { Card.DAMAGE, "D" } }
+
+local window, tabs, pages = nil, {}, {}
+local tab = "browse"
+local browse, yours, create = {}, {}, {}
+local needle = ""
+local order = {}
+
+local function Secret(v) return v ~= nil and issecretvalue and issecretvalue(v) end
+
+local function Text(parent, size, color)
+    local fs = parent:CreateFontString(nil, "OVERLAY")
+    Kit.Font(fs, size or Kit.TEXT_SIZE, "essentials")
+    fs:SetJustifyH("LEFT")
+    fs:SetWordWrap(false)
+    local c = color or Pal.text
+    fs:SetTextColor(c[1], c[2], c[3])
+    return fs
+end
+
+local function ClassHex(class)
+    local token = type(class) == "number" and select(2, GetClassInfo(class)) or class
+    local cc = token and RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]
+    return cc and ("|cff%02x%02x%02x"):format(cc.r * 255, cc.g * 255, cc.b * 255) or "|cffffffff"
+end
+
+local function RoleText(bits)
+    local parts = {}
+    for _, pair in ipairs(ROLE_LETTERS) do
+        if bit.band(bits or 0, pair[1]) ~= 0 then parts[#parts + 1] = pair[2] end
+    end
+    return table.concat(parts)
+end
+
+local function Age(seconds)
+    if seconds < 60 then return "just now" end
+    if seconds < 3600 then return ("%dm ago"):format(seconds / 60) end
+    return ("%dh ago"):format(seconds / 3600)
+end
+
+local function Score(tenths) return tenths and ("%.1f"):format(tenths / 10) or nil end
+
+local function KillsText(card)
+    if not (card and card.hasKills) then return nil end
+    local total = 0
+    for i = 1, card.nKills do
+        total = total + card.kills[i]
+    end
+    if total == 0 then return "First time" end
+    return total == 1 and "1 boss kill" or ("%d boss kills"):format(total)
+end
+
+local function QuestsText(card)
+    if not (card and card.hasQuests) or card.nHave == 0 then return nil end
+    return card.nHave == 1 and "1 quest" or ("%d quests"):format(card.nHave)
+end
+
+local function Whisper(name)
+    local SendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
+    if SendTell then SendTell(name, DEFAULT_CHAT_FRAME) end
+end
+
+local function TurnOn()
+    if not LFG.Get("enabled") then
+        LFG.Cfg().enabled = true
+        LFG.Apply()
+    end
+end
+
+local Paint
+
+-------------------------------------------------------------------------------
+--  Browse
+-------------------------------------------------------------------------------
+local function PickText()
+    if Search.pick == Search.ALL then return "Every dungeon" end
+    if Search.pick == Search.LEVEL then return "For your level" end
+    local activity = Listings.Activity(Search.pick)
+    return activity and activity.short or "For your level"
+end
+
+local function DungeonMenu(owner)
+    Kit.ContextMenu(owner, function(_, root)
+        root:CreateRadio("For your level", function() return Search.pick == Search.LEVEL end, function() Search.Run(Search.LEVEL) Paint() end)
+        root:CreateRadio("Every dungeon", function() return Search.pick == Search.ALL end, function() Search.Run(Search.ALL) Paint() end)
+        root:CreateDivider()
+        local list = {}
+        Search.Activities(list)
+        for _, id in ipairs(list) do
+            local activity = Listings.Activity(id)
+            local label = activity.max > 0 and ("%s  %d-%d"):format(activity.short, activity.min, activity.max) or activity.short
+            if not Search.Suits(id) then label = "|cff808080" .. label .. "|r" end
+            root:CreateRadio(label, function() return Search.pick == id end, function() Search.Run(id) Paint() end)
+        end
+    end)
+end
+
+local function SortMenu(owner)
+    Kit.ContextMenu(owner, function(_, root)
+        for _, key in ipairs(SORT_ORDER) do
+            root:CreateRadio(SORT_NAMES[key], function() return LFG.Get("sort") == key end, function()
+                LFG.Cfg().sort = key
+                Paint()
+            end)
+        end
+    end)
+end
+
+local function ApplyRow(row)
+    if row.leaderName then Browse.Apply(row.leaderName, row.dungeon) end
+    Paint()
+end
+
+local function NewBrowseRow(i)
+    local content = browse.content
+    local row = CreateFrame("Frame", nil, content)
+    row:SetHeight(ROW_H)
+    row:SetPoint("TOPLEFT", 0, -(i - 1) * (ROW_H + 2))
+    row:SetPoint("RIGHT", content, "RIGHT", 0, 0)
+    local bg = row:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(1, 1, 1, i % 2 == 0 and 0.03 or 0.05)
+    row.head = Text(row, Kit.TEXT_SIZE)
+    row.head:SetPoint("TOPLEFT", 8, -6)
+    row.head:SetPoint("RIGHT", row, "RIGHT", -230, 0)
+    row.sub = Text(row, Kit.SMALL_SIZE, Pal.muted)
+    row.sub:SetPoint("BOTTOMLEFT", 8, 6)
+    row.sub:SetPoint("RIGHT", row, "RIGHT", -150, 0)
+    row.slots = Text(row, Kit.SMALL_SIZE, Pal.text)
+    row.slots:SetPoint("TOPRIGHT", row, "TOPRIGHT", -150, -6)
+    row.slots:SetJustifyH("RIGHT")
+    row.age = Text(row, Kit.SMALL_SIZE, Pal.muted)
+    row.age:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -150, 6)
+    row.age:SetJustifyH("RIGHT")
+    row.apply = Kit.Button(row, "Apply", 64, 20, function() ApplyRow(row) end, { key = "essentials" })
+    row.apply:SetPoint("RIGHT", row, "RIGHT", -74, 0)
+    row.whisper = Kit.Button(row, "Whisper", 64, 20, function()
+        if row.leaderName then Whisper(row.leaderName) end
+    end, { key = "essentials" })
+    row.whisper:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+    row.status = Text(row, Kit.SMALL_SIZE, Pal.green)
+    row.status:SetPoint("RIGHT", row.whisper, "LEFT", -8, 0)
+    row:EnableMouse(true)
+    row:SetScript("OnEnter", function(self)
+        if not self.tip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        for _, line in ipairs(self.tip) do
+            GameTooltip:AddLine(line, 1, 1, 1, true)
+        end
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    browse.rows[i] = row
+    return row
+end
+
+local function PaintBrowseRow(row, entry)
+    local activity = entry.activity and Listings.Activity(entry.activity)
+    local leader = entry.members[1]
+    for m = 1, entry.nMembers do
+        if entry.members[m].leader then leader = entry.members[m] end
+    end
+    local card = entry.leader and Browse.CardOf(entry.leader)
+    row.leaderName, row.dungeon = entry.leader, entry.dungeon
+    local head = {}
+    if leader then
+        head[#head + 1] = ClassHex(leader.class) .. (entry.leader or leader.name or "?") .. "|r"
+        if leader.level then head[#head + 1] = tostring(leader.level) end
+        if leader.zone then head[#head + 1] = "|cff9aa6b2" .. leader.zone .. "|r" end
+    else
+        head[#head + 1] = entry.leader or "?"
+    end
+    local score = card and Score(card.score)
+    if score then head[#head + 1] = "|cffffd100GS " .. score .. "|r" end
+    row.head:SetText(table.concat(head, "  "))
+    local sub = {}
+    if activity then
+        sub[#sub + 1] = activity.max > 0 and ("%s %d-%d"):format(activity.name, activity.min, activity.max) or activity.name
+    end
+    local kills, quests = KillsText(card), QuestsText(card)
+    if kills then sub[#sub + 1] = kills end
+    if quests then sub[#sub + 1] = quests end
+    row.sub:SetText(table.concat(sub, "   "))
+    local size = activity and activity.size or 5
+    if entry.numMembers <= 1 and leader then
+        row.slots:SetText(RoleText(leader.roles))
+    else
+        row.slots:SetText(("T%d H%d D%d  %d/%d"):format(entry.tanks, entry.healers, entry.damage, entry.numMembers, size))
+    end
+    row.age:SetText(Age(entry.age))
+    local sentTo = entry.leader and Comms.SentTo(entry.leader)
+    row.apply:SetShown(card ~= nil and not entry.mine and not entry.delisted and not sentTo)
+    row.whisper:SetShown(not entry.mine and entry.leader ~= nil)
+    if entry.mine then
+        row.status:SetText("Your group")
+    elseif sentTo then
+        row.status:SetText(sentTo.declined and "Declined" or sentTo.acked and "Received" or "Applied")
+    else
+        row.status:SetText("")
+    end
+    row:SetAlpha(entry.delisted and 0.4 or 1)
+    local tip = {}
+    local group = card and card.group
+    if group then
+        if group.min > 0 then tip[#tip + 1] = ("Minimum Gear Score %.1f"):format(group.min / 10) end
+        tip[#tip + 1] = ("Needs %d tank, %d healer, %d damage"):format(group.tanks, group.healers, group.damage)
+        if group.note ~= "" then tip[#tip + 1] = group.note end
+    end
+    for m = 1, entry.nMembers do
+        local member = entry.members[m]
+        tip[#tip + 1] = ("%s%s|r %s %s%s"):format(ClassHex(member.class), member.name or "?", member.level or "",
+            RoleText(member.roles), member.zone and ("  |cff9aa6b2" .. member.zone .. "|r") or "")
+    end
+    row.tip = #tip > 0 and tip or nil
+    row:Show()
+end
+
+local function PaintBrowse()
+    browse.pick:SetText("Dungeon: " .. PickText())
+    browse.sort:SetText("Sort: " .. (SORT_NAMES[LFG.Get("sort")] or "Newest"))
+    local n = Listings.Read()
+    wipe(order)
+    for i = 1, n do
+        local entry = Listings.entries[i]
+        if Browse.Matches(entry, needle) then order[#order + 1] = entry end
+    end
+    Browse.Sort(order, LFG.Get("sort"))
+    for i, entry in ipairs(order) do
+        PaintBrowseRow(browse.rows[i] or NewBrowseRow(i), entry)
+    end
+    for i = #order + 1, #browse.rows do
+        browse.rows[i]:Hide()
+    end
+    browse.content:SetHeight(math.max(1, #order * (ROW_H + 2)))
+    local state = Search.state
+    local note
+    if InCombatLockdown() and IsEncounterInProgress and IsEncounterInProgress() then
+        note = "The group finder is closed during a boss fight."
+    elseif state == "searching" then
+        note = "Searching..."
+    elseif state == "failed" then
+        note = "The search failed. Try Search again."
+    elseif state == "unavailable" then
+        note = "The group finder has nothing for your level yet."
+    elseif Listings.state == "locked" then
+        note = "Listings cannot be read right now. Try again after combat."
+    elseif not Listings.searched then
+        note = "Press Search to find groups."
+    elseif #order == 0 then
+        note = needle ~= "" and "No group matches your filter." or "No groups listed right now."
+    end
+    browse.note:SetText(note or "")
+    browse.count:SetText(Listings.searched and (#order == 1 and "1 group" or ("%d groups"):format(#order)) or "")
+    Browse.Ask()
+end
+
+local function BuildBrowse(page)
+    browse.rows = {}
+    browse.pick = Kit.Button(page, "Dungeon: For your level", 200, BAR_H - 2, function(self) DungeonMenu(self) end, { key = "essentials" })
+    browse.pick:SetPoint("TOPLEFT", 0, 0)
+    browse.filter = Kit.Input(page, 200, BAR_H - 2, "Filter dungeon, leader or note", "essentials")
+    browse.filter:SetPoint("LEFT", browse.pick, "RIGHT", 8, 0)
+    browse.filter:HookScript("OnTextChanged", function(self)
+        needle = (self:GetText() or ""):lower()
+        if window and window:IsShown() then PaintBrowse() end
+    end)
+    browse.sort = Kit.Button(page, "Sort: Newest", 130, BAR_H - 2, function(self) SortMenu(self) end, { key = "essentials" })
+    browse.sort:SetPoint("LEFT", browse.filter, "RIGHT", 8, 0)
+    browse.search = Kit.Button(page, "Search", 90, BAR_H - 2, function()
+        Search.Run()
+        Paint()
+    end, { key = "essentials" })
+    browse.search:SetPoint("TOPRIGHT", page, "TOPRIGHT", 0, 0)
+    browse.count = Text(page, Kit.SMALL_SIZE, Pal.muted)
+    browse.count:SetPoint("TOPLEFT", 2, -(BAR_H + 4))
+    local scroll, content = Kit.Scroll(page)
+    scroll:SetPoint("TOPLEFT", 0, -(BAR_H + 22))
+    scroll:SetPoint("BOTTOMRIGHT", -10, 0)
+    browse.content = content
+    browse.note = Text(page, Kit.TEXT_SIZE, Pal.muted)
+    browse.note:SetPoint("TOP", scroll, "TOP", 0, -30)
+    browse.note:SetJustifyH("CENTER")
+end
+
+-------------------------------------------------------------------------------
+--  Your Group
+-------------------------------------------------------------------------------
+local function NewApplicantRow(i)
+    local content = yours.content
+    local row = CreateFrame("Frame", nil, content)
+    row:SetHeight(ROW_H)
+    row:SetPoint("TOPLEFT", 0, -(i - 1) * (ROW_H + 2))
+    row:SetPoint("RIGHT", content, "RIGHT", 0, 0)
+    local bg = row:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(1, 1, 1, i % 2 == 0 and 0.03 or 0.05)
+    row.head = Text(row, Kit.TEXT_SIZE)
+    row.head:SetPoint("TOPLEFT", 8, -6)
+    row.head:SetPoint("RIGHT", row, "RIGHT", -160, 0)
+    row.sub = Text(row, Kit.SMALL_SIZE, Pal.muted)
+    row.sub:SetPoint("BOTTOMLEFT", 8, 6)
+    row.sub:SetPoint("RIGHT", row, "RIGHT", -160, 0)
+    row.invite = Kit.Button(row, "Invite", 70, 20, function()
+        local record = row.record
+        if record and not record.invited and Group.Answering() and Comms.HasApplicant(record) then
+            C_PartyInfo.InviteUnit(record.name)
+            record.invited = true
+            Paint()
+        end
+    end, { key = "essentials" })
+    row.invite:SetPoint("RIGHT", row, "RIGHT", -82, 0)
+    row.decline = Kit.Button(row, "Decline", 70, 20, function()
+        local record = row.record
+        if record and Group.Answering() and Comms.HasApplicant(record) then
+            if not Comms.Decline(record.name) then
+                CUI.Print("|cff4cc9f0Looking For Group:|r too many whispers are waiting to be sent. Try Decline again in a moment.")
+            end
+            Paint()
+        end
+    end, { key = "essentials" })
+    row.decline:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+    row:EnableMouse(true)
+    row:SetScript("OnEnter", function(self)
+        if not (self.record and self.record.note) then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(self.record.note, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    yours.rows[i] = row
+    return row
+end
+
+local applicantOrder = {}
+local function PaintYours()
+    local listed = Group.Listed()
+    local info = C_LFGList.GetActiveEntryInfo and C_LFGList.GetActiveEntryInfo()
+    local lines = {}
+    if listed and info and info.activityIDs and info.activityIDs[1] then
+        local activity = Listings.Activity(info.activityIDs[1])
+        lines[#lines + 1] = activity and activity.name or "Your listing"
+    else
+        lines[#lines + 1] = "You are not listed. Use Create to list your group."
+    end
+    local facts = {}
+    local mineInfo = Group.Info()
+    if mineInfo then
+        if Group.style and STYLES[Group.style] then facts[#facts + 1] = STYLES[Group.style] end
+        if Group.min > 0 then facts[#facts + 1] = ("Minimum Gear Score %.1f"):format(Group.min / 10) end
+        if Group.listedAt then facts[#facts + 1] = "Listed " .. Age(GetTime() - Group.listedAt) end
+    end
+    facts[#facts + 1] = #Comms.applicants == 1 and "1 applied" or ("%d applied"):format(#Comms.applicants)
+    yours.title:SetText(lines[1])
+    yours.facts:SetText(listed and table.concat(facts, "   ") or "")
+    local party = {}
+    for i = 1, GetNumGroupMembers() do
+        local unit = IsInRaid() and ("raid" .. i) or (i == 1 and "player" or ("party" .. (i - 1)))
+        local name, level = UnitName(unit), UnitLevel(unit)
+        local _, class = UnitClass(unit)
+        if name and not Secret(name) then party[#party + 1] = ClassHex(class) .. name .. "|r " .. (level or "") end
+    end
+    yours.party:SetText(table.concat(party, "   "))
+    yours.delist:SetShown(listed and Group.CanEdit())
+    wipe(applicantOrder)
+    if Group.CanEdit() then
+        for _, record in ipairs(Comms.applicants) do
+            applicantOrder[#applicantOrder + 1] = record
+        end
+    end
+    table.sort(applicantOrder, function(a, b) return (a.card.score or -1) > (b.card.score or -1) end)
+    for i, record in ipairs(applicantOrder) do
+        local row = yours.rows[i] or NewApplicantRow(i)
+        row.record = record
+        local card = record.card
+        local head = { ClassHex(card.class) .. record.name .. "|r", tostring(card.level), RoleText(card.roles) }
+        local score = Score(card.score)
+        if score then head[#head + 1] = "|cffffd100GS " .. score .. "|r" end
+        row.head:SetText(table.concat(head, "  "))
+        local sub = {}
+        local kills, quests = KillsText(card), QuestsText(card)
+        if kills then sub[#sub + 1] = kills end
+        if quests then sub[#sub + 1] = quests end
+        sub[#sub + 1] = Age(GetTime() - record.at)
+        row.sub:SetText(table.concat(sub, "   "))
+        row.invite:SetText(record.invited and "Invited" or "Invite")
+        row:Show()
+    end
+    for i = #applicantOrder + 1, #yours.rows do
+        yours.rows[i]:Hide()
+    end
+    yours.content:SetHeight(math.max(1, #applicantOrder * (ROW_H + 2)))
+    yours.empty:SetShown(listed and #applicantOrder == 0)
+end
+
+local function BuildYours(page)
+    yours.rows = {}
+    yours.title = Text(page, 14, CUI.Kit.SyncAccent({}))
+    yours.title:SetPoint("TOPLEFT", 0, 0)
+    yours.title:SetPoint("RIGHT", page, "RIGHT", -100, 0)
+    yours.delist = Kit.Button(page, "Delist", 90, BAR_H - 2, function()
+        Group.Delist()
+        Paint()
+    end, { key = "essentials" })
+    yours.delist:SetPoint("TOPRIGHT", 0, 0)
+    yours.facts = Text(page, Kit.SMALL_SIZE, Pal.muted)
+    yours.facts:SetPoint("TOPLEFT", 0, -22)
+    yours.party = Text(page, Kit.SMALL_SIZE)
+    yours.party:SetPoint("TOPLEFT", 0, -40)
+    local scroll, content = Kit.Scroll(page)
+    scroll:SetPoint("TOPLEFT", 0, -62)
+    scroll:SetPoint("BOTTOMRIGHT", -10, 0)
+    yours.content = content
+    yours.empty = Text(page, Kit.TEXT_SIZE, Pal.muted)
+    yours.empty:SetPoint("TOP", scroll, "TOP", 0, -30)
+    yours.empty:SetText("No one has applied yet. CludesUI players who apply show here.")
+end
+
+-------------------------------------------------------------------------------
+--  Create
+-------------------------------------------------------------------------------
+local activities = {}
+local function Kicker(page, text)
+    local fs = Text(page, Kit.SMALL_SIZE, CUI.Kit.SyncAccent({}))
+    fs:SetText(text)
+    return fs
+end
+
+local function PaintCreate()
+    local page = create.page
+    local width = (page:GetWidth() and page:GetWidth() > 0) and page:GetWidth() or (WIN_W - PAD * 2)
+    local tileW = math.floor((width - (TILE_COLS - 1) * TILE_GAP) / TILE_COLS)
+    local n = Search.Activities(activities)
+    create.empty:SetShown(n == 0)
+    local y = 16
+    for i = 1, n do
+        local tile = create.tiles[i]
+        if not tile then
+            tile = Kit.Button(page, "", tileW, TILE_H, function(self)
+                Group.activity = self.activity
+                Paint()
+            end, { key = "essentials" })
+            tile.range = Text(tile, Kit.SMALL_SIZE, Pal.muted)
+            tile.range:SetPoint("BOTTOMLEFT", 6, 4)
+            create.tiles[i] = tile
+        end
+        local id = activities[i]
+        local activity = Listings.Activity(id)
+        tile.activity = id
+        tile:SetSize(tileW, TILE_H)
+        tile:ClearAllPoints()
+        local column, line = (i - 1) % TILE_COLS, math.floor((i - 1) / TILE_COLS)
+        tile:SetPoint("TOPLEFT", column * (tileW + TILE_GAP), -(y + line * (TILE_H + TILE_GAP)))
+        tile:SetText(activity.short)
+        tile.range:SetText(activity.max > 0 and ("%d-%d"):format(activity.min, activity.max) or "")
+        local color = GetQuestDifficultyColor and GetQuestDifficultyColor(activity.min > 0 and activity.min or UnitLevel("player"))
+        if color then tile.range:SetTextColor(color.r, color.g, color.b) end
+        tile:SetActive(Group.activity == id)
+        tile:Show()
+    end
+    for i = n + 1, #create.tiles do
+        create.tiles[i]:Hide()
+    end
+    y = y + math.max(1, math.ceil(n / TILE_COLS)) * (TILE_H + TILE_GAP) + 10
+    create.kRoles:SetPoint("TOPLEFT", 0, -y)
+    y = y + 16
+    for i, role in ipairs(create.roles) do
+        role:ClearAllPoints()
+        role:SetPoint("TOPLEFT", (i - 1) * 190, -y)
+        role.value:SetText(Group[role.field])
+    end
+    y = y + 32
+    create.kMin:SetPoint("TOPLEFT", 0, -y)
+    create.kStyle:SetPoint("TOPLEFT", 260, -y)
+    y = y + 16
+    create.minRow:SetPoint("TOPLEFT", 0, -y)
+    create.minValue:SetText(Group.min > 0 and ("%.1f"):format(Group.min / 10) or "None")
+    for i, button in ipairs(create.styles) do
+        button:ClearAllPoints()
+        button:SetPoint("TOPLEFT", 260 + (i - 1) * 96, -y)
+        button:SetActive(Group.style == i)
+    end
+    y = y + 32
+    create.kNote:SetPoint("TOPLEFT", 0, -y)
+    y = y + 16
+    create.note:SetPoint("TOPLEFT", 0, -y)
+    create.count:SetText(("%d/%d"):format(#Group.note, Card.NOTE_MAX))
+    create.list:SetText(Group.Listed() and "Update Group" or "List Group")
+    local why
+    if not Group.CanEdit() then
+        why = "Only your group's leader can change its listing."
+    elseif not Group.Ready() then
+        why = "Pick a dungeon and a style to list your group."
+    end
+    create.why:SetText(why or "")
+end
+
+local function BuildCreate(page)
+    create.page = page
+    create.tiles = {}
+    create.kDungeon = Kicker(page, "DUNGEON")
+    create.kDungeon:SetPoint("TOPLEFT", 0, 0)
+    create.empty = Text(page, Kit.TEXT_SIZE, Pal.muted)
+    create.empty:SetPoint("TOPLEFT", 0, -18)
+    create.empty:SetText("The group finder has no dungeons for your level yet.")
+    create.kRoles = Kicker(page, "ROLES NEEDED")
+    create.roles = {}
+    for i, role in ipairs({ { "tanks", "Tank" }, { "healers", "Healer" }, { "damage", "Damage" } }) do
+        local holder = CreateFrame("Frame", nil, page)
+        holder:SetSize(180, 22)
+        holder.field = role[1]
+        local label = Text(holder, Kit.TEXT_SIZE)
+        label:SetPoint("LEFT")
+        label:SetText(role[2])
+        local plus = Kit.Button(holder, "+", 22, 20, function()
+            Group[role[1]] = math.min(Card.NEED_MAX, Group[role[1]] + 1)
+            Paint()
+        end, { key = "essentials" })
+        plus:SetPoint("RIGHT")
+        holder.value = Text(holder, Kit.TEXT_SIZE)
+        holder.value:SetPoint("RIGHT", plus, "LEFT", -8, 0)
+        local minus = Kit.Button(holder, "-", 22, 20, function()
+            Group[role[1]] = math.max(0, Group[role[1]] - 1)
+            Paint()
+        end, { key = "essentials" })
+        minus:SetPoint("RIGHT", holder.value, "LEFT", -8, 0)
+        create.roles[i] = holder
+    end
+    create.kMin = Kicker(page, "MINIMUM GEAR SCORE")
+    create.minRow = CreateFrame("Frame", nil, page)
+    create.minRow:SetSize(220, 22)
+    local minus = Kit.Button(create.minRow, "-", 22, 20, function()
+        Group.min = math.max(0, Group.min - 50)
+        Paint()
+    end, { key = "essentials" })
+    minus:SetPoint("LEFT")
+    create.minValue = Text(create.minRow, Kit.TEXT_SIZE)
+    create.minValue:SetPoint("LEFT", minus, "RIGHT", 10, 0)
+    create.minValue:SetWidth(50)
+    create.minValue:SetJustifyH("CENTER")
+    local plus = Kit.Button(create.minRow, "+", 22, 20, function()
+        Group.min = math.min(1000, Group.min + 50)
+        Paint()
+    end, { key = "essentials" })
+    plus:SetPoint("LEFT", create.minValue, "RIGHT", 10, 0)
+    create.kStyle = Kicker(page, "STYLE")
+    create.styles = {}
+    for i, name in ipairs(STYLES) do
+        create.styles[i] = Kit.Button(page, name, 90, 20, function()
+            Group.style = i
+            Paint()
+        end, { key = "essentials" })
+    end
+    create.kNote = Kicker(page, "NOTE")
+    create.note = Kit.Input(page, 420, 22, "What you are looking for (only CludesUI players see it)", "essentials")
+    create.note:SetMaxLetters(Card.NOTE_MAX)
+    create.note:HookScript("OnTextChanged", function(self)
+        Group.note = Card.CleanNote(self:GetText())
+        if create.count then create.count:SetText(("%d/%d"):format(#Group.note, Card.NOTE_MAX)) end
+    end)
+    create.count = Text(page, Kit.SMALL_SIZE, Pal.muted)
+    create.count:SetPoint("LEFT", create.note, "RIGHT", 8, 0)
+    create.list = Kit.Button(page, "List Group", 120, BAR_H, function()
+        if Group.List() then
+            tab = "yours"
+        end
+        Paint()
+    end, { key = "essentials" })
+    create.list:SetPoint("BOTTOMRIGHT", 0, 0)
+    create.reset = Kit.Button(page, "Reset", 80, BAR_H, function()
+        Group.activity, Group.style, Group.min, Group.note = nil, nil, 0, ""
+        Group.tanks, Group.healers, Group.damage = 1, 1, 3
+        create.note:SetText("")
+        Paint()
+    end, { key = "essentials" })
+    create.reset:SetPoint("RIGHT", create.list, "LEFT", -8, 0)
+    create.why = Text(page, Kit.SMALL_SIZE, Pal.amber)
+    create.why:SetPoint("BOTTOMLEFT", 0, 4)
+end
+
+-------------------------------------------------------------------------------
+--  Window
+-------------------------------------------------------------------------------
+local TABS = { { "browse", "Browse" }, { "yours", "Your Group" }, { "create", "Create" } }
+
+function Paint()
+    if not (window and window:IsShown()) then return end
+    for key, page in pairs(pages) do
+        page:SetShown(key == tab)
+    end
+    for _, button in ipairs(tabs) do
+        button:SetActive(button.key == tab)
+    end
+    if tab == "browse" then
+        PaintBrowse()
+    elseif tab == "yours" then
+        PaintYours()
+    else
+        PaintCreate()
+    end
+end
+
+local function Build()
+    if window then return window end
+    window = Kit.Window("CludesUILookingForGroup", WIN_W, WIN_H, CUI.L("Looking For Group"), { key = "essentials" })
+    local x = PAD
+    for i, def in ipairs(TABS) do
+        local button = Kit.Button(window, def[2], 100, TAB_H, function()
+            tab = def[1]
+            Paint()
+        end, { key = "essentials" })
+        button.key = def[1]
+        button:SetPoint("TOPLEFT", x, -(Kit.HEADER_H + 6))
+        x = x + 104
+        tabs[i] = button
+    end
+    for _, def in ipairs(TABS) do
+        local page = CreateFrame("Frame", nil, window)
+        page:SetPoint("TOPLEFT", PAD, -(Kit.HEADER_H + TAB_H + 14))
+        page:SetPoint("BOTTOMRIGHT", -PAD, PAD)
+        pages[def[1]] = page
+    end
+    BuildBrowse(pages.browse)
+    BuildYours(pages.yours)
+    BuildCreate(pages.create)
+    window:SetScript("OnShow", function()
+        if Search.state == "idle" and not Listings.searched then Search.Run() end
+        Paint()
+    end)
+    window:Hide()
+    return window
+end
+
+local function Toggle()
+    if InCombatLockdown() and not (window and window:IsShown()) then
+        CUI.AfterCombat(function() Build():Show() end, "Looking For Group")
+        return
+    end
+    TurnOn()
+    Build()
+    window:SetShown(not window:IsShown())
+end
+
+for _, what in ipairs({ "listings", "listing", "search", "card", "noreply", "offline", "applicant", "received",
+    "declined", "withdrawn", "expired", "applicantExpired", "applied", "group" }) do
+    GF.Listen(what, function() Paint() end)
+end
+
+CUI._LFG.Toggle = Toggle
+CUI._LFG.Show = function()
+    TurnOn()
+    Build():Show()
+end
+
+SLASH_CUILFG1 = "/clfg"
+SlashCmdList.CUILFG = Toggle

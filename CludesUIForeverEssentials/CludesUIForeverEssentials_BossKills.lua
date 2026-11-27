@@ -178,7 +178,13 @@ local function Forget()
     if mine then wipe(mine) end
 end
 
-module.BossKills = { Summary = Summary, Recent = Recent, AddToTooltip = AddToTooltip }
+-- How many times this character has killed the boss.
+local function Count(boss)
+    local record = Record(boss)
+    return record and record.n or 0
+end
+
+module.BossKills = { Summary = Summary, Recent = Recent, AddToTooltip = AddToTooltip, Count = Count }
 CUI._BossKills = {
     Get = Get,
     Cfg = Cfg,

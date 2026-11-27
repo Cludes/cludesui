@@ -4548,6 +4548,7 @@ local HELP_COMMANDS = {
     { "TITLELINE", "/titleline", "Title Line" },
     { "CUIWAY", "/way", "Set a map waypoint" },
     { "CUIDUNGEONMAP", "/cdmap", "Dungeon Map: the dungeon's route, boss by boss" },
+    { "CUILFG", "/clfg", "Looking For Group: browse, apply to and list groups" },
     { "CUIPERF", "/cuiperf", "CPU time of each CludesUI addon" },
 }
 local function PrintHelp()

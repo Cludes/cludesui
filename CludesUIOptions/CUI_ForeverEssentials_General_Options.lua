@@ -1919,6 +1919,65 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  LOOKING FOR GROUP
+    ---------------------------------------------------------------------------
+    local LF = CUI._LFG
+    if LF then
+        local function Set(key, val)
+            LF.Cfg()[key] = val
+            LF.Apply()
+        end
+        local function lOff() return not LF.Get("enabled") end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "LOOKING FOR GROUP", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "labeledButton",
+            text = "Looking For Group",
+            buttonText = "Open",
+            width = 90,
+            tooltip = "A better window for the game's group finder: every listing for your level with the leader's zone, roles and age, a filter and sorts, and Whisper on each. CludesUI players also see each other's Gear Score, boss kills and quests, and can apply to a group and be invited. /clfg opens it too.",
+            onClick = function()
+                LF.Show()
+                CUI:RefreshPage()
+            end,
+        }, {
+            type = "toggle",
+            text = "Looking For Group",
+            tooltip = "Turns it on (opening the window does too). While you are listed, CludesUI players can ask for your card and apply.",
+            getValue = function() return not lOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Share My Gear Score",
+            disabled = lOff,
+            tooltip = "Your Gear Score on the card other CludesUI players see.",
+            getValue = function() return LF.Get("shareScore") end,
+            setValue = function(val) Set("shareScore", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Share My Boss Kills",
+            disabled = lOff,
+            tooltip = "How often you have killed each boss of the dungeon (from Boss Kill History).",
+            getValue = function() return LF.Get("shareKills") end,
+            setValue = function(val) Set("shareKills", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Share My Quests",
+            disabled = lOff,
+            tooltip = "The dungeon's quests in your log, and the ones you still need.",
+            getValue = function() return LF.Get("shareQuests") end,
+            setValue = function(val) Set("shareQuests", val and true or false) end,
+        }, { type = "label", text = "" })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  CHAT ZONES
     ---------------------------------------------------------------------------
     local CZ = CUI._ChatZones

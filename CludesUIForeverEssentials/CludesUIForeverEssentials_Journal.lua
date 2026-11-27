@@ -63,6 +63,7 @@ local function Prepare()
         return lhs.name < rhs.name
     end)
 end
+J.Prepare = Prepare
 
 local function LevelText(skinData)
     local lv = skinData.levels
