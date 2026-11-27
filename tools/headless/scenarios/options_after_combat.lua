@@ -16,3 +16,16 @@ HARNESS_ADVANCE(0.2)
 box = CUI._sidebarSearchBox
 OUT:write(("== combat over: open %s, search %q\n"):format(tostring(box and box:IsVisible() or false), tostring(box and box:GetText())))
 CUI.Print = print0
+-- Open when combat starts: closed, then back when it ends.
+CUI:Show()
+HARNESS_ADVANCE(0.2)
+CUI:SelectModule("CludesUIMinimap")
+combat = true
+HARNESS_FIRE_EVENT("PLAYER_REGEN_DISABLED")
+HARNESS_ADVANCE(0.2)
+local main = CUI._mainFrame
+OUT:write("== combat starts: window shown " .. tostring(main and main:IsShown()) .. "\n")
+combat = false
+HARNESS_FIRE_EVENT("PLAYER_REGEN_ENABLED")
+HARNESS_ADVANCE(0.2)
+OUT:write("== combat ends: window shown " .. tostring(main and main:IsShown()) .. ", crumb " .. tostring(CUI._headerCrumb and CUI._headerCrumb:GetText()) .. "\n")

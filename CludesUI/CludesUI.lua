@@ -4847,9 +4847,10 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 initFrame:SetScript("OnEvent", function(self, evt)
     if evt == "PLAYER_REGEN_DISABLED" then
+        -- Combat closes the window; it comes back, on the same page, once combat ends.
         if CUI._mainFrame and CUI._mainFrame:IsShown() then
             CUI:Hide()
-            CUI.PrintError("Options closed -- entering combat.")
+            CUI.AfterCombat(function() CUI:Show() end, "Options")
         end
         return
     end
