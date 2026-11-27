@@ -1204,6 +1204,8 @@ local function EnsureSearchUI()
             ["unlock mode"] = "edit layout",
             ["move frames"] = "edit layout",
             ["unlock frames"] = "edit layout",
+            controller = "gamepad",
+            ["minimap icon"] = "minimap button",
         }
         results = SearchIndex(QUERY_ALIASES[typed] or searchText, MAX_VISIBLE_RESULTS)
         -- Accent-colored "Page:"/"Section:" prefixes. Hex is computed per

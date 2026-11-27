@@ -3910,6 +3910,11 @@ CludesUI.AtLogin(function()
             -- Player Aura Bars draws over the scroll frame: no inline search there.
             noSearchPages = { [PAGE_AURA_BARS] = true },
             searchTerms = ufSearchTerms,
+            -- "player frame" or "focus frame" finds the page the frames are on.
+            pageSearchTerms = {
+                [PAGE_DISPLAY] = "player frame target frame focus frame",
+                [PAGE_MINI] = "pet frame target of target frame focus target frame tot",
+            },
             buildPage = function(pageTitle, hostFrame, yOffset)
                 if CludesUI._prebuilding and pageTitle == PAGE_AURA_BARS then return end
                 -- Clean up Player Aura Bars root when switching away. Needed here AND in
