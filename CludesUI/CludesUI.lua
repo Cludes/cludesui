@@ -4547,6 +4547,7 @@ local HELP_COMMANDS = {
     { "COTANKAURAS", "/ctank", "Tank Kit" },
     { "TITLELINE", "/titleline", "Title Line" },
     { "CUIWAY", "/way", "Set a map waypoint" },
+    { "CUIDUNGEONMAP", "/cdmap", "Dungeon Map: the dungeon's route, boss by boss" },
     { "CUIPERF", "/cuiperf", "CPU time of each CludesUI addon" },
 }
 local function PrintHelp()

@@ -3304,6 +3304,32 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             onClick = function() CUI._Journal.Show() end,
         }, { type = "label", text = "Opens on the dungeon you are in." })
         cursorY = cursorY - height
+        local DM = CUI._DungeonMap
+        if DM then
+            _, height = W:DualRow(hostFrame, cursorY, {
+                type = "toggle",
+                text = "Dungeon Map",
+                tooltip = "Inside a dungeon, a small map with the route: bosses numbered in kill order and joined by a line, the next one ringed, killed ones dimmed. It turns to the next boss's floor and moves on with each kill. /cdmap shows or hides it; move it in Edit Layout.",
+                getValue = function() return DM.Get("enabled") end,
+                setValue = function(val)
+                    DM.Cfg().enabled = val and true or false
+                    DM.Apply()
+                    CUI:RefreshPage()
+                end,
+            }, {
+                type = "toggle",
+                text = "Open on Entering",
+                tooltip = "Opens the Dungeon Map when you enter a dungeon, and closes it when you leave.",
+                disabled = function() return not DM.Get("enabled") end,
+                disabledTooltip = "Dungeon Map",
+                getValue = function() return DM.Get("autoShow") end,
+                setValue = function(val)
+                    DM.Cfg().autoShow = val and true or false
+                    DM.Apply()
+                end,
+            })
+            cursorY = cursorY - height
+        end
     end
 
     ---------------------------------------------------------------------------
