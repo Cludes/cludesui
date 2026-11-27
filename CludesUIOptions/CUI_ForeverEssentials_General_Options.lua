@@ -1919,6 +1919,83 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  CHAT ZONES
+    ---------------------------------------------------------------------------
+    local CZ = CUI._ChatZones
+    if CZ then
+        local function Set(key, val)
+            CZ.Cfg()[key] = val
+            CZ.Apply()
+        end
+        local function zOff() return not CZ.Get("enabled") end
+        local function chatOff() return zOff() or not CZ.Get("chat") end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "CHAT ZONES", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Chat Zones",
+            tooltip = "Shows where other players are: in front of their chat messages, and on Group Finder listings. The game never says where a stranger is, so a player shows once they turn up in the Group Finder, your guild, your friends, your group or a /who.",
+            getValue = function() return not zOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Zones in Chat",
+            disabled = zOff,
+            tooltip = "The speaker's zone in front of their message in chat channels, guild chat and whispers.",
+            getValue = function() return CZ.Get("chat") end,
+            setValue = function(val) Set("chat", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Show Level",
+            disabled = chatOff,
+            tooltip = "Adds their level after the zone.",
+            getValue = function() return CZ.Get("level") end,
+            setValue = function(val) Set("level", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Class Color",
+            disabled = chatOff,
+            tooltip = "The zone in the speaker's class color. Off, it is grey.",
+            getValue = function() return CZ.Get("classColor") end,
+            setValue = function(val) Set("classColor", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Where? on Whispers",
+            disabled = chatOff,
+            tooltip = "A [Where?] link after a whisper from someone whose zone is not known. Click it to look them up with /who; their next messages show their zone.",
+            getValue = function() return CZ.Get("where") end,
+            setValue = function(val) Set("where", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Zones in Group Finder",
+            disabled = zOff,
+            tooltip = "The leader's zone on each Group Finder listing, and every member's zone when you hover one.",
+            getValue = function() return CZ.Get("finder") end,
+            setValue = function(val) Set("finder", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "slider",
+            text = "Forget After (minutes)",
+            min = 1,
+            max = 60,
+            step = 1,
+            isPercent = false,
+            disabled = zOff,
+            tooltip = "A zone older than this is no longer shown, since the player has likely moved on.",
+            getValue = function() return CZ.Get("maxAge") end,
+            setValue = function(val) CZ.Cfg().maxAge = math.floor(val + 0.5) end,
+        }, { type = "label", text = "" })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  BOAT AND ZEPPELIN TIMERS
     ---------------------------------------------------------------------------
     local TR2 = CUI._Transport
