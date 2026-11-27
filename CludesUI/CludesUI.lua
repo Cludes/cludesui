@@ -3941,7 +3941,7 @@ end
 CUI.VERSION = "1.4.0"
 -- The newest entry in the Patch Notes (CUI._WHATSNEW_PATCHES, CUI__General_Options.lua):
 -- raise it with each new entry, and the Patch Notes dot lights once for everyone.
-CUI.NOTES_VERSION = "1.4.0"
+CUI.NOTES_VERSION = "1.5.0"
 
 -- Register this addon's version into a shared global table (taint-free at load time)
 if not _G._CUI_AddonVersions then _G._CUI_AddonVersions = {} end

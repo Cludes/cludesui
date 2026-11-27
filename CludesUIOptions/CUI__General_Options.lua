@@ -124,6 +124,49 @@ end
 -------------------------------------------------------------------------------
 CUI._WHATSNEW_PATCHES = {
     {
+        version = "1.5.0",
+        heroes = {
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Looking For Group",
+                desc = "A new window for the group finder (/clfg): every group for your level with the leader's zone, roles and age, a filter, sorts and Whisper. CludesUI players see each other's Gear Score, boss kills and quests, and can apply and be invited.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Journeys",
+                desc = "Place a map pin and a card shows the fastest way there by foot, flight, boat, tram, Hearthstone or teleport, with an arrow pointing to the next step.",
+            },
+        },
+        features = {
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Dungeon Map",
+                desc = "Inside a dungeon, a small map with the route: bosses numbered in kill order, the next one ringed, killed ones dimmed, turning to the next boss's floor. /cdmap.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Boss Kill History",
+                desc = "The Journal and the Dungeon Map show how often you have killed each boss, your best time and who was with you.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Creature Scout",
+                desc = "Hover a creature to see the spells it uses, its armor, what it is immune to and, for hunters, whether you can tame it.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Chat Zones",
+                desc = "See where other players are, in front of their chat messages and on group finder listings.",
+            },
+        },
+    },
+    {
         version = "1.4.0",
         heroes = {
             {
