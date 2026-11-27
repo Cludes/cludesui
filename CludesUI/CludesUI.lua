@@ -4506,6 +4506,24 @@ SlashCmdList.CUIPERF = function()
     end
 end
 
+-- Asked to open a window during combat: it opens once combat ends (the last
+-- ask wins), with a note in chat instead of a refusal.
+local afterCombatFn, afterCombatFrame
+function CUI.AfterCombat(fn, what)
+    afterCombatFn = fn
+    if not afterCombatFrame then
+        afterCombatFrame = CreateFrame("Frame")
+        afterCombatFrame:SetScript("OnEvent", function(self)
+            self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+            local run = afterCombatFn
+            afterCombatFn = nil
+            if run then run() end
+        end)
+    end
+    afterCombatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    CUI.Print(CUI.COLOR_CODES.BRAND .. "[CludesUI]|r " .. CUI.Lf("%s will open when combat ends.", CUI.L(what or "Options")))
+end
+
 SLASH_CUIOPTIONS1 = "/cui"
 SLASH_CUIOPTIONS2 = "/cludes"
 SLASH_CUIOPTIONS3 = "/cludesui"
@@ -4518,21 +4536,25 @@ SLASH_CUIOPTIONS3 = "/cludesui"
 -- (Enter goes to the top result, Tab steps through them).
 SlashCmdList.CUIOPTIONS = function(msg)
     local query = type(msg) == "string" and msg:match("^%s*(.-)%s*$") or ""
-    C_Timer.After(0, function()
-        if InCombatLockdown() then
-            CUI.PrintError("Cannot open options during combat.")
-            return
-        end
-        if query == "" then
+    local function Open(fromQueue)
+        if query == "" and not fromQueue then
             CUI:Toggle()
             return
         end
         CUI:Show()
+        if query == "" then return end
         local box = CUI._sidebarSearchBox
         if box then
             box:SetText(query)
             box:SetFocus()
         end
+    end
+    C_Timer.After(0, function()
+        if InCombatLockdown() then
+            CUI.AfterCombat(function() Open(true) end, "Options")
+            return
+        end
+        Open(false)
     end)
 end
 
@@ -4541,7 +4563,7 @@ SLASH_CUIQUICK1 = "/ce"
 SlashCmdList.CUIQUICK = function()
     C_Timer.After(0, function()
         if InCombatLockdown() then
-            CUI.PrintError("Cannot open options during combat.")
+            CUI.AfterCombat(function() CUI:Show() end, "Options")
             return
         end
         CUI:Toggle()
@@ -4553,7 +4575,7 @@ SLASH_CUIUNLOCK1 = "/unlock"
 SlashCmdList.CUIUNLOCK = function()
     C_Timer.After(0, function()
         if InCombatLockdown() then
-            CUI.PrintError("Cannot open options during combat.")
+            CUI.AfterCombat(function() SlashCmdList.CUIUNLOCK() end, "Edit Layout")
             return
         end
         CUI:EnsureUnlockCore()
@@ -5079,7 +5101,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
         button:SetSize(200, 35)
         button:SetScript("OnClick", function()
             if InCombatLockdown() then
-                CUI.PrintError("Cannot open options during combat.")
+                HideUIPanel(GameMenuFrame)
+                CUI.AfterCombat(function() CUI:Show() end, "Options")
                 return
             end
             HideUIPanel(GameMenuFrame)
