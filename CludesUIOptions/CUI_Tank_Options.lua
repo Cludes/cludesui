@@ -580,6 +580,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "slider",
             text = "Alert at Stacks",
+            tooltip = "The alert plays once the debuff reaches this many stacks.",
             min = 1,
             max = 20,
             step = 1,

@@ -481,7 +481,60 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         return text
     end
 
+    -- A description for the common controls that mean the same on every page,
+    -- for a row that brings none of its own (it shows as the row's hint line and
+    -- tooltip, and the search reads it). Keyed by the English label.
+    local GENERIC_HINTS = {
+        ["Visibility"] = "When it shows.",
+        ["Border Style"] = "The look of the border.",
+        ["Border Size"] = "How thick the border is.",
+        ["Border Color"] = "The border's color.",
+        ["Icon Size"] = "How big each icon is.",
+        ["Icon Spacing"] = "The gap between icons.",
+        ["Icon Shape"] = "The shape each icon is cut to.",
+        ["Icon Zoom"] = "Zooms into each icon's artwork to trim its edges.",
+        ["Spacing"] = "The gap between items.",
+        ["Background Opacity"] = "How see-through the background is.",
+        ["Bar Opacity"] = "How see-through the bar is.",
+        ["Opacity"] = "How see-through it is.",
+        ["Bar Texture"] = "The texture the bar is filled with.",
+        ["Font"] = "The font for this text.",
+        ["Font Outline"] = "The outline around this text.",
+        ["Scale"] = "Makes it bigger or smaller.",
+        ["Window Scale"] = "Makes the window bigger or smaller.",
+        ["Hover Borders"] = "Highlights the border while the mouse is over it.",
+        ["Orientation"] = "Horizontal or vertical.",
+        ["Text Align"] = "Where the text lines up.",
+        ["Bar Width"] = "How wide the bar is.",
+        ["Bar Height"] = "How tall the bar is.",
+        ["Width"] = "How wide it is.",
+        ["Height"] = "How tall it is.",
+        ["Size"] = "How big it is.",
+        ["Number of Rows"] = "How many rows the icons are laid out in.",
+        ["Number of Icons"] = "How many icons it has.",
+        ["Fill Color"] = "The bar's fill color.",
+        ["Background"] = "The background behind it.",
+        ["Text Size"] = "How big the text is.",
+        ["Timer Size"] = "How big the timer text is.",
+        ["Fill Opacity"] = "How see-through the bar's fill is.",
+        ["Health Bar Height"] = "How tall the health bar is.",
+        ["Health Bar Texture"] = "The texture the health bar is filled with.",
+        ["Power Height"] = "How tall the power bar is.",
+        ["Smooth Health Bars"] = "Health changes slide smoothly instead of jumping.",
+        ["Reverse Fill"] = "Fills the bar from the other end.",
+        ["Frame Spacing"] = "The gap between frames.",
+        ["Show When Solo"] = "Shows the frames while you are not in a group.",
+        ["Marker Size"] = "How big the marker is.",
+    }
+    local function WithGenericHint(cfg)
+        if type(cfg) == "table" and not cfg.tooltip and type(cfg.text) == "string" then
+            cfg.tooltip = GENERIC_HINTS[cfg.text]
+        end
+    end
+
     function WidgetFactory:DualRow(hostFrame, yOffset, leftCfg, rightCfg)
+        WithGenericHint(leftCfg)
+        WithGenericHint(rightCfg)
         local ROW_HEIGHT = 50
         local SIDE_PAD = 20 -- padding inside each half
         -- Blizzard Style: a row whose every control is gated for the active style is built (callers still hang cogs and sync icons on its regions) but hidden, takes no row background or search entry, and returns no height, so the page reads as if it were not there.
@@ -1017,6 +1070,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
     -- TripleRow: three widgets on one full-width row, 1px dividers at the splits. Each column uses the DualRow cfg format.
     function WidgetFactory:TripleRow(hostFrame, yOffset, leftCfg, midCfg, rightCfg, splits)
+        WithGenericHint(leftCfg)
+        WithGenericHint(midCfg)
+        WithGenericHint(rightCfg)
         local ROW_HEIGHT = (splits and splits.rowHeight) or 50
         local SIDE_PAD = 20
         local widget = CreateFrame("Frame", nil, hostFrame)
