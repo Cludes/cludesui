@@ -261,7 +261,7 @@ CUI_NS.unlockParts.Session = function(LM)
             end
             overrideBanner._text:SetText(
                 string.format(
-                    CUI.L("Customizing Layout Mode: %s (changes apply only to this group's specs)"),
+                    CUI.L("Customizing Layout: %s (changes apply only to this group's specs)"),
                     g.name or "?"
                 )
             )
@@ -918,7 +918,7 @@ CUI_NS.unlockParts.Session = function(LM)
         end
         if not LM.isUnlocked then return end
         CUI.PrintError(
-            CUI.L("Layout changed: Layout Mode closed, unsaved layout changes discarded.")
+            CUI.L("Layout changed: Edit Layout closed, unsaved layout changes discarded.")
         )
         pendingAfterClose = nil
         -- Unconditional: RevertPositions only runs below when positions changed,
@@ -1359,7 +1359,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 font = FONT_PATH,
                 fontFlags = "OUTLINE, SLUG",
                 text = CUI.L(
-                    "This is where you can control the settings of Layout Mode.\n\nElements can be repositioned by dragging or arrow keys (+shift)\nAnchor, Height Match, or Width match any element.\nSnapping is based on closest element, but you can snap only to\n a specific element via right click or the settings icon."
+                    "This is where you can control the settings of Edit Layout.\n\nElements can be repositioned by dragging or arrow keys (+shift)\nAnchor, Height Match, or Width match any element.\nSnapping is based on closest element, but you can snap only to\n a specific element via right click or the settings icon."
                 ),
                 btnW = 80,
                 btnH = 24,
@@ -1383,7 +1383,7 @@ CUI_NS.unlockParts.Session = function(LM)
     function mod.OpenUnlockMode()
         if LM.isUnlocked then return end
         if InCombatLockdown() then
-            print(CUI.L("|cffff6060[CludesUI]|r Cannot enter Layout Mode during combat."))
+            print(CUI.L("|cffff6060[CludesUI]|r Cannot enter Edit Layout during combat."))
             return
         end
         -- Standardized options-panel roundtrip: entering unlock mode by ANY means

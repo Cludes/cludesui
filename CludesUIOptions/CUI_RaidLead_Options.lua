@@ -159,7 +159,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Break Timers",
-            tooltip = "When the leader or an assistant starts a break, a bar counts it down for every CludesUI user in the group. Move it in Layout Mode.",
+            tooltip = "When the leader or an assistant starts a break, a bar counts it down for every CludesUI user in the group. Move it in Edit Layout.",
             getValue = function() return bt.enabled end,
             setValue = function(val) bt.enabled = val and true or false end,
         }, {
@@ -218,7 +218,7 @@ CUI.AtOptionsLogin(function()
             text = "Preview",
             buttonText = "Show",
             width = 90,
-            tooltip = "Shows the box for a few seconds so you can place it in Layout Mode.",
+            tooltip = "Shows the box for a few seconds so you can place it in Edit Layout.",
             onClick = function() mod.PreviewKicks() end,
         })
         cursorY = cursorY - height
@@ -270,7 +270,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Immunities on You",
-            tooltip = "Icons for Divine Shield, Blessing of Protection, Blessing of Spellwarding, Ice Block, Aspect of the Turtle and Cloak of Shadows while they are on you. Works in combat. Move it in Layout Mode.",
+            tooltip = "Icons for Divine Shield, Blessing of Protection, Blessing of Spellwarding, Ice Block, Aspect of the Turtle and Cloak of Shadows while they are on you. Works in combat. Move it in Edit Layout.",
             getValue = function() return im.enabled end,
             setValue = function(val)
                 im.enabled = val and true or false
@@ -334,7 +334,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Aura Glows",
-            tooltip = "While an aura you add here is on you, its icon shows with a glowing border and its time. Works in boss fights. Changes apply out of combat. Move it in Layout Mode.",
+            tooltip = "While an aura you add here is on you, its icon shows with a glowing border and its time. Works in boss fights. Changes apply out of combat. Move it in Edit Layout.",
             getValue = function() return ag.enabled end,
             setValue = function(val)
                 ag.enabled = val and true or false
@@ -404,13 +404,13 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Gateway Usable",
-            tooltip = "Gateway usable shows while you are close enough to a warlock's Demonic Gateway to click it. Move it in Layout Mode.",
+            tooltip = "Gateway usable shows while you are close enough to a warlock's Demonic Gateway to click it. Move it in Edit Layout.",
             getValue = function() return hs.gateway end,
             setValue = function(val) HSet("gateway", val) end,
         }, {
             type = "toggle",
             text = "Stats Panel",
-            tooltip = "Your crit, haste, mastery and versatility on screen, kept up to date through procs. Move it in Layout Mode.",
+            tooltip = "Your crit, haste, mastery and versatility on screen, kept up to date through procs. Move it in Edit Layout.",
             getValue = function() return hs.stats end,
             setValue = function(val) HSet("stats", val) end,
         })
@@ -421,7 +421,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Boss Pace",
-            tooltip = "A bar with the boss's health and a marker for where it should be to kill it in your target time: green while ahead, red while behind. The pace is a straight line, so phases and intermissions throw it off. Move it in Layout Mode.",
+            tooltip = "A bar with the boss's health and a marker for where it should be to kill it in your target time: green while ahead, red while behind. The pace is a straight line, so phases and intermissions throw it off. Move it in Edit Layout.",
             getValue = function() return pace.enabled end,
             setValue = function(val) pace.enabled = val and true or false end,
         }, {
@@ -482,7 +482,7 @@ CUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Upcoming Ability Bars",
-                tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Each phase runs from when it really began, read from the boss's timeline; phases still to come are estimates, shown faded. Move them in Layout Mode.",
+                tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Each phase runs from when it really began, read from the boss's timeline; phases still to come are estimates, shown faded. Move them in Edit Layout.",
                 getValue = function() return tl.bars end,
                 setValue = function(val) tl.bars = val and true or false end,
             }, {
@@ -635,7 +635,7 @@ CUI.AtOptionsLogin(function()
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Encounter Reminders",
-            tooltip = "When a boss is pulled, its note's lines for you appear before their time with a countdown. Move them in Layout Mode.",
+            tooltip = "When a boss is pulled, its note's lines for you appear before their time with a countdown. Move them in Edit Layout.",
             getValue = function() return r.enabled end,
             setValue = function(val) r.enabled = val and true or false end,
         }, {

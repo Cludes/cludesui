@@ -1874,7 +1874,7 @@ function CUI.Conditions_EnterUnlockForGroup(groupRec)
     local current = CurrentSpecID()
     if OwnerGid(current) then
         CUI:ShowConfirmPopup({
-            title = L("Customize Layout Mode"),
+            title = L("Customize Layout"),
             message = L(
                 "Your current spec has its own custom layout mode, so conditional layout modes never apply to it. Swap to a spec without one to customize this."
             ),
@@ -1886,7 +1886,7 @@ function CUI.Conditions_EnterUnlockForGroup(groupRec)
     local activeG = CUI.Conditions_ActiveGroup and CUI.Conditions_ActiveGroup()
     if not activeG or activeG.id ~= groupRec.id then
         CUI:ShowConfirmPopup({
-            title = L("Customize Layout Mode"),
+            title = L("Customize Layout"),
             message = L(
                 "This conditional is not active right now. Meet one of its conditions first (for example, enter the dungeon) so you can arrange the layout in its real context."
             ),
@@ -1900,7 +1900,7 @@ function CUI.Conditions_EnterUnlockForGroup(groupRec)
     if not condStore or not store then return end
     if condStore.layouts[groupRec.id] == nil then
         CUI:ShowConfirmPopup({
-            title = L("Customize Layout Mode"),
+            title = L("Customize Layout"),
             message = L(
                 "This will create a fully unique layout mode for this conditional group. Changes made to your default layout mode will no longer affect it."
             ),
@@ -1967,7 +1967,7 @@ function CUI.SpecOverrides_EnterUnlockForGroup(groupRec)
         if own and own ~= groupRec.id then
             local og = GroupById(own)
             CUI:ShowConfirmPopup({
-                title = L("Customize Layout Mode"),
+                title = L("Customize Layout"),
                 message = string.format(
                     L(
                         "The override group '%s' already provides the custom layout mode for your current spec. Customize it there, or remove this spec from that group."
@@ -1984,7 +1984,7 @@ function CUI.SpecOverrides_EnterUnlockForGroup(groupRec)
     if not store then return end
     if store.layouts[groupRec.id] == nil then
         CUI:ShowConfirmPopup({
-            title = L("Customize Layout Mode"),
+            title = L("Customize Layout"),
             message = L(
                 "This will create a fully unique layout mode for this override group. Changes made to your default layout mode will no longer affect these specs."
             ),

@@ -235,7 +235,7 @@ CUI._WHATSNEW_PATCHES = {
             },
             {
                 module = "Layout Mode",
-                title = "A new Layout Mode bar",
+                title = "A new Edit Layout bar",
                 desc = "A toolbar across the top of the screen with square toggle buttons, the element filter, and Exit and Save & Exit on the right. It opens with a new animation.",
                 onClick = function()
                     if CUI.OpenUnlockMode then CUI:OpenUnlockMode() end
@@ -299,7 +299,7 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Tank Kit",
                 title = "Built for tanks",
-                desc = "Your co-tank's health, debuffs and defensives beside your frames, TAUNT alerts, and a row of the externals other players put on you. Set it up under Tank Kit or with /ctank, and move its frames in Layout Mode.",
+                desc = "Your co-tank's health, debuffs and defensives beside your frames, TAUNT alerts, and a row of the externals other players put on you. Set it up under Tank Kit or with /ctank, and move its frames in Edit Layout.",
             },
             {
                 module = "Raid Lead",
@@ -1179,8 +1179,8 @@ CUI.AtOptionsLogin(function()
             },
             {
                 key = "unlock",
-                label = "Hide Layout Mode Menu Button",
-                tooltip = "Hides the Layout Mode button from the game's Escape/pause menu. You can still toggle Layout Mode from the CUI options panel.",
+                label = "Hide Edit Layout Menu Button",
+                tooltip = "Hides the Edit Layout button from the game's Escape/pause menu. You can still toggle Edit Layout from the CUI options panel.",
             },
             { key = "minimap", label = "Show Minimap Button" },
         }
@@ -1272,7 +1272,7 @@ CUI.AtOptionsLogin(function()
         pointAnchorRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Point Anchoring",
-            tooltip = "Show nine source points after clicking Anchor in Layout Mode. Choose a source point, then a target point. Turning this off hides the handles and preserves saved point anchors.",
+            tooltip = "Show nine source points after clicking Anchor in Edit Layout. Choose a source point, then a target point. Turning this off hides the handles and preserves saved point anchors.",
             getValue = function() return CludesUIDB and CludesUIDB.unlockPointHandles == true end,
             setValue = function(val)
                 CUI.SetPointAnchorHandles(val)
@@ -1281,7 +1281,7 @@ CUI.AtOptionsLogin(function()
         }, {
             type = "dropdown",
             text = "Overlap Cycling",
-            tooltip = "Scroll with the chosen modifier to cycle overlapping frames in Layout Mode.",
+            tooltip = "Scroll with the chosen modifier to cycle overlapping frames in Edit Layout.",
             values = CUI.UNLOCK_OVERLAP_LABELS,
             order = { "disabled", "scroll", "shiftscroll", "controlscroll", "altscroll" },
             getValue = function() return CUI.GetUnlockOverlapMethod() end,

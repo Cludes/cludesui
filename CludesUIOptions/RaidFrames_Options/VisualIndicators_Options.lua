@@ -2595,7 +2595,7 @@ local function BuildVisualIndicators(
     hmRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Healer Mana Display",
-        tooltip = "Shows a mana percentage row for every healer in your group as its own movable text display. Position it in Layout Mode.",
+        tooltip = "Shows a mana percentage row for every healer in your group as its own movable text display. Position it in Edit Layout.",
         values = { none = "None", party = "In Party", raid = "In Raid", both = "In Party & Raid" },
         order = { "none", "party", "raid", "both" },
         getValue = function()
@@ -2858,7 +2858,7 @@ local function BuildVisualIndicators(
         pgRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Player Group Label",
-            tooltip = "Shows your raid group number in its own movable frame. Position it in Layout Mode.",
+            tooltip = "Shows your raid group number in its own movable frame. Position it in Edit Layout.",
             getValue = function() return PlayerGroupCfg().enabled and true or false end,
             setValue = function(val)
                 PlayerGroupCfg().enabled = val

@@ -2449,7 +2449,7 @@ CUI.AtOptionsLogin(function()
                 {
                     type = "toggle",
                     text = enableLabel,
-                    tooltip = "A standalone cast bar for this unit, placeable anywhere in Layout Mode. Runs alongside the Unit Frames cast bars.",
+                    tooltip = "A standalone cast bar for this unit, placeable anywhere in Edit Layout. Runs alongside the Unit Frames cast bars.",
                     getValue = On,
                     setValue = A.Flag("enabled", true),
                 },

@@ -1239,12 +1239,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 sum = "Overrides",
                 enabled = stringHasOverrides,
                 offTip = "This profile string does not carry any override data.",
-                tip = "Import the sharer's complete override setup: spec and conditional override values, groups, their custom Layout Mode layouts, and Buff Manager overrides. This replaces ALL of your own overrides. Off = keep yours untouched.",
+                tip = "Import the sharer's complete override setup: spec and conditional override values, groups, their custom layouts, and Buff Manager overrides. This replaces ALL of your own overrides. Off = keep yours untouched.",
                 get = function() return includeOverridesImport end,
                 set = function() includeOverridesImport = not includeOverridesImport end,
             },
             {
-                label = "Layout Mode Layout",
+                label = "Edit Layout Positions",
                 sum = "Layout",
                 enabled = true,
                 tip = "Import the anchor & size-match relationships from this profile. Off = keep your own layout; only the selected modules' own positions/settings come in.",
@@ -2106,7 +2106,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- Build addon item list
         local selectedAddons = {}
-        local includeLayoutExport = true -- "Unlock Mode Layout" include (default on)
+        local includeLayoutExport = true -- "Edit Layout Positions" include (default on)
         local includeGlobalsExport = true -- "Global Settings" include (default on)
         -- "Overrides" include: nil = AUTO -- ON when every loaded module is checked, OFF for subsets, until the user toggles it in the
         -- Include dropdown. Resolved via EffectiveIncludeOverrides (footer block).
@@ -2234,12 +2234,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             {
                 label = "Overrides",
                 sum = "Overrides",
-                tip = "Include your complete override setup: spec and conditional override values, groups, their custom Layout Mode layouts, and Buff Manager overrides. On import this replaces the recipient's overrides entirely.",
+                tip = "Include your complete override setup: spec and conditional override values, groups, their custom layouts, and Buff Manager overrides. On import this replaces the recipient's overrides entirely.",
                 get = function() return EffectiveIncludeOverrides() end,
                 set = function() includeOverridesExport = not EffectiveIncludeOverrides() end,
             },
             {
-                label = "Layout Mode Layout",
+                label = "Edit Layout Positions",
                 sum = "Layout",
                 tip = "Include the anchor & size-match relationships between modules. Off = export each module's own positions only, with no cross-module tying.",
                 get = function() return includeLayoutExport end,

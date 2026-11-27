@@ -475,11 +475,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 local name = (CUI.GetBarLabel and CUI.GetBarLabel(target)) or target
                 return isWidth
                         and CUI.Lf(
-                            "Width matched to %1$s. Unmatch in Layout Mode to edit.",
+                            "Width matched to %1$s. Unmatch in Edit Layout to edit.",
                             CUI.L(name)
                         )
                     or CUI.Lf(
-                        "Height matched to %1$s. Unmatch in Layout Mode to edit.",
+                        "Height matched to %1$s. Unmatch in Edit Layout to edit.",
                         CUI.L(name)
                     )
             end

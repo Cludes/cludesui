@@ -380,8 +380,8 @@ end
 --- describe the unlock-layout fork.
 local function BuildUnlockLayoutRow(host, rowY, group, opts)
     opts = opts or {}
-    local crumbText = opts.crumb or "Custom Layout Mode"
-    local heading = opts.title or "Delete Custom Layout Mode"
+    local crumbText = opts.crumb or "Custom Layout"
+    local heading = opts.title or "Delete Custom Layout"
     local msgText = opts.message
         or "Delete the custom layout mode for '%s'? Its specs return to your default layout mode layout."
     local removeFn = opts.removeFn or CUI.SpecOverrides_RemoveUnlockLayout
@@ -778,7 +778,7 @@ function CUI.SpecOverrides_BuildListPage(host, startY)
 
     -- TOP section: custom unlock modes (one whole-layout fork per group).
     if layoutList then
-        local _, hh = W:SectionHeader(host, "Custom Layout Modes", rowY)
+        local _, hh = W:SectionHeader(host, "Custom Layouts", rowY)
         rowY = rowY - hh
         for _, group in ipairs(layoutList) do
             local _, rowH = BuildUnlockLayoutRow(host, rowY, group)
@@ -1019,7 +1019,7 @@ function CUI.SpecOverrides_BuildListPage(host, startY)
                 title = L("Promote Override to Profile"),
                 message = string.format(
                     L(
-                        "This permanently overwrites this profile's settings with the override '%s': its captured settings and its custom Layout Mode and Buff Manager layouts (where present) become the profile's own baseline for every spec. ALL spec override groups on this profile are then deleted and the UI reloads. Conditional overrides are not affected."
+                        "This permanently overwrites this profile's settings with the override '%s': its captured settings and its custom layout and Buff Manager layouts (where present) become the profile's own baseline for every spec. ALL spec override groups on this profile are then deleted and the UI reloads. Conditional overrides are not affected."
                     ),
                     pg.name or "?"
                 ),
@@ -1104,7 +1104,7 @@ function CUI.Conditions_BuildListPage(host, startY)
 
     -- TOP section: custom unlock modes (one whole-layout fork per group).
     if layoutList then
-        local _, hh = W:SectionHeader(host, "Custom Layout Modes", rowY)
+        local _, hh = W:SectionHeader(host, "Custom Layouts", rowY)
         rowY = rowY - hh
         for _, group in ipairs(layoutList) do
             local CONTENT_PAD = CUI.CONTENT_PAD or 40
@@ -1116,7 +1116,7 @@ function CUI.Conditions_BuildListPage(host, startY)
             label:SetText(group.name or "?")
             local trail = CUI.MakeFont(line, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
             trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
-            trail:SetText(L("Custom Layout Mode"))
+            trail:SetText(L("Custom Layout"))
             local button = CreateFrame("Button", nil, line)
             button:SetSize(116, 22)
             button:SetPoint("RIGHT", line, "RIGHT", -20, 0)
@@ -1135,7 +1135,7 @@ function CUI.Conditions_BuildListPage(host, startY)
             local gname = group.name or "?"
             button:SetScript("OnClick", function()
                 CUI:ShowConfirmPopup({
-                    title = L("Delete Custom Layout Mode"),
+                    title = L("Delete Custom Layout"),
                     message = string.format(
                         L(
                             "Delete the custom layout mode for '%s'? Its conditions return to your default layout mode layout."

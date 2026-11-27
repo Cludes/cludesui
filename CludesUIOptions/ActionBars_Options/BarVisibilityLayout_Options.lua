@@ -728,7 +728,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 local target = wt or ht
                 if target then
                     local name = (CUI.GetBarLabel and CUI.GetBarLabel(target)) or target
-                    return CUI.Lf("Size matched to %1$s. Unmatch in Layout Mode to edit.", name)
+                    return CUI.Lf("Size matched to %1$s. Unmatch in Edit Layout to edit.", name)
                 end
                 return nil
             end,

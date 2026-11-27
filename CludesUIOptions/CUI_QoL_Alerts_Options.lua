@@ -99,7 +99,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
     }, {
         type = "toggle",
         text = "Potion Ready Alert",
-        tooltip = "Shows on-screen text when a potion you used is off cooldown again. Use the cog to set the text, size and color; use Layout Mode to reposition the alerts.",
+        tooltip = "Shows on-screen text when a potion you used is off cooldown again. Use the cog to set the text, size and color; use Edit Layout to reposition the alerts.",
         getValue = function() return CludesUIDB and CludesUIDB.potionAlertEnabled or false end,
         setValue = function(val)
             Account().potionAlertEnabled = val
@@ -113,7 +113,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
     row2, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Unspent Talents Alert",
-        tooltip = "Shows on-screen text while you have unspent talent points. It stays up until you spend them or open your talents, and returns after a level-up. Use the cog to set the text, size and color; use Layout Mode to reposition the alerts.",
+        tooltip = "Shows on-screen text while you have unspent talent points. It stays up until you spend them or open your talents, and returns after a level-up. Use the cog to set the text, size and color; use Edit Layout to reposition the alerts.",
         getValue = function() return CludesUIDB and CludesUIDB.talentAlertEnabled or false end,
         setValue = function(val)
             Account().talentAlertEnabled = val

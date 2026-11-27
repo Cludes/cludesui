@@ -4620,7 +4620,7 @@ SlashCmdList.CUIUNLOCK = function()
         if CUI._openUnlockMode then
             CUI._openUnlockMode()
         else
-            CUI.PrintError("Layout Mode is not available.")
+            CUI.PrintError("Edit Layout is not available.")
         end
     end)
 end
@@ -5186,7 +5186,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         unlockButton:SetSize(200, 35)
         unlockButton:SetScript("OnClick", function()
             if InCombatLockdown() then
-                CUI.PrintError("Cannot toggle Layout Mode during combat.")
+                CUI.PrintError("Cannot toggle Edit Layout during combat.")
                 return
             end
             HideUIPanel(GameMenuFrame)
@@ -5343,9 +5343,9 @@ initFrame:SetScript("OnEvent", function(self, evt)
             if showUnlock then
                 unlockButton:Show()
                 if brandHex then
-                    unlockButton:SetText(brandHex .. "CUI|r |cffffffffLayout Mode|r")
+                    unlockButton:SetText(brandHex .. "CUI|r |cffffffffEdit Layout|r")
                 else
-                    unlockButton:SetText("CUI Layout Mode")
+                    unlockButton:SetText("CUI Edit Layout")
                 end
                 if _reskinMenu then
                     local fs2 = unlockButton:GetFontString()

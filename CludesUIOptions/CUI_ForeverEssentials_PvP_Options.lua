@@ -465,7 +465,7 @@ function _G._CUI_BuildForeverPvPAuras(hostFrame, cursorY)
     Row({
         type = "toggle",
         text = "Movable Countdown",
-        tooltip = "Move the battleground start countdown in Layout Mode. The battleground scores move with Top Bar Event Text (QoL > Shifter).",
+        tooltip = "Move the battleground start countdown in Edit Layout. The battleground scores move with Top Bar Event Text (Quality of Life > Window Mover).",
         getValue = function() return A.CountdownGet("enabled") == true end,
         setValue = function(val)
             A.CountdownCfg().enabled = val and true or false

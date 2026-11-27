@@ -1487,7 +1487,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Combat Timer",
-            tooltip = "How long the current fight has run, held for a few seconds after it ends. Move it in Layout Mode.",
+            tooltip = "How long the current fight has run, held for a few seconds after it ends. Move it in Edit Layout.",
             getValue = function() return CE.timer.Get("enabled") end,
             setValue = function(val) Set(CE.timer, "enabled", val and true or false) end,
         }, {
@@ -1864,7 +1864,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Zone Timer",
             disabled = tOff,
-            tooltip = "A list of the boats and zeppelins in your zone with their times. Move it in Layout Mode.",
+            tooltip = "A list of the boats and zeppelins in your zone with their times. Move it in Edit Layout.",
             getValue = function() return TR2.Get("zone") end,
             setValue = function(val) Set("zone", val and true or false) end,
         })
@@ -2267,7 +2267,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             Tog(
                 "tracker",
                 "Library Books Tracker",
-                "Lists the books still to find in your zone, and the ones you carry. Its X closes it until you enter another zone. Move it in Layout Mode."
+                "Lists the books still to find in your zone, and the ones you carry. Its X closes it until you enter another zone. Move it in Edit Layout."
             ),
             Tog(
                 "bagTracker",
@@ -2414,7 +2414,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             Tog(
                 "rareAlert",
                 "Rare Alerts",
-                "A card and a sound when a rare's nameplate, your target, your mouseover or the minimap shows one. Left-click the card to target it, right-click to close it. Move it in Layout Mode."
+                "A card and a sound when a rare's nameplate, your target, your mouseover or the minimap shows one. Left-click the card to target it, right-click to close it. Move it in Edit Layout."
             ),
             Tog("rareAlertKilled", "Alert for Killed Rares", "Also alerts for rares you have killed before.")
         )
@@ -3166,7 +3166,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Healer Mana",
-            tooltip = "Your group's healers and their mana, lowest first, with a cup beside anyone drinking. Move it in Layout Mode.",
+            tooltip = "Your group's healers and their mana, lowest first, with a cup beside anyone drinking. Move it in Edit Layout.",
             getValue = function() return not hmOff() end,
             setValue = function(val) Set(hm, "enabled", val and true or false) end,
         }, {
@@ -3644,7 +3644,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 ),
                 fishRow(
                     "Bobber Indicator",
-                    "Shows whether the key will reel in. Place it in Layout Mode.",
+                    "Shows whether the key will reel in. Place it in Edit Layout.",
                     "indicator"
                 ),
                 fishRow(

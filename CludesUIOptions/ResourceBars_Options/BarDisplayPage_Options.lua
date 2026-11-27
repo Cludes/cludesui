@@ -891,7 +891,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             local profile = DB()
             if profile and not profile.primary.enabled then return "Power Bar" end
             if CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power") then
-                return "This option can't be used while you have the Power Bar Height Matched in the Layout Mode."
+                return "This option can't be used while you have the Power Bar Height Matched in the Edit Layout."
             end
             return "This option can't be used while Shift Elements if No Resource is enabled."
         end,
@@ -973,7 +973,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 local profile = DB()
                 if profile and not profile.primary.enabled then return "Power Bar" end
                 if matchedHeight() then
-                    return "This option can't be used while you have the Power Bar Height Matched in the Layout Mode."
+                    return "This option can't be used while you have the Power Bar Height Matched in the Edit Layout."
                 end
                 return "Expand Power Bar if No Resource"
             end,

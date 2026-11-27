@@ -171,13 +171,13 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
     CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_BonusRoll",
         disabled = lootUnlockOff,
-        disabledTooltip = "Move Loot Windows in Layout Mode",
+        disabledTooltip = "Move Loot Windows in Edit Layout",
     })
 
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
-        text = "Move Loot Windows in Layout Mode",
-        tooltip = "Adds Bonus Roll, Group Loot, and Alert Toast movers to Layout Mode.",
+        text = "Move Loot Windows in Edit Layout",
+        tooltip = "Adds Bonus Roll, Group Loot, and Alert Toast movers to Edit Layout.",
         getValue = function() return CludesUIDB and CludesUIDB.shifterLootUnlock or false end,
         setValue = function(val)
             Account().shifterLootUnlock = val
@@ -190,10 +190,10 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         end,
     }, {
         type = "toggle",
-        text = "Hide Layout Mode Overlays",
-        tooltip = "Hides the loot window movers in Layout Mode while keeping their saved positions applied.",
+        text = "Hide Edit Layout Overlays",
+        tooltip = "Hides the loot window movers in Edit Layout while keeping their saved positions applied.",
         disabled = lootUnlockOff,
-        disabledTooltip = "Move Loot Windows in Layout Mode",
+        disabledTooltip = "Move Loot Windows in Edit Layout",
         getValue = function() return CludesUIDB and CludesUIDB.shifterLootHideOverlays or false end,
         setValue = function(val) Account().shifterLootHideOverlays = val end,
     })
@@ -209,12 +209,12 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
     CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_TopBarEventText",
         disabled = topBarUnlockOff,
-        disabledTooltip = "Move Top Bar Event Text in Layout Mode",
+        disabledTooltip = "Move Top Bar Event Text in Edit Layout",
     })
 
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
-        text = "Move Top Bar Event Text in Layout Mode",
+        text = "Move Top Bar Event Text in Edit Layout",
         tooltip = "Adds a mover for Blizzard's top-center event text and widgets (scenario, event, and encounter bars).",
         getValue = function() return CludesUIDB and CludesUIDB.shifterTopBarUnlock or false end,
         setValue = function(val)
@@ -228,10 +228,10 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         end,
     }, {
         type = "toggle",
-        text = "Hide Layout Mode Overlay",
-        tooltip = "Hides the Top Bar Event Text mover in Layout Mode while keeping its saved position applied.",
+        text = "Hide Edit Layout Overlay",
+        tooltip = "Hides the Top Bar Event Text mover in Edit Layout while keeping its saved position applied.",
         disabled = topBarUnlockOff,
-        disabledTooltip = "Move Top Bar Event Text in Layout Mode",
+        disabledTooltip = "Move Top Bar Event Text in Edit Layout",
         getValue = function() return CludesUIDB and CludesUIDB.shifterTopBarHideOverlay or false end,
         setValue = function(val) Account().shifterTopBarHideOverlay = val end,
     })
@@ -248,13 +248,13 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
     CUI.BuildSectionUnlockJump(heading, {
         key = "CUI_FlagCarriers",
         disabled = battlegroundUnlockOff,
-        disabledTooltip = "Move Battleground Frames in Layout Mode",
+        disabledTooltip = "Move Battleground Frames in Edit Layout",
     })
 
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
-        text = "Move Battleground Frames in Layout Mode",
-        tooltip = "Adds movers for the battleground flag carriers and the capture bar to Layout Mode.",
+        text = "Move Battleground Frames in Edit Layout",
+        tooltip = "Adds movers for the battleground flag carriers and the capture bar to Edit Layout.",
         getValue = function() return CludesUIDB and CludesUIDB.shifterBattlegroundUnlock or false end,
         setValue = function(val)
             Account().shifterBattlegroundUnlock = val
@@ -264,10 +264,10 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         end,
     }, {
         type = "toggle",
-        text = "Hide Layout Mode Overlays",
-        tooltip = "Hides the battleground frame movers in Layout Mode while keeping their saved positions applied.",
+        text = "Hide Edit Layout Overlays",
+        tooltip = "Hides the battleground frame movers in Edit Layout while keeping their saved positions applied.",
         disabled = battlegroundUnlockOff,
-        disabledTooltip = "Move Battleground Frames in Layout Mode",
+        disabledTooltip = "Move Battleground Frames in Edit Layout",
         getValue = function() return CludesUIDB and CludesUIDB.shifterBattlegroundHideOverlays or false end,
         setValue = function(val) Account().shifterBattlegroundHideOverlays = val end,
     })

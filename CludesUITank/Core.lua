@@ -469,7 +469,7 @@ local function handleSlashCommand(msg)
             "  " .. CMD .. " |cffffff00reset|r         - reset frame position to center"
         )
         DEFAULT_CHAT_FRAME:AddMessage(
-            "  " .. CMD .. " |cffffff00move|r          - open Layout Mode to move the frames"
+            "  " .. CMD .. " |cffffff00move|r          - open Edit Layout to move the frames"
         )
         DEFAULT_CHAT_FRAME:AddMessage(
             "  " .. CMD .. " |cffffff00pin|r [name]    - pin current (or named) co-tank"
@@ -526,7 +526,7 @@ local function handleSlashCommand(msg)
     if cmd == "lock" or cmd == "unlock" or cmd == "move" then
         -- The frame is placed with CludesUI Layout Mode.
         if InCombatLockdown() then
-            mod.Print("Layout Mode cannot open in combat.")
+            mod.Print("Edit Layout cannot open in combat.")
             return
         end
         CUI:EnsureUnlockCore()

@@ -365,7 +365,7 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
     sctRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Self Combat Text",
-        tooltip = "Shows your damage taken, healing, avoids and combat enter/leave above the player frame instead of Blizzard's combat text, whose other messages are hidden while this is on. Move it in Layout Mode.",
+        tooltip = "Shows your damage taken, healing, avoids and combat enter/leave above the player frame instead of Blizzard's combat text, whose other messages are hidden while this is on. Move it in Edit Layout.",
         getValue = function() return not sctOff() end,
         setValue = CUI.SectionToggleSetValue(function(val) SCTSet("enabled", val) end),
     }, {
@@ -2013,7 +2013,7 @@ CUI.AtOptionsLogin(function()
         restedRow, height = W:DualRow(hostFrame, cursorY, CUI.RestedIndicatorCfg(), {
             type = "toggle",
             text = "Target Distance (Range) Text",
-            tooltip = "Shows the approximate distance to your current target as movable on-screen text (default 30-35). Use the cog for format, alignment, and text size; use Layout Mode to position or Anchor to your Player Frame.",
+            tooltip = "Shows the approximate distance to your current target as movable on-screen text (default 30-35). Use the cog for format, alignment, and text size; use Edit Layout to position or Anchor to your Player Frame.",
             getValue = function() return CludesUIDB and CludesUIDB.targetDistanceEnabled or false end,
             setValue = function(val)
                 Account().targetDistanceEnabled = val

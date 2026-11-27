@@ -695,12 +695,12 @@ local function BuildCardRow(hostFrame, posY, options)
             if CUI.ShowWidgetTooltip then
                 local tipText
                 if enabled then
-                    tipText = L("Customize Layout Mode")
+                    tipText = L("Customize Layout")
                 else
                     -- Owner-locked (another group provides this spec's unlock mode) has
                     -- its own text; non-membership gets the switch-spec hint.
                     tipText = options.unlockLockedTooltip
-                        or L("Switch to a spec in this group to customize its Layout Mode")
+                        or L("Switch to a spec in this group to customize its layout")
                 end
                 CUI.ShowWidgetTooltip(self, tipText)
             end

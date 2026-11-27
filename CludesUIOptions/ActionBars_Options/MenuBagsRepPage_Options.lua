@@ -179,7 +179,7 @@ local function DataBarKit(hostFrame)
                 return CUI.GetBarLabel(keyName)
                     .. ": "
                     .. CUI.Lf(
-                        "Size matched to %1$s. Unmatch in Layout Mode to edit.",
+                        "Size matched to %1$s. Unmatch in Edit Layout to edit.",
                         CUI.GetBarLabel(t)
                     )
             end,

@@ -607,7 +607,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                 return W:DualRow(hostFrame, ry, {
                     type = "toggle",
                     text = "Enable Call Totem Bar",
-                    tooltip = "Reskins Blizzard's call totem bar in this look and moves it with Layout Mode instead of Edit Mode.",
+                    tooltip = "Reskins Blizzard's call totem bar in this look and moves it with Edit Layout instead of Edit Mode.",
                     getValue = function()
                         local profile = DB()
                         local c = profile and profile.callTotemBar

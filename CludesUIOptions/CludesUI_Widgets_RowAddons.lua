@@ -607,7 +607,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- explains. Returns whether the open was requested.
     function CUI.OpenUnlockModeAt(key)
         if InCombatLockdown() then
-            CUI.PrintError("Cannot enter Layout Mode during combat.")
+            CUI.PrintError("Cannot enter Edit Layout during combat.")
             return false
         end
         -- Installed by the unlock core's init, so a live check rather than a dead guard.
@@ -641,7 +641,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local key = options.key
         local button = BuildInlineCog(region, {
             icon = CUI.UNLOCK_ICON,
-            tip = options.tooltip or "Move in Layout Mode",
+            tip = options.tooltip or "Move in Edit Layout",
             show = function()
                 local keyName = key
                 if type(keyName) == "function" then keyName = keyName() end

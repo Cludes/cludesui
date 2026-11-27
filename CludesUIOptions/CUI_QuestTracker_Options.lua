@@ -78,7 +78,7 @@ CludesUI.AtOptionsLogin(function()
             infoLabel:SetPoint("CENTER")
             infoLabel:SetJustifyH("CENTER")
             infoLabel:SetText(
-                CUSTOM and CludesUI.L("Reposition this element within Layout Mode")
+                CUSTOM and CludesUI.L("Reposition this element within Edit Layout")
                     or CludesUI.L("Reposition this element within Blizzard Edit Mode")
             )
 

@@ -2021,7 +2021,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
         _, height = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Cast Bar",
-            tooltip = "Shows a cast bar for your pet's spells (e.g. Seduction). Turning it on needs a reload. Position it in Layout Mode.",
+            tooltip = "Shows a cast bar for your pet's spells (e.g. Seduction). Turning it on needs a reload. Position it in Edit Layout.",
             getValue = function() return P.showCastbar == true end,
             setValue = function(value)
                 P.showCastbar = value

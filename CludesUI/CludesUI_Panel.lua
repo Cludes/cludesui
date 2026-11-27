@@ -6639,7 +6639,7 @@ local function ShowNavUnlockTip()
         local tip = CUI.BuildTipCallout(CUI._panelBody, {
             width = 320,
             height = 100,
-            text = CUI.L("Layout Mode is where you can adjust\npositioning for all the elements of CludesUI"),
+            text = CUI.L("Edit Layout is where you can adjust\npositioning for all the elements of CludesUI"),
             onOkay = function()
                 if CludesUIDB then CludesUIDB.sidebarUnlockTipSeen = true end
             end,

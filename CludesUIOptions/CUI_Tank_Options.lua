@@ -310,7 +310,7 @@ CUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Show Externals on You",
-                tooltip = "A row of the big defensives other players put on you, such as Pain Suppression or Ironbark. It shows only in a tank spec. Move it in Layout Mode.",
+                tooltip = "A row of the big defensives other players put on you, such as Pain Suppression or Ironbark. It shows only in a tank spec. Move it in Edit Layout.",
                 getValue = function() return mod.ExternalsEnabled() end,
                 setValue = function(val)
                     DB().extEnabled = val and true or false
@@ -731,7 +731,7 @@ CUI.AtOptionsLogin(function()
             text = "Move the Co-Tank Frame and Externals",
             buttonText = "Layout Mode",
             width = 120,
-            tooltip = "Opens Layout Mode, where every CludesUI frame is moved and resized.",
+            tooltip = "Opens Edit Layout, where every CludesUI frame is moved and resized.",
             onClick = function()
                 if InCombatLockdown() then return end
                 CUI:EnsureUnlockCore()

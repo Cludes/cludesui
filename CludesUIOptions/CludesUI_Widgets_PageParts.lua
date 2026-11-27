@@ -54,7 +54,7 @@ function CUI.BuildUnlockPlaceholder(options)
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     local labelText = frame:CreateFontString(nil, "OVERLAY")
     labelText:SetFont(fontFile, 10, "OUTLINE, SLUG")
-    labelText:SetText(CUI.L(options.text or "Move in Layout Mode"))
+    labelText:SetText(CUI.L(options.text or "Move in Edit Layout"))
     labelText:SetTextColor(1, 1, 1, 0.9)
     labelText:SetPoint("CENTER")
     frame._label = labelText
