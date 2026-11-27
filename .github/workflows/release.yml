@@ -81,10 +81,35 @@ jobs:
           sed -i "s/^\(CUI\.VERSION = \"\)[0-9.]*\"/\1$version\"/" out/CludesUI/CludesUI.lua
           (cd out && zip -r -q "../CludesUI-$TAG.zip" .)
 
+      # CurseForge gets every few releases, not each one: a version cut with
+      # tools/release.sh (a tag push) goes up at once, others once CF_EVERY
+      # releases have built up since the last upload. The "curseforge" tag marks
+      # the last uploaded release; its notes cover everything since it.
+      - name: CurseForge due
+        id: cf
+        if: steps.version.outputs.skip != '1'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          CF_EVERY: 5
+        run: |
+          git fetch --tags --force -q
+          last=$(git rev-parse -q --verify "refs/tags/curseforge^{commit}" || true)
+          due=0
+          if [ "$GITHUB_REF_TYPE" = "tag" ] || [ -z "$last" ]; then
+            due=1
+          else
+            since=$(( $(git tag --list 'v*' --contains "$last" | wc -l) - 1 ))
+            echo "$since release(s) since the last CurseForge upload"
+            if [ "$since" -ge "$CF_EVERY" ]; then due=1; fi
+          fi
+          echo "due=$due" >> "$GITHUB_OUTPUT"
+          echo "since=$last" >> "$GITHUB_OUTPUT"
+
       - name: Release notes
         if: steps.version.outputs.skip != '1'
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          CF_SINCE: ${{ steps.cf.outputs.since }}
         # notes.md (GitHub) and cf_notes.md (CurseForge): the commits' Player: lines,
         # grouped New and improved / Fixed (tools/release_notes.py).
         run: python3 tools/release_notes.py
@@ -103,8 +128,11 @@ jobs:
           fi
 
       - name: Upload to CurseForge
-        if: steps.version.outputs.skip != '1'
+        if: steps.version.outputs.skip != '1' && steps.cf.outputs.due == '1'
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
           TAG: ${{ steps.version.outputs.tag }}
-        run: python3 tools/curseforge_upload.py
+        run: |
+          python3 tools/curseforge_upload.py
+          git tag -f curseforge "$TAG^{commit}"
+          git push -q -f origin refs/tags/curseforge

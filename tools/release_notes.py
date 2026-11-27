@@ -2,11 +2,15 @@
 cf_notes.md for CurseForge (tools/curseforge_upload.py uploads it as the
 file's changelog).
 
-Env: TAG (vX.Y.Z), GITHUB_REPOSITORY (owner/repo). The lines are the
-"Player: ..." body lines of the addon-changing commits since the previous tag,
-oldest first; a line starting with "Fixed" or "Fix" goes under Fixed, every
-other under New and improved. GitHub's copy adds the zip install steps;
-CurseForge's leaves them out (its app installs the addon).
+Env: TAG (vX.Y.Z), GITHUB_REPOSITORY (owner/repo), CF_SINCE (the commit
+CurseForge last got, from the "curseforge" tag: CurseForge gets only every few
+releases, so its notes cover every release since then).
+
+The lines are the "Player: ..." body lines of the addon-changing commits in
+the range, oldest first; a line starting with "Fixed" or "Fix" goes under
+Fixed, every other under New and improved. GitHub's copy (since the previous
+tag) adds the zip install steps; CurseForge's leaves them out (its app
+installs the addon).
 """
 import os
 import re
@@ -21,9 +25,9 @@ def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True).stdout.strip()
 
 
-def main():
-    prev = git("describe", "--tags", "--abbrev=0", TAG + "^")
-    rng = f"{prev}..{TAG}" if prev else TAG
+def notes(since, since_name):
+    """The heading, grouped Player lines and compare link for since..TAG."""
+    rng = f"{since}..{TAG}" if since else TAG
     day = git("log", "-1", "--format=%cd", "--date=format:%d %B %Y", TAG).lstrip("0")
     has_changes = bool(git("log", "--no-merges", "--format=%h", rng, *PATHS))
     bodies = git("log", "--no-merges", "--reverse", "--format=%B", rng, *PATHS)
@@ -37,11 +41,17 @@ def main():
     if fixed:
         body += ["### Fixed", ""] + [f"- {l}" for l in fixed] + [""]
     if not lines:
-        body += ["- " + ("Fixes and polish." if has_changes else f"No addon changes since {prev}."), ""]
+        body += ["- " + ("Fixes and polish." if has_changes else f"No addon changes since {since_name}."), ""]
     link = []
-    if prev:
-        link = [f"[Every change since {prev}](https://github.com/{REPO}/compare/{prev}...{TAG})"]
+    if since:
+        ref = since_name if since_name.startswith("v") else since
+        link = [f"[Every change since {since_name}](https://github.com/{REPO}/compare/{ref}...{TAG})"]
+    return body, link
 
+
+def main():
+    prev = git("describe", "--tags", "--abbrev=0", "--match", "v*", TAG + "^")
+    body, link = notes(prev, prev)
     install = [
         "### Install",
         "",
@@ -51,8 +61,12 @@ def main():
     ]
     with open("notes.md", "w", encoding="utf-8") as f:
         f.write("\n".join(body + install + link) + "\n")
+
+    cf_since = os.environ.get("CF_SINCE") or prev
+    cf_name = (git("describe", "--tags", "--exact-match", "--match", "v*", cf_since) or cf_since[:7]) if cf_since else ""
+    cf_body, cf_link = notes(cf_since, cf_name)
     with open("cf_notes.md", "w", encoding="utf-8") as f:
-        f.write("\n".join(body + link) + "\n")
+        f.write("\n".join(cf_body + cf_link) + "\n")
     print(open("cf_notes.md", encoding="utf-8").read())
 
 
