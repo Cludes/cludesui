@@ -66,7 +66,7 @@ CUI.CONDITIONS = {
         label = "Dark Mode",
         requires = DarkModeMasterOn,
         tooltip = "Active while Dark Mode is on.",
-        requiresHint = "Check every Dark Mode in Global Settings > Colors, except Class Resource Bar, to use this condition.",
+        requiresHint = "Check every Dark Mode in Core Settings > Colors, except Class Resource Bar, to use this condition.",
     },
 }
 -- WoW Forever only: its Gamepad interface style has no retail counterpart

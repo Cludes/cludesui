@@ -2427,7 +2427,7 @@ CludesUI.AtLogin(function()
                 function()
                     CludesUI.ShowWidgetTooltip(
                         block,
-                        "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
+                        "Not available in Dark Mode. Dark Mode colors can be adjusted in Core Settings > Colors."
                     )
                 end
             )
@@ -3803,7 +3803,7 @@ CludesUI.AtLogin(function()
                     end
                     if Tex(s) == "none" then return "This option requires a Bar Texture other than None." end
                     if mod.UF_DarkThemeOn(s) then
-                        return "This option requires a Dark Mode Fill of 100 (Global Settings > Colors)."
+                        return "This option requires a Dark Mode Fill of 100 (Core Settings > Colors)."
                     end
                     if mini == "boss" then return "This option requires a health Fill Color of 100." end
                     return "This option requires a health Fill Opacity of 100."

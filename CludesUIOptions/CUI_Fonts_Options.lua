@@ -2082,7 +2082,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             { key = "actionBars", label = "Action Bars Icons" },
             { key = "unitFrames", label = "Unit Frames Icons" },
             { key = "cdm", label = "CDM Icons" },
-            { key = "raidFrames", label = "Raid & Party Frames Icons" },
+            { key = "raidFrames", label = "Group Frames Icons" },
             { key = "bags", label = "Bags Icons" },
         }
         local region = oitRow._leftRegion

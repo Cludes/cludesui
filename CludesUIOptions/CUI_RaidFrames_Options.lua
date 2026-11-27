@@ -584,7 +584,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         ShowActivePreview()
     end
     local DARK_TIP =
-        "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
+        "Not available in Dark Mode. Dark Mode colors can be adjusted in Core Settings > Colors."
 
     _, height = W:SectionHeader(hostFrame, "PARTY TARGETS", cursorY)
     cursorY = cursorY - height
@@ -2057,7 +2057,7 @@ CUI.AtLogin(function()
                         return "This option requires a Health Bar Texture other than None."
                     end
                     if Dark() then
-                        return "This option requires a Dark Mode Fill of 100 (Global Settings > Colors)."
+                        return "This option requires a Dark Mode Fill of 100 (Core Settings > Colors)."
                     end
                     return "This option requires a Fill Opacity of 100."
                 end,

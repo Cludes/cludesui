@@ -2717,7 +2717,7 @@ function CUI.ExportProfile(
     -- CDM spell layouts: the exporter never saw it because the in-game export
     -- flow passes explicit values.)
     if includeCDM == nil then includeCDM = true end
-    if includeGlobals == nil then includeGlobals = true end -- default ON ("Include Global Settings")
+    if includeGlobals == nil then includeGlobals = true end -- default ON ("Include Core Settings")
     -- Blizz UI Enhanced account-global bundle: headless full calls (the Wago
     -- creator export, partner installers) default ON so a pack delivers the
     -- creator's complete look -- there is no UI in that path to opt in. The

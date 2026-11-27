@@ -423,7 +423,7 @@ function CUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             CUI.ShowWidgetTooltip(
                 self,
                 CUI.L(
-                    "Show a pulsing dot on the Patch Notes button whenever CludesUI updates to a new version."
+                    "Show a pulsing dot on the What's New button whenever it has something new."
                 )
             )
         end)

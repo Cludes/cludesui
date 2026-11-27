@@ -151,7 +151,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             )
             linkBtn:SetScript(
                 "OnEnter",
-                function(self) CUI.ShowWidgetTooltip(self, "Open Resource & Cast Bars > Cast Bar") end
+                function(self) CUI.ShowWidgetTooltip(self, "Open Power & Cast Bars > Cast Bar") end
             )
             linkBtn:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         end

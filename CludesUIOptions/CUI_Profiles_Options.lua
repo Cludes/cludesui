@@ -105,7 +105,7 @@ local ADDON_DESCS = {
     CludesUIBlizzardSkin = "Clean and beautiful visual refreshes for Blizzard UI elements.",
     CludesUIFriends = "A modern friends list with built-in organization tools.",
     CludesUIMythicTimer = "Mythic+ timer, targeted spell bars, and standalone cast bars.",
-    CludesUIQuestTracker = "A clean, updated reskin of Blizzard's Quest Tracker.",
+    CludesUIQuestTracker = "A clean, updated reskin of Blizzard's Objective Tracker.",
     CludesUIMinimap = "A new age minimap with clean styling and square layout options.",
     CludesUIDamageMeters = "Lightweight damage meters with simple but powerful customization.",
     CludesUIChat = "Modern chat enhancements with useful utilities.",
@@ -1265,7 +1265,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 sum = "Window Skins",
                 enabled = stringHasBlizzSkin,
                 offTip = "This profile string does not carry any Window & Tooltip Skins settings.",
-                tip = "Apply the sharer's Window Skins Window Skins and Tooltips & Menus settings. These are account-wide and will overwrite yours across ALL profiles. Off = keep your own.",
+                tip = "Apply the sharer's Window Styling settings (its General and Tooltips & Menus pages). These are account-wide and will overwrite yours across ALL profiles. Off = keep your own.",
                 get = function() return includeWindowSkinsImport end,
                 set = function(refresh, dropdownBtn)
                     if includeWindowSkinsImport then
@@ -1278,7 +1278,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                     CUI:ShowConfirmPopup({
                         title = CUI.L("Overwrite Window & Tooltip Settings?"),
                         message = CUI.L(
-                            "This will replace YOUR Window Skins settings (the Window Skins and Tooltips & Menus tabs) with the sharer's, across ALL of your profiles. Your current settings on those two tabs cannot be recovered afterward."
+                            "This will replace YOUR Window Styling settings (its General and Tooltips & Menus pages) with the sharer's, across ALL of your profiles. Your current settings on those two tabs cannot be recovered afterward."
                         ),
                         confirmText = CUI.L("OK"),
                         cancelText = CUI.L("Cancel"),
@@ -1632,7 +1632,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 if CUI.IsFullAccountPayload(bundle) then
                     pastePage:Hide()
                     local message = CUI.L(
-                        "This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Utilities, Frame Bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced."
+                        "This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Quality of Life, Frame Bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced."
                     )
                     -- Spell setups from the other client are skipped on import: say so.
                     local data = bundle.data
@@ -2258,7 +2258,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             rowDefs[#rowDefs + 1] = {
                 label = "Window & Tooltip Skins",
                 sum = "Window Skins",
-                tip = "Include your Window Skins settings from the Window Skins and Tooltips & Menus tabs. These are account-wide: if the importer opts in, they overwrite that player's settings across ALL of their profiles.",
+                tip = "Include your Window Styling settings from its General and Tooltips & Menus pages. These are account-wide: if the importer opts in, they overwrite that player's settings across ALL of their profiles.",
                 get = function() return includeWindowSkinsExport end,
                 set = function() includeWindowSkinsExport = not includeWindowSkinsExport end,
             }

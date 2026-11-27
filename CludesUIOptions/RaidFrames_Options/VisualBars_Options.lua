@@ -359,7 +359,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         max = 100,
         step = 1,
         disabled = function() return SettingOr("healthColorMode", "class") == "dark" end,
-        disabledTooltip = "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors.",
+        disabledTooltip = "Not available in Dark Mode. Dark Mode colors can be adjusted in Core Settings > Colors.",
         rawTooltip = true,
         getValue = SValRow("bgDarkness", 50),
         setValue = SSetRow("bgDarkness"),
@@ -525,7 +525,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             function()
                 CUI.ShowWidgetTooltip(
                     bgSwatch,
-                    "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
+                    "Not available in Dark Mode. Dark Mode colors can be adjusted in Core Settings > Colors."
                 )
             end
         )
@@ -1763,7 +1763,7 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             function()
                 CUI.ShowWidgetTooltip(
                     bgPwrSwatch,
-                    "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors."
+                    "Power Colored Background. Power colors can be adjusted in Core Settings > Colors."
                 )
             end
         )

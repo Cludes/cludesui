@@ -4137,7 +4137,7 @@ CUI.AtOptionsLogin(function()
 
     CUI:RegisterModule("CludesUIAuraBuffReminders", {
         title = "Auras, Buffs & Consumables",
-        description = "Buff Reminders: Raid Buffs, Auras, and Consumables.",
+        description = "Buff Checks: raid buffs, auras and consumables.",
         pages = FOREVER and { PAGE_REMINDERS } or { PAGE_REMINDERS, PAGE_TALENTS },
         buildPage = function(pageName, parent, yOffset)
             local build = PAGE_BUILDERS[pageName]

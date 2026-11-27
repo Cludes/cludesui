@@ -4096,7 +4096,7 @@ CUI._RunConflictCheck = function()
                 label = "Clique",
                 targets = { "CludesUIRaidFrames" },
                 moduleCheck = function() return _G._CURF_IsHoverCastEnabled and _G._CURF_IsHoverCastEnabled() end,
-                message = "Clique controls click-casting on the same Raid & Party Frames as CludesUI's Frame Bindings, so they conflict. Disable the Clique addon to use Frame Bindings.",
+                message = "Clique controls click-casting on the same Group Frames as CludesUI's Frame Bindings, so they conflict. Disable the Clique addon to use Frame Bindings.",
             },
             {
                 addon = "TellMeWhen",

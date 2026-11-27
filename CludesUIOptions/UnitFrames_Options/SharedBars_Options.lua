@@ -2344,7 +2344,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 refreshAlpha = function() return ReadSetting("powerPercentPowerColor", true) and 0.3 or 1 end,
             },
             {
-                tooltip = "Power Colored Fill. Power colors can be adjusted in Global Settings -> Colors.",
+                tooltip = "Power Colored Fill. Power colors can be adjusted in Core Settings > Colors.",
                 hasAlpha = false,
                 getValue = function()
                     local _, pToken = UnitPowerType("player")
@@ -2422,7 +2422,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 local f = CUI.GetPowerBgDarkenFactor()
                 return details.r * f, details.g * f, details.b * f
             end,
-            autoTip = "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors.",
+            autoTip = "Power Colored Background. Power colors can be adjusted in Core Settings > Colors.",
             colorKey = "customPowerBgColor",
             colorDefault = { r = 17 / 255, g = 17 / 255, b = 17 / 255 },
             customTip = "Custom Background Color",

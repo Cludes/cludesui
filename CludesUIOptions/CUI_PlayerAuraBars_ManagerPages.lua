@@ -2663,7 +2663,7 @@ function mod.PABMP_ShowFilterEditor()
                 CludesUI:ShowConfirmPopup({
                     title = Loc("Copy Raid & Party Filters"),
                     message = Loc(
-                        "One-time copy of the Raid & Party Frames Buff Manager filters into these filters. Same-named filters are OVERWRITTEN; the two lists stay separate afterwards."
+                        "One-time copy of the Group Frames Buff Manager filters into these filters. Same-named filters are OVERWRITTEN; the two lists stay separate afterwards."
                     ),
                     confirmText = Loc("Copy"),
                     cancelText = Loc("Cancel"),

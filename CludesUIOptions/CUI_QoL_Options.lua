@@ -747,7 +747,7 @@ CUI.AtOptionsLogin(function()
                 key = "suppressErrors",
                 label = "Lua Errors",
                 alias = "Suppress Lua Errors",
-                tooltip = "Hides the Lua error popup. The same setting as Global Settings > Developer.",
+                tooltip = "Hides the Lua error popup. The same setting as Core Settings > General > Developer.",
                 read = function() return not (CludesUIDB and CludesUIDB.suppressErrors == false) end,
                 write = function(val)
                     QDB().suppressErrors = val

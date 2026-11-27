@@ -505,7 +505,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     }, {
         type = "toggle",
         text = "Dark Mode",
-        tooltip = "Dark Mode for this frame. Global Settings > Colors switches every frame.",
+        tooltip = "Dark Mode for this frame. Core Settings > Colors switches every frame.",
         getValue = function() return mod.UF_DarkThemeOn(SettingsDB()) end,
         setValue = function(value)
             WriteSetting("darkTheme", value)

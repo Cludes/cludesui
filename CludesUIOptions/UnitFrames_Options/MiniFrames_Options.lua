@@ -288,7 +288,7 @@ local function BuildMiniTextAndSize(
     local darkCfg = {
         type = "toggle",
         text = "Dark Mode",
-        tooltip = "Dark Mode for this frame. Global Settings > Colors switches every frame.",
+        tooltip = "Dark Mode for this frame. Core Settings > Colors switches every frame.",
         getValue = function() return mod.UF_DarkThemeOn(unitSettings) end,
         setValue = function(value)
             MSet("darkTheme", value)
@@ -1109,7 +1109,7 @@ local function BuildMiniTextAndSize(
                     local f = CUI.GetPowerBgDarkenFactor()
                     return details.r * f, details.g * f, details.b * f
                 end,
-                autoTip = "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors.",
+                autoTip = "Power Colored Background. Power colors can be adjusted in Core Settings > Colors.",
                 colorKey = "customPowerBgColor",
                 colorDefault = { r = 17 / 255, g = 17 / 255, b = 17 / 255 },
                 customTip = "Custom Background Color",
@@ -1145,7 +1145,7 @@ local function BuildMiniTextAndSize(
                 function()
                     CUI.ShowWidgetTooltip(
                         powerSwatch,
-                        "Power Colored Fill. Power colors can be adjusted in Global Settings -> Colors."
+                        "Power Colored Fill. Power colors can be adjusted in Core Settings > Colors."
                     )
                 end
             )

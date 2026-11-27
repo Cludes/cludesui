@@ -98,8 +98,8 @@ CludesUI.AtOptionsLogin(function()
                 local enabled = TrackerGet("forceOnScreen") == true
                 fosFS:SetText(
                     CludesUI.L(
-                        enabled and "Allow Quest Tracker to be Moved Offscreen"
-                            or "Force Quest Tracker on Screen"
+                        enabled and "Allow Objective Tracker to be Moved Offscreen"
+                            or "Force Objective Tracker on Screen"
                     )
                 )
                 fosBtn:SetSize(fosFS:GetStringWidth() + 12, 18)
@@ -949,7 +949,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Experimental Quest Tools",
                 tooltip = "Unlocks Sort Quests, Filter Quests and Auto Track Zone Quests.",
                 disabled = function() return CUSTOM end,
-                disabledTooltip = "Always on with the Custom Quest Tracker.",
+                disabledTooltip = "Always on with the Custom Objective Tracker.",
                 rawTooltip = CUSTOM or nil,
                 getValue = function() return CUSTOM or TrackerGet("questWatchExperimental") == true end,
                 setValue = function(val)

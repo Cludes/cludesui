@@ -157,7 +157,7 @@ local function AskReload()
     if reloadAsked then return end
     reloadAsked = true
     CUI:ShowConfirmPopup({
-        title = "Reload to Move the Quest Tracker",
+        title = "Reload to Move the Objective Tracker",
         message = "The quest tracker's new position and height are saved to your Edit Mode layout. Blizzard applies them after a reload.",
         confirmText = "Reload",
         cancelText = "Not Now",

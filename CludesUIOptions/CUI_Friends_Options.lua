@@ -69,7 +69,7 @@ local function Toggle(text, key, after, onByDefault, tooltip)
     return { type = "toggle", text = text, tooltip = tooltip, getValue = get, setValue = set }
 end
 
-local CHROME_TIP = "The Friends List window skin draws this border (Window Skins > Window Skins)."
+local CHROME_TIP = "The Friends List window skin draws this border (Window Styling > General)."
 
 local function BuildPage(_, host, yOffset)
     local W = CUI.Widgets

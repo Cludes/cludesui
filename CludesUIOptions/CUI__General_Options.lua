@@ -2020,7 +2020,7 @@ CUI.AtOptionsLogin(function()
         wtext:SetSpacing(3)
         wtext:SetText(
             CUI.L(
-                "This export includes cross profile settings that will overwrite the importing user's settings including Utilities, Frame Bindings and more that should typically not be shared with standard profiles. THIS IS NOT RECOMMENDED for public sharing of profiles."
+                "This export includes cross profile settings that will overwrite the importing user's settings including Quality of Life, Frame Bindings and more that should typically not be shared with standard profiles. THIS IS NOT RECOMMENDED for public sharing of profiles."
             )
         )
         warn:SetHeight((wtext:GetStringHeight() or 40) + 28)

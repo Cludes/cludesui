@@ -1434,7 +1434,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 disabledTooltip = function()
                     local rowCfg = rowConf()
                     if rowCfg and rowCfg.darkTheme then
-                        return "This option requires Class Resource Bar Dark Mode to be off. Dark Mode colors can be adjusted in Global Settings -> Colors."
+                        return "This option requires Class Resource Bar Dark Mode to be off. Dark Mode colors can be adjusted in Core Settings > Colors."
                     end
                     return "Class Resource"
                 end,

@@ -982,13 +982,13 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
             and SkinCfg(
                 "micromenu",
                 "Micro Menu Skin",
-                "Same setting as the Micro Menu card on Window Skins > Window Skins."
+                "Same setting as the Micro Menu card on Window Styling > General."
             )
         local bagSkin = SkinCfg
             and SkinCfg(
                 "bagbar",
                 "Bag Bar Skin",
-                "Same setting as the Bag Bar card on Window Skins > Window Skins."
+                "Same setting as the Bag Bar card on Window Styling > General."
             )
         local function Ctl(key, labelText)
             return EndCapsCtl({

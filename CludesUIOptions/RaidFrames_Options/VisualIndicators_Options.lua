@@ -2527,7 +2527,7 @@ local function BuildVisualIndicators(
         end,
     }, {
         type = "dropdown",
-        text = "Show Raid & Party Frames Tooltip",
+        text = "Show Group Frames Tooltip",
         tooltip = "Controls when the tooltip appears as you hover a raid or party frame",
         values = {
             always = "Always",

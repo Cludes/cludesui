@@ -111,15 +111,15 @@ local CAST_BARS = {
     {
         text = "Hide Resource Bars Cast Bar",
         tooltip = Wording(
-            "Hides the Resource & Cast Bars cast bar while a controller is connected and gamepad mode is on. Blizzard's gamepad interface shows its own.",
-            "Hides the Resource & Cast Bars cast bar while WoW's gamepad interface is on. Blizzard's gamepad interface shows its own."
+            "Hides the Power & Cast Bars cast bar while a controller is connected and gamepad mode is on. Blizzard's gamepad interface shows its own.",
+            "Hides the Power & Cast Bars cast bar while WoW's gamepad interface is on. Blizzard's gamepad interface shows its own."
         ),
         settings = CastBarSettings,
         key = "gamepadHide",
         apply = function() CUI.ModuleNS("CludesUIResourceBars").RB_ApplyGamepadCastbar() end,
         disabled = function(castBar) return not (castBar and castBar.enabled) end,
         moduleName = "Resource & Cast Bars",
-        needs = "This option requires the cast bar in Resource & Cast Bars to be enabled",
+        needs = "This option requires the cast bar in Power & Cast Bars to be enabled",
     },
 }
 

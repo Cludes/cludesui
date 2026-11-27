@@ -78,7 +78,7 @@ local function PickOtherLook(styleKey, labelText, dimmer)
         )
         return
     end
-    CUI.Print("|cff4cc9f0CludesUI:|r " .. labelText .. " can be switched on under Global Settings > Style.")
+    CUI.Print("|cff4cc9f0CludesUI:|r " .. labelText .. " can be switched on under Core Settings > Style.")
     if dimmer then dimmer:Hide() end
     ReleasePending()
 end
@@ -137,7 +137,7 @@ local function ShowStyleChoicePopup()
     Pix.Point(desc, "TOP", title, "BOTTOM", 0, -10)
     desc:SetText(
         CUI.L(
-            "CludesUI's features work with every look. Change your mind any time under Global Settings > Style."
+            "CludesUI's features work with every look. Change your mind any time under Core Settings > Style."
         )
     )
 
