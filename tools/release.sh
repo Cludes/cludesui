@@ -9,7 +9,8 @@
 # Default: patch.
 set -e
 cd "$(dirname "$0")/.."
-git fetch -q --tags
+# --force: the release workflow moves its "curseforge" marker tag.
+git fetch -q --tags --force
 cur=$(git tag --list 'v*' --sort=-v:refname | head -1 | sed 's/^v//')
 want=${1:-patch}
 IFS=. read -r MA MI PA <<EOF
