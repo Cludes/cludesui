@@ -124,3 +124,14 @@ for _, label in ipairs({ "Your Group", "Create", "Browse" }) do
 end
 LF.Toggle()
 OUT:write("== toggled shown " .. tostring(win:IsShown()) .. "\n")
+local function FindMacro(f, d)
+    if d > 8 then return end
+    for _, ch in ipairs({ f:GetChildren() }) do
+        local m = ch.GetAttribute and ch:GetAttribute("macrotext")
+        if m and m ~= "" then return ch, m end
+        local hit, hm = FindMacro(ch, d + 1)
+        if hit then return hit, hm end
+    end
+end
+local finderButton, finderMacro = FindMacro(win, 0)
+OUT:write("== Group Finder button: " .. tostring(finderButton and finderButton.label and finderButton.label:GetText()) .. ", runs " .. tostring(finderMacro) .. "\n")

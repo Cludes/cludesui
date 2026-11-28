@@ -282,7 +282,7 @@ local function PaintBrowse()
     elseif Listings.state == "locked" then
         memo = "Listings cannot be read right now. Try again after combat."
     elseif not Listings.searched then
-        memo = "Search in the Group Finder (I, Premade Groups): the groups it finds show here."
+        memo = "Press Group Finder and search in Premade Groups: the groups it finds show here."
     elseif #order == 0 then
         memo = needle ~= "" and "No group matches your filter." or "No groups listed right now."
     end
@@ -303,12 +303,38 @@ local function BuildBrowse(page)
     end)
     browse.sort = Kit.Button(page, "Sort: Newest", 130, BAR_H - 2, function(self) SortMenu(self) end, { key = "essentials" })
     browse.sort:SetPoint("LEFT", browse.filter, "RIGHT", 8, 0)
-    -- Only the game's own Group Finder may search; this window reads what it finds.
-    browse.search = Kit.Button(page, "Search", 90, BAR_H - 2, function()
-        CUI.Print(CUI.L("Searching is the Group Finder's own: press I, open Premade Groups and press Search there. The groups it finds show in this window."))
+    -- Only the game's own Group Finder may search; this window reads what it
+    -- finds. The button opens it through a secure /click of the game's own
+    -- Group Finder button (12.1 broke the "click" action; opening it from
+    -- addon code would taint its Search). It remembers Premade Groups once
+    -- picked.
+    browse.search = Kit.SecureButton(page, nil, "Group Finder", 100, BAR_H - 2, { key = "essentials" })
+    local function Wire()
+        browse.search:SetAttribute("type", "macro")
+        browse.search:SetAttribute("macrotext", "/click LFDMicroButton")
+    end
+    if InCombatLockdown() then
+        local waiter = CreateFrame("Frame")
+        waiter:RegisterEvent("PLAYER_REGEN_ENABLED")
+        waiter:SetScript("OnEvent", function(self)
+            self:UnregisterAllEvents()
+            Wire()
+        end)
+    else
+        Wire()
+    end
+    browse.search:HookScript("OnClick", function()
+        CUI.Print(CUI.L("Search in Premade Groups: the groups it finds show in this window."))
         Search.Run()
         Paint()
-    end, { key = "essentials" })
+    end)
+    browse.search:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:SetText(CUI.L("Open the Group Finder"))
+        GameTooltip:AddLine(CUI.L("Only the game's own Group Finder can search. Search in Premade Groups and the groups it finds show here."), 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    browse.search:HookScript("OnLeave", function() GameTooltip:Hide() end)
     browse.search:SetPoint("TOPRIGHT", page, "TOPRIGHT", 0, 0)
     browse.count = Text(page, Kit.SMALL_SIZE, Pal.muted)
     browse.count:SetPoint("TOPLEFT", 2, -(BAR_H + 4))
