@@ -58,6 +58,29 @@ function _G._CUI_BuildForeverDungeonsPage(_, hostFrame, yOffset)
             })
             cursorY = cursorY - height
         end
+        local DQ = CUI._DungeonQuests
+        if DQ then
+            _, height = W:DualRow(hostFrame, cursorY, {
+                type = "toggle",
+                text = "Dungeon Quests on Entering",
+                tooltip = "A chat line as you enter a dungeon: how many of its quests are in your log, and how many you have not picked up yet (with where the first is given). The Dungeon Map's Quests button lists them; click it to share yours with your group.",
+                getValue = function() return DQ.Get("summary") end,
+                setValue = function(val)
+                    DQ.Cfg().summary = val and true or false
+                    DQ.Apply()
+                end,
+            }, {
+                type = "toggle",
+                text = "Accept Shared Dungeon Quests",
+                tooltip = "A dungeon quest a group member shares with you is accepted as it opens. Other quests still ask.",
+                getValue = function() return DQ.Get("acceptShared") end,
+                setValue = function(val)
+                    DQ.Cfg().acceptShared = val and true or false
+                    DQ.Apply()
+                end,
+            })
+            cursorY = cursorY - height
+        end
         local BK = CUI._BossKills
         if BK then
             _, height = W:DualRow(hostFrame, cursorY, {

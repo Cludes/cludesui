@@ -43,6 +43,7 @@ CludesUIForeverEssentials_StatWeights.lua
 CludesUIForeverEssentials_Journal.lua
 CludesUIForeverEssentials_JournalData.lua
 CludesUIForeverEssentials_DungeonMap.lua
+CludesUIForeverEssentials_DungeonQuests.lua
 CludesUIForeverEssentials_BossKills.lua
 CludesUIForeverEssentials_LFG.lua
 CludesUIForeverEssentials_LFGWindow.lua

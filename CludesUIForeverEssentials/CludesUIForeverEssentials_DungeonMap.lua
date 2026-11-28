@@ -428,6 +428,19 @@ local function Build()
     floorName:SetPoint("LEFT", down, "RIGHT", 4, 0)
     floorName:SetPoint("RIGHT", up, "LEFT", -4, 0)
     floorName:SetWordWrap(false)
+    -- Quests: hover for the dungeon's quests, click to share yours (DungeonQuests.lua).
+    local questsButton = CUI.Kit.Button(window, CUI.L("Quests"), 54, 18, function()
+        if module.DungeonQuests and dungeon then module.DungeonQuests.ShareAll(dungeon) end
+    end, { key = "essentials" })
+    questsButton:SetPoint("RIGHT", floorBar, "LEFT", -6, 0)
+    questsButton:HookScript("OnEnter", function(self)
+        if not (module.DungeonQuests and dungeon) then return end
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        module.DungeonQuests.FillTooltip(GameTooltip, dungeon)
+        GameTooltip:Show()
+    end)
+    questsButton:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    window.questsButton = questsButton
     floorName:SetTextColor(Pal.muted[1], Pal.muted[2], Pal.muted[3])
     youLine = canvas:CreateLine(nil, "OVERLAY")
     youLine:SetThickness(2)
