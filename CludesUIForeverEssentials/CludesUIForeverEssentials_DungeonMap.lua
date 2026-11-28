@@ -551,11 +551,6 @@ events:SetScript("OnEvent", function(_, event, ...)
         if success == 1 then KilledEncounter(encounterID) end
     elseif event == "BOSS_KILL" then
         KilledEncounter((...))
-    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        local _, sub, _, _, _, _, _, guid = CombatLogGetCurrentEventInfo()
-        if sub ~= "UNIT_DIED" or type(guid) ~= "string" or (issecretvalue and issecretvalue(guid)) then return end
-        local kind, _, _, _, _, npc = strsplit("-", guid)
-        if kind == "Creature" then Killed(tonumber(npc)) end
     elseif event == "PLAYER_ENTERING_WORLD" then
         local login, reload = ...
         Enter(not (login or reload))
@@ -573,8 +568,6 @@ local function Apply()
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "ENCOUNTER_END", "BOSS_KILL" }) do
         events:RegisterEvent(event)
     end
-    -- Bosses without an encounter (rares, some classic ones) by their death.
-    if CombatLogGetCurrentEventInfo then events:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED") end
     Enter()
 end
 

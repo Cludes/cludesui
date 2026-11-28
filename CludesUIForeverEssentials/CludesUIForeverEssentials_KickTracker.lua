@@ -5,10 +5,11 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  CludesUIForeverEssentials_KickTracker.lua  (WoW Forever only)
 --  Interrupt Tracker: your group's interrupts in a small list: who has one
 --  (Kick, Pummel or Shield Bash, Earth Shock, Counterspell), whether it is
---  ready or how long until it is, and how many casts each has stopped this
---  run. The first ready one is marked "next". Cooldowns are read from the
---  combat log, so it works for everyone, with or without CludesUI. Shown in
---  dungeons and raids (or everywhere); move it in Edit Layout.
+--  ready or how long until it is. The first ready one is marked "next".
+--  Read from the group's own casts (UNIT_SPELLCAST_SUCCEEDED; the game keeps
+--  the combat log from addons on this client), so it works for everyone, with
+--  or without CludesUI. Shown in dungeons and raids (or everywhere); move it
+--  in Edit Layout.
 --  Ranks and learn levels are Forever's trainers'; cooldowns the game's own
 --  base cooldown for the spell (the numbers below only if the game has none).
 -------------------------------------------------------------------------------
@@ -45,7 +46,6 @@ local ROW_W, ROW_H = 200, 18
 local MAX_ROWS = 10
 
 local readyAt = {} -- guid -> time the interrupt is ready again
-local stopped = {} -- guid -> casts interrupted this run
 local cooldownOf = {} -- interrupt key -> seconds
 local panel, rows, ticker = nil, {}, nil
 
@@ -172,9 +172,7 @@ local function Draw()
     for i = 1, shown do
         local entry = list[i]
         local row = Row(i)
-        local count = stopped[entry.guid] or 0
-        row.name:SetText(("%s%s|r  |cffa3adb5%s%s|r"):format(ClassHex(entry.class), entry.name, INTERRUPTS[entry.kick].name,
-            count > 0 and (" x" .. count) or ""))
+        row.name:SetText(("%s%s|r  |cffa3adb5%s|r"):format(ClassHex(entry.class), entry.name, INTERRUPTS[entry.kick].name))
         if entry.left == 0 then
             row.state:SetText(i == 1 and "|cff60d080next|r" or "|cff60d080ready|r")
         else
@@ -191,23 +189,24 @@ local function Draw()
 end
 
 local events = CreateFrame("Frame")
-events:SetScript("OnEvent", function(_, event)
-    if event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        local _, sub, _, srcGUID, _, _, _, _, _, _, _, spellId = CombatLogGetCurrentEventInfo()
-        if Secret(sub) or Secret(srcGUID) or Secret(spellId) then return end
-        if sub == "SPELL_CAST_SUCCESS" then
-            local kick = KICK_OF_SPELL[spellId]
-            if kick then readyAt[srcGUID] = GetTime() + Cooldown(kick) end
-        elseif sub == "SPELL_INTERRUPT" and KICK_OF_SPELL[spellId] then
-            stopped[srcGUID] = (stopped[srcGUID] or 0) + 1
-        end
+-- The units whose casts count: you and your party or raid.
+local MEMBER = { player = true }
+for i = 1, 4 do
+    MEMBER["party" .. i] = true
+end
+for i = 1, 40 do
+    MEMBER["raid" .. i] = true
+end
+
+events:SetScript("OnEvent", function(_, event, unit, _, spellId)
+    if event == "UNIT_SPELLCAST_SUCCEEDED" then
+        if Secret(unit) or Secret(spellId) or not MEMBER[unit] then return end
+        local kick = KICK_OF_SPELL[spellId]
+        local guid = kick and UnitGUID(unit)
+        if guid and not Secret(guid) then readyAt[guid] = GetTime() + Cooldown(kick) end
         return
     end
-    if event == "PLAYER_ENTERING_WORLD" then
-        -- A new instance is a new run: the counts start again.
-        wipe(stopped)
-        wipe(readyAt)
-    end
+    if event == "PLAYER_ENTERING_WORLD" then wipe(readyAt) end
     Draw()
 end)
 
@@ -217,7 +216,7 @@ local function Apply()
         Draw()
         return
     end
-    for _, ev in ipairs({ "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "GROUP_ROSTER_UPDATE", "COMBAT_LOG_EVENT_UNFILTERED" }) do
+    for _, ev in ipairs({ "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "GROUP_ROSTER_UPDATE", "UNIT_SPELLCAST_SUCCEEDED" }) do
         events:RegisterEvent(ev)
     end
     Draw()
@@ -228,7 +227,7 @@ CUI._KickTracker = {
     Cfg = Cfg,
     Apply = Apply,
     Draw = Draw,
-    State = function() return readyAt, stopped end,
+    State = function() return readyAt end,
 }
 
 F.Start(Apply, {

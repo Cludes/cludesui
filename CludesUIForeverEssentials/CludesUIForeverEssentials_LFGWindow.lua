@@ -259,7 +259,7 @@ local function PaintBrowse()
     wipe(order)
     for i = 1, n do
         local lst = Listings.listingsList[i]
-        if Browse.PassesFilter(lst, needle) then order[#order + 1] = lst end
+        if Search.Wants(lst) and Browse.PassesFilter(lst, needle) then order[#order + 1] = lst end
     end
     Browse.Order(order, LFG.Get("sort"))
     for i, lst in ipairs(order) do
@@ -282,7 +282,7 @@ local function PaintBrowse()
     elseif Listings.state == "locked" then
         memo = "Listings cannot be read right now. Try again after combat."
     elseif not Listings.searched then
-        memo = "Press Search to find groups."
+        memo = "Search in the Group Finder (I, Premade Groups): the groups it finds show here."
     elseif #order == 0 then
         memo = needle ~= "" and "No group matches your filter." or "No groups listed right now."
     end
@@ -303,7 +303,9 @@ local function BuildBrowse(page)
     end)
     browse.sort = Kit.Button(page, "Sort: Newest", 130, BAR_H - 2, function(self) SortMenu(self) end, { key = "essentials" })
     browse.sort:SetPoint("LEFT", browse.filter, "RIGHT", 8, 0)
+    -- Only the game's own Group Finder may search; this window reads what it finds.
     browse.search = Kit.Button(page, "Search", 90, BAR_H - 2, function()
+        CUI.Print(CUI.L("Searching is the Group Finder's own: press I, open Premade Groups and press Search there. The groups it finds show in this window."))
         Search.Run()
         Paint()
     end, { key = "essentials" })

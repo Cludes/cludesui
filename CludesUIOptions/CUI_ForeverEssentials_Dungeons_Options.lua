@@ -219,7 +219,7 @@ function _G._CUI_BuildForeverDungeonsPage(_, hostFrame, yOffset)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Interrupt Tracker",
-            tooltip = "Your group's interrupts (Kick, Pummel or Shield Bash, Earth Shock, Counterspell) in a small list: ready or how long until it is, the first ready one marked next, and how many casts each has stopped this run. Read from the combat log, so it works for everyone.",
+            tooltip = "Your group's interrupts (Kick, Pummel or Shield Bash, Earth Shock, Counterspell) in a small list: ready or how long until it is, the first ready one marked next. Read from your group's casts, so it works for everyone.",
             getValue = function() return not kOff() end,
             setValue = function(val)
                 KT.Cfg().enabled = val and true or false
@@ -252,7 +252,7 @@ function _G._CUI_BuildForeverDungeonsPage(_, hostFrame, yOffset)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Who Pulled",
-            tooltip = "In a dungeon or raid group, the first hit of each fight says who started it, e.g. Pull: Sneaky (Sinister Strike) on Defias Thug, or which mob came to the group.",
+            tooltip = "In a dungeon or raid group, says who was first into each fight, e.g. Pull: Sneaky on Defias Thug, or Holy was attacked first when a mob came to the group.",
             getValue = function() return not wOff() end,
             setValue = function(val)
                 PW.Cfg().enabled = val and true or false

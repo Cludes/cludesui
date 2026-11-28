@@ -1,7 +1,7 @@
 -- Interrupt Tracker (CludesUIForeverEssentials_KickTracker.lua, Forever): a
 -- party of you (a level 30 mage: Counterspell), a rogue (Kick) and a level
 -- 20 warrior (Shield Bash, not Pummel yet) and a priest (no interrupt); the
--- rogue kicks and lands it: on cooldown and counted, the others ready and
+-- rogue kicks: on cooldown, the others ready and
 -- the first marked next; the cooldown runs out.
 local CUI = rawget(_G, "CludesUI")
 local KT = CUI._KickTracker
@@ -24,12 +24,6 @@ UnitClass = function(u) return nil, members[u] and members[u][2] end
 UnitLevel = function(u) return members[u] and members[u][3] or 1 end
 UnitGUID = function(u) return members[u] and members[u][4] end
 GetSpellBaseCooldown = function(id) return id == 1766 and 10000 or 0, 1500 end
-local nextEvent
-CombatLogGetCurrentEventInfo = function() return unpack(nextEvent) end
-local function Log(...)
-    nextEvent = { 0, ... }
-    HARNESS_FIRE_EVENT("COMBAT_LOG_EVENT_UNFILTERED")
-end
 local function Show(label)
     KT.Draw()
     OUT:write("== " .. label .. "\n")
@@ -45,8 +39,9 @@ end
 CludesUIDB.kickTracker = { enabled = true }
 KT.Apply()
 Show("start")
-Log("SPELL_CAST_SUCCESS", false, "Player-1-R", "Sneaky", 0x511, 0, "Creature-0-1-2-3-38-1", "Defias Thug", 0xa48, 0, 1767, "Kick")
-Log("SPELL_INTERRUPT", false, "Player-1-R", "Sneaky", 0x511, 0, "Creature-0-1-2-3-38-1", "Defias Thug", 0xa48, 0, 1767, "Kick")
-Show("Sneaky kicked (rank 2) and stopped a cast")
+HARNESS_FIRE_EVENT("UNIT_SPELLCAST_SUCCEEDED", "nameplate3", "cast-0", 1767)
+Show("a nameplate's Kick (not the group's) changes nothing")
+HARNESS_FIRE_EVENT("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-1", 1767)
+Show("Sneaky kicked (rank 2)")
 HARNESS_ADVANCE(11)
 Show("eleven seconds later")

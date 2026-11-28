@@ -1137,7 +1137,6 @@ end
 -------------------------------------------------------------------------------
 --  Search: the activities for your level, all of them, or one
 -------------------------------------------------------------------------------
-local SEARCH_TIMEOUT = 15
 local LEVEL, ALL = "level", "all"
 local Search = { state = "idle", pick = LEVEL, LEVEL = LEVEL, ALL = ALL }
 GF.Search = Search
@@ -1201,21 +1200,28 @@ local function SetState(state)
     GF.Notify("search", state)
 end
 
+-- The game keeps searching to its own Group Finder (C_LFGList.Search is
+-- protected), so the pick filters what that finds: the listings of the picked
+-- dungeons, or every one.
+local wanted = {}
 function Search.Run(pick)
-    if not GF.On() or Search.state == "searching" then return false end
+    if not GF.On() then return false end
     Search.pick = pick or Search.pick
-    local category = PickCategory()
-    if not category then
+    wipe(wanted)
+    if not PickCategory() then
         SetState("unavailable")
         return false
     end
-    C_LFGList.Search(category, 0, 0, nil, false, nil, searchFor)
-    SetState("searching")
-    local gen = searchGen
-    C_Timer.After(SEARCH_TIMEOUT, function()
-        if gen == searchGen then SetState("failed") end
-    end)
+    for _, ref in ipairs(searchFor) do
+        wanted[ref] = true
+    end
+    GF.Notify("search", Search.state)
     return true
+end
+
+function Search.Wants(lst)
+    if Search.pick == ALL or not next(wanted) then return true end
+    return lst.activity == nil or wanted[lst.activity] == true
 end
 
 -------------------------------------------------------------------------------
