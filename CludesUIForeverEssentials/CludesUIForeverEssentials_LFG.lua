@@ -24,7 +24,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  A card or application is answered only while you are listed; answers and
 --  sends are rate limited so browsing players cannot fill the queue.
 -------------------------------------------------------------------------------
-local _, module = ...
+local THIS_ADDON, module = ...
 
 local F = module.Feature("lfg", {
     enabled = false,
@@ -1355,6 +1355,17 @@ local EVENTS = {
     "LFG_LIST_ACTIVE_ENTRY_UPDATE", "GROUP_ROSTER_UPDATE", "PARTY_LEADER_CHANGED",
 }
 
+-- The game may keep listing a group to its own Group Finder, as it keeps
+-- searching (Search is blocked even from a click). If it blocks a listing
+-- call, say what to do instead, once a session.
+local blockWatch = CreateFrame("Frame")
+local blockTold = false
+blockWatch:SetScript("OnEvent", function(_, _, addon, func)
+    if blockTold or addon ~= THIS_ADDON or type(func) ~= "string" or not func:find("Listing", 1, true) then return end
+    blockTold = true
+    CUI.Print("|cff4cc9f0LFG:|r " .. CUI.L("The game keeps listing a group to its own Group Finder: list, update or delist your group there (press Group Finder). CludesUI players still see your card."))
+end)
+
 local function Apply()
     local want = Enabled() and C_LFGList ~= nil
     if want == talking then return end
@@ -1368,9 +1379,12 @@ local function Apply()
         for _, event in ipairs(EVENTS) do
             events:RegisterEvent(event)
         end
+        blockWatch:RegisterEvent("ADDON_ACTION_BLOCKED")
+        blockWatch:RegisterEvent("ADDON_ACTION_FORBIDDEN")
         if AddFilter then AddFilter("CHAT_MSG_SYSTEM", HideOffline) end
     else
         events:UnregisterAllEvents()
+        blockWatch:UnregisterAllEvents()
         if RemoveFilter then RemoveFilter("CHAT_MSG_SYSTEM", HideOffline) end
         ClearComms()
         Listings.n, Listings.state, Listings.searched, dirty = 0, "none", false, true

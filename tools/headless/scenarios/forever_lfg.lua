@@ -135,3 +135,14 @@ local function FindMacro(f, d)
 end
 local finderButton, finderMacro = FindMacro(win, 0)
 OUT:write("== Group Finder button: " .. tostring(finderButton and finderButton.label and finderButton.label:GetText()) .. ", runs " .. tostring(finderMacro) .. "\n")
+
+-- The game blocking a listing call: the guidance is printed once, for this
+-- addon only.
+local told = {}
+local keepPrint = CUI.Print
+CUI.Print = function(t) told[#told + 1] = (t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
+HARNESS_FIRE_EVENT("ADDON_ACTION_BLOCKED", "SomeOtherAddon", "C_LFGList.CreateListing()")
+HARNESS_FIRE_EVENT("ADDON_ACTION_BLOCKED", "CludesUIForeverEssentials", "C_LFGList.CreateListing()")
+HARNESS_FIRE_EVENT("ADDON_ACTION_BLOCKED", "CludesUIForeverEssentials", "C_LFGList.UpdateListing()")
+CUI.Print = keepPrint
+OUT:write("== listing blocked, told " .. #told .. ": " .. table.concat(told, " / ") .. "\n")
