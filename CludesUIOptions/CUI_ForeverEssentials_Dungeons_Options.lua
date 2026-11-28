@@ -172,6 +172,40 @@ function _G._CUI_BuildForeverDungeonsPage(_, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  RES HELPER
+    ---------------------------------------------------------------------------
+    local RH = CUI._ResHelper
+    if RH then
+        local function rOff() return not RH.Get("enabled") end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "RES HELPER", cursorY)
+        cursorY = cursorY - height
+        CUI.BuildSectionUnlockJump(heading, { key = "CUIFE_ResHelper", disabled = rOff, disabledTooltip = "Res Helper" })
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Res Helper",
+            tooltip = "After a wipe, a list of your dead group members: click a name to cast your resurrection on them. Shows out of combat, in a group, when you know a resurrection (Priest, Paladin, Shaman or Druid). Players already being resurrected are marked.",
+            getValue = function() return not rOff() end,
+            setValue = function(val)
+                RH.Cfg().enabled = val and true or false
+                RH.Apply()
+            end,
+        }, {
+            type = "toggle",
+            text = "Say Who You Resurrect",
+            disabled = rOff,
+            tooltip = "Says \"Resurrecting <name>\" in group chat as you start, so two healers do not pick the same player.",
+            getValue = function() return RH.Get("announce") end,
+            setValue = function(val)
+                RH.Cfg().announce = val and true or false
+                RH.Apply()
+            end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  LOOKING FOR GROUP
     ---------------------------------------------------------------------------
     local LF = CUI._LFG
