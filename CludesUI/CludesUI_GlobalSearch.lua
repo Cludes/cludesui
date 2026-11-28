@@ -391,8 +391,19 @@ local QUERY_SYNONYMS = {
     -- A choice inside a dropdown (dropdown values are not indexed): its row
     { "compact", { "bag display", "bank display" } },
 }
--- WoW Forever's Name Format (first or last names; Forever Essentials > General).
-if CUI.IS_FOREVER then QUERY_SYNONYMS[#QUERY_SYNONYMS + 1] = { "surname", { "name format" } } end
+-- WoW Forever's Name Format (first or last names; Forever Essentials > General),
+-- and the words players use for the Dungeons & Raids page's CC Marker Bar and Res Helper.
+if CUI.IS_FOREVER then
+    for _, syn in ipairs({
+        { "surname", { "name format" } },
+        { "sheep", { "cc marker", "polymorph" } },
+        { "crowd control", { "cc marker" } },
+        { "rez", { "res helper", "resurrect" } },
+        { "battle res", { "res helper" } },
+    }) do
+        QUERY_SYNONYMS[#QUERY_SYNONYMS + 1] = syn
+    end
+end
 local SYNONYM_MIN_PREFIX = 3
 
 local function SearchIndex(searchText, maxResults)
