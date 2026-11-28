@@ -24,16 +24,16 @@ local F = module.Feature(
 )
 local Get, Enabled = F.Get, F.Enabled
 
-local PAD, BOX_PAD, ROW_GAP, BAR_H = 10, 7, 3, 5
+local PAD, BOX_PAD, LINE_SPACING, BAR_H = 10, 7, 3, 5
 local ACTIVE_SHOWN = 3
-local COUNT = "(%d+)%s*/%s*(%d+)"
+local TALLY = "(%d+)%s*/%s*(%d+)"
 local GREEN, AMBER = { 0.37, 0.77, 0.42 }, { 1, 0.7, 0.25 }
 
 local window, silenced, watched, hooked = nil, {}, {}, {}
 local started, pending = false, false
-local rows, rowsUsed = {}, 0
+local lines, linesUsed = {}, 0
 local boxes, boxesUsed = {}, 0
-local listCache
+local rosterCache
 
 local function Has(o, m) return type(o) == "table" and type(o[m]) == "function" end
 local function Dig(t, ...)
@@ -79,10 +79,10 @@ local function Heading(rxp, guide)
     return title
 end
 
-local function Row(rxp, element)
+local function Line(rxp, element)
     local frame = element.frame
-    local textFs = Dig(frame, "text")
-    local shown = Has(textFs, "GetText") and textFs:GetText()
+    local labelFs = Dig(frame, "text")
+    local shown = Has(labelFs, "GetText") and labelFs:GetText()
     if type(shown) ~= "string" or shown == "" or shown == " " then
         local raw = element.text ~= " " and element.text or element.tooltipText or element.rawtext
         shown = type(raw) == "string" and raw or ""
@@ -91,31 +91,31 @@ local function Row(rxp, element)
     local icon = Dig(frame, "icon")
     local glyph = Has(icon, "GetText") and icon:GetText()
     if type(glyph) ~= "string" then glyph = element.icon or Dig(rxp, "icons", element.tag) or "" end
-    local button = Dig(frame, "button")
-    local done = (Has(button, "GetChecked") and button:GetChecked()) or element.completed or element.skip
-    local have, need = Plain(shown):match(COUNT)
+    local btn = Dig(frame, "button")
+    local done = (Has(btn, "GetChecked") and btn:GetChecked()) or element.completed or element.skip
+    local have, need = Plain(shown):match(TALLY)
     if type(element.tag) == "string" and element.tag:find("^buy") and type(element.id) == "number" and type(element.qty) == "number" then
         have, need = C_Item.GetItemCount(element.id), element.qty
     end
-    return { text = shown, icon = glyph, done = done and true or false, source = textFs, have = tonumber(have), need = tonumber(need) }
+    return { text = shown, icon = glyph, done = done and true or false, source = labelFs, have = tonumber(have), need = tonumber(need) }
 end
 
-local function StepList(rxp)
+local function StepRoster(rxp)
     local v2 = rxp.v2
     if not Has(v2, "BuildGuideStepsSnapshot") then return {} end
-    if listCache and listCache.guide == rxp.currentGuide then return listCache.list end
+    if rosterCache and rosterCache.guide == rxp.currentGuide then return rosterCache.list end
     local snapshot = Run("Snapshot", v2.BuildGuideStepsSnapshot, v2, true)
-    local list = {}
+    local roster = {}
     for _, r in ipairs(snapshot and snapshot.rows or {}) do
         if not r.hidden and type(r.text) == "string" then
-            list[#list + 1] = { index = r.index, text = Plain(r.text:match("^[^\n]*") or ""), done = r.complete and true or false }
+            roster[#roster + 1] = { index = r.index, text = Plain(r.text:match("^[^\n]*") or ""), done = r.complete and true or false }
         end
     end
-    listCache = { guide = rxp.currentGuide, list = list }
-    return list
+    rosterCache = { guide = rxp.currentGuide, list = roster }
+    return roster
 end
 
-local function Read()
+local function Load()
     local rxp = RXP()
     local guide = rxp and rxp.currentGuide
     if not guide or guide.empty then return nil end
@@ -126,19 +126,19 @@ local function Read()
     local after = step or 0
     for _, s in ipairs(Dig(rxp, "RXPFrame", "activeSteps") or {}) do
         if s.active and not s.hidewindow and not s.hidetip then
-            local list = {}
+            local roster = {}
             for _, element in ipairs(s.elements or {}) do
-                if element.text or element.rawtext or element.tooltipText then list[#list + 1] = Row(rxp, element) end
+                if element.text or element.rawtext or element.tooltipText then roster[#roster + 1] = Line(rxp, element) end
             end
             local label = (s.title and s.title ~= "") and s.title or CUI.Lf("Step %1$d", s.index)
-            model.steps[#model.steps + 1] = { label = label, rows = list, source = s }
+            model.steps[#model.steps + 1] = { label = label, rows = roster, source = s }
             if s.index > after then after = s.index end
             if #model.steps == ACTIVE_SHOWN then break end
         end
     end
     model.next = {}
-    for _, entry in ipairs(StepList(rxp)) do
-        if entry.index > after and #model.next < Get("steps") then model.next[#model.next + 1] = entry end
+    for _, item in ipairs(StepRoster(rxp)) do
+        if item.index > after and #model.next < Get("steps") then model.next[#model.next + 1] = item end
     end
     return model
 end
@@ -172,10 +172,10 @@ end
 local function Take()
     local rxp = RXP()
     local guide = Dig(_G.RXPV2GuideWindow, "frame")
-    local steps = rxp and rxp.player and _G["RXPActiveStepsFrame" .. tostring(rxp.player.name)]
-    steps = Dig(steps, "frame") or steps
+    local stages = rxp and rxp.player and _G["RXPActiveStepsFrame" .. tostring(rxp.player.name)]
+    stages = Dig(stages, "frame") or stages
     Silence(guide, true)
-    Silence(steps, true)
+    Silence(stages, true)
 end
 
 local function Release()
@@ -190,7 +190,7 @@ end
 --  The window
 -------------------------------------------------------------------------------
 
-local Refresh
+local Renew
 
 local function MaySkip()
     local mode = Get("skip")
@@ -217,7 +217,7 @@ local function SkipActive(step)
     end
 end
 
-local function Tip(owner, text)
+local function Hint(owner, text)
     GameTooltip:SetOwner(owner, "ANCHOR_TOP")
     GameTooltip:SetText(text, CUI.Kit.Accent())
     local mode = Get("skip")
@@ -226,16 +226,16 @@ local function Tip(owner, text)
     GameTooltip:Show()
 end
 
-local function Text(parent, size, color)
+local function Label(parent, dims, tint)
     local fs = parent:CreateFontString(nil, "OVERLAY")
-    CUI.Kit.Font(fs, size, "essentials")
+    CUI.Kit.Font(fs, dims, "essentials")
     fs:SetJustifyH("LEFT")
     fs:SetWordWrap(true)
-    if color then fs:SetTextColor(color[1], color[2], color[3]) end
+    if tint then fs:SetTextColor(tint[1], tint[2], tint[3]) end
     return fs
 end
 
-local function Build()
+local function Make()
     if window then return window end
     local Kit = CUI.Kit
     window = CreateFrame("Frame", "CludesUIGuideWindow", UIParent)
@@ -252,20 +252,20 @@ local function Build()
         local point, _, relPoint, x, y = self:GetPoint(1)
         if point then F.Cfg().pos = { point = point, relPoint = relPoint, x = x, y = y } end
     end)
-    window:SetScript("OnMouseUp", function(_, button)
-        if button == "RightButton" then Menu() end
+    window:SetScript("OnMouseUp", function(_, btn)
+        if btn == "RightButton" then Menu() end
     end)
     Kit.Panel(window, 0.85)
-    window.title = Text(window, 14)
+    window.title = Label(window, 14)
     window.title:SetPoint("TOPLEFT", PAD, -PAD)
     window.title:SetPoint("RIGHT", window, "RIGHT", -PAD - 20, 0)
     window.title:SetWordWrap(false)
     window.fold = Kit.Glyph(window, "-", function()
         F.Cfg().folded = not Get("folded")
-        Refresh()
+        Renew()
     end, CUI.L("Fold"), "essentials")
     window.fold:SetPoint("TOPRIGHT", -5, -6)
-    window.progress = Text(window, Kit.SMALL_SIZE, Kit.Palette.muted)
+    window.progress = Label(window, Kit.SMALL_SIZE, Kit.Palette.muted)
     window.bar = CreateFrame("StatusBar", nil, window)
     window.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     window.bar:SetHeight(BAR_H)
@@ -287,58 +287,58 @@ local function Box(i)
     b.edge:SetPoint("TOPLEFT")
     b.edge:SetPoint("BOTTOMLEFT")
     b.edge:SetWidth(2)
-    b.label = Text(b, CUI.Kit.SMALL_SIZE)
+    b.label = Label(b, CUI.Kit.SMALL_SIZE)
     b.label:SetPoint("TOPLEFT", BOX_PAD, -BOX_PAD)
-    b:SetScript("OnClick", function(self, button)
-        if button == "RightButton" then return Menu() end
+    b:SetScript("OnClick", function(self, btn)
+        if btn == "RightButton" then return Menu() end
         if MaySkip() then SkipActive(self.step) end
     end)
-    b:SetScript("OnEnter", function(self) Tip(self, CUI.L("Skip step")) end)
+    b:SetScript("OnEnter", function(self) Hint(self, CUI.L("Skip step")) end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
     boxes[i] = b
     return b
 end
 
-local function RowText(i)
-    local fs = rows[i]
+local function LineLabel(i)
+    local fs = lines[i]
     if fs then return fs end
-    fs = Text(window, CUI.Kit.TEXT_SIZE)
-    rows[i] = fs
+    fs = Label(window, CUI.Kit.TEXT_SIZE)
+    lines[i] = fs
     return fs
 end
 
 -- The next steps: one button each (shift-click goes there).
-local nextRows = {}
-local function NextRow(i)
-    local r = nextRows[i]
+local nextLines = {}
+local function NextLine(i)
+    local r = nextLines[i]
     if r then return r end
     r = CreateFrame("Button", nil, window)
     r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    r.text = Text(r, CUI.Kit.SMALL_SIZE, CUI.Kit.Palette.muted)
+    r.text = Label(r, CUI.Kit.SMALL_SIZE, CUI.Kit.Palette.muted)
     r.text:SetPoint("TOPLEFT")
     r.text:SetPoint("TOPRIGHT")
     r.text:SetWordWrap(false)
-    r:SetScript("OnClick", function(self, button)
-        if button == "RightButton" then return Menu() end
+    r:SetScript("OnClick", function(self, btn)
+        if btn == "RightButton" then return Menu() end
         if MaySkip() and self.index then Run("SetStep", RXP().SetStep, self.index) end
     end)
-    r:SetScript("OnEnter", function(self) Tip(self, CUI.Lf("Go to step %1$d", self.index or 0)) end)
+    r:SetScript("OnEnter", function(self) Hint(self, CUI.Lf("Go to step %1$d", self.index or 0)) end)
     r:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    nextRows[i] = r
+    nextLines[i] = r
     return r
 end
 
 -- A row's source text changing (an objective's count) redraws the window.
-local function Watch(source)
-    if source and not hooked[source] and Has(source, "SetText") then
-        hooked[source] = true
-        hooksecurefunc(source, "SetText", function()
-            if window and window:IsShown() then Refresh() end
+local function Watch(origin)
+    if origin and not hooked[origin] and Has(origin, "SetText") then
+        hooked[origin] = true
+        hooksecurefunc(origin, "SetText", function()
+            if window and window:IsShown() then Renew() end
         end)
     end
 end
 
-local function Draw()
+local function Render()
     pending = false
     if not (Enabled() and RXP() and Ready()) then
         if window then window:Hide() end
@@ -346,16 +346,16 @@ local function Draw()
         return
     end
     Take()
-    Build()
+    Make()
     local Kit = CUI.Kit
     local width = Get("width")
     local inner = width - 2 * PAD
     window:SetWidth(width)
-    local model = Read()
+    local model = Load()
     window.title:SetText(model and model.heading or CUI.L("No guide selected"))
     window.fold.t:SetText(Get("folded") and "+" or "-")
     local y = -PAD - 18
-    rowsUsed, boxesUsed = 0, 0
+    linesUsed, boxesUsed = 0, 0
     if model and model.total then
         window.progress:ClearAllPoints()
         window.progress:SetPoint("TOPLEFT", PAD, y)
@@ -389,53 +389,53 @@ local function Draw()
             box:SetPoint("TOPLEFT", PAD, y)
             box:SetWidth(inner)
             local by = -BOX_PAD - box.label:GetStringHeight() - 4
-            for _, row in ipairs(step.rows) do
-                rowsUsed = rowsUsed + 1
-                local fs = RowText(rowsUsed)
+            for _, line in ipairs(step.rows) do
+                linesUsed = linesUsed + 1
+                local fs = LineLabel(linesUsed)
                 fs:SetParent(box)
                 fs:ClearAllPoints()
                 fs:SetPoint("TOPLEFT", box, "TOPLEFT", BOX_PAD, by)
                 fs:SetWidth(inner - 2 * BOX_PAD)
-                local text = row.text
-                if row.icon ~= "" then text = row.icon .. " " .. text end
+                local text = line.text
+                if line.icon ~= "" then text = line.icon .. " " .. text end
                 fs:SetText(text)
                 local c = Kit.Palette.text
-                if row.done then
+                if line.done then
                     c = Kit.Palette.muted
-                elseif row.have and row.need and row.need > 0 then
-                    c = row.have >= row.need and GREEN or (row.have > 0 and AMBER or c)
+                elseif line.have and line.need and line.need > 0 then
+                    c = line.have >= line.need and GREEN or (line.have > 0 and AMBER or c)
                 end
                 fs:SetTextColor(c[1], c[2], c[3])
-                fs:SetAlpha(row.done and 0.6 or 1)
+                fs:SetAlpha(line.done and 0.6 or 1)
                 fs:Show()
-                Watch(row.source)
-                by = by - fs:GetStringHeight() - ROW_GAP
+                Watch(line.source)
+                by = by - fs:GetStringHeight() - LINE_SPACING
             end
-            local h = -by + BOX_PAD - ROW_GAP
+            local h = -by + BOX_PAD - LINE_SPACING
             box:SetHeight(h)
             box:Show()
             y = y - h - 6
         end
-        for i, entry in ipairs(model.next) do
-            local nr = NextRow(i)
-            nr.index = entry.index
-            nr.text:SetText(("%d. %s"):format(entry.index, entry.text))
+        for i, item in ipairs(model.next) do
+            local nr = NextLine(i)
+            nr.index = item.index
+            nr.text:SetText(("%d. %s"):format(item.index, item.text))
             nr:ClearAllPoints()
             nr:SetPoint("TOPLEFT", PAD, y)
             nr:SetSize(inner, 14)
             nr:Show()
             y = y - 15
         end
-        for i = #model.next + 1, #nextRows do
-            nextRows[i]:Hide()
+        for i = #model.next + 1, #nextLines do
+            nextLines[i]:Hide()
         end
     else
-        for i = 1, #nextRows do
-            nextRows[i]:Hide()
+        for i = 1, #nextLines do
+            nextLines[i]:Hide()
         end
     end
-    for i = rowsUsed + 1, #rows do
-        rows[i]:Hide()
+    for i = linesUsed + 1, #lines do
+        lines[i]:Hide()
     end
     for i = boxesUsed + 1, #boxes do
         boxes[i]:Hide()
@@ -449,15 +449,15 @@ local function Draw()
 end
 
 -- Many RestedXP updates land together: one redraw on the next frame.
-function Refresh()
+function Renew()
     if pending then return end
     pending = true
-    C_Timer.After(0, Draw)
+    C_Timer.After(0, Render)
 end
 
 local function Rebuilt()
-    listCache = nil
-    Refresh()
+    rosterCache = nil
+    Renew()
 end
 
 local function Start()
@@ -476,7 +476,7 @@ loader:SetScript("OnEvent", function(_, evt, name)
     if evt == "ADDON_LOADED" and name ~= "RXPGuides" then return end
     loader:UnregisterEvent("ADDON_LOADED")
     Start()
-    Refresh()
+    Renew()
 end)
 
 local function Apply()
@@ -494,14 +494,14 @@ local function Apply()
     end
 end
 
-CUI._GuideWindow = { Get = Get, Cfg = F.Cfg, Apply = Apply, Read = Read, Loaded = function() return RXP() ~= nil end, Ready = Ready }
+CUI._GuideWindow = { Get = Get, Cfg = F.Cfg, Apply = Apply, Read = Load, Loaded = function() return RXP() ~= nil end, Ready = Ready }
 
 F.Start(Apply, {
     key = "CUI_GuideWindow",
     label = "Guide Window",
     order = 762,
-    frame = function(build)
-        if build then Build() end
+    frame = function(make)
+        if make then Make() end
         return window
     end,
     size = function() return Get("width"), window and window:GetHeight() or 200 end,
