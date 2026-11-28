@@ -40,26 +40,26 @@ local F = module.Feature("questList", {
 local Get = F.Get
 local function On() return DF.Enabled() end
 
-local ACCENT = CUI.Kit.SyncAccent({}) -- refreshed on each draw
-local MUTED = { 0.6, 0.65, 0.7 }
-local GOLD = { 1, 0.82, 0 }
-local CHECK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
+local BRAND = CUI.Kit.SyncAccent({}) -- refreshed on each draw
+local DIM = { 0.6, 0.65, 0.7 }
+local AMBER = { 1, 0.82, 0 }
+local TEST = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
 local NONE = {}
-local function Muted(textValue) return "|cff9aa6b2" .. textValue .. "|r" end
+local function Dim(labelValue) return "|cff9aa6b2" .. labelValue .. "|r" end
 local function Secret(val) return issecretvalue ~= nil and issecretvalue(val) end
-local function Font() return CUI.GetFontPath("essentials") end
+local function Typeface() return CUI.GetFontPath("essentials") end
 local SAME_MAPS = { [2665] = 2521 }
-local function SameMap(map) return map and (SAME_MAPS[map] or map) end
+local function SameChart(chart) return chart and (SAME_MAPS[chart] or chart) end
 
 local QD, RD
-local function QuestData()
+local function TaskInfo()
     if not QD then
         QD = module.QuestData()
         module.QuestData = nil
     end
     return QD
 end
-local function RareData()
+local function BossInfo()
     if not RD then
         RD = module.RareData()
         module.RareData = nil
@@ -67,54 +67,54 @@ local function RareData()
     return RD
 end
 
-local function CharKey() return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") end
-local function CharStore(key)
+local function CharId() return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") end
+local function CharKeep(key)
     local conf = F.Cfg()
     conf[key] = conf[key] or {}
-    local char = CharKey()
+    local char = CharId()
     conf[key][char] = conf[key][char] or {}
     return conf[key][char]
 end
 
 local Link = module.DiscoveryLink
-local ZoneName = module.DiscoveryZoneName
+local AreaHeading = module.DiscoveryZoneName
 
 -------------------------------------------------------------------------------
 --  Quest rules
 -------------------------------------------------------------------------------
 local Q = {}
 do
-    local NAME, LEVEL, REQ_LEVEL, SIDE, RACES, CLASSES, MAP, X, Y, GIVER, ITEM =
+    local HEADING, LVL, REQ_LVL, FACTION, FOLKS, CALLINGS, CHART, X, Y, ORIGIN, THING =
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
     local ALLIANCE, HORDE = 1, 2
-    local RACE_BITS =
+    local FOLK_FLAGS =
         { [1] = 0, [2] = 1, [3] = 2, [4] = 3, [5] = 4, [6] = 5, [7] = 6, [8] = 7, [95] = 32, [96] = 33 }
-    local MAX_UNDER, CLASSIC_GREEN_RANGE, MISSES_HELD = 10, 8, 2
+    local TOP_BELOW, CLASSIC_GREEN_RANGE, GAPS_KEPT = 10, 8, 2
     local D
-    local mine, zoneOf, chains, chainOf, closers, recipes, needs, teaches
-    local ranks, untils, maxLevels, minReps, maxReps, factions
+    local mine, areaOf, chains, linkOf, closers, recipes, requires, teaches
+    local ranks, untils, topLevels, leastReps, topReps, factions
     local opened, reopened = {}, {}
-    local done, logged, skills, known, standings = {}, {}, {}, {}, {}
-    local byMap
-    local zoneChains, zoneSingles, seenChain = {}, {}, {}
+    local done, logged, crafts, known, standings = {}, {}, {}, {}, {}
+    local byChart
+    local areaChains, areaSingles, spottedLink = {}, {}, {}
     local found, foundIn = {}, {}
     local named = {}
-    local givers, spare, giverAt = {}, {}, {}
+    local givers, spare, sourceAt = {}, {}, {}
     local blocking = {}
 
     local function HasBit(mask, bit) return math.floor(mask / 2 ^ bit) % 2 == 1 end
 
-    local function ForMe(quest, side, raceBit, classBit)
-        if quest[SIDE] == ALLIANCE and side ~= ALLIANCE then return false end
-        if quest[SIDE] == HORDE and side ~= HORDE then return false end
-        if quest[RACES] > 0 and raceBit and not HasBit(quest[RACES], raceBit) then return false end
-        if quest[CLASSES] > 0 and classBit and not HasBit(quest[CLASSES], classBit) then return false end
+    local function ForMe(task, side, folkBit, callingBit)
+        if task[FACTION] == ALLIANCE and side ~= ALLIANCE then return false end
+        if task[FACTION] == HORDE and side ~= HORDE then return false end
+        if task[FOLKS] > 0 and folkBit and not HasBit(task[FOLKS], folkBit) then return false end
+        if task[CALLINGS] > 0 and callingBit and not HasBit(task[CALLINGS], callingBit) then return false end
         return true
     end
 
-    local function OwnSteps(steps)
+    local function MineStages(stages)
         local own = {}
-        for _, step in ipairs(steps) do
+        for _, step in ipairs(stages) do
             local ids = {}
             for _, ident in ipairs(step) do
                 if mine[ident] then ids[#ids + 1] = ident end
@@ -125,114 +125,114 @@ do
         return own
     end
 
-    local function AddChain(own)
+    local function PutChain(own)
         local first = D.Quests[own[1][1]]
-        local chain = { steps = own, name = first[NAME], level = first[LEVEL], id = #chains + 1 }
+        local chain = { steps = own, name = first[HEADING], level = first[LVL], id = #chains + 1 }
         chains[#chains + 1] = chain
         for _, ids in ipairs(own) do
             for _, ident in ipairs(ids) do
-                chainOf[ident] = chain
+                linkOf[ident] = chain
             end
         end
     end
 
-    local function AddCloser(ident, other)
+    local function PutFinisher(ident, other)
         if not mine[ident] then return end
-        local entries = closers[ident]
-        if not entries then
-            entries = {}
-            closers[ident] = entries
+        local items = closers[ident]
+        if not items then
+            items = {}
+            closers[ident] = items
         end
-        entries[#entries + 1] = other
+        items[#items + 1] = other
     end
 
-    local function IndexClosers()
+    local function CatalogClosers()
         closers, recipes, factions = {}, {}, {}
-        needs, teaches, ranks, untils =
+        requires, teaches, ranks, untils =
             D.Profession or NONE, D.Recipe or NONE, D.SkillRank or NONE, D.Until or NONE
-        maxLevels, minReps, maxReps = D.MaxLevel or NONE, D.MinReputation or NONE, D.MaxReputation or NONE
+        topLevels, leastReps, topReps = D.MaxLevel or NONE, D.MinReputation or NONE, D.MaxReputation or NONE
         local groupOf = {}
-        for _, set in ipairs(D.Exclusive or NONE) do
-            for _, ident in ipairs(set) do
-                groupOf[ident] = set
-                for _, other in ipairs(set) do
-                    if other ~= ident then AddCloser(ident, other) end
+        for _, assign in ipairs(D.Exclusive or NONE) do
+            for _, ident in ipairs(assign) do
+                groupOf[ident] = assign
+                for _, other in ipairs(assign) do
+                    if other ~= ident then PutFinisher(ident, other) end
                 end
             end
         end
-        for ident, target in pairs(D.Breadcrumb or NONE) do
-            AddCloser(ident, target)
-            for _, other in ipairs(groupOf[target] or NONE) do
-                if other ~= target then AddCloser(ident, other) end
+        for ident, aim in pairs(D.Breadcrumb or NONE) do
+            PutFinisher(ident, aim)
+            for _, other in ipairs(groupOf[aim] or NONE) do
+                if other ~= aim then PutFinisher(ident, other) end
             end
         end
         for ident, elements in pairs(D.Requires) do
             for _, element in ipairs(elements) do
                 if type(element) == "table" then
                     for _, before in ipairs(element) do
-                        AddCloser(before, ident)
+                        PutFinisher(before, ident)
                     end
                 else
-                    AddCloser(element, ident)
+                    PutFinisher(element, ident)
                 end
             end
         end
         for ident, others in pairs(D.ClosedBy or NONE) do
             for _, other in ipairs(others) do
-                AddCloser(ident, other)
+                PutFinisher(ident, other)
             end
         end
         for _, spell in pairs(teaches) do
             recipes[spell] = true
         end
-        for _, rep in pairs(minReps) do
+        for _, rep in pairs(leastReps) do
             factions[rep[1]] = true
         end
-        for _, rep in pairs(maxReps) do
+        for _, rep in pairs(topReps) do
             factions[rep[1]] = true
         end
     end
 
     local function Prepare()
         if mine then return end
-        D = QuestData()
-        mine, zoneOf, chains, chainOf = {}, {}, {}, {}
+        D = TaskInfo()
+        mine, areaOf, chains, linkOf = {}, {}, {}, {}
         local side = UnitFactionGroup("player") == "Horde" and HORDE or ALLIANCE
-        local raceBit = RACE_BITS[select(3, UnitRace("player"))]
-        local classID = select(3, UnitClass("player"))
-        local classBit = classID and classID - 1
-        for ident, quest in pairs(D.Quests) do
-            if ForMe(quest, side, raceBit, classBit) then mine[ident] = true end
+        local folkBit = FOLK_FLAGS[select(3, UnitRace("player"))]
+        local callingID = select(3, UnitClass("player"))
+        local callingBit = callingID and callingID - 1
+        for ident, task in pairs(D.Quests) do
+            if ForMe(task, side, folkBit, callingBit) then mine[ident] = true end
         end
-        for ident in pairs(CharStore("mine")) do
+        for ident in pairs(CharKeep("mine")) do
             if D.Quests[ident] then mine[ident] = true end
         end
-        for _, zone in ipairs(D.Zones) do
-            for _, ident in ipairs(zone.quests) do
-                zoneOf[ident] = zone
+        for _, area in ipairs(D.Zones) do
+            for _, ident in ipairs(area.quests) do
+                areaOf[ident] = area
             end
         end
-        for _, steps in ipairs(D.Chains) do
-            local own = OwnSteps(steps)
-            if #own > 1 then AddChain(own) end
+        for _, stages in ipairs(D.Chains) do
+            local own = MineStages(stages)
+            if #own > 1 then PutChain(own) end
         end
-        IndexClosers()
+        CatalogClosers()
     end
     Q.Prepare = Prepare
 
-    local function AddSkills(...)
-        for index = 1, select("#", ...) do
-            local index = select(index, ...)
-            if index then
-                local rank, _, _, _, line = select(3, GetProfessionInfo(index))
-                if line then skills[line] = rank end
+    local function PutCrafts(...)
+        for catalog = 1, select("#", ...) do
+            local catalog = select(catalog, ...)
+            if catalog then
+                local tier, _, _, _, row = select(3, GetProfessionInfo(catalog))
+                if row then crafts[row] = tier end
             end
         end
     end
 
-    local function ReadKnown()
-        wipe(skills)
-        AddSkills(GetProfessions())
+    local function ReadTrained()
+        wipe(crafts)
+        PutCrafts(GetProfessions())
         wipe(known)
         for spell in pairs(recipes) do
             known[spell] = C_SpellBook.IsSpellKnown(spell)
@@ -243,135 +243,135 @@ do
             standings[faction] = payload and payload.currentStanding
         end
         wipe(logged)
-        for index = 1, C_QuestLog.GetNumQuestLogEntries() do
-            local ident = C_QuestLog.GetQuestIDForLogIndex(index)
+        for catalog = 1, C_QuestLog.GetNumQuestLogEntries() do
+            local ident = C_QuestLog.GetQuestIDForLogIndex(catalog)
             if ident then logged[ident] = true end
         end
     end
 
-    local function Outgrown(ident)
-        local level, rep = maxLevels[ident], maxReps[ident]
-        if level and UnitLevel("player") > level then return true end
+    local function Past(ident)
+        local lvl, rep = topLevels[ident], topReps[ident]
+        if lvl and UnitLevel("player") > lvl then return true end
         local standing = rep and standings[rep[1]]
         return standing ~= nil and standing >= rep[2]
     end
 
-    local function ShortOfReputation(ident)
-        local rep = minReps[ident]
+    local function LackingOfStanding(ident)
+        local rep = leastReps[ident]
         local standing = rep and standings[rep[1]]
         return standing ~= nil and standing < rep[2]
     end
 
-    local function Closed(ident)
+    local function Shut(ident)
         local status
-        local skill = needs[ident]
-        if skill and (skills[skill] or 0) < (ranks[ident] or 1) then
+        local craft = requires[ident]
+        if craft and (crafts[craft] or 0) < (ranks[ident] or 1) then
             status = "skill"
-        elseif known[teaches[ident]] or done[untils[ident]] or Outgrown(ident) then
+        elseif known[teaches[ident]] or done[untils[ident]] or Past(ident) then
             status = "closed"
         else
-            local entries = closers[ident] or NONE
-            for index = 1, #entries do
-                if done[entries[index]] or logged[entries[index]] then
+            local items = closers[ident] or NONE
+            for catalog = 1, #items do
+                if done[items[catalog]] or logged[items[catalog]] then
                     status = "closed"
                     break
                 end
             end
         end
-        if not status and ShortOfReputation(ident) then status = "rep" end
+        if not status and LackingOfStanding(ident) then status = "rep" end
         if status and not reopened[ident] then return status end
     end
 
-    local function ZoneTurnIns(ident)
-        local zone = zoneOf and zoneOf[ident]
-        return zone and CharStore("turnIns")[zone.map] or 0
+    local function AreaHandBacks(ident)
+        local area = areaOf and areaOf[ident]
+        return area and CharKeep("turnIns")[area.map] or 0
     end
 
-    local function QuestLevel(ident) return D.Quests[ident][LEVEL] end
+    local function TaskLvl(ident) return D.Quests[ident][LVL] end
 
-    local function SortKey(entry)
+    local function RankId(entry)
         if type(entry) == "table" then return entry.level, entry.name end
-        local quest = D.Quests[entry]
-        return quest[LEVEL], quest[NAME]
+        local task = D.Quests[entry]
+        return task[LVL], task[HEADING]
     end
 
-    local function ByLevel(a, b)
-        local la, na = SortKey(a)
-        local lb, nb = SortKey(b)
+    local function ByLvl(a, b)
+        local la, na = RankId(a)
+        local lb, nb = RankId(b)
         if la ~= lb then return la < lb end
         return na < nb
     end
 
-    local function FoundKey(ident)
-        local chain = chainOf[ident]
-        if not chain then return QuestLevel(ident), 0, 0 end
+    local function FoundId(ident)
+        local chain = linkOf[ident]
+        if not chain then return TaskLvl(ident), 0, 0 end
         return chain.level, chain.id, (Q.ChainStep(ident))
     end
 
-    local function FoundOrder(a, b)
-        local la, ca, sa = FoundKey(a)
-        local lb, callback, scrollBar = FoundKey(b)
+    local function FoundTier(a, b)
+        local la, ca, sa = FoundId(a)
+        local lb, callback, scrollBar = FoundId(b)
         if la ~= lb then return la < lb end
         if ca ~= callback then return ca < callback end
         if sa ~= scrollBar then return sa < scrollBar end
-        return D.Quests[a][NAME] < D.Quests[b][NAME]
+        return D.Quests[a][HEADING] < D.Quests[b][HEADING]
     end
 
-    local function Matches(quest, textValue)
-        if quest[NAME]:lower():find(textValue, 1, true) then return true end
-        return quest[GIVER] ~= nil and quest[GIVER]:lower():find(textValue, 1, true) ~= nil
+    local function Fits(task, labelValue)
+        if task[HEADING]:lower():find(labelValue, 1, true) then return true end
+        return task[ORIGIN] ~= nil and task[ORIGIN]:lower():find(labelValue, 1, true) ~= nil
     end
 
-    local function Index()
-        if byMap then return end
-        byMap = {}
-        for ident, quest in pairs(D.Quests) do
-            local map = quest[MAP]
-            if map and mine[ident] then
-                byMap[map] = byMap[map] or {}
-                table.insert(byMap[map], ident)
+    local function Catalog()
+        if byChart then return end
+        byChart = {}
+        for ident, task in pairs(D.Quests) do
+            local chart = task[CHART]
+            if chart and mine[ident] then
+                byChart[chart] = byChart[chart] or {}
+                table.insert(byChart[chart], ident)
             end
         end
     end
 
-    local function RecycleGivers()
-        for index = #givers, 1, -1 do
-            local entry = givers[index]
+    local function ReuseSources()
+        for catalog = #givers, 1, -1 do
+            local entry = givers[catalog]
             wipe(entry.quests)
             spare[#spare + 1] = entry
-            givers[index] = nil
+            givers[catalog] = nil
         end
-        wipe(giverAt)
+        wipe(sourceAt)
     end
 
-    local function GiverEntry(quest)
-        local key = quest[X] .. ":" .. quest[Y]
-        local entry = giverAt[key]
+    local function OriginThing(task)
+        local key = task[X] .. ":" .. task[Y]
+        local entry = sourceAt[key]
         if entry then return entry end
         entry = table.remove(spare) or { quests = {} }
-        entry.x, entry.y, entry.grey, entry.repeatable, entry.dungeon = quest[X], quest[Y], true, true, false
-        giverAt[key] = entry
+        entry.x, entry.y, entry.grey, entry.repeatable, entry.dungeon = task[X], task[Y], true, true, false
+        sourceAt[key] = entry
         givers[#givers + 1] = entry
         return entry
     end
 
-    local function AddToLists(ident)
-        local chain = chainOf[ident]
+    local function PutToRosters(ident)
+        local chain = linkOf[ident]
         if not chain then
-            zoneSingles[#zoneSingles + 1] = ident
+            areaSingles[#areaSingles + 1] = ident
             return
         end
-        if seenChain[chain] then return end
-        seenChain[chain] = true
-        zoneChains[#zoneChains + 1] = chain
+        if spottedLink[chain] then return end
+        spottedLink[chain] = true
+        areaChains[#areaChains + 1] = chain
     end
 
-    local function Wanted(ident, chainsOnly)
-        return Q.Available(ident) and (chainOf[ident] ~= nil or not chainsOnly or Q.Dungeon(ident))
+    local function Desired(ident, chainsOnly)
+        return Q.Available(ident) and (linkOf[ident] ~= nil or not chainsOnly or Q.Dungeon(ident))
     end
 
-    local function AddToGiver(ident, trivial)
-        local entry = GiverEntry(D.Quests[ident])
+    local function PutToOrigin(ident, trivial)
+        local entry = OriginThing(D.Quests[ident])
         table.insert(entry.quests, ident)
         if not trivial then entry.grey = false end
         if not Q.Repeatable(ident) then entry.repeatable = false end
@@ -380,13 +380,13 @@ do
 
     function Q.Refresh()
         Prepare()
-        opened, reopened = CharStore("opened"), CharStore("reopened")
-        ReadKnown()
+        opened, reopened = CharKeep("opened"), CharKeep("reopened")
+        ReadTrained()
         wipe(done)
         local all = C_QuestLog.GetAllCompletedQuestIDs and C_QuestLog.GetAllCompletedQuestIDs()
         if all then
-            for index = 1, #all do
-                done[all[index]] = true
+            for catalog = 1, #all do
+                done[all[catalog]] = true
             end
             return
         end
@@ -398,44 +398,44 @@ do
     function Q.Done(ident) return done[ident] == true end
     function Q.InLog(ident) return C_QuestLog.GetLogIndexForQuestID(ident) ~= nil end
     function Q.Mine(ident) return mine[ident] == true end
-    function Q.Name(ident) return D.Quests[ident][NAME] end
-    function Q.Level(ident) return QuestLevel(ident) end
+    function Q.Name(ident) return D.Quests[ident][HEADING] end
+    function Q.Level(ident) return TaskLvl(ident) end
 
     function Q.SetMine(ids)
         Prepare()
         local storage
         for ident in pairs(ids) do
             if not mine[ident] and D.Quests[ident] then
-                storage = storage or CharStore("mine")
+                storage = storage or CharKeep("mine")
                 storage[ident] = true
             end
         end
         if not storage then return end
-        mine, byMap = nil, nil
+        mine, byChart = nil, nil
         Prepare()
     end
 
     function Q.RequiredLevel(ident)
-        local quest = D.Quests[ident]
-        return math.max(quest[REQ_LEVEL], quest[LEVEL] - MAX_UNDER)
+        local task = D.Quests[ident]
+        return math.max(task[REQ_LVL], task[LVL] - TOP_BELOW)
     end
 
-    function Q.Zone(ident) return zoneOf[ident] end
-    function Q.Chain(ident) return chainOf[ident] end
+    function Q.Zone(ident) return areaOf[ident] end
+    function Q.Chain(ident) return linkOf[ident] end
     function Q.Zones()
         Prepare()
         return D.Zones
     end
-    function Q.Giver(ident) return D.Quests[ident][GIVER] end
-    function Q.Item(ident) return D.Quests[ident][ITEM] end
+    function Q.Giver(ident) return D.Quests[ident][ORIGIN] end
+    function Q.Item(ident) return D.Quests[ident][THING] end
     function Q.Repeatable(ident) return D.Repeatable ~= nil and D.Repeatable[ident] == true end
     function Q.Dungeon(ident) return D.Dungeon ~= nil and D.Dungeon[ident] == true end
     function Q.Battleground(ident) return D.Battleground ~= nil and D.Battleground[ident] == true end
     function Q.Elsewhere(ident) return D.Elsewhere ~= nil and D.Elsewhere[ident] == true end
 
     function Q.Spot(ident)
-        local quest = D.Quests[ident]
-        if quest[MAP] then return quest[MAP], quest[X], quest[Y] end
+        local task = D.Quests[ident]
+        if task[CHART] then return task[CHART], task[X], task[Y] end
     end
 
     function Q.StepDone(step)
@@ -447,39 +447,39 @@ do
     end
 
     function Q.ChainAt(chain)
-        local steps = chain.steps
-        for index = #steps, 1, -1 do
-            if Q.StepDone(steps[index]) then return index + 1, #steps end
+        local stages = chain.steps
+        for catalog = #stages, 1, -1 do
+            if Q.StepDone(stages[catalog]) then return catalog + 1, #stages end
         end
-        return 1, #steps
+        return 1, #stages
     end
 
     function Q.NotOffered(ident)
-        local entry = CharStore("notOffered")[ident]
+        local entry = CharKeep("notOffered")[ident]
         if not entry then return false end
-        if (entry[3] or 1) >= MISSES_HELD then return true end
-        return entry[1] == UnitLevel("player") and entry[2] == ZoneTurnIns(ident)
+        if (entry[3] or 1) >= GAPS_KEPT then return true end
+        return entry[1] == UnitLevel("player") and entry[2] == AreaHandBacks(ident)
     end
 
     function Q.SetOffered(ident, offered)
-        local storage = CharStore("notOffered")
-        local entry, level = storage[ident], UnitLevel("player")
+        local storage = CharKeep("notOffered")
+        local entry, lvl = storage[ident], UnitLevel("player")
         if offered then
             storage[ident] = nil
         elseif not entry then
-            storage[ident] = { level, ZoneTurnIns(ident), 1 }
+            storage[ident] = { lvl, AreaHandBacks(ident), 1 }
         else
-            if entry[1] ~= level then entry[3] = (entry[3] or 1) + 1 end
-            entry[1], entry[2] = level, ZoneTurnIns(ident)
+            if entry[1] ~= lvl then entry[3] = (entry[3] or 1) + 1 end
+            entry[1], entry[2] = lvl, AreaHandBacks(ident)
         end
     end
 
     function Q.CountTurnIn(ident)
         Prepare()
-        local zone = zoneOf[ident]
-        if not zone then return end
-        local turnIns = CharStore("turnIns")
-        turnIns[zone.map] = (turnIns[zone.map] or 0) + 1
+        local area = areaOf[ident]
+        if not area then return end
+        local handBacks = CharKeep("turnIns")
+        handBacks[area.map] = (handBacks[area.map] or 0) + 1
     end
 
     function Q.State(ident)
@@ -488,36 +488,36 @@ do
         return status
     end
 
-    local function Counts(ident) return mine[ident] or not D.Quests[ident] end
+    local function Tallies(ident) return mine[ident] or not D.Quests[ident] end
 
-    local function Met(element)
-        if type(element) == "number" then return done[element] or not Counts(element) end
+    local function Reached(element)
+        if type(element) == "number" then return done[element] or not Tallies(element) end
         local counted = false
         for _, ident in ipairs(element) do
             if done[ident] then return true end
-            if Counts(ident) then counted = true end
+            if Tallies(ident) then counted = true end
         end
         return not counted
     end
 
     function Q.Opened(ident)
         for _, element in ipairs(D.Requires[ident] or NONE) do
-            if not Met(element) then return opened[ident] == true end
+            if not Reached(element) then return opened[ident] == true end
         end
         return true
     end
 
-    function Q.SetOpened(ident) CharStore("opened")[ident] = true end
-    function Q.SetReopened(ident) CharStore("reopened")[ident] = true end
+    function Q.SetOpened(ident) CharKeep("opened")[ident] = true end
+    function Q.SetReopened(ident) CharKeep("reopened")[ident] = true end
 
     function Q.Blocking(ident)
         wipe(blocking)
         for _, element in ipairs(D.Requires[ident] or NONE) do
-            if not Met(element) then
+            if not Reached(element) then
                 local first = element
                 if type(element) == "table" then
                     for _, other in ipairs(element) do
-                        if Counts(other) then
+                        if Tallies(other) then
                             first = other
                             break
                         end
@@ -530,89 +530,89 @@ do
     end
 
     function Q.Title(ident)
-        local quest = D.Quests[ident]
-        return quest and quest[NAME] or C_QuestLog.GetTitleForQuestID(ident)
+        local task = D.Quests[ident]
+        return task and task[HEADING] or C_QuestLog.GetTitleForQuestID(ident)
     end
 
     function Q.Expected(ident)
         if done[ident] then return "done" end
         if Q.InLog(ident) then return "log" end
-        local closed = Closed(ident)
-        if closed then return closed end
+        local shut = Shut(ident)
+        if shut then return shut end
         if not Q.Opened(ident) then return "later" end
         if UnitLevel("player") < Q.RequiredLevel(ident) then return "low" end
         return "open"
     end
 
-    function Q.ZoneProgress(zone)
-        local num, sum, low, high = 0, 0, nil, nil
-        for _, ident in ipairs(zone.quests) do
+    function Q.ZoneProgress(area)
+        local num, sum, low, upper = 0, 0, nil, nil
+        for _, ident in ipairs(area.quests) do
             if
                 mine[ident]
                 and not Q.Repeatable(ident)
                 and not Q.Dungeon(ident)
                 and not Q.Elsewhere(ident)
-                and (done[ident] or not Closed(ident) or Q.InLog(ident))
+                and (done[ident] or not Shut(ident) or Q.InLog(ident))
             then
                 sum = sum + 1
                 if done[ident] then num = num + 1 end
-                local level = QuestLevel(ident)
-                if level > 0 then
-                    low = math.min(low or level, level)
-                    high = math.max(high or level, level)
+                local lvl = TaskLvl(ident)
+                if lvl > 0 then
+                    low = math.min(low or lvl, lvl)
+                    upper = math.max(upper or lvl, lvl)
                 end
             end
         end
-        return num, sum, low, high
+        return num, sum, low, upper
     end
 
     function Q.Progress()
         local num, sum = 0, 0
-        for _, zone in ipairs(D.Zones) do
-            local zn, zt = Q.ZoneProgress(zone)
+        for _, area in ipairs(D.Zones) do
+            local zn, zt = Q.ZoneProgress(area)
             num, sum = num + zn, sum + zt
         end
         return num, sum
     end
 
-    function Q.ZoneLists(zone)
-        wipe(zoneChains)
-        wipe(zoneSingles)
-        wipe(seenChain)
-        for _, ident in ipairs(zone.quests) do
-            if mine[ident] then AddToLists(ident) end
+    function Q.ZoneLists(area)
+        wipe(areaChains)
+        wipe(areaSingles)
+        wipe(spottedLink)
+        for _, ident in ipairs(area.quests) do
+            if mine[ident] then PutToRosters(ident) end
         end
-        table.sort(zoneChains, ByLevel)
-        table.sort(zoneSingles, ByLevel)
-        return zoneChains, zoneSingles
+        table.sort(areaChains, ByLvl)
+        table.sort(areaSingles, ByLvl)
+        return areaChains, areaSingles
     end
 
     function Q.ChainStep(ident)
-        local chain = chainOf[ident]
+        local chain = linkOf[ident]
         if not chain then return end
-        for index, step in ipairs(chain.steps) do
+        for catalog, step in ipairs(chain.steps) do
             for _, other in ipairs(step) do
-                if other == ident then return index, #chain.steps end
+                if other == ident then return catalog, #chain.steps end
             end
         end
     end
 
-    function Q.Search(textValue, limit)
+    function Q.Search(labelValue, limit)
         Prepare()
         wipe(found)
         local num = 0
-        for _, zone in ipairs(D.Zones) do
-            local entry = foundIn[zone] or { zone = zone, ids = {} }
-            foundIn[zone] = entry
+        for _, area in ipairs(D.Zones) do
+            local entry = foundIn[area] or { zone = area, ids = {} }
+            foundIn[area] = entry
             local ids = wipe(entry.ids)
-            for _, ident in ipairs(zone.quests) do
-                if mine[ident] and Matches(D.Quests[ident], textValue) then
+            for _, ident in ipairs(area.quests) do
+                if mine[ident] and Fits(D.Quests[ident], labelValue) then
                     num = num + 1
                     if num <= limit then ids[#ids + 1] = ident end
                 end
             end
             if #ids > 0 then
-                table.sort(ids, FoundOrder)
+                table.sort(ids, FoundTier)
                 found[#found + 1] = entry
             end
         end
@@ -621,54 +621,54 @@ do
 
     function Q.CurrentZone()
         Prepare()
-        local map = SameMap(C_Map.GetBestMapForUnit("player"))
-        while map do
-            for _, zone in ipairs(D.Zones) do
-                if zone.map == map then return zone end
+        local chart = SameChart(C_Map.GetBestMapForUnit("player"))
+        while chart do
+            for _, area in ipairs(D.Zones) do
+                if area.map == chart then return area end
             end
-            local details = C_Map.GetMapInfo(map)
-            map = details and details.parentMapID ~= 0 and details.parentMapID or nil
+            local details = C_Map.GetMapInfo(chart)
+            chart = details and details.parentMapID ~= 0 and details.parentMapID or nil
         end
     end
 
     function Q.Link(ident)
-        local map, posX, posY = Q.Spot(ident)
-        if map then
-            Link(Q.Name(ident), map, posX, posY, Q.Giver(ident) and ("(" .. Q.Giver(ident) .. ")"))
+        local chart, posX, posY = Q.Spot(ident)
+        if chart then
+            Link(Q.Name(ident), chart, posX, posY, Q.Giver(ident) and ("(" .. Q.Giver(ident) .. ")"))
         end
     end
 
     function Q.Trivial(ident)
-        local level = QuestLevel(ident)
-        if level <= 0 then return false end
+        local lvl = TaskLvl(ident)
+        if lvl <= 0 then return false end
         if QuestDifficultyColors and QuestDifficultyColors.trivial then
-            return GetQuestDifficultyColor(level) == QuestDifficultyColors.trivial
+            return GetQuestDifficultyColor(lvl) == QuestDifficultyColors.trivial
         end
         local green = GetQuestGreenRange and GetQuestGreenRange() or CLASSIC_GREEN_RANGE
-        return level < UnitLevel("player") - green
+        return lvl < UnitLevel("player") - green
     end
 
     function Q.Available(ident) return mine[ident] == true and Q.State(ident) == "open" end
 
-    function Q.GiverQuests(name, mapID)
-        if Secret(name) then return NONE end
+    function Q.GiverQuests(title, chartID)
+        if Secret(title) then return NONE end
         Prepare()
-        Index()
+        Catalog()
         wipe(named)
-        for _, ident in ipairs(byMap[mapID] or NONE) do
-            if D.Quests[ident][GIVER] == name then named[#named + 1] = ident end
+        for _, ident in ipairs(byChart[chartID] or NONE) do
+            if D.Quests[ident][ORIGIN] == title then named[#named + 1] = ident end
         end
         return named
     end
 
-    function Q.Givers(mapID, grey, chainsOnly)
+    function Q.Givers(chartID, grey, chainsOnly)
         Prepare()
-        Index()
-        RecycleGivers()
-        for _, ident in ipairs(byMap[SameMap(mapID)] or NONE) do
-            if Wanted(ident, chainsOnly) then
+        Catalog()
+        ReuseSources()
+        for _, ident in ipairs(byChart[SameChart(chartID)] or NONE) do
+            if Desired(ident, chainsOnly) then
                 local trivial = Q.Trivial(ident)
-                if grey or not trivial then AddToGiver(ident, trivial) end
+                if grey or not trivial then PutToOrigin(ident, trivial) end
             end
         end
         return givers
@@ -678,29 +678,29 @@ end
 -------------------------------------------------------------------------------
 --  Givers: learn from the quest givers you speak to what they really offer
 -------------------------------------------------------------------------------
-local giverEvents = CreateFrame("Frame")
+local sourceEvents = CreateFrame("Frame")
 do
-    local CLOSED = { closed = true, skill = true, rep = true }
+    local SHUT = { closed = true, skill = true, rep = true }
     local offered, titles = {}, {}
     local listed
 
-    local function ReadableGUID(unitToken)
-        local unitGuid = UnitGUID(unitToken)
-        if not Secret(unitGuid) then return unitGuid end
+    local function PlainId(unitToken)
+        local unitId = UnitGUID(unitToken)
+        if not Secret(unitId) then return unitId end
     end
 
-    local function Learn(unitToken)
+    local function Collect(unitToken)
         if not UnitExists(unitToken) or UnitIsPlayer(unitToken) then return end
-        local zone = Q.CurrentZone()
-        if not zone then return end
+        local area = Q.CurrentZone()
+        if not area then return end
         Q.Refresh()
         Q.SetMine(offered)
         local trivial = C_Minimap
             and C_Minimap.IsFilteredOut
             and Enum.MinimapTrackingFilter
             and not C_Minimap.IsFilteredOut(Enum.MinimapTrackingFilter.TrivialQuests)
-        for _, ident in ipairs(Q.GiverQuests(UnitName(unitToken), zone.map)) do
-            if offered[ident] and CLOSED[Q.Expected(ident)] then Q.SetReopened(ident) end
+        for _, ident in ipairs(Q.GiverQuests(UnitName(unitToken), area.map)) do
+            if offered[ident] and SHUT[Q.Expected(ident)] then Q.SetReopened(ident) end
             if offered[ident] and Q.Expected(ident) == "later" then Q.SetOpened(ident) end
             if Q.Expected(ident) == "open" and (trivial or not Q.Trivial(ident)) then
                 Q.SetOffered(ident, offered[ident] == true)
@@ -708,43 +708,43 @@ do
         end
     end
 
-    giverEvents:SetScript("OnEvent", function(_, evt, questID)
+    sourceEvents:SetScript("OnEvent", function(_, evt, taskID)
         if evt == "GOSSIP_SHOW" then
             wipe(offered)
-            for _, quest in ipairs(C_GossipInfo.GetAvailableQuests() or NONE) do
-                if quest.questID then offered[quest.questID] = true end
+            for _, task in ipairs(C_GossipInfo.GetAvailableQuests() or NONE) do
+                if task.questID then offered[task.questID] = true end
             end
-            listed = ReadableGUID("npc")
-            Learn("npc")
+            listed = PlainId("npc")
+            Collect("npc")
         elseif evt == "QUEST_GREETING" then
             wipe(offered)
             wipe(titles)
-            for index = 1, GetNumAvailableQuests() do
-                local ident = GetAvailableQuestInfo and select(5, GetAvailableQuestInfo(index))
+            for catalog = 1, GetNumAvailableQuests() do
+                local ident = GetAvailableQuestInfo and select(5, GetAvailableQuestInfo(catalog))
                 if ident then
                     offered[ident] = true
                 else
-                    titles[GetAvailableTitle(index) or ""] = true
+                    titles[GetAvailableTitle(catalog) or ""] = true
                 end
             end
             if next(titles) then
-                local zone = Q.CurrentZone()
-                if zone then
-                    for _, ident in ipairs(Q.GiverQuests(UnitName("npc"), zone.map)) do
+                local area = Q.CurrentZone()
+                if area then
+                    for _, ident in ipairs(Q.GiverQuests(UnitName("npc"), area.map)) do
                         if titles[Q.Name(ident)] then offered[ident] = true end
                     end
                 end
             end
-            listed = ReadableGUID("npc")
-            Learn("npc")
+            listed = PlainId("npc")
+            Collect("npc")
         elseif evt == "QUEST_DETAIL" then
-            local unitGuid = ReadableGUID("questnpc")
-            if not unitGuid or unitGuid == listed then return end
+            local unitId = PlainId("questnpc")
+            if not unitId or unitId == listed then return end
             wipe(offered)
             offered[GetQuestID()] = true
-            Learn("questnpc")
+            Collect("questnpc")
         elseif evt == "QUEST_TURNED_IN" then
-            Q.CountTurnIn(questID)
+            Q.CountTurnIn(taskID)
         end
     end)
 end
@@ -755,52 +755,52 @@ end
 local R = {}
 local killEvents = CreateFrame("Frame")
 do
-    local NAME, LOW, HIGH, ELITE, REACT_A, REACT_H, MAP, SPOTS, TRAIL = 1, 2, 3, 4, 5, 6, 7, 8, 9
-    local LOOT_ID, LOOT_QUALITY, LOOT_CHANCE, LOOT_NAME, LOOT_NEW = 1, 2, 3, 4, 5
+    local HEADING, LOWER, UPPER, BOSS, STANCE_A, STANCE_H, CHART, PLACES, PATH = 1, 2, 3, 4, 5, 6, 7, 8, 9
+    local SPOILS_ID, SPOILS_GRADE, SPOILS_ODDS, SPOILS_HEADING, SPOILS_FRESH = 1, 2, 3, 4, 5
     local D
-    local mine, byMap
+    local mine, byChart
     local listeners = {}
-    local entries, found, foundIn, lowered = {}, {}, {}, {}
+    local items, found, foundIn, lowered = {}, {}, {}, {}
 
     local function Prepare()
         if mine then return end
-        D = RareData()
+        D = BossInfo()
         mine = {}
-        local react = UnitFactionGroup("player") == "Horde" and REACT_H or REACT_A
+        local stance = UnitFactionGroup("player") == "Horde" and STANCE_H or STANCE_A
         for npc, rare in pairs(D.Rares) do
-            if rare[react] ~= 1 then mine[npc] = true end
+            if rare[stance] ~= 1 then mine[npc] = true end
         end
     end
     R.Prepare = Prepare
 
-    local function Kills() return CharStore("rareKills") end
-    local function Drops() return CharStore("rareDrops") end
-    local function Changed(npc)
+    local function Slain() return CharKeep("rareKills") end
+    local function Drops() return CharKeep("rareDrops") end
+    local function Altered(npc)
         for _, func in ipairs(listeners) do
             func(npc)
         end
     end
 
-    local function ZoneFor(map)
-        for _, zone in ipairs(D.Zones) do
-            if zone.map == map then return zone end
+    local function AreaFor(chart)
+        for _, area in ipairs(D.Zones) do
+            if area.map == chart then return area end
         end
     end
 
-    local function Nearest(points, px, py, bx, by, bestD)
-        for index = 1, #points, 2 do
-            local dx, dy = points[index] / 100 - px, points[index + 1] / 100 - py
-            local skinData = dx * dx + dy * dy
-            if not bestD or skinData < bestD then
-                bx, by, bestD = points[index], points[index + 1], skinData
+    local function Closest(points, px, py, bx, by, topD)
+        for catalog = 1, #points, 2 do
+            local dx, dy = points[catalog] / 100 - px, points[catalog + 1] / 100 - py
+            local skinInfo = dx * dx + dy * dy
+            if not topD or skinInfo < topD then
+                bx, by, topD = points[catalog], points[catalog + 1], skinInfo
             end
         end
-        return bx, by, bestD
+        return bx, by, topD
     end
 
-    function R.NpcOf(unitGuid)
-        if type(unitGuid) ~= "string" or Secret(unitGuid) then return end
-        local kind, _, _, _, _, ident = strsplit("-", unitGuid)
+    function R.NpcOf(unitId)
+        if type(unitId) ~= "string" or Secret(unitId) then return end
+        local kind, _, _, _, _, ident = strsplit("-", unitId)
         if kind == "Creature" or kind == "Vehicle" then return tonumber(ident) end
     end
 
@@ -808,79 +808,79 @@ do
         Prepare()
         return D.Rares[npc] ~= nil
     end
-    function R.Name(npc) return D.Rares[npc][NAME] end
-    function R.Elite(npc) return D.Rares[npc][ELITE] == 1 end
-    function R.Map(npc) return D.Rares[npc][MAP] end
+    function R.Name(npc) return D.Rares[npc][HEADING] end
+    function R.Elite(npc) return D.Rares[npc][BOSS] == 1 end
+    function R.Map(npc) return D.Rares[npc][CHART] end
     function R.Levels(npc)
         local rare = D.Rares[npc]
-        return rare[LOW], rare[HIGH]
+        return rare[LOWER], rare[UPPER]
     end
     function R.LevelText(npc)
-        local low, high = R.Levels(npc)
+        local low, upper = R.Levels(npc)
         if low <= 0 then return "??" end
-        if low == high then return tostring(low) end
-        return ("%d-%d"):format(low, high)
+        if low == upper then return tostring(low) end
+        return ("%d-%d"):format(low, upper)
     end
     function R.Mine(npc)
         Prepare()
         return mine[npc] == true
     end
     function R.OnChange(func) listeners[#listeners + 1] = func end
-    function R.Killed(npc) return Kills()[npc] ~= nil end
-    function R.Record(npc) return Kills()[npc] end
+    function R.Killed(npc) return Slain()[npc] ~= nil end
+    function R.Record(npc) return Slain()[npc] end
 
-    function R.AddKill(npc, unitGuid)
-        local all = Kills()
+    function R.AddKill(npc, unitId)
+        local all = Slain()
         local record = all[npc] or { n = 0 }
         record.n = record.n + 1
         record.at = time()
-        record.guid = unitGuid
+        record.guid = unitId
         all[npc] = record
-        Changed(npc)
+        Altered(npc)
     end
 
     function R.SetKilled(npc, killed)
-        local all = Kills()
+        local all = Slain()
         all[npc] = killed and (all[npc] or { n = 0, at = time() }) or nil
-        Changed(npc)
+        Altered(npc)
     end
 
-    function R.Dropped(npc, itemId)
-        local itemList = Drops()[npc]
-        return itemList ~= nil and itemList[itemId] ~= nil
+    function R.Dropped(npc, thingId)
+        local thingRoster = Drops()[npc]
+        return thingRoster ~= nil and thingRoster[thingId] ~= nil
     end
 
-    function R.AddDrop(npc, itemId)
+    function R.AddDrop(npc, thingId)
         local all = Drops()
         all[npc] = all[npc] or {}
-        if all[npc][itemId] then return end
-        all[npc][itemId] = time()
-        Changed(npc)
+        if all[npc][thingId] then return end
+        all[npc][thingId] = time()
+        Altered(npc)
     end
 
-    function R.ZoneProgress(zone)
+    function R.ZoneProgress(area)
         Prepare()
-        local all = Kills()
-        local num, sum, low, high = 0, 0, nil, nil
-        for _, npc in ipairs(zone.rares) do
+        local all = Slain()
+        local num, sum, low, upper = 0, 0, nil, nil
+        for _, npc in ipairs(area.rares) do
             if mine[npc] then
                 sum = sum + 1
                 if all[npc] then num = num + 1 end
                 local lo, hi = R.Levels(npc)
                 if lo > 0 then
                     low = math.min(low or lo, lo)
-                    high = math.max(high or hi, hi)
+                    upper = math.max(upper or hi, hi)
                 end
             end
         end
-        return num, sum, low, high
+        return num, sum, low, upper
     end
 
     function R.Progress()
         Prepare()
         local num, sum = 0, 0
-        for _, zone in ipairs(D.Zones) do
-            local zn, zt = R.ZoneProgress(zone)
+        for _, area in ipairs(D.Zones) do
+            local zn, zt = R.ZoneProgress(area)
             num, sum = num + zn, sum + zt
         end
         return num, sum
@@ -891,41 +891,41 @@ do
         return D.Zones
     end
 
-    function R.ZoneList(zone)
+    function R.ZoneList(area)
         Prepare()
-        wipe(entries)
-        for _, npc in ipairs(zone.rares) do
-            if mine[npc] then entries[#entries + 1] = npc end
+        wipe(items)
+        for _, npc in ipairs(area.rares) do
+            if mine[npc] then items[#items + 1] = npc end
         end
-        return entries
+        return items
     end
 
     function R.CurrentZone()
         Prepare()
-        local map = SameMap(C_Map.GetBestMapForUnit("player"))
-        while map do
-            local zone = ZoneFor(map)
-            if zone then return zone end
-            local details = C_Map.GetMapInfo(map)
-            map = details and details.parentMapID ~= 0 and details.parentMapID or nil
+        local chart = SameChart(C_Map.GetBestMapForUnit("player"))
+        while chart do
+            local area = AreaFor(chart)
+            if area then return area end
+            local details = C_Map.GetMapInfo(chart)
+            chart = details and details.parentMapID ~= 0 and details.parentMapID or nil
         end
     end
 
-    function R.Search(textValue, limit)
+    function R.Search(labelValue, limit)
         Prepare()
         wipe(found)
         local num = 0
-        for _, zone in ipairs(D.Zones) do
-            local entry = foundIn[zone] or { zone = zone, ids = {} }
-            foundIn[zone] = entry
+        for _, area in ipairs(D.Zones) do
+            local entry = foundIn[area] or { zone = area, ids = {} }
+            foundIn[area] = entry
             local ids = wipe(entry.ids)
-            for _, npc in ipairs(zone.rares) do
-                local name = lowered[npc]
-                if not name then
-                    name = D.Rares[npc][NAME]:lower()
-                    lowered[npc] = name
+            for _, npc in ipairs(area.rares) do
+                local title = lowered[npc]
+                if not title then
+                    title = D.Rares[npc][HEADING]:lower()
+                    lowered[npc] = title
                 end
-                if mine[npc] and name:find(textValue, 1, true) then
+                if mine[npc] and title:find(labelValue, 1, true) then
                     num = num + 1
                     if num <= limit then ids[#ids + 1] = npc end
                 end
@@ -937,120 +937,120 @@ do
 
     function R.Spot(npc)
         local rare = D.Rares[npc]
-        local spots = rare[SPOTS]
-        if #spots == 0 then return end
-        local place = SameMap(C_Map.GetBestMapForUnit("player")) == rare[MAP]
-            and C_Map.GetPlayerMapPosition(rare[MAP], "player")
-        if not place or Secret(place) then return rare[MAP], spots[1], spots[2] end
+        local places = rare[PLACES]
+        if #places == 0 then return end
+        local place = SameChart(C_Map.GetBestMapForUnit("player")) == rare[CHART]
+            and C_Map.GetPlayerMapPosition(rare[CHART], "player")
+        if not place or Secret(place) then return rare[CHART], places[1], places[2] end
         local px, py = place:GetXY()
-        local bx, by, bestD = Nearest(spots, px, py, spots[1], spots[2], nil)
-        if rare[TRAIL] then
-            bx, by = Nearest(rare[TRAIL], px, py, bx, by, bestD)
+        local bx, by, topD = Closest(places, px, py, places[1], places[2], nil)
+        if rare[PATH] then
+            bx, by = Closest(rare[PATH], px, py, bx, by, topD)
         end
-        return rare[MAP], bx, by
+        return rare[CHART], bx, by
     end
 
-    function R.Spots(npc) return D.Rares[npc][SPOTS] end
+    function R.Spots(npc) return D.Rares[npc][PLACES] end
     function R.Loot(npc) return D.Loot and D.Loot[npc] end
 
-    function R.AddLoot(tipText, npc)
-        local loot = R.Loot(npc)
-        if not loot then return end
-        tipText:AddLine(" ")
-        tipText:AddLine("Drops", unpack(GOLD))
-        for _, entry in ipairs(loot) do
-            local color = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[entry[LOOT_QUALITY]]
+    function R.AddLoot(hintLabel, npc)
+        local spoils = R.Loot(npc)
+        if not spoils then return end
+        hintLabel:AddLine(" ")
+        hintLabel:AddLine("Drops", unpack(AMBER))
+        for _, entry in ipairs(spoils) do
+            local tint = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[entry[SPOILS_GRADE]]
                 or { r = 1, g = 1, b = 1 }
-            local iconTex = C_Item.GetItemIconByID(entry[LOOT_ID])
-            local name = (iconTex and ("|T%s:14:14|t "):format(iconTex) or "")
-                .. entry[LOOT_NAME]
-                .. (entry[LOOT_NEW] == 1 and " " .. CUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
-                .. (R.Dropped(npc, entry[LOOT_ID]) and " |cff60d080(you got it)|r" or "")
-            local chance = entry[LOOT_CHANCE]
-            tipText:AddDoubleLine(
-                name,
-                chance >= 1 and ("%d%%"):format(math.floor(chance + 0.5)) or ("%.1f%%"):format(chance),
-                color.r,
-                color.g,
-                color.b,
-                unpack(MUTED)
+            local glyphTex = C_Item.GetItemIconByID(entry[SPOILS_ID])
+            local title = (glyphTex and ("|T%s:14:14|t "):format(glyphTex) or "")
+                .. entry[SPOILS_HEADING]
+                .. (entry[SPOILS_FRESH] == 1 and " " .. CUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
+                .. (R.Dropped(npc, entry[SPOILS_ID]) and " |cff60d080(you got it)|r" or "")
+            local odds = entry[SPOILS_ODDS]
+            hintLabel:AddDoubleLine(
+                title,
+                odds >= 1 and ("%d%%"):format(math.floor(odds + 0.5)) or ("%.1f%%"):format(odds),
+                tint.r,
+                tint.g,
+                tint.b,
+                unpack(DIM)
             )
         end
-        if loot.more then tipText:AddLine(("And %d more"):format(loot.more), unpack(MUTED)) end
+        if spoils.more then hintLabel:AddLine(("And %d more"):format(spoils.more), unpack(DIM)) end
     end
 
-    function R.OnMap(mapID)
+    function R.OnMap(chartID)
         Prepare()
-        if not byMap then
-            byMap = {}
+        if not byChart then
+            byChart = {}
             for npc, rare in pairs(D.Rares) do
-                if mine[npc] and #rare[SPOTS] > 0 then
-                    byMap[rare[MAP]] = byMap[rare[MAP]] or {}
-                    table.insert(byMap[rare[MAP]], npc)
+                if mine[npc] and #rare[PLACES] > 0 then
+                    byChart[rare[CHART]] = byChart[rare[CHART]] or {}
+                    table.insert(byChart[rare[CHART]], npc)
                 end
             end
         end
-        return byMap[SameMap(mapID)] or NONE
+        return byChart[SameChart(chartID)] or NONE
     end
 
     function R.Link(npc)
-        local map, posX, posY = R.Spot(npc)
-        if map then Link(R.Name(npc), map, posX, posY) end
+        local chart, posX, posY = R.Spot(npc)
+        if chart then Link(R.Name(npc), chart, posX, posY) end
     end
 
     -- Kills: a rare you targeted dying while yours, or a corpse you loot.
     local counted = {}
-    local watching
+    local tracking
 
-    local function Count(unitGuid)
-        local npc = R.NpcOf(unitGuid)
-        if not npc or not R.Known(npc) or counted[unitGuid] then return end
-        counted[unitGuid] = true
+    local function Tally(unitId)
+        local npc = R.NpcOf(unitId)
+        if not npc or not R.Known(npc) or counted[unitId] then return end
+        counted[unitId] = true
         local record = R.Record(npc)
-        if record and record.guid == unitGuid then return end
-        R.AddKill(npc, unitGuid)
+        if record and record.guid == unitId then return end
+        R.AddKill(npc, unitId)
     end
 
-    local function StopWatching()
-        watching = nil
+    local function HaltTracking()
+        tracking = nil
         killEvents:UnregisterEvent("UNIT_HEALTH")
     end
 
     killEvents:SetScript("OnEvent", function(_, evt)
         if evt == "PLAYER_TARGET_CHANGED" then
-            StopWatching()
-            local unitGuid = UnitGUID("target")
-            local npc = R.NpcOf(unitGuid)
-            if not npc or not R.Known(npc) or counted[unitGuid] then return end
+            HaltTracking()
+            local unitId = UnitGUID("target")
+            local npc = R.NpcOf(unitId)
+            if not npc or not R.Known(npc) or counted[unitId] then return end
             local dead, denied = UnitIsDead("target"), UnitIsTapDenied("target")
             if Secret(dead) or Secret(denied) then return end
             if dead then
-                if not denied then Count(unitGuid) end
+                if not denied then Tally(unitId) end
                 return
             end
-            watching = unitGuid
+            tracking = unitId
             killEvents:RegisterUnitEvent("UNIT_HEALTH", "target")
         elseif evt == "UNIT_HEALTH" then
-            local unitGuid = UnitGUID("target")
-            if Secret(unitGuid) or unitGuid ~= watching then return end
+            local unitId = UnitGUID("target")
+            if Secret(unitId) or unitId ~= tracking then return end
             local dead, denied = UnitIsDead("target"), UnitIsTapDenied("target")
             if Secret(dead) or Secret(denied) or not dead then return end
-            if not denied then Count(unitGuid) end
-            StopWatching()
+            if not denied then Tally(unitId) end
+            HaltTracking()
         elseif evt == "LOOT_READY" then
             for slot = 1, GetNumLootItems() do
-                local itemLink = GetLootSlotLink(slot)
-                local itemId = type(itemLink) == "string"
-                        and not Secret(itemLink)
-                        and tonumber(itemLink:match("item:(%d+)"))
+                local thingChain = GetLootSlotLink(slot)
+                local thingId = type(thingChain) == "string"
+                        and not Secret(thingChain)
+                        and tonumber(thingChain:match("item:(%d+)"))
                     or nil
                 local sources = { GetLootSourceInfo(slot) }
-                for index = 1, #sources, 2 do
-                    local unitGuid = sources[index]
-                    if not Secret(unitGuid) then
-                        Count(unitGuid)
-                        local npc = R.NpcOf(unitGuid)
-                        if itemId and npc and R.Known(npc) then R.AddDrop(npc, itemId) end
+                for catalog = 1, #sources, 2 do
+                    local unitId = sources[catalog]
+                    if not Secret(unitId) then
+                        Tally(unitId)
+                        local npc = R.NpcOf(unitId)
+                        if thingId and npc and R.Known(npc) then R.AddDrop(npc, thingId) end
                     end
                 end
             end
@@ -1061,233 +1061,233 @@ end
 -------------------------------------------------------------------------------
 --  Rare Alerts: a card when a rare is near; left-click targets it
 -------------------------------------------------------------------------------
-local RareAlert = {}
-local alertEvents = CreateFrame("Frame")
+local BossCaution = {}
+local warnEvents = CreateFrame("Frame")
 do
-    local AGAIN_AFTER = 300
-    local RARE = { rare = true, rareelite = true }
+    local NEXT_LATER = 300
+    local ELITE = { rare = true, rareelite = true }
     local W, H = 260, 64
-    local cardFrame, target
-    local shownNpc, shownGuid
+    local tileWindow, aim
+    local shownNpc, shownId
     local alerted = {}
 
-    local function HideTarget()
-        if target and target:IsShown() and not InCombatLockdown() then target:Hide() end
+    local function ConcealAim()
+        if aim and aim:IsShown() and not InCombatLockdown() then aim:Hide() end
     end
 
-    local function HideAlert()
-        if not cardFrame then return end
-        HideTarget()
-        cardFrame.fade:Stop()
-        cardFrame:Hide()
-        shownNpc, shownGuid = nil, nil
-        alertEvents:UnregisterEvent("UNIT_FLAGS")
+    local function ConcealCaution()
+        if not tileWindow then return end
+        ConcealAim()
+        tileWindow.fade:Stop()
+        tileWindow:Hide()
+        shownNpc, shownId = nil, nil
+        warnEvents:UnregisterEvent("UNIT_FLAGS")
     end
-    RareAlert.Hide = HideAlert
+    BossCaution.Hide = ConcealCaution
 
-    local function BuildTarget()
-        target = CreateFrame("Button", "CludesUIRareAlertTarget", UIParent, "SecureActionButtonTemplate")
-        target:SetFrameStrata("DIALOG")
-        target:RegisterForClicks("AnyUp", "AnyDown")
-        target:SetAttribute("type1", "macro")
-        target:SetScript("PostClick", function(_, btnFrame, down)
-            if btnFrame == "RightButton" and not down then HideAlert() end
+    local function BuildAim()
+        aim = CreateFrame("Button", "CludesUIRareAlertTarget", UIParent, "SecureActionButtonTemplate")
+        aim:SetFrameStrata("DIALOG")
+        aim:RegisterForClicks("AnyUp", "AnyDown")
+        aim:SetAttribute("type1", "macro")
+        aim:SetScript("PostClick", function(_, btnWindow, down)
+            if btnWindow == "RightButton" and not down then ConcealCaution() end
         end)
-        target:SetScript("OnEnter", function()
-            GameTooltip:SetOwner(cardFrame, "ANCHOR_TOP")
-            GameTooltip:SetText(cardFrame.name:GetText() or "Rare", 1, 1, 1)
-            GameTooltip:AddLine("Left-click to target it. Right-click to close it.", unpack(ACCENT))
+        aim:SetScript("OnEnter", function()
+            GameTooltip:SetOwner(tileWindow, "ANCHOR_TOP")
+            GameTooltip:SetText(tileWindow.name:GetText() or "Rare", 1, 1, 1)
+            GameTooltip:AddLine("Left-click to target it. Right-click to close it.", unpack(BRAND))
             GameTooltip:Show()
         end)
-        target:SetScript("OnLeave", function()
+        aim:SetScript("OnLeave", function()
             GameTooltip:Hide()
-            HideTarget()
+            ConcealAim()
         end)
-        target:SetScript("OnShow", function(self) self:RegisterEvent("PLAYER_REGEN_DISABLED") end)
-        target:SetScript("OnHide", function(self) self:UnregisterEvent("PLAYER_REGEN_DISABLED") end)
-        target:SetScript("OnEvent", target.Hide)
-        target:Hide()
+        aim:SetScript("OnShow", function(self) self:RegisterEvent("PLAYER_REGEN_DISABLED") end)
+        aim:SetScript("OnHide", function(self) self:UnregisterEvent("PLAYER_REGEN_DISABLED") end)
+        aim:SetScript("OnEvent", aim.Hide)
+        aim:Hide()
     end
 
     -- A secure button of its own over the card (never its child, so the card
     -- can still show and hide in combat), set and shown only out of combat.
-    local function CoverCard()
+    local function MaskTile()
         if InCombatLockdown() then return end
-        local seen = cardFrame.seen
-        local name = not cardFrame.preview and seen and seen.name and seen.name:gsub("%c", "") or nil
-        local leftX = cardFrame:GetLeft()
-        if not (name and leftX) then return HideTarget() end
-        if not target then BuildTarget() end
-        local scale = cardFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+        local spotted = tileWindow.seen
+        local title = not tileWindow.preview and spotted and spotted.name and spotted.name:gsub("%c", "") or nil
+        local leftX = tileWindow:GetLeft()
+        if not (title and leftX) then return ConcealAim() end
+        if not aim then BuildAim() end
+        local scale = tileWindow:GetEffectiveScale() / UIParent:GetEffectiveScale()
         local macro = Get("rareAlertSkull") and "/cleartarget\n/targetexact %s\n/tm !8" or "/targetexact %s"
-        target:SetAttribute("macrotext1", macro:format(name))
-        target:ClearAllPoints()
-        target:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", leftX * scale, cardFrame:GetBottom() * scale)
-        target:SetSize(cardFrame:GetWidth() * scale, cardFrame:GetHeight() * scale)
-        target:Show()
+        aim:SetAttribute("macrotext1", macro:format(title))
+        aim:ClearAllPoints()
+        aim:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", leftX * scale, tileWindow:GetBottom() * scale)
+        aim:SetSize(tileWindow:GetWidth() * scale, tileWindow:GetHeight() * scale)
+        aim:Show()
     end
 
     local function Build()
-        cardFrame = CreateFrame("Button", "CludesUIRareAlert", UIParent)
-        cardFrame:SetSize(W, H)
-        cardFrame:SetFrameStrata("HIGH")
-        cardFrame:SetClampedToScreen(true)
-        CUI.Kit.Panel(cardFrame, 0.92)
-        cardFrame:RegisterForClicks("RightButtonUp")
-        cardFrame:SetScript("OnClick", function(_, btnFrame)
-            if btnFrame == "RightButton" then HideAlert() end
+        tileWindow = CreateFrame("Button", "CludesUIRareAlert", UIParent)
+        tileWindow:SetSize(W, H)
+        tileWindow:SetFrameStrata("HIGH")
+        tileWindow:SetClampedToScreen(true)
+        CUI.Kit.Panel(tileWindow, 0.92)
+        tileWindow:RegisterForClicks("RightButtonUp")
+        tileWindow:SetScript("OnClick", function(_, btnWindow)
+            if btnWindow == "RightButton" then ConcealCaution() end
         end)
-        cardFrame:SetScript("OnEnter", function()
-            CoverCard()
-            GameTooltip:SetOwner(cardFrame, "ANCHOR_TOP")
-            GameTooltip:SetText(cardFrame.name:GetText() or "Rare", 1, 1, 1)
-            GameTooltip:AddLine("Right-click to close it.", unpack(ACCENT))
+        tileWindow:SetScript("OnEnter", function()
+            MaskTile()
+            GameTooltip:SetOwner(tileWindow, "ANCHOR_TOP")
+            GameTooltip:SetText(tileWindow.name:GetText() or "Rare", 1, 1, 1)
+            GameTooltip:AddLine("Right-click to close it.", unpack(BRAND))
             GameTooltip:Show()
         end)
-        cardFrame:SetScript("OnLeave", function()
-            if target and target:IsShown() and target:IsMouseOver() then return end
+        tileWindow:SetScript("OnLeave", function()
+            if aim and aim:IsShown() and aim:IsMouseOver() then return end
             GameTooltip:Hide()
-            HideTarget()
+            ConcealAim()
         end)
-        cardFrame.model = CreateFrame("PlayerModel", nil, cardFrame)
-        cardFrame.model:SetSize(H - 12, H - 12)
-        cardFrame.model:SetPoint("LEFT", 6, 0)
-        cardFrame.star = cardFrame:CreateTexture(nil, "ARTWORK")
-        cardFrame.star:SetSize(32, 32)
-        cardFrame.star:SetPoint("CENTER", cardFrame.model, "CENTER")
-        cardFrame.star:SetAtlas("VignetteKill")
-        cardFrame.name = cardFrame:CreateFontString(nil, "OVERLAY")
-        CUI.Kit.Font(cardFrame.name, 14, "essentials")
-        cardFrame.name:SetPoint("TOPLEFT", cardFrame.model, "TOPRIGHT", 8, -4)
-        cardFrame.name:SetPoint("RIGHT", -8, 0)
-        cardFrame.name:SetJustifyH("LEFT")
-        cardFrame.name:SetWordWrap(false)
-        cardFrame.detail = cardFrame:CreateFontString(nil, "OVERLAY")
-        CUI.Kit.Font(cardFrame.detail, 11, "essentials")
-        cardFrame.detail:SetPoint("TOPLEFT", cardFrame.name, "BOTTOMLEFT", 0, -4)
-        cardFrame.detail:SetPoint("RIGHT", -8, 0)
-        cardFrame.detail:SetJustifyH("LEFT")
-        cardFrame.detail:SetTextColor(unpack(MUTED))
-        cardFrame.fade = cardFrame:CreateAnimationGroup()
-        local fadeIn = cardFrame.fade:CreateAnimation("Alpha")
-        fadeIn:SetFromAlpha(0)
-        fadeIn:SetToAlpha(1)
-        fadeIn:SetDuration(0.3)
-        fadeIn:SetOrder(1)
-        cardFrame.fadeOut = cardFrame.fade:CreateAnimation("Alpha")
-        cardFrame.fadeOut:SetFromAlpha(1)
-        cardFrame.fadeOut:SetToAlpha(0)
-        cardFrame.fadeOut:SetDuration(0.3)
-        cardFrame.fadeOut:SetOrder(2)
-        cardFrame.fade:SetScript("OnFinished", HideAlert)
-        cardFrame:Hide()
+        tileWindow.model = CreateFrame("PlayerModel", nil, tileWindow)
+        tileWindow.model:SetSize(H - 12, H - 12)
+        tileWindow.model:SetPoint("LEFT", 6, 0)
+        tileWindow.star = tileWindow:CreateTexture(nil, "ARTWORK")
+        tileWindow.star:SetSize(32, 32)
+        tileWindow.star:SetPoint("CENTER", tileWindow.model, "CENTER")
+        tileWindow.star:SetAtlas("VignetteKill")
+        tileWindow.name = tileWindow:CreateFontString(nil, "OVERLAY")
+        CUI.Kit.Font(tileWindow.name, 14, "essentials")
+        tileWindow.name:SetPoint("TOPLEFT", tileWindow.model, "TOPRIGHT", 8, -4)
+        tileWindow.name:SetPoint("RIGHT", -8, 0)
+        tileWindow.name:SetJustifyH("LEFT")
+        tileWindow.name:SetWordWrap(false)
+        tileWindow.detail = tileWindow:CreateFontString(nil, "OVERLAY")
+        CUI.Kit.Font(tileWindow.detail, 11, "essentials")
+        tileWindow.detail:SetPoint("TOPLEFT", tileWindow.name, "BOTTOMLEFT", 0, -4)
+        tileWindow.detail:SetPoint("RIGHT", -8, 0)
+        tileWindow.detail:SetJustifyH("LEFT")
+        tileWindow.detail:SetTextColor(unpack(DIM))
+        tileWindow.fade = tileWindow:CreateAnimationGroup()
+        local dimIn = tileWindow.fade:CreateAnimation("Alpha")
+        dimIn:SetFromAlpha(0)
+        dimIn:SetToAlpha(1)
+        dimIn:SetDuration(0.3)
+        dimIn:SetOrder(1)
+        tileWindow.fadeOut = tileWindow.fade:CreateAnimation("Alpha")
+        tileWindow.fadeOut:SetFromAlpha(1)
+        tileWindow.fadeOut:SetToAlpha(0)
+        tileWindow.fadeOut:SetDuration(0.3)
+        tileWindow.fadeOut:SetOrder(2)
+        tileWindow.fade:SetScript("OnFinished", ConcealCaution)
+        tileWindow:Hide()
     end
-    RareAlert.Frame = function(build)
-        if build and not cardFrame then Build() end
-        return cardFrame
+    BossCaution.Frame = function(make)
+        if make and not tileWindow then Build() end
+        return tileWindow
     end
 
-    local function Paint(seen)
-        local level = seen.level and (seen.level == -1 and "??" or tostring(seen.level))
-            or (seen.npc and R.Known(seen.npc) and R.LevelText(seen.npc))
+    local function Render(spotted)
+        local lvl = spotted.level and (spotted.level == -1 and "??" or tostring(spotted.level))
+            or (spotted.npc and R.Known(spotted.npc) and R.LevelText(spotted.npc))
             or nil
-        cardFrame.name:SetText((seen.name or "Rare") .. (seen.elite and " |cffffb040Elite|r" or ""))
-        local bits = {}
-        if level then bits[#bits + 1] = "Level " .. level end
-        local record = seen.npc and R.Known(seen.npc) and R.Record(seen.npc)
+        tileWindow.name:SetText((spotted.name or "Rare") .. (spotted.elite and " |cffffb040Elite|r" or ""))
+        local flags = {}
+        if lvl then flags[#flags + 1] = "Level " .. lvl end
+        local record = spotted.npc and R.Known(spotted.npc) and R.Record(spotted.npc)
         if record then
-            bits[#bits + 1] = record.n > 1 and ("killed %d times"):format(record.n) or "killed before"
+            flags[#flags + 1] = record.n > 1 and ("killed %d times"):format(record.n) or "killed before"
         end
-        if seen.tapped then bits[#bits + 1] = "|cffff6060tapped by someone else|r" end
-        if seen.map then
-            bits[#bits + 1] = ("%s %.1f, %.1f"):format(ZoneName(seen.map), seen.x or 0, seen.y or 0)
+        if spotted.tapped then flags[#flags + 1] = "|cffff6060tapped by someone else|r" end
+        if spotted.map then
+            flags[#flags + 1] = ("%s %.1f, %.1f"):format(AreaHeading(spotted.map), spotted.x or 0, spotted.y or 0)
         end
-        cardFrame.detail:SetText(table.concat(bits, "  "))
+        tileWindow.detail:SetText(table.concat(flags, "  "))
     end
 
-    local function Show(seen, quiet)
-        if not cardFrame then Build() end
-        if not CUI._unlockActive then F.Place(cardFrame) end
-        shownNpc, shownGuid = not quiet and seen.npc or nil, not quiet and seen.guid or nil
-        cardFrame.preview = quiet == true
-        cardFrame.seen = seen
-        cardFrame.model:ClearModel()
+    local function Reveal(spotted, silent)
+        if not tileWindow then Build() end
+        if not CUI._unlockActive then F.Place(tileWindow) end
+        shownNpc, shownId = not silent and spotted.npc or nil, not silent and spotted.guid or nil
+        tileWindow.preview = silent == true
+        tileWindow.seen = spotted
+        tileWindow.model:ClearModel()
         local isShown = false
-        if seen.unit and UnitExists(seen.unit) then
-            cardFrame.model:SetUnit(seen.unit)
+        if spotted.unit and UnitExists(spotted.unit) then
+            tileWindow.model:SetUnit(spotted.unit)
             isShown = true
-        elseif seen.npc then
-            cardFrame.model:SetCreature(seen.npc)
+        elseif spotted.npc then
+            tileWindow.model:SetCreature(spotted.npc)
             isShown = true
         end
-        cardFrame.model:SetShown(isShown)
-        if isShown then cardFrame.model:SetPortraitZoom(1) end
-        cardFrame.star:SetShown(not isShown)
-        Paint(seen)
-        cardFrame.fade:Stop()
-        cardFrame:SetAlpha(1)
-        cardFrame:Show()
-        if target and target:IsShown() then CoverCard() end
-        if not quiet then
-            alertEvents:RegisterEvent("UNIT_FLAGS")
-            cardFrame.fadeOut:SetStartDelay(Get("rareAlertTime"))
-            cardFrame.fade:Play()
+        tileWindow.model:SetShown(isShown)
+        if isShown then tileWindow.model:SetPortraitZoom(1) end
+        tileWindow.star:SetShown(not isShown)
+        Render(spotted)
+        tileWindow.fade:Stop()
+        tileWindow:SetAlpha(1)
+        tileWindow:Show()
+        if aim and aim:IsShown() then MaskTile() end
+        if not silent then
+            warnEvents:RegisterEvent("UNIT_FLAGS")
+            tileWindow.fadeOut:SetStartDelay(Get("rareAlertTime"))
+            tileWindow.fade:Play()
             if Get("rareSound") then PlaySoundFile(598196, "Master") end
             if FlashClientIcon then FlashClientIcon() end
         end
     end
-    RareAlert.Show = Show
+    BossCaution.Show = Reveal
 
-    local function Due(key, npc)
-        if alerted[key] and GetTime() - alerted[key] < AGAIN_AFTER then return false end
+    local function Pending(key, npc)
+        if alerted[key] and GetTime() - alerted[key] < NEXT_LATER then return false end
         return not (npc and R.Known(npc) and R.Killed(npc) and not Get("rareAlertKilled"))
     end
 
-    local function Alert(key, seen)
-        if not Due(key, seen.npc) then return end
+    local function Caution(key, spotted)
+        if not Pending(key, spotted.npc) then return end
         alerted[key] = GetTime()
-        Show(seen)
+        Reveal(spotted)
     end
 
-    local function Retap(unitToken)
+    local function Reclaim(unitToken)
         local denied = UnitIsTapDenied(unitToken)
-        if Secret(denied) or not cardFrame then return end
-        local seen = cardFrame.seen
-        if (seen.tapped == true) == (denied == true) then return end
-        seen.tapped = denied or nil
-        Paint(seen)
+        if Secret(denied) or not tileWindow then return end
+        local spotted = tileWindow.seen
+        if (spotted.tapped == true) == (denied == true) then return end
+        spotted.tapped = denied or nil
+        Render(spotted)
     end
 
     local function Check(unitToken)
         if not UnitExists(unitToken) then return end
         local kind = UnitClassification(unitToken)
-        if Secret(kind) or not RARE[kind] then return end
-        local unitGuid = UnitGUID(unitToken)
-        if Secret(unitGuid) or not unitGuid then return end
-        local npc = R.NpcOf(unitGuid)
+        if Secret(kind) or not ELITE[kind] then return end
+        local unitId = UnitGUID(unitToken)
+        if Secret(unitId) or not unitId then return end
+        local npc = R.NpcOf(unitId)
         local dead, hostile = UnitIsDead(unitToken), UnitCanAttack("player", unitToken)
         if not npc or Secret(dead) or Secret(hostile) or dead or not hostile then return end
         if npc == shownNpc then
-            shownGuid = shownGuid or unitGuid
-            if unitGuid == shownGuid then Retap(unitToken) end
+            shownId = shownId or unitId
+            if unitId == shownId then Reclaim(unitToken) end
         end
-        local name, level = UnitName(unitToken), UnitLevel(unitToken)
-        if Secret(name) then return end
-        if Secret(level) then level = nil end
-        if not Due(npc, npc) then return end
+        local title, lvl = UnitName(unitToken), UnitLevel(unitToken)
+        if Secret(title) then return end
+        if Secret(lvl) then lvl = nil end
+        if not Pending(npc, npc) then return end
         local denied = UnitIsTapDenied(unitToken)
-        Alert(npc, {
-            name = name,
-            level = level,
+        Caution(npc, {
+            name = title,
+            level = lvl,
             npc = npc,
-            guid = unitGuid,
+            guid = unitId,
             unit = unitToken,
             elite = kind == "rareelite",
             tapped = not Secret(denied) and denied or nil,
         })
     end
 
-    local function CheckVignette(ident)
+    local function TestMarker(ident)
         local details = C_VignetteInfo.GetVignetteInfo(ident)
         if not details or Secret(details.objectGUID) or Secret(details.name) then return end
         local npc = R.NpcOf(details.objectGUID)
@@ -1298,31 +1298,31 @@ do
         if not npc or not (R.Known(npc) or atlas:find("Kill")) then return end
         if R.Known(npc) and not R.Mine(npc) then return end
         local known = R.Known(npc)
-        local map = C_Map.GetBestMapForUnit("player")
-        local place = map
+        local chart = C_Map.GetBestMapForUnit("player")
+        local place = chart
             and C_VignetteInfo.GetVignettePosition
-            and C_VignetteInfo.GetVignettePosition(ident, map)
+            and C_VignetteInfo.GetVignettePosition(ident, chart)
         local posX, posY
         if place and not Secret(place) then
             posX, posY = place:GetXY()
         end
-        Alert(npc, {
+        Caution(npc, {
             name = details.name or (known and R.Name(npc)) or "Rare",
             level = known and R.Levels(npc) or nil,
             npc = npc,
-            map = posX and map or nil,
+            map = posX and chart or nil,
             x = posX and posX * 100,
             y = posY and posY * 100,
         })
     end
 
-    alertEvents:SetScript("OnEvent", function(_, evt, unitToken, onMinimap)
+    warnEvents:SetScript("OnEvent", function(_, evt, unitToken, onMinimap)
         if evt == "UNIT_FLAGS" then
-            if not shownGuid then return end
-            local unitGuid = UnitGUID(unitToken)
-            if Secret(unitGuid) or unitGuid ~= shownGuid then return end
+            if not shownId then return end
+            local unitId = UnitGUID(unitToken)
+            if Secret(unitId) or unitId ~= shownId then return end
             local dead = UnitIsDead(unitToken)
-            if not Secret(dead) and not dead then Retap(unitToken) end
+            if not Secret(dead) and not dead then Reclaim(unitToken) end
         elseif evt == "NAME_PLATE_UNIT_ADDED" then
             Check(unitToken)
         elseif evt == "PLAYER_TARGET_CHANGED" then
@@ -1330,46 +1330,46 @@ do
         elseif evt == "UPDATE_MOUSEOVER_UNIT" then
             Check("mouseover")
         elseif evt == "VIGNETTE_MINIMAP_UPDATED" then
-            if onMinimap and not Secret(unitToken) then CheckVignette(unitToken) end
+            if onMinimap and not Secret(unitToken) then TestMarker(unitToken) end
         end
     end)
 
     R.OnChange(function(npc)
-        if shownNpc and npc == shownNpc and R.Killed(npc) then HideAlert() end
+        if shownNpc and npc == shownNpc and R.Killed(npc) then ConcealCaution() end
     end)
 
-    function RareAlert.Apply()
-        alertEvents:UnregisterAllEvents()
-        if not (On() and Get("rareAlert")) then return HideAlert() end
-        alertEvents:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-        alertEvents:RegisterEvent("PLAYER_TARGET_CHANGED")
-        alertEvents:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
+    function BossCaution.Apply()
+        warnEvents:UnregisterAllEvents()
+        if not (On() and Get("rareAlert")) then return ConcealCaution() end
+        warnEvents:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+        warnEvents:RegisterEvent("PLAYER_TARGET_CHANGED")
+        warnEvents:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
         if C_VignetteInfo and C_VignetteInfo.GetVignetteInfo then
-            alertEvents:RegisterEvent("VIGNETTE_MINIMAP_UPDATED")
+            warnEvents:RegisterEvent("VIGNETTE_MINIMAP_UPDATED")
         end
-        if shownNpc then alertEvents:RegisterEvent("UNIT_FLAGS") end
+        if shownNpc then warnEvents:RegisterEvent("UNIT_FLAGS") end
     end
 
-    function RareAlert.Test()
-        local unitGuid = UnitGUID("target")
-        if unitGuid and not Secret(unitGuid) and UnitExists("target") then
-            Show({
+    function BossCaution.Test()
+        local unitId = UnitGUID("target")
+        if unitId and not Secret(unitId) and UnitExists("target") then
+            Reveal({
                 name = UnitName("target"),
                 level = UnitLevel("target"),
-                npc = R.NpcOf(unitGuid),
-                guid = unitGuid,
+                npc = R.NpcOf(unitId),
+                guid = unitId,
                 unit = "target",
             })
         else
-            Show({ name = "Mist Howler", level = 22, npc = 10644 })
+            Reveal({ name = "Mist Howler", level = 22, npc = 10644 })
         end
     end
 
-    function RareAlert.Preview(enabled)
+    function BossCaution.Preview(enabled)
         if enabled then
-            Show({ name = "Mist Howler", level = 22, npc = 10644 }, true)
-        elseif cardFrame and cardFrame.preview then
-            HideAlert()
+            Reveal({ name = "Mist Howler", level = 22, npc = 10644 }, true)
+        elseif tileWindow and tileWindow.preview then
+            ConcealCaution()
         end
     end
 end
@@ -1379,9 +1379,9 @@ end
 -------------------------------------------------------------------------------
 local provider, layer, waiter
 local added = false
-local pins, pinsUsed = {}, 0
+local markers, markersUsed = {}, 0
 
-local function PinsWanted() return On() and (Get("questPins") or Get("rarePins")) end
+local function MarkersDesired() return On() and (Get("questPins") or Get("rarePins")) end
 
 local function Anchor(p)
     local canvas = layer:GetParent()
@@ -1392,14 +1392,14 @@ local function Anchor(p)
     p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * wid * cs, -p.y * hgt * cs)
 end
 
-local function ClearPins()
-    for index = 1, pinsUsed do
-        pins[index]:Hide()
+local function WipeMarkers()
+    for catalog = 1, markersUsed do
+        markers[catalog]:Hide()
     end
-    pinsUsed = 0
+    markersUsed = 0
 end
 
-local function NewPin()
+local function FreshMarker()
     local p = CreateFrame("Button", nil, layer)
     p:RegisterForClicks("LeftButtonUp")
     p.icon = p:CreateTexture(nil, "ARTWORK")
@@ -1407,7 +1407,7 @@ local function NewPin()
     p:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         self.tip(GameTooltip)
-        GameTooltip:AddLine("Click to link its map pin in chat.", unpack(MUTED))
+        GameTooltip:AddLine("Click to link its map pin in chat.", unpack(DIM))
         GameTooltip:Show()
     end)
     p:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1418,21 +1418,21 @@ local function NewPin()
     return p
 end
 
-local function Pin(posX, posY, size, tipText, onClick)
-    pinsUsed = pinsUsed + 1
-    local p = pins[pinsUsed] or NewPin()
-    pins[pinsUsed] = p
-    p:SetSize(size, size)
+local function Marker(posX, posY, dims, hintLabel, onClick)
+    markersUsed = markersUsed + 1
+    local p = markers[markersUsed] or FreshMarker()
+    markers[markersUsed] = p
+    p:SetSize(dims, dims)
     p.x, p.y = posX / 100, posY / 100
     p.icon:SetVertexColor(1, 1, 1)
     p.icon:SetDesaturated(false)
-    p.tip, p.onClick = tipText, onClick
+    p.tip, p.onClick = hintLabel, onClick
     Anchor(p)
     p:Show()
     return p
 end
 
-local STATE_WORDS = {
+local STATUS_TERMS = {
     done = "Done",
     log = "In your quest log",
     open = "Open",
@@ -1444,91 +1444,91 @@ local STATE_WORDS = {
     held = "Not offered yet",
 }
 
-local function StateText(ident, status)
-    local words = STATE_WORDS[status] or status
-    if status == "low" then words = words:format(Q.RequiredLevel(ident)) end
-    return words
+local function StatusLabel(ident, status)
+    local terms = STATUS_TERMS[status] or status
+    if status == "low" then terms = terms:format(Q.RequiredLevel(ident)) end
+    return terms
 end
 
-local function QuestTip(ident)
-    return function(tipText)
-        local color = GetQuestDifficultyColor(Q.Level(ident))
-        tipText:SetText(Q.Name(ident), color.r, color.g, color.b)
-        local bits = { ("Level %d"):format(Q.Level(ident)) }
-        if Q.Dungeon(ident) then bits[#bits + 1] = Q.Battleground(ident) and "Battleground" or "Dungeon" end
-        if Q.Repeatable(ident) then bits[#bits + 1] = "Repeatable" end
-        tipText:AddLine(table.concat(bits, ", "), unpack(MUTED))
-        if Q.Giver(ident) then tipText:AddLine(Q.Giver(ident), 1, 1, 1) end
+local function TaskHint(ident)
+    return function(hintLabel)
+        local tint = GetQuestDifficultyColor(Q.Level(ident))
+        hintLabel:SetText(Q.Name(ident), tint.r, tint.g, tint.b)
+        local flags = { ("Level %d"):format(Q.Level(ident)) }
+        if Q.Dungeon(ident) then flags[#flags + 1] = Q.Battleground(ident) and "Battleground" or "Dungeon" end
+        if Q.Repeatable(ident) then flags[#flags + 1] = "Repeatable" end
+        hintLabel:AddLine(table.concat(flags, ", "), unpack(DIM))
+        if Q.Giver(ident) then hintLabel:AddLine(Q.Giver(ident), 1, 1, 1) end
         local status = Q.State(ident)
-        tipText:AddLine(StateText(ident, status), unpack(status == "open" and GOLD or MUTED))
+        hintLabel:AddLine(StatusLabel(ident, status), unpack(status == "open" and AMBER or DIM))
         if status == "later" then
             for _, before in ipairs(Q.Blocking(ident)) do
-                tipText:AddLine("Requires: " .. (Q.Title(before) or ("quest " .. before)), 1, 0.5, 0.5, true)
+                hintLabel:AddLine("Requires: " .. (Q.Title(before) or ("quest " .. before)), 1, 0.5, 0.5, true)
             end
         end
-        local step, steps = Q.ChainStep(ident)
+        local step, stages = Q.ChainStep(ident)
         if step then
-            tipText:AddLine(("Step %d of %d of %s"):format(step, steps, Q.Chain(ident).name), unpack(ACCENT))
+            hintLabel:AddLine(("Step %d of %d of %s"):format(step, stages, Q.Chain(ident).name), unpack(BRAND))
         end
     end
 end
 
-local function RareTip(npc)
-    return function(tipText)
-        tipText:SetText(R.Name(npc) .. (R.Elite(npc) and " |cffffb040Elite|r" or ""), 1, 1, 1)
-        tipText:AddLine("Level " .. R.LevelText(npc), unpack(MUTED))
+local function BossHint(npc)
+    return function(hintLabel)
+        hintLabel:SetText(R.Name(npc) .. (R.Elite(npc) and " |cffffb040Elite|r" or ""), 1, 1, 1)
+        hintLabel:AddLine("Level " .. R.LevelText(npc), unpack(DIM))
         local record = R.Record(npc)
         if record then
-            tipText:AddLine(
+            hintLabel:AddLine(
                 record.n > 1 and ("Killed %d times"):format(record.n) or "Killed",
                 0.38,
                 0.85,
                 0.5
             )
         end
-        R.AddLoot(tipText, npc)
+        R.AddLoot(hintLabel, npc)
     end
 end
 
-local function DrawPins()
-    CUI.Kit.SyncAccent(ACCENT)
-    ClearPins()
-    if not PinsWanted() then return end
-    local mapID = WorldMapFrame:GetMapID()
-    if not mapID then return end
-    local size = Get("pinSize")
+local function RenderMarkers()
+    CUI.Kit.SyncAccent(BRAND)
+    WipeMarkers()
+    if not MarkersDesired() then return end
+    local chartID = WorldMapFrame:GetMapID()
+    if not chartID then return end
+    local dims = Get("pinSize")
     if Get("questPins") then
         Q.Refresh()
-        for _, giver in ipairs(Q.Givers(mapID, Get("pinGrey"), Get("chainsOnly"))) do
-            local quests = giver.quests
-            local p = Pin(giver.x, giver.y, size * 0.8, function(tipText)
-                for index, ident in ipairs(quests) do
-                    if index > 1 then tipText:AddLine(" ") end
-                    if index == 1 then
-                        QuestTip(ident)(tipText)
+        for _, source in ipairs(Q.Givers(chartID, Get("pinGrey"), Get("chainsOnly"))) do
+            local quests = source.quests
+            local p = Marker(source.x, source.y, dims * 0.8, function(hintLabel)
+                for catalog, ident in ipairs(quests) do
+                    if catalog > 1 then hintLabel:AddLine(" ") end
+                    if catalog == 1 then
+                        TaskHint(ident)(hintLabel)
                     else
-                        local color = GetQuestDifficultyColor(Q.Level(ident))
-                        tipText:AddLine(
-                            Q.Name(ident) .. Muted(("  (%d)"):format(Q.Level(ident))),
-                            color.r,
-                            color.g,
-                            color.b
+                        local tint = GetQuestDifficultyColor(Q.Level(ident))
+                        hintLabel:AddLine(
+                            Q.Name(ident) .. Dim(("  (%d)"):format(Q.Level(ident))),
+                            tint.r,
+                            tint.g,
+                            tint.b
                         )
                     end
                 end
             end, function() Q.Link(quests[1]) end)
-            local atlas = giver.repeatable and "QuestDaily" or giver.grey and "TrivialQuests" or "QuestNormal"
+            local atlas = source.repeatable and "QuestDaily" or source.grey and "TrivialQuests" or "QuestNormal"
             if not (C_Texture.GetAtlasInfo(atlas) and p.icon:SetAtlas(atlas)) then
                 p.icon:SetTexture("Interface\\GossipFrame\\AvailableQuestIcon")
             end
-            if giver.dungeon and not giver.repeatable then p.icon:SetVertexColor(0.4, 1, 0.4) end
+            if source.dungeon and not source.repeatable then p.icon:SetVertexColor(0.4, 1, 0.4) end
         end
     end
     if Get("rarePins") then
-        for _, npc in ipairs(R.OnMap(mapID)) do
+        for _, npc in ipairs(R.OnMap(chartID)) do
             if Get("rarePinsKilled") or not R.Killed(npc) then
-                local spots = R.Spots(npc)
-                local p = Pin(spots[1], spots[2], size, RareTip(npc), function() R.Link(npc) end)
+                local places = R.Spots(npc)
+                local p = Marker(places[1], places[2], dims, BossHint(npc), function() R.Link(npc) end)
                 if not (C_Texture.GetAtlasInfo("VignetteKill") and p.icon:SetAtlas("VignetteKill")) then
                     p.icon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcon_8")
                 end
@@ -1542,29 +1542,29 @@ local function DrawPins()
     end
 end
 
-local function RescalePins()
-    for index = 1, pinsUsed do
-        Anchor(pins[index])
+local function ResizeMarkers()
+    for catalog = 1, markersUsed do
+        Anchor(markers[catalog])
     end
 end
 
-local function PinsApply()
-    if not PinsWanted() then
+local function MarkersUse()
+    if not MarkersDesired() then
         if added then
             WorldMapFrame:RemoveDataProvider(provider)
             added = false
         end
-        if layer then ClearPins() end
+        if layer then WipeMarkers() end
         return
     end
     if not provider then
         if not C_AddOns.IsAddOnLoaded("Blizzard_WorldMap") then
             if not waiter then
                 waiter = CreateFrame("Frame")
-                waiter:SetScript("OnEvent", function(self, _, name)
-                    if name ~= "Blizzard_WorldMap" then return end
+                waiter:SetScript("OnEvent", function(self, _, title)
+                    if title ~= "Blizzard_WorldMap" then return end
                     self:UnregisterEvent("ADDON_LOADED")
-                    PinsApply()
+                    MarkersUse()
                 end)
             end
             waiter:RegisterEvent("ADDON_LOADED")
@@ -1576,70 +1576,70 @@ local function PinsApply()
             WorldMapFrame:GetPinFrameLevelsManager():GetValidFrameLevel("PIN_FRAME_LEVEL_AREA_POI")
         )
         provider = CreateFromMixins(MapCanvasDataProviderMixin)
-        provider.OnMapChanged = DrawPins
-        provider.RefreshAllData = DrawPins
-        provider.RemoveAllData = ClearPins
-        provider.OnCanvasScaleChanged = RescalePins
+        provider.OnMapChanged = RenderMarkers
+        provider.RefreshAllData = RenderMarkers
+        provider.RemoveAllData = WipeMarkers
+        provider.OnCanvasScaleChanged = ResizeMarkers
     end
     if not added then
         WorldMapFrame:AddDataProvider(provider)
         added = true
     end
-    if WorldMapFrame:IsShown() then DrawPins() end
+    if WorldMapFrame:IsShown() then RenderMarkers() end
 end
 
 -------------------------------------------------------------------------------
 --  The Quest List and Rares tabs
 -------------------------------------------------------------------------------
-local questZone, rareZone, questSearch, rareSearch = nil, nil, "", ""
-local tools = {}
-local STATE_COLOUR = { done = MUTED, log = GOLD, open = { 1, 1, 1 }, low = { 1, 0.5, 0.25 } }
+local taskArea, eliteArea, taskSearch, eliteSearch = nil, nil, "", ""
+local kit = {}
+local STATUS_TINT = { done = DIM, log = AMBER, open = { 1, 1, 1 }, low = { 1, 0.5, 0.25 } }
 
-local function ZoneMenu(ownerFrame, zones, progress, choose)
-    CUI.Kit.ContextMenu(ownerFrame, function(_, root)
+local function AreaMenu(ownerWindow, zones, progress, choose)
+    CUI.Kit.ContextMenu(ownerWindow, function(_, root)
         root:CreateButton("Your zone", function() choose(nil) end)
         root:CreateButton("All zones", function() choose(false) end)
         for _, part in ipairs({ { 0, "Eastern Kingdoms" }, { 1, "Kalimdor" } }) do
-            local continent, labelText = part[1], part[2]
-            local sub = root:CreateButton(labelText)
-            for _, zone in ipairs(zones) do
-                if zone.continent == continent then
-                    local num, sum = progress(zone)
-                    sub:CreateButton(("%s  %d/%d"):format(zone.name, num, sum), function() choose(zone) end)
+            local continent, labelLabel = part[1], part[2]
+            local sub = root:CreateButton(labelLabel)
+            for _, area in ipairs(zones) do
+                if area.continent == continent then
+                    local num, sum = progress(area)
+                    sub:CreateButton(("%s  %d/%d"):format(area.name, num, sum), function() choose(area) end)
                 end
             end
         end
         local other = root:CreateButton("Other")
-        for _, zone in ipairs(zones) do
-            if zone.continent ~= 0 and zone.continent ~= 1 then
-                local num, sum = progress(zone)
-                other:CreateButton(("%s  %d/%d"):format(zone.name, num, sum), function() choose(zone) end)
+        for _, area in ipairs(zones) do
+            if area.continent ~= 0 and area.continent ~= 1 then
+                local num, sum = progress(area)
+                other:CreateButton(("%s  %d/%d"):format(area.name, num, sum), function() choose(area) end)
             end
         end
     end)
 end
 
-local function Tools(hostFrame, key, onZone, onSearch, getSearch, extra)
-    local tbl = tools[key]
+local function Tools(hostWindow, key, onArea, onSearch, fetchSearch, extra)
+    local tbl = kit[key]
     if not tbl then
         tbl = {}
-        tbl.zone = CUI.Kit.Button(hostFrame, "", 90, 22, nil, { key = "essentials" })
+        tbl.zone = CUI.Kit.Button(hostWindow, "", 90, 22, nil, { key = "essentials" })
         tbl.zone:SetSize(200, 22)
-        tbl.zone:SetPoint("LEFT", hostFrame, "LEFT", 0, 0)
-        tbl.zone:SetScript("OnClick", function(self) onZone(self) end)
-        tbl.search = CUI.Kit.Input(hostFrame, 160, 22, "Search", "essentials")
+        tbl.zone:SetPoint("LEFT", hostWindow, "LEFT", 0, 0)
+        tbl.zone:SetScript("OnClick", function(self) onArea(self) end)
+        tbl.search = CUI.Kit.Input(hostWindow, 160, 22, "Search", "essentials")
         tbl.search:SetPoint("LEFT", tbl.zone, "RIGHT", 10, 0)
         tbl.search:HookScript("OnTextChanged", function(self, user)
             if user then onSearch(self:GetText()) end
         end)
         tbl.check = CUI.Kit.Check(
-            hostFrame,
+            hostWindow,
             "",
             function(self) extra.set(self:GetChecked()) end,
             "essentials"
         )
         tbl.check:SetPoint("LEFT", tbl.search, "RIGHT", 12, 0)
-        tools[key] = tbl
+        kit[key] = tbl
     end
     tbl.zone:Show()
     tbl.search:Show()
@@ -1649,70 +1649,70 @@ local function Tools(hostFrame, key, onZone, onSearch, getSearch, extra)
     return tbl
 end
 
-local function QuestRow(R2, ident, indent)
+local function TaskRow(R2, ident, indent)
     local status = Q.State(ident)
-    local color = GetQuestDifficultyColor(Q.Level(ident))
-    local name = ("|cff%02x%02x%02x[%d]|r %s"):format(
-        color.r * 255,
-        color.g * 255,
-        color.b * 255,
+    local tint = GetQuestDifficultyColor(Q.Level(ident))
+    local title = ("|cff%02x%02x%02x[%d]|r %s"):format(
+        tint.r * 255,
+        tint.g * 255,
+        tint.b * 255,
         Q.Level(ident),
         Q.Name(ident)
     )
     if status == "done" then
-        name = CHECK .. " " .. Muted(("[%d] %s"):format(Q.Level(ident), Q.Name(ident)))
+        title = TEST .. " " .. Dim(("[%d] %s"):format(Q.Level(ident), Q.Name(ident)))
     end
     local sub
     if status == "later" then
-        local nameList = {}
-        for index, before in ipairs(Q.Blocking(ident)) do
-            if index > 3 then
-                nameList[#nameList + 1] = "..."
+        local titleRoster = {}
+        for catalog, before in ipairs(Q.Blocking(ident)) do
+            if catalog > 3 then
+                titleRoster[#titleRoster + 1] = "..."
                 break
             end
-            nameList[#nameList + 1] = Q.Title(before) or ("quest " .. before)
+            titleRoster[#titleRoster + 1] = Q.Title(before) or ("quest " .. before)
         end
-        sub = "Requires: " .. table.concat(nameList, ", ")
+        sub = "Requires: " .. table.concat(titleRoster, ", ")
     elseif Q.Giver(ident) and status ~= "done" then
         sub = Q.Giver(ident)
     end
-    R2:Line(name .. (sub and ("\n" .. Muted(sub)) or ""), {
+    R2:Line(title .. (sub and ("\n" .. Dim(sub)) or ""), {
         indent = indent,
-        right = status ~= "done" and StateText(ident, status) or nil,
-        rightColour = STATE_COLOUR[status] or MUTED,
-        tip = QuestTip(ident),
+        right = status ~= "done" and StatusLabel(ident, status) or nil,
+        rightColour = STATUS_TINT[status] or DIM,
+        tip = TaskHint(ident),
         onClick = function() Q.Link(ident) end,
     })
 end
 
-local function DrawQuestZone(R2, zone)
-    local num, sum, low, high = Q.ZoneProgress(zone)
+local function RenderTaskArea(R2, area)
+    local num, sum, low, upper = Q.ZoneProgress(area)
     R2:Line(
         ("%s  %s"):format(
-            zone.name,
-            Muted(("%d of %d done%s"):format(num, sum, low and ("  levels %d-%d"):format(low, high) or ""))
+            area.name,
+            Dim(("%d of %d done%s"):format(num, sum, low and ("  levels %d-%d"):format(low, upper) or ""))
         ),
-        { size = 15, colour = ACCENT }
+        { size = 15, colour = BRAND }
     )
-    local chains, singles = Q.ZoneLists(zone)
-    local hide = Get("hideDone")
+    local chains, singles = Q.ZoneLists(area)
+    local conceal = Get("hideDone")
     if #chains > 0 then
         R2:Gap(4)
-        R2:Line("Chains", { size = 13, colour = GOLD })
+        R2:Line("Chains", { size = 13, colour = AMBER })
         for _, chain in ipairs(chains) do
-            local at, steps = Q.ChainAt(chain)
-            if not (hide and at > steps) then
+            local at, stages = Q.ChainAt(chain)
+            if not (conceal and at > stages) then
                 R2:Line(
                     ("%s  %s"):format(
                         chain.name,
-                        Muted(at > steps and "done" or ("step %d of %d"):format(at, steps))
+                        Dim(at > stages and "done" or ("step %d of %d"):format(at, stages))
                     ),
-                    { indent = 4, colour = at > steps and MUTED or { 1, 1, 1 } }
+                    { indent = 4, colour = at > stages and DIM or { 1, 1, 1 } }
                 )
-                for index, step in ipairs(chain.steps) do
-                    if not (hide and Q.StepDone(step)) and (index >= at - 1 or not hide) then
+                for catalog, step in ipairs(chain.steps) do
+                    if not (conceal and Q.StepDone(step)) and (catalog >= at - 1 or not conceal) then
                         for _, ident in ipairs(step) do
-                            QuestRow(R2, ident, 18)
+                            TaskRow(R2, ident, 18)
                         end
                     end
                 end
@@ -1722,29 +1722,29 @@ local function DrawQuestZone(R2, zone)
     local isShown = false
     for _, ident in ipairs(singles) do
         local status = Q.State(ident)
-        if not (hide and status == "done") then
+        if not (conceal and status == "done") then
             if not isShown then
                 R2:Gap(4)
-                R2:Line("Quests", { size = 13, colour = GOLD })
+                R2:Line("Quests", { size = 13, colour = AMBER })
                 isShown = true
             end
-            QuestRow(R2, ident, 4)
+            TaskRow(R2, ident, 4)
         end
     end
 end
 
-local function DrawQuests(R2, hostFrame)
-    CUI.Kit.SyncAccent(ACCENT)
+local function RenderQuests(R2, hostWindow)
+    CUI.Kit.SyncAccent(BRAND)
     Q.Refresh()
-    local tbl = Tools(hostFrame, "quests", function(self)
-        ZoneMenu(self, Q.Zones(), Q.ZoneProgress, function(zone)
-            questZone = zone
+    local tbl = Tools(hostWindow, "quests", function(self)
+        AreaMenu(self, Q.Zones(), Q.ZoneProgress, function(area)
+            taskArea = area
             module.DiscoveryRedraw()
         end)
-    end, function(textValue)
-        questSearch = textValue
+    end, function(labelValue)
+        taskSearch = labelValue
         module.DiscoveryRedraw()
-    end, function() return questSearch end, {
+    end, function() return taskSearch end, {
         label = "Hide done",
         get = function() return Get("hideDone") end,
         set = function(val)
@@ -1753,34 +1753,34 @@ local function DrawQuests(R2, hostFrame)
         end,
     })
     local num, sum = Q.Progress()
-    local search = questSearch:lower()
+    local search = taskSearch:lower()
     if #search >= 2 then
         tbl.zone:SetText("Search results")
-        local found, count = Q.Search(search, 200)
-        R2:Line(("%d quests match"):format(count), { colour = MUTED })
+        local found, tally = Q.Search(search, 200)
+        R2:Line(("%d quests match"):format(tally), { colour = DIM })
         for _, entry in ipairs(found) do
             R2:Gap(4)
-            R2:Line(entry.zone.name, { size = 13, colour = GOLD })
+            R2:Line(entry.zone.name, { size = 13, colour = AMBER })
             for _, ident in ipairs(entry.ids) do
-                QuestRow(R2, ident, 4)
+                TaskRow(R2, ident, 4)
             end
         end
         return
     end
-    if questZone == false then
+    if taskArea == false then
         tbl.zone:SetText("All zones")
         R2:Line(
-            ("Quest List  %s"):format(Muted(("%d of %d done"):format(num, sum))),
-            { size = 16, colour = ACCENT }
+            ("Quest List  %s"):format(Dim(("%d of %d done"):format(num, sum))),
+            { size = 16, colour = BRAND }
         )
-        for _, zone in ipairs(Q.Zones()) do
-            local zn, zt, low, high = Q.ZoneProgress(zone)
+        for _, area in ipairs(Q.Zones()) do
+            local zn, zt, low, upper = Q.ZoneProgress(area)
             if zt > 0 then
-                R2:Line(zone.name, {
-                    right = ("%d / %d%s"):format(zn, zt, low and ("   %d-%d"):format(low, high) or ""),
-                    rightColour = zn == zt and { 0.38, 0.85, 0.5 } or MUTED,
+                R2:Line(area.name, {
+                    right = ("%d / %d%s"):format(zn, zt, low and ("   %d-%d"):format(low, upper) or ""),
+                    rightColour = zn == zt and { 0.38, 0.85, 0.5 } or DIM,
                     onClick = function()
-                        questZone = zone
+                        taskArea = area
                         module.DiscoveryRedraw()
                     end,
                 })
@@ -1788,25 +1788,25 @@ local function DrawQuests(R2, hostFrame)
         end
         return
     end
-    local zone = questZone or Q.CurrentZone()
-    if not zone then
+    local area = taskArea or Q.CurrentZone()
+    if not area then
         tbl.zone:SetText("Pick a zone")
-        R2:Line("This place has no quests in the list. Pick a zone above.", { colour = MUTED })
+        R2:Line("This place has no quests in the list. Pick a zone above.", { colour = DIM })
         return
     end
-    tbl.zone:SetText(zone.name)
-    DrawQuestZone(R2, zone)
+    tbl.zone:SetText(area.name)
+    RenderTaskArea(R2, area)
 end
 
-local function RareRow(R2, npc)
+local function BossRow(R2, npc)
     local killed = R.Killed(npc)
-    local name = (killed and (CHECK .. " ") or "")
+    local title = (killed and (TEST .. " ") or "")
         .. R.Name(npc)
         .. (R.Elite(npc) and " |cffffb040Elite|r" or "")
-    R2:Line(killed and Muted(name) or name, {
+    R2:Line(killed and Dim(title) or title, {
         indent = 4,
         right = "Level " .. R.LevelText(npc),
-        tip = RareTip(npc),
+        tip = BossHint(npc),
         onClick = function()
             if IsShiftKeyDown() then
                 local record = R.Record(npc)
@@ -1823,17 +1823,17 @@ local function RareRow(R2, npc)
     })
 end
 
-local function DrawRares(R2, hostFrame)
-    CUI.Kit.SyncAccent(ACCENT)
-    local tbl = Tools(hostFrame, "rares", function(self)
-        ZoneMenu(self, R.Zones(), R.ZoneProgress, function(zone)
-            rareZone = zone
+local function RenderRares(R2, hostWindow)
+    CUI.Kit.SyncAccent(BRAND)
+    local tbl = Tools(hostWindow, "rares", function(self)
+        AreaMenu(self, R.Zones(), R.ZoneProgress, function(area)
+            eliteArea = area
             module.DiscoveryRedraw()
         end)
-    end, function(textValue)
-        rareSearch = textValue
+    end, function(labelValue)
+        eliteSearch = labelValue
         module.DiscoveryRedraw()
-    end, function() return rareSearch end, {
+    end, function() return eliteSearch end, {
         label = "Hide killed",
         get = function() return Get("rareHideKilled") end,
         set = function(val)
@@ -1841,35 +1841,35 @@ local function DrawRares(R2, hostFrame)
             module.DiscoveryRedraw()
         end,
     })
-    local search = rareSearch:lower()
-    local hide = Get("rareHideKilled")
+    local search = eliteSearch:lower()
+    local conceal = Get("rareHideKilled")
     if #search >= 2 then
         tbl.zone:SetText("Search results")
-        local found, count = R.Search(search, 200)
-        R2:Line(("%d rares match"):format(count), { colour = MUTED })
+        local found, tally = R.Search(search, 200)
+        R2:Line(("%d rares match"):format(tally), { colour = DIM })
         for _, entry in ipairs(found) do
             R2:Gap(4)
-            R2:Line(entry.zone.name, { size = 13, colour = GOLD })
+            R2:Line(entry.zone.name, { size = 13, colour = AMBER })
             for _, npc in ipairs(entry.ids) do
-                RareRow(R2, npc)
+                BossRow(R2, npc)
             end
         end
         return
     end
     local num, sum = R.Progress()
-    if rareZone == false then
+    if eliteArea == false then
         tbl.zone:SetText("All zones")
         R2:Line(
-            ("Rares  %s"):format(Muted(("%d of %d killed"):format(num, sum))),
-            { size = 16, colour = ACCENT }
+            ("Rares  %s"):format(Dim(("%d of %d killed"):format(num, sum))),
+            { size = 16, colour = BRAND }
         )
-        for _, zone in ipairs(R.Zones()) do
-            local zn, zt, low, high = R.ZoneProgress(zone)
+        for _, area in ipairs(R.Zones()) do
+            local zn, zt, low, upper = R.ZoneProgress(area)
             if zt > 0 then
-                R2:Line(zone.name, {
-                    right = ("%d / %d%s"):format(zn, zt, low and ("   %d-%d"):format(low, high) or ""),
+                R2:Line(area.name, {
+                    right = ("%d / %d%s"):format(zn, zt, low and ("   %d-%d"):format(low, upper) or ""),
                     onClick = function()
-                        rareZone = zone
+                        eliteArea = area
                         module.DiscoveryRedraw()
                     end,
                 })
@@ -1877,49 +1877,49 @@ local function DrawRares(R2, hostFrame)
         end
         return
     end
-    local zone = rareZone or R.CurrentZone()
-    if not zone then
+    local area = eliteArea or R.CurrentZone()
+    if not area then
         tbl.zone:SetText("Pick a zone")
-        R2:Line("This place has no rares in the list. Pick a zone above.", { colour = MUTED })
+        R2:Line("This place has no rares in the list. Pick a zone above.", { colour = DIM })
         return
     end
-    tbl.zone:SetText(zone.name)
-    local zn, zt = R.ZoneProgress(zone)
+    tbl.zone:SetText(area.name)
+    local zn, zt = R.ZoneProgress(area)
     R2:Line(
-        ("%s  %s"):format(zone.name, Muted(("%d of %d killed"):format(zn, zt))),
-        { size = 15, colour = ACCENT }
+        ("%s  %s"):format(area.name, Dim(("%d of %d killed"):format(zn, zt))),
+        { size = 15, colour = BRAND }
     )
     R2:Line(
         "Kills count from when Discovery is on. Shift-click a rare you killed before to tick it off.",
-        { colour = MUTED }
+        { colour = DIM }
     )
     R2:Gap(4)
-    for _, npc in ipairs(R.ZoneList(zone)) do
-        if not (hide and R.Killed(npc)) then RareRow(R2, npc) end
+    for _, npc in ipairs(R.ZoneList(area)) do
+        if not (conceal and R.Killed(npc)) then BossRow(R2, npc) end
     end
 end
 
-module.DiscoveryAddTab({ key = "quests", label = "Quest List", order = 40, draw = DrawQuests })
-module.DiscoveryAddTab({ key = "rares", label = "Rares", order = 50, draw = DrawRares })
+module.DiscoveryAddTab({ key = "quests", label = "Quest List", order = 40, draw = RenderQuests })
+module.DiscoveryAddTab({ key = "rares", label = "Rares", order = 50, draw = RenderRares })
 
 R.OnChange(function() module.DiscoveryRedraw() end)
 
 -------------------------------------------------------------------------------
 --  Events and apply
 -------------------------------------------------------------------------------
-local eventFrame = CreateFrame("Frame")
-eventFrame:SetScript("OnEvent", function()
-    if added and WorldMapFrame:IsShown() then DrawPins() end
+local eventWindow = CreateFrame("Frame")
+eventWindow:SetScript("OnEvent", function()
+    if added and WorldMapFrame:IsShown() then RenderMarkers() end
     module.DiscoveryRedraw()
 end)
 
 function module.QuestListApply()
-    giverEvents:UnregisterAllEvents()
+    sourceEvents:UnregisterAllEvents()
     killEvents:UnregisterAllEvents()
-    eventFrame:UnregisterAllEvents()
+    eventWindow:UnregisterAllEvents()
     if On() then
         for _, event in ipairs({ "GOSSIP_SHOW", "QUEST_GREETING", "QUEST_DETAIL", "QUEST_TURNED_IN" }) do
-            giverEvents:RegisterEvent(event)
+            sourceEvents:RegisterEvent(event)
         end
         killEvents:RegisterEvent("PLAYER_TARGET_CHANGED")
         killEvents:RegisterEvent("LOOT_READY")
@@ -1930,18 +1930,18 @@ function module.QuestListApply()
             "PLAYER_LEVEL_UP",
             "SKILL_LINES_CHANGED",
         }) do
-            pcall(eventFrame.RegisterEvent, eventFrame, event)
+            pcall(eventWindow.RegisterEvent, eventWindow, event)
         end
     end
-    PinsApply()
-    RareAlert.Apply()
+    MarkersUse()
+    BossCaution.Apply()
 end
 
 CUI._QuestList = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = function() module.QuestListApply() end,
-    TestAlert = RareAlert.Test,
+    TestAlert = BossCaution.Test,
 }
 
 F.Start(function() end, {
@@ -1949,10 +1949,10 @@ F.Start(function() end, {
     label = "Rare Alert",
     order = 757,
     shown = function() return On() and Get("rareAlert") end,
-    frame = function(build)
-        local cardFrame = RareAlert.Frame(build)
-        if build and CUI._unlockActive then RareAlert.Preview(true) end
-        return cardFrame
+    frame = function(make)
+        local tileWindow = BossCaution.Frame(make)
+        if make and CUI._unlockActive then BossCaution.Preview(true) end
+        return tileWindow
     end,
     size = function() return 260, 64 end,
     noAnchorTarget = true,
