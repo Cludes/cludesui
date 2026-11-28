@@ -115,7 +115,7 @@ local function Clock()
     end
 end
 
-local function MarkLayerSeen(key, zone, unitGuid)
+local function TakeReading(key, zone, unitGuid)
     if key == layer then
         pendingKey, pendingGuid = nil, nil
         return
@@ -143,7 +143,7 @@ end
 local function Read(unitToken, replace)
     if inside or (layer and not replace) then return end
     local key, zone = LayerOf(UnitGUID(unitToken))
-    if key then MarkLayerSeen(key, zone, UnitGUID(unitToken)) end
+    if key then TakeReading(key, zone, UnitGUID(unitToken)) end
 end
 
 local function Forget()
@@ -291,7 +291,7 @@ local function Accept()
     if not wasUp and StaticPopup1 and StaticPopup1:IsShown() then StaticPopup1Button1:Click() end
 end
 
-local function HookTooltip()
+local function HookSwapPrompt()
     local prompt = _G.ShardTransferImminentFrame
     if hooked or not prompt then return end
     prompt:HookScript("OnShow", Accept)
@@ -299,14 +299,14 @@ local function HookTooltip()
 end
 
 swapEv:SetScript("OnEvent", function()
-    HookTooltip()
+    HookSwapPrompt()
     Accept()
 end)
 
 S.Start(function()
     if S.Enabled() then
         swapEv:RegisterEvent("GROUP_JOINED")
-        HookTooltip()
+        HookSwapPrompt()
     else
         swapEv:UnregisterAllEvents()
     end

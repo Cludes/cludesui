@@ -79,7 +79,7 @@ local function Heading(rxp, guide)
     return title
 end
 
-local function StepRow(rxp, element)
+local function ReadGuideStep(rxp, element)
     local frame = element.frame
     local labelFs = Dig(frame, "text")
     local shown = Has(labelFs, "GetText") and labelFs:GetText()
@@ -128,7 +128,7 @@ local function Load()
         if s.active and not s.hidewindow and not s.hidetip then
             local roster = {}
             for _, element in ipairs(s.elements or {}) do
-                if element.text or element.rawtext or element.tooltipText then roster[#roster + 1] = StepRow(rxp, element) end
+                if element.text or element.rawtext or element.tooltipText then roster[#roster + 1] = ReadGuideStep(rxp, element) end
             end
             local label = (s.title and s.title ~= "") and s.title or CUI.Lf("Step %1$d", s.index)
             model.steps[#model.steps + 1] = { label = label, rows = roster, source = s }
@@ -299,7 +299,7 @@ local function Box(i)
     return b
 end
 
-local function StepText(i)
+local function StepLine(i)
     local fs = lines[i]
     if fs then return fs end
     fs = Label(window, CUI.Kit.TEXT_SIZE)
@@ -391,7 +391,7 @@ local function Render()
             local by = -BOX_PAD - box.label:GetStringHeight() - 4
             for _, line in ipairs(step.rows) do
                 linesUsed = linesUsed + 1
-                local fs = StepText(linesUsed)
+                local fs = StepLine(linesUsed)
                 fs:SetParent(box)
                 fs:ClearAllPoints()
                 fs:SetPoint("TOPLEFT", box, "TOPLEFT", BOX_PAD, by)

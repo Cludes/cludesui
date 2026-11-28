@@ -216,7 +216,7 @@ function TE.Render()
     panel:Show()
 end
 
-local function QueueEnchant()
+local function QueueRefresh()
     if state.pending then return end
     state.pending = true
     C_Timer.After(0.1, TE.Render)
@@ -255,7 +255,7 @@ events:SetScript("OnEvent", function(_, event, ...)
         if panel then panel:Hide() end
         return
     end
-    QueueEnchant()
+    QueueRefresh()
 end)
 
 local function Apply()

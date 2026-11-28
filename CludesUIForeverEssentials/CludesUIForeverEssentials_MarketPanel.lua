@@ -380,7 +380,7 @@ end
 -- The game asks before a post far under the going price: its own popup, and
 -- our post goes on only when you accept it there.
 local warningHooked = false
-local function HookBuyWarning()
+local function HookPostWarning()
     if warningHooked then return end
     local dialog = StaticPopupDialogs and StaticPopupDialogs.AUCTION_HOUSE_POST_WARNING
     if not dialog then return end
@@ -425,7 +425,7 @@ function Sell.Post()
             quantity = quantity,
             price = price,
         }
-        HookBuyWarning()
+        HookPostWarning()
     else
         PostWait()
     end

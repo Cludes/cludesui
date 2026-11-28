@@ -69,9 +69,9 @@ local function Splits()
     return c.chars[unitGuid]
 end
 
-local function TimeToLevel() return current and (current.base + (anchor and GetTime() - anchor or 0)) or 0 end
+local function TimeThisLevel() return current and (current.base + (anchor and GetTime() - anchor or 0)) or 0 end
 
-local function SessionStartLevel(cfg, fromStart, level)
+local function StartLevelTimer(cfg, fromStart, level)
     current = { level = level or UnitLevel("player"), base = 0, partial = not fromStart }
     anchor = not paused and GetTime() or nil
     cfg.current = current
@@ -85,13 +85,13 @@ local function TrackSplits(newLevel)
         if saved and saved.level == UnitLevel("player") then
             current, anchor = saved, not paused and GetTime() or nil
         else
-            SessionStartLevel(cfg, UnitXP("player") == 0)
+            StartLevelTimer(cfg, UnitXP("player") == 0)
         end
     end
     local level = newLevel or UnitLevel("player")
     if level > current.level then
-        cfg.levels[current.level] = { total = not current.partial and TimeToLevel() or nil }
-        SessionStartLevel(cfg, true, level)
+        cfg.levels[current.level] = { total = not current.partial and TimeThisLevel() or nil }
+        StartLevelTimer(cfg, true, level)
     elseif not anchor and not paused then
         anchor = GetTime()
     end
@@ -126,7 +126,7 @@ function module.XPPause()
     if paused then return end
     paused, pausedAt = true, GetTime()
     if current and anchor then
-        current.base, anchor = TimeToLevel(), nil
+        current.base, anchor = TimeThisLevel(), nil
     end
     if RefreshCard then RefreshCard() end
 end
@@ -209,7 +209,7 @@ RefreshCard = function()
     if current then
         lines[#lines + 1] = ("Level %d  %s%s"):format(
             current.level,
-            Clock(TimeToLevel()),
+            Clock(TimeThisLevel()),
             current.partial and "+" or ""
         )
     end
@@ -248,7 +248,7 @@ end
 local xEv = CreateFrame("Frame")
 xEv:SetScript("OnEvent", function(_, evt, arg1)
     if evt == "PLAYER_LOGOUT" then
-        if current then current.base = TimeToLevel() end
+        if current then current.base = TimeThisLevel() end
         return
     end
     if evt == "PLAYER_XP_UPDATE" then
@@ -265,7 +265,7 @@ local clock
 local function XApply()
     if not X.Enabled() then
         if current and anchor then
-            current.base, anchor = TimeToLevel(), nil
+            current.base, anchor = TimeThisLevel(), nil
         end
         xEv:UnregisterAllEvents()
         if clock then
