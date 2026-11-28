@@ -3247,6 +3247,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Say When You Drink",
+            tooltip = "As a healer in a dungeon or raid group, sitting down to drink says \"Drinking (25% mana)\" in group chat, and \"Mana full\" once you are ready. Works even with the Healer Mana list off.",
+            getValue = function() return hm.Get("sayDrink") end,
+            setValue = function(val) Set(hm, "sayDrink", val and true or false) end,
+        }, { type = "label", text = "" })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Width",
             min = 100,

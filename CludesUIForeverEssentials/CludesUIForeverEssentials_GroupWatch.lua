@@ -27,7 +27,7 @@ end
 -------------------------------------------------------------------------------
 local HM = module.Feature(
     "healerMana",
-    { enabled = false, where = "instance", showSelf = true, drinking = true, width = 160, size = 12 },
+    { enabled = false, where = "instance", showSelf = true, drinking = true, width = 160, size = 12, sayDrink = false },
     { point = "LEFT", relPoint = "LEFT", x = 40, y = -120 }
 )
 
@@ -375,7 +375,66 @@ HMApply = function()
     RedrawHealers()
 end
 
-HM.Start(HMApply, {
+-------------------------------------------------------------------------------
+--  Say When You Drink: a healer in a dungeon or raid group sitting down to
+--  drink says "Drinking (25% mana)" in group chat, and "Mana full" once the
+--  mana is back, so the group knows when to pull. Works on its own setting,
+--  with or without the Healer Mana list on.
+-------------------------------------------------------------------------------
+local drinkWatch = CreateFrame("Frame")
+local selfDrinking, saidFull = false, false
+local FULL = 0.98
+
+local function GroupChat()
+    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then return "INSTANCE_CHAT" end
+    if IsInRaid() then return "RAID" end
+    if IsInGroup() then return "PARTY" end
+end
+
+local function ManaShare()
+    local now, most = UnitPower("player", MANA), UnitPowerMax("player", MANA)
+    if Secret(now) or Secret(most) or not most or most <= 0 then return nil end
+    return now / most
+end
+
+local function SayToGroup(text)
+    local channel = GroupChat()
+    if not channel or (C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()) then return end
+    C_ChatInfo.SendChatMessage(text, channel)
+end
+
+local function DrinkCallWanted()
+    if not (HM.Get("sayDrink") and HealerManaWanted()) then return false end
+    local _, class = UnitClass("player")
+    return IsHealerUnit("player", class)
+end
+
+drinkWatch:SetScript("OnEvent", function(_, event)
+    if AurasSecret() then return end
+    local name = C_Spell.GetSpellName(DRINK_SPELL)
+    local drinking = name and C_UnitAuras.GetAuraDataBySpellName and C_UnitAuras.GetAuraDataBySpellName("player", name, "HELPFUL") ~= nil
+    local share = ManaShare()
+    if drinking and not selfDrinking then
+        selfDrinking, saidFull = true, share ~= nil and share >= FULL
+        if DrinkCallWanted() and share and share < FULL then SayToGroup(("Drinking (%d%% mana)"):format(share * 100)) end
+    elseif selfDrinking and share and share >= FULL and not saidFull then
+        saidFull = true
+        if DrinkCallWanted() then SayToGroup("Mana full") end
+    end
+    if not drinking then selfDrinking = false end
+end)
+
+local function ApplyDrinkCall()
+    drinkWatch:UnregisterAllEvents()
+    if not HM.Get("sayDrink") then return end
+    drinkWatch:RegisterUnitEvent("UNIT_AURA", "player")
+    drinkWatch:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
+end
+
+HM.Start(function()
+    HMApply()
+    ApplyDrinkCall()
+end, {
     key = "CUI_HealerMana",
     label = "Healer Mana",
     order = 746,
@@ -598,6 +657,13 @@ PT.Start(ApplyPetTracker, {
 })
 
 CUI._GroupWatch = {
-    healer = { Get = HM.Get, Cfg = HM.Cfg, Apply = HMApply },
+    healer = {
+        Get = HM.Get,
+        Cfg = HM.Cfg,
+        Apply = function()
+            HMApply()
+            ApplyDrinkCall()
+        end,
+    },
     pet = { Get = PT.Get, Cfg = PT.Cfg, Apply = ApplyPetTracker },
 }
