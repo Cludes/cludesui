@@ -98,4 +98,15 @@ Press("type hidden, tooltip says Undead", HIDDEN, 1525, "Rotting Ghoul")
 tipLine = HIDDEN
 Press("type and tooltip hidden", HIDDEN, 38, "Defias Thug")
 OUT:write("== printed: " .. table.concat(printed, " / ") .. "\n")
+
+-- GUIDs hidden as well, with two mages: the second humanoid gets the other
+-- mage's Polymorph on a free mark, never the first mob's Moon.
+CC.Reset()
+UnitCreatureType = function() return target.kind end
+members.party3 = { "Frosty", "MAGE", 30 }
+GetNumSubgroupMembers = function() return 3 end
+GetNumGroupMembers = function() return 4 end
+UnitGUID = function(u) return u == "target" and HIDDEN or nil end
+Press("GUID hidden, first humanoid", "Humanoid", 38, "Defias Thug")
+Press("GUID hidden, second humanoid", "Humanoid", 589, "Defias Pillager")
 CUI.Print = oldPrint

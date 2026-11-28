@@ -179,7 +179,8 @@ local function Pick(unit)
             for _, member in ipairs(roster) do
                 if member.class == control.class and member.level >= control.level and not Busy(member.name) then
                     local mark = control.mark
-                    if assigned[mark] and assigned[mark].guid ~= guid then
+                    -- Taken by another mob (with no GUID to tell, always another).
+                    if assigned[mark] and (guid == nil or assigned[mark].guid ~= guid) then
                         mark = nil
                         for m = 1, 6 do
                             if not assigned[m] then
