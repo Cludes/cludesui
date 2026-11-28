@@ -22,19 +22,19 @@ local MK = CUI._Market
 if not (Market and MK) then return end
 local Get = MK.Get
 
-local W, H, PAD, ROW = 340, 716, 10, CUI.Kit.ROW_H
+local W, H, PAD, LINE = 340, 716, 10, CUI.Kit.ROW_H
 local PAGE_H = H - 100 -- the space under the tabs and above the message line
 local PALETTE = CUI.Kit.Palette
-local MUTED, TEXT = PALETTE.muted, PALETTE.text
-local GREEN, RED, AMBER = PALETTE.green, PALETTE.red, PALETTE.amber
+local DIM, LABEL = PALETTE.muted, PALETTE.text
+local GREEN, CRIMSON, AMBER = PALETTE.green, PALETTE.red, PALETTE.amber
 local CUT = 0.95
 local SEARCH_TIMEOUT, POST_TIMEOUT = 6, 10
 local DURATIONS = { { 1, "12h" }, { 2, "24h" }, { 3, "48h" } }
 
-local Panel = { page = "sell" }
-local Deals, RenderDeals, BuildDeals -- DE Deals, further down
-local Shop, NewRow
-local panel
+local Pane = { page = "sell" }
+local Deals, RenderDeals, MakeDeals -- DE Deals, further down
+local Shop, FreshLine
+local pane
 
 local function Kit() return CUI.Kit end
 
@@ -65,18 +65,18 @@ end
 
 local function Paint(fs, c) fs:SetTextColor(c[1], c[2], c[3]) end
 
-local function Label(parent, size, colour)
+local function Label(parent, dims, tint)
     local fs = parent:CreateFontString(nil, "OVERLAY")
-    Kit().Font(fs, size, "essentials")
-    Paint(fs, colour or TEXT)
+    Kit().Font(fs, dims, "essentials")
+    Paint(fs, tint or LABEL)
     fs:SetJustifyH("LEFT")
     fs:SetWordWrap(false)
     return fs
 end
 
-local function Enable(button, on)
-    button:SetEnabled(on)
-    button:SetAlpha(on and 1 or 0.45)
+local function Enable(btn, on)
+    btn:SetEnabled(on)
+    btn:SetAlpha(on and 1 or 0.45)
 end
 
 -------------------------------------------------------------------------------
@@ -144,8 +144,8 @@ end
 --  Listings: one item's listings, cheapest first ({ price, quantity, own })
 -------------------------------------------------------------------------------
 local Listings = { rows = {}, gen = 0 }
-local SORT_PRICE = { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } }
-local SORT_BUYOUT = { { sortOrder = Enum.AuctionHouseSortOrder.Buyout, reverseSort = false } }
+local ORDER_PRICE = { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } }
+local ORDER_BUYOUT = { { sortOrder = Enum.AuctionHouseSortOrder.Buyout, reverseSort = false } }
 
 local function ListingsDone(state)
     Listings.state = state
@@ -167,7 +167,7 @@ function Listings.Send()
     local gen = Listings.gen
     Listings.state = "searching"
     if want.commodity then
-        C_AuctionHouse.SendSearchQuery(C_AuctionHouse.MakeItemKey(want.itemID), SORT_PRICE, true)
+        C_AuctionHouse.SendSearchQuery(C_AuctionHouse.MakeItemKey(want.itemID), ORDER_PRICE, true)
     else
         local key = want.itemKey
         if not key then
@@ -175,7 +175,7 @@ function Listings.Send()
             key = location and C_AuctionHouse.GetItemKeyFromItem(location)
         end
         if not key then return ListingsDone("listed") end
-        C_AuctionHouse.SendSearchQuery(key, SORT_BUYOUT, true)
+        C_AuctionHouse.SendSearchQuery(key, ORDER_BUYOUT, true)
     end
     C_Timer.After(SEARCH_TIMEOUT, function()
         if gen == Listings.gen and Listings.state == "searching" then ListingsDone("noanswer") end
@@ -189,10 +189,10 @@ function Listings.Want(entry, onDone)
     if entry then Listings.Send() end
 end
 
-local function ReadCommodities(itemID)
+local function LoadCommodities(thingID)
     wipe(Listings.rows)
-    for index = 1, math.min(C_AuctionHouse.GetNumCommoditySearchResults(itemID) or 0, 50) do
-        local r = C_AuctionHouse.GetCommoditySearchResultInfo(itemID, index)
+    for catalog = 1, math.min(C_AuctionHouse.GetNumCommoditySearchResults(thingID) or 0, 50) do
+        local r = C_AuctionHouse.GetCommoditySearchResultInfo(thingID, catalog)
         if r then
             Listings.rows[#Listings.rows + 1] =
                 { price = r.unitPrice, quantity = r.quantity, own = r.numOwnerItems or 0 }
@@ -200,10 +200,10 @@ local function ReadCommodities(itemID)
     end
 end
 
-local function ReadItems(itemKey)
+local function LoadItems(thingId)
     wipe(Listings.rows)
-    for index = 1, math.min(C_AuctionHouse.GetNumItemSearchResults(itemKey) or 0, 50) do
-        local r = C_AuctionHouse.GetItemSearchResultInfo(itemKey, index)
+    for catalog = 1, math.min(C_AuctionHouse.GetNumItemSearchResults(thingId) or 0, 50) do
+        local r = C_AuctionHouse.GetItemSearchResultInfo(thingId, catalog)
         if r and r.buyoutAmount then
             local own = r.containsOwnerItem and r.quantity or 0
             local last = Listings.rows[#Listings.rows]
@@ -225,19 +225,19 @@ function Listings.OnEvent(event, arg)
     if not want or Listings.state ~= "searching" then return end
     if event == "COMMODITY_SEARCH_RESULTS_UPDATED" then
         if want.commodity and arg == want.itemID then
-            ReadCommodities(arg)
+            LoadCommodities(arg)
             ListingsDone("listed")
         end
     elseif not want.commodity and type(arg) == "table" and arg.itemID == want.itemID then
-        ReadItems(arg)
+        LoadItems(arg)
         ListingsDone("listed")
     end
 end
 
 -- The cheapest listing that is not yours, and your cheapest.
-function Listings.Cheapest(rows)
+function Listings.Cheapest(lines)
     local other, own
-    for _, row in ipairs(rows or Listings.rows) do
+    for _, row in ipairs(lines or Listings.rows) do
         if not own and row.own > 0 then own = row.price end
         if not other and row.quantity > row.own then other = row.price end
     end
@@ -294,8 +294,8 @@ function Sell.Suggest(entry)
 end
 
 function Sell.Price(entry)
-    local set = Sell.priceSet[entry.key]
-    if set then return set, "hand" end
+    local assign = Sell.priceSet[entry.key]
+    if assign then return assign, "hand" end
     return Sell.Suggest(entry)
 end
 
@@ -323,21 +323,21 @@ function Sell.Pick(key)
     Sell.state = entry and "searching" or nil
     Mine.checking = nil -- a check cut short runs again after
     Listings.Want(entry, function()
-        for index, row in ipairs(Listings.rows) do
-            Sell.rows[index] = row
+        for catalog, row in ipairs(Listings.rows) do
+            Sell.rows[catalog] = row
         end
         Sell.state = Listings.state
-        Panel.Render()
+        Pane.Render()
         Mine.Resume()
     end)
-    Panel.Render()
+    Pane.Render()
 end
 
 -- The next item that is worth posting, after the one on show.
 function Sell.Next()
     local start = 0
-    for index, entry in ipairs(Sell.queue) do
-        if entry.key == Sell.focus then start = index end
+    for catalog, entry in ipairs(Sell.queue) do
+        if entry.key == Sell.focus then start = catalog end
     end
     for offset = 1, #Sell.queue do
         local entry = Sell.queue[(start + offset - 1) % #Sell.queue + 1]
@@ -354,9 +354,9 @@ local function PostDone(ok)
     posting.gen = posting.gen + 1
     if ok then
         local entry = posting.entry
-        Panel.posted = (Panel.posted or 0) + posting.quantity * posting.price
+        Pane.posted = (Pane.posted or 0) + posting.quantity * posting.price
         Sell.priceSet[entry.key], Sell.quantitySet[entry.key] = nil, nil
-        Panel.message = ("Posted %dx %s at %s each."):format(
+        Pane.message = ("Posted %dx %s at %s each."):format(
             posting.quantity,
             C_Item.GetItemNameByID(entry.itemID) or "item",
             Money(posting.price)
@@ -364,8 +364,8 @@ local function PostDone(ok)
         Sell.Read()
         if Bags.byKey[entry.key] then Sell.Pick(entry.key) else Sell.Next() end
     else
-        Panel.message = "The auction house did not take that post."
-        Panel.Render()
+        Pane.message = "The auction house did not take that post."
+        Pane.Render()
     end
 end
 
@@ -380,7 +380,7 @@ end
 -- The game asks before a post far under the going price: its own popup, and
 -- our post goes on only when you accept it there.
 local warningHooked = false
-local function HookWarning()
+local function AttachWarning()
     if warningHooked then return end
     local dialog = StaticPopupDialogs and StaticPopupDialogs.AUCTION_HOUSE_POST_WARNING
     if not dialog then return end
@@ -407,17 +407,17 @@ function Sell.Post()
     local location = Bags.Location(entry)
     if not location then return end
     local quantity, price, duration = Sell.Quantity(entry), (Sell.Price(entry)), Sell.Duration()
-    local needsConfirm
+    local requiresConfirm
     if entry.commodity then
-        needsConfirm = C_AuctionHouse.PostCommodity(location, duration, quantity, price)
+        requiresConfirm = C_AuctionHouse.PostCommodity(location, duration, quantity, price)
     else
-        needsConfirm = C_AuctionHouse.PostItem(location, duration, quantity, nil, price)
+        requiresConfirm = C_AuctionHouse.PostItem(location, duration, quantity, nil, price)
     end
     posting.entry, posting.quantity, posting.price = entry, quantity, price
     posting.multisell = not entry.commodity and quantity > 1
     posting.waiting = true
-    Panel.message = nil
-    if needsConfirm then
+    Pane.message = nil
+    if requiresConfirm then
         posting.confirm = {
             commodity = entry.commodity,
             location = location,
@@ -425,11 +425,11 @@ function Sell.Post()
             quantity = quantity,
             price = price,
         }
-        HookWarning()
+        AttachWarning()
     else
         PostWait()
     end
-    Panel.Render()
+    Pane.Render()
 end
 
 function Sell.OnEvent(event, created, total)
@@ -447,12 +447,12 @@ end
 --  My Auctions: each checked against the listings, one search at a time
 -------------------------------------------------------------------------------
 Mine = { list = {}, lowest = {}, checked = {}, cancelled = {} }
-local SORT_OWNED = {
+local ORDER_OWNED = {
     { sortOrder = Enum.AuctionHouseSortOrder.Name, reverseSort = false },
     { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false },
 }
 
-local function KeyOf(auction)
+local function IdOf(auction)
     local k = auction.itemKey
     if auction.commodity then return k.itemID end
     return k.itemID .. ":" .. (k.itemLevel or 0) .. ":" .. (k.itemSuffix or 0)
@@ -471,10 +471,10 @@ function Mine.Request()
     Mine.wanted = true
     if not C_AuctionHouse.IsThrottledMessageSystemReady() then return end
     Mine.wanted = false
-    C_AuctionHouse.QueryOwnedAuctions(SORT_OWNED)
+    C_AuctionHouse.QueryOwnedAuctions(ORDER_OWNED)
 end
 
-local function CheckNext()
+local function TestNext()
     Mine.checking = nil
     -- The Sell page's search goes first; it resumes the checks when done.
     if Sell.state == "searching" then return end
@@ -497,7 +497,7 @@ local function CheckNext()
                 )
             end
         end
-        return Panel.Render()
+        return Pane.Render()
     end
     local auction = Mine.checking
     Listings.Want(
@@ -510,22 +510,22 @@ local function CheckNext()
                 Mine.lowest[auction.key] = false
             end
             Mine.checked[auction.key] = true
-            CheckNext()
+            TestNext()
         end
     )
 end
 
 function Mine.Resume()
-    if not Mine.checking then CheckNext() end
+    if not Mine.checking then TestNext() end
 end
 
 function Mine.Read()
     wipe(Mine.list)
     wipe(Mine.cancelled)
-    for index = 1, C_AuctionHouse.GetNumOwnedAuctions() or 0 do
-        local info = C_AuctionHouse.GetOwnedAuctionInfo(index)
+    for catalog = 1, C_AuctionHouse.GetNumOwnedAuctions() or 0 do
+        local info = C_AuctionHouse.GetOwnedAuctionInfo(catalog)
         if info then
-            local keyInfo = C_AuctionHouse.GetItemKeyInfo(info.itemKey)
+            local idInfo = C_AuctionHouse.GetItemKeyInfo(info.itemKey)
             local auction = {
                 auctionID = info.auctionID,
                 itemKey = info.itemKey,
@@ -535,9 +535,9 @@ function Mine.Read()
                 price = info.buyoutAmount,
                 seconds = info.timeLeftSeconds,
                 sold = info.status == Enum.AuctionStatus.Sold,
-                commodity = keyInfo and keyInfo.isCommodity,
+                commodity = idInfo and idInfo.isCommodity,
             }
-            auction.key = keyInfo and KeyOf(auction)
+            auction.key = idInfo and IdOf(auction)
             Mine.list[#Mine.list + 1] = auction
         end
     end
@@ -547,7 +547,7 @@ function Mine.Read()
         if a ~= b then return a < b end
         return lhs.auctionID < rhs.auctionID
     end)
-    if not Mine.checking then CheckNext() end
+    if not Mine.checking then TestNext() end
 end
 
 function Mine.Counts()
@@ -567,7 +567,7 @@ function Mine.Cancel(auction)
     if not Mine.CanCancel(auction) then return end
     C_AuctionHouse.CancelAuction(auction.auctionID)
     Mine.cancelled[auction.auctionID] = true
-    Panel.Render()
+    Pane.Render()
 end
 
 function Mine.CancelNext()
@@ -596,10 +596,10 @@ function Deals.On()
     return DE ~= nil and DE.On() and DE.D.Known()
 end
 
-local function DealsSkill()
-    for _, index in pairs({ GetProfessions() }) do
-        local _, _, rank, _, _, _, line, modifier = GetProfessionInfo(index)
-        if line == 333 then return (rank or 0) + (modifier or 0) end
+local function DealsCraft()
+    for _, catalog in pairs({ GetProfessions() }) do
+        local _, _, tier, _, _, _, line, modifier = GetProfessionInfo(catalog)
+        if line == 333 then return (tier or 0) + (modifier or 0) end
     end
 end
 
@@ -612,40 +612,40 @@ function Deals.Find()
     local gen = Deals.gen
     if not (DE and house and house.prices) then
         Deals.state = "noscan"
-        return Panel.Render()
+        return Pane.Render()
     end
-    local V, skill = DE.Values, DealsSkill()
+    local V, craft = DE.Values, DealsCraft()
     local ids = {}
-    for itemID in pairs(house.prices) do
-        ids[#ids + 1] = itemID
+    for thingID in pairs(house.prices) do
+        ids[#ids + 1] = thingID
     end
     Deals.state, Deals.loading, Deals.done, Deals.total = "working", 0, 0, #ids
-    local index = 0
+    local catalog = 0
     local function Step()
         if gen ~= Deals.gen then return end
-        local last = math.min(index + DEALS_CHUNK, #ids)
-        for at = index + 1, last do
-            local itemID = ids[at]
-            local name, link, quality, level, _, _, _, _, equip, icon, _, classID = C_Item.GetItemInfo(itemID)
-            if not name then
-                local _, _, _, instantEquip, _, instantClass = C_Item.GetItemInfoInstant(itemID)
-                if instantClass == 2 or instantClass == 4 then
+        local last = math.min(catalog + DEALS_CHUNK, #ids)
+        for at = catalog + 1, last do
+            local thingID = ids[at]
+            local title, chain, grade, lvl, _, _, _, _, equip, glyph, _, callingID = C_Item.GetItemInfo(thingID)
+            if not title then
+                local _, _, _, instantEquip, _, instantCalling = C_Item.GetItemInfoInstant(thingID)
+                if instantCalling == 2 or instantCalling == 4 then
                     Deals.loading = Deals.loading + 1
-                    C_Item.RequestLoadItemDataByID(itemID)
+                    C_Item.RequestLoadItemDataByID(thingID)
                 end
-            elseif V.Takes(itemID, classID, quality, equip) then
-                local outcomes = V.Outcomes(classID, quality, level)
+            elseif V.Takes(thingID, callingID, grade, equip) then
+                local outcomes = V.Outcomes(callingID, grade, lvl)
                 local worth = outcomes and V.Expected(outcomes, function(id) return house.prices[id] end)
-                local need = V.Skill(level, quality)
-                if worth and not (Deals.mine and skill and need and need > skill) then
-                    local price = house.prices[itemID]
+                local need = V.Skill(lvl, grade)
+                if worth and not (Deals.mine and craft and need and need > craft) then
+                    local price = house.prices[thingID]
                     local value = math.floor(worth * CUT)
                     if value > price then
                         Deals.list[#Deals.list + 1] = {
-                            itemID = itemID,
-                            name = name,
-                            link = link,
-                            icon = icon,
+                            itemID = thingID,
+                            name = title,
+                            link = chain,
+                            icon = glyph,
                             price = price,
                             value = value,
                             profit = value - price,
@@ -655,8 +655,8 @@ function Deals.Find()
                 end
             end
         end
-        index, Deals.done = last, last
-        if index < #ids then
+        catalog, Deals.done = last, last
+        if catalog < #ids then
             C_Timer.After(0, Step)
         else
             table.sort(Deals.list, function(lhs, rhs)
@@ -668,7 +668,7 @@ function Deals.Find()
             end
             Deals.state = "done"
         end
-        Panel.Render()
+        Pane.Render()
     end
     Step()
 end
@@ -682,7 +682,7 @@ function Deals.Search(deal)
     bar:StartSearch()
 end
 
-BuildDeals = function(page)
+MakeDeals = function(page)
     local K = Kit()
     page.find = K.Button(page, "Find Deals", 110, 24, function() Deals.Find() end, {
         key = "essentials",
@@ -696,7 +696,7 @@ BuildDeals = function(page)
     end, "essentials")
     page.mineOnly:SetPoint("LEFT", page.find, "RIGHT", 12, 0)
     page.mineOnly:SetChecked(true)
-    page.status = Label(page, CUI.Kit.SMALL_SIZE, MUTED)
+    page.status = Label(page, CUI.Kit.SMALL_SIZE, DIM)
     page.status:SetPoint("TOPLEFT", PAD, -36)
     page.status:SetPoint("RIGHT", -PAD, 0)
     page.status:SetWordWrap(true)
@@ -704,7 +704,7 @@ BuildDeals = function(page)
 end
 
 RenderDeals = function()
-    local page = panel.deals
+    local page = pane.deals
     local status
     if Deals.state == "noscan" then
         status = "Scan Prices first: deals come from your last scan."
@@ -717,15 +717,15 @@ RenderDeals = function()
         status = "Find Deals goes through your last price scan."
     end
     page.status:SetText(status)
-    local shown = math.max(0, math.floor((PAGE_H - 70) / ROW))
-    for index = 1, math.max(shown, #page.rows) do
-        local deal = index <= shown and Deals.list[index] or nil
-        local row = page.rows[index]
+    local shown = math.max(0, math.floor((PAGE_H - 70) / LINE))
+    for catalog = 1, math.max(shown, #page.rows) do
+        local deal = catalog <= shown and Deals.list[catalog] or nil
+        local row = page.rows[catalog]
         if not row and deal then
-            row = NewRow(page, index, -64, function(self)
+            row = FreshLine(page, catalog, -64, function(self)
                 if self.deal then Deals.Search(self.deal) end
             end)
-            page.rows[index] = row
+            page.rows[catalog] = row
         end
         if row then
             row.deal, row.link = deal, deal and deal.link
@@ -749,20 +749,20 @@ Shop = { list = {} }
 function Shop.On() return Get("shopping") ~= false end
 
 -- "Linen Cloth: 3/10" or "3/10 Linen Cloth" -> "Linen Cloth".
-local function ObjectiveName(text)
+local function ObjectiveTitle(text)
     if type(text) ~= "string" then return end
-    local name = text:gsub("%d+%s*/%s*%d+", ""):gsub("^[%s:]+", ""):gsub("[%s:]+$", "")
-    return name ~= "" and name or nil
+    local title = text:gsub("%d+%s*/%s*%d+", ""):gsub("^[%s:]+", ""):gsub("[%s:]+$", "")
+    return title ~= "" and title or nil
 end
 
-local QUEST_ITEM = 12 -- Enum.ItemClass.Questitem
+local TASK_THING = 12 -- Enum.ItemClass.Questitem
 
 -- One RestedXP step line that wants an item (.buy or .collect): its item and
 -- count from the line's own fields, else from its text ("Gorilla Fang: 8/10").
 -- nil when it wants nothing or has it all; "loading" while the game loads it.
-local function GuideItem(element)
-    local tag = type(element.tag) == "string" and element.tag or ""
-    if not (tag:find("^buy") or tag:find("^collect")) then return end
+local function GuideThing(element)
+    local label = type(element.tag) == "string" and element.tag or ""
+    if not (label:find("^buy") or label:find("^collect")) then return end
     local id = tonumber(element.id or element.itemId or element.itemID)
     local need = tonumber(element.qty or element.count)
     local have
@@ -771,74 +771,74 @@ local function GuideItem(element)
         local shown = fs and fs.GetText and fs:GetText() or element.text
         if type(shown) ~= "string" then return end
         shown = shown:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T[^|]*|t", ""):gsub("|H[^|]*|h", ""):gsub("|h", "")
-        local name, got, want = shown:match("^%s*(.-):%s*(%d+)%s*/%s*(%d+)%s*$")
-        if not name then return end
-        name = name:gsub("^%[", ""):gsub("%]$", "")
-        id, have, need = C_Item.GetItemInfoInstant(name), tonumber(got), tonumber(want)
+        local title, got, want = shown:match("^%s*(.-):%s*(%d+)%s*/%s*(%d+)%s*$")
+        if not title then return end
+        title = title:gsub("^%[", ""):gsub("%]$", "")
+        id, have, need = C_Item.GetItemInfoInstant(title), tonumber(got), tonumber(want)
         if not id then return end
     end
     have = C_Item.GetItemCount(id) or have or 0
     if have >= need then return end
-    local name, link, _, _, _, _, _, _, _, icon = C_Item.GetItemInfo(id)
-    if not name then
+    local title, chain, _, _, _, _, _, _, _, glyph = C_Item.GetItemInfo(id)
+    if not title then
         C_Item.RequestLoadItemDataByID(id)
         return "loading"
     end
-    return { name = name, link = link, icon = icon, have = have, need = need, from = "Guide" }
+    return { name = title, link = chain, icon = glyph, have = have, need = need, from = "Guide" }
 end
 
 function Shop.Read()
-    local list, seen = {}, {}
+    local roster, spotted = {}, {}
     Shop.loading = 0
-    local function Add(entry)
+    local function Put(entry)
         local key = entry.name:lower()
-        if seen[key] then return end
-        seen[key] = true
-        list[#list + 1] = entry
+        if spotted[key] then return end
+        spotted[key] = true
+        roster[#roster + 1] = entry
     end
     local rxp = rawget(_G, "RXP")
-    local steps = rxp and rxp.RXPFrame and rxp.RXPFrame.activeSteps
-    for _, step in ipairs(type(steps) == "table" and steps or {}) do
+    local stages = rxp and rxp.RXPFrame and rxp.RXPFrame.activeSteps
+    for _, step in ipairs(type(stages) == "table" and stages or {}) do
         if step.active then
             for _, element in ipairs(step.elements or {}) do
-                local entry = not element.skip and GuideItem(element)
+                local entry = not element.skip and GuideThing(element)
                 if entry == "loading" then
                     Shop.loading = Shop.loading + 1
                 elseif entry then
-                    Add(entry)
+                    Put(entry)
                 end
             end
         end
     end
-    for index = 1, C_QuestLog.GetNumQuestLogEntries() do
-        local info = C_QuestLog.GetInfo(index)
+    for catalog = 1, C_QuestLog.GetNumQuestLogEntries() do
+        local info = C_QuestLog.GetInfo(catalog)
         if info and not info.isHeader and info.questID then
             for _, objective in ipairs(C_QuestLog.GetQuestObjectives(info.questID) or {}) do
-                local name = objective.type == "item" and not objective.finished and ObjectiveName(objective.text)
+                local title = objective.type == "item" and not objective.finished and ObjectiveTitle(objective.text)
                 -- Only items the auction house can sell: quest-only items (a head,
                 -- a letter) and items the game does not know yet are left out.
-                local itemID, _, _, _, icon, classID = C_Item.GetItemInfoInstant(name or "")
-                if name and itemID and classID ~= QUEST_ITEM then
-                    local link = select(2, C_Item.GetItemInfo(itemID))
-                    Add({ name = name, link = link, icon = icon, have = objective.numFulfilled or 0,
+                local thingID, _, _, _, glyph, callingID = C_Item.GetItemInfoInstant(title or "")
+                if title and thingID and callingID ~= TASK_THING then
+                    local chain = select(2, C_Item.GetItemInfo(thingID))
+                    Put({ name = title, link = chain, icon = glyph, have = objective.numFulfilled or 0,
                         need = objective.numRequired or 0, from = "Quest" })
                 end
             end
         end
     end
-    Shop.list = list
+    Shop.list = roster
     -- Guide items the game had not loaded yet: read again once it has.
     if Shop.loading > 0 and not Shop.retry then
         Shop.retry = true
         C_Timer.After(1, function()
             Shop.retry = false
-            if Panel.page == "shop" then Panel.Render() end
+            if Pane.page == "shop" then Pane.Render() end
         end)
     end
 end
 
-local function BuildShop(page)
-    page.status = Label(page, CUI.Kit.SMALL_SIZE, MUTED)
+local function MakeShop(page)
+    page.status = Label(page, CUI.Kit.SMALL_SIZE, DIM)
     page.status:SetPoint("TOPLEFT", PAD, -8)
     page.status:SetPoint("RIGHT", -PAD, 0)
     page.status:SetWordWrap(true)
@@ -846,20 +846,20 @@ local function BuildShop(page)
 end
 
 local function RenderShop()
-    local page = panel.shop
+    local page = pane.shop
     Shop.Read()
     page.status:SetText(#Shop.list == 0
         and "Nothing to buy: no RestedXP buy step or quest item is waiting."
         or ("%d to buy for your guide and quests. Click one to search for it."):format(#Shop.list))
-    local shown = math.max(0, math.floor((PAGE_H - 40) / ROW))
-    for index = 1, math.max(shown, #page.rows) do
-        local entry = index <= shown and Shop.list[index] or nil
-        local row = page.rows[index]
+    local shown = math.max(0, math.floor((PAGE_H - 40) / LINE))
+    for catalog = 1, math.max(shown, #page.rows) do
+        local entry = catalog <= shown and Shop.list[catalog] or nil
+        local row = page.rows[catalog]
         if not row and entry then
-            row = NewRow(page, index, -34, function(self)
+            row = FreshLine(page, catalog, -34, function(self)
                 if self.entry then Deals.Search(self.entry) end
             end)
-            page.rows[index] = row
+            page.rows[catalog] = row
         end
         if row then
             row.entry, row.link = entry, entry and entry.link
@@ -876,11 +876,11 @@ end
 -------------------------------------------------------------------------------
 --  The panel
 -------------------------------------------------------------------------------
-NewRow = function(parent, index, top, onClick)
+FreshLine = function(parent, catalog, top, onClick)
     local row = CreateFrame("Button", nil, parent)
-    row:SetHeight(ROW)
-    row:SetPoint("TOPLEFT", PAD, top - (index - 1) * ROW)
-    row:SetPoint("TOPRIGHT", -PAD, top - (index - 1) * ROW)
+    row:SetHeight(LINE)
+    row:SetPoint("TOPLEFT", PAD, top - (catalog - 1) * LINE)
+    row:SetPoint("TOPRIGHT", -PAD, top - (catalog - 1) * LINE)
     row.hover = row:CreateTexture(nil, "HIGHLIGHT")
     row.hover:SetAllPoints()
     row.hover:SetColorTexture(1, 1, 1, 0.04)
@@ -892,10 +892,10 @@ NewRow = function(parent, index, top, onClick)
     row.icon:SetSize(16, 16)
     row.icon:SetPoint("LEFT", 4, 0)
     row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    row.right = Label(row, CUI.Kit.TEXT_SIZE, TEXT)
+    row.right = Label(row, CUI.Kit.TEXT_SIZE, LABEL)
     row.right:SetPoint("RIGHT", -4, 0)
     row.right:SetJustifyH("RIGHT")
-    row.name = Label(row, CUI.Kit.TEXT_SIZE, TEXT)
+    row.name = Label(row, CUI.Kit.TEXT_SIZE, LABEL)
     row.name:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
     row.name:SetPoint("RIGHT", row.right, "LEFT", -6, 0)
     row:SetScript("OnClick", onClick)
@@ -909,118 +909,118 @@ NewRow = function(parent, index, top, onClick)
     return row
 end
 
-local function BuildSell(page)
+local function MakeSell(page)
     local K = Kit()
-    local card = CreateFrame("Frame", nil, page)
-    card:SetPoint("TOPLEFT", 0, 0)
-    card:SetPoint("TOPRIGHT", 0, 0)
-    card:SetHeight(248)
-    page.card = card
-    card.icon = card:CreateTexture(nil, "ARTWORK")
-    card.icon:SetSize(36, 36)
-    card.icon:SetPoint("TOPLEFT", PAD, -10)
-    card.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    card.name = Label(card, 14, TEXT)
-    card.name:SetPoint("TOPLEFT", card.icon, "TOPRIGHT", 10, -2)
-    card.name:SetPoint("RIGHT", -PAD, 0)
-    card.sub = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
-    card.sub:SetPoint("TOPLEFT", card.name, "BOTTOMLEFT", 0, -4)
-    card.sub:SetPoint("RIGHT", -PAD, 0)
-    card.reason = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
-    card.reason:SetPoint("TOPLEFT", card.icon, "BOTTOMLEFT", 0, -10)
-    card.reason:SetPoint("RIGHT", -PAD, 0)
-    card.reason:SetWordWrap(true)
+    local tile = CreateFrame("Frame", nil, page)
+    tile:SetPoint("TOPLEFT", 0, 0)
+    tile:SetPoint("TOPRIGHT", 0, 0)
+    tile:SetHeight(248)
+    page.card = tile
+    tile.icon = tile:CreateTexture(nil, "ARTWORK")
+    tile.icon:SetSize(36, 36)
+    tile.icon:SetPoint("TOPLEFT", PAD, -10)
+    tile.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    tile.name = Label(tile, 14, LABEL)
+    tile.name:SetPoint("TOPLEFT", tile.icon, "TOPRIGHT", 10, -2)
+    tile.name:SetPoint("RIGHT", -PAD, 0)
+    tile.sub = Label(tile, CUI.Kit.SMALL_SIZE, DIM)
+    tile.sub:SetPoint("TOPLEFT", tile.name, "BOTTOMLEFT", 0, -4)
+    tile.sub:SetPoint("RIGHT", -PAD, 0)
+    tile.reason = Label(tile, CUI.Kit.SMALL_SIZE, DIM)
+    tile.reason:SetPoint("TOPLEFT", tile.icon, "BOTTOMLEFT", 0, -10)
+    tile.reason:SetPoint("RIGHT", -PAD, 0)
+    tile.reason:SetWordWrap(true)
 
-    local priceLabel = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
+    local priceLabel = Label(tile, CUI.Kit.SMALL_SIZE, DIM)
     priceLabel:SetPoint("TOPLEFT", PAD, -96)
     priceLabel:SetText("Price each")
-    card.price = K.Input(card, 120, 24, nil, "essentials")
-    card.price:SetMaxLetters(16)
-    card.price:SetPoint("LEFT", priceLabel, "LEFT", 74, 0)
-    card.price:HookScript("OnEditFocusLost", function(self)
+    tile.price = K.Input(tile, 120, 24, nil, "essentials")
+    tile.price:SetMaxLetters(16)
+    tile.price:SetPoint("LEFT", priceLabel, "LEFT", 74, 0)
+    tile.price:HookScript("OnEditFocusLost", function(self)
         local entry, amount = Sell.Focus(), Parse(self:GetText())
         if entry then Sell.priceSet[entry.key] = amount and amount > 0 and Floor(entry, amount) or nil end
-        Panel.Render()
+        Pane.Render()
     end)
 
-    local qtyLabel = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
+    local qtyLabel = Label(tile, CUI.Kit.SMALL_SIZE, DIM)
     qtyLabel:SetPoint("TOPLEFT", PAD, -128)
     qtyLabel:SetText("Quantity")
-    card.qty = K.Input(card, 50, 24, nil, "essentials")
-    card.qty:SetNumeric(true)
-    card.qty:SetMaxLetters(4)
-    card.qty:SetJustifyH("CENTER")
-    card.qty:SetPoint("LEFT", qtyLabel, "LEFT", 74, 0)
-    card.qty:HookScript("OnEditFocusLost", function(self)
+    tile.qty = K.Input(tile, 50, 24, nil, "essentials")
+    tile.qty:SetNumeric(true)
+    tile.qty:SetMaxLetters(4)
+    tile.qty:SetJustifyH("CENTER")
+    tile.qty:SetPoint("LEFT", qtyLabel, "LEFT", 74, 0)
+    tile.qty:HookScript("OnEditFocusLost", function(self)
         local entry, n = Sell.Focus(), tonumber(self:GetText() or "")
         if entry then Sell.quantitySet[entry.key] = n and n > 0 and n or nil end
-        Panel.Render()
+        Pane.Render()
     end)
-    card.all = K.Button(card, "All", 40, 24, function()
+    tile.all = K.Button(tile, "All", 40, 24, function()
         local entry = Sell.Focus()
         if entry then Sell.quantitySet[entry.key] = nil end
-        Panel.Render()
+        Pane.Render()
     end, { key = "essentials" })
-    card.all:SetPoint("LEFT", card.qty, "RIGHT", 6, 0)
+    tile.all:SetPoint("LEFT", tile.qty, "RIGHT", 6, 0)
     -- Duration: its own row under Quantity (12h, 24h, 48h left to right).
-    local durLabel = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
+    local durLabel = Label(tile, CUI.Kit.SMALL_SIZE, DIM)
     durLabel:SetPoint("TOPLEFT", PAD, -160)
     durLabel:SetText("Duration")
-    card.durations = {}
+    tile.durations = {}
     local prev
-    for index = #DURATIONS, 1, -1 do
-        local d = DURATIONS[index]
-        local b = K.Button(card, d[2], 40, 24, function()
+    for catalog = #DURATIONS, 1, -1 do
+        local d = DURATIONS[catalog]
+        local b = K.Button(tile, d[2], 40, 24, function()
             MK.Cfg().duration = d[1]
-            Panel.Render()
+            Pane.Render()
         end, { key = "essentials", tip = "How long the auction runs. Longer costs a bigger deposit." })
         if prev then b:SetPoint("RIGHT", prev, "LEFT", -4, 0) else b:SetPoint("LEFT", durLabel, "LEFT", 74 + 2 * 44, 0) end
         b.duration = d[1]
-        card.durations[index], prev = b, b
+        tile.durations[catalog], prev = b, b
     end
-    card.deposit = Label(card, CUI.Kit.SMALL_SIZE, MUTED)
-    card.deposit:SetPoint("TOPLEFT", PAD, -192)
-    card.deposit:SetPoint("RIGHT", -PAD, 0)
-    card.post = K.Button(card, "Post", 90, 28, function() Sell.Post() end, { key = "essentials", size = 13 })
-    card.post:SetPoint("TOPRIGHT", -PAD, -212)
-    card.post:SetActive(true)
-    card.skip = K.Button(card, "Skip", 60, 28, function() Sell.Next() end, { key = "essentials" })
-    card.skip:SetPoint("RIGHT", card.post, "LEFT", -6, 0)
-    card.empty = Label(card, CUI.Kit.TEXT_SIZE, MUTED)
-    card.empty:SetPoint("TOPLEFT", PAD, -14)
-    card.empty:SetPoint("RIGHT", -PAD, 0)
-    card.empty:SetWordWrap(true)
+    tile.deposit = Label(tile, CUI.Kit.SMALL_SIZE, DIM)
+    tile.deposit:SetPoint("TOPLEFT", PAD, -192)
+    tile.deposit:SetPoint("RIGHT", -PAD, 0)
+    tile.post = K.Button(tile, "Post", 90, 28, function() Sell.Post() end, { key = "essentials", size = 13 })
+    tile.post:SetPoint("TOPRIGHT", -PAD, -212)
+    tile.post:SetActive(true)
+    tile.skip = K.Button(tile, "Skip", 60, 28, function() Sell.Next() end, { key = "essentials" })
+    tile.skip:SetPoint("RIGHT", tile.post, "LEFT", -6, 0)
+    tile.empty = Label(tile, CUI.Kit.TEXT_SIZE, DIM)
+    tile.empty:SetPoint("TOPLEFT", PAD, -14)
+    tile.empty:SetPoint("RIGHT", -PAD, 0)
+    tile.empty:SetWordWrap(true)
 
-    local head = Label(page, 11, MUTED)
+    local head = Label(page, 11, DIM)
     head:SetPoint("TOPLEFT", PAD, -258)
     head:SetText("LISTINGS")
     page.listHead = head
     page.listings = {}
-    for index = 1, 5 do
-        local row = NewRow(page, index, -274, function(self)
+    for catalog = 1, 5 do
+        local row = FreshLine(page, catalog, -274, function(self)
             local entry = Sell.Focus()
             if entry and self.listing then
                 local l = self.listing
                 Sell.priceSet[entry.key] = l.quantity > l.own and Floor(entry, l.price - Step(entry)) or l.price
-                Panel.Render()
+                Pane.Render()
             end
         end)
         row.icon:Hide()
         row.name:ClearAllPoints()
         row.name:SetPoint("LEFT", 4, 0)
         row.name:SetPoint("RIGHT", row.right, "LEFT", -6, 0)
-        page.listings[index] = row
+        page.listings[catalog] = row
     end
-    local queueHead = Label(page, 11, MUTED)
-    queueHead:SetPoint("TOPLEFT", PAD, -392)
-    queueHead:SetText("YOUR BAGS")
-    page.queueHead = queueHead
+    local lineHead = Label(page, 11, DIM)
+    lineHead:SetPoint("TOPLEFT", PAD, -392)
+    lineHead:SetText("YOUR BAGS")
+    page.queueHead = lineHead
     page.queue = {}
 end
 
-local function BuildMine(page)
+local function MakeMine(page)
     local K = Kit()
-    page.summary = Label(page, CUI.Kit.TEXT_SIZE, TEXT)
+    page.summary = Label(page, CUI.Kit.TEXT_SIZE, LABEL)
     page.summary:SetPoint("TOPLEFT", PAD, -8)
     page.summary:SetPoint("RIGHT", -150, 0)
     page.next = K.Button(page, "Cancel Next Undercut", 140, 24, function() Mine.CancelNext() end, {
@@ -1031,67 +1031,67 @@ local function BuildMine(page)
     page.rows = {}
 end
 
-local function Build()
+local function Make()
     local house = rawget(_G, "AuctionHouseFrame")
     local K = Kit()
-    panel = CreateFrame("Frame", "CludesUIMarketPanel", house)
-    panel:SetPoint("TOPLEFT", house, "TOPRIGHT", 4, 0)
-    panel:SetHeight(H)
-    panel:SetWidth(W)
-    panel:EnableMouse(true)
-    K.Panel(panel, 0.97)
-    K.Header(panel, "The Market", function()
-        Panel.closed = true
-        panel:Hide()
+    pane = CreateFrame("Frame", "CludesUIMarketPanel", house)
+    pane:SetPoint("TOPLEFT", house, "TOPRIGHT", 4, 0)
+    pane:SetHeight(H)
+    pane:SetWidth(W)
+    pane:EnableMouse(true)
+    K.Panel(pane, 0.97)
+    K.Header(pane, "The Market", function()
+        Pane.closed = true
+        pane:Hide()
     end, { key = "essentials", closeTip = "Hides the panel until your next visit." })
-    panel.tabs = {}
+    pane.tabs = {}
     local prev
     local widths = { sell = 52, mine = 110, deals = 72, shop = 70 }
     for _, t in ipairs({ { "sell", "Sell" }, { "mine", "My Auctions" }, { "deals", "DE Deals" }, { "shop", "Shopping" } }) do
-        local tab = K.Button(panel, t[2], widths[t[1]], 26, function()
-            Panel.page = t[1]
+        local tab = K.Button(pane, t[2], widths[t[1]], 26, function()
+            Pane.page = t[1]
             if t[1] == "mine" then Mine.Start() elseif t[1] == "sell" then Sell.Read() end
-            Panel.Render()
+            Pane.Render()
         end, { key = "essentials" })
         if prev then tab:SetPoint("LEFT", prev, "RIGHT", 6, 0) else tab:SetPoint("TOPLEFT", PAD, -38) end
         tab.key, prev = t[1], tab
-        panel.tabs[#panel.tabs + 1] = tab
+        pane.tabs[#pane.tabs + 1] = tab
     end
-    panel.message = Label(panel, CUI.Kit.SMALL_SIZE, MUTED)
-    panel.message:SetPoint("BOTTOMLEFT", PAD, 10)
-    panel.message:SetPoint("RIGHT", -PAD, 0)
+    pane.message = Label(pane, CUI.Kit.SMALL_SIZE, DIM)
+    pane.message:SetPoint("BOTTOMLEFT", PAD, 10)
+    pane.message:SetPoint("RIGHT", -PAD, 0)
     for _, key in ipairs({ "sell", "mine", "deals", "shop" }) do
-        local page = CreateFrame("Frame", nil, panel)
+        local page = CreateFrame("Frame", nil, pane)
         page:SetPoint("TOPLEFT", 0, -72)
         page:SetPoint("BOTTOMRIGHT", 0, 28)
-        panel[key] = page
+        pane[key] = page
     end
-    BuildSell(panel.sell)
-    BuildMine(panel.mine)
-    BuildDeals(panel.deals)
-    BuildShop(panel.shop)
+    MakeSell(pane.sell)
+    MakeMine(pane.mine)
+    MakeDeals(pane.deals)
+    MakeShop(pane.shop)
 end
 
-local function QueueRows(page)
-    return math.max(0, math.floor((PAGE_H - 408) / ROW))
+local function LineLines(page)
+    return math.max(0, math.floor((PAGE_H - 408) / LINE))
 end
 
 local function RenderSell()
-    local page, card = panel.sell, panel.sell.card
+    local page, tile = pane.sell, pane.sell.card
     local entry = Sell.Focus()
-    for _, child in ipairs({ card:GetChildren() }) do
+    for _, child in ipairs({ tile:GetChildren() }) do
         child:SetShown(entry ~= nil)
     end
-    for _, fs in ipairs({ card.name, card.sub, card.reason, card.deposit }) do
+    for _, fs in ipairs({ tile.name, tile.sub, tile.reason, tile.deposit }) do
         fs:SetShown(entry ~= nil)
     end
-    card.icon:SetShown(entry ~= nil)
-    card.empty:SetShown(entry == nil)
-    card.empty:SetText(#Sell.queue == 0 and "Nothing in your bags the auction house takes." or "Pick an item below to price and post it.")
+    tile.icon:SetShown(entry ~= nil)
+    tile.empty:SetShown(entry == nil)
+    tile.empty:SetText(#Sell.queue == 0 and "Nothing in your bags the auction house takes." or "Pick an item below to price and post it.")
     if entry then
-        card.icon:SetTexture(entry.icon)
-        card.name:SetText(C_Item.GetItemNameByID(entry.itemID) or entry.link or "")
-        card.sub:SetText(("%d in your bags%s"):format(entry.count, entry.scan and (", scan " .. Money(entry.scan) .. " each") or ""))
+        tile.icon:SetTexture(entry.icon)
+        tile.name:SetText(C_Item.GetItemNameByID(entry.itemID) or entry.link or "")
+        tile.sub:SetText(("%d in your bags%s"):format(entry.count, entry.scan and (", scan " .. Money(entry.scan) .. " each") or ""))
         local price, why, from = Sell.Price(entry)
         local other = Listings.Cheapest(Sell.rows)
         local reason
@@ -1109,46 +1109,46 @@ local function RenderSell()
         else
             reason = "No listings or scan: the game's default from the vendor price."
         end
-        local warn = entry.vendor > 0 and price * CUT <= entry.vendor
-        if warn then reason = reason .. "\n|cffff6161A vendor pays " .. Money(entry.vendor) .. " each, more than this after the cut.|r" end
-        card.reason:SetText(reason)
-        if not card.price:HasFocus() then card.price:SetText(Money(price)) end
+        local caution = entry.vendor > 0 and price * CUT <= entry.vendor
+        if caution then reason = reason .. "\n|cffff6161A vendor pays " .. Money(entry.vendor) .. " each, more than this after the cut.|r" end
+        tile.reason:SetText(reason)
+        if not tile.price:HasFocus() then tile.price:SetText(Money(price)) end
         local quantity = Sell.Quantity(entry)
-        if not card.qty:HasFocus() then card.qty:SetText(tostring(quantity)) end
+        if not tile.qty:HasFocus() then tile.qty:SetText(tostring(quantity)) end
         local duration = Sell.Duration()
-        for _, b in ipairs(card.durations) do
+        for _, b in ipairs(tile.durations) do
             b:SetActive(b.duration == duration)
         end
         local deposit = Sell.Deposit(entry, quantity)
-        card.deposit:SetText(
+        tile.deposit:SetText(
             ("Deposit %s  |  You get %s"):format(Money(deposit or 0), Money(math.floor(price * quantity * CUT)))
         )
-        Enable(card.post, not posting.waiting)
-        card.post:SetText(posting.waiting and "Posting..." or "Post")
+        Enable(tile.post, not posting.waiting)
+        tile.post:SetText(posting.waiting and "Posting..." or "Post")
     end
     -- Listings
     page.listHead:SetShown(entry ~= nil)
     local price = entry and (Sell.Price(entry))
-    for index, row in ipairs(page.listings) do
-        local l = entry and Sell.rows[index]
+    for catalog, row in ipairs(page.listings) do
+        local l = entry and Sell.rows[catalog]
         row.listing = l
         row:SetShown(l ~= nil)
         if l then
             row.name:SetText(Money(l.price) .. (l.own > 0 and "  |cff5ec46b(yours)|r" or ""))
             row.right:SetText(l.quantity .. " up")
-            Paint(row.name, price and l.price < price and AMBER or TEXT)
+            Paint(row.name, price and l.price < price and AMBER or LABEL)
         end
     end
     -- Your bags
-    local shown = QueueRows(page)
-    for index = 1, math.max(shown, #page.queue) do
-        local row = page.queue[index]
-        local e = index <= shown and Sell.queue[index]
+    local shown = LineLines(page)
+    for catalog = 1, math.max(shown, #page.queue) do
+        local row = page.queue[catalog]
+        local e = catalog <= shown and Sell.queue[catalog]
         if not row and e then
-            row = NewRow(page, index, -408, function(self)
+            row = FreshLine(page, catalog, -408, function(self)
                 if self.entry then Sell.Pick(self.entry.key) end
             end)
-            page.queue[index] = row
+            page.queue[catalog] = row
         end
         if row then
             row.entry, row.link = e or nil, e and e.link
@@ -1156,7 +1156,7 @@ local function RenderSell()
             if e then
                 row.icon:SetTexture(e.icon)
                 row.name:SetText(("%s x%d"):format(C_Item.GetItemNameByID(e.itemID) or "?", e.count))
-                Paint(row.name, e.vendorBetter and MUTED or TEXT)
+                Paint(row.name, e.vendorBetter and DIM or LABEL)
                 row.right:SetText(e.vendorBetter and "vendor" or (e.scan and Money(e.worth) or "no price"))
                 row.sel:SetShown(e.key == Sell.focus)
             end
@@ -1165,34 +1165,34 @@ local function RenderSell()
 end
 
 local STATUS = {
-    undercut = { "undercut", RED },
+    undercut = { "undercut", CRIMSON },
     lowest = { "lowest", GREEN },
-    checking = { "checking...", MUTED },
-    noanswer = { "no answer", MUTED },
+    checking = { "checking...", DIM },
+    noanswer = { "no answer", DIM },
     sold = { "sold", GREEN },
 }
 
 local function RenderMine()
-    local page = panel.mine
+    local page = pane.mine
     local undercut = Mine.Counts()
     page.summary:SetText(
         #Mine.list == 0 and "You have no auctions here."
             or (("%d auctions, %s"):format(#Mine.list, undercut > 0 and ("|cffff6161" .. undercut .. " undercut|r") or "none undercut"))
     )
     Enable(page.next, undercut > 0)
-    local shown = math.max(0, math.floor((PAGE_H - 40) / ROW))
-    for index = 1, math.max(shown, #page.rows) do
-        local auction = index <= shown and Mine.list[index] or nil
-        local row = page.rows[index]
+    local shown = math.max(0, math.floor((PAGE_H - 40) / LINE))
+    for catalog = 1, math.max(shown, #page.rows) do
+        local auction = catalog <= shown and Mine.list[catalog] or nil
+        local row = page.rows[catalog]
         if not row and auction then
-            row = NewRow(page, index, -36, function() end)
+            row = FreshLine(page, catalog, -36, function() end)
             row.cancel = Kit().Button(row, "Cancel", 56, 20, function(self)
                 if self:GetParent().auction then Mine.Cancel(self:GetParent().auction) end
             end, { key = "essentials", size = 11 })
             row.cancel:SetPoint("RIGHT", -2, 0)
             row.right:ClearAllPoints()
             row.right:SetPoint("RIGHT", row.cancel, "LEFT", -6, 0)
-            page.rows[index] = row
+            page.rows[catalog] = row
         end
         if row then
             row.auction, row.link = auction, auction and auction.link
@@ -1215,41 +1215,41 @@ local function RenderMine()
     end
 end
 
-function Panel.Render()
-    if not (panel and panel:IsShown()) then return end
-    for _, tab in ipairs(panel.tabs) do
-        tab:SetActive(tab.key == Panel.page)
+function Pane.Render()
+    if not (pane and pane:IsShown()) then return end
+    for _, tab in ipairs(pane.tabs) do
+        tab:SetActive(tab.key == Pane.page)
     end
     local undercut = Mine.Counts()
-    panel.tabs[2]:SetText(undercut > 0 and ("My Auctions (" .. undercut .. ")") or "My Auctions")
-    panel.sell:SetShown(Panel.page == "sell")
-    panel.mine:SetShown(Panel.page == "mine")
-    panel.tabs[3]:SetShown(Deals.On())
-    panel.tabs[4]:SetShown(Shop.On())
-    if (Panel.page == "deals" and not Deals.On()) or (Panel.page == "shop" and not Shop.On()) then Panel.page = "sell" end
+    pane.tabs[2]:SetText(undercut > 0 and ("My Auctions (" .. undercut .. ")") or "My Auctions")
+    pane.sell:SetShown(Pane.page == "sell")
+    pane.mine:SetShown(Pane.page == "mine")
+    pane.tabs[3]:SetShown(Deals.On())
+    pane.tabs[4]:SetShown(Shop.On())
+    if (Pane.page == "deals" and not Deals.On()) or (Pane.page == "shop" and not Shop.On()) then Pane.page = "sell" end
     -- Line the shown tabs up, so a hidden one leaves no gap.
     local prev
-    for _, tab in ipairs(panel.tabs) do
+    for _, tab in ipairs(pane.tabs) do
         if tab:IsShown() then
             tab:ClearAllPoints()
             if prev then tab:SetPoint("LEFT", prev, "RIGHT", 6, 0) else tab:SetPoint("TOPLEFT", PAD, -38) end
             prev = tab
         end
     end
-    panel.sell:SetShown(Panel.page == "sell")
-    panel.mine:SetShown(Panel.page == "mine")
-    panel.deals:SetShown(Panel.page == "deals")
-    panel.shop:SetShown(Panel.page == "shop")
-    if Panel.page == "sell" then
+    pane.sell:SetShown(Pane.page == "sell")
+    pane.mine:SetShown(Pane.page == "mine")
+    pane.deals:SetShown(Pane.page == "deals")
+    pane.shop:SetShown(Pane.page == "shop")
+    if Pane.page == "sell" then
         RenderSell()
-    elseif Panel.page == "mine" then
+    elseif Pane.page == "mine" then
         RenderMine()
-    elseif Panel.page == "shop" then
+    elseif Pane.page == "shop" then
         RenderShop()
     else
         RenderDeals()
     end
-    panel.message:SetText(Panel.message or ("Posted this visit: " .. Money(Panel.posted or 0)))
+    pane.message:SetText(Pane.message or ("Posted this visit: " .. Money(Pane.posted or 0)))
 end
 
 -------------------------------------------------------------------------------
@@ -1272,18 +1272,18 @@ local EVENTS = {
     "QUEST_LOG_UPDATE",
 }
 
-local function PanelOn() return Get("enabled") and Get("panel") ~= false end
+local function PaneOn() return Get("enabled") and Get("panel") ~= false end
 
 events:SetScript("OnEvent", function(_, event, arg1, arg2)
     if event == "AUCTION_HOUSE_SHOW" then
-        if not PanelOn() or not rawget(_G, "AuctionHouseFrame") then return end
-        if not panel then Build() end
-        Panel.closed, Panel.posted, Panel.message, Mine.alerted = false, 0, nil, false
-        panel:Show()
+        if not PaneOn() or not rawget(_G, "AuctionHouseFrame") then return end
+        if not pane then Make() end
+        Pane.closed, Pane.posted, Pane.message, Mine.alerted = false, 0, nil, false
+        pane:Show()
         Sell.Read()
         Mine.Start()
-        if Panel.page == "sell" and not Sell.Focus() then Sell.Next() end
-        Panel.Render()
+        if Pane.page == "sell" and not Sell.Focus() then Sell.Next() end
+        Pane.Render()
         return
     elseif event == "AUCTION_HOUSE_CLOSED" then
         Listings.Want(nil)
@@ -1291,21 +1291,21 @@ events:SetScript("OnEvent", function(_, event, arg1, arg2)
         Sell.focus, Sell.state, Mine.checking = nil, nil, nil
         return
     end
-    if not (panel and panel:IsShown()) then return end
+    if not (pane and pane:IsShown()) then return end
     if event == "OWNED_AUCTIONS_UPDATED" then
         Mine.Read()
-        Panel.Render()
+        Pane.Render()
     elseif event == "AUCTION_CANCELED" then
         Mine.Request()
     elseif event == "BAG_UPDATE_DELAYED" then
-        if Panel.page == "sell" and not posting.waiting then
+        if Pane.page == "sell" and not posting.waiting then
             Sell.Read()
-            Panel.Render()
-        elseif Panel.page == "shop" then
-            Panel.Render()
+            Pane.Render()
+        elseif Pane.page == "shop" then
+            Pane.Render()
         end
     elseif event == "QUEST_LOG_UPDATE" then
-        if Panel.page == "shop" then Panel.Render() end
+        if Pane.page == "shop" then Pane.Render() end
     elseif event == "AUCTION_HOUSE_THROTTLED_SYSTEM_READY" then
         if Mine.wanted then Mine.Request() end
         Listings.OnEvent(event)
@@ -1318,14 +1318,14 @@ end)
 
 local function Apply()
     events:UnregisterAllEvents()
-    if panel and not PanelOn() then panel:Hide() end
-    if not PanelOn() then return end
+    if pane and not PaneOn() then pane:Hide() end
+    if not PaneOn() then return end
     for _, event in ipairs(EVENTS) do
         pcall(events.RegisterEvent, events, event)
     end
 end
 
-CUI._MarketPanel = { Apply = Apply, Panel = Panel, Sell = Sell, Mine = Mine, Listings = Listings, Deals = Deals, Shop = Shop }
+CUI._MarketPanel = { Apply = Apply, Panel = Pane, Sell = Sell, Mine = Mine, Listings = Listings, Deals = Deals, Shop = Shop }
 
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
