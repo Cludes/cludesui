@@ -34,12 +34,12 @@ local F = module.Feature("townMap", {
 })
 local Get, Enabled = F.Get, F.Enabled
 
-local CLASS_ICON = "Interface\\Icons\\ClassIcon_"
+local CALLING_GLYPH = "Interface\\Icons\\ClassIcon_"
 local TRACKING = "Interface\\Minimap\\Tracking\\"
 local GOSSIP = "Interface\\GossipFrame\\"
 local ROUND_MASK = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
-local CROP_LOW, CROP_HIGH = 0.08, 0.92
-local MINI_MAX = 40
+local TRIM_LOWER, TRIM_UPPER = 0.08, 0.92
+local MINI_TOP = 40
 local EMPTY = {}
 
 -- category = { setting, fallback icon, label }
@@ -63,7 +63,7 @@ local CATEGORIES = {
 local EVERYWHERE = { flight = true, inn = true, stable = true }
 
 -- Map art per category, first that exists wins (atlas names, or file paths).
-local MAP_ART = {
+local CHART_IMAGE = {
     spirit = { "poi-soulspiritghost" },
     class = { "Class", TRACKING .. "Class", GOSSIP .. "TrainerGossipIcon" },
     profession = { "Profession", TRACKING .. "Profession", GOSSIP .. "TrainerGossipIcon" },
@@ -80,10 +80,10 @@ local MAP_ART = {
     vendor = { "Banker", GOSSIP .. "VendorGossipIcon" },
     mail = { "Mailbox", TRACKING .. "Mailbox" },
 }
-local ROUND_ART = { spirit = true }
+local ROUND_IMAGE = { spirit = true }
 
 local payload
-local function Data()
+local function Info()
     if not payload then
         payload = module.TownMapData()
         module.TownMapData = nil
@@ -92,87 +92,87 @@ local function Data()
 end
 
 --- The service NPCs by map, for other features (Professions' gathering trainers).
-function module.TownNPCList() return Data().npcs end
+function module.TownNPCList() return Info().npcs end
 
-local function SameMap(map) return map and (Data().same[map] or map) end
+local function SameChart(chart) return chart and (Info().same[chart] or chart) end
 local function Faction() return UnitFactionGroup("player") == "Horde" and "H" or "A" end
 
 -------------------------------------------------------------------------------
 --  Pin art
 -------------------------------------------------------------------------------
-local function IsFile(art) return art:find("\\", 1, true) ~= nil end
+local function IsFile(image) return image:find("\\", 1, true) ~= nil end
 
-local function TryArt(iconTex, art)
-    if IsFile(art) then return iconTex:SetTexture(art) end
-    if not C_Texture.GetAtlasInfo(art) then return false end
-    iconTex:SetAtlas(art)
+local function TryImage(glyphTex, image)
+    if IsFile(image) then return glyphTex:SetTexture(image) end
+    if not C_Texture.GetAtlasInfo(image) then return false end
+    glyphTex:SetAtlas(image)
     return true
 end
 
-local function SetRound(pin, round)
-    if round and not pin.roundMask then
-        pin.roundMask = pin:CreateMaskTexture()
-        pin.roundMask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        pin.roundMask:SetAllPoints(pin.icon)
+local function AssignRound(marker, round)
+    if round and not marker.roundMask then
+        marker.roundMask = marker:CreateMaskTexture()
+        marker.roundMask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        marker.roundMask:SetAllPoints(marker.icon)
     end
-    if not pin.roundMask or (pin.isRound or false) == round then return end
+    if not marker.roundMask or (marker.isRound or false) == round then return end
     if round then
-        pin.icon:AddMaskTexture(pin.roundMask)
+        marker.icon:AddMaskTexture(marker.roundMask)
     else
-        pin.icon:RemoveMaskTexture(pin.roundMask)
+        marker.icon:RemoveMaskTexture(marker.roundMask)
     end
-    pin.isRound = round
+    marker.isRound = round
 end
 
-local function ClassIcon(token) return CLASS_ICON .. token:lower():gsub("^%l", string.upper) end
+local function CallingGlyph(token) return CALLING_GLYPH .. token:lower():gsub("^%l", string.upper) end
 
-local function Paint(pin, npc)
-    local iconTex, kind = pin.icon, npc[3]
-    SetRound(pin, false)
-    for _, art in ipairs(MAP_ART[kind] or EMPTY) do
-        if TryArt(iconTex, art) then
-            iconTex:SetTexCoord(0, 1, 0, 1)
-            pin.border:Hide()
+local function Paint(marker, npc)
+    local glyphTex, kind = marker.icon, npc[3]
+    AssignRound(marker, false)
+    for _, image in ipairs(CHART_IMAGE[kind] or EMPTY) do
+        if TryImage(glyphTex, image) then
+            glyphTex:SetTexCoord(0, 1, 0, 1)
+            marker.border:Hide()
             return
         end
     end
-    if ROUND_ART[kind] then
-        SetRound(pin, true)
-        iconTex:SetTexture(CATEGORIES[kind][2])
-        iconTex:SetTexCoord(0, 1, 0, 1)
-        pin.border:Hide()
+    if ROUND_IMAGE[kind] then
+        AssignRound(marker, true)
+        glyphTex:SetTexture(CATEGORIES[kind][2])
+        glyphTex:SetTexCoord(0, 1, 0, 1)
+        marker.border:Hide()
         return
     end
-    iconTex:SetTexture(
-        CATEGORIES[kind][2] or (npc[6] and ClassIcon(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark"
+    glyphTex:SetTexture(
+        CATEGORIES[kind][2] or (npc[6] and CallingGlyph(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark"
     )
-    iconTex:SetTexCoord(CROP_LOW, CROP_HIGH, CROP_LOW, CROP_HIGH)
-    pin.border:Show()
+    glyphTex:SetTexCoord(TRIM_LOWER, TRIM_UPPER, TRIM_LOWER, TRIM_UPPER)
+    marker.border:Show()
 end
 
-local function ShowTip(pin)
-    local npc = pin.npc
+local function RevealHint(marker)
+    local npc = marker.npc
     if not npc then return end
-    GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
+    GameTooltip:SetOwner(marker, "ANCHOR_RIGHT")
     GameTooltip:SetText(npc[4], 1, 1, 1)
-    local title = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
-    if title ~= npc[4] then GameTooltip:AddLine(title, CUI.Kit.Accent()) end
+    local heading = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
+    if heading ~= npc[4] then GameTooltip:AddLine(heading, CUI.Kit.Accent()) end
     GameTooltip:Show()
 end
 
-local function NewPin(hostFrame)
-    local pin = CreateFrame("Frame", nil, hostFrame)
-    pin:SetMouseMotionEnabled(true)
-    pin:SetMouseClickEnabled(false)
-    pin.border = pin:CreateTexture(nil, "BACKGROUND")
-    pin.border:SetPoint("TOPLEFT", -1, 1)
-    pin.border:SetPoint("BOTTOMRIGHT", 1, -1)
-    pin.border:SetColorTexture(0, 0, 0, 1)
-    pin.icon = pin:CreateTexture(nil, "ARTWORK")
-    pin.icon:SetAllPoints()
-    pin:SetScript("OnEnter", ShowTip)
-    pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    return pin
+local function FreshMarker(hostWindow)
+    local marker = CreateFrame("Frame", nil, hostWindow)
+    marker:SetMouseMotionEnabled(true)
+    marker:SetMouseClickEnabled(false)
+    marker.border = marker:CreateTexture(nil, "BACKGROUND")
+    marker.border:SetPoint("TOPLEFT", -1, 1)
+    marker.border:SetPoint("BOTTOMRIGHT", 1, -1)
+    marker.border:SetColorTexture(0, 0, 0, 1)
+    marker.icon = marker:CreateTexture(nil, "ARTWORK")
+    marker.icon:SetAllPoints()
+    marker:SetScript("OnEnter", RevealHint)
+    marker:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return marker
 end
 
 -------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ end
 -------------------------------------------------------------------------------
 local provider, layer, waiter
 local added = false
-local pins, used = {}, 0
+local markers, used = {}, 0
 
 -- Flight masters are left to Map Markers when it shows flight points.
 local function FlightsElsewhere()
@@ -188,15 +188,15 @@ local function FlightsElsewhere()
     return mt and mt.On and mt.On("flights")
 end
 
-local function Wanted(npc, faction, class, shops)
+local function Desired(npc, faction, calling, shops)
     local kind = npc[3]
     local category = CATEGORIES[kind]
     if not category or not Get(category[1]) then return false end
     if not (npc[7] or ""):find(faction, 1, true) then return false end
     if kind == "mail" or kind == "spirit" then return true end
     if not (shops or EVERYWHERE[kind]) then return false end
-    if kind == "class" and npc[6] ~= class then return false end
-    if kind == "stable" and class ~= "HUNTER" then return false end
+    if kind == "class" and npc[6] ~= calling then return false end
+    if kind == "stable" and calling ~= "HUNTER" then return false end
     if kind == "flight" and FlightsElsewhere() then return false end
     return true
 end
@@ -210,72 +210,72 @@ local function Anchor(p)
     p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * wid * cs, -p.y * hgt * cs)
 end
 
-local function Clear()
-    for index = 1, used do
-        pins[index]:Hide()
-        pins[index].npc = nil
+local function Wipe()
+    for catalog = 1, used do
+        markers[catalog]:Hide()
+        markers[catalog].npc = nil
     end
     used = 0
 end
 
-local function Rescale()
-    for index = 1, used do
-        Anchor(pins[index])
+local function Resize()
+    for catalog = 1, used do
+        Anchor(markers[catalog])
     end
 end
 
 local function Place(npc)
     used = used + 1
-    local p = pins[used]
+    local p = markers[used]
     if not p then
-        p = NewPin(layer)
-        pins[used] = p
+        p = FreshMarker(layer)
+        markers[used] = p
     end
     p.npc, p.x, p.y = npc, npc[1] / 100, npc[2] / 100
-    local size = Get("size")
-    p:SetSize(size, size)
+    local dims = Get("size")
+    p:SetSize(dims, dims)
     Paint(p, npc)
     Anchor(p)
     p:Show()
 end
 
-local function Draw()
-    Clear()
+local function Render()
+    Wipe()
     if not Enabled() then return end
-    local mapID = SameMap(WorldMapFrame:GetMapID())
-    if not mapID then return end
-    local skinData = Data()
+    local chartID = SameChart(WorldMapFrame:GetMapID())
+    if not chartID then return end
+    local skinInfo = Info()
     local faction = Faction()
-    local _, class = UnitClass("player")
-    local shops = not Get("capitalsOnly") or skinData.capitals[mapID]
-    for _, entries in ipairs({ skinData.npcs[mapID], skinData.mail[mapID], skinData.spirit[mapID] }) do
-        for _, npc in ipairs(entries or EMPTY) do
-            if Wanted(npc, faction, class, shops) then Place(npc) end
+    local _, calling = UnitClass("player")
+    local shops = not Get("capitalsOnly") or skinInfo.capitals[chartID]
+    for _, items in ipairs({ skinInfo.npcs[chartID], skinInfo.mail[chartID], skinInfo.spirit[chartID] }) do
+        for _, npc in ipairs(items or EMPTY) do
+            if Desired(npc, faction, calling, shops) then Place(npc) end
         end
     end
 end
 
-local function Build()
+local function Make()
     layer = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer.Child)
     layer:SetAllPoints()
     layer:SetFrameLevel(
         WorldMapFrame:GetPinFrameLevelsManager():GetValidFrameLevel("PIN_FRAME_LEVEL_AREA_POI")
     )
     provider = CreateFromMixins(MapCanvasDataProviderMixin)
-    provider.OnMapChanged = Draw
-    provider.RefreshAllData = Draw
-    provider.RemoveAllData = Clear
-    provider.OnCanvasScaleChanged = Rescale
+    provider.OnMapChanged = Render
+    provider.RefreshAllData = Render
+    provider.RemoveAllData = Wipe
+    provider.OnCanvasScaleChanged = Resize
     provider.OnGlobalAlphaChanged = function(self) layer:SetAlpha(self:GetMap():GetGlobalAlpha()) end
 end
 
-local function MapApply()
+local function ChartUse()
     if not Enabled() then
         if added then
             WorldMapFrame:RemoveDataProvider(provider)
             added = false
         end
-        if layer then Clear() end
+        if layer then Wipe() end
         return
     end
     if not provider then
@@ -285,75 +285,75 @@ local function MapApply()
                 waiter:SetScript("OnEvent", function(self, _, name)
                     if name ~= "Blizzard_WorldMap" then return end
                     self:UnregisterEvent("ADDON_LOADED")
-                    MapApply()
+                    ChartUse()
                 end)
             end
             waiter:RegisterEvent("ADDON_LOADED")
             return
         end
-        Build()
+        Make()
     end
     if not added then
         WorldMapFrame:AddDataProvider(provider)
         added = true
     end
-    if WorldMapFrame:IsShown() then Draw() end
+    if WorldMapFrame:IsShown() then Render() end
 end
 
 -------------------------------------------------------------------------------
 --  Minimap: mailboxes and spirit healers near you
 -------------------------------------------------------------------------------
 local mini
-local spots = {}
+local places = {}
 
-local function MiniNew()
-    local pin = NewPin(Minimap)
-    local size = Get("size") * 0.9
-    pin:SetSize(size, size)
-    return pin
+local function MiniFresh()
+    local marker = FreshMarker(Minimap)
+    local dims = Get("size") * 0.9
+    marker:SetSize(dims, dims)
+    return marker
 end
 
-local function MiniPaint(pin, entries, index)
-    pin.npc = entries[index]
-    local size = Get("size") * 0.9
-    pin:SetSize(size, size)
-    Paint(pin, entries[index])
+local function MiniRender(marker, items, catalog)
+    marker.npc = items[catalog]
+    local dims = Get("size") * 0.9
+    marker:SetSize(dims, dims)
+    Paint(marker, items[catalog])
 end
 
-local function MiniRefresh()
-    wipe(spots)
-    local map = Enabled()
+local function MiniRenew()
+    wipe(places)
+    local chart = Enabled()
         and (Get("minimapMail") or Get("minimapSpirit"))
         and C_Map.GetBestMapForUnit("player")
-    if map then
-        local skinData, faction = Data(), Faction()
-        local same = SameMap(map)
+    if chart then
+        local skinInfo, faction = Info(), Faction()
+        local same = SameChart(chart)
         if Get("minimapMail") and Get("mail") then
-            for _, s in ipairs(skinData.mail[same] or EMPTY) do
-                if (s[7] or ""):find(faction, 1, true) then spots[#spots + 1] = s end
+            for _, s in ipairs(skinInfo.mail[same] or EMPTY) do
+                if (s[7] or ""):find(faction, 1, true) then places[#places + 1] = s end
             end
         end
         if Get("minimapSpirit") and Get("spirit") then
-            for _, s in ipairs(skinData.spirit[same] or EMPTY) do
-                if (s[7] or ""):find(faction, 1, true) then spots[#spots + 1] = s end
+            for _, s in ipairs(skinInfo.spirit[same] or EMPTY) do
+                if (s[7] or ""):find(faction, 1, true) then places[#places + 1] = s end
             end
         end
     end
-    if not mini and #spots == 0 then return end
+    if not mini and #places == 0 then return end
     mini = mini
         or module.MinimapLayer({
-            max = MINI_MAX,
-            new = MiniNew,
-            paint = MiniPaint,
-            xy = function(entries, index) return entries[index][1] / 100, entries[index][2] / 100 end,
+            max = MINI_TOP,
+            new = MiniFresh,
+            paint = MiniRender,
+            xy = function(items, catalog) return items[catalog][1] / 100, items[catalog][2] / 100 end,
         })
-    mini:Set(map, spots, #spots)
+    mini:Set(chart, places, #places)
 end
 
 local miniEv = CreateFrame("Frame")
-miniEv:SetScript("OnEvent", MiniRefresh)
+miniEv:SetScript("OnEvent", MiniRenew)
 
-local function MiniApply()
+local function MiniUse()
     miniEv:UnregisterAllEvents()
     if Enabled() and (Get("minimapMail") or Get("minimapSpirit")) then
         for _, event in ipairs({
@@ -365,12 +365,12 @@ local function MiniApply()
             miniEv:RegisterEvent(event)
         end
     end
-    if IsLoggedIn() then MiniRefresh() end
+    if IsLoggedIn() then MiniRenew() end
 end
 
 local function Apply()
-    MapApply()
-    MiniApply()
+    ChartUse()
+    MiniUse()
 end
 
 CUI._TownMap = { Get = Get, Cfg = F.Cfg, Apply = Apply }
