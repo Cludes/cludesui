@@ -349,12 +349,17 @@ local QUERY_SYNONYMS = {
     { "experience", { "xp" } },
     { "lfg", { "group finder", "queue" } },
     { "m+", { "mythic", "keystone" } },
+    { "ah", { "auction" } },
+    { "dps meter", { "damage meter" } },
+    { "recount", { "damage meter" } },
     { "mplus", { "mythic", "keystone" } },
     -- Other words for the same thing
     { "transparency", { "opacity" } },
     { "alpha", { "opacity" } },
     { "kick", { "interrupt" } },
     { "interrupt", { "kick" } },
+    { "grey", { "junk" } },
+    { "gray", { "junk" } },
     { "cleanse", { "dispel" } },
     { "purge", { "dispel" } },
     { "decurse", { "dispel" } },
@@ -393,7 +398,7 @@ local QUERY_SYNONYMS = {
 }
 -- WoW Forever's Name Format (first or last names; Forever Essentials > General),
 -- the words players use for the Dungeons & Raids page's CC Marker Bar and Res Helper,
--- and for the World Map's Reveal Unexplored Areas.
+-- the World Map's Reveal Unexplored Areas and Journeys (route planning).
 if CUI.IS_FOREVER then
     for _, syn in ipairs({
         { "surname", { "name format" } },
@@ -406,6 +411,11 @@ if CUI.IS_FOREVER then
         { "fog of war", { "reveal unexplored" } },
         { "fog", { "reveal unexplored" } },
         { "whole map", { "reveal unexplored" } },
+        { "pathing", { "journeys" } },
+        { "directions", { "journeys" } },
+        { "navigation", { "journeys" } },
+        { "tomtom", { "journeys" } },
+        { "route planner", { "journeys" } },
     }) do
         QUERY_SYNONYMS[#QUERY_SYNONYMS + 1] = syn
     end
