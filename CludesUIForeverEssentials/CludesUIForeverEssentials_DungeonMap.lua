@@ -20,8 +20,11 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  enough; the fit is trusted only while its across and down scales keep
 --  the picture's 3:2 shape and the readings sit within FIT_YARDS of it.
 --  Then the map shows you, a line to the next boss, and (where the game
---  gives your facing) an arrow and the yards to go. Where the game hides
---  your position, the footer says so and the route works as before.
+--  gives your facing) an arrow and the yards to go. Inside dungeons the game
+--  hides your world position (UnitPosition), so the readings then use your
+--  place on the game's own dungeon map (C_Map.GetPlayerMapPosition), fitted
+--  the same way, per floor and per game map. Where both are hidden, the
+--  footer says so and the route works as before.
 -------------------------------------------------------------------------------
 local CUI = CludesUI
 if not (CUI and CUI.IS_FOREVER) then return end
@@ -51,6 +54,7 @@ local floor -- the floor on show
 local manualFloor = false -- a < > pick holds until the next kill
 local autoShown = false -- opened by entering a dungeon (leaving closes it again)
 local FIT_YARDS = 40 -- the furthest a reading may sit from the fit
+local FIT_MAP = 0.06 -- the same, for readings on the game's map (a share of its width)
 local MAX_READINGS = 12 -- per floor, oldest dropped
 local youDot, youLine, arrow, yardsText, ticker
 local Fit, DrawYou, PositionShown -- below, used by Draw
@@ -248,13 +252,22 @@ end
 local function Secret(v) return v ~= nil and issecretvalue and issecretvalue(v) end
 
 -- Your position in the dungeon (world yards, x north, y west), or nil.
+-- Where you are: world yards (x north, y west) and source "", or, where the
+-- game hides those, your place on its dungeon map (x east, y south, 0 to 1)
+-- and source "#<map id>". nil when both are hidden.
 local function Position()
     local x, y = UnitPosition("player")
-    if x == nil or Secret(x) or Secret(y) then return nil end
-    return x, y
+    if x ~= nil and not Secret(x) and not Secret(y) then return x, y, "" end
+    local mapID = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    if not mapID or Secret(mapID) then return nil end
+    local at = C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(mapID, "player")
+    if not at or Secret(at) then return nil end
+    local mx, my = at:GetXY()
+    if mx == nil or Secret(mx) or Secret(my) or (mx == 0 and my == 0) then return nil end
+    return mx, my, "#" .. mapID
 end
 
-local function Readings(floorNumber, create)
+local function Readings(floorNumber, create, source)
     if not dungeon then return nil end
     local all = create and Cfg() or F.Read()
     local byKey = all.readings
@@ -263,11 +276,12 @@ local function Readings(floorNumber, create)
         byKey = {}
         all.readings = byKey
     end
-    local mine = byKey[dungeon.key]
+    local key = dungeon.key .. (source or "")
+    local mine = byKey[key]
     if not mine then
         if not create then return nil end
         mine = {}
-        byKey[dungeon.key] = mine
+        byKey[key] = mine
     end
     local list = mine[floorNumber]
     if not list and create then
@@ -290,47 +304,76 @@ local function LineFit(list, wi, pi)
     return slope, (sp - slope * sw) / n
 end
 
-function Fit(floorNumber)
-    if fits[floorNumber] ~= nil then return fits[floorNumber] or nil end
-    local list = Readings(floorNumber)
+-- World readings: u from world y and v from world x, both falling (north up:
+-- west is left, north is up), across 1.5 times down (the picture's 3:2).
+-- Map readings: u from map x and v from map y, both rising, and the game's
+-- map is 3:2 as well, so the two scales match.
+function Fit(floorNumber, source)
+    source = source or ""
+    local key = floorNumber .. source
+    if fits[key] ~= nil then return fits[key] or nil end
+    local list = Readings(floorNumber, false, source)
+    local onMap = source ~= ""
     local fit = false
     if list and #list >= 2 then
-        local su, au = LineFit(list, 2, 3) -- u from world y
-        local sv, av = LineFit(list, 1, 4) -- v from world x
-        -- North up: going west moves left (u falls), going north moves up (v falls).
-        if su and sv and su < 0 and sv < 0 then
+        local ui, vi = onMap and 1 or 2, onMap and 2 or 1
+        local su, au = LineFit(list, ui, 3)
+        local sv, av = LineFit(list, vi, 4)
+        local sign = onMap and 1 or -1
+        if su and sv and su * sign > 0 and sv * sign > 0 then
             local shape = sv / su
             local worst = 0
             for _, r in ipairs(list) do
-                local du, dv = (su * r[2] + au - r[3]) / su, (sv * r[1] + av - r[4]) / sv
+                local du, dv = (su * r[ui] + au - r[3]) / su, (sv * r[vi] + av - r[4]) / sv
                 worst = math.max(worst, math.sqrt(du * du + dv * dv))
             end
-            if shape > 1.2 and shape < 1.8 and worst <= FIT_YARDS then fit = { su = su, au = au, sv = sv, av = av } end
+            local low, high, limit = 1.2, 1.8, FIT_YARDS
+            if onMap then low, high, limit = 0.6, 1.6, FIT_MAP end
+            if shape > low and shape < high and worst <= limit then
+                fit = { su = su, au = au, sv = sv, av = av, onMap = onMap }
+            end
         end
     end
-    fits[floorNumber] = fit
+    fits[key] = fit
     return fit or nil
 end
 
 local function Note(floorNumber, u, v)
-    local x, y = Position()
+    local x, y, source = Position()
     if not x then return end
-    local list = Readings(floorNumber, true)
+    local list = Readings(floorNumber, true, source)
     list[#list + 1] = { x, y, u, v }
     while #list > MAX_READINGS do
         table.remove(list, 1)
     end
-    fits[floorNumber] = nil
+    fits[floorNumber .. source] = nil
 end
 
-local function ToPicture(fit, x, y) return fit.su * y + fit.au, fit.sv * x + fit.av end
-local function ToWorld(fit, u, v) return (v - fit.av) / fit.sv, (u - fit.au) / fit.su end
+local function ToPicture(fit, x, y)
+    if fit.onMap then return fit.su * x + fit.au, fit.sv * y + fit.av end
+    return fit.su * y + fit.au, fit.sv * x + fit.av
+end
+local function ToWorld(fit, u, v)
+    if fit.onMap then return (u - fit.au) / fit.su, (v - fit.av) / fit.sv end
+    return (v - fit.av) / fit.sv, (u - fit.au) / fit.su
+end
+
+-- From you to a point, as world yards north (dx) and west (dy); nil where a
+-- map reading has no size for its map.
+local function Toward(source, x, y, tx, ty)
+    if source == "" then return tx - x, ty - y end
+    local mapID = tonumber(source:sub(2))
+    local w, h
+    if C_Map.GetMapWorldSize then w, h = C_Map.GetMapWorldSize(mapID) end
+    if not w or Secret(w) or Secret(h) or w <= 0 or h <= 0 then return nil end
+    return -(ty - y) * h, -(tx - x) * w
+end
 
 -- The you dot, the line on to the next boss and the arrow, kept current.
 function DrawYou()
     if not (window and window:IsShown() and youDot) then return end
-    local x, y = Position()
-    local fit = x and dungeon and Fit(floor or 1)
+    local x, y, source = Position()
+    local fit = x and dungeon and Fit(floor or 1, source)
     local nextStop = fit and NextStop()
     if not fit then
         youDot:Hide()
@@ -364,7 +407,12 @@ function DrawYou()
         return
     end
     local tx, ty = ToWorld(fit, nextStop.x, nextStop.y)
-    local dx, dy = tx - x, ty - y
+    local dx, dy = Toward(source, x, y, tx, ty)
+    if not dx then
+        arrow:Hide()
+        yardsText:SetText("")
+        return
+    end
     yardsText:SetText(("%d yd"):format(math.sqrt(dx * dx + dy * dy)))
     local facing = GetPlayerFacing and GetPlayerFacing()
     if facing and not Secret(facing) then
@@ -600,7 +648,7 @@ CUI._DungeonMap = {
     Toggle = SlashCmdList.CUIDUNGEONMAP,
     -- For tests: the dungeon on show, its route and the next stop.
     State = function() return dungeon, route, NextStop(), killed end,
-    Fit = function(n) return Fit(n or floor or 1) end,
+    Fit = function(n, source) return Fit(n or floor or 1, source) end,
     Map = function() return map, floor end,
     PositionShown = function() return PositionShown() end,
     DrawYou = function() DrawYou() end,
