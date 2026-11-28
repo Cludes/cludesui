@@ -170,6 +170,24 @@ CUI._WHATSNEW_PATCHES = {
                 title = "Say When You Drink",
                 desc = "Healers can tell the group when they sit down to drink and when their mana is full.",
             },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Interrupt Tracker",
+                desc = "A small list of your group's interrupts: whose is ready, how long until the others are, and whose turn is next.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Who Pulled",
+                desc = "In a dungeon or raid group, says who was first into each fight, and on which mob.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Looking For Group and the Group Finder",
+                desc = "The LFG window's Group Finder button opens the game's Group Finder; the groups you find in Premade Groups show in the CludesUI window.",
+            },
         },
     },
     {
