@@ -20,12 +20,12 @@ if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return CUI.GetFontPath("essentials") end
+local function Typeface() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
-local function Known(ident)
+local function Learned(ident)
     return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(ident)
 end
-local _, CLASS = UnitClass("player")
+local _, CALLING = UnitClass("player")
 
 -------------------------------------------------------------------------------
 --  Restock
@@ -128,10 +128,10 @@ local FOOD_AND_DRINK = {
     [20390] = true,
 }
 local AMMO_SLOT, RANGED_SLOT = 0, 18
-local WEAPON_CLASS, THROWN_SUBCLASS = 2, 16
-local THROWN_CLASSES = { ROGUE = true, WARRIOR = true }
-local FOOD_CLASS, FOOD_SUBCLASS, OTHER_SUBCLASS = 0, 5, 8
-local FOOD_SPELL, NUTRITIOUS_DRINK, DRINK_ITEM = 433, 1249920, 159
+local WEAPON_CALLING, THROWN_SUBCLASS = 2, 16
+local THROWN_CALLINGS = { ROGUE = true, WARRIOR = true }
+local FOOD_CALLING, FOOD_SUBCLASS, OTHER_SUBCLASS = 0, 5, 8
+local FOOD_SPELL, NUTRITIOUS_DRINK, DRINK_THING = 433, 1249920, 159
 local NO_DRINK = { WARRIOR = true, ROGUE = true }
 
 local R = module.Feature("restock", {
@@ -151,39 +151,39 @@ local R = module.Feature("restock", {
     size = 16,
 }, { point = "CENTER", relPoint = "CENTER", x = 0, y = 120 })
 
-local function Target(itemId)
+local function Aim(thingId)
     local tbl = R.Read().targets
-    return (tbl and tbl[itemId]) or TARGETS[itemId]
+    return (tbl and tbl[thingId]) or TARGETS[thingId]
 end
 
 local pending = {}
 local rEvents = CreateFrame("Frame")
-local function RequestItem(ident)
+local function RequestThing(ident)
     if pending[ident] then return end
     pending[ident] = true
     rEvents:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     C_Item.RequestLoadItemDataByID(ident)
 end
 
-local function ItemName(ident) return C_Item.GetItemNameByID(ident) or ("item " .. ident) end
+local function ThingTitle(ident) return C_Item.GetItemNameByID(ident) or ("item " .. ident) end
 
-local function KnownReagent(family)
+local function LearnedReagent(family)
     local entry
-    for _, rank in ipairs(family) do
-        if Known(rank[1]) then entry = rank[2] end
+    for _, tier in ipairs(family) do
+        if Learned(tier[1]) then entry = tier[2] end
     end
     return entry
 end
 
 local function CarriedAmmo()
-    if THROWN_CLASSES[CLASS] then
+    if THROWN_CALLINGS[CALLING] then
         local entry = GetInventoryItemID("player", RANGED_SLOT)
         if entry then
-            local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(entry)
-            if classID == WEAPON_CLASS and subID == THROWN_SUBCLASS then
+            local _, _, _, _, _, callingID, subID = C_Item.GetItemInfoInstant(entry)
+            if callingID == WEAPON_CALLING and subID == THROWN_SUBCLASS then
                 local stack = select(8, C_Item.GetItemInfo(entry))
                 if not stack then
-                    RequestItem(entry)
+                    RequestThing(entry)
                     return
                 end
                 if stack > 1 then return entry end
@@ -194,24 +194,24 @@ local function CarriedAmmo()
     return GetInventoryItemID("player", AMMO_SLOT)
 end
 
-local function Wanted()
-    local wanted = {}
+local function Desired()
+    local desired = {}
     if R.Get("reagents") then
-        for _, frame in ipairs(FAMILIES) do
-            local entry = frame.class == CLASS and KnownReagent(frame)
-            if entry and Target(entry) > 0 then wanted[entry] = Target(entry) end
+        for _, window in ipairs(FAMILIES) do
+            local entry = window.class == CALLING and LearnedReagent(window)
+            if entry and Aim(entry) > 0 then desired[entry] = Aim(entry) end
         end
     end
     local ammo = R.Get("ammo") and CarriedAmmo()
-    if ammo and ammo > 0 then wanted[ammo] = R.Get("ammoTarget") end
-    return wanted
+    if ammo and ammo > 0 then desired[ammo] = R.Get("ammoTarget") end
+    return desired
 end
 
-local function HunterAmmoOn() return CLASS == "HUNTER" and R.Get("hunterAmmo") end
+local function HunterAmmoOn() return CALLING == "HUNTER" and R.Get("hunterAmmo") end
 
-local function ScanBags()
+local function SweepBags()
     local food, drink, junk, free = 0, 0, 0, 0
-    local drinkSpell = C_Item.GetItemSpell(DRINK_ITEM)
+    local drinkSpell = C_Item.GetItemSpell(DRINK_THING)
     local nutritious = C_Spell.GetSpellName(NUTRITIOUS_DRINK)
     local foodSpell = C_Spell.GetSpellName(FOOD_SPELL)
     for bag = 0, NUM_BAG_SLOTS or 4 do
@@ -223,11 +223,11 @@ local function ScanBags()
                 if details.quality == Enum.ItemQuality.Poor and not details.hasNoValue then
                     junk = junk + 1
                 end
-                local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(details.itemID)
-                local isFood = classID == FOOD_CLASS and (subID == FOOD_SUBCLASS or subID == OTHER_SUBCLASS)
-                local level = isFood and select(5, C_Item.GetItemInfo(details.itemID))
-                if isFood and not level then RequestItem(details.itemID) end
-                if level and level >= R.Get("foodMinLevel") and level <= R.Get("foodMaxLevel") then
+                local _, _, _, _, _, callingID, subID = C_Item.GetItemInfoInstant(details.itemID)
+                local isFood = callingID == FOOD_CALLING and (subID == FOOD_SUBCLASS or subID == OTHER_SUBCLASS)
+                local lvl = isFood and select(5, C_Item.GetItemInfo(details.itemID))
+                if isFood and not lvl then RequestThing(details.itemID) end
+                if lvl and lvl >= R.Get("foodMinLevel") and lvl <= R.Get("foodMaxLevel") then
                     local spell = C_Item.GetItemSpell(details.itemID)
                     if FOOD_AND_DRINK[details.itemID] then
                         food, drink = food + details.stackCount, drink + details.stackCount
@@ -245,11 +245,11 @@ end
 
 local function Lines()
     local lines = {}
-    for ident, target in pairs(Wanted()) do
+    for ident, aim in pairs(Desired()) do
         local have = C_Item.GetItemCount(ident)
         local hunterAmmo = HunterAmmoOn() and ident == GetInventoryItemID("player", AMMO_SLOT)
-        if not hunterAmmo and have < target then
-            lines[#lines + 1] = ("%s  %d / %d"):format(ItemName(ident), have, target)
+        if not hunterAmmo and have < aim then
+            lines[#lines + 1] = ("%s  %d / %d"):format(ThingTitle(ident), have, aim)
         end
     end
     table.sort(lines)
@@ -257,13 +257,13 @@ local function Lines()
         local ammo = GetInventoryItemID("player", AMMO_SLOT)
         if ammo and ammo > 0 then
             local have, below = C_Item.GetItemCount(ammo), R.Get("hunterAmmoBelow")
-            if have <= below then lines[#lines + 1] = ("%s  %d / %d"):format(ItemName(ammo), have, below) end
+            if have <= below then lines[#lines + 1] = ("%s  %d / %d"):format(ThingTitle(ammo), have, below) end
         end
     end
-    local food, junk, free, drink = ScanBags()
+    local food, junk, free, drink = SweepBags()
     local below = R.Get("foodBelow")
     if R.Get("food") and food < below then lines[#lines + 1] = ("Food  %d left"):format(food) end
-    if R.Get("food") and not NO_DRINK[CLASS] and drink < below then
+    if R.Get("food") and not NO_DRINK[CALLING] and drink < below then
         lines[#lines + 1] = ("Drink  %d left"):format(drink)
     end
     if R.Get("vendor") then
@@ -273,22 +273,22 @@ local function Lines()
     return lines
 end
 
-local alert, flash
-local function BuildAlert()
-    if alert then return alert end
-    alert = CreateFrame("Frame", "CludesUIRestock", UIParent)
-    alert:SetSize(240, 60)
+local warn, flash
+local function MakeWarn()
+    if warn then return warn end
+    warn = CreateFrame("Frame", "CludesUIRestock", UIParent)
+    warn:SetSize(240, 60)
     -- A font first: the client refuses text on a FontString without one.
-    alert.title = alert:CreateFontString(nil, "OVERLAY")
-    alert.title:SetPoint("TOP", 0, -4)
-    CUI.Kit.Font(alert.title, R.Get("size") + 6, "essentials")
-    alert.title:SetTextColor(CUI.Kit.Accent())
-    alert.title:SetText("Restock")
-    alert.text = alert:CreateFontString(nil, "OVERLAY")
-    alert.text:SetPoint("TOP", alert.title, "BOTTOM", 0, -4)
-    alert.text:SetJustifyH("CENTER")
-    CUI.Kit.Font(alert.text, R.Get("size"), "essentials")
-    flash = alert:CreateAnimationGroup()
+    warn.title = warn:CreateFontString(nil, "OVERLAY")
+    warn.title:SetPoint("TOP", 0, -4)
+    CUI.Kit.Font(warn.title, R.Get("size") + 6, "essentials")
+    warn.title:SetTextColor(CUI.Kit.Accent())
+    warn.title:SetText("Restock")
+    warn.text = warn:CreateFontString(nil, "OVERLAY")
+    warn.text:SetPoint("TOP", warn.title, "BOTTOM", 0, -4)
+    warn.text:SetJustifyH("CENTER")
+    CUI.Kit.Font(warn.text, R.Get("size"), "essentials")
+    flash = warn:CreateAnimationGroup()
     flash:SetLooping("BOUNCE")
     flash:SetScript("OnLoop", function(self)
         self.loops = (self.loops or 0) + 1
@@ -298,37 +298,37 @@ local function BuildAlert()
     pulse:SetFromAlpha(1)
     pulse:SetToAlpha(0.35)
     pulse:SetDuration(0.6)
-    alert:Hide()
-    return alert
+    warn:Hide()
+    return warn
 end
 
-local function HideAlert()
-    if alert then
+local function ConcealWarn()
+    if warn then
         if flash then flash:Stop() end
-        alert:Hide()
+        warn:Hide()
     end
 end
 
-local function ShowAlert(lines)
-    BuildAlert()
-    local size = R.Get("size")
-    CUI.Kit.Font(alert.title, size + 6, "essentials")
-    CUI.Kit.Font(alert.text, size, "essentials")
-    alert.text:SetText(table.concat(lines, "\n"))
-    alert:SetSize(
-        math.max(alert.title:GetStringWidth(), alert.text:GetStringWidth()) + 16,
-        alert.title:GetStringHeight() + alert.text:GetStringHeight() + 12
+local function RevealWarn(lines)
+    MakeWarn()
+    local dims = R.Get("size")
+    CUI.Kit.Font(warn.title, dims + 6, "essentials")
+    CUI.Kit.Font(warn.text, dims, "essentials")
+    warn.text:SetText(table.concat(lines, "\n"))
+    warn:SetSize(
+        math.max(warn.title:GetStringWidth(), warn.text:GetStringWidth()) + 16,
+        warn.title:GetStringHeight() + warn.text:GetStringHeight() + 12
     )
-    if not alert:IsShown() then
-        alert:Show()
+    if not warn:IsShown() then
+        warn:Show()
         flash.loops = 0
         flash:Play()
     end
 end
 
-local function Check()
+local function Test()
     if CUI._unlockActive and R.Enabled() then
-        ShowAlert({ "Arcane Powder  3 / 20", "Junk to sell  6" })
+        RevealWarn({ "Arcane Powder  3 / 20", "Junk to sell  6" })
         return
     end
     if
@@ -338,45 +338,45 @@ local function Check()
         or IsInInstance()
         or (MerchantFrame and MerchantFrame:IsShown())
     then
-        HideAlert()
+        ConcealWarn()
         return
     end
     local lines = Lines()
     if #lines > 0 then
-        ShowAlert(lines)
+        RevealWarn(lines)
     else
-        HideAlert()
+        ConcealWarn()
     end
 end
 
 -- Buys whole bundles up to each target, as far as gold and the vendor's stock allow.
 local function Buy()
     if not (R.Enabled() and R.Get("buy")) then return end
-    local wanted = Wanted()
+    local desired = Desired()
     local money = GetMoney()
     local spent, bought = 0, {}
-    for index = 1, GetMerchantNumItems() do
-        local ident = tonumber((GetMerchantItemLink(index) or ""):match("item:(%d+)"))
-        local target = ident and wanted[ident]
-        local details = target and C_MerchantFrame.GetItemInfo(index)
+    for catalog = 1, GetMerchantNumItems() do
+        local ident = tonumber((GetMerchantItemLink(catalog) or ""):match("item:(%d+)"))
+        local aim = ident and desired[ident]
+        local details = aim and C_MerchantFrame.GetItemInfo(catalog)
         if details and details.isPurchasable and not details.hasExtendedCost then
             local bundle = math.max(details.stackCount, 1)
-            local bundles = math.ceil((target - C_Item.GetItemCount(ident)) / bundle)
+            local bundles = math.ceil((aim - C_Item.GetItemCount(ident)) / bundle)
             if details.numAvailable and details.numAvailable >= 0 then
                 bundles = math.min(bundles, details.numAvailable)
             end
             if details.price > 0 then bundles = math.min(bundles, math.floor(money / details.price)) end
-            local perBuy = math.max(math.floor(GetMerchantItemMaxStack(index) / bundle), 1)
+            local perBuy = math.max(math.floor(GetMerchantItemMaxStack(catalog) / bundle), 1)
             if bundles > 0 then
                 local leftX = bundles
                 while leftX > 0 do
                     local take = math.min(leftX, perBuy)
-                    BuyMerchantItem(index, take * bundle)
+                    BuyMerchantItem(catalog, take * bundle)
                     leftX = leftX - take
                 end
                 money = money - bundles * details.price
                 spent = spent + bundles * details.price
-                bought[#bought + 1] = bundles * bundle .. "x " .. ItemName(ident)
+                bought[#bought + 1] = bundles * bundle .. "x " .. ThingTitle(ident)
             end
         end
     end
@@ -396,29 +396,29 @@ rEvents:SetScript("OnEvent", function(_, evt, ident)
         if not pending[ident] then return end
         pending[ident] = nil
         if not next(pending) then rEvents:UnregisterEvent("GET_ITEM_INFO_RECEIVED") end
-        return Check()
+        return Test()
     end
     if evt == "MERCHANT_SHOW" then
-        HideAlert()
+        ConcealWarn()
         Buy()
     elseif evt == "MERCHANT_CLOSED" then
-        C_Timer.After(0.5, Check)
+        C_Timer.After(0.5, Test)
     elseif evt == "PLAYER_REGEN_DISABLED" then
-        HideAlert()
+        ConcealWarn()
     elseif evt == "PLAYER_UPDATE_RESTING" or evt == "PLAYER_ENTERING_WORLD" then
         local resting = IsResting()
-        if resting and not wasResting then Check() end
-        if not resting then HideAlert() end
+        if resting and not wasResting then Test() end
+        if not resting then ConcealWarn() end
         wasResting = resting
     else
-        Check()
+        Test()
     end
 end)
 
-local function RApply()
+local function RUse()
     rEvents:UnregisterAllEvents()
     if not R.Enabled() then
-        HideAlert()
+        ConcealWarn()
         return
     end
     for ident in pairs(TARGETS) do
@@ -436,22 +436,22 @@ local function RApply()
         rEvents:RegisterEvent(event)
     end
     if R.Get("ammo") or HunterAmmoOn() then rEvents:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player") end
-    RequestItem(DRINK_ITEM)
+    RequestThing(DRINK_THING)
     wasResting = IsResting()
-    if alert and not CUI._unlockActive then R.Place(alert) end
-    Check()
+    if warn and not CUI._unlockActive then R.Place(warn) end
+    Test()
 end
 
 --- This class's reagents, for the options page: { {item, name, target}, ... }.
-local function ClassReagents()
-    local result, seen = {}, {}
-    for _, frame in ipairs(FAMILIES) do
-        if frame.class == CLASS then
-            for _, rank in ipairs(frame) do
-                local entry = rank[2]
-                if not seen[entry] then
-                    seen[entry] = true
-                    result[#result + 1] = { item = entry, name = ItemName(entry) }
+local function CallingMats()
+    local result, spotted = {}, {}
+    for _, window in ipairs(FAMILIES) do
+        if window.class == CALLING then
+            for _, tier in ipairs(window) do
+                local entry = tier[2]
+                if not spotted[entry] then
+                    spotted[entry] = true
+                    result[#result + 1] = { item = entry, name = ThingTitle(entry) }
                 end
             end
         end
@@ -459,16 +459,16 @@ local function ClassReagents()
     return result
 end
 
-R.Start(RApply, {
+R.Start(RUse, {
     key = "CUI_Restock",
     label = "Restock Reminder",
     order = 748,
-    frame = function(build)
-        if build then
-            BuildAlert()
-            Check()
+    frame = function(make)
+        if make then
+            MakeWarn()
+            Test()
         end
-        return alert
+        return warn
     end,
     size = function() return 240, 60 end,
     noAnchorTarget = true,
@@ -478,7 +478,7 @@ R.Start(RApply, {
 -------------------------------------------------------------------------------
 --  Lockpicking Skill
 -------------------------------------------------------------------------------
-local LOCKBOX_SKILL = {
+local LOCKBOX_CRAFT = {
     [4632] = 1,
     [4633] = 25,
     [4634] = 70,
@@ -506,43 +506,43 @@ local LOCKBOX_SKILL = {
 }
 local LOCKPICKING = 633
 local L = module.Feature("lockboxSkill", { enabled = false })
-local lockSkill, lockName
-local function ReadSkill()
+local lockCraft, lockTitle
+local function LoadCraft()
     local details = C_SkillInfo
         and C_SkillInfo.GetSkillLineInfoByID
         and C_SkillInfo.GetSkillLineInfoByID(LOCKPICKING)
-    lockSkill = details and (details.rank + details.modifier)
-    lockName = (details and details.name ~= "" and details.name)
+    lockCraft = details and (details.rank + details.modifier)
+    lockTitle = (details and details.name ~= "" and details.name)
         or (C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillDisplayName and C_TradeSkillUI.GetTradeSkillDisplayName(
             LOCKPICKING
         ))
         or "Lockpicking"
 end
 local lockEv = CreateFrame("Frame")
-lockEv:SetScript("OnEvent", ReadSkill)
+lockEv:SetScript("OnEvent", LoadCraft)
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, payload)
         if not L.Enabled() then return end
         local ident = payload and payload.id
         if not ident or Secret(ident) then return end
-        local need = LOCKBOX_SKILL[ident]
+        local need = LOCKBOX_CRAFT[ident]
         if not need then return end
-        if not lockName then ReadSkill() end
-        local red, green, blue
-        if not lockSkill then
-            red, green, blue = 1, 0.8, 0.2
-        elseif lockSkill < need then
-            red, green, blue = 1, 0.3, 0.3
+        if not lockTitle then LoadCraft() end
+        local crimson, green, blue
+        if not lockCraft then
+            crimson, green, blue = 1, 0.8, 0.2
+        elseif lockCraft < need then
+            crimson, green, blue = 1, 0.3, 0.3
         else
-            red, green, blue = 0.4, 0.9, 0.5
+            crimson, green, blue = 0.4, 0.9, 0.5
         end
-        tooltip:AddLine(ITEM_MIN_SKILL:format(lockName, need), red, green, blue)
+        tooltip:AddLine(ITEM_MIN_SKILL:format(lockTitle, need), crimson, green, blue)
     end)
 end
 L.Start(function()
     if L.Enabled() then
         lockEv:RegisterEvent("SKILL_LINES_CHANGED")
-        ReadSkill()
+        LoadCraft()
     else
         lockEv:UnregisterAllEvents()
     end
@@ -560,14 +560,14 @@ local G = module.Feature(
     { worn = false, pole = false, poleWhere = "always", size = 48 },
     { point = "TOP", relPoint = "TOP", x = 0, y = -290 }
 )
-local gFrame
-local gIcons, dismissed = {}, {}
+local gWindow
+local gGlyphs, dismissed = {}, {}
 local function GOn() return G.Get("worn") or G.Get("pole") end
 
 local function Wearing(wid, ident)
     if wid.item then return ident == wid.item end
-    local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(ident)
-    return classID == Enum.ItemClass.Weapon and subID == Enum.ItemWeaponSubclass[wid.weapon]
+    local _, _, _, _, _, callingID, subID = C_Item.GetItemInfoInstant(ident)
+    return callingID == Enum.ItemClass.Weapon and subID == Enum.ItemWeaponSubclass[wid.weapon]
 end
 
 local function WornHere(wid, here)
@@ -579,11 +579,11 @@ local function WornHere(wid, here)
     return true
 end
 
-local GUpdate
-local function Icon(index)
-    local widget = gIcons[index]
+local GRefresh
+local function Glyph(catalog)
+    local widget = gGlyphs[catalog]
     if widget then return widget end
-    widget = CreateFrame("Button", nil, gFrame)
+    widget = CreateFrame("Button", nil, gWindow)
     widget.tex = widget:CreateTexture(nil, "ARTWORK")
     widget.tex:SetAllPoints()
     widget.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -599,24 +599,24 @@ local function Icon(index)
     widget:SetScript("OnMouseUp", function(self)
         if self.slot and IsControlKeyDown() then
             dismissed[self.slot] = GetInventoryItemID("player", self.slot)
-            GUpdate()
+            GRefresh()
         end
     end)
-    gIcons[index] = widget
+    gGlyphs[catalog] = widget
     return widget
 end
 
-GUpdate = function()
-    if not gFrame then return end
-    local size = G.Get("size")
+GRefresh = function()
+    if not gWindow then return end
+    local dims = G.Get("size")
     local here = select(8, GetInstanceInfo())
     local isShown = 0
     for _, wid in ipairs(WORN) do
         local ident = GetInventoryItemID("player", wid.slot)
         if dismissed[wid.slot] ~= ident then dismissed[wid.slot] = nil end
-        local show, texture, slot
+        local reveal, texture, slot
         if CUI._unlockActive then
-            show, texture = G.Get(wid.setting), C_Item.GetItemIconByID(wid.item or wid.sample)
+            reveal, texture = G.Get(wid.setting), C_Item.GetItemIconByID(wid.item or wid.sample)
         elseif
             ident
             and not dismissed[wid.slot]
@@ -624,55 +624,55 @@ GUpdate = function()
             and WornHere(wid, here)
             and Wearing(wid, ident)
         then
-            show, texture, slot = true, C_Item.GetItemIconByID(ident), wid.slot
+            reveal, texture, slot = true, C_Item.GetItemIconByID(ident), wid.slot
         end
-        if show then
+        if reveal then
             isShown = isShown + 1
-            local widget = Icon(isShown)
-            widget:SetSize(size, size)
+            local widget = Glyph(isShown)
+            widget:SetSize(dims, dims)
             widget:ClearAllPoints()
-            widget:SetPoint("LEFT", gFrame, "LEFT", (isShown - 1) * (size + 4), 0)
+            widget:SetPoint("LEFT", gWindow, "LEFT", (isShown - 1) * (dims + 4), 0)
             widget.tex:SetTexture(texture)
             widget.slot = slot
             widget:Show()
         end
     end
-    for index = isShown + 1, #gIcons do
-        gIcons[index]:Hide()
+    for catalog = isShown + 1, #gGlyphs do
+        gGlyphs[catalog]:Hide()
     end
-    gFrame:SetSize(math.max(isShown, 1) * (size + 4) - 4, size)
+    gWindow:SetSize(math.max(isShown, 1) * (dims + 4) - 4, dims)
 end
 
 local gEv = CreateFrame("Frame")
 gEv:SetScript("OnEvent", function(_, evt, slot, hasCurrent)
     if evt == "PLAYER_EQUIPMENT_CHANGED" and not hasCurrent then dismissed[slot] = nil end
-    GUpdate()
+    GRefresh()
 end)
 
-local function GApply()
+local function GUse()
     gEv:UnregisterAllEvents()
     if not GOn() then
-        if gFrame then gFrame:Hide() end
+        if gWindow then gWindow:Hide() end
         return
     end
-    if not gFrame then gFrame = CreateFrame("Frame", "CludesUIGearReminders", UIParent) end
-    if not CUI._unlockActive then G.Place(gFrame) end
-    gFrame:Show()
+    if not gWindow then gWindow = CreateFrame("Frame", "CludesUIGearReminders", UIParent) end
+    if not CUI._unlockActive then G.Place(gWindow) end
+    gWindow:Show()
     for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD" }) do
         gEv:RegisterEvent(event)
     end
-    GUpdate()
+    GRefresh()
 end
 
-G.Start(GApply, {
+G.Start(GUse, {
     key = "CUI_GearReminders",
     label = "Gear Reminders",
     order = 749,
     shown = GOn,
-    frame = function(build)
-        if build and not gFrame then gFrame = CreateFrame("Frame", "CludesUIGearReminders", UIParent) end
-        if build then GUpdate() end
-        return gFrame
+    frame = function(make)
+        if make and not gWindow then gWindow = CreateFrame("Frame", "CludesUIGearReminders", UIParent) end
+        if make then GRefresh() end
+        return gWindow
     end,
     size = function() return G.Get("size") * 2 + 4, G.Get("size") end,
     noAnchorTarget = true,
@@ -687,34 +687,34 @@ local T = module.Feature(
     { enabled = false, size = 22 },
     { point = "CENTER", relPoint = "CENTER", x = 0, y = 300 }
 )
-local tFrame, tCombat
-local function TBuild()
-    if tFrame then return tFrame end
-    tFrame = CreateFrame("Frame", "CludesUITalentPoints", UIParent)
-    tFrame:SetSize(300, 32)
-    tFrame.text = tFrame:CreateFontString(nil, "OVERLAY")
-    tFrame.text:SetPoint("CENTER")
-    tFrame.text:SetTextColor(1, 0.82, 0)
-    tFrame:Hide()
-    return tFrame
+local tWindow, tCombat
+local function TMake()
+    if tWindow then return tWindow end
+    tWindow = CreateFrame("Frame", "CludesUITalentPoints", UIParent)
+    tWindow:SetSize(300, 32)
+    tWindow.text = tWindow:CreateFontString(nil, "OVERLAY")
+    tWindow.text:SetPoint("CENTER")
+    tWindow.text:SetTextColor(1, 0.82, 0)
+    tWindow:Hide()
+    return tWindow
 end
-local function TUpdate()
-    if not tFrame then return end
-    CUI.Kit.Font(tFrame.text, T.Get("size"), "essentials")
+local function TRefresh()
+    if not tWindow then return end
+    CUI.Kit.Font(tWindow.text, T.Get("size"), "essentials")
     local points
     if CUI._unlockActive and T.Enabled() then
         points = 2
     elseif T.Enabled() and not tCombat and C_ClassTalents and C_ClassTalents.HasUnspentTalentPoints then
-        local unspent, classPoints, specPoints = C_ClassTalents.HasUnspentTalentPoints()
-        if unspent then points = (classPoints or 0) + (specPoints or 0) end
+        local unspent, callingPoints, specPoints = C_ClassTalents.HasUnspentTalentPoints()
+        if unspent then points = (callingPoints or 0) + (specPoints or 0) end
     end
     if points and points > 0 then
-        tFrame.text:SetText(
+        tWindow.text:SetText(
             points == 1 and CUI.L("1 Unspent Talent Point") or (points .. " Unspent Talent Points")
         )
-        tFrame:Show()
+        tWindow:Show()
     else
-        tFrame:Hide()
+        tWindow:Hide()
     end
 end
 local tEv = CreateFrame("Frame")
@@ -724,15 +724,15 @@ tEv:SetScript("OnEvent", function(_, evt)
     elseif evt == "PLAYER_REGEN_ENABLED" then
         tCombat = false
     end
-    TUpdate()
+    TRefresh()
 end)
-local function TApply()
+local function TUse()
     tEv:UnregisterAllEvents()
     if not T.Enabled() then
-        if tFrame then tFrame:Hide() end
+        if tWindow then tWindow:Hide() end
         return
     end
-    TBuild()
+    TMake()
     tCombat = UnitAffectingCombat("player")
     for _, event in ipairs({
         "PLAYER_LEVEL_UP",
@@ -744,19 +744,19 @@ local function TApply()
     }) do
         pcall(tEv.RegisterEvent, tEv, event)
     end
-    if not CUI._unlockActive then T.Place(tFrame) end
-    TUpdate()
+    if not CUI._unlockActive then T.Place(tWindow) end
+    TRefresh()
 end
-T.Start(TApply, {
+T.Start(TUse, {
     key = "CUI_TalentPoints",
     label = "Talent Points",
     order = 750,
-    frame = function(build)
-        if build then
-            TBuild()
-            TUpdate()
+    frame = function(make)
+        if make then
+            TMake()
+            TRefresh()
         end
-        return tFrame
+        return tWindow
     end,
     size = function() return 300, 32 end,
     noAnchorTarget = true,
@@ -768,12 +768,12 @@ CUI._Reminders = {
         Get = R.Get,
         Cfg = R.Cfg,
         Read = R.Read,
-        Apply = RApply,
-        Reagents = ClassReagents,
-        Target = Target,
-        Class = CLASS,
+        Apply = RUse,
+        Reagents = CallingMats,
+        Target = Aim,
+        Class = CALLING,
     },
     lock = { Get = L.Get, Cfg = L.Cfg },
-    gear = { Get = G.Get, Cfg = G.Cfg, Apply = GApply },
-    talents = { Get = T.Get, Cfg = T.Cfg, Apply = TApply },
+    gear = { Get = G.Get, Cfg = G.Cfg, Apply = GUse },
+    talents = { Get = T.Get, Cfg = T.Cfg, Apply = TUse },
 }
