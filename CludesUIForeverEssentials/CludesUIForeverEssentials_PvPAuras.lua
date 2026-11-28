@@ -24,10 +24,10 @@ if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local ABILITIES = module.PVP_AURA_SPELLS or { crowdControl = {}, otherCrowdControl = {}, debuffs = {} }
-local CC_LEAD, HARM_LEAD = "cc_", "debuff_"
+local SPELLS = module.PVP_AURA_SPELLS or { crowdControl = {}, otherCrowdControl = {}, debuffs = {} }
+local CC_PREFIX, DEBUFF_PREFIX = "cc_", "debuff_"
 
-local PRESETS = {
+local DEFAULTS = {
     enabled = false,
     size = 36,
     timer = true,
@@ -52,38 +52,38 @@ local PRESETS = {
     focusCC = true,
     focusDebuffs = false,
 }
-for _, item in ipairs(ABILITIES.crowdControl) do
-    PRESETS[CC_LEAD .. item.key] = true
+for _, entry in ipairs(SPELLS.crowdControl) do
+    DEFAULTS[CC_PREFIX .. entry.key] = true
 end
-for _, item in ipairs(ABILITIES.debuffs) do
-    PRESETS[HARM_LEAD .. item.key] = false
+for _, entry in ipairs(SPELLS.debuffs) do
+    DEFAULTS[DEBUFF_PREFIX .. entry.key] = false
 end
 
-local F = module.Feature("pvpAuras", PRESETS, { point = "CENTER", relPoint = "CENTER", x = 240, y = -60 })
+local F = module.Feature("pvpAuras", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 240, y = -60 })
 -- The focus panel's own spot (only its pos is kept there).
 local FF = module.Feature("pvpAurasFocus", {}, { point = "CENTER", relPoint = "CENTER", x = 240, y = -180 })
 -- Battleground Countdown: on = moved; its holder's spot is Blizzard's own by default.
 local FT = module.Feature("bgCountdown", { enabled = false }, { point = "TOP", relPoint = "TOP", x = 0, y = -155 })
 local Get, Enabled = F.Get, F.Enabled
 
-local LINES = { "buffs", "cc", "debuffs" }
-local TOP_ID = { buffs = "buffMax", cc = "ccMax", debuffs = "debuffMax" }
-local SIEVE = { buffs = "HELPFUL", cc = "HARMFUL", debuffs = "HARMFUL" }
-local TOP_GLYPHS = 10
-local GLYPH_SPACING, LINE_SPACING, TITLE_SPACING = 3, 4, 6
-local EDGE = 1
-local TRIM = 0.08
-local TIME_DIMS, TALLY_DIMS, TITLE_DIMS, SHIELD_DIMS = 0.34, 0.3, 0.42, 0.42
-local LEAST_LABEL = 8
-local FLASH = 0.5
-local CAUTION_WINDOW = 2
-local IVORY, GOLDEN, CRIMSON, PALE = { 1, 1, 1, 1 }, { 1, 0.82, 0, 1 }, { 1, 0.2, 0.2, 1 }, { 1, 0.2, 0.2, 0.3 }
-local SHIELD_TONE = { 0.55, 0.82, 1 }
-local SHIELD_GLYPH = "|TInterface\\Icons\\Spell_Holy_PowerWordShield:0:0:0:0:64:64:5:59:5:59|t "
-local CALLING_GLYPHS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
-local TALLY_W, TALLY_H, TALLY_TOP = 206, 26, 155
+local ROWS = { "buffs", "cc", "debuffs" }
+local MAX_KEY = { buffs = "buffMax", cc = "ccMax", debuffs = "debuffMax" }
+local FILTER = { buffs = "HELPFUL", cc = "HARMFUL", debuffs = "HARMFUL" }
+local MAX_ICONS = 10
+local ICON_GAP, ROW_GAP, NAME_GAP = 3, 4, 6
+local BORDER = 1
+local CROP = 0.08
+local TIME_SIZE, COUNT_SIZE, NAME_SIZE, ABSORB_SIZE = 0.34, 0.3, 0.42, 0.42
+local MIN_TEXT = 8
+local BLINK = 0.5
+local WARN_SPAN = 2
+local WHITE, YELLOW, RED, FAINT = { 1, 1, 1, 1 }, { 1, 0.82, 0, 1 }, { 1, 0.2, 0.2, 1 }, { 1, 0.2, 0.2, 0.3 }
+local ABSORB_RGB = { 0.55, 0.82, 1 }
+local ABSORB_ICON = "|TInterface\\Icons\\Spell_Holy_PowerWordShield:0:0:0:0:64:64:5:59:5:59|t "
+local CLASS_ICONS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
+local COUNT_W, COUNT_H, COUNT_TOP = 206, 26, 155
 
-local VIEWS = {
+local DISPLAYS = {
     {
         unit = "target",
         feat = F,
@@ -110,14 +110,14 @@ local VIEWS = {
 
 local AK = CUI.AuraKit
 local buttons, regions = {}, setmetatable({}, { __mode = "k" })
-local pending, reskinPending = false, false
-local clockOptions, clockSig
-local eventWindow = CreateFrame("Frame")
+local pending, restylePending = false, false
+local timerOpts, timerSig
+local eventFrame = CreateFrame("Frame")
 
-local function Locked() return InCombatLockdown() or (AK and AK.AurasRestricted()) or false end
+local function AurasRestricted() return InCombatLockdown() or (AK and AK.AurasRestricted()) or false end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
-local function Typeface() return CUI.GetFontPath("essentials") end
-local function LabelDims(ratio) return math.max(LEAST_LABEL, math.floor(Get("size") * ratio + 0.5)) end
+local function AuraFont() return CUI.GetFontPath("essentials") end
+local function FontSizeFor(ratio) return math.max(MIN_TEXT, math.floor(Get("size") * ratio + 0.5)) end
 local function DisplayOn(d) return Enabled() and (d.switch == nil or Get(d.switch) == true) end
 
 -------------------------------------------------------------------------------
@@ -125,11 +125,11 @@ local function DisplayOn(d) return Enabled() and (d.switch == nil or Get(d.switc
 -------------------------------------------------------------------------------
 
 -- The ids of every picked entry; n = how many ids.
-local function Chosen(items, lead, into)
+local function IsPicked(entries, prefix, into)
     local n = 0
-    for _, item in ipairs(items) do
-        if Get(lead .. item.key) then
-            for ident in pairs(item.ids) do
+    for _, entry in ipairs(entries) do
+        if Get(prefix .. entry.key) then
+            for ident in pairs(entry.ids) do
                 into[ident] = true
                 n = n + 1
             end
@@ -141,16 +141,16 @@ end
 -- The candidate filters per row, and per row whether it has anything to
 -- show: an empty spell list is never handed to the engine (it would read as
 -- no filter at all), its row is switched off instead.
-local function Sieves()
+local function AuraFilters()
     local cc, debuffs = {}, {}
-    local nCC = Chosen(ABILITIES.crowdControl, CC_LEAD, cc)
+    local nCC = IsPicked(SPELLS.crowdControl, CC_PREFIX, cc)
     if Get("ccOther") then
-        for ident in pairs(ABILITIES.otherCrowdControl) do
+        for ident in pairs(SPELLS.otherCrowdControl) do
             cc[ident] = true
             nCC = nCC + 1
         end
     end
-    local nDebuffs = Chosen(ABILITIES.debuffs, HARM_LEAD, debuffs)
+    local nDebuffs = IsPicked(SPELLS.debuffs, DEBUFF_PREFIX, debuffs)
     for ident in tostring(Get("debuffExtra") or ""):gmatch("%d+") do
         debuffs[tonumber(ident)] = true
         nDebuffs = nDebuffs + 1
@@ -165,55 +165,55 @@ end
 --  Icons
 -------------------------------------------------------------------------------
 
-local function Tint(c) return CreateColor(c[1], c[2], c[3], c[4]) end
+local function Color(c) return CreateColor(c[1], c[2], c[3], c[4]) end
 
 -- Warn Before It Ends: white, yellow under twice Red Under, red under it,
 -- blinking red with Blink When Red.
-local function CautionRamp(cautionAt, flash)
-    local ramp = C_CurveUtil.CreateColorCurve()
-    ramp:SetType(Enum.LuaCurveType.Step)
-    ramp:AddPoint(0, Tint(CRIMSON))
-    if flash then
-        local at, pale = FLASH, true
-        while at < cautionAt do
-            ramp:AddPoint(at, Tint(pale and PALE or CRIMSON))
-            at, pale = at + FLASH, not pale
+local function WarningCurve(warnAt, blink)
+    local curve = C_CurveUtil.CreateColorCurve()
+    curve:SetType(Enum.LuaCurveType.Step)
+    curve:AddPoint(0, Color(RED))
+    if blink then
+        local at, faint = BLINK, true
+        while at < warnAt do
+            curve:AddPoint(at, Color(faint and FAINT or RED))
+            at, faint = at + BLINK, not faint
         end
     end
-    ramp:AddPoint(cautionAt, Tint(GOLDEN))
-    ramp:AddPoint(cautionAt * CAUTION_WINDOW, Tint(IVORY))
-    return ramp
+    curve:AddPoint(warnAt, Color(YELLOW))
+    curve:AddPoint(warnAt * WARN_SPAN, Color(WHITE))
+    return curve
 end
 
 -- The time-left binding options, rebuilt only when the warn settings change.
-local function ClockOptions()
-    local caution = Get("warn") == true
-    local sig = (caution and "1" or "0") .. Get("warnAt") .. (Get("warnBlink") and "1" or "0")
-    if sig ~= clockSig then
-        clockSig = sig
-        local ramp = caution and C_CurveUtil and C_CurveUtil.CreateColorCurve and CautionRamp(Get("warnAt"), Get("warnBlink") == true)
-        clockOptions = AK.BuildDurationTextOpts(AK.GetDurationFormatter(false), ramp or nil)
+local function CountdownOptions()
+    local warn = Get("warn") == true
+    local sig = (warn and "1" or "0") .. Get("warnAt") .. (Get("warnBlink") and "1" or "0")
+    if sig ~= timerSig then
+        timerSig = sig
+        local curve = warn and C_CurveUtil and C_CurveUtil.CreateColorCurve and WarningCurve(Get("warnAt"), Get("warnBlink") == true)
+        timerOpts = AK.BuildDurationTextOpts(AK.GetDurationFormatter(false), curve or nil)
     end
-    return clockOptions, sig
+    return timerOpts, sig
 end
 
-local function Typefaces(r)
-    r.time:SetFont(Typeface(), LabelDims(TIME_DIMS), "OUTLINE")
-    r.count:SetFont(Typeface(), LabelDims(TALLY_DIMS), "OUTLINE")
+local function ApplyFonts(r)
+    r.time:SetFont(AuraFont(), FontSizeFor(TIME_SIZE), "OUTLINE")
+    r.count:SetFont(AuraFont(), FontSizeFor(COUNT_SIZE), "OUTLINE")
 end
 
 -- Size, fonts, which texts show and the time-left binding. Only out of the
 -- restriction (the buttons are forbidden while auras are secret).
-local function SkinBtn(btn)
-    local r = regions[btn]
+local function StyleAuraButton(button)
+    local r = regions[button]
     if not r then return end
-    local dims = Get("size")
-    btn:SetSize(dims, dims)
-    Typefaces(r)
+    local size = Get("size")
+    button:SetSize(size, size)
+    ApplyFonts(r)
     r.time:SetShown(Get("timer") == true)
     r.count:SetShown(Get("count") == true)
     if Get("timer") then
-        local opts, sig = ClockOptions()
+        local opts, sig = CountdownOptions()
         if r.timerSig ~= sig then
             r.timerSig = sig
             -- A fresh copy: the safe setter strips a refused colour off what it is given.
@@ -221,51 +221,51 @@ local function SkinBtn(btn)
             for k, v in pairs(opts) do
                 copy[k] = v
             end
-            AK.SetDurationTextSafe(btn, r.time, copy)
+            AK.SetDurationTextSafe(button, r.time, copy)
         end
     end
 end
 
 -- initializeFrame: every region made and given its font before the button
 -- registers any of them (each registration paints through them at once).
-local function SetupBtn(btn)
-    local ground = btn:CreateTexture(nil, "BACKGROUND")
+local function SetupAuraButton(button)
+    local ground = button:CreateTexture(nil, "BACKGROUND")
     ground:SetAllPoints()
     ground:SetColorTexture(0, 0, 0, 1)
-    local glyph = btn:CreateTexture(nil, "ARTWORK")
-    glyph:SetPoint("TOPLEFT", EDGE, -EDGE)
-    glyph:SetPoint("BOTTOMRIGHT", -EDGE, EDGE)
-    glyph:SetTexCoord(TRIM, 1 - TRIM, TRIM, 1 - TRIM)
-    local swipe = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
-    swipe:SetAllPoints(glyph)
+    local icon = button:CreateTexture(nil, "ARTWORK")
+    icon:SetPoint("TOPLEFT", BORDER, -BORDER)
+    icon:SetPoint("BOTTOMRIGHT", -BORDER, BORDER)
+    icon:SetTexCoord(CROP, 1 - CROP, CROP, 1 - CROP)
+    local swipe = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
+    swipe:SetAllPoints(icon)
     swipe:SetDrawEdge(false)
     swipe:SetHideCountdownNumbers(true)
     swipe:SetReverse(true)
-    local labelHost = CreateFrame("Frame", nil, btn)
-    labelHost:SetAllPoints()
-    labelHost:SetFrameLevel(swipe:GetFrameLevel() + 1)
-    local timeLabel = labelHost:CreateFontString(nil, "OVERLAY")
-    timeLabel:SetPoint("BOTTOM", 0, 2)
-    local tallyLabel = labelHost:CreateFontString(nil, "OVERLAY")
-    tallyLabel:SetPoint("TOPRIGHT", -2, -2)
-    local r = { time = timeLabel, count = tallyLabel }
-    regions[btn] = r
-    Typefaces(r)
-    btn:SetIcon(glyph)
-    btn:SetDurationCooldown(swipe)
-    btn:SetApplicationCount(tallyLabel)
-    buttons[#buttons + 1] = btn
-    SkinBtn(btn)
+    local textHost = CreateFrame("Frame", nil, button)
+    textHost:SetAllPoints()
+    textHost:SetFrameLevel(swipe:GetFrameLevel() + 1)
+    local timeText = textHost:CreateFontString(nil, "OVERLAY")
+    timeText:SetPoint("BOTTOM", 0, 2)
+    local countText = textHost:CreateFontString(nil, "OVERLAY")
+    countText:SetPoint("TOPRIGHT", -2, -2)
+    local r = { time = timeText, count = countText }
+    regions[button] = r
+    ApplyFonts(r)
+    button:SetIcon(icon)
+    button:SetDurationCooldown(swipe)
+    button:SetApplicationCount(countText)
+    buttons[#buttons + 1] = button
+    StyleAuraButton(button)
 end
 
-local function ReskinButtons()
-    if Locked() then
-        reskinPending = true
+local function RestyleButtons()
+    if AurasRestricted() then
+        restylePending = true
         return
     end
-    reskinPending = false
+    restylePending = false
     for i = 1, #buttons do
-        SkinBtn(buttons[i])
+        StyleAuraButton(buttons[i])
     end
 end
 
@@ -275,8 +275,8 @@ end
 
 -- The absorb: a clear bar whose value is the amount; its text sits in a clip
 -- on the fill, so it shows only while the fill has width.
-local function FreshShield(box)
-    local bar = CreateFrame("StatusBar", nil, box)
+local function CreateAbsorbBar(holder)
+    local bar = CreateFrame("StatusBar", nil, holder)
     bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     bar:SetStatusBarColor(0, 0, 0, 0)
     bar:SetMinMaxValues(0, 1)
@@ -291,54 +291,54 @@ local function FreshShield(box)
     return bar
 end
 
-local function FreshHeading(box)
-    local heading = CreateFrame("Frame", nil, box)
-    heading.class = heading:CreateTexture(nil, "ARTWORK")
-    heading.class:SetTexture(CALLING_GLYPHS)
-    heading.class:SetPoint("LEFT")
-    heading.name = heading:CreateFontString(nil, "OVERLAY")
-    heading.name:SetPoint("LEFT", heading.class, "RIGHT", TITLE_SPACING, 0)
-    heading.name:SetJustifyH("LEFT")
-    heading.name:SetWordWrap(false)
-    return heading
+local function CreateAuraHeader(holder)
+    local header = CreateFrame("Frame", nil, holder)
+    header.class = header:CreateTexture(nil, "ARTWORK")
+    header.class:SetTexture(CLASS_ICONS)
+    header.class:SetPoint("LEFT")
+    header.name = header:CreateFontString(nil, "OVERLAY")
+    header.name:SetPoint("LEFT", header.class, "RIGHT", NAME_GAP, 0)
+    header.name:SetJustifyH("LEFT")
+    header.name:SetWordWrap(false)
+    return header
 end
 
 -- Each row on its own line. The icons' size is their own (StyleButton), so a
 -- size change never touches the container's layout.
-local LINE_ARRANGE = { elementSpacing = GLYPH_SPACING, lineSpacing = LINE_SPACING, groupLineSpacing = LINE_SPACING, forceNewLine = true }
+local ROW_LAYOUT = { elementSpacing = ICON_GAP, lineSpacing = ROW_GAP, groupLineSpacing = ROW_GAP, forceNewLine = true }
 
 -- The panel's frame (cheap, any time) and its container (out of combat and
 -- restriction only; false = not yet).
-local function Box(d)
+local function IconFrame(d)
     if d.holder then return d.holder end
-    local box = CreateFrame("Frame", d.frameName, UIParent)
-    box:SetSize(Get("size"), Get("size"))
-    box:Hide()
-    d.holder = box
-    d.absorb = FreshShield(box)
-    if d.nameKey then d.header = FreshHeading(box) end
-    return box
+    local holder = CreateFrame("Frame", d.frameName, UIParent)
+    holder:SetSize(Get("size"), Get("size"))
+    holder:Hide()
+    d.holder = holder
+    d.absorb = CreateAbsorbBar(holder)
+    if d.nameKey then d.header = CreateAuraHeader(holder) end
+    return holder
 end
 
-local function MakeBox(d)
+local function BuildAuraFrame(d)
     if d.container then return true end
-    if d.failed or Locked() then return false end
+    if d.failed or AurasRestricted() then return false end
     if C_AddOns and not C_AddOns.IsAddOnLoaded("Blizzard_AuraContainer") then
         pcall(C_AddOns.LoadAddOn, "Blizzard_AuraContainer")
     end
-    local box = Box(d)
-    local sieves, has = Sieves()
+    local holder = IconFrame(d)
+    local filters, has = AuraFilters()
     local success, err = pcall(function()
-        local c = CreateFrame("AuraContainer", nil, box, "CustomAuraContainerTemplate")
+        local c = CreateFrame("AuraContainer", nil, holder, "CustomAuraContainerTemplate")
         c:SetPoint("TOPLEFT")
         c:SetSize(1, 1)
-        for _, row in ipairs(LINES) do
-            c:AddAuraGroup(row, SIEVE[row], {
-                maxFrameCount = TOP_GLYPHS,
+        for _, row in ipairs(ROWS) do
+            c:AddAuraGroup(row, FILTER[row], {
+                maxFrameCount = MAX_ICONS,
                 sortMethod = AuraContainerSortMethod and AuraContainerSortMethod.Default or 0,
-                initializeFrame = SetupBtn,
-                layout = LINE_ARRANGE,
-                candidateFilters = has[row] and sieves[row] or nil,
+                initializeFrame = SetupAuraButton,
+                layout = ROW_LAYOUT,
+                candidateFilters = has[row] and filters[row] or nil,
             })
         end
         c:SetUnit(d.unit)
@@ -353,49 +353,49 @@ local function MakeBox(d)
 end
 
 -- Rows on, caps and filters, from the settings.
-local function UseLines(d)
+local function LayoutRows(d)
     local c = d.container
-    local sieves, has = Sieves()
-    for _, row in ipairs(LINES) do
+    local filters, has = AuraFilters()
+    for _, row in ipairs(ROWS) do
         local on = Get(d.rows[row]) == true and has[row]
-        if on then c:SetAuraGroupCandidateFilters(row, sieves[row]) end
-        c:SetAuraGroupMaxFrameCount(row, on and Get(TOP_ID[row]) or 0)
+        if on then c:SetAuraGroupCandidateFilters(row, filters[row]) end
+        c:SetAuraGroupMaxFrameCount(row, on and Get(MAX_KEY[row]) or 0)
         if c.SetAuraGroupEnabled then c:SetAuraGroupEnabled(row, on) end
     end
 end
 
 -- The panel's size: the rows that can show something (ticked, with spells to
 -- match), as wide as the widest cap.
-local function PaneDims(d)
-    local _, has = Sieves()
-    local dims, lines, wide = Get("size"), 0, 1
-    for _, row in ipairs(LINES) do
-        if Get(d.rows[row]) and has[row] then lines, wide = lines + 1, math.max(wide, Get(TOP_ID[row])) end
+local function PanelDimensions(d)
+    local _, has = AuraFilters()
+    local size, rows, wide = Get("size"), 0, 1
+    for _, row in ipairs(ROWS) do
+        if Get(d.rows[row]) and has[row] then rows, wide = rows + 1, math.max(wide, Get(MAX_KEY[row])) end
     end
-    lines = math.max(lines, 1)
-    return wide * dims + (wide - 1) * GLYPH_SPACING, lines * dims + (lines - 1) * LINE_SPACING
+    rows = math.max(rows, 1)
+    return wide * size + (wide - 1) * ICON_GAP, rows * size + (rows - 1) * ROW_GAP
 end
 
-local function Arrange(d)
-    local dims = Get("size")
-    d.holder:SetSize(PaneDims(d))
-    local shieldDims = LabelDims(SHIELD_DIMS)
-    d.absorb.text:SetFont(Typeface(), shieldDims, "OUTLINE")
-    d.absorb.text:SetTextColor(SHIELD_TONE[1], SHIELD_TONE[2], SHIELD_TONE[3])
-    d.absorb:SetSize(dims * 2, shieldDims + 4)
+local function LayoutPanel(d)
+    local size = Get("size")
+    d.holder:SetSize(PanelDimensions(d))
+    local absorbSize = FontSizeFor(ABSORB_SIZE)
+    d.absorb.text:SetFont(AuraFont(), absorbSize, "OUTLINE")
+    d.absorb.text:SetTextColor(ABSORB_RGB[1], ABSORB_RGB[2], ABSORB_RGB[3])
+    d.absorb:SetSize(size * 2, absorbSize + 4)
     d.absorb:ClearAllPoints()
-    d.absorb:SetPoint("RIGHT", d.holder, "TOPLEFT", -TITLE_SPACING, -dims / 2)
+    d.absorb:SetPoint("RIGHT", d.holder, "TOPLEFT", -NAME_GAP, -size / 2)
     if d.header then
-        local titleDims = LabelDims(TITLE_DIMS)
-        d.header.name:SetFont(Typeface(), titleDims, "OUTLINE")
-        d.header.class:SetSize(titleDims + 4, titleDims + 4)
-        d.header:SetSize(d.holder:GetWidth(), titleDims + 4)
+        local nameSize = FontSizeFor(NAME_SIZE)
+        d.header.name:SetFont(AuraFont(), nameSize, "OUTLINE")
+        d.header.class:SetSize(nameSize + 4, nameSize + 4)
+        d.header:SetSize(d.holder:GetWidth(), nameSize + 4)
         d.header:ClearAllPoints()
-        d.header:SetPoint("BOTTOMLEFT", d.holder, "TOPLEFT", 0, LINE_SPACING)
+        d.header:SetPoint("BOTTOMLEFT", d.holder, "TOPLEFT", 0, ROW_GAP)
     end
 end
 
-local function RefreshShield(d)
+local function RefreshAbsorb(d)
     local bar = d.absorb
     if not (bar and bar:IsShown()) then return end
     if not UnitExists(d.unit) then
@@ -404,60 +404,60 @@ local function RefreshShield(d)
     end
     local amount = UnitGetTotalAbsorbs(d.unit)
     bar:SetValue(amount or 0)
-    bar.text:SetFormattedText(SHIELD_GLYPH .. "%d", amount or 0)
+    bar.text:SetFormattedText(ABSORB_ICON .. "%d", amount or 0)
 end
 
 -- The focus panel's name, tinted by class, with the class icon.
-local function RefreshHeading(d)
-    local heading = d.header
-    if not heading then return end
+local function RefreshHeader(d)
+    local header = d.header
+    if not header then return end
     local shown = Get(d.nameKey) == true and UnitExists(d.unit)
-    heading:SetShown(shown and true or false)
+    header:SetShown(shown and true or false)
     if not shown then return end
-    heading.name:SetText(UnitName(d.unit))
-    local _, callingFile = UnitClass(d.unit)
-    local plain = callingFile and not Secret(callingFile)
-    local tint = plain and RAID_CLASS_COLORS and RAID_CLASS_COLORS[callingFile]
-    local coords = plain and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[callingFile]
-    if tint then
-        heading.name:SetTextColor(tint.r, tint.g, tint.b)
+    header.name:SetText(UnitName(d.unit))
+    local _, classFile = UnitClass(d.unit)
+    local plain = classFile and not Secret(classFile)
+    local color = plain and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+    local coords = plain and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile]
+    if color then
+        header.name:SetTextColor(color.r, color.g, color.b)
     else
-        heading.name:SetTextColor(1, 1, 1)
+        header.name:SetTextColor(1, 1, 1)
     end
-    heading.class:SetShown(coords ~= nil)
-    if coords then heading.class:SetTexCoord(coords[1], coords[2], coords[3], coords[4]) end
+    header.class:SetShown(coords ~= nil)
+    if coords then header.class:SetTexCoord(coords[1], coords[2], coords[3], coords[4]) end
 end
 
 -- The focus panel steps aside (alpha) while the focus is your target: the
 -- target panel already shows them.
-local function FocalIsAim()
+local function FocusIsTarget()
     if not (UnitExists("focus") and UnitExists("target")) then return false end
     local same = UnitIsUnit("focus", "target")
     return not Secret(same) and same == true
 end
 
-local function RefreshFocalDim()
-    local d = VIEWS[2]
-    if d.holder then d.holder:SetAlpha((FocalIsAim() and not CUI._unlockActive) and 0 or 1) end
+local function RefreshFocusFade()
+    local d = DISPLAYS[2]
+    if d.holder then d.holder:SetAlpha((FocusIsTarget() and not CUI._unlockActive) and 0 or 1) end
 end
 
-local function ConcealPane(d)
+local function HidePanel(d)
     if d.container then d.container:SetEnabled(false) end
     if d.holder then d.holder:Hide() end
 end
 
-local function RevealPane(d)
-    Box(d)
-    if not MakeBox(d) then return false end
-    UseLines(d)
-    Arrange(d)
+local function ShowPanel(d)
+    IconFrame(d)
+    if not BuildAuraFrame(d) then return false end
+    LayoutRows(d)
+    LayoutPanel(d)
     if not CUI._unlockActive then d.feat.Place(d.holder) end
     d.container:SetEnabled(true)
     d.holder:Show()
     d.absorb:SetShown(Get("absorb") == true)
     d.container:UpdateAllAuras()
-    RefreshShield(d)
-    RefreshHeading(d)
+    RefreshAbsorb(d)
+    RefreshHeader(d)
     return true
 end
 
@@ -465,31 +465,31 @@ end
 --  Battleground Countdown
 -------------------------------------------------------------------------------
 
-local tallyBox, tallyHung
+local countHolder, countHung
 
-local function TallyBox()
-    if not tallyBox then
-        tallyBox = CreateFrame("Frame", "CludesUIBGCountdown", UIParent)
-        tallyBox:SetSize(TALLY_W, TALLY_H)
+local function CountFrame()
+    if not countHolder then
+        countHolder = CreateFrame("Frame", "CludesUIBGCountdown", UIParent)
+        countHolder:SetSize(COUNT_W, COUNT_H)
     end
-    return tallyBox
+    return countHolder
 end
 
 -- Blizzard's tracker spans the screen and stacks its bars from 155 below
 -- its top, its big digits on its centre: on, it keeps that size and hangs
 -- from the holder; off, it goes back over the screen.
-local function UseTimer()
+local function ConfigureCountdown()
     local tracker = _G.TimerTracker
     if not tracker then return end
     if FT.Enabled() then
-        local box = TallyBox()
-        if not CUI._unlockActive then FT.Place(box) end
+        local holder = CountFrame()
+        if not CUI._unlockActive then FT.Place(holder) end
         tracker:ClearAllPoints()
         tracker:SetSize(UIParent:GetWidth(), UIParent:GetHeight())
-        tracker:SetPoint("TOP", box, "TOP", 0, TALLY_TOP)
-        tallyHung = true
-    elseif tallyHung then
-        tallyHung = false
+        tracker:SetPoint("TOP", holder, "TOP", 0, COUNT_TOP)
+        countHung = true
+    elseif countHung then
+        countHung = false
         tracker:ClearAllPoints()
         tracker:SetAllPoints(UIParent)
     end
@@ -500,76 +500,76 @@ end
 -------------------------------------------------------------------------------
 
 local function Apply()
-    UseTimer()
+    ConfigureCountdown()
     if FT.Enabled() then
-        eventWindow:RegisterEvent("UI_SCALE_CHANGED")
-        eventWindow:RegisterEvent("DISPLAY_SIZE_CHANGED")
+        eventFrame:RegisterEvent("UI_SCALE_CHANGED")
+        eventFrame:RegisterEvent("DISPLAY_SIZE_CHANGED")
     else
-        eventWindow:UnregisterEvent("UI_SCALE_CHANGED")
-        eventWindow:UnregisterEvent("DISPLAY_SIZE_CHANGED")
+        eventFrame:UnregisterEvent("UI_SCALE_CHANGED")
+        eventFrame:UnregisterEvent("DISPLAY_SIZE_CHANGED")
     end
-    if not Enabled() and not (VIEWS[1].holder or VIEWS[2].holder) then return end
-    if Locked() then
+    if not Enabled() and not (DISPLAYS[1].holder or DISPLAYS[2].holder) then return end
+    if AurasRestricted() then
         pending = true
-        eventWindow:RegisterEvent("PLAYER_REGEN_ENABLED")
+        eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
         return
     end
     pending = false
-    for _, d in ipairs(VIEWS) do
-        eventWindow:UnregisterEvent(d.changed)
+    for _, d in ipairs(DISPLAYS) do
+        eventFrame:UnregisterEvent(d.changed)
     end
-    eventWindow:UnregisterEvent("UNIT_ABSORB_AMOUNT_CHANGED")
-    local shieldUnits = {}
-    for _, d in ipairs(VIEWS) do
-        if DisplayOn(d) and RevealPane(d) then
-            eventWindow:RegisterEvent(d.changed)
-            if Get("absorb") then shieldUnits[#shieldUnits + 1] = d.unit end
+    eventFrame:UnregisterEvent("UNIT_ABSORB_AMOUNT_CHANGED")
+    local absorbUnits = {}
+    for _, d in ipairs(DISPLAYS) do
+        if DisplayOn(d) and ShowPanel(d) then
+            eventFrame:RegisterEvent(d.changed)
+            if Get("absorb") then absorbUnits[#absorbUnits + 1] = d.unit end
         else
-            ConcealPane(d)
+            HidePanel(d)
         end
     end
-    if shieldUnits[1] then
-        eventWindow:RegisterUnitEvent("UNIT_ABSORB_AMOUNT_CHANGED", shieldUnits[1], shieldUnits[2])
+    if absorbUnits[1] then
+        eventFrame:RegisterUnitEvent("UNIT_ABSORB_AMOUNT_CHANGED", absorbUnits[1], absorbUnits[2])
     end
-    ReskinButtons()
-    RefreshFocalDim()
+    RestyleButtons()
+    RefreshFocusFade()
 end
 
-eventWindow:SetScript("OnEvent", function(_, evt, unit)
+eventFrame:SetScript("OnEvent", function(_, evt, unit)
     if evt == "UNIT_ABSORB_AMOUNT_CHANGED" then
-        for _, d in ipairs(VIEWS) do
-            if d.unit == unit then RefreshShield(d) end
+        for _, d in ipairs(DISPLAYS) do
+            if d.unit == unit then RefreshAbsorb(d) end
         end
     elseif evt == "PLAYER_TARGET_CHANGED" or evt == "PLAYER_FOCUS_CHANGED" then
-        for _, d in ipairs(VIEWS) do
+        for _, d in ipairs(DISPLAYS) do
             if evt == d.changed and d.container then
                 d.container:UpdateAllAuras()
-                RefreshShield(d)
-                RefreshHeading(d)
+                RefreshAbsorb(d)
+                RefreshHeader(d)
             end
         end
-        RefreshFocalDim()
+        RefreshFocusFade()
     elseif evt == "PLAYER_REGEN_ENABLED" then
         if pending then Apply() end
-        if reskinPending then ReskinButtons() end
+        if restylePending then RestyleButtons() end
         -- A restricted answer can hold for the rest of the frame it was read
         -- in: what is still waiting tries once more a moment later.
-        if pending or reskinPending then
+        if pending or restylePending then
             C_Timer.After(0.2, function()
                 if pending then Apply() end
-                if reskinPending then ReskinButtons() end
+                if restylePending then RestyleButtons() end
             end)
         end
     else
         -- UI_SCALE_CHANGED / DISPLAY_SIZE_CHANGED: the tracker spans the screen.
-        UseTimer()
+        ConfigureCountdown()
     end
 end)
 
 if AK and AK.OnRestrictionLift then
     AK.OnRestrictionLift(function()
         if pending then Apply() end
-        if reskinPending then ReskinButtons() end
+        if restylePending then RestyleButtons() end
     end)
 end
 
@@ -577,24 +577,24 @@ CUI._PvPAuras = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,
-    Spells = ABILITIES,
-    CC_PREFIX = CC_LEAD,
-    DEBUFF_PREFIX = HARM_LEAD,
+    Spells = SPELLS,
+    CC_PREFIX = CC_PREFIX,
+    DEBUFF_PREFIX = DEBUFF_PREFIX,
     CountdownGet = FT.Get,
     CountdownCfg = FT.Cfg,
 }
 
-for _, d in ipairs(VIEWS) do
-    d.feat.Start(d == VIEWS[1] and Apply or function() end, {
+for _, d in ipairs(DISPLAYS) do
+    d.feat.Start(d == DISPLAYS[1] and Apply or function() end, {
         key = d.key,
         label = d.label,
         order = d.order,
         shown = function() return DisplayOn(d) end,
-        frame = function(make)
-            if make then Box(d) end
+        frame = function(build)
+            if build then IconFrame(d) end
             return d.holder
         end,
-        size = function() return PaneDims(d) end,
+        size = function() return PanelDimensions(d) end,
         noAnchorTarget = true,
         noSizeMatchTarget = true,
     })
@@ -603,11 +603,11 @@ FT.Start(function() end, {
     key = "CUI_BGCountdown",
     label = "Battleground Countdown",
     order = 760,
-    frame = function(make)
-        if make then TallyBox() end
-        return tallyBox
+    frame = function(build)
+        if build then CountFrame() end
+        return countHolder
     end,
-    size = function() return TALLY_W, TALLY_H end,
+    size = function() return COUNT_W, COUNT_H end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })
