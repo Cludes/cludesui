@@ -79,3 +79,23 @@ HARNESS_FIRE_EVENT("PLAYER_REGEN_ENABLED")
 local n = 0
 for _ in pairs(CC.State()) do n = n + 1 end
 OUT:write("== after the fight, assignments left " .. n .. "\n")
+
+-- Inside a dungeon the game can hide the creature type: the tooltip line
+-- ("Level 44 Undead") is read instead; with that hidden too, a control is
+-- still given and you are told to check it fits.
+CC.Reset()
+local HIDDEN = {}
+issecretvalue = function(v) return v == HIDDEN end
+UnitCreatureType = function() return HIDDEN end
+local tipLine
+C_TooltipInfo = C_TooltipInfo or {}
+C_TooltipInfo.GetUnit = function() return { lines = { { leftText = "Barbed Lasher" }, { leftText = tipLine } } } end
+local printed = {}
+local oldPrint = CUI.Print
+CUI.Print = function(t) printed[#printed + 1] = (t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
+tipLine = "Level 44 Undead"
+Press("type hidden, tooltip says Undead", HIDDEN, 1525, "Rotting Ghoul")
+tipLine = HIDDEN
+Press("type and tooltip hidden", HIDDEN, 38, "Defias Thug")
+OUT:write("== printed: " .. table.concat(printed, " / ") .. "\n")
+CUI.Print = oldPrint

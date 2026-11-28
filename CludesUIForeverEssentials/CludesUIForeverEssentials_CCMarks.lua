@@ -130,21 +130,46 @@ local function MarkOf(guid)
     end
 end
 
--- The best control for the target: control, player name, mark, or nil and why.
+local function Plain(v)
+    if v == nil or Secret(v) then return nil end
+    return v
+end
+
+-- What the creature is. Inside dungeons the game can hide UnitCreatureType;
+-- its tooltip ("Level 44 Elemental") may still say.
+local KINDS = { "Humanoid", "Beast", "Critter", "Undead", "Demon", "Elemental", "Dragonkin", "Giant", "Mechanical" }
+local function KindOf(unit)
+    local kind = Plain(UnitCreatureType(unit))
+    if kind then return kind end
+    local data = C_TooltipInfo and C_TooltipInfo.GetUnit and C_TooltipInfo.GetUnit(unit)
+    local lines = data and not Secret(data) and data.lines
+    if type(lines) ~= "table" then return nil end
+    for i = 2, math.min(#lines, 4) do
+        local text = Plain(lines[i] and lines[i].leftText)
+        if type(text) == "string" then
+            for _, word in ipairs(KINDS) do
+                if text:find(word, 1, true) then return word end
+            end
+        end
+    end
+end
+
+-- The best control for the target: control, player name, mark, GUID, mob
+-- name and whether its type was unknown; or nil and why.
 local function Pick(unit)
     unit = unit or "target"
     if not UnitExists(unit) or UnitIsPlayer(unit) or UnitIsDead(unit) then return nil, "Target an enemy first." end
     local hostile = UnitCanAttack("player", unit)
     if Secret(hostile) or not hostile then return nil, "Target an enemy first." end
-    local kind = UnitCreatureType(unit)
-    if Secret(kind) then return nil, "The game hides what that is right now." end
-    local guid = UnitGUID(unit)
+    -- Unknown type: every control is offered, and the caller says to check it fits.
+    local kind = KindOf(unit)
+    local guid = Plain(UnitGUID(unit))
     local npc = NpcID(guid)
     local inCombat = UnitAffectingCombat(unit)
     local roster = Roster()
     local blocked
     for _, control in ipairs(CONTROLS) do
-        local fits = not control.types or (kind and control.types[kind])
+        local fits = not control.types or not kind or control.types[kind]
         if fits and control.beforePull and inCombat and not Secret(inCombat) then fits = false end
         if fits and Immune(npc, control) then
             fits = false
@@ -163,7 +188,7 @@ local function Pick(unit)
                             end
                         end
                     end
-                    if mark then return control, member.name, mark, guid, UnitName(unit) end
+                    if mark then return control, member.name, mark, guid, Plain(UnitName(unit)), kind == nil end
                 end
             end
         end
@@ -292,13 +317,16 @@ local function BuildBar()
             CUI.Print("|cff4cc9f0CC:|r assign crowd control before the pull: the game blocks it in combat.")
             return
         end
-        local control, player, mark, guid, mob = Pick("target")
+        local control, player, mark, guid, mob, unsure = Pick("target")
         if not control then
             self:SetAttribute("macrotext", "")
             CUI.Print("|cff4cc9f0CC:|r " .. player)
             return
         end
-        local already = MarkOf(guid)
+        if unsure then
+            CUI.Print(("|cff4cc9f0CC:|r the game hides what this mob is: check %s works on it."):format(control.name))
+        end
+        local already = guid and MarkOf(guid)
         if already then assigned[already] = nil end
         self:SetAttribute("macrotext", ("/tm %d"):format(mark))
         pending = { control, player, mark, guid, mob }
@@ -310,9 +338,10 @@ local function BuildBar()
     assignButton:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
         GameTooltip:SetText("Assign Crowd Control")
-        local control, player, mark = Pick("target")
+        local control, player, mark, _, _, unsure = Pick("target")
         if control then
             GameTooltip:AddLine(("%s from %s, marked %s"):format(control.name, player, MARK_NAMES[mark]), 1, 1, 1)
+            if unsure then GameTooltip:AddLine("The game hides what this mob is: check it fits.", 1, 0.8, 0.4, true) end
         else
             GameTooltip:AddLine(player, 1, 0.6, 0.6, true)
         end
