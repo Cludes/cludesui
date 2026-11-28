@@ -2013,7 +2013,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             tooltip = "Includes mage teleports and Moonglade when you know them and they are ready.",
             getValue = function() return JY.Get("teleports") end,
             setValue = function(val) Set("teleports", val and true or false) end,
-        }, { type = "label", text = "" })
+        }, {
+            type = "toggle",
+            text = "Route on Minimap",
+            disabled = jOff,
+            tooltip = "Dots on the minimap along the walk to the next step.",
+            getValue = function() return JY.Get("minimapRoute") end,
+            setValue = function(val) Set("minimapRoute", val and true or false) end,
+        })
         cursorY = cursorY - height
     end
 

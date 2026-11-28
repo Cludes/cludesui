@@ -28,7 +28,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local F = module.Feature("journeys", { enabled = false, hearth = true, teleports = true },
+local F = module.Feature("journeys", { enabled = false, hearth = true, teleports = true, minimapRoute = true },
     { point = "TOPRIGHT", relPoint = "TOPRIGHT", x = -260, y = -220 })
 local Get, Enabled, Cfg = F.Get, F.Enabled, F.Cfg
 local Kit = CUI.Kit
@@ -50,6 +50,9 @@ local C = {
     SWITCH_SHARE = 0.1,
     ARRIVED = 15,
     STEP_REACHED = 20,
+    REPLAN_MOVED = 5,
+    DOT_EVERY = 12,
+    MAX_DOTS = 80,
     CORNER_REACH = 8,
     REPLAN_EVERY = 3,
     HEARTHSTONE = 6948,
@@ -661,8 +664,83 @@ end
 
 -- The arrow turns toward the next step's place (x north, y west; the game's
 -- facing is radians from north, counter-clockwise). The art points down.
+-------------------------------------------------------------------------------
+--  The walk on the minimap: dots along its corners, every DOT_EVERY yards
+--  from where you stand, left out past the minimap's edge, turned with the
+--  minimap when it rotates.
+-------------------------------------------------------------------------------
+local routeLayer, dots = nil, {}
+
+local function HideDots(from)
+    for i = from, #dots do
+        dots[i]:Hide()
+    end
+end
+
+local function DrawRoute(here)
+    if not (Get("minimapRoute") and corners and here and Minimap and Minimap:IsVisible() and C_Minimap and C_Minimap.GetViewRadius) then
+        HideDots(1)
+        return
+    end
+    if not routeLayer then
+        routeLayer = CreateFrame("Frame", nil, Minimap)
+        routeLayer:SetAllPoints(Minimap)
+        routeLayer:SetFrameLevel(Minimap:GetFrameLevel() + 5)
+    end
+    local yards = C_Minimap.GetViewRadius()
+    local radius = Minimap:GetWidth() / 2
+    if not (yards and yards > 0 and radius > 0) then return HideDots(1) end
+    local scale = radius / yards
+    local turn = 0
+    if GetCVar("rotateMinimap") == "1" then
+        local facing = GetPlayerFacing and GetPlayerFacing()
+        if facing and not Secret(facing) then turn = facing end
+    end
+    local cosT, sinT = math.cos(turn), math.sin(turn)
+    local r, g, b = Kit.Accent()
+    local shown = 0
+    -- Walk the corners from where you stand, dropping a dot every DOT_EVERY yards.
+    local fromX, fromY = here.x, here.y
+    local carry = C.DOT_EVERY
+    for i = cornerAt or 3, #corners - 1, 2 do
+        local toX, toY = corners[i], corners[i + 1]
+        local legX, legY = toX - fromX, toY - fromY
+        local length = math.sqrt(legX * legX + legY * legY)
+        local along = carry
+        while along <= length and shown < C.MAX_DOTS do
+            local px, py = fromX + legX * along / length, fromY + legY * along / length
+            -- North is up, west is left; a rotating minimap turns with you.
+            local up, right = (px - here.x) * scale, -(py - here.y) * scale
+            up, right = up * cosT - right * sinT, up * sinT + right * cosT
+            if up * up + right * right <= (radius - 3) * (radius - 3) then
+                shown = shown + 1
+                local dot = dots[shown]
+                if not dot then
+                    dot = routeLayer:CreateTexture(nil, "OVERLAY")
+                    dot:SetTexture("Interface\\AddOns\\CludesUI\\media\\white-square.png")
+                    dot:SetSize(4, 4)
+                    dots[shown] = dot
+                end
+                dot:SetVertexColor(r, g, b, 0.9)
+                dot:ClearAllPoints()
+                dot:SetPoint("CENTER", routeLayer, "CENTER", right, up)
+                dot:Show()
+            end
+            along = along + C.DOT_EVERY
+        end
+        carry = along - length
+        fromX, fromY = toX, toY
+        if shown >= C.MAX_DOTS then break end
+    end
+    HideDots(shown + 1)
+end
+
 local function PointArrow()
-    if not (card and card:IsShown()) then return end
+    if not (card and card:IsShown()) then
+        HideDots(1)
+        return
+    end
+    DrawRoute(not arrived and Player() or nil)
     local leg = plan and plan.legs[1]
     local here = Player()
     local target = leg and (leg.mode == "walk" and leg or nil)
@@ -747,12 +825,25 @@ end
 local events = CreateFrame("Frame")
 local ticker
 
+-- Where the last plan was made from, and the pin it went to: standing
+-- still with the same pin, the plan stands (each one searches a continent).
+local plannedFrom, plannedPinX, plannedPinY
+local function Moved()
+    local here, pin = Player(), Goal()
+    if not (here and pin and plannedFrom) then return true end
+    if pin.x ~= plannedPinX or pin.y ~= plannedPinY or here.c ~= plannedFrom.c then return true end
+    return Planner.Distance(here, plannedFrom) > C.REPLAN_MOVED
+end
+
 local function Tick()
     sinceReplan = sinceReplan + 0.1
-    if sinceReplan >= C.REPLAN_EVERY and not InCombatLockdown() then
+    if sinceReplan >= C.REPLAN_EVERY and not InCombatLockdown() and (Moved() or not plan) then
+        local here, pin = Player(), Goal()
+        plannedFrom, plannedPinX, plannedPinY = here, pin and pin.x, pin and pin.y
         Replan()
         Draw()
     else
+        if sinceReplan >= C.REPLAN_EVERY then sinceReplan = 0 end
         PointArrow()
     end
 end

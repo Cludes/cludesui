@@ -68,6 +68,30 @@ if corners then
     OUT:write("== card shown " .. tostring(card and card:IsShown()) .. "\n")
 end
 
+-- The minimap route: dots along the walk within the minimap's circle.
+C_Minimap = C_Minimap or {}
+C_Minimap.GetViewRadius = function() return 233 end
+local mm = rawget(_G, "Minimap")
+if mm then
+    mm.GetWidth = function() return 140 end
+    mm.IsVisible = function() return true end
+    HARNESS_ADVANCE(0.2)
+    local dotCount = 0
+    for _, child in ipairs({ mm:GetChildren() }) do
+        for _, region in ipairs({ child:GetRegions() }) do
+            if region.IsShown and region:IsShown() then dotCount = dotCount + 1 end
+        end
+    end
+    OUT:write(("== minimap route dots %d (233 yd view, one every 12 yd)\n"):format(dotCount))
+else
+    OUT:write("== no Minimap frame in the fake client\n")
+end
+
+-- Standing still: no new plan is started.
+local before = select(1, JY.Plan())
+HARNESS_ADVANCE(4)
+OUT:write("== standing still keeps the plan " .. tostring(select(1, JY.Plan()) == before) .. "\n")
+
 -- Auberdine to Darnassus: the sea cannot be walked.
 here = { x = 6420, y = 600, c = 1 }
 pin = { c = 1, x = 9947, y = 2630 }
