@@ -42,45 +42,45 @@ local RAMP = {
     { 0.88, 0.82, 0.32, 0.88 }, { 0.94, 1.00, 0.66, 0.25 }, { 1.00, 1.00, 0.50, 0.00 },
 }
 local KEEP = 600 -- seconds an inspected score is kept
-local INSPECT_SPACING = 2
+local INSPECT_GAP = 2
 
 local Score = {}
 
 -- An item as epic item levels (never below 0).
-function Score.Epic(lvl, quality)
-    return math.max(0, lvl * (SCALE[quality] or 1) + (SHIFT[quality] or 0))
+function Score.Epic(level, quality)
+    return math.max(0, level * (SCALE[quality] or 1) + (SHIFT[quality] or 0))
 end
 
 -- read(slot) -> item level, quality, two-hander. Returns the score, and
 -- whether every item's data was there.
-function Score.Of(load)
+function Score.Of(read)
     local sum, complete, twoHand = 0, true, false
     for _, slot in ipairs(ORDER) do
         if not (slot == OFF and twoHand) then
             local weight = SLOTS[slot]
-            local lvl, quality, two = load(slot)
+            local level, quality, two = read(slot)
             if slot == MAIN and two then
                 twoHand = true
                 weight = weight + SLOTS[OFF]
             end
-            if lvl then
+            if level then
                 if not quality then complete = false end
-                sum = sum + weight * Score.Epic(lvl, quality)
+                sum = sum + weight * Score.Epic(level, quality)
             end
         end
     end
     return sum / TOTAL, complete
 end
 
-local function LoadLink(link)
+local function ReadItemLink(link)
     if not link then return end
-    local lvl = C_Item.GetDetailedItemLevelInfo(link)
+    local level = C_Item.GetDetailedItemLevelInfo(link)
     local _, _, quality = C_Item.GetItemInfo(link)
     local _, _, _, equip = C_Item.GetItemInfoInstant(link)
-    return lvl or 0, lvl and quality, equip == "INVTYPE_2HWEAPON"
+    return level or 0, level and quality, equip == "INVTYPE_2HWEAPON"
 end
 
-function Score.Links(links) return Score.Of(function(slot) return LoadLink(links[slot]) end) end
+function Score.Links(links) return Score.Of(function(slot) return ReadItemLink(links[slot]) end) end
 
 function Score.Unit(unit)
     local links = {}
@@ -92,26 +92,26 @@ end
 
 -- A level's goal: epics five levels over it (level 65 at the cap, about the
 -- first raid tier), so level-fit blues read blue and only top gear orange.
-function Score.Goal(lvl)
-    return Score.Epic(math.min(lvl or 60, 60) + 5, 4)
+function Score.Goal(level)
+    return Score.Epic(math.min(level or 60, 60) + 5, 4)
 end
 
 function Score.Colour(share)
     share = math.max(0, math.min(1, share))
     for index = 2, #RAMP do
-        local upper = RAMP[index]
-        if share <= upper[1] then
-            local lower = RAMP[index - 1]
-            local t = upper[1] > lower[1] and (share - lower[1]) / (upper[1] - lower[1]) or 1
-            return lower[2] + (upper[2] - lower[2]) * t, lower[3] + (upper[3] - lower[3]) * t, lower[4] + (upper[4] - lower[4]) * t
+        local high = RAMP[index]
+        if share <= high[1] then
+            local low = RAMP[index - 1]
+            local t = high[1] > low[1] and (share - low[1]) / (high[1] - low[1]) or 1
+            return low[2] + (high[2] - low[2]) * t, low[3] + (high[3] - low[3]) * t, low[4] + (high[4] - low[4]) * t
         end
     end
     return 1, 0.5, 0
 end
 
 -- "26.4" in its colour, and "92%" of the level's goal.
-function Score.Text(score, lvl)
-    local share = score / Score.Goal(lvl)
+function Score.Text(score, level)
+    local share = score / Score.Goal(level)
     local hex = CUI.HexColor(Score.Colour(share))
     return ("%s%.1f|r"):format(hex, score), ("%s%d%%|r"):format(hex, math.floor(math.min(share, 1) * 100 + 0.5))
 end
@@ -119,7 +119,7 @@ end
 -------------------------------------------------------------------------------
 --  Others' scores: from every inspect answer, kept by GUID
 -------------------------------------------------------------------------------
-local learned = {} -- guid -> { score, level, complete, when }
+local known = {} -- guid -> { score, level, complete, when }
 
 -- A unit's GUID, or nil while the game hands it back as a secret value (those
 -- can be neither compared nor used as a table key).
@@ -131,7 +131,7 @@ end
 local inspecting -- { guid, unit, at } our own background inspect
 
 function Score.Known(guid)
-    local entry = guid and learned[guid]
+    local entry = guid and known[guid]
     if entry and GetTime() - entry.when < KEEP then return entry end
 end
 
@@ -139,8 +139,8 @@ local function Remember(unit)
     local guid = Guid(unit)
     if not guid then return end
     local score, complete = Score.Unit(unit)
-    learned[guid] = { score = score, level = UnitLevel(unit), complete = complete, when = GetTime() }
-    return learned[guid]
+    known[guid] = { score = score, level = UnitLevel(unit), complete = complete, when = GetTime() }
+    return known[guid]
 end
 
 -- The player you hover: inspected when nothing else is (the game keeps one
@@ -152,13 +152,13 @@ local function Hovered(unit)
     if not CheckInteractDistance(unit, 1) then return end
     local inspect = rawget(_G, "InspectFrame")
     if inspect and inspect:IsShown() then return end
-    if inspecting or GetTime() - lastAsk < INSPECT_SPACING then return end
+    if inspecting or GetTime() - lastAsk < INSPECT_GAP then return end
     local guid = Guid(unit)
     if not guid or Score.Known(guid) then return end
     lastAsk = GetTime()
     inspecting = { guid = guid, unit = unit }
     NotifyInspect(unit)
-    C_Timer.After(INSPECT_SPACING * 2, function()
+    C_Timer.After(INSPECT_GAP * 2, function()
         if inspecting and inspecting.guid == guid then inspecting = nil end
     end)
 end
@@ -166,31 +166,31 @@ end
 -------------------------------------------------------------------------------
 --  Tooltips
 -------------------------------------------------------------------------------
-local function TooltipLine(tooltip, unit)
-    local label, share
+local function ScoreLine(tooltip, unit)
+    local text, share
     if UnitIsUnit(unit, "player") then
-        label, share = Score.Text(Score.Unit("player"), UnitLevel("player"))
+        text, share = Score.Text(Score.Unit("player"), UnitLevel("player"))
     else
         local entry = Score.Known(Guid(unit))
         if entry then
-            label, share = Score.Text(entry.score, entry.level)
+            text, share = Score.Text(entry.score, entry.level)
         else
             Hovered(unit)
             return
         end
     end
     local r, g, b = CUI.Kit.Accent()
-    tooltip:AddDoubleLine("Gear Score", label .. "  " .. share, r, g, b, 1, 1, 1)
+    tooltip:AddDoubleLine("Gear Score", text .. "  " .. share, r, g, b, 1, 1, 1)
 end
 
 local hooked = false
-local function HookTooltip()
+local function HookUnitTooltip()
     if hooked or not (TooltipDataProcessor and Enum.TooltipDataType) then return end
     hooked = true
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
         if not (On() and Get("tooltip")) or tooltip ~= GameTooltip then return end
         local _, unit = tooltip:GetUnit()
-        if unit and not (issecretvalue and issecretvalue(unit)) and UnitIsPlayer(unit) then TooltipLine(tooltip, unit) end
+        if unit and not (issecretvalue and issecretvalue(unit)) and UnitIsPlayer(unit) then ScoreLine(tooltip, unit) end
     end)
 end
 
@@ -198,24 +198,24 @@ end
 --  The character sheet: under your level line
 -------------------------------------------------------------------------------
 local sheetLine
-local function RenderSheet()
-    local lvl = rawget(_G, "CharacterLevelText")
-    if not lvl then return end
+local function ShowOnCharacterSheet()
+    local level = rawget(_G, "CharacterLevelText")
+    if not level then return end
     if not sheetLine then
         -- On a layer of its own over the slot buttons (the sheet's slots
         -- otherwise draw over its left end).
-        local host = lvl:GetParent()
+        local host = level:GetParent()
         local layer = CreateFrame("Frame", nil, host)
         layer:SetAllPoints(host)
         layer:SetFrameLevel(host:GetFrameLevel() + 30)
         sheetLine = layer:CreateFontString(nil, "OVERLAY")
         CUI.Kit.Font(sheetLine, CUI.Kit.TEXT_SIZE, "essentials")
-        sheetLine:SetPoint("TOP", lvl, "BOTTOM", 0, -3)
+        sheetLine:SetPoint("TOP", level, "BOTTOM", 0, -3)
     end
     sheetLine:SetShown(On())
     if not On() then return end
-    local label, share = Score.Text(Score.Unit("player"), UnitLevel("player"))
-    sheetLine:SetText("Gear Score " .. label .. "  " .. share)
+    local text, share = Score.Text(Score.Unit("player"), UnitLevel("player"))
+    sheetLine:SetText("Gear Score " .. text .. "  " .. share)
 end
 
 -- The inspect sheet's line under item level (empty on Forever) asks here.
@@ -223,9 +223,9 @@ function CUI.GearScoreLine(unit)
     if not (On() and unit and UnitExists(unit)) then return end
     local theirs = Remember(unit)
     if not theirs then return end
-    local label = Score.Text(theirs.score, theirs.level)
+    local text = Score.Text(theirs.score, theirs.level)
     local mine = Score.Text(Score.Unit("player"), UnitLevel("player"))
-    return ("Gear Score %s%s  |cffa3adb5(you %s)|r"):format(label, theirs.complete and "" or " ...", mine)
+    return ("Gear Score %s%s  |cffa3adb5(you %s)|r"):format(text, theirs.complete and "" or " ...", mine)
 end
 
 -------------------------------------------------------------------------------
@@ -252,10 +252,10 @@ events:SetScript("OnEvent", function(_, event, arg)
         end
     elseif event == "UNIT_INVENTORY_CHANGED" then
         local guid = Guid(arg)
-        if guid then learned[guid] = nil end
-        if arg == "player" and sheetLine then RenderSheet() end
+        if guid then known[guid] = nil end
+        if arg == "player" and sheetLine then ShowOnCharacterSheet() end
     elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_LEVEL_UP" then
-        RenderSheet()
+        ShowOnCharacterSheet()
     end
 end)
 
@@ -267,11 +267,11 @@ local function Apply()
     for _, event in ipairs({ "INSPECT_READY", "UNIT_INVENTORY_CHANGED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP" }) do
         events:RegisterEvent(event)
     end
-    HookTooltip()
+    HookUnitTooltip()
     local sheet = rawget(_G, "CharacterFrame")
     if sheet and not sheetHooked then
         sheetHooked = true
-        sheet:HookScript("OnShow", RenderSheet)
+        sheet:HookScript("OnShow", ShowOnCharacterSheet)
     end
 end
 
