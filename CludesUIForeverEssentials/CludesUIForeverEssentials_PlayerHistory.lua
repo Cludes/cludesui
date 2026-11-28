@@ -18,22 +18,22 @@ local _, module = ...
 local F = module.Feature("playerHistory", { enabled = false, chats = true, days = 90, tooltip = true })
 local Get, Enabled = F.Get, F.Enabled
 
-local MAX_PLAYERS, MAX_SESSIONS, MAX_CHATS = 1000, 10, 10
-local MIN_SESSION, RESUME = 60, 300
-local MAX_TEXT, MAX_NOTE = 200, 120
-local DAY = 86400
-local TAGS = {
+local PLAYERS_KEPT, SESSIONS_KEPT, CHATS_KEPT = 1000, 10, 10
+local SESSION_MIN_SECONDS, RESUME_WITHIN = 60, 300
+local CHAT_MAX_LEN, NOTE_MAX_LEN = 200, 120
+local SECONDS_PER_DAY = 86400
+local NOTE_TAGS = {
     { key = "tank", label = "Great Tank", good = true },
     { key = "healer", label = "Great Healer", good = true },
     { key = "dps", label = "Great DPS", good = true },
     { key = "friendly", label = "Friendly", good = true },
     { key = "avoid", label = "Avoid", good = false },
 }
-local TAG = {}
-for _, tag in ipairs(TAGS) do
-    TAG[tag.key] = tag
+local TAG_BY_KEY = {}
+for _, tag in ipairs(NOTE_TAGS) do
+    TAG_BY_KEY[tag.key] = tag
 end
-local CHANNEL = {
+local CHAT_KIND = {
     CHAT_MSG_WHISPER = "WHISPER",
     CHAT_MSG_WHISPER_INFORM = "WHISPER",
     CHAT_MSG_PARTY = "PARTY",
@@ -76,9 +76,9 @@ local function PlainText(text, max)
     return Truncate(text, max)
 end
 
-local players, notes, count, myGUID
-local open, seen, curInst, curPlace, curType = {}, {}, nil, nil, nil
-local resume, resumeAt
+local players, notes, count, playerGUID
+local open, seen, instanceKey, instancePlace, instanceKind = {}, {}, nil, nil, nil
+local resume, resumeBefore
 
 local function LoadStore()
     if players then return true end
@@ -86,17 +86,17 @@ local function LoadStore()
     cfg.players = cfg.players or {}
     cfg.notes = cfg.notes or {}
     players, notes = cfg.players, cfg.notes
-    local cutoff = time() - math.max(7, math.min(365, Get("days"))) * DAY
+    local forgetBefore = time() - math.max(7, math.min(365, Get("days"))) * SECONDS_PER_DAY
     count = 0
     for guid, rec in pairs(players) do
-        if type(rec) ~= "table" or (rec.lastSeen or 0) < cutoff and not notes[guid] then
+        if type(rec) ~= "table" or (rec.lastSeen or 0) < forgetBefore and not notes[guid] then
             players[guid] = nil
         else
             count = count + 1
         end
     end
     if cfg.resume and type(cfg.resume) == "table" then
-        resume, resumeAt = cfg.resume, cfg.resume.at
+        resume, resumeBefore = cfg.resume, cfg.resume.at
     end
     cfg.resume = nil
     return true
@@ -117,7 +117,7 @@ end
 local function RecordFor(guid, now)
     local rec = players[guid]
     if rec then return rec end
-    if count >= MAX_PLAYERS then
+    if count >= PLAYERS_KEPT then
         local oldest, at
         for g, region in pairs(players) do
             if not open[g] and not notes[g] and (not at or region.lastSeen < at) then
@@ -144,13 +144,13 @@ local function NotePlayer(rec, unit)
     if Readable(class) then rec.classFile = class end
 end
 
-local function EnterInstance(st)
-    if st.inst == curInst then return end
-    st.inst, st.place, st.instance = curInst, curPlace, curType
-    if curType == "raid" then
-        st.raids = st.raids + 1
+local function EnterInstance(session)
+    if session.inst == instanceKey then return end
+    session.inst, session.place, session.instance = instanceKey, instancePlace, instanceKind
+    if instanceKind == "raid" then
+        session.raids = session.raids + 1
     else
-        st.dungeons = st.dungeons + 1
+        session.dungeons = session.dungeons + 1
     end
 end
 
@@ -159,38 +159,38 @@ local function ShowHistory(guid, unit, now, raid)
     if not rec then return end
     NotePlayer(rec, unit)
     rec.lastSeen = now
-    local st = { at = now, raid = raid, dungeons = 0, raids = 0, extend = false }
+    local session = { at = now, raid = raid, dungeons = 0, raids = 0, extend = false }
     local region = resume and resume[guid]
     if resume then resume[guid] = nil end
     if
         type(region) == "table"
-        and resumeAt
-        and now - resumeAt <= RESUME
+        and resumeBefore
+        and now - resumeBefore <= RESUME_WITHIN
         and region.at
         and region.at <= now
     then
-        st.at, st.raid = region.at, st.raid or region.raid
-        st.inst, st.place, st.instance = region.inst, region.place, region.instance
-        st.dungeons, st.raids = region.dungeons or 0, region.raids or 0
-        local lastS = rec.sessions[1]
-        st.extend = region.kept == true and lastS ~= nil and lastS.at == region.at
+        session.at, session.raid = region.at, session.raid or region.raid
+        session.inst, session.place, session.instance = region.inst, region.place, region.instance
+        session.dungeons, session.raids = region.dungeons or 0, region.raids or 0
+        local lastSession = rec.sessions[1]
+        session.extend = region.kept == true and lastSession ~= nil and lastSession.at == region.at
     end
-    open[guid] = st
-    if curInst then EnterInstance(st) end
+    open[guid] = session
+    if instanceKey then EnterInstance(session) end
 end
 
 local function EndSession(guid, now)
-    local st, rec = open[guid], players[guid]
-    local seconds = now - st.at
-    if rec and (st.extend or seconds >= MIN_SESSION) then
-        local cfg = st.extend and rec.sessions[1]
+    local session, rec = open[guid], players[guid]
+    local seconds = now - session.at
+    if rec and (session.extend or seconds >= SESSION_MIN_SECONDS) then
+        local cfg = session.extend and rec.sessions[1]
         if not cfg then
-            cfg = PushLimited(rec.sessions, MAX_SESSIONS)
+            cfg = PushLimited(rec.sessions, SESSIONS_KEPT)
             rec.groups = rec.groups + 1
         end
         cfg.at, cfg.seconds, cfg.kind, cfg.place, cfg.instance =
-            st.at, seconds, st.raid and "raid" or "party", st.place, st.instance
-        rec.dungeons, rec.raids = rec.dungeons + st.dungeons, rec.raids + st.raids
+            session.at, seconds, session.raid and "raid" or "party", session.place, session.instance
+        rec.dungeons, rec.raids = rec.dungeons + session.dungeons, rec.raids + session.raids
         rec.lastSeen = now
     end
     open[guid] = nil
@@ -201,7 +201,7 @@ local function ScanGroup(now)
     local members = GetNumGroupMembers() or 0
     local function MarkSeen(unit, raid)
         local guid = UnitGUID(unit)
-        if not IsPlayerGUID(guid) or guid == myGUID then return end
+        if not IsPlayerGUID(guid) or guid == playerGUID then return end
         seen[guid] = true
         if open[guid] then
             if raid then open[guid].raid = true end
@@ -232,29 +232,29 @@ local function InstanceName()
         or (kind ~= "party" and kind ~= "raid")
         or type(id) ~= "number"
     then
-        curInst, curPlace, curType = nil, nil, nil
+        instanceKey, instancePlace, instanceKind = nil, nil, nil
         return
     end
-    curInst, curType, curPlace = id, kind, (type(name) == "string" and name ~= "") and name or nil
-    for _, st in pairs(open) do
-        EnterInstance(st)
+    instanceKey, instanceKind, instancePlace = id, kind, (type(name) == "string" and name ~= "") and name or nil
+    for _, session in pairs(open) do
+        EnterInstance(session)
     end
 end
 
 local function OnLogout()
     local now, saved = time(), nil
-    for guid, st in pairs(open) do
-        local kept = st.extend or now - st.at >= MIN_SESSION
+    for guid, session in pairs(open) do
+        local kept = session.extend or now - session.at >= SESSION_MIN_SECONDS
         saved = saved or {}
         saved[guid] = {
-            at = st.at,
-            raid = st.raid,
-            inst = st.inst,
-            place = st.place,
-            instance = st.instance,
+            at = session.at,
+            raid = session.raid,
+            inst = session.inst,
+            place = session.place,
+            instance = session.instance,
             kept = kept,
-            dungeons = kept and 0 or st.dungeons,
-            raids = kept and 0 or st.raids,
+            dungeons = kept and 0 or session.dungeons,
+            raids = kept and 0 or session.raids,
         }
         EndSession(guid, now)
     end
@@ -265,7 +265,7 @@ local function OnLogout()
 end
 
 local function LogChatLine(rec, now, mine, channel, text)
-    local e = PushLimited(rec.chats, MAX_CHATS)
+    local e = PushLimited(rec.chats, CHATS_KEPT)
     e.at, e.mine, e.channel, e.text = now, mine, channel, text
     rec.lastSeen = now
 end
@@ -274,10 +274,10 @@ local function OnChatMessage(event, text, sender, _, _, _, _, _, _, _, _, _, gui
     if type(guid) ~= "string" or Secret(guid) or Secret(text) or Secret(sender) or type(text) ~= "string" then
         return
     end
-    local channel = CHANNEL[event]
+    local channel = CHAT_KIND[event]
     if channel == "WHISPER" then
-        if guid == myGUID or not IsPlayerGUID(guid) then return end
-        local clean = PlainText(text, MAX_TEXT)
+        if guid == playerGUID or not IsPlayerGUID(guid) then return end
+        local clean = PlainText(text, CHAT_MAX_LEN)
         if not clean then return end
         local rec = RecordFor(guid, time())
         if not rec then return end
@@ -287,22 +287,22 @@ local function OnChatMessage(event, text, sender, _, _, _, _, _, _, _, _, _, gui
             if Readable(class) then rec.classFile = class end
         end
         LogChatLine(rec, time(), event == "CHAT_MSG_WHISPER_INFORM", "WHISPER", clean)
-    elseif guid == myGUID then
+    elseif guid == playerGUID then
         if next(open) == nil or IsInRaid() then return end
-        local clean = PlainText(text, MAX_TEXT)
+        local clean = PlainText(text, CHAT_MAX_LEN)
         if not clean then return end
         for other in pairs(open) do
             if players[other] then LogChatLine(players[other], time(), true, channel, clean) end
         end
     elseif open[guid] and players[guid] then
-        local clean = PlainText(text, MAX_TEXT)
+        local clean = PlainText(text, CHAT_MAX_LEN)
         if clean then LogChatLine(players[guid], time(), false, channel, clean) end
     end
 end
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnEvent", function(_, event, ...)
-    if CHANNEL[event] then return OnChatMessage(event, ...) end
+    if CHAT_KIND[event] then return OnChatMessage(event, ...) end
     if event == "GROUP_ROSTER_UPDATE" then
         ScanGroup(time())
     elseif event == "PLAYER_LOGOUT" then
@@ -323,9 +323,9 @@ end
 
 function module.SetPlayerNote(guid, text, tag, name)
     if not IsPlayerGUID(guid) or guid == UnitGUID("player") then return false end
-    if tag ~= nil and not TAG[tag] then return false end
+    if tag ~= nil and not TAG_BY_KEY[tag] then return false end
     LoadStore()
-    text = (type(text) == "string" and not Secret(text)) and PlainText(text, MAX_NOTE) or nil
+    text = (type(text) == "string" and not Secret(text)) and PlainText(text, NOTE_MAX_LEN) or nil
     if not text and not tag then
         notes[guid] = nil
         return true
@@ -348,7 +348,7 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         LoadStore()
         local note, rec = notes[guid], players[guid]
         if note then
-            local tbl = TAG[note.tag]
+            local tbl = TAG_BY_KEY[note.tag]
             if tbl then
                 if tbl.good then
                     tooltip:AddLine(tbl.label, 0.4, 0.9, 0.5)
@@ -383,7 +383,7 @@ StaticPopupDialogs["CLUDESUI_PLAYER_NOTE"] = {
     button1 = ACCEPT,
     button2 = CANCEL,
     hasEditBox = true,
-    maxLetters = MAX_NOTE,
+    maxLetters = NOTE_MAX_LEN,
     OnShow = function(self, data)
         local note = module.PlayerNote(data.guid)
         local box = self.editBox or self.EditBox
@@ -405,10 +405,10 @@ StaticPopupDialogs["CLUDESUI_PLAYER_NOTE"] = {
     hideOnEscape = true,
 }
 
-local menusAdded
+local unitMenusAdded
 local function AddUnitMenus()
-    if menusAdded or not (Menu and Menu.ModifyMenu) then return end
-    menusAdded = true
+    if unitMenusAdded or not (Menu and Menu.ModifyMenu) then return end
+    unitMenusAdded = true
     local function SortedPlayers(_, root, ctx)
         if type(ctx) ~= "table" then return end
         local guid, name
@@ -436,7 +436,7 @@ local function AddUnitMenus()
                 )
             end
         )
-        for _, tag in ipairs(TAGS) do
+        for _, tag in ipairs(NOTE_TAGS) do
             sub:CreateRadio(tag.label, function()
                 local n = module.PlayerNote(guid)
                 return n and n.tag == tag.key
@@ -475,8 +475,8 @@ end
 local win, rows, scroll, content, search
 local function TimeAgo(s)
     if s < 3600 then return math.floor(s / 60) .. "m" end
-    if s < DAY then return math.floor(s / 3600) .. "h" end
-    return math.floor(s / DAY) .. "d"
+    if s < SECONDS_PER_DAY then return math.floor(s / 3600) .. "h" end
+    return math.floor(s / SECONDS_PER_DAY) .. "d"
 end
 
 local function RefreshList()
@@ -484,9 +484,9 @@ local function RefreshList()
     LoadStore()
     local filter = (search:GetText() or ""):lower()
     local list = {}
-    local seenG = {}
+    local seenThisScan = {}
     for guid, rec in pairs(players) do
-        seenG[guid] = true
+        seenThisScan[guid] = true
         local note = notes[guid]
         local hay = ((rec.name or "") .. " " .. (note and note.text or "")):lower()
         if filter == "" or hay:find(filter, 1, true) then
@@ -494,7 +494,7 @@ local function RefreshList()
         end
     end
     for guid, note in pairs(notes) do
-        if not seenG[guid] then
+        if not seenThisScan[guid] then
             local hay = ((note.name or "") .. " " .. (note.text or "")):lower()
             if filter == "" or hay:find(filter, 1, true) then
                 list[#list + 1] = {
@@ -521,7 +521,7 @@ local function RefreshList()
         local c = rec.classFile and RAID_CLASS_COLORS[rec.classFile]
         local name = rec.name or "?"
         if c then name = c:WrapTextInColorCode(name) end
-        local tag = note and TAG[note.tag]
+        local tag = note and TAG_BY_KEY[note.tag]
         region:SetPoint("TOPLEFT", 0, -(i - 1) * 16)
         region:SetText(
             ("%s  |cff9aa6b2%d groups, %d dungeons, %d raids, %s ago|r%s%s"):format(
@@ -601,9 +601,9 @@ local function Apply()
     AddUnitMenus()
     if Enabled() then
         LoadStore()
-        myGUID = UnitGUID("player")
-        if players[myGUID] then
-            players[myGUID] = nil
+        playerGUID = UnitGUID("player")
+        if players[playerGUID] then
+            players[playerGUID] = nil
             count = count - 1
         end
         for _, event in ipairs({
@@ -614,7 +614,7 @@ local function Apply()
         }) do
             eventFrame:RegisterEvent(event)
         end
-        for event in pairs(CHANNEL) do
+        for event in pairs(CHAT_KIND) do
             if Get("chats") then
                 eventFrame:RegisterEvent(event)
             else
