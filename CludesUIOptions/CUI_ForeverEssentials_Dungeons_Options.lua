@@ -291,7 +291,7 @@ function _G._CUI_BuildForeverDungeonsPage(_, hostFrame, yOffset)
             text = "Looking For Group",
             buttonText = "Open",
             width = 90,
-            tooltip = "A better window for the game's group finder: every listing for your level with the leader's zone, roles and age, a filter and sorts, and Whisper on each. CludesUI players also see each other's Gear Score, boss kills and quests, and can apply to a group and be invited. /clfg opens it too.",
+            tooltip = "A better window for the game's group finder: search in the Group Finder (its button opens it) and every group found shows here with the leader's zone, roles and age, filtered to your level or a dungeon, with sorts and Whisper on each. CludesUI players also see each other's Gear Score, boss kills and quests, and can apply to a group and be invited. /clfg opens it too.",
             onClick = function()
                 LF.Show()
                 CUI:RefreshPage()
