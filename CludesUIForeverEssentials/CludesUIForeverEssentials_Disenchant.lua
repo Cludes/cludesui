@@ -22,7 +22,7 @@ local PALETTE = CUI.Kit.Palette
 
 local SPELL, ENCHANTING = 13262, 333
 local WEAPON, ARMOR = 2, 4
-local UNCOMMON, BOSS, EPIC = 2, 3, 4
+local UNCOMMON, ELITE, EPIC = 2, 3, 4
 local CUT = 0.95
 local NEVER_SLOTS = { INVTYPE_BODY = true, INVTYPE_TABARD = true }
 local NO_DISENCHANT = {
@@ -50,7 +50,7 @@ local OUTCOMES = {
         { 61, 65, 16204, 16203, 14344, 75, 20, 22, 75, 2, 5, 2, 3 },
     },
     -- rare: { from, to, shard, (crystal at 0.5%) }
-    [BOSS] = {
+    [ELITE] = {
         { 1, 25, 10978 }, { 26, 30, 11084 }, { 31, 35, 11138 }, { 36, 40, 11139 },
         { 41, 45, 11177 }, { 46, 50, 11178 }, { 51, 55, 14343 }, { 56, 80, 14344, 20725 },
     },
@@ -73,7 +73,7 @@ end
 -- The Enchanting skill an item needs, from its level and quality.
 function Values.Skill(lvl, grade)
     if not (lvl and lvl >= 1 and grade) then return end
-    if grade >= BOSS and lvl <= 25 then return 25 end
+    if grade >= ELITE and lvl <= 25 then return 25 end
     if lvl <= 20 then return 1 end
     return math.max(25, (math.ceil(lvl / 5) - 4) * 25)
 end
@@ -88,7 +88,7 @@ function Values.Outcomes(callingID, grade, lvl)
                 local roster = { { row[3], dust, row[10], row[11] }, { row[4], essence, row[12], row[13] } }
                 if row[5] then roster[#roster + 1] = { row[5], 100 - dust - essence, 1, 1 } end
                 return roster
-            elseif grade == BOSS then
+            elseif grade == ELITE then
                 if row[4] then return { { row[3], 99.5, 1, 1 }, { row[4], 0.5, 1, 1 } } end
                 return { { row[3], 100, 1, 1 } }
             end
@@ -348,7 +348,7 @@ local function Wait()
     end)
 end
 
-local function BuildAll()
+local function MakeAll()
     all = CUI.Kit.SecureButton(window, "CludesUIDisenchantAll", "Disenchant All", 160, 28, { key = "essentials", size = 13 })
     all:SetPoint("BOTTOMRIGHT", -12, 12)
     all:SetActive(true)
@@ -373,7 +373,7 @@ local function BuildAll()
     end)
 end
 
-local function Build()
+local function Make()
     window = CUI.Kit.Window("CludesUIDisenchantWindow", GRID_W + 40, 440, "Disenchant", { key = "essentials" })
     window:Hide() -- a new frame starts shown; the first Show must run OnShow
     local sub = window:CreateFontString(nil, "OVERLAY")
@@ -395,7 +395,7 @@ local function Build()
     CUI.Kit.Font(window.summary, CUI.Kit.TEXT_SIZE, "essentials")
     window.summary:SetTextColor(unpack(PALETTE.muted))
     window.summary:SetPoint("BOTTOMLEFT", 14, 20)
-    BuildAll()
+    MakeAll()
     window:SetScript("OnShow", function()
         for _, event in ipairs({ "BAG_UPDATE_DELAYED", "ITEM_LOCK_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "UI_ERROR_MESSAGE" }) do
             events:RegisterEvent(event)
@@ -421,8 +421,8 @@ events:SetScript("OnEvent", function(_, event, _, message)
         trying.key = nil
     elseif event == "UI_ERROR_MESSAGE" then
         local refused = false
-        for _, heading in ipairs(REFUSALS) do
-            if _G[heading] ~= nil and _G[heading] == message then refused = true end
+        for _, title in ipairs(REFUSALS) do
+            if _G[title] ~= nil and _G[title] == message then refused = true end
         end
         if not refused then return end
         Release()
@@ -435,7 +435,7 @@ function Window.Open()
     if not On() then return CUI.Print("Turn on Disenchant in Forever Tools > Professions first.") end
     if not D.Known() then return CUI.Print("You do not know Disenchant.") end
     if InCombatLockdown() then return CUI.Print("The Disenchant window cannot open in combat.") end
-    if not window then Build() end
+    if not window then Make() end
     window:Show()
 end
 
