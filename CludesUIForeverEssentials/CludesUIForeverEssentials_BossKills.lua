@@ -18,7 +18,7 @@ local Get, Enabled, Cfg = F.Get, F.Enabled, F.Cfg
 local J = module.Journal
 
 local KEEP = 10
-local DAY = 86400
+local DAILY = 86400
 local events = CreateFrame("Frame")
 local pulled = {} -- encounterID -> GetTime() at the pull
 local byEncounter
@@ -27,7 +27,7 @@ local function Secret(value)
     return issecretvalue and issecretvalue(value)
 end
 
-local function CharKey() return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") end
+local function CharId() return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") end
 
 local function Mine(create)
     local root = create and Cfg() or F.Read()
@@ -37,12 +37,12 @@ local function Mine(create)
         chars = {}
         root.chars = chars
     end
-    local key = CharKey()
+    local key = CharId()
     if not chars[key] and create then chars[key] = {} end
     return chars[key]
 end
 
-local function Index()
+local function Catalog()
     byEncounter = {}
     for _, dungeon in ipairs(J and J.dungeons or {}) do
         for _, wing in ipairs(dungeon.wings or {}) do
@@ -56,23 +56,23 @@ local function Index()
 end
 
 local function BossFor(encounterID)
-    if not byEncounter then Index() end
+    if not byEncounter then Catalog() end
     return byEncounter[encounterID]
 end
 
-local function Record(boss)
+local function Log(boss)
     local id = boss and boss.encounters and boss.encounters[1]
     local mine = id and Mine(false)
-    local record = mine and mine[id]
-    if type(record) == "table" and type(record.n) == "number" then return record end
+    local log = mine and mine[id]
+    if type(log) == "table" and type(log.n) == "number" then return log end
 end
 
 local function Length(seconds)
     return ("%d:%02d"):format(math.floor(seconds / 60), seconds % 60)
 end
 
-local function Ago(at)
-    local days = math.floor((time() - at) / DAY)
+local function Since(at)
+    local days = math.floor((time() - at) / DAILY)
     if days <= 0 then return "today" end
     if days == 1 then return "yesterday" end
     return ("%d days ago"):format(days)
@@ -81,71 +81,71 @@ end
 local function Team()
     local names = {}
     for i = 1, 4 do
-        local name = UnitName("party" .. i)
-        if name and not Secret(name) then names[#names + 1] = name end
+        local title = UnitName("party" .. i)
+        if title and not Secret(title) then names[#names + 1] = title end
     end
     return #names > 0 and table.concat(names, ", ") or false
 end
 
-local function Add(boss, took)
+local function Put(boss, took)
     local mine = Mine(true)
     if not mine then return end
     local key = boss.encounters[1]
     local now = time()
-    local record = mine[key]
-    if type(record) ~= "table" then
-        record = { n = 0, first = now, at = {}, took = {}, team = {} }
-        mine[key] = record
+    local log = mine[key]
+    if type(log) ~= "table" then
+        log = { n = 0, first = now, at = {}, took = {}, team = {} }
+        mine[key] = log
     end
     local length = took and math.floor(took + 0.5) or nil
-    if length and (not record.best or length < record.best) then
-        if record.best then
-            CUI.Print(("|cff4cc9f0Boss Kills:|r new best on %s: %s, was %s."):format(boss.name, Length(length), Length(record.best)))
+    if length and (not log.best or length < log.best) then
+        if log.best then
+            CUI.Print(("|cff4cc9f0Boss Kills:|r new best on %s: %s, was %s."):format(boss.name, Length(length), Length(log.best)))
         end
-        record.best, record.bestAt = length, now
+        log.best, log.bestAt = length, now
     end
-    if #record.at >= KEEP then
-        table.remove(record.at, 1)
-        table.remove(record.took, 1)
-        table.remove(record.team, 1)
+    if #log.at >= KEEP then
+        table.remove(log.at, 1)
+        table.remove(log.took, 1)
+        table.remove(log.team, 1)
     end
-    record.n = record.n + 1
-    record.at[#record.at + 1] = now
-    record.took[#record.took + 1] = length or false
-    record.team[#record.team + 1] = Team()
+    log.n = log.n + 1
+    log.at[#log.at + 1] = now
+    log.took[#log.took + 1] = length or false
+    log.team[#log.team + 1] = Team()
 end
 
 -- One line for a boss: "Killed 3 times, last today, best 1:42", or nil.
 local function Summary(boss)
     if not Enabled() then return nil end
-    local record = Record(boss)
-    if not record or record.n == 0 then return nil end
-    local parts = { record.n == 1 and "Killed once" or ("Killed %d times"):format(record.n) }
-    local last = record.at[#record.at]
-    if last then parts[#parts + 1] = "last " .. Ago(last) end
-    if record.best then parts[#parts + 1] = "best " .. Length(record.best) end
+    local log = Log(boss)
+    if not log or log.n == 0 then return nil end
+    local parts = { log.n == 1 and "Killed once" or ("Killed %d times"):format(log.n) }
+    local last = log.at[#log.at]
+    if last then parts[#parts + 1] = "last " .. Since(last) end
+    if log.best then parts[#parts + 1] = "best " .. Length(log.best) end
     return table.concat(parts, ", ")
 end
 
 -- Up to three latest kills, newest first: { "2 days ago, 1:42, with A, B", ... }.
 local function Recent(boss, most)
-    local record = Enabled() and Record(boss)
-    if not record then return {} end
+    local log = Enabled() and Log(boss)
+    if not log then return {} end
     local out = {}
-    for i = #record.at, math.max(1, #record.at - (most or 3) + 1), -1 do
-        local line = Ago(record.at[i])
-        if record.took[i] then line = line .. ", " .. Length(record.took[i]) end
-        if record.team[i] then line = line .. ", with " .. record.team[i] end
-        out[#out + 1] = line
+    for i = #log.at, math.max(1, #log.at - (most or 3) + 1), -1 do
+        local row = Since(log.at[i])
+        if log.took[i] then row = row .. ", " .. Length(log.took[i]) end
+        if log.team[i] then row = row .. ", with " .. log.team[i] end
+        out[#out + 1] = row
     end
     return out
 end
 
 -- Adds the summary and the latest kills to an open GameTooltip.
-local function AddToTooltip(tooltip, boss)
-    local line = Summary(boss)
-    if not line then return end
-    tooltip:AddLine(line, 0.4, 0.9, 0.5)
+local function PutToTooltip(tooltip, boss)
+    local row = Summary(boss)
+    if not row then return end
+    tooltip:AddLine(row, 0.4, 0.9, 0.5)
     for _, kill in ipairs(Recent(boss, 3)) do
         tooltip:AddLine(kill, 0.6, 0.6, 0.6, true)
     end
@@ -160,7 +160,7 @@ events:SetScript("OnEvent", function(_, event, encounterID, _, _, _, success)
     local started = pulled[encounterID]
     pulled[encounterID] = nil
     local boss = success == 1 and BossFor(encounterID)
-    if boss then Add(boss, started and GetTime() - started) end
+    if boss then Put(boss, started and GetTime() - started) end
 end)
 
 local function Apply()
@@ -179,12 +179,12 @@ local function Forget()
 end
 
 -- How many times this character has killed the boss.
-local function Count(boss)
-    local record = Record(boss)
-    return record and record.n or 0
+local function Tally(boss)
+    local log = Log(boss)
+    return log and log.n or 0
 end
 
-module.BossKills = { Summary = Summary, Recent = Recent, AddToTooltip = AddToTooltip, Count = Count }
+module.BossKills = { Summary = Summary, Recent = Recent, AddToTooltip = PutToTooltip, Count = Tally }
 CUI._BossKills = {
     Get = Get,
     Cfg = Cfg,
