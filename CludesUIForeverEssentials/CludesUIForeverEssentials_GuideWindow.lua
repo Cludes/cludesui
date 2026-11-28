@@ -24,7 +24,7 @@ local F = module.Feature(
 )
 local Get, Enabled = F.Get, F.Enabled
 
-local PAD, BOX_PAD, ROW_SPACING, BAR_H = 10, 7, 3, 5
+local PAD, BOX_PAD, LINE_SPACING, BAR_H = 10, 7, 3, 5
 local ACTIVE_SHOWN = 3
 local TALLY = "(%d+)%s*/%s*(%d+)"
 local GREEN, AMBER = { 0.37, 0.77, 0.42 }, { 1, 0.7, 0.25 }
@@ -79,7 +79,7 @@ local function Heading(rxp, guide)
     return title
 end
 
-local function Row(rxp, element)
+local function StepRow(rxp, element)
     local frame = element.frame
     local labelFs = Dig(frame, "text")
     local shown = Has(labelFs, "GetText") and labelFs:GetText()
@@ -128,7 +128,7 @@ local function Load()
         if s.active and not s.hidewindow and not s.hidetip then
             local roster = {}
             for _, element in ipairs(s.elements or {}) do
-                if element.text or element.rawtext or element.tooltipText then roster[#roster + 1] = Row(rxp, element) end
+                if element.text or element.rawtext or element.tooltipText then roster[#roster + 1] = StepRow(rxp, element) end
             end
             local label = (s.title and s.title ~= "") and s.title or CUI.Lf("Step %1$d", s.index)
             model.steps[#model.steps + 1] = { label = label, rows = roster, source = s }
@@ -137,8 +137,8 @@ local function Load()
         end
     end
     model.next = {}
-    for _, thing in ipairs(StepRoster(rxp)) do
-        if thing.index > after and #model.next < Get("steps") then model.next[#model.next + 1] = thing end
+    for _, item in ipairs(StepRoster(rxp)) do
+        if item.index > after and #model.next < Get("steps") then model.next[#model.next + 1] = item end
     end
     return model
 end
@@ -235,7 +235,7 @@ local function Label(parent, dims, tint)
     return fs
 end
 
-local function Build()
+local function Make()
     if window then return window end
     local Kit = CUI.Kit
     window = CreateFrame("Frame", "CludesUIGuideWindow", UIParent)
@@ -299,7 +299,7 @@ local function Box(i)
     return b
 end
 
-local function RowLabel(i)
+local function StepText(i)
     local fs = lines[i]
     if fs then return fs end
     fs = Label(window, CUI.Kit.TEXT_SIZE)
@@ -309,7 +309,7 @@ end
 
 -- The next steps: one button each (shift-click goes there).
 local nextLines = {}
-local function NextRow(i)
+local function NextStepRow(i)
     local r = nextLines[i]
     if r then return r end
     r = CreateFrame("Button", nil, window)
@@ -346,7 +346,7 @@ local function Render()
         return
     end
     Take()
-    Build()
+    Make()
     local Kit = CUI.Kit
     local width = Get("width")
     local inner = width - 2 * PAD
@@ -391,7 +391,7 @@ local function Render()
             local by = -BOX_PAD - box.label:GetStringHeight() - 4
             for _, line in ipairs(step.rows) do
                 linesUsed = linesUsed + 1
-                local fs = RowLabel(linesUsed)
+                local fs = StepText(linesUsed)
                 fs:SetParent(box)
                 fs:ClearAllPoints()
                 fs:SetPoint("TOPLEFT", box, "TOPLEFT", BOX_PAD, by)
@@ -409,17 +409,17 @@ local function Render()
                 fs:SetAlpha(line.done and 0.6 or 1)
                 fs:Show()
                 Watch(line.source)
-                by = by - fs:GetStringHeight() - ROW_SPACING
+                by = by - fs:GetStringHeight() - LINE_SPACING
             end
-            local h = -by + BOX_PAD - ROW_SPACING
+            local h = -by + BOX_PAD - LINE_SPACING
             box:SetHeight(h)
             box:Show()
             y = y - h - 6
         end
-        for i, thing in ipairs(model.next) do
-            local nr = NextRow(i)
-            nr.index = thing.index
-            nr.text:SetText(("%d. %s"):format(thing.index, thing.text))
+        for i, item in ipairs(model.next) do
+            local nr = NextStepRow(i)
+            nr.index = item.index
+            nr.text:SetText(("%d. %s"):format(item.index, item.text))
             nr:ClearAllPoints()
             nr:SetPoint("TOPLEFT", PAD, y)
             nr:SetSize(inner, 14)
@@ -500,8 +500,8 @@ F.Start(Apply, {
     key = "CUI_GuideWindow",
     label = "Guide Window",
     order = 762,
-    frame = function(build)
-        if build then Build() end
+    frame = function(make)
+        if make then Make() end
         return window
     end,
     size = function() return Get("width"), window and window:GetHeight() or 200 end,
