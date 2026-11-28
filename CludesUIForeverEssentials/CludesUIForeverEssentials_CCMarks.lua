@@ -62,7 +62,7 @@ local CONTROLS = {
 CUI._CCControls = CONTROLS
 
 local assigned = {} -- mark -> { mob, control, player }
-local bar, assignBtn, sayBtn, listLabel
+local bar, assignButton, sayButton, listText
 local queued -- a show/hide waiting for combat to end
 
 local function Secret(v) return v ~= nil and issecretvalue and issecretvalue(v) end
@@ -92,9 +92,9 @@ local function Roster()
         if UnitExists(unit) then
             local name = UnitName(unit)
             local _, class = UnitClass(unit)
-            local lvl = UnitLevel(unit)
-            if name and not Secret(name) and class and not Secret(lvl) then
-                list[#list + 1] = { name = name, class = class, level = lvl or 0, unit = unit }
+            local level = UnitLevel(unit)
+            if name and not Secret(name) and class and not Secret(level) then
+                list[#list + 1] = { name = name, class = class, level = level or 0, unit = unit }
             end
         end
     end
@@ -175,13 +175,13 @@ CUI._CCPick = Pick
 -------------------------------------------------------------------------------
 --  Chat
 -------------------------------------------------------------------------------
-local function Channel()
+local function GroupChannel()
     if IsInRaid() then return "RAID" end
     if IsInGroup() then return "PARTY" end
 end
 
 local function Send(text)
-    local channel = Channel()
+    local channel = GroupChannel()
     if not channel or (C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()) then
         CUI.Print("|cff4cc9f0CC:|r " .. text:gsub("{rt(%d)}", function(i) return "|T" .. ICON:format(i) .. ":0|t" end))
         return
@@ -189,12 +189,12 @@ local function Send(text)
     C_ChatInfo.SendChatMessage(text, channel)
 end
 
-local function Line(mark, a) return ("{rt%d} %s: %s"):format(mark, a.control.name, a.player) end
+local function AssignmentText(mark, a) return ("{rt%d} %s: %s"):format(mark, a.control.name, a.player) end
 
 local function Announce()
     local parts = {}
     for mark = 1, 6 do
-        if assigned[mark] then parts[#parts + 1] = Line(mark, assigned[mark]) end
+        if assigned[mark] then parts[#parts + 1] = AssignmentText(mark, assigned[mark]) end
     end
     if #parts == 0 then
         CUI.Print("|cff4cc9f0CC:|r nothing is assigned yet. Target a mob and press CC.")
@@ -203,8 +203,8 @@ local function Announce()
     Send(table.concat(parts, ", ") .. ". Kill {rt8} then {rt7}.")
 end
 
-local function RenderList()
-    if not listLabel then return end
+local function RefreshList()
+    if not listText then return end
     local lines = {}
     for mark = 1, 6 do
         local a = assigned[mark]
@@ -212,19 +212,19 @@ local function RenderList()
             lines[#lines + 1] = ("|T%s:0|t %s: %s (%s)"):format(ICON:format(mark), a.control.name, a.player, a.mob or "?")
         end
     end
-    listLabel:SetText(table.concat(lines, "\n"))
+    listText:SetText(table.concat(lines, "\n"))
 end
 
-local function Clear()
+local function ClearAssignments()
     wipe(assigned)
-    RenderList()
+    RefreshList()
 end
 
 -- After the CC button's mark went on: record it and say so.
 local function Assigned(control, player, mark, guid, mob)
     assigned[mark] = { control = control, player = player, guid = guid, mob = mob }
-    RenderList()
-    if Get("announce") then Send(Line(mark, assigned[mark]) .. (mob and (" (" .. mob .. ")") or "")) end
+    RefreshList()
+    if Get("announce") then Send(AssignmentText(mark, assigned[mark]) .. (mob and (" (" .. mob .. ")") or "")) end
     if Get("whisper") and player ~= UnitName("player") and not (C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()) then
         C_ChatInfo.SendChatMessage(("%s the {rt%d} please."):format(control.name, mark), "WHISPER", nil, player)
     end
@@ -233,9 +233,9 @@ end
 -------------------------------------------------------------------------------
 --  The bar
 -------------------------------------------------------------------------------
-local BTN, SPACING = 24, 3
+local BTN, GAP = 24, 3
 
-local function MarkBtn(parent, index, x)
+local function CreateMarkButton(parent, index, x)
     local b = Kit.SecureButton(parent, nil, "", BTN, BTN, { key = "essentials" })
     b:SetAttribute("type", "macro")
     b:SetAttribute("macrotext", ("/tm %d"):format(index))
@@ -258,11 +258,11 @@ local function MarkBtn(parent, index, x)
 end
 
 local pending
-local function Make()
+local function BuildBar()
     if bar then return bar end
     bar = CreateFrame("Frame", "CludesUICCMarkBar", UIParent)
-    local total = 9
-    local width = total * (BTN + SPACING) + 3 * (44 + SPACING) + 6
+    local count = 9
+    local width = count * (BTN + GAP) + 3 * (44 + GAP) + 6
     bar:SetSize(width, BTN + 6)
     Kit.Panel(bar)
     bar:SetMovable(true)
@@ -278,15 +278,15 @@ local function Make()
     end)
     local x = 3
     for _, index in ipairs({ 8, 7, 1, 2, 3, 4, 5, 6, 0 }) do
-        MarkBtn(bar, index, x)
-        x = x + BTN + SPACING
+        CreateMarkButton(bar, index, x)
+        x = x + BTN + GAP
     end
-    assignBtn = Kit.SecureButton(bar, "CludesUICCAssign", "CC", 44, BTN, { key = "essentials" })
-    assignBtn:RegisterForClicks("AnyDown")
-    assignBtn:SetAttribute("type", "macro")
-    assignBtn:SetAttribute("macrotext", "")
-    assignBtn:SetPoint("LEFT", x, 0)
-    assignBtn:SetScript("PreClick", function(self)
+    assignButton = Kit.SecureButton(bar, "CludesUICCAssign", "CC", 44, BTN, { key = "essentials" })
+    assignButton:RegisterForClicks("AnyDown")
+    assignButton:SetAttribute("type", "macro")
+    assignButton:SetAttribute("macrotext", "")
+    assignButton:SetPoint("LEFT", x, 0)
+    assignButton:SetScript("PreClick", function(self)
         pending = nil
         if InCombatLockdown() then
             CUI.Print("|cff4cc9f0CC:|r assign crowd control before the pull: the game blocks it in combat.")
@@ -303,11 +303,11 @@ local function Make()
         self:SetAttribute("macrotext", ("/tm %d"):format(mark))
         pending = { control, player, mark, guid, mob }
     end)
-    assignBtn:SetScript("PostClick", function()
+    assignButton:SetScript("PostClick", function()
         if pending then Assigned(unpack(pending)) end
         pending = nil
     end)
-    assignBtn:HookScript("OnEnter", function(self)
+    assignButton:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
         GameTooltip:SetText("Assign Crowd Control")
         local control, player, mark = Pick("target")
@@ -318,24 +318,24 @@ local function Make()
         end
         GameTooltip:Show()
     end)
-    assignBtn:HookScript("OnLeave", function() GameTooltip:Hide() end)
-    x = x + 44 + SPACING
-    sayBtn = Kit.Button(bar, "Say", 44, BTN, Announce, { key = "essentials", tip = "Post every assignment and the kill order in group chat." })
-    sayBtn:SetPoint("LEFT", x, 0)
-    x = x + 44 + SPACING
-    local clearBtn = Kit.Button(bar, "Reset", 44, BTN, Clear, { key = "essentials", tip = "Forget the assignments." })
-    clearBtn:SetPoint("LEFT", x, 0)
-    listLabel = bar:CreateFontString(nil, "OVERLAY")
-    Kit.Font(listLabel, Kit.SMALL_SIZE, "essentials")
-    listLabel:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 4, -4)
-    listLabel:SetJustifyH("LEFT")
-    listLabel:SetTextColor(Pal.text[1], Pal.text[2], Pal.text[3])
+    assignButton:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    x = x + 44 + GAP
+    sayButton = Kit.Button(bar, "Say", 44, BTN, Announce, { key = "essentials", tip = "Post every assignment and the kill order in group chat." })
+    sayButton:SetPoint("LEFT", x, 0)
+    x = x + 44 + GAP
+    local resetButton = Kit.Button(bar, "Reset", 44, BTN, ClearAssignments, { key = "essentials", tip = "Forget the assignments." })
+    resetButton:SetPoint("LEFT", x, 0)
+    listText = bar:CreateFontString(nil, "OVERLAY")
+    Kit.Font(listText, Kit.SMALL_SIZE, "essentials")
+    listText:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 4, -4)
+    listText:SetJustifyH("LEFT")
+    listText:SetTextColor(Pal.text[1], Pal.text[2], Pal.text[3])
     F.Place(bar)
     bar:Hide()
     return bar
 end
 
-local function Desired()
+local function BarWanted()
     if not Enabled() then return false end
     if not Get("instancesOnly") then return true end
     local inside, kind = IsInInstance()
@@ -348,8 +348,8 @@ local function Sync()
         return
     end
     queued = false
-    local want = Desired()
-    if want then Make() end
+    local want = BarWanted()
+    if want then BuildBar() end
     if bar then
         bar:SetScale(Get("scale") or 1)
         bar:SetShown(want)
@@ -359,7 +359,7 @@ end
 local events = CreateFrame("Frame")
 events:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_REGEN_ENABLED" then
-        if Get("resetAfterCombat") and next(assigned) then Clear() end
+        if Get("resetAfterCombat") and next(assigned) then ClearAssignments() end
         if queued then Sync() end
         return
     end
@@ -384,11 +384,11 @@ CUI._CCMarks = {
     Pick = Pick,
     Assigned = Assigned,
     Announce = Announce,
-    Reset = Clear,
+    Reset = ClearAssignments,
     State = function() return assigned end,
     Toggle = function()
         if InCombatLockdown() then return end
-        Make()
+        BuildBar()
         bar:SetShown(not bar:IsShown())
     end,
 }
@@ -400,8 +400,8 @@ F.Start(Apply, {
     key = "CUIFE_CCMarks",
     label = "CC Marker Bar",
     order = 62,
-    frame = function(make)
-        if make then Make() end
+    frame = function(build)
+        if build then BuildBar() end
         return bar
     end,
     size = function() return bar and bar:GetWidth() or 400, bar and bar:GetHeight() or 30 end,
