@@ -22,47 +22,47 @@ local F =
 local Get = F.Get
 
 local SEND_SLOTS, MAIL_ATTACHMENTS = 12, 16
-local DAILY = 86400
-local EXPIRY_CAUTION = 3 * DAILY
+local DAY = 86400
+local EXPIRY_WARN = 3 * DAY
 local TRADE_GOODS = Enum.ItemClass.Tradegoods
 local GEAR = { [Enum.ItemClass.Weapon] = true, [Enum.ItemClass.Armor] = true }
 
-local function Say(labelValue) CUI.Print("|cff4cc9f0Mail:|r " .. labelValue) end
+local function Say(textValue) CUI.Print("|cff4cc9f0Mail:|r " .. textValue) end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
-local function CallingTitle(title, calling)
-    local tint = calling and C_ClassColor and C_ClassColor.GetClassColor(calling)
-    return tint and tint:WrapTextInColorCode(title) or title
+local function ClassLabel(name, class)
+    local color = class and C_ClassColor and C_ClassColor.GetClassColor(class)
+    return color and color:WrapTextInColorCode(name) or name
 end
 local function Coins(copper) return C_CurrencyInfo.GetCoinTextureString(copper, 12) end
 
 -------------------------------------------------------------------------------
 --  Characters
 -------------------------------------------------------------------------------
-local realmId, me
+local realmKey, me
 local function All()
     local cfg = F.Cfg()
     cfg.alts = cfg.alts or {}
     return cfg.alts
 end
 local function Realm()
-    realmId = realmId or ((GetRealmName() or "?") .. "-" .. (UnitFactionGroup("player") or ""))
-    All()[realmId] = All()[realmId] or {}
-    return All()[realmId]
+    realmKey = realmKey or ((GetRealmName() or "?") .. "-" .. (UnitFactionGroup("player") or ""))
+    All()[realmKey] = All()[realmKey] or {}
+    return All()[realmKey]
 end
 -- Forever names have a surname: the key is the full name without the realm.
-local function MyTitle()
+local function CharacterName()
     me = me or ((GetUnitName("player", true) or UnitName("player")):match("^[^-]+"))
     return me
 end
 local function Me()
-    local realm, title, first = Realm(), MyTitle(), UnitName("player")
-    local old = first ~= title and realm[first]
-    if not realm[title] and old and old.class == select(2, UnitClass("player")) then
-        realm[title], realm[first] = old, nil
+    local realm, name, first = Realm(), CharacterName(), UnitName("player")
+    local old = first ~= name and realm[first]
+    if not realm[name] and old and old.class == select(2, UnitClass("player")) then
+        realm[name], realm[first] = old, nil
     end
-    realm[title] = realm[title] or {}
-    realm[title].full = true
-    return realm[title]
+    realm[name] = realm[name] or {}
+    realm[name].full = true
+    return realm[name]
 end
 
 local function RosterOn() return Get("altCounts") or Get("mailAlts") or Get("expiry") end
@@ -91,11 +91,11 @@ local function Emptied(cfg, key)
     cfg[key] = {}
     return cfg[key]
 end
-local function SweepBags()
+local function CountBags()
     Count(Emptied(Me(), "bags"), BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS)
 end
 -- Forever has the character bank tabs; an older client the bank and its bags.
-local function SweepBank()
+local function CountBank()
     local into = Emptied(Me(), "bank")
     local first, last = Enum.BagIndex.CharacterBankTab_1, Enum.BagIndex.CharacterBankTab_9
     if first and last then return Count(into, first, last) end
@@ -106,43 +106,43 @@ local function SweepBank()
 end
 
 local mailPending
-local function SweepMail()
+local function CountMail()
     mailPending = nil
     if not RosterOn() then return end
     local isShown, sum = GetInboxNumItems()
-    local thingRoster, soonest, nowTime = {}, nil, time()
-    for catalog = 1, isShown do
-        local _, _, _, _, _, _, daysLeft, thingTally = GetInboxHeaderInfo(catalog)
+    local itemList, soonest, nowTime = {}, nil, time()
+    for index = 1, isShown do
+        local _, _, _, _, _, _, daysLeft, itemCount = GetInboxHeaderInfo(index)
         if daysLeft then
-            local expires = nowTime + math.floor(daysLeft * DAILY)
+            local expires = nowTime + math.floor(daysLeft * DAY)
             if not soonest or expires < soonest then soonest = expires end
         end
-        if thingTally and thingTally > 0 then
+        if itemCount and itemCount > 0 then
             for a = 1, MAIL_ATTACHMENTS do
-                local _, ident, _, tally = GetInboxItem(catalog, a)
-                if ident then thingRoster[ident] = (thingRoster[ident] or 0) + (tally or 1) end
+                local _, ident, _, count = GetInboxItem(index, a)
+                if ident then itemList[ident] = (itemList[ident] or 0) + (count or 1) end
             end
         end
     end
     local c = Me()
-    c.mail, c.mailCount, c.mailExpires = thingRoster, sum or isShown, soonest
+    c.mail, c.mailCount, c.mailExpires = itemList, sum or isShown, soonest
 end
 
-local bankReveal
+local bankOpen
 local rEv = CreateFrame("Frame")
 rEv:SetScript("OnEvent", function(_, evt, arg)
     if evt == "BAG_UPDATE_DELAYED" then
-        if Get("altCounts") then SweepBags() end
-        if bankReveal then SweepBank() end
+        if Get("altCounts") then CountBags() end
+        if bankOpen then CountBank() end
     elseif evt == "BANKFRAME_OPENED" then
-        bankReveal = true
-        SweepBank()
+        bankOpen = true
+        CountBank()
     elseif evt == "BANKFRAME_CLOSED" then
-        bankReveal = nil
+        bankOpen = nil
     elseif evt == "MAIL_INBOX_UPDATE" then
         if not mailPending then
             mailPending = true
-            C_Timer.After(1, SweepMail)
+            C_Timer.After(1, CountMail)
         end
     elseif evt == "PLAYER_LEVEL_UP" then
         Me().level = arg
@@ -151,7 +151,7 @@ rEv:SetScript("OnEvent", function(_, evt, arg)
     end
 end)
 
-local function RosterUse()
+local function ApplyRoster()
     rEv:UnregisterAllEvents()
     if RosterOn() then
         RefreshRoster()
@@ -160,19 +160,19 @@ local function RosterUse()
         end
     end
     if Get("altCounts") then
-        SweepBags()
+        CountBags()
         for _, event in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED" }) do
             rEv:RegisterEvent(event)
         end
     end
 end
 
-local function AltRoster()
-    local items, mine = {}, MyTitle()
-    for title, c in pairs(Realm()) do
-        if title ~= mine then
-            items[#items + 1] = {
-                name = title,
+local function AltCharacters()
+    local entries, mine = {}, CharacterName()
+    for name, c in pairs(Realm()) do
+        if name ~= mine then
+            entries[#entries + 1] = {
+                name = name,
                 class = c.class,
                 level = c.level or 0,
                 money = c.money or 0,
@@ -180,11 +180,11 @@ local function AltRoster()
             }
         end
     end
-    table.sort(items, function(lhs, rhs)
+    table.sort(entries, function(lhs, rhs)
         if lhs.level ~= rhs.level then return lhs.level > rhs.level end
         return lhs.name < rhs.name
     end)
-    return items
+    return entries
 end
 
 -- Alt Item Counts on item tooltips.
@@ -193,29 +193,29 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         if not Get("altCounts") then return end
         local ident = payload and payload.id
         if not ident or Secret(ident) then return end
-        local lineRoster, sum, elsewhere, mine = {}, 0, false, MyTitle()
-        for title, c in pairs(Realm()) do
+        local rowList, sum, elsewhere, mine = {}, 0, false, CharacterName()
+        for name, c in pairs(Realm()) do
             local bags, bank, mail =
                 c.bags and c.bags[ident] or 0, c.bank and c.bank[ident] or 0, c.mail and c.mail[ident] or 0
-            local tally = bags + bank + mail
-            if tally > 0 then
-                sum = sum + tally
-                if title ~= mine or bank > 0 or mail > 0 then elsewhere = true end
+            local count = bags + bank + mail
+            if count > 0 then
+                sum = sum + count
+                if name ~= mine or bank > 0 or mail > 0 then elsewhere = true end
                 local parts = {}
                 if bags > 0 then parts[#parts + 1] = bags .. " bags" end
                 if bank > 0 then parts[#parts + 1] = bank .. " bank" end
                 if mail > 0 then parts[#parts + 1] = mail .. " mail" end
-                lineRoster[#lineRoster + 1] =
-                    { name = title, class = c.class, count = tally, text = table.concat(parts, ", ") }
+                rowList[#rowList + 1] =
+                    { name = name, class = c.class, count = count, text = table.concat(parts, ", ") }
             end
         end
         if not elsewhere then return end
-        table.sort(lineRoster, function(lhs, rhs) return lhs.count > rhs.count end)
+        table.sort(rowList, function(lhs, rhs) return lhs.count > rhs.count end)
         tooltip:AddDoubleLine("Total owned", sum, 1, 1, 1, 1, 1, 1)
-        for catalog = 1, math.min(#lineRoster, 8) do
+        for index = 1, math.min(#rowList, 8) do
             tooltip:AddDoubleLine(
-                "  " .. CallingTitle(lineRoster[catalog].name, lineRoster[catalog].class),
-                lineRoster[catalog].text,
+                "  " .. ClassLabel(rowList[index].name, rowList[index].class),
+                rowList[index].text,
                 1,
                 1,
                 1,
@@ -230,31 +230,31 @@ end
 -------------------------------------------------------------------------------
 --  Mailbox buttons
 -------------------------------------------------------------------------------
-local altsBtn, attachBtn
-local qBag, qSlot, qThing = {}, {}, {}
-local qHead, qTally = 1, 0
-local pendingSlot, pendingThing, pendingBag, pendingBagSlot
+local altsButton, attachButton
+local qBag, qSlot, qItem = {}, {}, {}
+local qHead, qCount = 1, 0
+local pendingSlot, pendingItem, pendingBag, pendingBagSlot
 local clicking = false
 local mEv = CreateFrame("Frame")
 
-local function Menu(ownerWindow, fillTex) CUI.Kit.ContextMenu(ownerWindow, fillTex) end
+local function Menu(ownerFrame, fillTex) CUI.Kit.ContextMenu(ownerFrame, fillTex) end
 
-local function RevealAltsMenu(ownerWindow)
-    local items = AltRoster()
+local function ShowAltsMenu(ownerFrame)
+    local entries = AltCharacters()
     local sum = GetMoney()
-    for _, alt in ipairs(items) do
+    for _, alt in ipairs(entries) do
         sum = sum + alt.money
     end
-    Menu(ownerWindow, function(_, root)
+    Menu(ownerFrame, function(_, root)
         root:CreateTitle("Gold on this realm: " .. Coins(sum))
-        if #items == 0 then
+        if #entries == 0 then
             root:CreateTitle("Log in on your other characters once and they appear here.", WHITE_FONT_COLOR)
             return
         end
         local firstOnly = false
-        for _, alt in ipairs(items) do
+        for _, alt in ipairs(entries) do
             root:CreateButton(
-                ("%s  |cff808080%d|r  %s"):format(CallingTitle(alt.name, alt.class), alt.level, Coins(alt.money)),
+                ("%s  |cff808080%d|r  %s"):format(ClassLabel(alt.name, alt.class), alt.level, Coins(alt.money)),
                 function()
                     SendMailNameEditBox:SetText(alt.name)
                     SendMailSubjectEditBox:SetFocus()
@@ -272,14 +272,14 @@ local function RevealAltsMenu(ownerWindow)
 end
 
 local function FreeSlot()
-    for catalog = 1, SEND_SLOTS do
-        if not HasSendMailItem(catalog) then return catalog end
+    for index = 1, SEND_SLOTS do
+        if not HasSendMailItem(index) then return index end
     end
 end
 
-local function HaltAttaching()
-    qHead, qTally = 1, 0
-    pendingSlot, pendingThing, pendingBag, pendingBagSlot = nil, nil, nil, nil
+local function StopAttaching()
+    qHead, qCount = 1, 0
+    pendingSlot, pendingItem, pendingBag, pendingBagSlot = nil, nil, nil, nil
     clicking = false
     mEv:UnregisterEvent("MAIL_SEND_INFO_UPDATE")
     mEv:UnregisterEvent("MAIL_SEND_SUCCESS")
@@ -288,17 +288,17 @@ end
 local function Mailable(bag, slot)
     local ident = C_Container.GetContainerItemID(bag, slot)
     if not ident then return end
-    local _, _, subType, _, _, callingID, subCallingID = C_Item.GetItemInfoInstant(ident)
-    if callingID ~= TRADE_GOODS and not GEAR[callingID] then return end
+    local _, _, subType, _, _, classID, subClassID = C_Item.GetItemInfoInstant(ident)
+    if classID ~= TRADE_GOODS and not GEAR[classID] then return end
     local details = C_Container.GetContainerItemInfo(bag, slot)
     if not details or details.isBound or details.isLocked or details.itemID ~= ident then return end
-    if GEAR[callingID] and (details.quality or 0) < Enum.ItemQuality.Uncommon then return end
-    return ident, callingID, subCallingID or -1, subType
+    if GEAR[classID] and (details.quality or 0) < Enum.ItemQuality.Uncommon then return end
+    return ident, classID, subClassID or -1, subType
 end
 
-local function Fits(key, callingID, subCallingID)
-    if key == "gear" then return GEAR[callingID] end
-    return callingID == TRADE_GOODS and (key == "all" or key == subCallingID)
+local function MatchesFilter(key, classID, subClassID)
+    if key == "gear" then return GEAR[classID] end
+    return classID == TRADE_GOODS and (key == "all" or key == subClassID)
 end
 
 local function OnCursor(ident)
@@ -307,12 +307,12 @@ local function OnCursor(ident)
 end
 
 local function StillPending()
-    if HasSendMailItem(pendingSlot) and select(2, GetSendMailItem(pendingSlot)) == pendingThing then
+    if HasSendMailItem(pendingSlot) and select(2, GetSendMailItem(pendingSlot)) == pendingItem then
         pendingSlot = nil
         return false
     end
     local details = C_Container.GetContainerItemInfo(pendingBag, pendingBagSlot)
-    if not GetCursorInfo() and not (details and details.isLocked) then HaltAttaching() end
+    if not GetCursorInfo() and not (details and details.isLocked) then StopAttaching() end
     return true
 end
 
@@ -321,13 +321,13 @@ local function AttachNext()
     if clicking then return end
     while true do
         if pendingSlot and StillPending() then return end
-        if qHead > qTally or GetCursorInfo() then
-            HaltAttaching()
+        if qHead > qCount or GetCursorInfo() then
+            StopAttaching()
             return
         end
         local slot = FreeSlot()
         if not slot then
-            local leftX = qTally - qHead + 1
+            local leftX = qCount - qHead + 1
             Say(
                 ("%d stack%s didn't fit, all %d attachment slots are full. Send this one and attach again."):format(
                     leftX,
@@ -335,27 +335,27 @@ local function AttachNext()
                     SEND_SLOTS
                 )
             )
-            HaltAttaching()
+            StopAttaching()
             return
         end
-        local bag, bagSlot, ident = qBag[qHead], qSlot[qHead], qThing[qHead]
+        local bag, bagSlot, ident = qBag[qHead], qSlot[qHead], qItem[qHead]
         qHead = qHead + 1
         local details = C_Container.GetContainerItemInfo(bag, bagSlot)
         if details and details.itemID == ident and not details.isLocked and not details.isBound then
             C_Container.PickupContainerItem(bag, bagSlot)
-            local kept, kind = OnCursor(ident)
-            if not kept then
+            local held, kind = OnCursor(ident)
+            if not held then
                 if kind then ClearCursor() end
-                HaltAttaching()
+                StopAttaching()
                 return
             end
-            pendingSlot, pendingThing, pendingBag, pendingBagSlot = slot, ident, bag, bagSlot
+            pendingSlot, pendingItem, pendingBag, pendingBagSlot = slot, ident, bag, bagSlot
             clicking = true
             ClickSendMailItemButton(slot)
             clicking = false
             if OnCursor(ident) then
                 ClearCursor()
-                HaltAttaching()
+                StopAttaching()
                 return
             end
         end
@@ -363,54 +363,54 @@ local function AttachNext()
 end
 
 local function Attach(key)
-    HaltAttaching()
+    StopAttaching()
     local num = 0
     for bag = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS do
         for slot = 1, C_Container.GetContainerNumSlots(bag) do
-            local ident, callingID, subCallingID = Mailable(bag, slot)
-            if ident and Fits(key, callingID, subCallingID) then
+            local ident, classID, subClassID = Mailable(bag, slot)
+            if ident and MatchesFilter(key, classID, subClassID) then
                 num = num + 1
-                qBag[num], qSlot[num], qThing[num] = bag, slot, ident
+                qBag[num], qSlot[num], qItem[num] = bag, slot, ident
             end
         end
     end
     if num == 0 then return end
-    qHead, qTally = 1, num
+    qHead, qCount = 1, num
     mEv:RegisterEvent("MAIL_SEND_INFO_UPDATE")
     mEv:RegisterEvent("MAIL_SEND_SUCCESS")
     AttachNext()
 end
 
-local function RevealAttachMenu(ownerWindow)
-    local tallies, labels, sequence = {}, {}, {}
-    local function Tally(key, labelLabel)
-        if not tallies[key] then
-            tallies[key], labels[key] = 0, labelLabel
+local function ShowAttachMenu(ownerFrame)
+    local counts, labels, sequence = {}, {}, {}
+    local function Tally(key, labelText)
+        if not counts[key] then
+            counts[key], labels[key] = 0, labelText
             sequence[#sequence + 1] = key
         end
-        tallies[key] = tallies[key] + 1
+        counts[key] = counts[key] + 1
     end
     for bag = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS do
         for slot = 1, C_Container.GetContainerNumSlots(bag) do
-            local ident, callingID, subCallingID, subType = Mailable(bag, slot)
+            local ident, classID, subClassID, subType = Mailable(bag, slot)
             if ident then
-                if callingID == TRADE_GOODS then
+                if classID == TRADE_GOODS then
                     Tally("all", "All trade goods")
-                    Tally(subCallingID, subType or "Other trade goods")
+                    Tally(subClassID, subType or "Other trade goods")
                 else
                     Tally("gear", "Unbound gear")
                 end
             end
         end
     end
-    Menu(ownerWindow, function(_, root)
+    Menu(ownerFrame, function(_, root)
         root:CreateTitle("Attach from your bags")
         if #sequence == 0 then
             root:CreateTitle("No trade goods or unbound gear in your bags.", WHITE_FONT_COLOR)
             return
         end
         for _, key in ipairs(sequence) do
-            local num = tallies[key]
+            local num = counts[key]
             root:CreateButton(
                 ("%s (%d stack%s)"):format(labels[key], num, num == 1 and "" or "s"),
                 function() Attach(key) end
@@ -419,48 +419,48 @@ local function RevealAttachMenu(ownerWindow)
     end)
 end
 
-local function MailBtn(labelValue, hintLabel, func)
+local function CreateMailButton(textValue, tipText, func)
     local b =
-        CUI.Kit.Button(SendMailFrame, labelValue, 64, 22, func, { key = "essentials", tip = hintLabel })
+        CUI.Kit.Button(SendMailFrame, textValue, 64, 22, func, { key = "essentials", tip = tipText })
     return b
 end
 
-local function MakeButtons()
-    if altsBtn or not (SendMailFrame and MailFrame) then return end
-    altsBtn = MailBtn(
+local function BuildMailButtons()
+    if altsButton or not (SendMailFrame and MailFrame) then return end
+    altsButton = CreateMailButton(
         "Alts",
         "Your characters on this realm and faction with their level and gold. Pick one to fill the To box.",
-        function(self) RevealAltsMenu(self) end
+        function(self) ShowAltsMenu(self) end
     )
-    altsBtn:SetPoint("TOPLEFT", MailFrame, "TOPRIGHT", 4, -30)
-    attachBtn = MailBtn(
+    altsButton:SetPoint("TOPLEFT", MailFrame, "TOPRIGHT", 4, -30)
+    attachButton = CreateMailButton(
         "Attach",
         "Attach every trade good, one type of trade good, or your unbound gear from your bags, up to the 12 attachment slots.",
-        function(self) RevealAttachMenu(self) end
+        function(self) ShowAttachMenu(self) end
     )
 end
 
 local function PlaceButtons()
-    if not altsBtn then return end
-    altsBtn:SetShown(Get("mailAlts"))
-    attachBtn:ClearAllPoints()
-    if altsBtn:IsShown() then
-        attachBtn:SetPoint("TOPLEFT", altsBtn, "BOTTOMLEFT", 0, -4)
+    if not altsButton then return end
+    altsButton:SetShown(Get("mailAlts"))
+    attachButton:ClearAllPoints()
+    if altsButton:IsShown() then
+        attachButton:SetPoint("TOPLEFT", altsButton, "BOTTOMLEFT", 0, -4)
     else
-        attachBtn:SetPoint("TOPLEFT", MailFrame, "TOPRIGHT", 4, -30)
+        attachButton:SetPoint("TOPLEFT", MailFrame, "TOPRIGHT", 4, -30)
     end
-    attachBtn:SetShown(Get("quickAttach"))
+    attachButton:SetShown(Get("quickAttach"))
 end
 
-local function CautionExpiring()
+local function WarnExpiringMail()
     local nowTime, soon = time(), {}
     for _, realm in pairs(All()) do
-        for title, c in pairs(realm) do
-            if c.mailExpires and (c.mailCount or 0) > 0 and c.mailExpires - nowTime < EXPIRY_CAUTION then
+        for name, c in pairs(realm) do
+            if c.mailExpires and (c.mailCount or 0) > 0 and c.mailExpires - nowTime < EXPIRY_WARN then
                 local leftX = c.mailExpires - nowTime
                 local when = leftX <= 0 and "may have expired"
-                    or (leftX < DAILY and "less than a day" or (math.floor(leftX / DAILY) .. "d"))
-                soon[#soon + 1] = CallingTitle(title, c.class) .. " (" .. when .. ")"
+                    or (leftX < DAY and "less than a day" or (math.floor(leftX / DAY) .. "d"))
+                soon[#soon + 1] = ClassLabel(name, c.class) .. " (" .. when .. ")"
             end
         end
     end
@@ -477,24 +477,24 @@ mEv:SetScript("OnEvent", function(_, evt, isLogin)
     if evt == "MAIL_SEND_INFO_UPDATE" then
         AttachNext()
     elseif evt == "MAIL_SHOW" then
-        MakeButtons()
+        BuildMailButtons()
         PlaceButtons()
     elseif evt == "MAIL_CLOSED" or evt == "MAIL_SEND_SUCCESS" then
-        HaltAttaching()
+        StopAttaching()
     elseif evt == "PLAYER_ENTERING_WORLD" then
         mEv:UnregisterEvent("PLAYER_ENTERING_WORLD")
-        if isLogin and Get("expiry") then C_Timer.After(5, CautionExpiring) end
+        if isLogin and Get("expiry") then C_Timer.After(5, WarnExpiringMail) end
     end
 end)
 
 local function Apply()
-    RosterUse()
+    ApplyRoster()
     if Get("mailAlts") or Get("quickAttach") then
-        MakeButtons()
+        BuildMailButtons()
         mEv:RegisterEvent("MAIL_SHOW")
         mEv:RegisterEvent("MAIL_CLOSED")
     else
-        HaltAttaching()
+        StopAttaching()
         mEv:UnregisterEvent("MAIL_SHOW")
         mEv:UnregisterEvent("MAIL_CLOSED")
     end
@@ -502,18 +502,18 @@ local function Apply()
 end
 
 --- Forget menu for the options page.
-local function ForgetMenu(ownerWindow)
-    ownerWindow = ownerWindow or (GetMouseFoci and GetMouseFoci()[1]) or UIParent
-    Menu(ownerWindow, function(_, root)
+local function ForgetMenu(ownerFrame)
+    ownerFrame = ownerFrame or (GetMouseFoci and GetMouseFoci()[1]) or UIParent
+    Menu(ownerFrame, function(_, root)
         root:CreateTitle("Forget a character")
         local any
         for realm, chars in pairs(All()) do
-            for title, c in pairs(chars) do
+            for name, c in pairs(chars) do
                 any = true
-                root:CreateButton(CallingTitle(title, c.class) .. "  |cff808080" .. realm .. "|r", function()
-                    chars[title] = nil
+                root:CreateButton(ClassLabel(name, c.class) .. "  |cff808080" .. realm .. "|r", function()
+                    chars[name] = nil
                     if not next(chars) then All()[realm] = nil end
-                    Say("forgot " .. title .. ". It comes back the next time you log in on it.")
+                    Say("forgot " .. name .. ". It comes back the next time you log in on it.")
                 end)
             end
         end
