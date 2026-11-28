@@ -1,0 +1,20 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: |cff4cc9f0CludesUI|r Journeys Data
+## Category: |cff4cc9f0Cludes|rUI
+## Group: CludesUI
+## Notes: The walking maps Journeys plans walks on. Loaded the first time a journey needs them.
+## Author: Cludes
+## Version: 1.5.0
+## Dependencies: CludesUIForeverEssentials
+## LoadOnDemand: 1
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Each continent's crossings and walks, then its tiles (CBOR, deflated, Base64;
+# decoded by CludesUIForeverEssentials_Walking.lua when a walk first needs one).
+Walk0.lua
+Walk0_1.lua
+Walk1.lua
+Walk1_1.lua
+Walk2991.lua
+Walk2991_1.lua

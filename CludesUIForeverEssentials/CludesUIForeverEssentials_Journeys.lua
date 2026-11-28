@@ -14,10 +14,13 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --
 --  CludesUI never places the game's waypoint itself (see CludesUIQoL_
 --  Waypoint.lua: taint), so the pin is yours to place: on the world map,
---  or with a /way link. Walks are straight lines times a detour factor;
---  with no walking maps to say where the sea is, the two islands the
---  network reaches by boat (Teldrassil, Feathermoon) are never walked to or
---  from, so a journey there takes the boat.
+--  or with a /way link. Walks are measured on the walking maps
+--  (CludesUIForeverEssentials_Walking.lua, the CludesUIJourneysData addon):
+--  round hills and water, along piers; the arrow follows the walk's corners.
+--  Where the maps cannot say, a walk is the straight line times a detour
+--  factor, and the two islands the network reaches by boat (Teldrassil,
+--  Feathermoon) are never walked to or from. Plans are made in slices of a
+--  frame, so a search over a continent never stalls the game.
 --  Flight points are learned at a flight master's map; Hearthstone and
 --  teleport landings the first time you use them.
 --  Per character: CludesUIDB.journeys.chars["Name-Realm"] = { flights, landings }.
@@ -47,6 +50,7 @@ local C = {
     SWITCH_SHARE = 0.1,
     ARRIVED = 15,
     STEP_REACHED = 20,
+    CORNER_REACH = 8,
     REPLAN_EVERY = 3,
     HEARTHSTONE = 6948,
     HEARTH_SPELL = 8690,
@@ -84,7 +88,7 @@ do
         local nodes, flights, docks = { false, false }, {}, {}
         for id, f in pairs(net.flights) do
             if Has(f[6], ctx.faction) and ctx.known[id] then
-                flights[id] = AddNode(nodes, { kind = "flight", id = id, name = f[1], c = f[2], x = f[3], y = f[4], key = "f" .. id })
+                flights[id] = AddNode(nodes, { kind = "flight", net = true, id = id, name = f[1], c = f[2], x = f[3], y = f[4], key = "f" .. id })
             end
         end
         for s, ship in ipairs(net.ships) do
@@ -92,7 +96,7 @@ do
                 docks[s] = {}
                 for i = 3, #ship do
                     local d = ship[i]
-                    docks[s][i - 2] = AddNode(nodes, { kind = "dock", ship = s, dock = i - 2, name = d[5], shipKind = ship[1],
+                    docks[s][i - 2] = AddNode(nodes, { kind = "dock", net = true, ship = s, dock = i - 2, name = d[5], shipKind = ship[1],
                         c = d[1], x = d[2], y = d[3], key = "s" .. s .. "." .. (i - 2) })
                 end
             end
@@ -100,8 +104,8 @@ do
         for l, link in ipairs(net.links) do
             if Has(link[2], ctx.faction) then
                 local a, b = link[4], link[5]
-                local here = AddNode(nodes, { kind = "link", link = l, name = a[4], linkKind = link[1], c = a[1], x = a[2], y = a[3], key = "l" .. l .. ".1" })
-                local there = AddNode(nodes, { kind = "link", link = l, name = b[4], linkKind = link[1], c = b[1], x = b[2], y = b[3], key = "l" .. l .. ".2" })
+                local here = AddNode(nodes, { kind = "link", net = true, link = l, name = a[4], linkKind = link[1], c = a[1], x = a[2], y = a[3], key = "l" .. l .. ".1" })
+                local there = AddNode(nodes, { kind = "link", net = true, link = l, name = b[4], linkKind = link[1], c = b[1], x = b[2], y = b[3], key = "l" .. l .. ".2" })
                 here.other, there.other = there.index, here.index
             end
         end
@@ -111,15 +115,15 @@ do
 
     local function Nodes(ctx, net)
         local nodes = {}
-        AddNode(nodes, { kind = "start", key = "start", c = ctx.from.c, x = ctx.from.x, y = ctx.from.y })
-        AddNode(nodes, { kind = "goal", key = "goal", c = ctx.to.c, x = ctx.to.x, y = ctx.to.y, name = ctx.to.name })
+        AddNode(nodes, { kind = "start", key = "start", c = ctx.from.c, x = ctx.from.x, y = ctx.from.y, reach = ctx.from.reach })
+        AddNode(nodes, { kind = "goal", key = "goal", c = ctx.to.c, x = ctx.to.x, y = ctx.to.y, name = ctx.to.name, reach = ctx.to.reach })
         local fixed = Network(ctx, net)
         for i = GOAL + 1, #fixed.nodes do
             nodes[i] = fixed.nodes[i]
         end
         for _, jump in ipairs(ctx.jumps or {}) do
             AddNode(nodes, { kind = "jump", key = "j" .. (jump.spell or jump.item), mode = jump.mode, name = jump.name, cast = jump.cast,
-                spell = jump.spell, item = jump.item, c = jump.c, x = jump.x, y = jump.y })
+                spell = jump.spell, item = jump.item, c = jump.c, x = jump.x, y = jump.y, reach = jump.reach })
         end
         return nodes, fixed.flights, fixed.docks
     end
@@ -211,9 +215,13 @@ do
         local island = Island(a)
         for v = GOAL, #nodes do
             local b = nodes[v]
-            if v ~= u and b.c == a.c and b.kind ~= "jump" and not state.done[v] and Island(b) == island then
-                local seconds = Distance(a, b) * C.WALK_DETOUR / ctx.speed
-                if Relax(state, u, v, seconds) then state.leg[v] = { mode = "walk", seconds = seconds } end
+            if v ~= u and b.c == a.c and b.kind ~= "jump" and not state.done[v] then
+                local yards = ctx.walk and ctx.walk(a, b)
+                if yards == nil and Island(b) == island then yards = Distance(a, b) * C.WALK_DETOUR end
+                if yards then
+                    local seconds = yards / ctx.speed
+                    if Relax(state, u, v, seconds) then state.leg[v] = { mode = "walk", seconds = seconds } end
+                end
             end
         end
     end
@@ -445,7 +453,11 @@ end
 -------------------------------------------------------------------------------
 --  Guide: the journey you follow
 -------------------------------------------------------------------------------
+local Walking = module.Walking
 local plan, goal, arrived
+local corners, cornerAt -- the first walk's corners { x1, y1, ... }; the one aimed at
+local working, driver -- the plan being made, across frames
+local StepWork
 local sinceReplan = 0
 
 local function StepText(leg)
@@ -471,12 +483,96 @@ local function Duration(seconds)
     return ("%dh %02dm"):format(seconds / 3600, (seconds % 3600) / 60)
 end
 
+-- Reaches of spots that do not move (the pin, jump landings, step ends),
+-- kept until the pin moves: each is a search over a continent.
+local fixedReaches, fixedCount = {}, 0
+local function FixedReach(spot)
+    local key = ("%d:%.1f,%.1f"):format(spot.c, spot.x, spot.y)
+    local reach = fixedReaches[key]
+    if reach == nil then
+        reach = Walking.Reach(spot)
+        if reach ~= nil then
+            if fixedCount >= 16 then
+                wipe(fixedReaches)
+                fixedCount = 0
+            end
+            fixedReaches[key], fixedCount = reach, fixedCount + 1
+        end
+    end
+    return reach
+end
+
+-- Yards walked between two planner places: a travel place by its key,
+-- anything else by its reach. false: no walk; nil: the maps cannot say.
+local function WalkYards(a, b)
+    local ea = a.net and a.key or a.reach
+    local eb = b.net and b.key or b.reach
+    if ea == false or eb == false then return false end
+    if not ea or not eb then return nil end
+    return Walking.Yards(a.c, ea, eb)
+end
+
+local function Work(from, to, faction, jumps, keep)
+    local mapped = Walking.Ready()
+    if mapped then
+        from.reach = Walking.Reach(from)
+        to.reach = FixedReach(to)
+        for _, jump in ipairs(jumps) do
+            jump.reach = FixedReach(jump)
+        end
+    end
+    local result = Planner.Plan({
+        from = from,
+        to = to,
+        faction = faction,
+        known = CharStore().flights,
+        knownVersion = knownVersion,
+        speed = C.RUN_SPEED,
+        jumps = jumps,
+        keep = keep,
+        walk = mapped and WalkYards or nil,
+    })
+    local first = result and result.legs[1]
+    if mapped and first and first.mode == "walk" and from.reach then
+        local there = first.kind == "goal" and to.reach or FixedReach({ c = first.c, x = first.x, y = first.y })
+        result.corners = there and Walking.Corners(from.reach, there) or nil
+    end
+    return result
+end
+
+local Draw
+local function Planned(ok, result)
+    working = nil
+    if driver then driver:SetScript("OnUpdate", nil) end
+    if not ok then
+        geterrorhandler()(result)
+        return
+    end
+    plan = result
+    corners, cornerAt = plan and plan.corners, 3
+    if Draw then Draw() end
+end
+
+function StepWork()
+    if not working then
+        driver:SetScript("OnUpdate", nil)
+        return
+    end
+    Walking.StartSlice()
+    local ok, result = coroutine.resume(working)
+    if coroutine.status(working) == "dead" then Planned(ok, result) end
+end
+
 local function Replan()
     sinceReplan = 0
     local was = goal
     goal = Goal()
     -- A pin moved somewhere else is a new journey: the old route is not kept.
-    if goal and was and (goal.c ~= was.c or Planner.Distance(goal, was) > 1) then plan = nil end
+    if goal and was and (goal.c ~= was.c or Planner.Distance(goal, was) > 1) then
+        plan, corners = nil, nil
+        wipe(fixedReaches)
+        fixedCount = 0
+    end
     if not goal then
         plan, arrived = nil, false
         return
@@ -489,18 +585,18 @@ local function Replan()
         return
     end
     arrived = false
+    if working then return end
     local faction = UnitFactionGroup("player") == "Horde" and "H" or "A"
-    local known = CharStore().flights
-    plan = Planner.Plan({
-        from = from,
-        to = goal,
-        faction = faction,
-        known = known,
-        knownVersion = knownVersion,
-        speed = C.RUN_SPEED,
-        jumps = Jumps(faction),
-        keep = plan,
-    })
+    local to = { c = goal.c, x = goal.x, y = goal.y, name = goal.name }
+    working = coroutine.create(Work)
+    driver = driver or CreateFrame("Frame")
+    Walking.StartSlice()
+    local ok, result = coroutine.resume(working, from, to, faction, Jumps(faction), plan)
+    if coroutine.status(working) == "dead" then
+        Planned(ok, result)
+    else
+        driver:SetScript("OnUpdate", StepWork)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -576,8 +672,24 @@ local function PointArrow()
         return
     end
     local facing = GetPlayerFacing and GetPlayerFacing()
-    local dx, dy = target.x - here.x, target.y - here.y
-    local yards = math.sqrt(dx * dx + dy * dy)
+    local aimX, aimY, after = target.x, target.y, 0
+    if corners then
+        -- Aim at the next corner not yet reached; the yards are what is left of the walk.
+        local n = #corners
+        while cornerAt < n - 1 do
+            local cx, cy = corners[cornerAt] - here.x, corners[cornerAt + 1] - here.y
+            if cx * cx + cy * cy > C.CORNER_REACH * C.CORNER_REACH then break end
+            cornerAt = cornerAt + 2
+        end
+        if cornerAt <= n - 1 then
+            aimX, aimY = corners[cornerAt], corners[cornerAt + 1]
+            for i = cornerAt, n - 3, 2 do
+                after = after + math.sqrt((corners[i + 2] - corners[i]) ^ 2 + (corners[i + 3] - corners[i + 1]) ^ 2)
+            end
+        end
+    end
+    local dx, dy = aimX - here.x, aimY - here.y
+    local yards = math.sqrt(dx * dx + dy * dy) + after
     if facing and not Secret(facing) then
         arrow:SetRotation(math.atan2(dy, dx) - facing + math.pi)
         arrow:SetShown(true)
@@ -585,10 +697,10 @@ local function PointArrow()
         arrow:SetShown(false)
     end
     distText:SetText(("%d yd"):format(yards))
-    if yards <= C.STEP_REACHED then sinceReplan = C.REPLAN_EVERY end
+    if math.sqrt((target.x - here.x) ^ 2 + (target.y - here.y) ^ 2) <= C.STEP_REACHED then sinceReplan = C.REPLAN_EVERY end
 end
 
-local function Draw()
+function Draw()
     local shown = Enabled() and goal ~= nil and not IsInInstance()
     if not shown then
         if card then card:Hide() end
@@ -679,7 +791,8 @@ local function Apply()
         ticker = nil
     end
     if not Enabled() then
-        plan, goal = nil, nil
+        plan, goal, corners, working = nil, nil, nil, nil
+        if driver then driver:SetScript("OnUpdate", nil) end
         if card then card:Hide() end
         return
     end
@@ -696,7 +809,7 @@ CUI._Journeys = {
     Get = Get,
     Cfg = Cfg,
     Apply = Apply,
-    Plan = function() return plan, goal, arrived end,
+    Plan = function() return plan, goal, arrived, corners, working ~= nil end,
     Replan = function()
         Replan()
         Draw()

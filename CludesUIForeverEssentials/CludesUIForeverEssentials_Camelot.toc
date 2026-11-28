@@ -61,6 +61,7 @@ CludesUIForeverEssentials_ScoutData.lua
 CludesUIForeverEssentials_Scout.lua
 CludesUIForeverEssentials_ChatZones.lua
 CludesUIForeverEssentials_JourneysData.lua
+CludesUIForeverEssentials_Walking.lua
 CludesUIForeverEssentials_Journeys.lua
 CludesUIForeverEssentials_MapRevealData.lua
 CludesUIForeverEssentials_MapReveal.lua
