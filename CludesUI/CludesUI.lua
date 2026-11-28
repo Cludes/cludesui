@@ -3938,7 +3938,7 @@ end
 -------------------------------------------------------------------------------
 --  Slash commands
 -------------------------------------------------------------------------------
-CUI.VERSION = "1.5.0"
+CUI.VERSION = "1.6.0"
 -- The newest entry in the Patch Notes (CUI._WHATSNEW_PATCHES, CUI__General_Options.lua):
 -- raise it with each new entry, and the Patch Notes dot lights once for everyone.
 CUI.NOTES_VERSION = "1.6.0"

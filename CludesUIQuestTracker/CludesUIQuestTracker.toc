@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: A clean, updated reskin of Blizzard's Quest Tracker.
 ## Author: Cludes
-## Version: 1.5.0
+## Version: 1.6.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIQuestTrackerDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga

@@ -2,7 +2,7 @@
 ## Title: |cff4cc9f0CludesUI|r
 ## Notes: Shared framework for the CludesUI addon suite
 ## Author: Cludes
-## Version: 1.5.0
+## Version: 1.6.0
 ## SavedVariables: CludesUIDB
 ## IconTexture: Interface\AddOns\CludesUI\media\HappyBufo
 ## AddonCompartmentFunc: CludesUI_OnAddonCompartmentClick

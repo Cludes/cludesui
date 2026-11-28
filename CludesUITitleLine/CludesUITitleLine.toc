@@ -5,7 +5,7 @@
 ## Group: CludesUI
 ## Notes: Your Mythic+ rating against the 0.1% and 1% title lines, with a season graph and a projected date.
 ## Author: Cludes
-## Version: 1.5.0
+## Version: 1.6.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUITitleLineDB
 ## IconTexture: Interface\AddOns\CludesUITitleLine\Media\Icon
