@@ -392,7 +392,8 @@ local QUERY_SYNONYMS = {
     { "compact", { "bag display", "bank display" } },
 }
 -- WoW Forever's Name Format (first or last names; Forever Essentials > General),
--- and the words players use for the Dungeons & Raids page's CC Marker Bar and Res Helper.
+-- the words players use for the Dungeons & Raids page's CC Marker Bar and Res Helper,
+-- and for the World Map's Reveal Unexplored Areas.
 if CUI.IS_FOREVER then
     for _, syn in ipairs({
         { "surname", { "name format" } },
@@ -400,6 +401,11 @@ if CUI.IS_FOREVER then
         { "crowd control", { "cc marker" } },
         { "rez", { "res helper", "resurrect" } },
         { "battle res", { "res helper" } },
+        { "map reveal", { "reveal unexplored" } },
+        { "reveal map", { "reveal unexplored" } },
+        { "fog of war", { "reveal unexplored" } },
+        { "fog", { "reveal unexplored" } },
+        { "whole map", { "reveal unexplored" } },
     }) do
         QUERY_SYNONYMS[#QUERY_SYNONYMS + 1] = syn
     end
