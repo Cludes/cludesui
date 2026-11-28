@@ -28,10 +28,10 @@ if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local NODES = module.GLIMMER_NODES or {}
-local CATEGORIES = { "ore", "herb", "quest", "giver", "chest", "bobber", "corpse" }
+local NODE_INFO = module.GLIMMER_NODES or {}
+local KIND_LIST = { "ore", "herb", "quest", "giver", "chest", "bobber", "corpse" }
 
-local DEFAULTS = {
+local DEFAULT_SET = {
     enabled = false,
     style = "sparkles",
     size = 1,
@@ -63,50 +63,50 @@ local DEFAULTS = {
     bobberR = 1, bobberG = 0.48, bobberB = 0.42,
     corpseR = 0.74, corpseG = 0.56, corpseB = 1,
 }
-local F = module.Feature("glimmer", DEFAULTS)
+local F = module.Feature("glimmer", DEFAULT_SET)
 local Get, Enabled = F.Get, F.Enabled
 
-local UNIT = "softinteract"
-local BOBBER = 35591
-local GUID_OBJECT = "^GameObject%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"
-local PROFESSION_OF = { ore = 186, herb = 182 }
-local ICON_SPELL = { herb = 2383, ore = 2580 }
-local SPOT_SCALE = 1000
-local SNAP = 15
-local MAX_GATHERED = 400
-local MINIMAP_MAX = 40
-local MEDIA = "Interface\\AddOns\\CludesUI\\media\\glimmer\\"
-local TIER_RGB = {
+local SOFT_UNIT = "softinteract"
+local BOBBER_ID = 35591
+local OBJECT_GUID_KIND = "^GameObject%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"
+local SKILL_LINE_KIND = { ore = 186, herb = 182 }
+local ICON_FOR_SPELL = { herb = 2383, ore = 2580 }
+local SPOT_UNIT = 1000
+local SNAP_YARDS = 15
+local GATHER_LOG_MAX = 400
+local MINIMAP_PIN_MAX = 40
+local ART_DIR = "Interface\\AddOns\\CludesUI\\media\\glimmer\\"
+local TIER_COLOURS = {
     orange = { r = 1, g = 0.5, b = 0.25 },
     yellow = { r = 1, g = 1, b = 0 },
     green = { r = 0.25, g = 0.75, b = 0.25 },
     grey = { r = 0.5, g = 0.5, b = 0.5 },
     red = { r = 1, g = 0.38, b = 0.38 },
 }
-local LOCKED_RGB = { r = 0.62, g = 0.62, b = 0.62 }
-local QUEST_LINE_RGB = { r = 1, g = 0.82, b = 0 }
-local SOFT_CVARS = {
+local BLOCKED_RGB = { r = 0.62, g = 0.62, b = 0.62 }
+local QUEST_RGB = { r = 1, g = 0.82, b = 0 }
+local INTERACT_CVARS = {
     SoftTargetInteract = function() return "3" end,
     SoftTargetInteractOnlyInRange = function() return "0" end,
     SoftTargetIconGameObject = function() return "1" end,
     SoftTargetInteractRange = function() return tostring(Get("range")) end,
     SoftTargetInteractArc = function() return tostring(Get("arc")) end,
 }
-local PLATE_CVAR = "SoftTargetNameplateInteract"
+local PLATE_SETTING = "SoftTargetNameplateInteract"
 
-local function Plain(v) return not (issecretvalue and issecretvalue(v)) end
+local function Simplified(v) return not (issecretvalue and issecretvalue(v)) end
 
 -------------------------------------------------------------------------------
 --  Game settings held while on
 -------------------------------------------------------------------------------
 
-local cvarWait = CreateFrame("Frame")
-local plateOpen
+local cvarRetry = CreateFrame("Frame")
+local plateShown
 
-local function Hold()
+local function Pause()
     local c = F.Cfg()
     c.held = c.held or {}
-    for name, value in pairs(SOFT_CVARS) do
+    for name, value in pairs(INTERACT_CVARS) do
         local current = C_CVar.GetCVar(name)
         local wanted = value()
         if current ~= nil and current ~= wanted then
@@ -116,67 +116,67 @@ local function Hold()
     end
 end
 
-local function Release()
+local function LetGo()
     local held = F.Read().held
     if not held then return end
     for name, value in pairs(held) do
         CUI.ReleaseCVar(name, value, "CludesUIForeverEssentials")
     end
-    local plate = held[PLATE_CVAR]
-    if plate then CUI.ReleaseCVar(PLATE_CVAR, plate, "CludesUIForeverEssentials") end
+    local plate = held[PLATE_SETTING]
+    if plate then CUI.ReleaseCVar(PLATE_SETTING, plate, "CludesUIForeverEssentials") end
     F.Cfg().held = nil
-    plateOpen = nil
+    plateShown = nil
 end
 
-local function ApplyCVars()
+local function HoldInteractCVars()
     if InCombatLockdown() then
-        cvarWait:RegisterEvent("PLAYER_REGEN_ENABLED")
+        cvarRetry:RegisterEvent("PLAYER_REGEN_ENABLED")
         return
     end
-    cvarWait:UnregisterEvent("PLAYER_REGEN_ENABLED")
+    cvarRetry:UnregisterEvent("PLAYER_REGEN_ENABLED")
     if Enabled() then
-        Hold()
+        Pause()
     else
-        Release()
+        LetGo()
     end
 end
-cvarWait:SetScript("OnEvent", ApplyCVars)
+cvarRetry:SetScript("OnEvent", HoldInteractCVars)
 
 -- A nameplate for the soft interact target: on while something is lit (or
 -- always, with Only Highlighted off), so the effect has a frame to follow.
-local function SetPlate(open)
-    if open == plateOpen or InCombatLockdown() then return end
-    plateOpen = open
+local function ShowOnPlate(open)
+    if open == plateShown or InCombatLockdown() then return end
+    plateShown = open
     local c = F.Cfg()
     c.held = c.held or {}
-    if c.held[PLATE_CVAR] == nil then c.held[PLATE_CVAR] = C_CVar.GetCVar(PLATE_CVAR) or "0" end
-    CUI.HoldCVar(PLATE_CVAR, open and "1" or "0", "CludesUIForeverEssentials")
+    if c.held[PLATE_SETTING] == nil then c.held[PLATE_SETTING] = C_CVar.GetCVar(PLATE_SETTING) or "0" end
+    CUI.HoldCVar(PLATE_SETTING, open and "1" or "0", "CludesUIForeverEssentials")
 end
 
 -------------------------------------------------------------------------------
 --  What the target is
 -------------------------------------------------------------------------------
 
-local CURSOR_FILES = { Mine = "ore", GatherHerbs = "herb", QuestTurnIn = "quest", Quest = "quest", QuestRepeatable = "quest" }
-local CURSOR_WORDS = { herb = "herb", mine = "ore", quest = "quest", important = "quest", recurring = "quest", wrapper = "quest" }
-local cursorIDs, probe
+local CURSOR_ART = { Mine = "ore", GatherHerbs = "herb", QuestTurnIn = "quest", Quest = "quest", QuestRepeatable = "quest" }
+local CURSOR_KINDS = { herb = "herb", mine = "ore", quest = "quest", important = "quest", recurring = "quest", wrapper = "quest" }
+local cursorArtIds, probe
 
-local function CursorIDs()
-    cursorIDs = {}
+local function CursorArtIds()
+    cursorArtIds = {}
     if not GetFileIDFromPath then return end
-    for file, category in pairs(CURSOR_FILES) do
+    for file, category in pairs(CURSOR_ART) do
         local ident = GetFileIDFromPath("Interface\\Cursor\\" .. file)
-        if ident then cursorIDs[ident] = { category, false } end
+        if ident then cursorArtIds[ident] = { category, false } end
         ident = GetFileIDFromPath("Interface\\Cursor\\Unable" .. file)
-        if ident then cursorIDs[ident] = { category, true } end
+        if ident then cursorArtIds[ident] = { category, true } end
     end
 end
 
-local function FromName(name)
-    if type(name) ~= "string" or not Plain(name) then return end
+local function KindFromName(name)
+    if type(name) ~= "string" or not Simplified(name) then return end
     name = name:lower()
     local unable = name:find("unable", 1, true) ~= nil
-    for word, category in pairs(CURSOR_WORDS) do
+    for word, category in pairs(CURSOR_KINDS) do
         if name:find(word, 1, true) then return category, unable end
     end
     return nil, unable
@@ -184,47 +184,47 @@ end
 
 -- The cursor the game would show over the unit: its category and whether
 -- it is the "unable" one.
-local function Cursor(unit, lowPriority)
+local function Cursor(unit, deferrable)
     if not SetUnitCursorTexture then return end
-    if not cursorIDs then CursorIDs() end
+    if not cursorArtIds then CursorArtIds() end
     probe = probe or CreateFrame("Frame"):CreateTexture()
-    if not SetUnitCursorTexture(probe, unit, nil, lowPriority) then return end
+    if not SetUnitCursorTexture(probe, unit, nil, deferrable) then return end
     local texture = probe:GetTexture()
-    if not Plain(texture) then return end
-    local known = cursorIDs[texture]
+    if not Simplified(texture) then return end
+    local known = cursorArtIds[texture]
     if known then return known[1], known[2] end
-    return FromName(texture)
+    return KindFromName(texture)
 end
 
-local function ObjectID(unit)
+local function ObjectIdOf(unit)
     local guid = UnitGUID(unit)
-    if not (guid and Plain(guid)) then return end
-    return tonumber(guid:match(GUID_OBJECT))
+    if not (guid and Simplified(guid)) then return end
+    return tonumber(guid:match(OBJECT_GUID_KIND))
 end
 
-local function QuestLine(unit)
+local function QuestText(unit)
     local data = C_TooltipInfo and C_TooltipInfo.GetUnit and C_TooltipInfo.GetUnit(unit)
-    if not (data and Plain(data) and data.lines) then return end
-    local questLine = Enum.TooltipDataLineType and Enum.TooltipDataLineType.QuestObjective
+    if not (data and Simplified(data) and data.lines) then return end
+    local questText = Enum.TooltipDataLineType and Enum.TooltipDataLineType.QuestObjective
     for _, line in ipairs(data.lines) do
-        if line.type == questLine and Plain(line.leftText) then return line.leftText end
+        if line.type == questText and Simplified(line.leftText) then return line.leftText end
     end
 end
 
-local function SkillAt(index, skillLine)
+local function SkillOf(index, lineId)
     if not index then return end
     local _, _, rank, _, _, _, line, modifier = GetProfessionInfo(index)
-    if line == skillLine then return (rank or 0) + (modifier or 0) end
+    if line == lineId then return (rank or 0) + (modifier or 0) end
 end
 
-local function Skill(category)
-    local line = PROFESSION_OF[category]
+local function SkillRank(category)
+    local line = SKILL_LINE_KIND[category]
     if not line then return 0 end
     local first, second = GetProfessions()
-    return SkillAt(first, line) or SkillAt(second, line) or 0
+    return SkillOf(first, line) or SkillOf(second, line) or 0
 end
 
-local function Tier(skill, need)
+local function TierOf(skill, need)
     if skill < need then return "red" end
     local over = skill - need
     if over < 25 then return "orange" end
@@ -233,41 +233,41 @@ local function Tier(skill, need)
     return "grey"
 end
 
-local TIER_TEXT = {
+local TIER_LABELS = {
     orange = "Skill-up every gather",
     yellow = "Skill-up likely",
     green = "Skill-up unlikely",
     grey = "No skill-up",
 }
-local function TierText(category, need, tier)
+local function TierLabel(category, need, tier)
     if tier == "red" then
         return CUI.Lf("Requires %1$s %2$d", category == "ore" and CUI.L("Mining") or CUI.L("Herbalism"), need)
     end
-    return CUI.L(TIER_TEXT[tier])
+    return CUI.L(TIER_LABELS[tier])
 end
 
 local function Reach(unit)
     if not UnitIsInInteractRange then return true end
     local near = UnitIsInInteractRange(unit)
-    if not Plain(near) then return false end
+    if not Simplified(near) then return false end
     return near and true or false
 end
 
 local read = {}
-local function Corpse(unit)
+local function IsSkinnable(unit)
     if not Get("corpse") then return end
     local dead = UnitIsDead(unit)
-    if not (Plain(dead) and dead) then return end
+    if not (Simplified(dead) and dead) then return end
     local guid = UnitGUID(unit)
-    if not (guid and Plain(guid)) then return end
-    local hasLoot, canLoot = CanLootUnit(guid)
-    if not (Plain(hasLoot) and Plain(canLoot) and hasLoot and canLoot) then return end
+    if not (guid and Simplified(guid)) then return end
+    local holdsLoot, lootable = CanLootUnit(guid)
+    if not (Simplified(holdsLoot) and Simplified(lootable) and holdsLoot and lootable) then return end
     wipe(read)
     read.category, read.unable, read.locked, read.ready = "corpse", false, false, Reach(unit)
     return read
 end
 
-local function QuestGiver(unit)
+local function IsQuestGiver(unit)
     local category, unable = Cursor(unit, true)
     if category ~= "quest" then return end
     wipe(read)
@@ -276,25 +276,25 @@ local function QuestGiver(unit)
     return read
 end
 
-local function ReadTarget(unit)
+local function ReadSoftTarget(unit)
     local object = UnitIsGameObject and UnitIsGameObject(unit)
-    if not Plain(object) then return end
-    if not object then return Corpse(unit) or QuestGiver(unit) end
+    if not Simplified(object) then return end
+    if not object then return IsSkinnable(unit) or IsQuestGiver(unit) end
     wipe(read)
-    local ident = ObjectID(unit)
-    local node = ident and NODES[ident]
-    local cursorCategory, unable = Cursor(unit)
-    local category = node and node[1] or (ident == BOBBER and "bobber") or cursorCategory
+    local ident = ObjectIdOf(unit)
+    local node = ident and NODE_INFO[ident]
+    local cursorKind, unable = Cursor(unit)
+    local category = node and node[1] or (ident == BOBBER_ID and "bobber") or cursorKind
     read.id, read.unable = ident, unable or false
     if category == "ore" or category == "herb" then
-        read.skill = Skill(category)
+        read.skill = SkillRank(category)
         read.need = node and node[2]
-        if read.need then read.tier = Tier(read.skill, read.need) end
+        if read.need then read.tier = TierOf(read.skill, read.need) end
         read.locked = read.tier == "red" or read.skill <= 0 or read.unable
     else
-        local line = QuestLine(unit)
+        local line = QuestText(unit)
         local related = C_QuestLog.UnitIsRelatedToActiveQuest and C_QuestLog.UnitIsRelatedToActiveQuest(unit)
-        if line or (Plain(related) and related) then
+        if line or (Simplified(related) and related) then
             category = "quest"
             read.line = line
         end
@@ -312,101 +312,101 @@ local function Color(category) return { r = Get(category .. "R"), g = Get(catego
 -------------------------------------------------------------------------------
 
 local sin, cos, sqrt, random, min, max, pi = math.sin, math.cos, math.sqrt, math.random, math.min, math.max, math.pi
-local TWO_PI = pi * 2
-local BASE, FAR_ALPHA, LOCKED_ALPHA, LOCKED_SPEED = 48, 0.5, 0.55, 0.5
-local FADE, BLEND, BURST_TIME, MAX_STEP = 0.3, 0.25, 0.5, 0.1
-local GLINTS, COMETS, TAIL, RISERS = 14, 2, 6, 5
-local CORNERS = { { -1, 1, 0, 1, 0, 1 }, { 1, 1, 1, 0, 0, 1 }, { 1, -1, 1, 0, 1, 0 }, { -1, -1, 0, 1, 1, 0 } }
+local FULL_TURN = pi * 2
+local BASE, DISTANT_ALPHA, BLOCKED_ALPHA, BLOCKED_SPEED = 48, 0.5, 0.55, 0.5
+local FADE_SECONDS, BLEND_MODE, FLASH_SECONDS, STEP_CAP = 0.3, 0.25, 0.5, 0.1
+local SPARKLE_COUNT, TRAIL_COUNT, TRAIL_LENGTH, RISE_COUNT = 14, 2, 6, 5
+local CORNER_SET = { { -1, 1, 0, 1, 0, 1 }, { 1, 1, 1, 0, 0, 1 }, { 1, -1, 1, 0, 1, 0 }, { -1, -1, 0, 1, 1, 0 } }
 
-local function Tex(fx, file, layer)
+local function TextureFor(fx, file, layer)
     local t = fx:CreateTexture(nil, layer or "ARTWORK")
-    t:SetTexture(MEDIA .. file)
+    t:SetTexture(ART_DIR .. file)
     t:SetBlendMode("ADD")
     t:Hide()
     return t
 end
 
-local function Respawn(glint, now)
-    local angle, reach = random() * TWO_PI, sqrt(random())
-    glint.x, glint.y = cos(angle) * reach * 0.9, sin(angle) * reach * 0.7
-    glint.life = 0.6 + 0.8 * random()
-    glint.scale = 0.5 + 0.7 * random()
-    glint.angle = random() * TWO_PI
-    glint.spin = (random() - 0.5) * 2
-    glint.age = now and 0 or -0.6 * random()
+local function RespawnInfo(sparkleRef, now)
+    local angle, reach = random() * FULL_TURN, sqrt(random())
+    sparkleRef.x, sparkleRef.y = cos(angle) * reach * 0.9, sin(angle) * reach * 0.7
+    sparkleRef.life = 0.6 + 0.8 * random()
+    sparkleRef.scale = 0.5 + 0.7 * random()
+    sparkleRef.angle = random() * FULL_TURN
+    sparkleRef.spin = (random() - 0.5) * 2
+    sparkleRef.age = now and 0 or -0.6 * random()
 end
 
-local function Approach(v, target, step)
+local function EaseTo(v, target, step)
     if v < target then return min(v + step, target) end
     return max(v - step, target)
 end
 
-local function Paint(t, fx, alpha) t:SetVertexColor(fx.r, fx.g, fx.b, max(0, min(1, alpha))) end
+local function Redraw(t, fx, alpha) t:SetVertexColor(fx.r, fx.g, fx.b, max(0, min(1, alpha))) end
 
-local function Place(t, fx, x, y, w, h)
+local function Position(t, fx, x, y, w, h)
     t:ClearAllPoints()
     t:SetPoint("CENTER", fx, "CENTER", x, y)
     t:SetSize(max(w, 0.01), max(h or w, 0.01))
 end
 
-local DRAW = {}
-function DRAW.glow(fx, a, B)
-    Place(fx.glow, fx, 0, 0, B * 2.6 * (1 + 0.08 * sin(fx.time * 3)))
-    Paint(fx.glow, fx, a * 0.7)
-    Place(fx.core, fx, 0, 0, B * 1.1)
+local DRAW_LAYER = {}
+function DRAW_LAYER.glow(fx, a, B)
+    Position(fx.glow, fx, 0, 0, B * 2.6 * (1 + 0.08 * sin(fx.time * 3)))
+    Redraw(fx.glow, fx, a * 0.7)
+    Position(fx.core, fx, 0, 0, B * 1.1)
     fx.core:SetVertexColor(1, 1, 1, a * 0.35 * (0.5 + 0.5 * fx.lock))
 end
-function DRAW.sparkles(fx, a, B, step)
-    Place(fx.glow, fx, 0, 0, B * 2.2)
-    Paint(fx.glow, fx, a * 0.25)
-    for _, glint in ipairs(fx.glints) do
-        glint.age = glint.age + step
-        if glint.age >= glint.life then Respawn(glint) end
-        local age = max(glint.age, 0)
-        local shine = glint.age > 0 and sin(pi * glint.age / glint.life) or 0
-        Place(glint.tex, fx, glint.x * B, glint.y * B + 10 * age, B * 0.75 * glint.scale * (0.35 + 0.65 * shine))
-        glint.tex:SetRotation(glint.angle + glint.spin * age)
-        Paint(glint.tex, fx, a * shine)
+function DRAW_LAYER.sparkles(fx, a, B, step)
+    Position(fx.glow, fx, 0, 0, B * 2.2)
+    Redraw(fx.glow, fx, a * 0.25)
+    for _, sparkleRef in ipairs(fx.glints) do
+        sparkleRef.age = sparkleRef.age + step
+        if sparkleRef.age >= sparkleRef.life then RespawnInfo(sparkleRef) end
+        local age = max(sparkleRef.age, 0)
+        local shine = sparkleRef.age > 0 and sin(pi * sparkleRef.age / sparkleRef.life) or 0
+        Position(sparkleRef.tex, fx, sparkleRef.x * B, sparkleRef.y * B + 10 * age, B * 0.75 * sparkleRef.scale * (0.35 + 0.65 * shine))
+        sparkleRef.tex:SetRotation(sparkleRef.angle + sparkleRef.spin * age)
+        Redraw(sparkleRef.tex, fx, a * shine)
     end
 end
-function DRAW.ring(fx, a, B)
+function DRAW_LAYER.ring(fx, a, B)
     local gy = B * -0.35
-    Place(fx.ring, fx, 0, gy, B * 2.6, B * 0.95)
-    Paint(fx.ring, fx, a)
+    Position(fx.ring, fx, 0, gy, B * 2.6, B * 0.95)
+    Redraw(fx.ring, fx, a)
     local rx, ry = B * 1.3, B * 0.475
     for c, tail in ipairs(fx.comets) do
-        local head = fx.time * 1.6 + (c - 1) * TWO_PI / #fx.comets
+        local head = fx.time * 1.6 + (c - 1) * FULL_TURN / #fx.comets
         for j, t in ipairs(tail) do
             local an, fade = head - (j - 1) * 0.09, 1 - (j - 1) / #tail
-            Place(t, fx, cos(an) * rx, gy + sin(an) * ry, B * 0.42 * fade * 1.8)
-            Paint(t, fx, a * fade)
+            Position(t, fx, cos(an) * rx, gy + sin(an) * ry, B * 0.42 * fade * 1.8)
+            Redraw(t, fx, a * fade)
         end
     end
 end
-function DRAW.beam(fx, a, B)
+function DRAW_LAYER.beam(fx, a, B)
     local base = B * -0.35
     fx.beam:ClearAllPoints()
     fx.beam:SetPoint("BOTTOM", fx, "CENTER", 0, base)
     fx.beam:SetSize(B * 0.9, B * 3.6)
-    Paint(fx.beam, fx, a * 0.9)
+    Redraw(fx.beam, fx, a * 0.9)
     for i, t in ipairs(fx.risers) do
         local phase = (fx.time * 0.45 + i / #fx.risers) % 1
-        Place(t, fx, (t.lane - 0.5) * B * 0.5, base + phase * B * 3.2, B * 0.35 * sin(pi * phase))
+        Position(t, fx, (t.lane - 0.5) * B * 0.5, base + phase * B * 3.2, B * 0.35 * sin(pi * phase))
         t:SetVertexColor(1, 1, 1, a * sin(pi * phase))
     end
 end
-function DRAW.brackets(fx, a, B)
+function DRAW_LAYER.brackets(fx, a, B)
     local far = 1 - fx.lock
     local h = B * (0.95 + 0.5 * far + far * 0.08 * sin(fx.time * 2.5))
     for i, t in ipairs(fx.brackets) do
-        local c = CORNERS[i]
-        Place(t, fx, c[1] * h, c[2] * h * 0.85, B * 0.8)
+        local c = CORNER_SET[i]
+        Position(t, fx, c[1] * h, c[2] * h * 0.85, B * 0.8)
         t:SetTexCoord(c[3], c[4], c[5], c[6])
-        Paint(t, fx, a)
+        Redraw(t, fx, a)
     end
 end
 
-local PARTS = {
+local SPARKLE_PIECES = {
     glow = { "glow", "core" },
     sparkles = { "glow", "glints" },
     ring = { "ring", "comets" },
@@ -414,79 +414,79 @@ local PARTS = {
     brackets = { "brackets" },
 }
 
-local function Step(fx, elapsed)
-    elapsed = min(elapsed, MAX_STEP)
-    local slow = fx.locked and LOCKED_SPEED or 1
+local function Advance(fx, elapsed)
+    elapsed = min(elapsed, STEP_CAP)
+    local slow = fx.locked and BLOCKED_SPEED or 1
     fx.time = fx.time + elapsed * slow
-    fx.appear = Approach(fx.appear, 1, elapsed / FADE)
-    fx.lock = Approach(fx.lock, fx.ready and 1 or 0, elapsed / BLEND)
-    local a = fx.appear * fx.alpha * (FAR_ALPHA + (1 - FAR_ALPHA) * fx.lock)
-    if fx.locked then a = a * LOCKED_ALPHA end
+    fx.appear = EaseTo(fx.appear, 1, elapsed / FADE_SECONDS)
+    fx.lock = EaseTo(fx.lock, fx.ready and 1 or 0, elapsed / BLEND_MODE)
+    local a = fx.appear * fx.alpha * (DISTANT_ALPHA + (1 - DISTANT_ALPHA) * fx.lock)
+    if fx.locked then a = a * BLOCKED_ALPHA end
     local B = BASE * fx.size
-    DRAW[fx.style](fx, a, B, elapsed * slow)
+    DRAW_LAYER[fx.style](fx, a, B, elapsed * slow)
     if fx.burstAge then
         fx.burstAge = fx.burstAge + elapsed
-        local k = fx.burstAge / BURST_TIME
+        local k = fx.burstAge / FLASH_SECONDS
         if k >= 1 then
             fx.burstAge = nil
             fx.burst:Hide()
         else
-            Place(fx.burst, fx, 0, 0, B * (0.8 + k * 3))
+            Position(fx.burst, fx, 0, 0, B * (0.8 + k * 3))
             fx.burst:SetVertexColor(1, 1, 1, (1 - k) * fx.alpha)
             fx.burst:Show()
         end
     end
 end
 
-local function NewEffect(parent)
+local function NewSparkle(parent)
     local fx = CreateFrame("Frame", nil, parent)
     fx:SetSize(1, 1)
     fx.time, fx.appear, fx.lock, fx.alpha, fx.size = 0, 0, 0, 1, 1
     fx.r, fx.g, fx.b, fx.style = 1, 1, 1, "sparkles"
-    fx.glow = Tex(fx, "glow", "BACKGROUND")
-    fx.core = Tex(fx, "glow")
-    fx.ring = Tex(fx, "ring", "BORDER")
-    fx.beam = Tex(fx, "beam", "BORDER")
-    fx.burst = Tex(fx, "ring", "OVERLAY")
+    fx.glow = TextureFor(fx, "glow", "BACKGROUND")
+    fx.core = TextureFor(fx, "glow")
+    fx.ring = TextureFor(fx, "ring", "BORDER")
+    fx.beam = TextureFor(fx, "beam", "BORDER")
+    fx.burst = TextureFor(fx, "ring", "OVERLAY")
     fx.glints, fx.comets, fx.risers, fx.brackets = {}, {}, {}, {}
-    local glintTex, cometTex = {}, {}
-    for i = 1, GLINTS do
-        local g = { tex = Tex(fx, "flare", "OVERLAY") }
-        Respawn(g)
-        fx.glints[i], glintTex[i] = g, g.tex
+    local sparkleTextures, trailTextures = {}, {}
+    for i = 1, SPARKLE_COUNT do
+        local g = { tex = TextureFor(fx, "flare", "OVERLAY") }
+        RespawnInfo(g)
+        fx.glints[i], sparkleTextures[i] = g, g.tex
     end
-    for c = 1, COMETS do
+    for c = 1, TRAIL_COUNT do
         fx.comets[c] = {}
-        for j = 1, TAIL do
-            local t = Tex(fx, "glow")
+        for j = 1, TRAIL_LENGTH do
+            local t = TextureFor(fx, "glow")
             fx.comets[c][j] = t
-            cometTex[#cometTex + 1] = t
+            trailTextures[#trailTextures + 1] = t
         end
     end
-    for i = 1, RISERS do
-        local t = Tex(fx, "flare", "OVERLAY")
-        t.lane = i / (RISERS + 1)
+    for i = 1, RISE_COUNT do
+        local t = TextureFor(fx, "flare", "OVERLAY")
+        t.lane = i / (RISE_COUNT + 1)
         fx.risers[i] = t
     end
-    for i = 1, #CORNERS do
-        fx.brackets[i] = Tex(fx, "bracket")
+    for i = 1, #CORNER_SET do
+        fx.brackets[i] = TextureFor(fx, "bracket")
     end
     fx.parts = {
         glow = { fx.glow },
         core = { fx.core },
         ring = { fx.ring },
         beam = { fx.beam },
-        glints = glintTex,
-        comets = cometTex,
+        glints = sparkleTextures,
+        comets = trailTextures,
         risers = fx.risers,
         brackets = fx.brackets,
     }
-    fx:SetScript("OnUpdate", Step)
+    fx:SetScript("OnUpdate", Advance)
     return fx
 end
 
-local function SetEffect(fx, style, color, alpha, size, ready, locked)
-    if not PARTS[style] then style = "sparkles" end
+local function UseSparkle(fx, style, color, alpha, size, ready, locked)
+    if not SPARKLE_PIECES[style] then style = "sparkles" end
     if fx.style ~= style or not fx.styled then
         fx.style, fx.styled = style, true
         for _, list in pairs(fx.parts) do
@@ -494,30 +494,30 @@ local function SetEffect(fx, style, color, alpha, size, ready, locked)
                 t:Hide()
             end
         end
-        for _, key in ipairs(PARTS[style]) do
+        for _, key in ipairs(SPARKLE_PIECES[style]) do
             for _, t in ipairs(fx.parts[key]) do
                 t:Show()
             end
         end
     end
-    if locked then color = LOCKED_RGB end
+    if locked then color = BLOCKED_RGB end
     fx.r, fx.g, fx.b = color.r, color.g, color.b
     fx.alpha, fx.size = alpha, size
     if ready and fx.ready == false and not locked then
         fx.burstAge = 0
-        for _, glint in ipairs(fx.glints) do
-            Respawn(glint, true)
+        for _, sparkleRef in ipairs(fx.glints) do
+            RespawnInfo(sparkleRef, true)
         end
     end
     fx.ready, fx.locked = ready and true or false, locked and true or false
 end
 
-local function StartEffect(fx)
+local function BeginSparkle(fx)
     fx.appear, fx.burstAge = 0, nil
     fx.lock = fx.ready and 1 or 0
     fx.burst:Hide()
-    for _, glint in ipairs(fx.glints) do
-        Respawn(glint)
+    for _, sparkleRef in ipairs(fx.glints) do
+        RespawnInfo(sparkleRef)
     end
 end
 
@@ -525,39 +525,39 @@ end
 --  Highlight on the target's nameplate
 -------------------------------------------------------------------------------
 
-local PLATE_Y, LINE_Y = -40, -6
-local BAR_PARTS = { "HealthBarsContainer", "LevelFrame", "PlayerLevelDiffFrame" }
-local fx, line, watch, plate, shown, barOwner
-local hlEvents = CreateFrame("Frame")
+local PLATE_OFFSET_Y, CARD_OFFSET_Y = -40, -6
+local CARD_PIECES = { "HealthBarsContainer", "LevelFrame", "PlayerLevelDiffFrame" }
+local fx, line, watch, plate, shown, cardHost
+local highlightFrame = CreateFrame("Frame")
 
-local function Paused()
+local function IsHeld()
     if InCombatLockdown() then return true end
     return Get("hideInstance") and IsInInstance() and true or false
 end
 
-local function ShowBar()
-    if not barOwner then return end
-    for _, name in ipairs(BAR_PARTS) do
-        if barOwner[name] then barOwner[name]:SetAlpha(1) end
+local function ShowCard()
+    if not cardHost then return end
+    for _, name in ipairs(CARD_PIECES) do
+        if cardHost[name] then cardHost[name]:SetAlpha(1) end
     end
-    barOwner = nil
+    cardHost = nil
 end
 
 -- A unit's plate (a corpse, a quest giver): the game shows it only because
 -- the soft target's plate is on, so its health bar and level step aside and
 -- just the name stays over the effect (only where the plate is the game's own).
-local function HideBar(to)
+local function HideCard(to)
     local unitFrame = to.UnitFrame
     if not unitFrame then return end
-    barOwner = unitFrame
-    for _, name in ipairs(BAR_PARTS) do
+    cardHost = unitFrame
+    for _, name in ipairs(CARD_PIECES) do
         if unitFrame[name] then unitFrame[name]:SetAlpha(0) end
     end
 end
 
-local function ReleaseFx()
+local function StopSparkle()
     if not plate then return end
-    ShowBar()
+    ShowCard()
     fx:Hide()
     fx:ClearAllPoints()
     fx:SetParent(UIParent)
@@ -565,9 +565,9 @@ local function ReleaseFx()
     plate, shown = nil, nil
 end
 
-local function BuildFx()
+local function MakeSparkle()
     if fx then return end
-    fx = NewEffect(UIParent)
+    fx = NewSparkle(UIParent)
     fx:Hide()
     line = fx:CreateFontString(nil, "OVERLAY")
     CUI.Kit.Font(line, 12, "essentials", "OUTLINE")
@@ -575,16 +575,16 @@ local function BuildFx()
     watch:Hide()
 end
 
-local function LineFor(info)
-    if info.category == "quest" then return info.line, QUEST_LINE_RGB end
+local function CardLine(info)
+    if info.category == "quest" then return info.line, QUEST_RGB end
     if not info.tier then return end
-    return TierText(info.category, info.need, info.tier), TIER_RGB[info.tier]
+    return TierLabel(info.category, info.need, info.tier), TIER_COLOURS[info.tier]
 end
 
-local function PaintFx(info)
-    local color = (info.tier and Get("skillColors")) and TIER_RGB[info.tier] or Color(info.category)
-    SetEffect(fx, Get("style"), color, Get("brightness"), Get("size"), info.ready, info.locked)
-    local text, c = LineFor(info)
+local function DrawSparkle(info)
+    local color = (info.tier and Get("skillColors")) and TIER_COLOURS[info.tier] or Color(info.category)
+    UseSparkle(fx, Get("style"), color, Get("brightness"), Get("size"), info.ready, info.locked)
+    local text, c = CardLine(info)
     if text and Get("showLine") then
         line:SetText(text)
         line:SetTextColor(c.r, c.g, c.b)
@@ -594,95 +594,95 @@ local function PaintFx(info)
     end
 end
 
-local function Attach(to, info)
+local function FixToPlate(to, info)
     fx:SetParent(to)
     local level = to:GetFrameLevel()
-    if Plain(level) then fx:SetFrameLevel(math.max(level - 1, 0)) end
+    if Simplified(level) then fx:SetFrameLevel(math.max(level - 1, 0)) end
     if fx.SetIgnoreParentAlpha then fx:SetIgnoreParentAlpha(true) end
     fx:ClearAllPoints()
-    fx:SetPoint("CENTER", to, "CENTER", 0, PLATE_Y)
-    if info.category == "corpse" or info.category == "giver" then HideBar(to) end
+    fx:SetPoint("CENTER", to, "CENTER", 0, PLATE_OFFSET_Y)
+    if info.category == "corpse" or info.category == "giver" then HideCard(to) end
     line:ClearAllPoints()
-    line:SetPoint("TOP", to, "BOTTOM", 0, LINE_Y)
+    line:SetPoint("TOP", to, "BOTTOM", 0, CARD_OFFSET_Y)
     plate, shown = to, { ready = info.ready }
     for k, v in pairs(info) do
         shown[k] = v
     end
-    PaintFx(shown)
-    StartEffect(fx)
+    DrawSparkle(shown)
+    BeginSparkle(fx)
     fx:Show()
     watch:Show()
 end
 
-local function Wanted(category) return category ~= nil and Get(category) and true or false end
+local function WantedNow(category) return category ~= nil and Get(category) and true or false end
 
-local function Evaluate()
-    if not Enabled() then return ReleaseFx() end
-    if Paused() then
-        SetPlate(false)
-        return ReleaseFx()
+local function Assess()
+    if not Enabled() then return StopSparkle() end
+    if IsHeld() then
+        ShowOnPlate(false)
+        return StopSparkle()
     end
-    local info = ReadTarget(UNIT)
-    if not (info and Wanted(info.category) and not (info.locked and Get("hideLocked"))) then
-        SetPlate(not Get("onlyHighlighted"))
-        return ReleaseFx()
+    local info = ReadSoftTarget(SOFT_UNIT)
+    if not (info and WantedNow(info.category) and not (info.locked and Get("hideLocked"))) then
+        ShowOnPlate(not Get("onlyHighlighted"))
+        return StopSparkle()
     end
-    SetPlate(true)
-    local to = C_NamePlate.GetNamePlateForUnit(UNIT)
-    if not (to and Plain(to)) then return ReleaseFx() end
+    ShowOnPlate(true)
+    local to = C_NamePlate.GetNamePlateForUnit(SOFT_UNIT)
+    if not (to and Simplified(to)) then return StopSparkle() end
     if to ~= plate then
-        ReleaseFx()
-        Attach(to, info)
+        StopSparkle()
+        FixToPlate(to, info)
     else
         for k, v in pairs(info) do
             shown[k] = v
         end
-        PaintFx(shown)
+        DrawSparkle(shown)
     end
 end
 
 -- Walking into reach (or out of it) brightens or dims the effect, held a
 -- moment so the edge of the range does not flicker.
-local watchSince, wantReady, wantSince = 0, nil, nil
-local function Watch(_, elapsed)
-    watchSince = watchSince + elapsed
-    if watchSince < 0.15 then return end
-    watchSince = 0
+local watchedAt, readyAt, wantedAt = 0, nil, nil
+local function WatchSoft(_, elapsed)
+    watchedAt = watchedAt + elapsed
+    if watchedAt < 0.15 then return end
+    watchedAt = 0
     if not shown then return end
-    local ready = Reach(UNIT)
+    local ready = Reach(SOFT_UNIT)
     if ready == shown.ready then
-        wantSince = nil
+        wantedAt = nil
         return
     end
     local now = GetTime()
-    if ready ~= wantReady or not wantSince then
-        wantReady, wantSince = ready, now
-    elseif now - wantSince >= 0.15 then
-        shown.ready, wantSince = ready, nil
-        PaintFx(shown)
+    if ready ~= readyAt or not wantedAt then
+        readyAt, wantedAt = ready, now
+    elseif now - wantedAt >= 0.15 then
+        shown.ready, wantedAt = ready, nil
+        DrawSparkle(shown)
     end
 end
 
-hlEvents:SetScript("OnEvent", function(_, evt, unit)
+highlightFrame:SetScript("OnEvent", function(_, evt, unit)
     if evt == "PLAYER_REGEN_DISABLED" then
-        SetPlate(false)
-        ReleaseFx()
+        ShowOnPlate(false)
+        StopSparkle()
     elseif evt == "NAME_PLATE_UNIT_ADDED" then
-        local soft = UnitIsUnit(unit, UNIT)
-        if not plate and not (Plain(soft) and not soft) then Evaluate() end
+        local soft = UnitIsUnit(unit, SOFT_UNIT)
+        if not plate and not (Simplified(soft) and not soft) then Assess() end
     elseif evt == "NAME_PLATE_UNIT_REMOVED" then
-        if plate and C_NamePlate.GetNamePlateForUnit(unit) == plate then ReleaseFx() end
+        if plate and C_NamePlate.GetNamePlateForUnit(unit) == plate then StopSparkle() end
     elseif evt == "PLAYER_SOFT_INTERACT_CHANGED" then
-        ReleaseFx()
-        Evaluate()
+        StopSparkle()
+        Assess()
     elseif evt == "QUEST_LOG_UPDATE" or evt == "SKILL_LINES_CHANGED" then
-        if plate then Evaluate() end
+        if plate then Assess() end
     else
-        Evaluate()
+        Assess()
     end
 end)
 
-local HL_EVENTS = {
+local HIGHLIGHT_EVENTS = {
     "PLAYER_SOFT_INTERACT_CHANGED",
     "NAME_PLATE_UNIT_ADDED",
     "NAME_PLATE_UNIT_REMOVED",
@@ -693,28 +693,28 @@ local HL_EVENTS = {
     "SKILL_LINES_CHANGED",
 }
 
-local function HighlightApply()
-    hlEvents:UnregisterAllEvents()
+local function ApplyHighlight()
+    highlightFrame:UnregisterAllEvents()
     if not Enabled() then
-        if fx then ReleaseFx() end
+        if fx then StopSparkle() end
         return
     end
-    BuildFx()
-    watch:SetScript("OnUpdate", Watch)
-    for _, evt in ipairs(HL_EVENTS) do
-        hlEvents:RegisterEvent(evt)
+    MakeSparkle()
+    watch:SetScript("OnUpdate", WatchSoft)
+    for _, evt in ipairs(HIGHLIGHT_EVENTS) do
+        highlightFrame:RegisterEvent(evt)
     end
-    ReleaseFx()
-    Evaluate()
+    StopSparkle()
+    Assess()
 end
 
 -------------------------------------------------------------------------------
 --  Spots: where herbs and ore grow, and the ones you gathered
 -------------------------------------------------------------------------------
 
-local SPOTS
-local function LoadSpots()
-    if SPOTS then return true end
+local SPOT_TABLE
+local function UnpackSpots()
+    if SPOT_TABLE then return true end
     local packed = module.GLIMMER_SPOTS_PACKED
     local u = C_EncodingUtil
     if not (packed and u and u.DecodeBase64 and u.DecompressString and u.DeserializeCBOR) or InCombatLockdown() then
@@ -728,24 +728,24 @@ local function LoadSpots()
     for i = 1, #flat, 2 do
         all[flat[i]] = flat[i + 1]
     end
-    SPOTS, module.GLIMMER_SPOTS_PACKED = all, nil
+    SPOT_TABLE, module.GLIMMER_SPOTS_PACKED = all, nil
     return true
 end
 
-local function SpotWanted(category)
+local function ShowSpot(category)
     if not Get(category) then return false end
     if not Get("myProfessions") then return true end
-    return Skill(category) > 0
+    return SkillRank(category) > 0
 end
 
-local function SpotsFor(mapID, out)
+local function MapSpots(mapID, out)
     wipe(out)
-    local all = SPOTS and SPOTS[mapID]
+    local all = SPOT_TABLE and SPOT_TABLE[mapID]
     if not all then return 0 end
-    local want = { ore = SpotWanted("ore"), herb = SpotWanted("herb") }
+    local want = { ore = ShowSpot("ore"), herb = ShowSpot("herb") }
     local n = 0
     for i = 1, #all, 3 do
-        local node = NODES[all[i]]
+        local node = NODE_INFO[all[i]]
         if node and want[node[1]] then
             out[n + 1], out[n + 2], out[n + 3] = all[i], all[i + 1], all[i + 2]
             n = n + 3
@@ -754,33 +754,33 @@ local function SpotsFor(mapID, out)
     return n / 3
 end
 
-local function NodeTier(ident)
-    local node = NODES[ident]
+local function NodeSkillTier(ident)
+    local node = NODE_INFO[ident]
     if not node then return end
-    return Tier(Skill(node[1]), node[2])
+    return TierOf(SkillRank(node[1]), node[2])
 end
 
-local function NodeColor(ident)
-    local node = NODES[ident]
-    local tier = Get("skillColors") and NodeTier(ident)
-    return tier and TIER_RGB[tier] or Color(node[1])
+local function NodeRGB(ident)
+    local node = NODE_INFO[ident]
+    local tier = Get("skillColors") and NodeSkillTier(ident)
+    return tier and TIER_COLOURS[tier] or Color(node[1])
 end
 
-local function Gathered(mapID)
+local function NoteGathered(mapID)
     local all = F.Read().gathered
     return all and all[mapID]
 end
 
-local function Snap(mapID, gathered, ident, x, y)
-    local bestX, bestY, best = x, y, SNAP * SNAP
-    for _, e in pairs(gathered) do
+local function SnapToGrid(mapID, gatheredLog, ident, x, y)
+    local bestX, bestY, best = x, y, SNAP_YARDS * SNAP_YARDS
+    for _, e in pairs(gatheredLog) do
         if e.id == ident then
             local d = (e.x - x) ^ 2 + (e.y - y) ^ 2
             if d <= best then bestX, bestY, best = e.x, e.y, d end
         end
     end
-    if best < SNAP * SNAP then return bestX, bestY end
-    local all = SPOTS and SPOTS[mapID]
+    if best < SNAP_YARDS * SNAP_YARDS then return bestX, bestY end
+    local all = SPOT_TABLE and SPOT_TABLE[mapID]
     for i = 1, all and #all or 0, 3 do
         if all[i] == ident then
             local d = (all[i + 1] - x) ^ 2 + (all[i + 2] - y) ^ 2
@@ -790,17 +790,17 @@ local function Snap(mapID, gathered, ident, x, y)
     return bestX, bestY
 end
 
-local function Record(ident)
+local function Remember(ident)
     local mapID = C_Map.GetBestMapForUnit("player")
     local pos = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
     if not pos then return end
     local px, py = pos:GetXY()
-    if not (Plain(px) and Plain(py)) then return end
+    if not (Simplified(px) and Simplified(py)) then return end
     local c = F.Cfg()
     c.gathered = c.gathered or {}
     local map = c.gathered[mapID] or {}
     c.gathered[mapID] = map
-    local x, y = Snap(mapID, map, ident, math.floor(px * SPOT_SCALE + 0.5), math.floor(py * SPOT_SCALE + 0.5))
+    local x, y = SnapToGrid(mapID, map, ident, math.floor(px * SPOT_UNIT + 0.5), math.floor(py * SPOT_UNIT + 0.5))
     local key = ("%d:%d:%d"):format(ident, x, y)
     local entry = map[key]
     if not entry then
@@ -809,7 +809,7 @@ local function Record(ident)
             count = count + 1
             if not oldest or e.last < oldest then oldest, oldestKey = e.last, k end
         end
-        if count >= MAX_GATHERED then map[oldestKey] = nil end
+        if count >= GATHER_LOG_MAX then map[oldestKey] = nil end
         entry = { id = ident, x = x, y = y, count = 0 }
         map[key] = entry
     end
@@ -823,16 +823,16 @@ end
 
 local mini
 local spots, tracked = {}, {}
-local miniEv = CreateFrame("Frame")
+local minimapFrame = CreateFrame("Frame")
 
-local function NodeTip(owner, ident, extra)
-    local node = NODES[ident]
+local function NodeTooltip(owner, ident, extra)
+    local node = NODE_INFO[ident]
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
     GameTooltip:SetText(("%s (%d)"):format(CUI.L(node[3]), node[2]), 1, 1, 1)
-    local tier = NodeTier(ident)
+    local tier = NodeSkillTier(ident)
     if tier then
-        local c = TIER_RGB[tier]
-        GameTooltip:AddLine(TierText(node[1], node[2], tier), c.r, c.g, c.b)
+        local c = TIER_COLOURS[tier]
+        GameTooltip:AddLine(TierLabel(node[1], node[2], tier), c.r, c.g, c.b)
     end
     if extra then
         local m = CUI.Kit.Palette.muted
@@ -841,25 +841,25 @@ local function NodeTip(owner, ident, extra)
     GameTooltip:Show()
 end
 
-local function NewMiniPin()
+local function NewMinimapPin()
     local pin = CreateFrame("Frame", nil, Minimap)
     pin.ring = pin:CreateTexture(nil, "BACKGROUND")
-    pin.ring:SetTexture(MEDIA .. "ring")
+    pin.ring:SetTexture(ART_DIR .. "ring")
     pin.ring:SetPoint("CENTER")
     pin.icon = pin:CreateTexture(nil, "ARTWORK")
     pin.icon:SetPoint("CENTER")
     pin.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     pin:EnableMouse(true)
-    pin:SetScript("OnEnter", function(self) NodeTip(self, self.id) end)
+    pin:SetScript("OnEnter", function(self) NodeTooltip(self, self.id) end)
     pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
     return pin
 end
 
 -- With Find Herbs / Find Minerals tracking, the icon moves to the ring's
 -- corner so the game's own dot shows inside it when the node is up.
-local function PaintMiniPin(pin, list, i)
+local function DrawMinimapPin(pin, list, i)
     local ident = list[i * 3 - 2]
-    local node = NODES[ident]
+    local node = NODE_INFO[ident]
     local size = Get("minimapSize")
     pin.id = ident
     pin:SetSize(size, size)
@@ -872,44 +872,44 @@ local function PaintMiniPin(pin, list, i)
         pin.icon:SetPoint("CENTER")
         pin.icon:SetSize(size * 0.7, size * 0.7)
     end
-    pin.icon:SetTexture(C_Spell.GetSpellTexture(ICON_SPELL[node[1]]))
-    local c = NodeColor(ident)
+    pin.icon:SetTexture(C_Spell.GetSpellTexture(ICON_FOR_SPELL[node[1]]))
+    local c = NodeRGB(ident)
     pin.ring:SetVertexColor(c.r, c.g, c.b)
 end
 
-local function Track()
+local function Follow()
     wipe(tracked)
     if not (C_Minimap and C_Minimap.GetNumTrackingTypes) then return end
     for i = 1, C_Minimap.GetNumTrackingTypes() do
         local info = C_Minimap.GetTrackingInfo(i)
         if info and info.active then
-            for category, spell in pairs(ICON_SPELL) do
+            for category, spell in pairs(ICON_FOR_SPELL) do
                 if info.spellID == spell then tracked[category] = true end
             end
         end
     end
 end
 
-local function MiniRefresh()
-    local on = Enabled() and Get("minimapIcons") and (SpotWanted("ore") or SpotWanted("herb"))
-    if not on or not LoadSpots() then
+local function RefreshMinimapPins()
+    local on = Enabled() and Get("minimapIcons") and (ShowSpot("ore") or ShowSpot("herb"))
+    if not on or not UnpackSpots() then
         if mini then mini:Set(nil) end
         return
     end
-    Track()
+    Follow()
     mini = mini or module.MinimapLayer({
-        max = MINIMAP_MAX,
-        new = NewMiniPin,
-        paint = PaintMiniPin,
-        xy = function(list, i) return list[i * 3 - 1] / SPOT_SCALE, list[i * 3] / SPOT_SCALE end,
+        max = MINIMAP_PIN_MAX,
+        new = NewMinimapPin,
+        paint = DrawMinimapPin,
+        xy = function(list, i) return list[i * 3 - 1] / SPOT_UNIT, list[i * 3] / SPOT_UNIT end,
     })
     local mapID = C_Map.GetBestMapForUnit("player")
-    mini:Set(mapID, spots, mapID and SpotsFor(mapID, spots) or 0)
+    mini:Set(mapID, spots, mapID and MapSpots(mapID, spots) or 0)
 end
-miniEv:SetScript("OnEvent", MiniRefresh)
+minimapFrame:SetScript("OnEvent", RefreshMinimapPins)
 
-local function MiniApply()
-    miniEv:UnregisterAllEvents()
+local function ApplyMinimapPins()
+    minimapFrame:UnregisterAllEvents()
     if Enabled() and Get("minimapIcons") and module.MinimapLayer then
         for _, evt in ipairs({
             "ZONE_CHANGED_NEW_AREA",
@@ -920,28 +920,28 @@ local function MiniApply()
             "PLAYER_REGEN_ENABLED",
             "MINIMAP_UPDATE_TRACKING",
         }) do
-            miniEv:RegisterEvent(evt)
+            minimapFrame:RegisterEvent(evt)
         end
     end
-    if module.MinimapLayer and IsLoggedIn() then MiniRefresh() end
+    if module.MinimapLayer and IsLoggedIn() then RefreshMinimapPins() end
 end
 
 -------------------------------------------------------------------------------
 --  Gathered on the world map
 -------------------------------------------------------------------------------
 
-local provider, layer, added, waiter, lastGUID
-local mapPins, mapUsed = {}, 0
-local lootEv = CreateFrame("Frame")
+local provider, layer, added, waiter, lastSoft
+local mapPinPool, mapPinsUsed = {}, 0
+local lootFrame = CreateFrame("Frame")
 
-local function MapClear()
-    for i = 1, mapUsed do
-        mapPins[i]:Hide()
+local function ClearMapPins()
+    for i = 1, mapPinsUsed do
+        mapPinPool[i]:Hide()
     end
-    mapUsed = 0
+    mapPinsUsed = 0
 end
 
-local function MapAnchor(p)
+local function MapLayer(p)
     local canvas = layer:GetParent()
     local wid, hgt = canvas:GetSize()
     local cs = canvas:GetScale()
@@ -950,12 +950,12 @@ local function MapAnchor(p)
     p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * wid * cs, -p.y * hgt * cs)
 end
 
-local function MapPin(i)
-    local p = mapPins[i]
+local function MapPinAt(i)
+    local p = mapPinPool[i]
     if p then return p end
     p = CreateFrame("Frame", nil, layer)
     p.ring = p:CreateTexture(nil, "BACKGROUND")
-    p.ring:SetTexture(MEDIA .. "ring")
+    p.ring:SetTexture(ART_DIR .. "ring")
     p.ring:SetPoint("TOPLEFT", -4, 4)
     p.ring:SetPoint("BOTTOMRIGHT", 4, -4)
     p.icon = p:CreateTexture(nil, "ARTWORK")
@@ -963,63 +963,63 @@ local function MapPin(i)
     p.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     p:EnableMouse(true)
     p:SetScript("OnEnter", function(self)
-        NodeTip(self, self.entry.id, CUI.Lf("Gathered %1$d times.", self.entry.count))
+        NodeTooltip(self, self.entry.id, CUI.Lf("Gathered %1$d times.", self.entry.count))
     end)
     p:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    mapPins[i] = p
+    mapPinPool[i] = p
     return p
 end
 
-local function MapDraw()
-    MapClear()
+local function DrawMapPins()
+    ClearMapPins()
     if not (Enabled() and Get("gatheredPins")) then return end
     local mapID = WorldMapFrame:GetMapID()
-    for _, entry in pairs(mapID and Gathered(mapID) or {}) do
-        local node = NODES[entry.id]
+    for _, entry in pairs(mapID and NoteGathered(mapID) or {}) do
+        local node = NODE_INFO[entry.id]
         if node and Get(node[1]) then
-            mapUsed = mapUsed + 1
-            local p = MapPin(mapUsed)
+            mapPinsUsed = mapPinsUsed + 1
+            local p = MapPinAt(mapPinsUsed)
             local size = Get("gatheredPinSize")
-            p.entry, p.x, p.y = entry, entry.x / SPOT_SCALE, entry.y / SPOT_SCALE
+            p.entry, p.x, p.y = entry, entry.x / SPOT_UNIT, entry.y / SPOT_UNIT
             p:SetSize(size, size)
-            p.icon:SetTexture(C_Spell.GetSpellTexture(ICON_SPELL[node[1]]))
-            local c = NodeColor(entry.id)
+            p.icon:SetTexture(C_Spell.GetSpellTexture(ICON_FOR_SPELL[node[1]]))
+            local c = NodeRGB(entry.id)
             p.ring:SetVertexColor(c.r, c.g, c.b)
-            MapAnchor(p)
+            MapLayer(p)
             p:Show()
         end
     end
 end
 
-local function MapBuild()
+local function MakeMapLayer()
     layer = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer.Child)
     layer:SetAllPoints()
     layer:SetFrameLevel(WorldMapFrame:GetPinFrameLevelsManager():GetValidFrameLevel("PIN_FRAME_LEVEL_AREA_POI"))
     provider = CreateFromMixins(MapCanvasDataProviderMixin)
-    provider.OnMapChanged = MapDraw
-    provider.RefreshAllData = MapDraw
-    provider.RemoveAllData = MapClear
+    provider.OnMapChanged = DrawMapPins
+    provider.RefreshAllData = DrawMapPins
+    provider.RemoveAllData = ClearMapPins
     provider.OnCanvasScaleChanged = function()
-        for i = 1, mapUsed do
-            MapAnchor(mapPins[i])
+        for i = 1, mapPinsUsed do
+            MapLayer(mapPinPool[i])
         end
     end
     provider.OnGlobalAlphaChanged = function(self) layer:SetAlpha(self:GetMap():GetGlobalAlpha()) end
 end
 
 -- A loot window from a herb or vein (by the loot's source GUID) notes it.
-local function OnLoot()
+local function OnLooted()
     for slot = 1, GetNumLootItems() do
         local sources = { GetLootSourceInfo(slot) }
         for i = 1, #sources, 2 do
             local guid = sources[i]
-            if Plain(guid) and type(guid) == "string" then
-                local ident = tonumber(guid:match(GUID_OBJECT))
-                local node = ident and NODES[ident]
+            if Simplified(guid) and type(guid) == "string" then
+                local ident = tonumber(guid:match(OBJECT_GUID_KIND))
+                local node = ident and NODE_INFO[ident]
                 if node and (node[1] == "ore" or node[1] == "herb") then
-                    if guid ~= lastGUID then
-                        lastGUID = guid
-                        if Record(ident) and WorldMapFrame and WorldMapFrame:IsShown() then MapDraw() end
+                    if guid ~= lastSoft then
+                        lastSoft = guid
+                        if Remember(ident) and WorldMapFrame and WorldMapFrame:IsShown() then DrawMapPins() end
                     end
                     return
                 end
@@ -1027,21 +1027,21 @@ local function OnLoot()
         end
     end
 end
-lootEv:SetScript("OnEvent", OnLoot)
+lootFrame:SetScript("OnEvent", OnLooted)
 
-local function MapApply()
+local function ApplyMapPins()
     local on = Enabled() and Get("gatheredPins")
     if on then
-        lootEv:RegisterEvent("LOOT_READY")
+        lootFrame:RegisterEvent("LOOT_READY")
     else
-        lootEv:UnregisterEvent("LOOT_READY")
+        lootFrame:UnregisterEvent("LOOT_READY")
     end
     if not on then
         if added then
             WorldMapFrame:RemoveDataProvider(provider)
             added = false
         end
-        if layer then MapClear() end
+        if layer then ClearMapPins() end
         return
     end
     if not provider then
@@ -1051,48 +1051,48 @@ local function MapApply()
                 waiter:SetScript("OnEvent", function(self, _, name)
                     if name ~= "Blizzard_WorldMap" then return end
                     self:UnregisterEvent("ADDON_LOADED")
-                    MapApply()
+                    ApplyMapPins()
                 end)
             end
             waiter:RegisterEvent("ADDON_LOADED")
             return
         end
-        MapBuild()
+        MakeMapLayer()
     end
     if not added then
         WorldMapFrame:AddDataProvider(provider)
         added = true
     end
-    if WorldMapFrame:IsShown() then MapDraw() end
+    if WorldMapFrame:IsShown() then DrawMapPins() end
 end
 
 -------------------------------------------------------------------------------
 
 local function Apply()
-    ApplyCVars()
-    HighlightApply()
-    MiniApply()
-    MapApply()
+    HoldInteractCVars()
+    ApplyHighlight()
+    ApplyMinimapPins()
+    ApplyMapPins()
 end
 
 CUI._Glimmer = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,
-    Categories = CATEGORIES,
-    Read = ReadTarget,
-    Record = Record,
-    Gathered = Gathered,
+    Categories = KIND_LIST,
+    Read = ReadSoftTarget,
+    Record = Remember,
+    Gathered = NoteGathered,
     -- The effect frame and its line (tests).
     Fx = function() return fx, line end,
     -- For Zone Info: the herbs and ore that grow in a zone, each once, by
     -- skill: { kind, need, name } (nil while the spots cannot be read yet).
     ZoneNodes = function(mapID)
-        if not LoadSpots() then return nil end
+        if not UnpackSpots() then return nil end
         local list, seen = {}, {}
-        local all = SPOTS[mapID]
+        local all = SPOT_TABLE[mapID]
         for i = 1, all and #all or 0, 3 do
-            local node = NODES[all[i]]
+            local node = NODE_INFO[all[i]]
             local key = node and (node[1] .. ":" .. node[3])
             if node and (node[1] == "herb" or node[1] == "ore") and not seen[key] then
                 seen[key] = true
@@ -1105,7 +1105,7 @@ CUI._Glimmer = {
         end)
         return list
     end,
-    Skill = Skill,
+    Skill = SkillRank,
 }
 
 F.Start(Apply)
