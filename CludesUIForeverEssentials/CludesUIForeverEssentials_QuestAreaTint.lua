@@ -16,49 +16,49 @@ local _, module = ...
 local F = module.Feature("questAreaTint", { enabled = false, color = "blue", fill = 0.5 })
 local Get, Enabled = F.Get, F.Enabled
 
-local TEMPLATE = "QuestBlobPinTemplate"
-local MEDIA = "Interface\\AddOns\\CludesUI\\media\\questarea\\"
-local GAME_FILL = "Interface\\WorldMap\\UI-QuestBlob-Inside"
-local GAME_EDGE = "Interface\\WorldMap\\UI-QuestBlob-Outside"
-local GAME_FILL_ALPHA, GAME_EDGE_ALPHA = 128, 192
-local COLORS = { blue = true, violet = true, green = true, gold = true, red = true }
+local BLOB_TEMPLATE = "QuestBlobPinTemplate"
+local TINT_DIR = "Interface\\AddOns\\CludesUI\\media\\questarea\\"
+local STOCK_INSIDE = "Interface\\WorldMap\\UI-QuestBlob-Inside"
+local STOCK_RIM = "Interface\\WorldMap\\UI-QuestBlob-Outside"
+local STOCK_INSIDE_ALPHA, STOCK_RIM_ALPHA = 128, 192
+local SWATCHES = { blue = true, violet = true, green = true, gold = true, red = true }
 
-local tinted, hooked
+local recoloured, mapHooked
 
-local function Paint(pin, fill, edge, fillAlpha, edgeAlpha)
-    pin:SetFillTexture(fill)
-    pin:SetBorderTexture(edge)
-    pin:SetFillAlpha(fillAlpha)
-    pin:SetBorderAlpha(edgeAlpha)
+local function Recolor(pin, inside, rim, insideAlpha, rimAlpha)
+    pin:SetFillTexture(inside)
+    pin:SetBorderTexture(rim)
+    pin:SetFillAlpha(insideAlpha)
+    pin:SetBorderAlpha(rimAlpha)
 end
 
-local function Tint()
-    local map = _G.WorldMapFrame
-    if not (map and map.EnumeratePinsByTemplate) then return end
-    local on = Enabled()
-    if not (on or tinted) then return end
-    local color = COLORS[Get("color")] and Get("color") or "blue"
-    local fillAlpha = math.floor(Get("fill") * 255 + 0.5)
-    for pin in map:EnumeratePinsByTemplate(TEMPLATE) do
+local function TintAll()
+    local worldMap = _G.WorldMapFrame
+    if not (worldMap and worldMap.EnumeratePinsByTemplate) then return end
+    local wanted = Enabled()
+    if not (wanted or recoloured) then return end
+    local swatch = SWATCHES[Get("color")] and Get("color") or "blue"
+    local insideAlpha = math.floor(Get("fill") * 255 + 0.5)
+    for pin in worldMap:EnumeratePinsByTemplate(BLOB_TEMPLATE) do
         if pin.SetFillTexture then
-            if on then
-                Paint(pin, MEDIA .. color .. "_fill", MEDIA .. color .. "_edge", fillAlpha, 255)
+            if wanted then
+                Recolor(pin, TINT_DIR .. swatch .. "_fill", TINT_DIR .. swatch .. "_edge", insideAlpha, 255)
             else
-                Paint(pin, GAME_FILL, GAME_EDGE, GAME_FILL_ALPHA, GAME_EDGE_ALPHA)
+                Recolor(pin, STOCK_INSIDE, STOCK_RIM, STOCK_INSIDE_ALPHA, STOCK_RIM_ALPHA)
             end
         end
     end
-    tinted = on
+    recoloured = wanted
 end
 
 local function Apply()
-    local map = _G.WorldMapFrame
-    if Enabled() and map and not hooked then
-        hooked = true
-        if map.OnMapChanged then hooksecurefunc(map, "OnMapChanged", Tint) end
-        map:HookScript("OnShow", Tint)
+    local worldMap = _G.WorldMapFrame
+    if Enabled() and worldMap and not mapHooked then
+        mapHooked = true
+        if worldMap.OnMapChanged then hooksecurefunc(worldMap, "OnMapChanged", TintAll) end
+        worldMap:HookScript("OnShow", TintAll)
     end
-    Tint()
+    TintAll()
 end
 
 CUI._QuestAreaTint = { Get = Get, Cfg = F.Cfg, Apply = Apply }
