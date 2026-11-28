@@ -160,8 +160,8 @@ local function RevealHint(marker)
     GameTooltip:Show()
 end
 
-local function FreshMarker(hostFrame)
-    local marker = CreateFrame("Frame", nil, hostFrame)
+local function FreshMarker(hostWindow)
+    local marker = CreateFrame("Frame", nil, hostWindow)
     marker:SetMouseMotionEnabled(true)
     marker:SetMouseClickEnabled(false)
     marker.border = marker:CreateTexture(nil, "BACKGROUND")
@@ -255,7 +255,7 @@ local function Render()
     end
 end
 
-local function Build()
+local function Make()
     layer = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer.Child)
     layer:SetAllPoints()
     layer:SetFrameLevel(
@@ -282,8 +282,8 @@ local function ChartUse()
         if not C_AddOns.IsAddOnLoaded("Blizzard_WorldMap") then
             if not waiter then
                 waiter = CreateFrame("Frame")
-                waiter:SetScript("OnEvent", function(self, _, title)
-                    if title ~= "Blizzard_WorldMap" then return end
+                waiter:SetScript("OnEvent", function(self, _, name)
+                    if name ~= "Blizzard_WorldMap" then return end
                     self:UnregisterEvent("ADDON_LOADED")
                     ChartUse()
                 end)
@@ -291,7 +291,7 @@ local function ChartUse()
             waiter:RegisterEvent("ADDON_LOADED")
             return
         end
-        Build()
+        Make()
     end
     if not added then
         WorldMapFrame:AddDataProvider(provider)
