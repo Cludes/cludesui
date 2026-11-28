@@ -93,6 +93,9 @@ function ShareNext()
         return
     end
     local index = C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(quest[QUEST_ID])
+    -- Modern clients share the selected quest; older ones take the log index.
+    -- Selecting it first and passing the index works on both.
+    if index and C_QuestLog.SetSelectedQuest then C_QuestLog.SetSelectedQuest(quest[QUEST_ID]) end
     if index and QuestLogPushQuest then QuestLogPushQuest(index) end
     C_Timer.After(SHARE_GAP, ShareNext)
 end
