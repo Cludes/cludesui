@@ -101,3 +101,14 @@ Report("Auberdine to Darnassus")
 here = { x = -9460, y = 60, c = 0 }
 pin = { c = 0, x = -9060, y = 430 }
 Report("Goldshire to Stormwind gate")
+
+-- Ride a mount for a moment: walks are then timed at its speed (60% mount: 11.2 yd/s).
+IsMounted = function() return true end
+IsSwimming = function() return false end
+IsFlying = function() return false end
+GetUnitSpeed = function() return 11.2, 11.2, 0, 0 end
+HARNESS_ADVANCE(0.6)
+IsMounted = function() return false end
+here = { x = -10640, y = 1050, c = 0 }
+pin = { c = 0, x = -10560, y = -1180 }
+Report("Westfall to Duskwood after riding a mount")

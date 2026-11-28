@@ -460,7 +460,7 @@ local Walking = module.Walking
 local plan, goal, arrived
 local corners, cornerAt -- the first walk's corners { x1, y1, ... }; the one aimed at
 local working, driver -- the plan being made, across frames
-local StepWork
+local StepWork, TravelSpeed
 local sinceReplan = 0
 
 local function StepText(leg)
@@ -515,6 +515,12 @@ local function WalkYards(a, b)
     return Walking.Yards(a.c, ea, eb)
 end
 
+-- Yards a second for walks: your mount's, once it is known.
+function TravelSpeed()
+    local mounted = CharStore().mountSpeed
+    return mounted and mounted > C.RUN_SPEED and mounted or C.RUN_SPEED
+end
+
 local function Work(from, to, faction, jumps, keep)
     local mapped = Walking.Ready()
     if mapped then
@@ -530,7 +536,7 @@ local function Work(from, to, faction, jumps, keep)
         faction = faction,
         known = CharStore().flights,
         knownVersion = knownVersion,
-        speed = C.RUN_SPEED,
+        speed = TravelSpeed(),
         jumps = jumps,
         keep = keep,
         walk = mapped and WalkYards or nil,
@@ -835,7 +841,18 @@ local function Moved()
     return Planner.Distance(here, plannedFrom) > C.REPLAN_MOVED
 end
 
+-- Your mount's running speed, learned while you ride (walks are timed at it
+-- once known: a mounted character rides between steps).
+local function LearnMountSpeed()
+    if not (IsMounted and IsMounted()) or (UnitOnTaxi and UnitOnTaxi("player")) or IsSwimming() or IsFlying() then return end
+    local _, run = GetUnitSpeed("player")
+    if not run or Secret(run) or run <= C.RUN_SPEED then return end
+    local mine = CharStore()
+    if not mine.mountSpeed or run > mine.mountSpeed + 0.1 then mine.mountSpeed = run end
+end
+
 local function Tick()
+    LearnMountSpeed()
     sinceReplan = sinceReplan + 0.1
     if sinceReplan >= C.REPLAN_EVERY and not InCombatLockdown() and (Moved() or not plan) then
         local here, pin = Player(), Goal()

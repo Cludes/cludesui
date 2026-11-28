@@ -9,6 +9,19 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --    /cdmap   shows or hides it (outside a dungeon: the last one you were in).
 --  Maps, pins and kill order come from the Dungeon Journal (Journal.lua,
 --  JournalData.lua).
+--
+--  Where you are: the maps are pictures with pins, not game coordinates.
+--  Where the game gives your position inside a dungeon (UnitPosition), the
+--  map learns how its picture lines up with the world from real readings:
+--  where you stand on entering (the entrance pin) and at each boss kill
+--  (that boss's pin). Each picture axis is a straight fit of one world axis
+--  (north-up maps: across from west, down from north), saved per dungeon
+--  floor, so later runs line up from the start. Two readings on a floor are
+--  enough; the fit is trusted only while its across and down scales keep
+--  the picture's 3:2 shape and the readings sit within FIT_YARDS of it.
+--  Then the map shows you, a line to the next boss, and (where the game
+--  gives your facing) an arrow and the yards to go. Where the game hides
+--  your position, the footer says so and the route works as before.
 -------------------------------------------------------------------------------
 local CUI = CludesUI
 if not (CUI and CUI.IS_FOREVER) then return end
@@ -37,6 +50,11 @@ local killed = {} -- npc id -> true, this run
 local floor -- the floor on show
 local manualFloor = false -- a < > pick holds until the next kill
 local autoShown = false -- opened by entering a dungeon (leaving closes it again)
+local FIT_YARDS = 40 -- the furthest a reading may sit from the fit
+local MAX_READINGS = 12 -- per floor, oldest dropped
+local youDot, youLine, arrow, yardsText, ticker
+local Fit, DrawYou, PositionShown -- below, used by Draw
+local fits = {} -- floor -> fit, for the dungeon on show (nil: not worked out yet)
 
 -------------------------------------------------------------------------------
 --  Route
@@ -221,6 +239,146 @@ local function Draw()
     local floors = map.floors or 1
     floorBar:SetShown(floors > 1)
     floorName:SetText(FloorName(floor))
+    DrawYou()
+end
+
+-------------------------------------------------------------------------------
+--  Where you are
+-------------------------------------------------------------------------------
+local function Secret(v) return v ~= nil and issecretvalue and issecretvalue(v) end
+
+-- Your position in the dungeon (world yards, x north, y west), or nil.
+local function Position()
+    local x, y = UnitPosition("player")
+    if x == nil or Secret(x) or Secret(y) then return nil end
+    return x, y
+end
+
+local function Readings(floorNumber, create)
+    if not dungeon then return nil end
+    local all = create and Cfg() or F.Read()
+    local byKey = all.readings
+    if not byKey then
+        if not create then return nil end
+        byKey = {}
+        all.readings = byKey
+    end
+    local mine = byKey[dungeon.key]
+    if not mine then
+        if not create then return nil end
+        mine = {}
+        byKey[dungeon.key] = mine
+    end
+    local list = mine[floorNumber]
+    if not list and create then
+        list = {}
+        mine[floorNumber] = list
+    end
+    return list
+end
+
+-- A straight fit of picture across (u) on world y and down (v) on world x.
+local function LineFit(list, wi, pi)
+    local n, sw, sp, sww, swp = #list, 0, 0, 0, 0
+    for _, r in ipairs(list) do
+        local w, q = r[wi], r[pi]
+        sw, sp, sww, swp = sw + w, sp + q, sww + w * w, swp + w * q
+    end
+    local d = n * sww - sw * sw
+    if n < 2 or math.abs(d) < 1e-6 then return nil end
+    local slope = (n * swp - sw * sp) / d
+    return slope, (sp - slope * sw) / n
+end
+
+function Fit(floorNumber)
+    if fits[floorNumber] ~= nil then return fits[floorNumber] or nil end
+    local list = Readings(floorNumber)
+    local fit = false
+    if list and #list >= 2 then
+        local su, au = LineFit(list, 2, 3) -- u from world y
+        local sv, av = LineFit(list, 1, 4) -- v from world x
+        -- North up: going west moves left (u falls), going north moves up (v falls).
+        if su and sv and su < 0 and sv < 0 then
+            local shape = sv / su
+            local worst = 0
+            for _, r in ipairs(list) do
+                local du, dv = (su * r[2] + au - r[3]) / su, (sv * r[1] + av - r[4]) / sv
+                worst = math.max(worst, math.sqrt(du * du + dv * dv))
+            end
+            if shape > 1.2 and shape < 1.8 and worst <= FIT_YARDS then fit = { su = su, au = au, sv = sv, av = av } end
+        end
+    end
+    fits[floorNumber] = fit
+    return fit or nil
+end
+
+local function Note(floorNumber, u, v)
+    local x, y = Position()
+    if not x then return end
+    local list = Readings(floorNumber, true)
+    list[#list + 1] = { x, y, u, v }
+    while #list > MAX_READINGS do
+        table.remove(list, 1)
+    end
+    fits[floorNumber] = nil
+end
+
+local function ToPicture(fit, x, y) return fit.su * y + fit.au, fit.sv * x + fit.av end
+local function ToWorld(fit, u, v) return (v - fit.av) / fit.sv, (u - fit.au) / fit.su end
+
+-- The you dot, the line on to the next boss and the arrow, kept current.
+function DrawYou()
+    if not (window and window:IsShown() and youDot) then return end
+    local x, y = Position()
+    local fit = x and dungeon and Fit(floor or 1)
+    local nextStop = fit and NextStop()
+    if not fit then
+        youDot:Hide()
+        youLine:Hide()
+        arrow:Hide()
+        -- Why there is no arrow: the game hides where you are, or the map is
+        -- still learning how it lines up (it needs the entrance and a kill).
+        local why = ""
+        if dungeon and not x then
+            why = CUI.L("position hidden")
+        elseif dungeon then
+            why = CUI.L("learning map")
+        end
+        yardsText:SetText(why)
+        return
+    end
+    local u, v = ToPicture(fit, x, y)
+    local inside = u >= 0 and u <= 1 and v >= 0 and v <= 1
+    youDot:SetShown(inside)
+    if inside then At(youDot, u, v) end
+    if nextStop and nextStop.floor == floor and inside then
+        youLine:SetStartPoint("TOPLEFT", canvas, u * MAP_W, -v * MAP_H)
+        youLine:SetEndPoint("TOPLEFT", canvas, nextStop.x * MAP_W, -nextStop.y * MAP_H)
+        youLine:Show()
+    else
+        youLine:Hide()
+    end
+    if not (nextStop and nextStop.floor == floor) then
+        arrow:Hide()
+        yardsText:SetText("")
+        return
+    end
+    local tx, ty = ToWorld(fit, nextStop.x, nextStop.y)
+    local dx, dy = tx - x, ty - y
+    yardsText:SetText(("%d yd"):format(math.sqrt(dx * dx + dy * dy)))
+    local facing = GetPlayerFacing and GetPlayerFacing()
+    if facing and not Secret(facing) then
+        arrow:SetRotation(math.atan2(dy, dx) - facing + math.pi)
+        arrow:Show()
+    else
+        arrow:Hide()
+    end
+end
+
+-- Whether the game gives your position here: true, false, or nil outside.
+function PositionShown()
+    if not dungeon then return nil end
+    return Position() ~= nil
 end
 
 -------------------------------------------------------------------------------
@@ -271,7 +429,33 @@ local function Build()
     floorName:SetPoint("RIGHT", up, "LEFT", -4, 0)
     floorName:SetWordWrap(false)
     floorName:SetTextColor(Pal.muted[1], Pal.muted[2], Pal.muted[3])
-    window:SetScript("OnShow", Draw)
+    youLine = canvas:CreateLine(nil, "OVERLAY")
+    youLine:SetThickness(2)
+    youLine:SetColorTexture(1, 1, 1, 0.7)
+    youDot = canvas:CreateTexture(nil, "OVERLAY", nil, 7)
+    youDot:SetSize(10, 10)
+    youDot:SetTexture("Interface\\AddOns\\CludesUI\\media\\white-square.png")
+    youDot:SetVertexColor(1, 1, 1, 1)
+    arrow = window:CreateTexture(nil, "OVERLAY")
+    arrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png")
+    arrow:SetSize(18, 18)
+    arrow:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", -PAD, PAD + 1)
+    arrow:SetVertexColor(CUI.Kit.Accent())
+    yardsText = window:CreateFontString(nil, "OVERLAY")
+    CUI.Kit.Font(yardsText, CUI.Kit.SMALL_SIZE, "essentials")
+    yardsText:SetPoint("RIGHT", arrow, "LEFT", -4, 0)
+    yardsText:SetTextColor(Pal.muted[1], Pal.muted[2], Pal.muted[3])
+    footText:SetPoint("RIGHT", window, "RIGHT", -(PAD + 80), 0)
+    window:SetScript("OnShow", function()
+        Draw()
+        if not ticker then ticker = C_Timer.NewTicker(0.2, DrawYou) end
+    end)
+    window:SetScript("OnHide", function()
+        if ticker then
+            ticker:Cancel()
+            ticker = nil
+        end
+    end)
     window:Hide()
     return window
 end
@@ -290,14 +474,25 @@ local function Detect()
     end
 end
 
-local function Enter()
+local function Enter(zonedIn)
     local found = Detect()
     if found and found ~= dungeon then
         -- A different dungeon: a new run.
         dungeon, map = found, J.Maps[found.key]
         wipe(killed)
+        wipe(fits)
         floor, manualFloor = nil, false
         BuildRoute()
+    end
+    -- Zoning in puts you at the entrance: a reading of where it is.
+    if found and zonedIn and map.entrance then
+        local e = map.entrance
+        C_Timer.After(1.5, function()
+            if dungeon == found then
+                Note(e[1], e[2], e[3])
+                Draw()
+            end
+        end)
     end
     if found and Get("autoShow") and not (window and window:IsShown()) then
         Build():Show()
@@ -314,6 +509,7 @@ local function Killed(npc)
     for _, entry in ipairs(route) do
         if entry.boss.npc == npc and not killed[npc] then
             killed[npc] = true
+            Note(entry.floor, entry.x, entry.y)
             manualFloor = false
             Draw()
             return
@@ -325,7 +521,10 @@ local function KilledEncounter(encounterID)
     if not dungeon then return end
     for _, entry in ipairs(route) do
         for _, id in ipairs(entry.boss.encounters or {}) do
-            if id == encounterID then killed[entry.boss.npc] = true end
+            if id == encounterID and not killed[entry.boss.npc] then
+                killed[entry.boss.npc] = true
+                Note(entry.floor, entry.x, entry.y)
+            end
         end
     end
     manualFloor = false
@@ -344,6 +543,9 @@ events:SetScript("OnEvent", function(_, event, ...)
         if sub ~= "UNIT_DIED" or type(guid) ~= "string" or (issecretvalue and issecretvalue(guid)) then return end
         local kind, _, _, _, _, npc = strsplit("-", guid)
         if kind == "Creature" then Killed(tonumber(npc)) end
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        local login, reload = ...
+        Enter(not (login or reload))
     else
         Enter()
     end
@@ -366,7 +568,7 @@ end
 SLASH_CUIDUNGEONMAP1 = "/cdmap"
 SlashCmdList.CUIDUNGEONMAP = function()
     if not On() then
-        CUI.Print(CUI.L("Dungeon Map is off: turn it on under Forever Tools > General > Dungeon Journal."))
+        CUI.Print(CUI.L("Dungeon Map is off: turn it on under Forever Tools > Dungeons & Raids > Dungeon Journal."))
         return
     end
     local w = Build()
@@ -392,6 +594,11 @@ CUI._DungeonMap = {
     Toggle = SlashCmdList.CUIDUNGEONMAP,
     -- For tests: the dungeon on show, its route and the next stop.
     State = function() return dungeon, route, NextStop(), killed end,
+    Fit = function(n) return Fit(n or floor or 1) end,
+    Map = function() return map, floor end,
+    PositionShown = function() return PositionShown() end,
+    DrawYou = function() DrawYou() end,
+    You = function() return youDot, youLine, arrow, yardsText end,
     Enter = Enter,
     KilledEncounter = KilledEncounter,
     Killed = Killed,
