@@ -61,10 +61,10 @@ local function ClassHex(class)
     return cc and ("|cff%02x%02x%02x"):format(cc.r * 255, cc.g * 255, cc.b * 255) or "|cffffffff"
 end
 
-local function RoleText(bits)
+local function RoleText(mask)
     local parts = {}
     for _, pair in ipairs(ROLE_LETTERS) do
-        if bit.band(bits or 0, pair[1]) ~= 0 then parts[#parts + 1] = pair[2] end
+        if bit.band(mask or 0, pair[1]) ~= 0 then parts[#parts + 1] = pair[2] end
     end
     return table.concat(parts)
 end
@@ -77,19 +77,19 @@ end
 
 local function Score(tenths) return tenths and ("%.1f"):format(tenths / 10) or nil end
 
-local function KillsText(card)
-    if not (card and card.hasKills) then return nil end
+local function KillsText(cardRec)
+    if not (cardRec and cardRec.killsShared) then return nil end
     local total = 0
-    for i = 1, card.nKills do
-        total = total + card.kills[i]
+    for i = 1, cardRec.killCount do
+        total = total + cardRec.killList[i]
     end
     if total == 0 then return "First time" end
     return total == 1 and "1 boss kill" or ("%d boss kills"):format(total)
 end
 
-local function QuestsText(card)
-    if not (card and card.hasQuests) or card.nHave == 0 then return nil end
-    return card.nHave == 1 and "1 quest" or ("%d quests"):format(card.nHave)
+local function QuestsText(cardRec)
+    if not (cardRec and cardRec.questsShared) or cardRec.haveCount == 0 then return nil end
+    return cardRec.haveCount == 1 and "1 quest" or ("%d quests"):format(cardRec.haveCount)
 end
 
 local function Whisper(name)
@@ -112,8 +112,8 @@ local Paint
 local function PickText()
     if Search.pick == Search.ALL then return "Every dungeon" end
     if Search.pick == Search.LEVEL then return "For your level" end
-    local activity = Listings.Activity(Search.pick)
-    return activity and activity.short or "For your level"
+    local act = Listings.ActivityFacts(Search.pick)
+    return act and act.short or "For your level"
 end
 
 local function DungeonMenu(owner)
@@ -121,22 +121,22 @@ local function DungeonMenu(owner)
         root:CreateRadio("For your level", function() return Search.pick == Search.LEVEL end, function() Search.Run(Search.LEVEL) Paint() end)
         root:CreateRadio("Every dungeon", function() return Search.pick == Search.ALL end, function() Search.Run(Search.ALL) Paint() end)
         root:CreateDivider()
-        local list = {}
-        Search.Activities(list)
-        for _, id in ipairs(list) do
-            local activity = Listings.Activity(id)
-            local label = activity.max > 0 and ("%s  %d-%d"):format(activity.short, activity.min, activity.max) or activity.short
-            if not Search.Suits(id) then label = "|cff808080" .. label .. "|r" end
-            root:CreateRadio(label, function() return Search.pick == id end, function() Search.Run(id) Paint() end)
+        local items = {}
+        Search.ActivityList(items)
+        for _, ref in ipairs(items) do
+            local act = Listings.ActivityFacts(ref)
+            local label = act.max > 0 and ("%s  %d-%d"):format(act.short, act.min, act.max) or act.short
+            if not Search.FitsLevel(ref) then label = "|cff808080" .. label .. "|r" end
+            root:CreateRadio(label, function() return Search.pick == ref end, function() Search.Run(ref) Paint() end)
         end
     end)
 end
 
 local function SortMenu(owner)
     Kit.ContextMenu(owner, function(_, root)
-        for _, key in ipairs(SORT_ORDER) do
-            root:CreateRadio(SORT_NAMES[key], function() return LFG.Get("sort") == key end, function()
-                LFG.Cfg().sort = key
+        for _, nameKey in ipairs(SORT_ORDER) do
+            root:CreateRadio(SORT_NAMES[nameKey], function() return LFG.Get("sort") == nameKey end, function()
+                LFG.Cfg().sort = nameKey
                 Paint()
             end)
         end
@@ -191,62 +191,62 @@ local function NewBrowseRow(i)
     return row
 end
 
-local function PaintBrowseRow(row, entry)
-    local activity = entry.activity and Listings.Activity(entry.activity)
-    local leader = entry.members[1]
-    for m = 1, entry.nMembers do
-        if entry.members[m].leader then leader = entry.members[m] end
+local function PaintBrowseRow(row, lst)
+    local act = lst.activity and Listings.ActivityFacts(lst.activity)
+    local leadName = lst.members[1]
+    for m = 1, lst.nMembers do
+        if lst.members[m].leader then leadName = lst.members[m] end
     end
-    local card = entry.leader and Browse.CardOf(entry.leader)
-    row.leaderName, row.dungeon = entry.leader, entry.dungeon
+    local cardRec = lst.leader and Browse.KnownCard(lst.leader)
+    row.leaderName, row.dungeon = lst.leader, lst.dungeon
     local head = {}
-    if leader then
-        head[#head + 1] = ClassHex(leader.class) .. (entry.leader or leader.name or "?") .. "|r"
-        if leader.level then head[#head + 1] = tostring(leader.level) end
-        if leader.zone then head[#head + 1] = "|cff9aa6b2" .. leader.zone .. "|r" end
+    if leadName then
+        head[#head + 1] = ClassHex(leadName.class) .. (lst.leader or leadName.name or "?") .. "|r"
+        if leadName.level then head[#head + 1] = tostring(leadName.level) end
+        if leadName.zone then head[#head + 1] = "|cff9aa6b2" .. leadName.zone .. "|r" end
     else
-        head[#head + 1] = entry.leader or "?"
+        head[#head + 1] = lst.leader or "?"
     end
-    local score = card and Score(card.score)
+    local score = cardRec and Score(cardRec.score)
     if score then head[#head + 1] = "|cffffd100GS " .. score .. "|r" end
     row.head:SetText(table.concat(head, "  "))
     local sub = {}
-    if activity then
-        sub[#sub + 1] = activity.max > 0 and ("%s %d-%d"):format(activity.name, activity.min, activity.max) or activity.name
+    if act then
+        sub[#sub + 1] = act.max > 0 and ("%s %d-%d"):format(act.name, act.min, act.max) or act.name
     end
-    local kills, quests = KillsText(card), QuestsText(card)
-    if kills then sub[#sub + 1] = kills end
+    local killList, quests = KillsText(cardRec), QuestsText(cardRec)
+    if killList then sub[#sub + 1] = killList end
     if quests then sub[#sub + 1] = quests end
     row.sub:SetText(table.concat(sub, "   "))
-    local size = activity and activity.size or 5
-    if entry.numMembers <= 1 and leader then
-        row.slots:SetText(RoleText(leader.roles))
+    local size = act and act.size or 5
+    if lst.numMembers <= 1 and leadName then
+        row.slots:SetText(RoleText(leadName.roles))
     else
-        row.slots:SetText(("T%d H%d D%d  %d/%d"):format(entry.tanks, entry.healers, entry.damage, entry.numMembers, size))
+        row.slots:SetText(("T%d H%d D%d  %d/%d"):format(lst.tankCount, lst.healerCount, lst.damageCount, lst.numMembers, size))
     end
-    row.age:SetText(Age(entry.age))
-    local sentTo = entry.leader and Comms.SentTo(entry.leader)
-    row.apply:SetShown(card ~= nil and not entry.mine and not entry.delisted and not sentTo)
-    row.whisper:SetShown(not entry.mine and entry.leader ~= nil)
-    if entry.mine then
+    row.age:SetText(Age(lst.age))
+    local sentTo = lst.leader and Comms.AppliedTo(lst.leader)
+    row.apply:SetShown(cardRec ~= nil and not lst.mine and not lst.delisted and not sentTo)
+    row.whisper:SetShown(not lst.mine and lst.leader ~= nil)
+    if lst.mine then
         row.status:SetText("Your group")
     elseif sentTo then
         row.status:SetText(sentTo.declined and "Declined" or sentTo.acked and "Received" or "Applied")
     else
         row.status:SetText("")
     end
-    row:SetAlpha(entry.delisted and 0.4 or 1)
+    row:SetAlpha(lst.delisted and 0.4 or 1)
     local tip = {}
-    local group = card and card.group
-    if group then
-        if group.min > 0 then tip[#tip + 1] = ("Minimum Gear Score %.1f"):format(group.min / 10) end
-        tip[#tip + 1] = ("Needs %d tank, %d healer, %d damage"):format(group.tanks, group.healers, group.damage)
-        if group.note ~= "" then tip[#tip + 1] = group.note end
+    local groupInfo = cardRec and cardRec.group
+    if groupInfo then
+        if groupInfo.min > 0 then tip[#tip + 1] = ("Minimum Gear Score %.1f"):format(groupInfo.min / 10) end
+        tip[#tip + 1] = ("Needs %d tank, %d healer, %d damage"):format(groupInfo.tankCount, groupInfo.healerCount, groupInfo.damageCount)
+        if groupInfo.memo ~= "" then tip[#tip + 1] = groupInfo.memo end
     end
-    for m = 1, entry.nMembers do
-        local member = entry.members[m]
-        tip[#tip + 1] = ("%s%s|r %s %s%s"):format(ClassHex(member.class), member.name or "?", member.level or "",
-            RoleText(member.roles), member.zone and ("  |cff9aa6b2" .. member.zone .. "|r") or "")
+    for m = 1, lst.nMembers do
+        local m2 = lst.members[m]
+        tip[#tip + 1] = ("%s%s|r %s %s%s"):format(ClassHex(m2.class), m2.name or "?", m2.level or "",
+            RoleText(m2.roles), m2.zone and ("  |cff9aa6b2" .. m2.zone .. "|r") or "")
     end
     row.tip = #tip > 0 and tip or nil
     row:Show()
@@ -255,40 +255,40 @@ end
 local function PaintBrowse()
     browse.pick:SetText("Dungeon: " .. PickText())
     browse.sort:SetText("Sort: " .. (SORT_NAMES[LFG.Get("sort")] or "Newest"))
-    local n = Listings.Read()
+    local n = Listings.Refresh()
     wipe(order)
     for i = 1, n do
-        local entry = Listings.entries[i]
-        if Browse.Matches(entry, needle) then order[#order + 1] = entry end
+        local lst = Listings.listingsList[i]
+        if Browse.PassesFilter(lst, needle) then order[#order + 1] = lst end
     end
-    Browse.Sort(order, LFG.Get("sort"))
-    for i, entry in ipairs(order) do
-        PaintBrowseRow(browse.rows[i] or NewBrowseRow(i), entry)
+    Browse.Order(order, LFG.Get("sort"))
+    for i, lst in ipairs(order) do
+        PaintBrowseRow(browse.rows[i] or NewBrowseRow(i), lst)
     end
     for i = #order + 1, #browse.rows do
         browse.rows[i]:Hide()
     end
     browse.content:SetHeight(math.max(1, #order * (ROW_H + 2)))
     local state = Search.state
-    local note
+    local memo
     if InCombatLockdown() and IsEncounterInProgress and IsEncounterInProgress() then
-        note = "The group finder is closed during a boss fight."
+        memo = "The group finder is closed during a boss fight."
     elseif state == "searching" then
-        note = "Searching..."
+        memo = "Searching..."
     elseif state == "failed" then
-        note = "The search failed. Try Search again."
+        memo = "The search failed. Try Search again."
     elseif state == "unavailable" then
-        note = "The group finder has nothing for your level yet."
+        memo = "The group finder has nothing for your level yet."
     elseif Listings.state == "locked" then
-        note = "Listings cannot be read right now. Try again after combat."
+        memo = "Listings cannot be read right now. Try again after combat."
     elseif not Listings.searched then
-        note = "Press Search to find groups."
+        memo = "Press Search to find groups."
     elseif #order == 0 then
-        note = needle ~= "" and "No group matches your filter." or "No groups listed right now."
+        memo = needle ~= "" and "No group matches your filter." or "No groups listed right now."
     end
-    browse.note:SetText(note or "")
+    browse.memo:SetText(memo or "")
     browse.count:SetText(Listings.searched and (#order == 1 and "1 group" or ("%d groups"):format(#order)) or "")
-    Browse.Ask()
+    Browse.Request()
 end
 
 local function BuildBrowse(page)
@@ -314,9 +314,9 @@ local function BuildBrowse(page)
     scroll:SetPoint("TOPLEFT", 0, -(BAR_H + 22))
     scroll:SetPoint("BOTTOMRIGHT", -10, 0)
     browse.content = content
-    browse.note = Text(page, Kit.TEXT_SIZE, Pal.muted)
-    browse.note:SetPoint("TOP", scroll, "TOP", 0, -30)
-    browse.note:SetJustifyH("CENTER")
+    browse.memo = Text(page, Kit.TEXT_SIZE, Pal.muted)
+    browse.memo:SetPoint("TOP", scroll, "TOP", 0, -30)
+    browse.memo:SetJustifyH("CENTER")
 end
 
 -------------------------------------------------------------------------------
@@ -338,18 +338,18 @@ local function NewApplicantRow(i)
     row.sub:SetPoint("BOTTOMLEFT", 8, 6)
     row.sub:SetPoint("RIGHT", row, "RIGHT", -160, 0)
     row.invite = Kit.Button(row, "Invite", 70, 20, function()
-        local record = row.record
-        if record and not record.invited and Group.Answering() and Comms.HasApplicant(record) then
-            C_PartyInfo.InviteUnit(record.name)
-            record.invited = true
+        local app = row.app
+        if app and not app.invited and Group.Answering() and Comms.IsApplicant(app) then
+            C_PartyInfo.InviteUnit(app.name)
+            app.invited = true
             Paint()
         end
     end, { key = "essentials" })
     row.invite:SetPoint("RIGHT", row, "RIGHT", -82, 0)
     row.decline = Kit.Button(row, "Decline", 70, 20, function()
-        local record = row.record
-        if record and Group.Answering() and Comms.HasApplicant(record) then
-            if not Comms.Decline(record.name) then
+        local app = row.app
+        if app and Group.Answering() and Comms.IsApplicant(app) then
+            if not Comms.Refuse(app.name) then
                 CUI.Print("|cff4cc9f0Looking For Group:|r too many whispers are waiting to be sent. Try Decline again in a moment.")
             end
             Paint()
@@ -358,9 +358,9 @@ local function NewApplicantRow(i)
     row.decline:SetPoint("RIGHT", row, "RIGHT", -6, 0)
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
-        if not (self.record and self.record.note) then return end
+        if not (self.app and self.app.memo) then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine(self.record.note, 1, 1, 1, true)
+        GameTooltip:AddLine(self.app.memo, 1, 1, 1, true)
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -371,11 +371,11 @@ end
 local applicantOrder = {}
 local function PaintYours()
     local listed = Group.Listed()
-    local info = C_LFGList.GetActiveEntryInfo and C_LFGList.GetActiveEntryInfo()
+    local res = C_LFGList.GetActiveEntryInfo and C_LFGList.GetActiveEntryInfo()
     local lines = {}
-    if listed and info and info.activityIDs and info.activityIDs[1] then
-        local activity = Listings.Activity(info.activityIDs[1])
-        lines[#lines + 1] = activity and activity.name or "Your listing"
+    if listed and res and res.activityIDs and res.activityIDs[1] then
+        local act = Listings.ActivityFacts(res.activityIDs[1])
+        lines[#lines + 1] = act and act.name or "Your listing"
     else
         lines[#lines + 1] = "You are not listed. Use Create to list your group."
     end
@@ -386,7 +386,7 @@ local function PaintYours()
         if Group.min > 0 then facts[#facts + 1] = ("Minimum Gear Score %.1f"):format(Group.min / 10) end
         if Group.listedAt then facts[#facts + 1] = "Listed " .. Age(GetTime() - Group.listedAt) end
     end
-    facts[#facts + 1] = #Comms.applicants == 1 and "1 applied" or ("%d applied"):format(#Comms.applicants)
+    facts[#facts + 1] = #Comms.incomingApps == 1 and "1 applied" or ("%d applied"):format(#Comms.incomingApps)
     yours.title:SetText(lines[1])
     yours.facts:SetText(listed and table.concat(facts, "   ") or "")
     local party = {}
@@ -400,26 +400,26 @@ local function PaintYours()
     yours.delist:SetShown(listed and Group.CanEdit())
     wipe(applicantOrder)
     if Group.CanEdit() then
-        for _, record in ipairs(Comms.applicants) do
-            applicantOrder[#applicantOrder + 1] = record
+        for _, app in ipairs(Comms.incomingApps) do
+            applicantOrder[#applicantOrder + 1] = app
         end
     end
     table.sort(applicantOrder, function(a, b) return (a.card.score or -1) > (b.card.score or -1) end)
-    for i, record in ipairs(applicantOrder) do
+    for i, app in ipairs(applicantOrder) do
         local row = yours.rows[i] or NewApplicantRow(i)
-        row.record = record
-        local card = record.card
-        local head = { ClassHex(card.class) .. record.name .. "|r", tostring(card.level), RoleText(card.roles) }
-        local score = Score(card.score)
+        row.app = app
+        local cardRec = app.card
+        local head = { ClassHex(cardRec.class) .. app.name .. "|r", tostring(cardRec.level), RoleText(cardRec.roles) }
+        local score = Score(cardRec.score)
         if score then head[#head + 1] = "|cffffd100GS " .. score .. "|r" end
         row.head:SetText(table.concat(head, "  "))
         local sub = {}
-        local kills, quests = KillsText(card), QuestsText(card)
-        if kills then sub[#sub + 1] = kills end
+        local killList, quests = KillsText(cardRec), QuestsText(cardRec)
+        if killList then sub[#sub + 1] = killList end
         if quests then sub[#sub + 1] = quests end
-        sub[#sub + 1] = Age(GetTime() - record.at)
+        sub[#sub + 1] = Age(GetTime() - app.at)
         row.sub:SetText(table.concat(sub, "   "))
-        row.invite:SetText(record.invited and "Invited" or "Invite")
+        row.invite:SetText(app.invited and "Invited" or "Invite")
         row:Show()
     end
     for i = #applicantOrder + 1, #yours.rows do
@@ -455,10 +455,10 @@ end
 -------------------------------------------------------------------------------
 --  Create
 -------------------------------------------------------------------------------
-local activities = {}
-local function Kicker(page, text)
+local acts = {}
+local function Kicker(page, textLine)
     local fs = Text(page, Kit.SMALL_SIZE, CUI.Kit.SyncAccent({}))
-    fs:SetText(text)
+    fs:SetText(textLine)
     return fs
 end
 
@@ -466,7 +466,7 @@ local function PaintCreate()
     local page = create.page
     local width = (page:GetWidth() and page:GetWidth() > 0) and page:GetWidth() or (WIN_W - PAD * 2)
     local tileW = math.floor((width - (TILE_COLS - 1) * TILE_GAP) / TILE_COLS)
-    local n = Search.Activities(activities)
+    local n = Search.ActivityList(acts)
     create.empty:SetShown(n == 0)
     local y = 16
     for i = 1, n do
@@ -480,18 +480,18 @@ local function PaintCreate()
             tile.range:SetPoint("BOTTOMLEFT", 6, 4)
             create.tiles[i] = tile
         end
-        local id = activities[i]
-        local activity = Listings.Activity(id)
-        tile.activity = id
+        local ref = acts[i]
+        local act = Listings.ActivityFacts(ref)
+        tile.activity = ref
         tile:SetSize(tileW, TILE_H)
         tile:ClearAllPoints()
         local column, line = (i - 1) % TILE_COLS, math.floor((i - 1) / TILE_COLS)
         tile:SetPoint("TOPLEFT", column * (tileW + TILE_GAP), -(y + line * (TILE_H + TILE_GAP)))
-        tile:SetText(activity.short)
-        tile.range:SetText(activity.max > 0 and ("%d-%d"):format(activity.min, activity.max) or "")
-        local color = GetQuestDifficultyColor and GetQuestDifficultyColor(activity.min > 0 and activity.min or UnitLevel("player"))
+        tile:SetText(act.short)
+        tile.range:SetText(act.max > 0 and ("%d-%d"):format(act.min, act.max) or "")
+        local color = GetQuestDifficultyColor and GetQuestDifficultyColor(act.min > 0 and act.min or UnitLevel("player"))
         if color then tile.range:SetTextColor(color.r, color.g, color.b) end
-        tile:SetActive(Group.activity == id)
+        tile:SetActive(Group.activity == ref)
         tile:Show()
     end
     for i = n + 1, #create.tiles do
@@ -519,8 +519,8 @@ local function PaintCreate()
     y = y + 32
     create.kNote:SetPoint("TOPLEFT", 0, -y)
     y = y + 16
-    create.note:SetPoint("TOPLEFT", 0, -y)
-    create.count:SetText(("%d/%d"):format(#Group.note, Card.NOTE_MAX))
+    create.memo:SetPoint("TOPLEFT", 0, -y)
+    create.count:SetText(("%d/%d"):format(#Group.memo, Card.NOTE_MAX))
     create.list:SetText(Group.Listed() and "Update Group" or "List Group")
     local why
     if not Group.CanEdit() then
@@ -541,7 +541,7 @@ local function BuildCreate(page)
     create.empty:SetText("The group finder has no dungeons for your level yet.")
     create.kRoles = Kicker(page, "ROLES NEEDED")
     create.roles = {}
-    for i, role in ipairs({ { "tanks", "Tank" }, { "healers", "Healer" }, { "damage", "Damage" } }) do
+    for i, role in ipairs({ { "tankCount", "Tank" }, { "healerCount", "Healer" }, { "damageCount", "Damage" } }) do
         local holder = CreateFrame("Frame", nil, page)
         holder:SetSize(180, 22)
         holder.field = role[1]
@@ -588,14 +588,14 @@ local function BuildCreate(page)
         end, { key = "essentials" })
     end
     create.kNote = Kicker(page, "NOTE")
-    create.note = Kit.Input(page, 420, 22, "What you are looking for (only CludesUI players see it)", "essentials")
-    create.note:SetMaxLetters(Card.NOTE_MAX)
-    create.note:HookScript("OnTextChanged", function(self)
-        Group.note = Card.CleanNote(self:GetText())
-        if create.count then create.count:SetText(("%d/%d"):format(#Group.note, Card.NOTE_MAX)) end
+    create.memo = Kit.Input(page, 420, 22, "What you are looking for (only CludesUI players see it)", "essentials")
+    create.memo:SetMaxLetters(Card.NOTE_MAX)
+    create.memo:HookScript("OnTextChanged", function(self)
+        Group.memo = Card.TidyNote(self:GetText())
+        if create.count then create.count:SetText(("%d/%d"):format(#Group.memo, Card.NOTE_MAX)) end
     end)
     create.count = Text(page, Kit.SMALL_SIZE, Pal.muted)
-    create.count:SetPoint("LEFT", create.note, "RIGHT", 8, 0)
+    create.count:SetPoint("LEFT", create.memo, "RIGHT", 8, 0)
     create.list = Kit.Button(page, "List Group", 120, BAR_H, function()
         if Group.List() then
             tab = "yours"
@@ -604,9 +604,9 @@ local function BuildCreate(page)
     end, { key = "essentials" })
     create.list:SetPoint("BOTTOMRIGHT", 0, 0)
     create.reset = Kit.Button(page, "Reset", 80, BAR_H, function()
-        Group.activity, Group.style, Group.min, Group.note = nil, nil, 0, ""
-        Group.tanks, Group.healers, Group.damage = 1, 1, 3
-        create.note:SetText("")
+        Group.activity, Group.style, Group.min, Group.memo = nil, nil, 0, ""
+        Group.tankCount, Group.healerCount, Group.damageCount = 1, 1, 3
+        create.memo:SetText("")
         Paint()
     end, { key = "essentials" })
     create.reset:SetPoint("RIGHT", create.list, "LEFT", -8, 0)
@@ -621,8 +621,8 @@ local TABS = { { "browse", "Browse" }, { "yours", "Your Group" }, { "create", "C
 
 function Paint()
     if not (window and window:IsShown()) then return end
-    for key, page in pairs(pages) do
-        page:SetShown(key == tab)
+    for nameKey, page in pairs(pages) do
+        page:SetShown(nameKey == tab)
     end
     for _, button in ipairs(tabs) do
         button:SetActive(button.key == tab)
@@ -679,7 +679,7 @@ end
 
 for _, what in ipairs({ "listings", "listing", "search", "card", "noreply", "offline", "applicant", "received",
     "declined", "withdrawn", "expired", "applicantExpired", "applied", "group" }) do
-    GF.Listen(what, function() Paint() end)
+    GF.Subscribe(what, function() Paint() end)
 end
 
 CUI._LFG.Toggle = Toggle
