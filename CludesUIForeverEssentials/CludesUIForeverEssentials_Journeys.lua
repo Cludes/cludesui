@@ -68,7 +68,7 @@ local Planner = {}
 do
     local sqrt, huge = math.sqrt, math.huge
     local FROM, TO = 1, 2
-    local LINK_STEP = { Tram = "tram", Lift = "lift" }
+    local CHAIN_STEP = { Tram = "tram", Lift = "lift" }
 
     local function Serves(side, faction) return side:find(faction, 1, true) ~= nil end
 
@@ -78,20 +78,20 @@ do
     end
     Planner.Distance = Distance
 
-    local function AddPlace(places, place)
+    local function PutPlace(places, place)
         places[#places + 1] = place
         place.index = #places
         return place
     end
 
     local built = { key = nil }
-    local function BuildNetwork(ctx, net)
+    local function MakeNetwork(ctx, net)
         local key = ctx.faction .. ":" .. ctx.knownVersion
         if built.key == key then return built end
         local places, masters, piers = { false, false }, {}, {}
         for id, f in pairs(net.flights) do
             if Serves(f[6], ctx.faction) and ctx.known[id] then
-                masters[id] = AddPlace(places, { kind = "flight", net = true, id = id, name = f[1], c = f[2], x = f[3], y = f[4], key = "f" .. id })
+                masters[id] = PutPlace(places, { kind = "flight", net = true, id = id, name = f[1], c = f[2], x = f[3], y = f[4], key = "f" .. id })
             end
         end
         for s, ship in ipairs(net.ships) do
@@ -99,16 +99,16 @@ do
                 piers[s] = {}
                 for i = 3, #ship do
                     local d = ship[i]
-                    piers[s][i - 2] = AddPlace(places, { kind = "dock", net = true, ship = s, dock = i - 2, name = d[5], shipKind = ship[1],
+                    piers[s][i - 2] = PutPlace(places, { kind = "dock", net = true, ship = s, dock = i - 2, name = d[5], shipKind = ship[1],
                         c = d[1], x = d[2], y = d[3], key = "s" .. s .. "." .. (i - 2) })
                 end
             end
         end
-        for l, link in ipairs(net.links) do
-            if Serves(link[2], ctx.faction) then
-                local a, b = link[4], link[5]
-                local here = AddPlace(places, { kind = "link", net = true, link = l, name = a[4], linkKind = link[1], c = a[1], x = a[2], y = a[3], key = "l" .. l .. ".1" })
-                local there = AddPlace(places, { kind = "link", net = true, link = l, name = b[4], linkKind = link[1], c = b[1], x = b[2], y = b[3], key = "l" .. l .. ".2" })
+        for l, chain in ipairs(net.links) do
+            if Serves(chain[2], ctx.faction) then
+                local a, b = chain[4], chain[5]
+                local here = PutPlace(places, { kind = "link", net = true, link = l, name = a[4], linkKind = chain[1], c = a[1], x = a[2], y = a[3], key = "l" .. l .. ".1" })
+                local there = PutPlace(places, { kind = "link", net = true, link = l, name = b[4], linkKind = chain[1], c = b[1], x = b[2], y = b[3], key = "l" .. l .. ".2" })
                 here.other, there.other = there.index, here.index
             end
         end
@@ -118,14 +118,14 @@ do
 
     local function PlanPlaces(ctx, net)
         local places = {}
-        AddPlace(places, { kind = "start", key = "start", c = ctx.from.c, x = ctx.from.x, y = ctx.from.y, reach = ctx.from.reach })
-        AddPlace(places, { kind = "goal", key = "goal", c = ctx.to.c, x = ctx.to.x, y = ctx.to.y, name = ctx.to.name, reach = ctx.to.reach })
-        local shared = BuildNetwork(ctx, net)
+        PutPlace(places, { kind = "start", key = "start", c = ctx.from.c, x = ctx.from.x, y = ctx.from.y, reach = ctx.from.reach })
+        PutPlace(places, { kind = "goal", key = "goal", c = ctx.to.c, x = ctx.to.x, y = ctx.to.y, name = ctx.to.name, reach = ctx.to.reach })
+        local shared = MakeNetwork(ctx, net)
         for i = TO + 1, #shared.places do
             places[i] = shared.places[i]
         end
         for _, jump in ipairs(ctx.jumps or {}) do
-            AddPlace(places, { kind = "jump", key = "j" .. (jump.spell or jump.item), mode = jump.mode, name = jump.name, cast = jump.cast,
+            PutPlace(places, { kind = "jump", key = "j" .. (jump.spell or jump.item), mode = jump.mode, name = jump.name, cast = jump.cast,
                 spell = jump.spell, item = jump.item, c = jump.c, x = jump.x, y = jump.y, reach = jump.reach })
         end
         return places, shared.masters, shared.piers
@@ -184,11 +184,11 @@ do
 
     local function Voyage(ship, from, to)
         local speed = C.SHIP_SPEED[ship[1]]
-        local count = #ship - 2
+        local tally = #ship - 2
         local t, i = 0, from
         while i ~= to do
             t = t + ship[i + 2][7] / speed
-            i = i % count + 1
+            i = i % tally + 1
             if i ~= to then t = t + ship[i + 2][6] end
         end
         return t
@@ -255,11 +255,11 @@ do
         end
     end
 
-    local function LinkEdges(search, places, u, net)
+    local function ChainEdges(search, places, u, net)
         local a = places[u]
         if search.settled[a.other] then return end
         local seconds = net.links[a.link][3] + C.TRANSFER
-        if Improve(search, u, a.other, seconds) then search.stepTo[a.other] = { mode = LINK_STEP[a.linkKind] or "portal", seconds = seconds } end
+        if Improve(search, u, a.other, seconds) then search.stepTo[a.other] = { mode = CHAIN_STEP[a.linkKind] or "portal", seconds = seconds } end
     end
 
     local function JumpEdges(search, places)
@@ -275,16 +275,16 @@ do
     end
 
     local function Unwind(search, places, v)
-        local steps = {}
+        local stages = {}
         while search.cameFrom[v] do
             local step = search.stepTo[v]
             local place = places[v]
             step.name, step.kind, step.key, step.c, step.x, step.y = place.name, place.kind, place.key, place.c, place.x, place.y
             step.shipKind = place.shipKind
-            if step.mode ~= "walk" or step.seconds >= C.MIN_WALK then table.insert(steps, 1, step) end
+            if step.mode ~= "walk" or step.seconds >= C.MIN_WALK then table.insert(stages, 1, step) end
             v = search.cameFrom[v]
         end
-        return steps
+        return stages
     end
 
     local function SameRoute(a, b)
@@ -302,12 +302,12 @@ do
         if not first then return nil end
         for v = TO, #places do
             if places[v].key == first.key and search.secs[v] < huge then
-                local steps, seconds = Unwind(search, places, v), search.secs[v]
+                local stages, seconds = Unwind(search, places, v), search.secs[v]
                 for i = 2, #followed.legs do
-                    steps[#steps + 1] = followed.legs[i]
+                    stages[#stages + 1] = followed.legs[i]
                     seconds = seconds + followed.legs[i].seconds
                 end
-                return { seconds = seconds, legs = steps }
+                return { seconds = seconds, legs = stages }
             end
         end
     end
@@ -337,15 +337,15 @@ do
             if kind == "start" then JumpEdges(search, places) end
             if kind == "flight" then FlightEdges(ctx, search, places, u, net) end
             if kind == "dock" then ShipEdges(search, places, u, net) end
-            if kind == "link" then LinkEdges(search, places, u, net) end
+            if kind == "link" then ChainEdges(search, places, u, net) end
         end
         local winner
         if search.secs[TO] < huge then
-            local steps, seconds = Unwind(search, places, TO), 0
-            for _, step in ipairs(steps) do
+            local stages, seconds = Unwind(search, places, TO), 0
+            for _, step in ipairs(stages) do
                 seconds = seconds + step.seconds
             end
-            winner = { seconds = seconds, legs = steps }
+            winner = { seconds = seconds, legs = stages }
         end
         local carried = ctx.keep and Continued(ctx.keep, search, places)
         if carried and not (winner and WorthSwitching(winner, carried)) then return carried end
@@ -356,13 +356,13 @@ end
 -------------------------------------------------------------------------------
 --  World: where you are, the pin, flights you know, jumps you can take
 -------------------------------------------------------------------------------
-local knownVersion = 0
+local learnedVersion = 0
 local teleportBySpell = {}
 for _, tp in ipairs(module.JOURNEY_TELEPORTS or {}) do
     teleportBySpell[tp.spell] = tp
 end
 
-local function CharStore()
+local function CharKeep()
     local root = Cfg()
     root.chars = root.chars or {}
     local key = (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?")
@@ -370,17 +370,17 @@ local function CharStore()
     if not mine then
         mine = { flights = {}, landings = {} }
         root.chars[key] = mine
-        knownVersion = knownVersion + 1
+        learnedVersion = learnedVersion + 1
         -- Seed from the Flight Point Reminder's record of this character.
-        local seen = CludesUIDB and CludesUIDB.flightPointsKnown and CludesUIDB.flightPointsKnown[key]
-        for id, known in pairs(seen or {}) do
+        local spotted = CludesUIDB and CludesUIDB.flightPointsKnown and CludesUIDB.flightPointsKnown[key]
+        for id, known in pairs(spotted or {}) do
             if type(id) == "number" and known == true then mine.flights[id] = true end
         end
     end
     return mine
 end
 
-local function Player()
+local function Person()
     local x, y, _, c = UnitPosition("player")
     if not x or Secret(x) or Secret(y) or Secret(c) then return nil end
     return { c = c, x = x, y = y }
@@ -403,13 +403,13 @@ local function Ready(start, duration)
 end
 
 local function Jumps(faction)
-    local list = {}
-    local landings = CharStore().landings
+    local roster = {}
+    local landings = CharKeep().landings
     if Get("hearth") and landings.hearth and C_Item.GetItemCount(C.HEARTHSTONE) > 0 then
         local start, duration = C_Item.GetItemCooldown(C.HEARTHSTONE)
         if Ready(start, duration) then
             local home = landings.hearth
-            list[#list + 1] = { mode = "hearth", name = home.name or "home", cast = C.HEARTH_CAST, item = C.HEARTHSTONE, c = home.c, x = home.x, y = home.y }
+            roster[#roster + 1] = { mode = "hearth", name = home.name or "home", cast = C.HEARTH_CAST, item = C.HEARTHSTONE, c = home.c, x = home.x, y = home.y }
         end
     end
     if Get("teleports") then
@@ -418,34 +418,34 @@ local function Jumps(faction)
             local cd = known and C_Spell.GetSpellCooldown(tp.spell)
             if cd and Ready(cd.startTime, cd.duration) and (not tp.reagent or C_Item.GetItemCount(tp.reagent) > 0) then
                 local spot = landings[tp.spell] or tp
-                list[#list + 1] = { mode = "teleport", name = tp.name, cast = C.TELEPORT_CAST, spell = tp.spell, c = spot.c, x = spot.x, y = spot.y }
+                roster[#roster + 1] = { mode = "teleport", name = tp.name, cast = C.TELEPORT_CAST, spell = tp.spell, c = spot.c, x = spot.x, y = spot.y }
             end
         end
     end
-    return list
+    return roster
 end
 
 local atFlightMaster = false
-local function LearnFlights()
+local function GatherFlights()
     local taxi = GetTaxiMapID and GetTaxiMapID()
     if not taxi then return false end
-    local known = CharStore().flights
-    local changed = false
+    local known = CharKeep().flights
+    local altered = false
     for _, node in ipairs(C_TaxiMap.GetAllTaxiNodes(taxi) or {}) do
         local now = node.state ~= Enum.FlightPathState.Unreachable or nil
-        if node.nodeID and known[node.nodeID] ~= now then known[node.nodeID], changed = now, true end
+        if node.nodeID and known[node.nodeID] ~= now then known[node.nodeID], altered = now, true end
     end
-    if changed then knownVersion = knownVersion + 1 end
-    return changed
+    if altered then learnedVersion = learnedVersion + 1 end
+    return altered
 end
 
 local landing, castFrom
-local function LearnLanding()
-    local spell, spot = landing, Player()
+local function GatherLanding()
+    local spell, spot = landing, Person()
     if not spell or not spot then return end
     if castFrom and spot.c == castFrom.c and Planner.Distance(spot, castFrom) < 100 then return end
     landing, castFrom = nil, nil
-    local landings = CharStore().landings
+    local landings = CharKeep().landings
     if spell == C.HEARTH_SPELL then
         landings.hearth = { name = GetBindLocation and GetBindLocation() or "home", c = spot.c, x = spot.x, y = spot.y }
     else
@@ -463,20 +463,20 @@ local working, driver -- the plan being made, across frames
 local StepWork, TravelSpeed
 local sinceReplan = 0
 
-local function StepText(leg)
-    local mode, name = leg.mode, leg.name or "?"
+local function StepLabel(leg)
+    local mode, title = leg.mode, leg.name or "?"
     if mode == "walk" then
-        if leg.kind == "flight" then return "Flight master: " .. name end
-        if leg.kind == "dock" then return name .. " dock" end
-        return name
+        if leg.kind == "flight" then return "Flight master: " .. title end
+        if leg.kind == "dock" then return title .. " dock" end
+        return title
     end
-    if mode == "fly" then return "Fly to " .. name end
-    if mode == "ship" then return (leg.shipKind or "Boat") .. " to " .. name end
-    if mode == "tram" then return "Deeprun Tram to " .. name end
-    if mode == "portal" then return "Portal to " .. name end
-    if mode == "lift" then return "Lift to " .. name end
-    if mode == "hearth" then return "Hearthstone to " .. name end
-    return "Teleport to " .. name
+    if mode == "fly" then return "Fly to " .. title end
+    if mode == "ship" then return (leg.shipKind or "Boat") .. " to " .. title end
+    if mode == "tram" then return "Deeprun Tram to " .. title end
+    if mode == "portal" then return "Portal to " .. title end
+    if mode == "lift" then return "Lift to " .. title end
+    if mode == "hearth" then return "Hearthstone to " .. title end
+    return "Teleport to " .. title
 end
 
 local function Duration(seconds)
@@ -488,18 +488,18 @@ end
 
 -- Reaches of spots that do not move (the pin, jump landings, step ends),
 -- kept until the pin moves: each is a search over a continent.
-local fixedReaches, fixedCount = {}, 0
+local fixedReaches, fixedTally = {}, 0
 local function FixedReach(spot)
     local key = ("%d:%.1f,%.1f"):format(spot.c, spot.x, spot.y)
     local reach = fixedReaches[key]
     if reach == nil then
         reach = Walking.Reach(spot)
         if reach ~= nil then
-            if fixedCount >= 16 then
+            if fixedTally >= 16 then
                 wipe(fixedReaches)
-                fixedCount = 0
+                fixedTally = 0
             end
-            fixedReaches[key], fixedCount = reach, fixedCount + 1
+            fixedReaches[key], fixedTally = reach, fixedTally + 1
         end
     end
     return reach
@@ -517,7 +517,7 @@ end
 
 -- Yards a second for walks: your mount's, once it is known.
 function TravelSpeed()
-    local mounted = CharStore().mountSpeed
+    local mounted = CharKeep().mountSpeed
     return mounted and mounted > C.RUN_SPEED and mounted or C.RUN_SPEED
 end
 
@@ -534,8 +534,8 @@ local function Work(from, to, faction, jumps, keep)
         from = from,
         to = to,
         faction = faction,
-        known = CharStore().flights,
-        knownVersion = knownVersion,
+        known = CharKeep().flights,
+        knownVersion = learnedVersion,
         speed = TravelSpeed(),
         jumps = jumps,
         keep = keep,
@@ -549,7 +549,7 @@ local function Work(from, to, faction, jumps, keep)
     return result
 end
 
-local Draw
+local Render
 local function Planned(ok, result)
     working = nil
     if driver then driver:SetScript("OnUpdate", nil) end
@@ -559,7 +559,7 @@ local function Planned(ok, result)
     end
     plan = result
     corners, cornerAt = plan and plan.corners, 3
-    if Draw then Draw() end
+    if Render then Render() end
 end
 
 function StepWork()
@@ -580,14 +580,14 @@ local function Replan()
     if goal and was and (goal.c ~= was.c or Planner.Distance(goal, was) > 1) then
         plan, corners = nil, nil
         wipe(fixedReaches)
-        fixedCount = 0
+        fixedTally = 0
     end
     if not goal then
         plan, arrived = nil, false
         return
     end
     if UnitOnTaxi and UnitOnTaxi("player") then return end
-    local from = Player()
+    local from = Person()
     if not from then return end
     if from.c == goal.c and Planner.Distance(from, goal) <= C.ARRIVED then
         plan, arrived = nil, true
@@ -611,61 +611,61 @@ end
 -------------------------------------------------------------------------------
 --  The Journey card
 -------------------------------------------------------------------------------
-local CARD_W, LINE_H, ARROW_ROW = 290, 17, 52
-local MAX_LINES = 7
-local card, arrow, nextText, distText, lines, totalText
+local TILE_W, ROW_H, ARROW_LINE = 290, 17, 52
+local TOP_LINES = 7
+local tile, arrow, nextLabel, distLabel, lines, totalLabel
 local ARROW = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
 
-local function CardHeight(n) return Kit.HEADER_H + ARROW_ROW + n * LINE_H + 30 end
+local function TileHeight(n) return Kit.HEADER_H + ARROW_LINE + n * ROW_H + 30 end
 
-local function BuildCard()
-    if card then return card end
-    card = Kit.Window("CludesUIJourney", CARD_W, CardHeight(3), CUI.L("Journey"), { key = "essentials", special = false, strata = "MEDIUM" })
-    card:SetScript("OnDragStop", function(self)
+local function MakeTile()
+    if tile then return tile end
+    tile = Kit.Window("CludesUIJourney", TILE_W, TileHeight(3), CUI.L("Journey"), { key = "essentials", special = false, strata = "MEDIUM" })
+    tile:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local point, _, relPoint, x, y = self:GetPoint(1)
         Cfg().pos = { point = point, relPoint = relPoint, x = x, y = y }
     end)
-    F.Place(card)
-    arrow = card:CreateTexture(nil, "ARTWORK")
+    F.Place(tile)
+    arrow = tile:CreateTexture(nil, "ARTWORK")
     arrow:SetTexture(ARROW)
     arrow:SetSize(36, 36)
     arrow:SetPoint("TOPLEFT", 12, -(Kit.HEADER_H + 8))
     local r, g, b = Kit.Accent()
     arrow:SetVertexColor(r, g, b)
-    nextText = card:CreateFontString(nil, "OVERLAY")
-    Kit.Font(nextText, Kit.TEXT_SIZE, "essentials")
-    nextText:SetPoint("TOPLEFT", 58, -(Kit.HEADER_H + 10))
-    nextText:SetPoint("RIGHT", card, "RIGHT", -10, 0)
-    nextText:SetJustifyH("LEFT")
-    nextText:SetWordWrap(false)
-    distText = card:CreateFontString(nil, "OVERLAY")
-    Kit.Font(distText, Kit.SMALL_SIZE, "essentials")
-    distText:SetPoint("TOPLEFT", nextText, "BOTTOMLEFT", 0, -4)
-    distText:SetTextColor(Pal.muted[1], Pal.muted[2], Pal.muted[3])
+    nextLabel = tile:CreateFontString(nil, "OVERLAY")
+    Kit.Font(nextLabel, Kit.TEXT_SIZE, "essentials")
+    nextLabel:SetPoint("TOPLEFT", 58, -(Kit.HEADER_H + 10))
+    nextLabel:SetPoint("RIGHT", tile, "RIGHT", -10, 0)
+    nextLabel:SetJustifyH("LEFT")
+    nextLabel:SetWordWrap(false)
+    distLabel = tile:CreateFontString(nil, "OVERLAY")
+    Kit.Font(distLabel, Kit.SMALL_SIZE, "essentials")
+    distLabel:SetPoint("TOPLEFT", nextLabel, "BOTTOMLEFT", 0, -4)
+    distLabel:SetTextColor(Pal.muted[1], Pal.muted[2], Pal.muted[3])
     lines = {}
-    for i = 1, MAX_LINES do
-        local left = card:CreateFontString(nil, "OVERLAY")
+    for i = 1, TOP_LINES do
+        local left = tile:CreateFontString(nil, "OVERLAY")
         Kit.Font(left, Kit.SMALL_SIZE, "essentials")
-        left:SetPoint("TOPLEFT", 12, -(Kit.HEADER_H + ARROW_ROW + (i - 1) * LINE_H))
-        left:SetPoint("RIGHT", card, "RIGHT", -70, 0)
+        left:SetPoint("TOPLEFT", 12, -(Kit.HEADER_H + ARROW_LINE + (i - 1) * ROW_H))
+        left:SetPoint("RIGHT", tile, "RIGHT", -70, 0)
         left:SetJustifyH("LEFT")
         left:SetWordWrap(false)
-        local right = card:CreateFontString(nil, "OVERLAY")
+        local right = tile:CreateFontString(nil, "OVERLAY")
         Kit.Font(right, Kit.SMALL_SIZE, "essentials")
-        right:SetPoint("TOPRIGHT", card, "TOPRIGHT", -10, -(Kit.HEADER_H + ARROW_ROW + (i - 1) * LINE_H))
+        right:SetPoint("TOPRIGHT", tile, "TOPRIGHT", -10, -(Kit.HEADER_H + ARROW_LINE + (i - 1) * ROW_H))
         right:SetJustifyH("RIGHT")
         right:SetTextColor(Pal.muted[1], Pal.muted[2], Pal.muted[3])
         lines[i] = { left = left, right = right }
     end
-    totalText = card:CreateFontString(nil, "OVERLAY")
-    Kit.Font(totalText, Kit.SMALL_SIZE, "essentials")
-    totalText:SetPoint("BOTTOMLEFT", 12, 10)
-    totalText:SetPoint("RIGHT", card, "RIGHT", -10, 0)
-    totalText:SetJustifyH("LEFT")
-    totalText:SetTextColor(Pal.muted[1], Pal.muted[2], Pal.muted[3])
-    card:Hide()
-    return card
+    totalLabel = tile:CreateFontString(nil, "OVERLAY")
+    Kit.Font(totalLabel, Kit.SMALL_SIZE, "essentials")
+    totalLabel:SetPoint("BOTTOMLEFT", 12, 10)
+    totalLabel:SetPoint("RIGHT", tile, "RIGHT", -10, 0)
+    totalLabel:SetJustifyH("LEFT")
+    totalLabel:SetTextColor(Pal.muted[1], Pal.muted[2], Pal.muted[3])
+    tile:Hide()
+    return tile
 end
 
 -- The arrow turns toward the next step's place (x north, y west; the game's
@@ -677,15 +677,15 @@ end
 -------------------------------------------------------------------------------
 local routeLayer, dots = nil, {}
 
-local function HideDots(from)
+local function ConcealDots(from)
     for i = from, #dots do
         dots[i]:Hide()
     end
 end
 
-local function DrawRoute(here)
+local function RenderRoute(here)
     if not (Get("minimapRoute") and corners and here and Minimap and Minimap:IsVisible() and C_Minimap and C_Minimap.GetViewRadius) then
-        HideDots(1)
+        ConcealDots(1)
         return
     end
     if not routeLayer then
@@ -695,14 +695,14 @@ local function DrawRoute(here)
     end
     local yards = C_Minimap.GetViewRadius()
     local radius = Minimap:GetWidth() / 2
-    if not (yards and yards > 0 and radius > 0) then return HideDots(1) end
+    if not (yards and yards > 0 and radius > 0) then return ConcealDots(1) end
     local scale = radius / yards
-    local turn = 0
+    local hand = 0
     if GetCVar("rotateMinimap") == "1" then
         local facing = GetPlayerFacing and GetPlayerFacing()
-        if facing and not Secret(facing) then turn = facing end
+        if facing and not Secret(facing) then hand = facing end
     end
-    local cosT, sinT = math.cos(turn), math.sin(turn)
+    local cosT, sinT = math.cos(hand), math.sin(hand)
     local r, g, b = Kit.Accent()
     local shown = 0
     -- Walk the corners from where you stand, dropping a dot every DOT_EVERY yards.
@@ -738,25 +738,25 @@ local function DrawRoute(here)
         fromX, fromY = toX, toY
         if shown >= C.MAX_DOTS then break end
     end
-    HideDots(shown + 1)
+    ConcealDots(shown + 1)
 end
 
 local function PointArrow()
-    if not (card and card:IsShown()) then
-        HideDots(1)
+    if not (tile and tile:IsShown()) then
+        ConcealDots(1)
         return
     end
-    DrawRoute(not arrived and Player() or nil)
+    RenderRoute(not arrived and Person() or nil)
     local leg = plan and plan.legs[1]
-    local here = Player()
-    local target = leg and (leg.mode == "walk" and leg or nil)
-    if arrived or not (target and here and here.c == target.c) then
+    local here = Person()
+    local aim = leg and (leg.mode == "walk" and leg or nil)
+    if arrived or not (aim and here and here.c == aim.c) then
         arrow:SetShown(false)
-        distText:SetText(arrived and "" or (UnitOnTaxi and UnitOnTaxi("player") and "In flight" or ""))
+        distLabel:SetText(arrived and "" or (UnitOnTaxi and UnitOnTaxi("player") and "In flight" or ""))
         return
     end
     local facing = GetPlayerFacing and GetPlayerFacing()
-    local aimX, aimY, after = target.x, target.y, 0
+    local aimX, aimY, later = aim.x, aim.y, 0
     if corners then
         -- Aim at the next corner not yet reached; the yards are what is left of the walk.
         local n = #corners
@@ -768,60 +768,60 @@ local function PointArrow()
         if cornerAt <= n - 1 then
             aimX, aimY = corners[cornerAt], corners[cornerAt + 1]
             for i = cornerAt, n - 3, 2 do
-                after = after + math.sqrt((corners[i + 2] - corners[i]) ^ 2 + (corners[i + 3] - corners[i + 1]) ^ 2)
+                later = later + math.sqrt((corners[i + 2] - corners[i]) ^ 2 + (corners[i + 3] - corners[i + 1]) ^ 2)
             end
         end
     end
     local dx, dy = aimX - here.x, aimY - here.y
-    local yards = math.sqrt(dx * dx + dy * dy) + after
+    local yards = math.sqrt(dx * dx + dy * dy) + later
     if facing and not Secret(facing) then
         arrow:SetRotation(math.atan2(dy, dx) - facing + math.pi)
         arrow:SetShown(true)
     else
         arrow:SetShown(false)
     end
-    distText:SetText(("%d yd"):format(yards))
-    if math.sqrt((target.x - here.x) ^ 2 + (target.y - here.y) ^ 2) <= C.STEP_REACHED then sinceReplan = C.REPLAN_EVERY end
+    distLabel:SetText(("%d yd"):format(yards))
+    if math.sqrt((aim.x - here.x) ^ 2 + (aim.y - here.y) ^ 2) <= C.STEP_REACHED then sinceReplan = C.REPLAN_EVERY end
 end
 
-function Draw()
+function Render()
     local shown = Enabled() and goal ~= nil and not IsInInstance()
     if not shown then
-        if card then card:Hide() end
+        if tile then tile:Hide() end
         return
     end
-    BuildCard()
+    MakeTile()
     local n = 0
     if arrived then
-        nextText:SetText("You have arrived")
+        nextLabel:SetText("You have arrived")
     elseif not plan then
-        nextText:SetText("No way found to " .. goal.name)
+        nextLabel:SetText("No way found to " .. goal.name)
     else
         local first = plan.legs[1]
-        nextText:SetText(first and StepText(first) or goal.name)
+        nextLabel:SetText(first and StepLabel(first) or goal.name)
         for i, leg in ipairs(plan.legs) do
-            if i > MAX_LINES then break end
+            if i > TOP_LINES then break end
             n = i
-            lines[i].left:SetText(("%d. %s"):format(i, StepText(leg)))
+            lines[i].left:SetText(("%d. %s"):format(i, StepLabel(leg)))
             lines[i].left:SetTextColor(i == 1 and 1 or Pal.text[1], i == 1 and 1 or Pal.text[2], i == 1 and 1 or Pal.text[3])
             lines[i].right:SetText(Duration(leg.seconds))
         end
     end
-    for i = 1, MAX_LINES do
+    for i = 1, TOP_LINES do
         lines[i].left:SetShown(i <= n)
         lines[i].right:SetShown(i <= n)
     end
     local known = 0
-    for _ in pairs(CharStore().flights) do
+    for _ in pairs(CharKeep().flights) do
         known = known + 1
     end
     if plan then
-        totalText:SetText(("About %s in all%s"):format(Duration(plan.seconds), known == 0 and ". Open a flight master's map to plan with your flights." or ""))
+        totalLabel:SetText(("About %s in all%s"):format(Duration(plan.seconds), known == 0 and ". Open a flight master's map to plan with your flights." or ""))
     else
-        totalText:SetText(known == 0 and "Open a flight master's map to plan with your flights." or "")
+        totalLabel:SetText(known == 0 and "Open a flight master's map to plan with your flights." or "")
     end
-    card:SetHeight(CardHeight(math.max(n, 1)))
-    card:Show()
+    tile:SetHeight(TileHeight(math.max(n, 1)))
+    tile:Show()
     PointArrow()
 end
 
@@ -833,32 +833,32 @@ local ticker
 
 -- Where the last plan was made from, and the pin it went to: standing
 -- still with the same pin, the plan stands (each one searches a continent).
-local plannedFrom, plannedPinX, plannedPinY
+local plannedFrom, plannedMarkerX, plannedMarkerY
 local function Moved()
-    local here, pin = Player(), Goal()
-    if not (here and pin and plannedFrom) then return true end
-    if pin.x ~= plannedPinX or pin.y ~= plannedPinY or here.c ~= plannedFrom.c then return true end
+    local here, marker = Person(), Goal()
+    if not (here and marker and plannedFrom) then return true end
+    if marker.x ~= plannedMarkerX or marker.y ~= plannedMarkerY or here.c ~= plannedFrom.c then return true end
     return Planner.Distance(here, plannedFrom) > C.REPLAN_MOVED
 end
 
 -- Your mount's running speed, learned while you ride (walks are timed at it
 -- once known: a mounted character rides between steps).
-local function LearnMountSpeed()
+local function GatherMountSpeed()
     if not (IsMounted and IsMounted()) or (UnitOnTaxi and UnitOnTaxi("player")) or IsSwimming() or IsFlying() then return end
     local _, run = GetUnitSpeed("player")
     if not run or Secret(run) or run <= C.RUN_SPEED then return end
-    local mine = CharStore()
+    local mine = CharKeep()
     if not mine.mountSpeed or run > mine.mountSpeed + 0.1 then mine.mountSpeed = run end
 end
 
 local function Tick()
-    LearnMountSpeed()
+    GatherMountSpeed()
     sinceReplan = sinceReplan + 0.1
     if sinceReplan >= C.REPLAN_EVERY and not InCombatLockdown() and (Moved() or not plan) then
-        local here, pin = Player(), Goal()
-        plannedFrom, plannedPinX, plannedPinY = here, pin and pin.x, pin and pin.y
+        local here, marker = Person(), Goal()
+        plannedFrom, plannedMarkerX, plannedMarkerY = here, marker and marker.x, marker and marker.y
         Replan()
-        Draw()
+        Render()
     else
         if sinceReplan >= C.REPLAN_EVERY then sinceReplan = 0 end
         PointArrow()
@@ -868,25 +868,25 @@ end
 events:SetScript("OnEvent", function(_, event, unit, _, spellID)
     if event == "TAXIMAP_OPENED" then
         atFlightMaster = true
-        LearnFlights()
+        GatherFlights()
     elseif event == "TAXIMAP_CLOSED" then
         atFlightMaster = false
     elseif event == "TAXI_NODE_STATUS_CHANGED" then
-        if atFlightMaster then LearnFlights() end
+        if atFlightMaster then GatherFlights() end
     elseif event == "HEARTHSTONE_BOUND" then
         landing, castFrom = C.HEARTH_SPELL, nil
-        LearnLanding()
+        GatherLanding()
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         if unit == "player" and not Secret(spellID) and (spellID == C.HEARTH_SPELL or teleportBySpell[spellID]) then
-            landing, castFrom = spellID, Player()
-            C_Timer.After(10, LearnLanding)
+            landing, castFrom = spellID, Person()
+            C_Timer.After(10, GatherLanding)
         end
         return
     elseif event == "PLAYER_ENTERING_WORLD" then
-        LearnLanding()
+        GatherLanding()
     end
     Replan()
-    Draw()
+    Render()
 end)
 
 local EVENTS = { "USER_WAYPOINT_UPDATED", "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "PLAYER_CONTROL_GAINED",
@@ -901,7 +901,7 @@ local function Apply()
     if not Enabled() then
         plan, goal, corners, working = nil, nil, nil, nil
         if driver then driver:SetScript("OnUpdate", nil) end
-        if card then card:Hide() end
+        if tile then tile:Hide() end
         return
     end
     for _, event in ipairs(EVENTS) do
@@ -910,7 +910,7 @@ local function Apply()
     events:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     ticker = C_Timer.NewTicker(0.1, Tick)
     Replan()
-    Draw()
+    Render()
 end
 
 CUI._Journeys = {
@@ -920,9 +920,9 @@ CUI._Journeys = {
     Plan = function() return plan, goal, arrived, corners, working ~= nil end,
     Replan = function()
         Replan()
-        Draw()
+        Render()
     end,
-    StepText = StepText,
+    StepText = StepLabel,
     Planner = Planner,
 }
 
@@ -930,9 +930,9 @@ F.Start(Apply, {
     key = "CUIFE_Journey",
     label = "Journey",
     order = 61,
-    frame = function(build)
-        if build then BuildCard() end
-        return card
+    frame = function(make)
+        if make then MakeTile() end
+        return tile
     end,
-    size = function() return CARD_W, card and card:GetHeight() or CardHeight(3) end,
+    size = function() return TILE_W, tile and tile:GetHeight() or TileHeight(3) end,
 })
