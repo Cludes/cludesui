@@ -26,22 +26,22 @@ local Get, Enabled = F.Get, F.Enabled
 
 local SENDER_GUID_ARG = 10
 local WHO_FIELDS = 6
-local LABEL_SPACING = 8
+local LABEL_GAP = 8
 local ROW_TAIL = 16
 local ROW_MARGIN = 26
-local HINT_SPACING, HINT_MARGIN = 8, 11
+local TIP_SPACING, TIP_MARGIN = 8, 11
 local ROLES_SPACE = 160
 local ROLES_SHRINK = 0.75
 local WHERE_LINK = "addon:CludesUI:where:"
 local GREY_WRAP = "|cff999999%s|r"
-local LABEL_EVENTS = { "CHAT_MSG_CHANNEL", "CHAT_MSG_GUILD", "CHAT_MSG_OFFICER", "CHAT_MSG_WHISPER" }
+local TAG_EVENTS = { "CHAT_MSG_CHANNEL", "CHAT_MSG_GUILD", "CHAT_MSG_OFFICER", "CHAT_MSG_WHISPER" }
 local LEARN_EVENTS = { "GUILD_ROSTER_UPDATE", "FRIENDLIST_UPDATE", "BN_FRIEND_INFO_CHANGED", "GROUP_ROSTER_UPDATE",
     "WHO_LIST_UPDATE", "CHAT_MSG_SYSTEM" }
 
-local AppendChatFilter = (ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter) or ChatFrame_AddMessageEventFilter
+local AddChatFilter = (ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter) or ChatFrame_AddMessageEventFilter
 local RemoveChatFilter = (ChatFrameUtil and ChatFrameUtil.RemoveMessageEventFilter) or ChatFrame_RemoveMessageEventFilter
 
-local spotted = {} -- name -> { zone, level, at }
+local seen = {} -- name -> { zone, level, at }
 local awaitingWho = {} -- names a [Where?] click is waiting on
 local tagging, finderHooked, whereHooked = false, false, false
 local whoLinePatterns
@@ -54,7 +54,7 @@ local function Secret(v)
     return issecretvalue and issecretvalue(v)
 end
 
-local function LabelsOn() return Enabled() and Get("chat") end
+local function TagsOn() return Enabled() and Get("chat") end
 local function ListingsOn() return Enabled() and Get("finder") end
 
 local function PlainName(name)
@@ -62,19 +62,19 @@ local function PlainName(name)
     return Ambiguate(name, "none")
 end
 
-local function NoteWhere(name, place, lvl)
+local function NoteWhere(name, place, level)
     local who = PlainName(name)
     if not who or not place or Secret(place) or place == "" then return end
-    lvl = not Secret(lvl) and tonumber(lvl) or nil
-    spotted[who] = { place = place, level = lvl and lvl > 0 and lvl or nil, seenAt = GetTime() }
+    level = not Secret(level) and tonumber(level) or nil
+    seen[who] = { place = place, level = level and level > 0 and level or nil, seenAt = GetTime() }
 end
 
 local function Recent(who)
-    local item = who and spotted[who]
+    local item = who and seen[who]
     if item and GetTime() - item.seenAt <= Get("maxAge") * 60 then return item end
 end
 
-local function AreaPrefix(item, guid)
+local function ZonePrefix(item, guid)
     local prefix = "[" .. item.place
     if Get("level") and item.level then prefix = prefix .. " " .. item.level end
     prefix = prefix .. "]"
@@ -107,8 +107,8 @@ end
 
 local function FromGuild()
     for i = 1, GetNumGuildMembers() do
-        local name, _, _, lvl, _, place, _, _, online = GetGuildRosterInfo(i)
-        if online then NoteWhere(name, place, lvl) end
+        local name, _, _, level, _, place, _, _, online = GetGuildRosterInfo(i)
+        if online then NoteWhere(name, place, level) end
     end
 end
 
@@ -129,8 +129,8 @@ end
 
 local function FromParty()
     for i = 1, GetNumGroupMembers() do
-        local name, _, _, lvl, _, _, place, online = GetRaidRosterInfo(i)
-        if online then NoteWhere(name, place, lvl) end
+        local name, _, _, level, _, _, place, online = GetRaidRosterInfo(i)
+        if online then NoteWhere(name, place, level) end
     end
 end
 
@@ -173,7 +173,7 @@ end
 -------------------------------------------------------------------------------
 --  Chat
 -------------------------------------------------------------------------------
-local function WhereLinkLabel(who)
+local function WhereLinkText(who)
     return "|H" .. WHERE_LINK .. who .. "|h" .. GREY_WRAP:format("[Where?]") .. "|h"
 end
 
@@ -185,27 +185,27 @@ local function OnWhereLink(_, link)
     C_FriendList.SendWho(('n-"%s"'):format(who:match("^[^-]+")))
 end
 
-local function LabelChat(_, event, line, author, ...)
+local function TagChat(_, event, line, author, ...)
     if Secret(line) or Secret(author) then return false end
     local who = PlainName(author)
     if not who or who == UnitName("player") then return false end
     local item = Recent(who)
     if not item then
         if event == "CHAT_MSG_WHISPER" and Get("where") then
-            return false, line .. " " .. WhereLinkLabel(who), author, ...
+            return false, line .. " " .. WhereLinkText(who), author, ...
         end
         return false
     end
-    return false, AreaPrefix(item, select(SENDER_GUID_ARG, ...)) .. line, author, ...
+    return false, ZonePrefix(item, select(SENDER_GUID_ARG, ...)) .. line, author, ...
 end
 
 -------------------------------------------------------------------------------
 --  Group Finder: the leader's zone on each listing, members' on hover
 -------------------------------------------------------------------------------
-local function AreaLabel(labels, owner, typefaceObject)
+local function ZoneLabel(labels, owner, fontObject)
     local label = labels[owner]
     if not label then
-        label = owner:CreateFontString(nil, "ARTWORK", typefaceObject)
+        label = owner:CreateFontString(nil, "ARTWORK", fontObject)
         label:SetJustifyH("LEFT")
         label:SetWordWrap(false)
         labels[owner] = label
@@ -251,7 +251,7 @@ function LeftEdgeIn(frame, leftmost)
     return LeftEdgeAmong(LeftEdgeAmong(leftmost, frame:GetRegions()), frame:GetChildren())
 end
 
-local function AreaRoom(item)
+local function ZoneRoom(item)
     local rolesLeft = item.DataDisplay and LeftEdgeIn(item.DataDisplay)
     local nameRight = item.ActivityName:GetRight()
     if Secret(rolesLeft) or Secret(nameRight) then return nil end
@@ -261,21 +261,21 @@ local function AreaRoom(item)
     return room - ROLES_SPACE - ROW_MARGIN - nameW
 end
 
-local function RenderListing(item)
+local function PaintListing(item)
     if not item.ActivityName then return end
     ShrinkRoles(item, ListingsOn())
     local place = ListingsOn() and item.resultID and item:IsShown() and LeaderArea(item.resultID)
-    local room = place and not Secret(place) and place ~= "" and AreaRoom(item)
+    local room = place and not Secret(place) and place ~= "" and ZoneRoom(item)
     if not room then
         if listingLabels[item] then listingLabels[item]:Hide() end
         return
     end
-    local label = AreaLabel(listingLabels, item, "GameFontDisableSmallLeft")
+    local label = ZoneLabel(listingLabels, item, "GameFontDisableSmallLeft")
     local path, size, flags = item.ActivityName:GetFont()
     if path then label:SetFont(path, size, flags) end
     label:SetTextColor(0.6, 0.6, 0.6)
     label:ClearAllPoints()
-    label:SetPoint("LEFT", item.ActivityName, "RIGHT", LABEL_SPACING, 0)
+    label:SetPoint("LEFT", item.ActivityName, "RIGHT", LABEL_GAP, 0)
     label:SetWidth(math.max(1, room))
     label:SetText(place)
     label:Show()
@@ -303,11 +303,11 @@ local function AreasByMember(result, resultID)
     return areas
 end
 
-local function TooltipMemberRows(hint)
+local function TooltipMemberRows(tip)
     local memberRows = {}
-    if hint.Leader and hint.Leader:IsShown() then memberRows[1] = hint.Leader end
-    if hint.memberPool then
-        for frame in hint.memberPool:EnumerateActive() do
+    if tip.Leader and tip.Leader:IsShown() then memberRows[1] = tip.Leader end
+    if tip.memberPool then
+        for frame in tip.memberPool:EnumerateActive() do
             memberRows[#memberRows + 1] = frame
         end
     end
@@ -322,22 +322,22 @@ local function LabelMemberArea(row, areas, edge)
     local place = name and areas[name] or recent and recent.place
     local rowX = row:GetLeft()
     if not (place and rowX) or Secret(rowX) then return 0 end
-    local label = AreaLabel(tooltipLabels, row, "GameFontHighlightSmallLeft")
+    local label = ZoneLabel(tooltipLabels, row, "GameFontHighlightSmallLeft")
     label:ClearAllPoints()
-    label:SetPoint("LEFT", row, "LEFT", edge - rowX + HINT_SPACING, 0)
+    label:SetPoint("LEFT", row, "LEFT", edge - rowX + TIP_SPACING, 0)
     label:SetText(place)
     label:Show()
     return label:GetStringWidth()
 end
 
-local function RenderListingTooltip(hint, resultID)
+local function PaintListingTooltip(tip, resultID)
     for _, label in pairs(tooltipLabels) do
         label:Hide()
     end
     local result = ListingsOn() and resultID and C_LFGList.GetSearchResultInfo(resultID)
     if not result or Secret(result.numMembers) then return end
     local areas = AreasByMember(result, resultID)
-    local memberRows = TooltipMemberRows(hint)
+    local memberRows = TooltipMemberRows(tip)
     local edge = 0
     for _, row in ipairs(memberRows) do
         local rowRight = RowRightEdge(row)
@@ -349,19 +349,19 @@ local function RenderListingTooltip(hint, resultID)
     for _, row in ipairs(memberRows) do
         widestLabel = math.max(widestLabel, LabelMemberArea(row, areas, edge))
     end
-    local hintX, hintW = hint:GetLeft(), hint:GetWidth()
-    if widestLabel > 0 and hintX and not Secret(hintX) and not Secret(hintW) then
-        local desired = edge - hintX + HINT_SPACING + widestLabel + HINT_MARGIN
-        if hintW < desired then hint:SetWidth(desired) end
+    local tipX, tipW = tip:GetLeft(), tip:GetWidth()
+    if widestLabel > 0 and tipX and not Secret(tipX) and not Secret(tipW) then
+        local wanted = edge - tipX + TIP_SPACING + widestLabel + TIP_MARGIN
+        if tipW < wanted then tip:SetWidth(wanted) end
     end
 end
 
 local function HookFinderFrames()
     if finderHooked or not _G.LFGBrowseSearchEntry_Update then return end
     finderHooked = true
-    hooksecurefunc("LFGBrowseSearchEntry_Update", RenderListing)
+    hooksecurefunc("LFGBrowseSearchEntry_Update", PaintListing)
     if _G.LFGBrowseSearchEntryTooltip_UpdateAndShow then
-        hooksecurefunc("LFGBrowseSearchEntryTooltip_UpdateAndShow", RenderListingTooltip)
+        hooksecurefunc("LFGBrowseSearchEntryTooltip_UpdateAndShow", PaintListingTooltip)
     end
 end
 
@@ -392,11 +392,11 @@ events:SetScript("OnEvent", function(_, event, ...)
     end
 end)
 
-local function HaltListening()
+local function StopListening()
     events:UnregisterAllEvents()
     if tagging then
-        for _, event in ipairs(LABEL_EVENTS) do
-            RemoveChatFilter(event, LabelChat)
+        for _, event in ipairs(TAG_EVENTS) do
+            RemoveChatFilter(event, TagChat)
         end
         tagging = false
     end
@@ -411,9 +411,9 @@ local function HaltListening()
 end
 
 local function Apply()
-    HaltListening()
+    StopListening()
     if not Enabled() then
-        wipe(spotted)
+        wipe(seen)
         wipe(awaitingWho)
         return
     end
@@ -424,17 +424,17 @@ local function Apply()
         events:RegisterEvent("LFG_LIST_SEARCH_RESULTS_RECEIVED")
         events:RegisterEvent("LFG_LIST_SEARCH_RESULT_UPDATED")
     end
-    if LabelsOn() and AppendChatFilter then
+    if TagsOn() and AddChatFilter then
         if not whereHooked and EventRegistry then
             whereHooked = true
             EventRegistry:RegisterCallback("SetItemRef", function(...)
-                if LabelsOn() then OnWhereLink(...) end
+                if TagsOn() then OnWhereLink(...) end
             end, events)
         end
         events:RegisterEvent("CHAT_MSG_GUILD")
         events:RegisterEvent("CHAT_MSG_OFFICER")
-        for _, event in ipairs(LABEL_EVENTS) do
-            AppendChatFilter(event, LabelChat)
+        for _, event in ipairs(TAG_EVENTS) do
+            AddChatFilter(event, TagChat)
         end
         tagging = true
     end
@@ -453,7 +453,7 @@ CUI._ChatZones = {
     Cfg = F.Cfg,
     Apply = Apply,
     Recent = Recent,
-    TagChat = LabelChat,
+    TagChat = TagChat,
 }
 
 F.Start(Apply)
