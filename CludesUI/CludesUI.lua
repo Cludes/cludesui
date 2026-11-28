@@ -4549,6 +4549,7 @@ local HELP_COMMANDS = {
     { "CUIWAY", "/way", "Set a map waypoint" },
     { "CUIDUNGEONMAP", "/cdmap", "Dungeon Map: the dungeon's route, boss by boss" },
     { "CUILFG", "/clfg", "Looking For Group: browse, apply to and list groups" },
+    { "CUICCMARK", "/ccmark", "CC Marker Bar: raid marks and crowd control assignments" },
     { "CUIPERF", "/cuiperf", "CPU time of each CludesUI addon" },
 }
 local function PrintHelp()

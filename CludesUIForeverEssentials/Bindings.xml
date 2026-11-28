@@ -1,4 +1,5 @@
 <Bindings>
 	<Binding name="CLICK CludesUIBlessNext:LeftButton" header="CUI_BLESSINGS" category="CludesUI" />
 	<Binding name="CLICK CludesUIBlessNextGreater:LeftButton" category="CludesUI" />
+	<Binding name="CLICK CludesUICCAssign:LeftButton" header="CUI_CCMARKS" category="CludesUI" />
 </Bindings>

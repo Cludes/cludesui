@@ -5,6 +5,8 @@ local CUI = CludesUI
 --  Registers the Forever Essentials sidebar addon (WoW Forever only) with its
 --  tabs:
 --    * General -- quality of life features (built by CUI_ForeverEssentials_General_Options.lua)
+--    * Dungeons -- "Dungeons & Raids": journal, map, kills, CC Marker Bar, LFG, inspect,
+--      instance tracker, raid debuffs (CUI_ForeverEssentials_Dungeons_Options.lua)
 --    * Travel -- flight timer (built by CUI_ForeverEssentials_Travel_Options.lua)
 --    * Threat -- threat meter (built by CUI_ForeverEssentials_Threat_Options.lua)
 --    * Loot   -- loot feed (built by CUI_ForeverEssentials_Loot_Options.lua)
@@ -21,6 +23,7 @@ local PAGE_LOOT = "Loot"
 local PAGE_MACROS = "Macros"
 local PAGE_TRAINING = "Training"
 local PAGE_PVP = "PvP"
+local PAGE_DUNGEONS = "Dungeons"
 
 -- Item quality dropdown values and order from Poor up to last, each in its
 -- colour (the General and Loot pages).
@@ -46,7 +49,8 @@ CUI.AtLogin(function()
     CUI:RegisterModule("CludesUIForeverEssentials", {
         title = "Forever Tools",
         description = "Essential tools for WoW Forever.",
-        pages = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING, PAGE_PVP },
+        pages = { PAGE_GENERAL, PAGE_DUNGEONS, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING, PAGE_PVP },
+        tabLabels = { [PAGE_DUNGEONS] = "Dungeons & Raids" },
         searchTerms = {
             "flight timer",
             "flight path",
@@ -89,10 +93,28 @@ CUI.AtLogin(function()
             "zone exit",
             "dungeon entrance",
             "instance",
+            "dungeon",
+            "raid",
+            "dungeon journal",
+            "dungeon map",
+            "boss kills",
+            "crowd control",
+            "cc",
+            "sheep",
+            "polymorph",
+            "sap",
+            "shackle",
+            "marker",
+            "raid marks",
+            "looking for group",
+            "lfg",
         },
         buildPage = function(page, hostFrame, yOffset)
             if page == PAGE_GENERAL and _G._CUI_BuildForeverGeneralPage then
                 return _G._CUI_BuildForeverGeneralPage(page, hostFrame, yOffset)
+            end
+            if page == PAGE_DUNGEONS and _G._CUI_BuildForeverDungeonsPage then
+                return _G._CUI_BuildForeverDungeonsPage(page, hostFrame, yOffset)
             end
             if page == PAGE_TRAVEL and _G._CUI_BuildFlightTimerPage then
                 return _G._CUI_BuildFlightTimerPage(page, hostFrame, yOffset)

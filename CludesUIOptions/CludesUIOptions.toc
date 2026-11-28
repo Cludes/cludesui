@@ -60,6 +60,7 @@ CUI_DamageMeters_Options.lua
 CludesUIDataBars_Options.lua
 CUI_ForeverEssentials_Options.lua
 CUI_ForeverEssentials_General_Options.lua
+CUI_ForeverEssentials_Dungeons_Options.lua
 CUI_ForeverEssentials_Travel_Options.lua
 CUI_ForeverEssentials_Threat_Options.lua
 CUI_ForeverEssentials_Loot_Options.lua
