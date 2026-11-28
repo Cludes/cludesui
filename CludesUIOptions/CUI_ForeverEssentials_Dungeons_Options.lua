@@ -206,6 +206,39 @@ function _G._CUI_BuildForeverDungeonsPage(_, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  WHO PULLED
+    ---------------------------------------------------------------------------
+    local PW = CUI._PullWatch
+    if PW then
+        local function wOff() return not PW.Get("enabled") end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "WHO PULLED", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Who Pulled",
+            tooltip = "In a dungeon or raid group, the first hit of each fight says who started it, e.g. Pull: Sneaky (Sinister Strike) on Defias Thug, or which mob came to the group.",
+            getValue = function() return not wOff() end,
+            setValue = function(val)
+                PW.Cfg().enabled = val and true or false
+                PW.Apply()
+            end,
+        }, {
+            type = "toggle",
+            text = "Say in Group",
+            disabled = wOff,
+            tooltip = "Also says it in group chat. Off, only you see it.",
+            getValue = function() return PW.Get("say") end,
+            setValue = function(val)
+                PW.Cfg().say = val and true or false
+                PW.Apply()
+            end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  LOOKING FOR GROUP
     ---------------------------------------------------------------------------
     local LF = CUI._LFG
