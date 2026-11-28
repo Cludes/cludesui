@@ -206,6 +206,40 @@ function _G._CUI_BuildForeverDungeonsPage(_, hostFrame, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  INTERRUPT TRACKER
+    ---------------------------------------------------------------------------
+    local KT = CUI._KickTracker
+    if KT then
+        local function kOff() return not KT.Get("enabled") end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "INTERRUPT TRACKER", cursorY)
+        cursorY = cursorY - height
+        CUI.BuildSectionUnlockJump(heading, { key = "CUIFE_KickTracker", disabled = kOff, disabledTooltip = "Interrupt Tracker" })
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Interrupt Tracker",
+            tooltip = "Your group's interrupts (Kick, Pummel or Shield Bash, Earth Shock, Counterspell) in a small list: ready or how long until it is, the first ready one marked next, and how many casts each has stopped this run. Read from the combat log, so it works for everyone.",
+            getValue = function() return not kOff() end,
+            setValue = function(val)
+                KT.Cfg().enabled = val and true or false
+                KT.Apply()
+            end,
+        }, {
+            type = "toggle",
+            text = "Only in Dungeons and Raids",
+            disabled = kOff,
+            tooltip = "Shows the list only inside dungeons and raids.",
+            getValue = function() return KT.Get("instancesOnly") end,
+            setValue = function(val)
+                KT.Cfg().instancesOnly = val and true or false
+                KT.Apply()
+            end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
     --  WHO PULLED
     ---------------------------------------------------------------------------
     local PW = CUI._PullWatch
