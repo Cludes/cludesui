@@ -37,21 +37,21 @@ local _, module = ...
 local sqrt, floor, abs, huge = math.sqrt, math.floor, math.abs, math.huge
 local yield, running = coroutine.yield, coroutine.running
 
-local DATA_ADDON = "CludesUIJourneysData"
+local INFO_ADDON = "CludesUIJourneysData"
 local TILE_YARDS = 1600 / 3
 local GRID_ORIGIN = 32 * TILE_YARDS
-local EDGE_KEY = 65536
-local MAX_SIDES = 8
+local EDGE_ID = 65536
+local TOP_FACTIONS = 8
 local LAND, WATER, SEA = 0, 1, 2
 local GROUND_COST = { [LAND] = 1, [WATER] = 1.6, [SEA] = 2.5 }
 local TILE_CACHE = 48
-local RELEASE_AFTER = 60
+local RELEASE_LATER = 60
 local SLICE_MS = 3
 local STAND_REACH = 200
 local HEIGHT_WEIGHT = 0.25
 local PIER_WIDTH = 30
 local NUDGE = 0.5
-local RAY_STEPS = 4000
+local RAY_STAGES = 4000
 local RAY_SLACK = 1e-6
 local ON_EDGE = 0.05
 local NEIGHBOUR_TILES = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
@@ -60,7 +60,7 @@ local Walking = {}
 module.Walking = Walking
 
 local loaded -- nil: not tried; true/false after
-local data -- CUI.WalkingData once the addon is in
+local info -- CUI.WalkingData once the addon is in
 local tileCache, tileUsed = {}, {}
 local graphCache, placeCache = {}, {}
 local sliceEnd = 0
@@ -86,8 +86,8 @@ function Walking.StartSlice() sliceEnd = debugprofilestop() + SLICE_MS end
 
 local function Release()
     local idle = GetTime() - lastUse
-    if idle < RELEASE_AFTER then
-        C_Timer.After(RELEASE_AFTER - idle, Release)
+    if idle < RELEASE_LATER then
+        C_Timer.After(RELEASE_LATER - idle, Release)
         return
     end
     releaseQueued = false
@@ -101,7 +101,7 @@ local function Touch()
     lastUse = GetTime()
     if releaseQueued then return end
     releaseQueued = true
-    C_Timer.After(RELEASE_AFTER, Release)
+    C_Timer.After(RELEASE_LATER, Release)
 end
 
 -- Loads the walking maps (once, out of combat). False when they are missing.
@@ -114,11 +114,11 @@ function Walking.Ready()
         return false
     end
     CUI.WalkingData = CUI.WalkingData or { tiles = { [0] = {}, [1] = {}, [2991] = {} }, graph = {}, walks = {} }
-    local isLoaded = C_AddOns.IsAddOnLoaded(DATA_ADDON)
-    if not isLoaded then isLoaded = C_AddOns.LoadAddOn(DATA_ADDON) end
-    data = CUI.WalkingData
+    local isLoaded = C_AddOns.IsAddOnLoaded(INFO_ADDON)
+    if not isLoaded then isLoaded = C_AddOns.LoadAddOn(INFO_ADDON) end
+    info = CUI.WalkingData
     -- Loaded and decodable: one continent's graph is tried before trusting any.
-    local c, packed = next(data.graph)
+    local c, packed = next(info.graph)
     loaded = isLoaded and c ~= nil and Unpack(packed) ~= nil or false
     return loaded
 end
@@ -127,28 +127,28 @@ end
 --  Tiles
 -------------------------------------------------------------------------------
 -- For each polygon side, the polygon beside it (shared vertex pair).
-local function LinkSides(rings)
+local function ChainFactions(rings)
     local firstOwner, beside = {}, {}
     for p = 1, #rings do
         local ring, row = rings[p], {}
         beside[p] = row
         for k = 1, #ring do
             local a, b = ring[k], ring[k % #ring + 1]
-            local key = a < b and a * EDGE_KEY + b or b * EDGE_KEY + a
+            local key = a < b and a * EDGE_ID + b or b * EDGE_ID + a
             local owner = firstOwner[key]
             if owner then
-                local q = floor(owner / MAX_SIDES)
+                local q = floor(owner / TOP_FACTIONS)
                 row[k] = q
-                beside[q][owner % MAX_SIDES + 1] = p
+                beside[q][owner % TOP_FACTIONS + 1] = p
             else
-                firstOwner[key] = p * MAX_SIDES + k - 1
+                firstOwner[key] = p * TOP_FACTIONS + k - 1
             end
         end
     end
     return beside
 end
 
-local function BuildTile(col, row, raw)
+local function MakeTile(col, row, raw)
     local baseX, baseY = GRID_ORIGIN - row * TILE_YARDS, GRID_ORIGIN - col * TILE_YARDS
     local xs, ys, zs = {}, {}, {}
     local ax, ay, az = 0, 0, 0
@@ -158,12 +158,12 @@ local function BuildTile(col, row, raw)
         local n = #xs + 1
         xs[n], ys[n], zs[n] = baseX - ax, baseY - ay, az
     end
-    local rings, packed, index, i = {}, raw.p, 0, 1
+    local rings, packed, catalog, i = {}, raw.p, 0, 1
     while i <= #packed do
         local ring = {}
         for k = 1, packed[i] do
-            index = index + packed[i + k]
-            ring[k] = index
+            catalog = catalog + packed[i + k]
+            ring[k] = catalog
         end
         i = i + packed[i] + 1
         rings[#rings + 1] = ring
@@ -184,23 +184,23 @@ local function BuildTile(col, row, raw)
     local seams = {}
     local l = raw.l or {}
     for k = 1, #l, 5 do
-        local key = l[k] * MAX_SIDES + l[k + 1] - 1
-        local list = seams[key] or {}
-        seams[key] = list
-        list[#list + 1], list[#list + 2], list[#list + 3] = l[k + 2], l[k + 3], l[k + 4]
+        local key = l[k] * TOP_FACTIONS + l[k + 1] - 1
+        local roster = seams[key] or {}
+        seams[key] = roster
+        roster[#roster + 1], roster[#roster + 2], roster[#roster + 3] = l[k + 2], l[k + 3], l[k + 4]
     end
     return {
-        xs = xs, ys = ys, zs = zs, rings = rings, beside = LinkSides(rings),
+        xs = xs, ys = ys, zs = zs, rings = rings, beside = ChainFactions(rings),
         midX = midX, midY = midY, midZ = midZ, ground = raw.a, gates = gates, seams = seams,
     }
 end
 
 local function DropOldestTile()
-    local oldest, oldestKey = huge, nil
+    local oldest, oldestId = huge, nil
     for key, at in pairs(tileUsed) do
-        if at < oldest then oldest, oldestKey = at, key end
+        if at < oldest then oldest, oldestId = at, key end
     end
-    if oldestKey then tileCache[oldestKey], tileUsed[oldestKey] = nil, nil end
+    if oldestId then tileCache[oldestId], tileUsed[oldestId] = nil, nil end
 end
 
 local function Tile(c, col, row)
@@ -208,15 +208,15 @@ local function Tile(c, col, row)
     local key = c .. ":" .. col .. ":" .. row
     local tile = tileCache[key]
     if tile == nil then
-        local all = data.tiles[c]
+        local all = info.tiles[c]
         local packed = all and all[col .. "_" .. row]
         local raw = packed and Unpack(packed)
-        tile = raw and BuildTile(col, row, raw) or false
-        local count = 0
+        tile = raw and MakeTile(col, row, raw) or false
+        local tally = 0
         for _ in pairs(tileCache) do
-            count = count + 1
+            tally = tally + 1
         end
-        if count >= TILE_CACHE then DropOldestTile() end
+        if tally >= TILE_CACHE then DropOldestTile() end
         tileCache[key] = tile
     end
     tileUsed[key] = GetTime()
@@ -244,7 +244,7 @@ end
 -- the nearest within STAND_REACH. dry: never the sea. Returns polygon,
 -- yards to it (0 when on it).
 local function StandOn(tile, x, y, z, dry)
-    local best, bestScore, off = nil, huge, 0
+    local best, topScore, off = nil, huge, 0
     local ground = dry and tile.ground
     for p = 1, #tile.rings do
         local dx, dy = tile.midX[p] - x, tile.midY[p] - y
@@ -252,8 +252,8 @@ local function StandOn(tile, x, y, z, dry)
         local on = InPolygon(tile, tile.rings[p], x, y)
         local rise = z and abs(tile.midZ[p] - z) or 0
         local score = on and rise or flat + rise * HEIGHT_WEIGHT
-        if (on or flat < STAND_REACH) and score < bestScore and not (ground and ground[p] == SEA) then
-            best, bestScore, off = p, score, on and 0 or flat + rise
+        if (on or flat < STAND_REACH) and score < topScore and not (ground and ground[p] == SEA) then
+            best, topScore, off = p, score, on and 0 or flat + rise
         end
     end
     return best, off
@@ -270,7 +270,7 @@ end
 -------------------------------------------------------------------------------
 --  Searches
 -------------------------------------------------------------------------------
-local function HeapPush(queue, dist, node)
+local function HeapAppend(queue, dist, node)
     local n = #queue + 1
     queue[n] = node
     while n > 1 do
@@ -298,7 +298,7 @@ local function HeapPop(queue, dist)
     return top
 end
 
-local function SideMiddle(tile, p, k)
+local function FactionMiddle(tile, p, k)
     local ring = tile.rings[p]
     local a, b = ring[k], ring[k % #ring + 1]
     return (tile.xs[a] + tile.xs[b]) / 2, (tile.ys[a] + tile.ys[b]) / 2, (tile.zs[a] + tile.zs[b]) / 2
@@ -322,11 +322,11 @@ local function SpreadInTile(tile, from, extra)
             for k = 1, #tile.rings[p] do
                 local q = beside[k]
                 if q and not settled[q] then
-                    local sx, sy, sz = SideMiddle(tile, p, k)
+                    local sx, sy, sz = FactionMiddle(tile, p, k)
                     local c = dist[p] + ToMiddle(tile, p, sx, sy, sz) + ToMiddle(tile, q, sx, sy, sz)
                     if c < (dist[q] or huge) then
                         dist[q], cameFrom[q] = c, p
-                        HeapPush(queue, dist, q)
+                        HeapAppend(queue, dist, q)
                     end
                 end
             end
@@ -340,7 +340,7 @@ local function Graph(c)
     Touch()
     local web = graphCache[c]
     if web == nil then
-        local packed = data.graph[c]
+        local packed = info.graph[c]
         web = false
         local raw = packed and Unpack(packed)
         if raw then
@@ -366,15 +366,15 @@ local function Places(c)
     Touch()
     local places = placeCache[c]
     if places == nil then
-        local packed = data.walks[c]
+        local packed = info.walks[c]
         places = false
         local raw = packed and Unpack(packed)
         if raw then
-            local index = {}
+            local catalog = {}
             for i, key in ipairs(raw.k) do
-                index[key] = i
+                catalog[key] = i
             end
-            places = { index = index, count = #raw.k, between = raw.d, reachOf = raw.r }
+            places = { index = catalog, count = #raw.k, between = raw.d, reachOf = raw.r }
         end
         placeCache[c] = places
     end
@@ -386,19 +386,19 @@ local function SearchGraph(web, seeds)
     local dist, settled, queue, cameFrom = {}, {}, {}, {}
     for gateId, yards in pairs(seeds) do
         dist[gateId] = yards
-        HeapPush(queue, dist, gateId)
+        HeapAppend(queue, dist, gateId)
     end
     while #queue > 0 do
         local a = HeapPop(queue, dist)
         if not settled[a] then
             settled[a] = true
-            local list = web.edgesOf[a]
-            for i = 1, #list, 2 do
-                local b = list[i]
-                local yards = dist[a] + list[i + 1]
+            local roster = web.edgesOf[a]
+            for i = 1, #roster, 2 do
+                local b = roster[i]
+                local yards = dist[a] + roster[i + 1]
                 if not settled[b] and yards < (dist[b] or huge) then
                     dist[b], cameFrom[b] = yards, a
-                    HeapPush(queue, dist, b)
+                    HeapAppend(queue, dist, b)
                 end
             end
             Slice()
@@ -416,16 +416,16 @@ local function PierRoot(c, spot)
     for s, ship in ipairs(net.ships) do
         if ship[1] == "Boat" then
             for i = 3, #ship do
-                local dock = ship[i]
-                local at = dock[1] == c and places.index["s" .. s .. "." .. (i - 2)]
+                local attach = ship[i]
+                local at = attach[1] == c and places.index["s" .. s .. "." .. (i - 2)]
                 local root = at and places.reachOf[at]
                 local tile = root and root[1] and Tile(c, root[1], root[2])
                 if tile then
                     local rootX, rootY = tile.midX[root[3]], tile.midY[root[3]]
-                    local pierLength = sqrt((dock[2] - rootX) ^ 2 + (dock[3] - rootY) ^ 2)
+                    local pierLength = sqrt((attach[2] - rootX) ^ 2 + (attach[3] - rootY) ^ 2)
                     local fromRoot = sqrt((spot.x - rootX) ^ 2 + (spot.y - rootY) ^ 2)
-                    local fromDock = sqrt((spot.x - dock[2]) ^ 2 + (spot.y - dock[3]) ^ 2)
-                    if fromDock + fromRoot <= pierLength + PIER_WIDTH then return tile, root[1], root[2], root[3], fromRoot end
+                    local fromAttach = sqrt((spot.x - attach[2]) ^ 2 + (spot.y - attach[3]) ^ 2)
+                    if fromAttach + fromRoot <= pierLength + PIER_WIDTH then return tile, root[1], root[2], root[3], fromRoot end
                 end
             end
         end
@@ -445,13 +445,13 @@ function Walking.Reach(spot)
     local ring, off
     if tile then ring, off = StandOn(tile, spot.x, spot.y, spot.z, true) end
     if not ring then
-        local baseCol, baseRow = col, row
+        local baseCol, baseLine = col, row
         for dx = -1, 1 do
             for dy = -1, 1 do
-                local t = Tile(c, baseCol + dx, baseRow + dy)
+                local t = Tile(c, baseCol + dx, baseLine + dy)
                 if t then
                     local p, o = StandOn(t, spot.x, spot.y, spot.z, true)
-                    if p and (not ring or o < off) then ring, off, tile, col, row = p, o, t, baseCol + dx, baseRow + dy end
+                    if p and (not ring or o < off) then ring, off, tile, col, row = p, o, t, baseCol + dx, baseLine + dy end
                 end
             end
         end
@@ -531,7 +531,7 @@ end
 -------------------------------------------------------------------------------
 --  Paths
 -------------------------------------------------------------------------------
-local function Cross2(ax, ay, bx, by, baseCol, baseRow) return (baseCol - ax) * (by - ay) - (bx - ax) * (baseRow - ay) end
+local function Cross2(ax, ay, bx, by, baseCol, baseLine) return (baseCol - ax) * (by - ay) - (bx - ax) * (baseLine - ay) end
 
 -- The side polygon p shares with q, as left and right ends seen going p to q.
 local function Doorway(tile, p, q)
@@ -625,9 +625,9 @@ local function OnPolygon(tile, p, x, y)
 end
 
 -- Where a line from (sx, sy) to (ex, ey) leaves polygon p, past t = after.
-local function LeavesBy(tile, p, sx, sy, ex, ey, after)
+local function LeavesBy(tile, p, sx, sy, ex, ey, later)
     local dx, dy = ex - sx, ey - sy
-    local side, at, out
+    local faction, at, out
     for k = 1, #tile.rings[p] do
         local d, ax, ay, bx, by = Inside(tile, p, k, ex, ey)
         if d < -ON_EDGE then
@@ -635,19 +635,19 @@ local function LeavesBy(tile, p, sx, sy, ex, ey, after)
             local denom = dx * (by - ay) - dy * (bx - ax)
             if denom ~= 0 then
                 local t = ((ax - sx) * (by - ay) - (ay - sy) * (bx - ax)) / denom
-                if t >= after - RAY_SLACK and (not at or t < at) then side, at = k, t end
+                if t >= later - RAY_SLACK and (not at or t < at) then faction, at = k, t end
             end
         end
     end
-    return out, side, at
+    return out, faction, at
 end
 
 local function PolygonAround(tile, p, x, y)
-    local best, bestRise
+    local best, topRise
     for q = 1, #tile.rings do
         if q ~= p and OnPolygon(tile, q, x, y) then
             local rise = abs(tile.midZ[q] - tile.midZ[p])
-            if not best or rise < bestRise then best, bestRise = q, rise end
+            if not best or rise < topRise then best, topRise = q, rise end
         end
     end
     return best
@@ -655,34 +655,34 @@ end
 
 -- Whether a straight line stays on the walking map (never changing level,
 -- and off water unless wet). Returns the tile, col, row, polygon it ends on.
-local function StaysOnMap(c, tile, col, row, p, sx, sy, ex, ey, wet)
+local function StaysOnChart(c, tile, col, row, p, sx, sy, ex, ey, wet)
     local length = sqrt((ex - sx) ^ 2 + (ey - sy) ^ 2)
     if length == 0 then return tile, col, row, p end
     local ux, uy = (ex - sx) / length, (ey - sy) / length
-    local after, nudged = 0, false
-    for _ = 1, RAY_STEPS do
+    local later, nudged = 0, false
+    for _ = 1, RAY_STAGES do
         if not wet and tile.ground and tile.ground[p] ~= LAND then return nil end
-        local out, k, t = LeavesBy(tile, p, sx, sy, ex, ey, after)
+        local out, k, t = LeavesBy(tile, p, sx, sy, ex, ey, later)
         if not out then return tile, col, row, p end
         if not k then return nil end
         local q = tile.beside[p][k]
-        local list = not q and tile.seams[p * MAX_SIDES + k - 1]
-        if not q and not list and not nudged and t * length < NUDGE then
+        local roster = not q and tile.seams[p * TOP_FACTIONS + k - 1]
+        if not q and not roster and not nudged and t * length < NUDGE then
             q = PolygonAround(tile, p, sx + ux * NUDGE, sy + uy * NUDGE)
             nudged = true
-            t = after
+            t = later
         end
-        after = t
+        later = t
         if q then
             p = q
         else
-            if not list then return nil end
+            if not roster then return nil end
             local x, y = sx + (ex - sx) * t, sy + (ey - sy) * t
             local found
-            for i = 1, #list, 3 do
-                local nextTile = Tile(c, col + list[i], row + list[i + 1])
-                if nextTile and OnPolygon(nextTile, list[i + 2], x - list[i + 1] * NUDGE, y - list[i] * NUDGE) then
-                    tile, col, row, p, found = nextTile, col + list[i], row + list[i + 1], list[i + 2], true
+            for i = 1, #roster, 3 do
+                local nextTile = Tile(c, col + roster[i], row + roster[i + 1])
+                if nextTile and OnPolygon(nextTile, roster[i + 2], x - roster[i + 1] * NUDGE, y - roster[i] * NUDGE) then
+                    tile, col, row, p, found = nextTile, col + roster[i], row + roster[i + 1], roster[i + 2], true
                     break
                 end
             end
@@ -701,12 +701,12 @@ local function CutCorners(a, points, from)
     local last = #points - 1
     local i = from
     while i < last do
-        local farthest, farTile, farCol, farRow, farRing
+        local farthest, farTile, farCol, farLine, farRing
         for j = i + 2, last, 2 do
-            local tile2, col2, row2, ring2 = StaysOnMap(a.c, tile, col, row, p, points[i], points[i + 1], points[j], points[j + 1], j == i + 2)
+            local tile2, col2, line2, ring2 = StaysOnChart(a.c, tile, col, row, p, points[i], points[i + 1], points[j], points[j + 1], j == i + 2)
             Slice()
             if not tile2 then break end
-            farthest, farTile, farCol, farRow, farRing = j, tile2, col2, row2, ring2
+            farthest, farTile, farCol, farLine, farRing = j, tile2, col2, line2, ring2
         end
         if not farthest then
             for k = i + 2, #points do
@@ -715,7 +715,7 @@ local function CutCorners(a, points, from)
             return out
         end
         out[#out + 1], out[#out + 2] = points[farthest], points[farthest + 1]
-        tile, col, row, p, i = farTile, farCol, farRow, farRing, farthest
+        tile, col, row, p, i = farTile, farCol, farLine, farRing, farthest
     end
     return out
 end
@@ -767,7 +767,7 @@ end
 
 -- For a scenario: forget whether the data loaded.
 function Walking.Reset()
-    loaded, data = nil, nil
+    loaded, info = nil, nil
     wipe(tileCache)
     wipe(tileUsed)
     wipe(graphCache)
