@@ -16,7 +16,7 @@ if not (CUI and CUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Typeface() return CUI.GetFontPath("essentials") end
+local function WatchFont() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 local function AurasSecret()
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
@@ -33,103 +33,103 @@ local HM = module.Feature(
 
 local MANA, MANA_TOKEN = 0, "MANA"
 local DRINK_SPELL = 430
-local DRINK_GLYPH = "Interface\\Icons\\INV_Drink_07"
-local HEALER_CALLINGS = { PRIEST = true, PALADIN = true, DRUID = true, SHAMAN = true }
-local LOWER, OUT = 0.6, 0.3
-local LINE_PAD, PAD, GLYPH_SPACING = 4, 6, 4
+local DRINK_ICON = "Interface\\Icons\\INV_Drink_07"
+local HEALER_CLASSES = { PRIEST = true, PALADIN = true, DRUID = true, SHAMAN = true }
+local LOW, OUT = 0.6, 0.3
+local ROW_PAD, PAD, ICON_GAP = 4, 6, 4
 local DEAD, OFFLINE, UNKNOWN = "Dead", "Offline", "--"
-local NO_TIER = math.huge
+local NO_RANK = math.huge
 local UNIT_EVENTS =
     { "UNIT_POWER_UPDATE", "UNIT_MAXPOWER", "UNIT_DISPLAYPOWER", "UNIT_CONNECTION", "UNIT_AURA" }
 
-local hmWindow, drinkTitle, shareRamp
-local lineRoster, members, roster, tracked, tier, units, watchers = {}, {}, {}, {}, {}, {}, {}
+local hmFrame, drinkName, shareCurve
+local rowList, members, list, tracked, rank, units, watchers = {}, {}, {}, {}, {}, {}, {}
 local RAID, PARTY = {}, {}
-for catalog = 1, 40 do
-    RAID[catalog] = "raid" .. catalog
+for index = 1, 40 do
+    RAID[index] = "raid" .. index
 end
-for catalog = 1, 4 do
-    PARTY[catalog] = "party" .. catalog
+for index = 1, 4 do
+    PARTY[index] = "party" .. index
 end
 
-local function HMHere()
+local function HealerManaWanted()
     if not IsInGroup() then return false end
     if HM.Get("where") == "group" then return true end
     local _, kind = IsInInstance()
     return kind == "party" or kind == "raid"
 end
 
-local function IsHealer(unitToken, calling)
+local function IsHealerUnit(unitToken, class)
     local role = UnitGroupRolesAssigned(unitToken)
     if Secret(role) then role = nil end
     if role == "HEALER" then return true end
     if role == "TANK" or role == "DAMAGER" then return false end
-    return HEALER_CALLINGS[calling] == true
+    return HEALER_CLASSES[class] == true
 end
 
-local function Units()
+local function WatchedUnits()
     wipe(units)
     if HM.Get("showSelf") then units[1] = "player" end
     if IsInRaid() then
-        for catalog = 1, math.min(GetNumGroupMembers(), 40) do
-            local me = UnitIsUnit(RAID[catalog], "player")
-            if not Secret(me) and not me then units[#units + 1] = RAID[catalog] end
+        for index = 1, math.min(GetNumGroupMembers(), 40) do
+            local me = UnitIsUnit(RAID[index], "player")
+            if not Secret(me) and not me then units[#units + 1] = RAID[index] end
         end
     else
-        for catalog = 1, math.min(GetNumSubgroupMembers(), 4) do
-            units[#units + 1] = PARTY[catalog]
+        for index = 1, math.min(GetNumSubgroupMembers(), 4) do
+            units[#units + 1] = PARTY[index]
         end
     end
     return units
 end
 
-local function Roster()
-    wipe(roster)
+local function HealerRoster()
+    wipe(list)
     wipe(tracked)
-    for _, unitToken in ipairs(Units()) do
-        local title, unitId = UnitName(unitToken), UnitGUID(unitToken)
-        local _, calling = UnitClass(unitToken)
+    for _, unitToken in ipairs(WatchedUnits()) do
+        local name, unitGuid = UnitName(unitToken), UnitGUID(unitToken)
+        local _, class = UnitClass(unitToken)
         if
-            title
-            and unitId
-            and not (Secret(title) or Secret(unitId) or Secret(calling))
-            and IsHealer(unitToken, calling)
+            name
+            and unitGuid
+            and not (Secret(name) or Secret(unitGuid) or Secret(class))
+            and IsHealerUnit(unitToken, class)
         then
-            local num = #roster + 1
+            local num = #list + 1
             local m = members[num] or {}
             members[num] = m
-            if m.guid ~= unitId then
+            if m.guid ~= unitGuid then
                 m.pct, m.drinking = nil, false
             end
-            m.unit, m.name, m.class, m.guid = unitToken, title, calling, unitId
-            roster[num], tracked[unitToken] = m, m
+            m.unit, m.name, m.class, m.guid = unitToken, name, class, unitGuid
+            list[num], tracked[unitToken] = m, m
         end
     end
 end
 
-local function CanLoadDrink()
+local function CanSeeDrinking()
     if not HM.Get("drinking") or AurasSecret() then return false end
-    drinkTitle = drinkTitle or C_Spell.GetSpellName(DRINK_SPELL)
-    return drinkTitle ~= nil
+    drinkName = drinkName or C_Spell.GetSpellName(DRINK_SPELL)
+    return drinkName ~= nil
 end
 
-local function Drinking(m)
-    if not (CanLoadDrink() and C_UnitAuras.GetAuraDataBySpellName) then return end
-    local aura = C_UnitAuras.GetAuraDataBySpellName(m.unit, drinkTitle, "HELPFUL")
+local function ReadDrinking(m)
+    if not (CanSeeDrinking() and C_UnitAuras.GetAuraDataBySpellName) then return end
+    local aura = C_UnitAuras.GetAuraDataBySpellName(m.unit, drinkName, "HELPFUL")
     m.drinking = aura ~= nil
     m.drinkID = aura and aura.auraInstanceID or nil
 end
 
 -- True when the drinking state changed (an aura update for this unit).
-local function DrinkAltered(m, details)
-    if not CanLoadDrink() then return false end
+local function DrinkingChanged(m, details)
+    if not CanSeeDrinking() then return false end
     local was = m.drinking
     if not details or details.isFullUpdate then
-        Drinking(m)
+        ReadDrinking(m)
         return m.drinking ~= was
     end
     for _, a in ipairs(details.addedAuras or {}) do
-        if not Secret(a.name) and a.name == drinkTitle then
+        if not Secret(a.name) and a.name == drinkName then
             m.drinking, m.drinkID = true, a.auraInstanceID
         end
     end
@@ -144,54 +144,54 @@ local function DrinkAltered(m, details)
     return m.drinking ~= was
 end
 
-local function Load(m)
+local function ReadMember(m)
     local online, dead = UnitIsConnected(m.unit), UnitIsDeadOrGhost(m.unit)
     if Secret(online) then online = true end
     if Secret(dead) then dead = false end
     m.state = (not online and OFFLINE) or (dead and DEAD) or nil
-    local current, top = UnitPower(m.unit, MANA), UnitPowerMax(m.unit, MANA)
-    m.secret = (Secret(current) or Secret(top)) == true
-    if not m.secret and top > 0 then m.pct = current / top end
+    local current, max = UnitPower(m.unit, MANA), UnitPowerMax(m.unit, MANA)
+    m.secret = (Secret(current) or Secret(max)) == true
+    if not m.secret and max > 0 then m.pct = current / max end
 end
 
-local function Less(a, b)
+local function HealerOrder(a, b)
     if (a.state ~= nil) ~= (b.state ~= nil) then return b.state ~= nil end
-    local pa, pb = a.pct or NO_TIER, b.pct or NO_TIER
+    local pa, pb = a.pct or NO_RANK, b.pct or NO_RANK
     if pa ~= pb then return pa < pb end
     if a.name ~= b.name then return a.name < b.name end
     return a.guid < b.guid
 end
 
 -- While any mana is secret, keep the last order (it cannot be compared).
-local function Kept(a, b)
-    local ra, rb = tier[a.guid] or NO_TIER, tier[b.guid] or NO_TIER
+local function KeepLastOrder(a, b)
+    local ra, rb = rank[a.guid] or NO_RANK, rank[b.guid] or NO_RANK
     if ra ~= rb then return ra < rb end
     return a.guid < b.guid
 end
 
-local function Order()
-    for catalog = 1, #roster do
-        if roster[catalog].secret then
-            table.sort(roster, Kept)
+local function SortHealers()
+    for index = 1, #list do
+        if list[index].secret then
+            table.sort(list, KeepLastOrder)
             return
         end
     end
-    table.sort(roster, Less)
-    wipe(tier)
-    for catalog = 1, #roster do
-        tier[roster[catalog].guid] = catalog
+    table.sort(list, HealerOrder)
+    wipe(rank)
+    for index = 1, #list do
+        rank[list[index].guid] = index
     end
 end
 
-local function SecretShare(typefaceStr, unitToken)
+local function ShowSecretMana(fontStr, unitToken)
     if not (UnitPowerPercent and C_CurveUtil) then return false end
-    if not shareRamp then
-        shareRamp = C_CurveUtil.CreateCurve()
-        shareRamp:SetType(Enum.LuaCurveType.Linear)
-        shareRamp:AddPoint(0, 0)
-        shareRamp:AddPoint(1, 100)
+    if not shareCurve then
+        shareCurve = C_CurveUtil.CreateCurve()
+        shareCurve:SetType(Enum.LuaCurveType.Linear)
+        shareCurve:AddPoint(0, 0)
+        shareCurve:AddPoint(1, 100)
     end
-    typefaceStr:SetFormattedText("%.1f%%", UnitPowerPercent(unitToken, MANA, false, shareRamp))
+    fontStr:SetFormattedText("%.1f%%", UnitPowerPercent(unitToken, MANA, false, shareCurve))
     return true
 end
 
@@ -202,12 +202,12 @@ local SAMPLE = {
     { name = "Paladin", class = "PALADIN", guid = "4", state = DEAD },
 }
 
-local function Line(catalog)
-    local row = lineRoster[catalog]
+local function HealerRow(index)
+    local row = rowList[index]
     if row then return row end
-    row = CreateFrame("Frame", nil, hmWindow)
+    row = CreateFrame("Frame", nil, hmFrame)
     row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetTexture(DRINK_GLYPH)
+    row.icon:SetTexture(DRINK_ICON)
     row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     row.icon:SetPoint("LEFT", 0, -1)
     row.pct = row:CreateFontString(nil, "OVERLAY")
@@ -216,30 +216,30 @@ local function Line(catalog)
     row.name = row:CreateFontString(nil, "OVERLAY")
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
-    lineRoster[catalog] = row
+    rowList[index] = row
     return row
 end
 
-local function RenderLines(items)
-    local dims, drinks = HM.Get("size"), HM.Get("drinking")
-    local step = dims + LINE_PAD
-    hmWindow:SetSize(HM.Get("width"), #items * step + 2 * PAD)
-    for catalog, m in ipairs(items) do
-        local region = Line(catalog)
+local function FillRows(entries)
+    local size, drinks = HM.Get("size"), HM.Get("drinking")
+    local step = size + ROW_PAD
+    hmFrame:SetSize(HM.Get("width"), #entries * step + 2 * PAD)
+    for index, m in ipairs(entries) do
+        local region = HealerRow(index)
         region:ClearAllPoints()
-        region:SetPoint("TOPLEFT", PAD, -PAD - (catalog - 1) * step)
-        region:SetPoint("TOPRIGHT", -PAD, -PAD - (catalog - 1) * step)
+        region:SetPoint("TOPLEFT", PAD, -PAD - (index - 1) * step)
+        region:SetPoint("TOPRIGHT", -PAD, -PAD - (index - 1) * step)
         region:SetHeight(step)
-        CUI.Kit.Font(region.name, dims, "essentials")
-        CUI.Kit.Font(region.pct, dims, "essentials")
-        region.icon:SetSize(dims, dims)
+        CUI.Kit.Font(region.name, size, "essentials")
+        CUI.Kit.Font(region.pct, size, "essentials")
+        region.icon:SetSize(size, size)
         region.name:ClearAllPoints()
-        region.name:SetPoint("LEFT", drinks and (dims + GLYPH_SPACING) or 0, 0)
+        region.name:SetPoint("LEFT", drinks and (size + ICON_GAP) or 0, 0)
         region.name:SetPoint("RIGHT", region.pct, "LEFT", -8, 0)
         region.name:SetText(m.name)
-        local tint = RAID_CLASS_COLORS[m.class]
-        if tint then
-            region.name:SetTextColor(tint.r, tint.g, tint.b)
+        local color = RAID_CLASS_COLORS[m.class]
+        if color then
+            region.name:SetTextColor(color.r, color.g, color.b)
         else
             region.name:SetTextColor(1, 1, 1)
         end
@@ -253,12 +253,12 @@ local function RenderLines(items)
             end
         elseif m.secret then
             region.pct:SetTextColor(1, 1, 1)
-            if not SecretShare(region.pct, m.unit) then region.pct:SetText(UNKNOWN) end
+            if not ShowSecretMana(region.pct, m.unit) then region.pct:SetText(UNKNOWN) end
         elseif m.pct then
             region.pct:SetText(("%.1f%%"):format(math.floor(m.pct * 1000 + 0.5) / 10))
             if m.pct < OUT then
                 region.pct:SetTextColor(1, 0.3, 0.3)
-            elseif m.pct < LOWER then
+            elseif m.pct < LOW then
                 region.pct:SetTextColor(1, 0.8, 0.2)
             else
                 region.pct:SetTextColor(0.4, 0.9, 0.5)
@@ -269,55 +269,55 @@ local function RenderLines(items)
         end
         region:Show()
     end
-    for catalog = #items + 1, #lineRoster do
-        lineRoster[catalog]:Hide()
+    for index = #entries + 1, #rowList do
+        rowList[index]:Hide()
     end
 end
 
-local function HMRedraw()
-    if not hmWindow then return end
+local function RedrawHealers()
+    if not hmFrame then return end
     if CUI._unlockActive and HM.Enabled() then
-        RenderLines(SAMPLE)
-        hmWindow:Show()
+        FillRows(SAMPLE)
+        hmFrame:Show()
         return
     end
-    if not (HM.Enabled() and HMHere()) or #roster == 0 then
-        hmWindow:Hide()
+    if not (HM.Enabled() and HealerManaWanted()) or #list == 0 then
+        hmFrame:Hide()
         return
     end
-    for catalog = 1, #roster do
-        Load(roster[catalog])
+    for index = 1, #list do
+        ReadMember(list[index])
     end
-    Order()
-    RenderLines(roster)
-    hmWindow:Show()
+    SortHealers()
+    FillRows(list)
+    hmFrame:Show()
 end
 
 local hmPending
-local function HMSoon()
+local function RedrawHealersSoon()
     if hmPending then return end
     hmPending = true
     C_Timer.After(0.25, function()
         hmPending = false
-        HMRedraw()
+        RedrawHealers()
     end)
 end
 
-local function OnUnitEvent(wid, evt, _, arg)
+local function OnHealerEvent(wid, evt, _, arg)
     if evt == "UNIT_POWER_UPDATE" and (Secret(arg) or arg ~= MANA_TOKEN) then return end
     local m = tracked[wid.unit]
     if not m then return end
-    if evt == "UNIT_AURA" and not DrinkAltered(m, arg) then return end
-    HMSoon()
+    if evt == "UNIT_AURA" and not DrinkingChanged(m, arg) then return end
+    RedrawHealersSoon()
 end
 
-local function Watch()
-    for catalog, m in ipairs(roster) do
-        local wid = watchers[catalog]
+local function WatchHealers()
+    for index, m in ipairs(list) do
+        local wid = watchers[index]
         if not wid then
             wid = CreateFrame("Frame")
-            wid:SetScript("OnEvent", OnUnitEvent)
-            watchers[catalog] = wid
+            wid:SetScript("OnEvent", OnHealerEvent)
+            watchers[index] = wid
         end
         if wid.unit ~= m.unit then
             wid:UnregisterAllEvents()
@@ -327,64 +327,64 @@ local function Watch()
             end
         end
     end
-    for catalog = #roster + 1, #watchers do
-        watchers[catalog]:UnregisterAllEvents()
-        watchers[catalog].unit = nil
+    for index = #list + 1, #watchers do
+        watchers[index]:UnregisterAllEvents()
+        watchers[index].unit = nil
     end
 end
 
 local hmEvents = CreateFrame("Frame")
-local HMUse
+local HMApply
 local rosterPending
 hmEvents:SetScript("OnEvent", function(_, evt)
-    if evt == "PLAYER_ENTERING_WORLD" then return HMUse() end
+    if evt == "PLAYER_ENTERING_WORLD" then return HMApply() end
     if rosterPending then return end
     rosterPending = true
     C_Timer.After(0.25, function()
         rosterPending = false
-        HMUse()
+        HMApply()
     end)
 end)
 
-HMUse = function()
+HMApply = function()
     if not HM.Enabled() then
         hmEvents:UnregisterAllEvents()
-        wipe(roster)
+        wipe(list)
         wipe(tracked)
-        Watch()
-        if hmWindow then hmWindow:Hide() end
+        WatchHealers()
+        if hmFrame then hmFrame:Hide() end
         return
     end
-    if not hmWindow then
-        hmWindow = CreateFrame("Frame", "CludesUIHealerMana", UIParent)
-        CUI.Kit.Panel(hmWindow, 0.75)
+    if not hmFrame then
+        hmFrame = CreateFrame("Frame", "CludesUIHealerMana", UIParent)
+        CUI.Kit.Panel(hmFrame, 0.75)
     end
     for _, event in ipairs({ "GROUP_ROSTER_UPDATE", "PLAYER_ROLES_ASSIGNED", "PLAYER_ENTERING_WORLD" }) do
         hmEvents:RegisterEvent(event)
     end
-    wipe(roster)
+    wipe(list)
     wipe(tracked)
-    if HMHere() then
-        Roster()
-        for catalog = 1, #roster do
-            Drinking(roster[catalog])
+    if HealerManaWanted() then
+        HealerRoster()
+        for index = 1, #list do
+            ReadDrinking(list[index])
         end
     end
-    Watch()
-    if not CUI._unlockActive then HM.Place(hmWindow) end
-    HMRedraw()
+    WatchHealers()
+    if not CUI._unlockActive then HM.Place(hmFrame) end
+    RedrawHealers()
 end
 
-HM.Start(HMUse, {
+HM.Start(HMApply, {
     key = "CUI_HealerMana",
     label = "Healer Mana",
     order = 746,
-    frame = function(make)
-        if make and not hmWindow then HMUse() end
-        if make and hmWindow then HMRedraw() end
-        return hmWindow
+    frame = function(build)
+        if build and not hmFrame then HMApply() end
+        if build and hmFrame then RedrawHealers() end
+        return hmFrame
     end,
-    size = function() return HM.Get("width"), #SAMPLE * (HM.Get("size") + LINE_PAD) + 2 * PAD end,
+    size = function() return HM.Get("width"), #SAMPLE * (HM.Get("size") + ROW_PAD) + 2 * PAD end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })
@@ -409,7 +409,7 @@ local PT = module.Feature("petTracker", {
 
 local CALL_PET, SUMMON_IMP = 883, 688
 local LONE_WOLF, LONE_WOLF_TAUGHT = 415370, 409979
-local PET_GLYPH = 132161
+local PET_ICON = 132161
 local SACRIFICE_BUFFS = { 18789, 18790, 18791, 18792 }
 local DISMOUNT_DELAY = 5
 local PT_EVENTS = {
@@ -426,61 +426,61 @@ local PT_EVENTS = {
     "PLAYER_CONTROL_GAINED",
 }
 
-local ptWindow, ramp, mounted, dismountClock, sacrificed
-local _, CALLING = UnitClass("player")
+local ptFrame, curve, mounted, dismountTimer, sacrificed
+local _, CLASS = UnitClass("player")
 
-local function Learned(ident)
+local function KnowsSpell(ident)
     return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(ident)
 end
 
-local function PTMake()
-    if ptWindow then return ptWindow end
-    ptWindow = CreateFrame("Frame", "CludesUIPetTracker", UIParent)
-    ptWindow.icon = ptWindow:CreateTexture(nil, "ARTWORK")
-    ptWindow.icon:SetTexture(PET_GLYPH)
-    ptWindow.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    ptWindow.text = ptWindow:CreateFontString(nil, "OVERLAY")
-    ptWindow.text:SetTextColor(1, 0.2, 0.2)
-    ptWindow:Hide()
-    return ptWindow
+local function BuildPetWarning()
+    if ptFrame then return ptFrame end
+    ptFrame = CreateFrame("Frame", "CludesUIPetTracker", UIParent)
+    ptFrame.icon = ptFrame:CreateTexture(nil, "ARTWORK")
+    ptFrame.icon:SetTexture(PET_ICON)
+    ptFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    ptFrame.text = ptFrame:CreateFontString(nil, "OVERLAY")
+    ptFrame.text:SetTextColor(1, 0.2, 0.2)
+    ptFrame:Hide()
+    return ptFrame
 end
 
-local function Reskin()
-    local dims = PT.Get("size")
-    CUI.Kit.Font(ptWindow.text, dims, "essentials")
-    ptWindow.text:ClearAllPoints()
+local function StylePetWarning()
+    local size = PT.Get("size")
+    CUI.Kit.Font(ptFrame.text, size, "essentials")
+    ptFrame.text:ClearAllPoints()
     if PT.Get("showIcon") then
-        ptWindow.icon:SetSize(dims + 12, dims + 12)
-        ptWindow.icon:SetPoint("LEFT")
-        ptWindow.icon:Show()
-        ptWindow.text:SetPoint("LEFT", ptWindow.icon, "RIGHT", 8, 0)
+        ptFrame.icon:SetSize(size + 12, size + 12)
+        ptFrame.icon:SetPoint("LEFT")
+        ptFrame.icon:Show()
+        ptFrame.text:SetPoint("LEFT", ptFrame.icon, "RIGHT", 8, 0)
     else
-        ptWindow.icon:Hide()
-        ptWindow.text:SetPoint("CENTER")
+        ptFrame.icon:Hide()
+        ptFrame.text:SetPoint("CENTER")
     end
-    ptWindow:SetSize(220, dims + 16)
+    ptFrame:SetSize(220, size + 16)
 end
 
 -- The warning fades out above the low-health line: 1 below it, 0 above.
-local function MakeRamp()
+local function BuildFadeCurve()
     local below = PT.Get("lowBelow") / 100
-    ramp = ramp or C_CurveUtil.CreateCurve()
-    ramp:SetType(Enum.LuaCurveType.Step)
-    ramp:ClearPoints()
-    ramp:AddPoint(0, 1)
-    ramp:AddPoint(below - 0.001, 1)
-    ramp:AddPoint(below, 0)
-    ramp:AddPoint(1, 0)
+    curve = curve or C_CurveUtil.CreateCurve()
+    curve:SetType(Enum.LuaCurveType.Step)
+    curve:ClearPoints()
+    curve:AddPoint(0, 1)
+    curve:AddPoint(below - 0.001, 1)
+    curve:AddPoint(below, 0)
+    curve:AddPoint(1, 0)
 end
 
-local function ShouldHavePet()
-    if CALLING == "HUNTER" then return Learned(CALL_PET) end
-    if CALLING == "WARLOCK" then return Learned(SUMMON_IMP) and not sacrificed end
+local function ExpectsPet()
+    if CLASS == "HUNTER" then return KnowsSpell(CALL_PET) end
+    if CLASS == "WARLOCK" then return KnowsSpell(SUMMON_IMP) and not sacrificed end
     return false
 end
 
-local function TestSacrifice()
-    if CALLING ~= "WARLOCK" or AurasSecret() then return end
+local function SacrificeActive()
+    if CLASS ~= "WARLOCK" or AurasSecret() then return end
     sacrificed = false
     for _, ident in ipairs(SACRIFICE_BUFFS) do
         if C_UnitAuras.GetPlayerAuraBySpellID(ident) then
@@ -490,45 +490,45 @@ local function TestSacrifice()
     end
 end
 
-local function IsPassive()
+local function PetIsPassive()
     if not PetHasActionBar() then return false end
-    for catalog = 1, NUM_PET_ACTION_SLOTS do
-        local title, _, _, isActive = GetPetActionInfo(catalog)
-        if title == "PET_MODE_PASSIVE" then return isActive == true end
+    for index = 1, NUM_PET_ACTION_SLOTS do
+        local name, _, _, isActive = GetPetActionInfo(index)
+        if name == "PET_MODE_PASSIVE" then return isActive == true end
     end
     return false
 end
 
-local function Warning()
+local function PetWarningText()
     if UnitIsDeadOrGhost("player") or UnitOnTaxi("player") then return end
-    if PT.Get("hideMounted") and (mounted or dismountClock) then return end
+    if PT.Get("hideMounted") and (mounted or dismountTimer) then return end
     if PT.Get("combatOnly") and not UnitAffectingCombat("player") then return end
     if PT.Get("instanceOnly") and not IsInInstance() then return end
-    if not ShouldHavePet() then return end
+    if not ExpectsPet() then return end
     if not UnitExists("pet") then
-        if CALLING == "HUNTER" and (Learned(LONE_WOLF) or Learned(LONE_WOLF_TAUGHT)) then return end
+        if CLASS == "HUNTER" and (KnowsSpell(LONE_WOLF) or KnowsSpell(LONE_WOLF_TAUGHT)) then return end
         return "missingText"
     end
-    if PT.Get("passive") and IsPassive() then return "passiveText" end
+    if PT.Get("passive") and PetIsPassive() then return "passiveText" end
     if PT.Get("lowHealth") and not UnitIsDeadOrGhost("pet") then return "lowText", true end
 end
 
-local function PTRefresh()
-    if not ptWindow then return end
+local function RefreshPetWarning()
+    if not ptFrame then return end
     if CUI._unlockActive and PT.Enabled() then
-        ptWindow.text:SetText(PT.Get("missingText"))
-        ptWindow:SetAlpha(1)
-        ptWindow:Show()
+        ptFrame.text:SetText(PT.Get("missingText"))
+        ptFrame:SetAlpha(1)
+        ptFrame:Show()
         return
     end
-    local id, lower = Warning()
-    if not id then
-        ptWindow:Hide()
+    local key, low = PetWarningText()
+    if not key then
+        ptFrame:Hide()
         return
     end
-    ptWindow.text:SetText(PT.Get(id))
-    ptWindow:SetAlpha(lower and UnitHealthPercent("pet", true, ramp) or 1)
-    ptWindow:Show()
+    ptFrame.text:SetText(PT.Get(key))
+    ptFrame:SetAlpha(low and UnitHealthPercent("pet", true, curve) or 1)
+    ptFrame:Show()
 end
 
 local ptEvents = CreateFrame("Frame")
@@ -536,61 +536,61 @@ ptEvents:SetScript("OnEvent", function(_, evt, unitToken)
     if evt == "PLAYER_MOUNT_DISPLAY_CHANGED" then
         local was = mounted
         mounted = IsMounted()
-        if dismountClock then
-            dismountClock:Cancel()
-            dismountClock = nil
+        if dismountTimer then
+            dismountTimer:Cancel()
+            dismountTimer = nil
         end
         if was and not mounted then
-            dismountClock = C_Timer.NewTimer(DISMOUNT_DELAY, function()
-                dismountClock = nil
-                PTRefresh()
+            dismountTimer = C_Timer.NewTimer(DISMOUNT_DELAY, function()
+                dismountTimer = nil
+                RefreshPetWarning()
             end)
         end
     elseif evt == "UNIT_AURA" or evt == "PLAYER_REGEN_ENABLED" then
-        TestSacrifice()
+        SacrificeActive()
     elseif evt == "UNIT_HEALTH" and unitToken ~= "pet" then
         return
     end
-    PTRefresh()
+    RefreshPetWarning()
 end)
 
-local function PTUse()
+local function ApplyPetTracker()
     ptEvents:UnregisterAllEvents()
     if not PT.Enabled() then
-        if dismountClock then
-            dismountClock:Cancel()
-            dismountClock = nil
+        if dismountTimer then
+            dismountTimer:Cancel()
+            dismountTimer = nil
         end
-        if ptWindow then ptWindow:Hide() end
+        if ptFrame then ptFrame:Hide() end
         return
     end
-    PTMake()
-    Reskin()
-    MakeRamp()
+    BuildPetWarning()
+    StylePetWarning()
+    BuildFadeCurve()
     mounted = IsMounted()
-    TestSacrifice()
+    SacrificeActive()
     for _, event in ipairs(PT_EVENTS) do
         ptEvents:RegisterEvent(event)
     end
     ptEvents:RegisterUnitEvent("UNIT_PET", "player")
     ptEvents:RegisterUnitEvent("UNIT_HEALTH", "pet")
     ptEvents:RegisterUnitEvent("UNIT_MAXHEALTH", "pet")
-    if CALLING == "WARLOCK" then ptEvents:RegisterUnitEvent("UNIT_AURA", "player") end
-    if not CUI._unlockActive then PT.Place(ptWindow) end
-    PTRefresh()
+    if CLASS == "WARLOCK" then ptEvents:RegisterUnitEvent("UNIT_AURA", "player") end
+    if not CUI._unlockActive then PT.Place(ptFrame) end
+    RefreshPetWarning()
 end
 
-PT.Start(PTUse, {
+PT.Start(ApplyPetTracker, {
     key = "CUI_PetTracker",
     label = "Pet Tracker",
     order = 747,
-    frame = function(make)
-        if make then
-            PTMake()
-            Reskin()
-            PTRefresh()
+    frame = function(build)
+        if build then
+            BuildPetWarning()
+            StylePetWarning()
+            RefreshPetWarning()
         end
-        return ptWindow
+        return ptFrame
     end,
     size = function() return 220, PT.Get("size") + 16 end,
     noAnchorTarget = true,
@@ -598,6 +598,6 @@ PT.Start(PTUse, {
 })
 
 CUI._GroupWatch = {
-    healer = { Get = HM.Get, Cfg = HM.Cfg, Apply = HMUse },
-    pet = { Get = PT.Get, Cfg = PT.Cfg, Apply = PTUse },
+    healer = { Get = HM.Get, Cfg = HM.Cfg, Apply = HMApply },
+    pet = { Get = PT.Get, Cfg = PT.Cfg, Apply = ApplyPetTracker },
 }

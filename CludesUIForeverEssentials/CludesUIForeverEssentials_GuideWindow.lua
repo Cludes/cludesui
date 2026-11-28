@@ -24,19 +24,19 @@ local F = module.Feature(
 )
 local Get, Enabled = F.Get, F.Enabled
 
-local PAD, BOX_PAD, LINE_SPACING, BAR_H = 10, 7, 3, 5
+local PAD, BOX_PAD, ROW_GAP, BAR_H = 10, 7, 3, 5
 local ACTIVE_SHOWN = 3
-local TALLY = "(%d+)%s*/%s*(%d+)"
+local COUNT = "(%d+)%s*/%s*(%d+)"
 local GREEN, AMBER = { 0.37, 0.77, 0.42 }, { 1, 0.7, 0.25 }
 
 local window, silenced, watched, hooked = nil, {}, {}, {}
 local started, pending = false, false
-local lines, linesUsed = {}, 0
+local rows, rowsUsed = {}, 0
 local boxes, boxesUsed = {}, 0
-local rosterCache
+local listCache
 
-local function Has(o, m) return type(o) == "table" and type(o[m]) == "function" end
-local function Dig(t, ...)
+local function HasMethod(o, m) return type(o) == "table" and type(o[m]) == "function" end
+local function DigField(t, ...)
     for i = 1, select("#", ...) do
         if type(t) ~= "table" then return nil end
         t = t[select(i, ...)]
@@ -44,7 +44,7 @@ local function Dig(t, ...)
     return t
 end
 local reported = {}
-local function Run(name, fn, ...)
+local function CallSafely(name, fn, ...)
     if type(fn) ~= "function" then return nil end
     local ok, result = pcall(fn, ...)
     if ok then return result end
@@ -54,13 +54,13 @@ local function Run(name, fn, ...)
     end
 end
 
-local function RXP() return _G.RXP end
-local function Ready()
-    local v2 = Dig(RXP(), "v2")
-    return Has(v2, "IsGuideWindowEnabled") and v2:IsGuideWindowEnabled() and true or false
+local function RestedXP() return _G.RXP end
+local function GuideReady()
+    local v2 = DigField(RestedXP(), "v2")
+    return HasMethod(v2, "IsGuideWindowEnabled") and v2:IsGuideWindowEnabled() and true or false
 end
 
-local function Plain(text)
+local function StripMarkup(text)
     text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T[^|]*|t", ""):gsub("|A[^|]*|a", "")
     text = text:gsub("|H[^|]*|h", ""):gsub("|h", "")
     return (text:gsub("^%s+", ""))
@@ -70,8 +70,8 @@ end
 --  What RestedXP shows
 -------------------------------------------------------------------------------
 
-local function Heading(rxp, guide)
-    local title = guide.title or guide.subgroup or Run("GuideName", rxp.GetGuideName, guide) or guide.name
+local function GuideHeading(rxp, guide)
+    local title = guide.title or guide.subgroup or CallSafely("GuideName", rxp.GetGuideName, guide) or guide.name
     if type(title) ~= "string" then return "" end
     local range, place = title:match("^(%d+%-%d+)%s+(.+)$")
     if not range then place, range = title:match("^(.-)%s+(%d+%-%d+)$") end
@@ -81,64 +81,64 @@ end
 
 local function ReadGuideStep(rxp, element)
     local frame = element.frame
-    local labelFs = Dig(frame, "text")
-    local shown = Has(labelFs, "GetText") and labelFs:GetText()
+    local textFs = DigField(frame, "text")
+    local shown = HasMethod(textFs, "GetText") and textFs:GetText()
     if type(shown) ~= "string" or shown == "" or shown == " " then
         local raw = element.text ~= " " and element.text or element.tooltipText or element.rawtext
         shown = type(raw) == "string" and raw or ""
-        shown = Run("ReplaceNpc", rxp.ReplaceNpcIds, shown, element) or shown
+        shown = CallSafely("ReplaceNpc", rxp.ReplaceNpcIds, shown, element) or shown
     end
-    local icon = Dig(frame, "icon")
-    local glyph = Has(icon, "GetText") and icon:GetText()
-    if type(glyph) ~= "string" then glyph = element.icon or Dig(rxp, "icons", element.tag) or "" end
-    local btn = Dig(frame, "button")
-    local done = (Has(btn, "GetChecked") and btn:GetChecked()) or element.completed or element.skip
-    local have, need = Plain(shown):match(TALLY)
+    local icon = DigField(frame, "icon")
+    local glyph = HasMethod(icon, "GetText") and icon:GetText()
+    if type(glyph) ~= "string" then glyph = element.icon or DigField(rxp, "icons", element.tag) or "" end
+    local button = DigField(frame, "button")
+    local done = (HasMethod(button, "GetChecked") and button:GetChecked()) or element.completed or element.skip
+    local have, need = StripMarkup(shown):match(COUNT)
     if type(element.tag) == "string" and element.tag:find("^buy") and type(element.id) == "number" and type(element.qty) == "number" then
         have, need = C_Item.GetItemCount(element.id), element.qty
     end
-    return { text = shown, icon = glyph, done = done and true or false, source = labelFs, have = tonumber(have), need = tonumber(need) }
+    return { text = shown, icon = glyph, done = done and true or false, source = textFs, have = tonumber(have), need = tonumber(need) }
 end
 
-local function StepRoster(rxp)
+local function GuideSteps(rxp)
     local v2 = rxp.v2
-    if not Has(v2, "BuildGuideStepsSnapshot") then return {} end
-    if rosterCache and rosterCache.guide == rxp.currentGuide then return rosterCache.list end
-    local snapshot = Run("Snapshot", v2.BuildGuideStepsSnapshot, v2, true)
-    local roster = {}
+    if not HasMethod(v2, "BuildGuideStepsSnapshot") then return {} end
+    if listCache and listCache.guide == rxp.currentGuide then return listCache.list end
+    local snapshot = CallSafely("Snapshot", v2.BuildGuideStepsSnapshot, v2, true)
+    local list = {}
     for _, r in ipairs(snapshot and snapshot.rows or {}) do
         if not r.hidden and type(r.text) == "string" then
-            roster[#roster + 1] = { index = r.index, text = Plain(r.text:match("^[^\n]*") or ""), done = r.complete and true or false }
+            list[#list + 1] = { index = r.index, text = StripMarkup(r.text:match("^[^\n]*") or ""), done = r.complete and true or false }
         end
     end
-    rosterCache = { guide = rxp.currentGuide, list = roster }
-    return roster
+    listCache = { guide = rxp.currentGuide, list = list }
+    return list
 end
 
-local function Load()
-    local rxp = RXP()
+local function ReadGuide()
+    local rxp = RestedXP()
     local guide = rxp and rxp.currentGuide
     if not guide or guide.empty then return nil end
-    local model = { heading = Heading(rxp, guide), steps = {} }
-    local step = Run("Progress", rxp.GetGuideProgress)
+    local model = { heading = GuideHeading(rxp, guide), steps = {} }
+    local step = CallSafely("Progress", rxp.GetGuideProgress)
     local total = guide.steps and #guide.steps or 0
     if step and total > 0 then model.step, model.total = step, total end
     local after = step or 0
-    for _, s in ipairs(Dig(rxp, "RXPFrame", "activeSteps") or {}) do
+    for _, s in ipairs(DigField(rxp, "RXPFrame", "activeSteps") or {}) do
         if s.active and not s.hidewindow and not s.hidetip then
-            local roster = {}
+            local list = {}
             for _, element in ipairs(s.elements or {}) do
-                if element.text or element.rawtext or element.tooltipText then roster[#roster + 1] = ReadGuideStep(rxp, element) end
+                if element.text or element.rawtext or element.tooltipText then list[#list + 1] = ReadGuideStep(rxp, element) end
             end
             local label = (s.title and s.title ~= "") and s.title or CUI.Lf("Step %1$d", s.index)
-            model.steps[#model.steps + 1] = { label = label, rows = roster, source = s }
+            model.steps[#model.steps + 1] = { label = label, rows = list, source = s }
             if s.index > after then after = s.index end
             if #model.steps == ACTIVE_SHOWN then break end
         end
     end
     model.next = {}
-    for _, item in ipairs(StepRoster(rxp)) do
-        if item.index > after and #model.next < Get("steps") then model.next[#model.next + 1] = item end
+    for _, entry in ipairs(GuideSteps(rxp)) do
+        if entry.index > after and #model.next < Get("steps") then model.next[#model.next + 1] = entry end
     end
     return model
 end
@@ -147,7 +147,7 @@ end
 --  RestedXP's own frames, faded out while this is on
 -------------------------------------------------------------------------------
 
-local function Silence(frame, top)
+local function MuteFrame(frame, top)
     if not frame or not frame.EnableMouse then return end
     if not silenced[frame] then
         local home = { mouse = frame:IsMouseEnabled() }
@@ -165,20 +165,20 @@ local function Silence(frame, top)
         frame:EnableMouse(false)
     end
     for _, child in ipairs({ frame:GetChildren() }) do
-        Silence(child, false)
+        MuteFrame(child, false)
     end
 end
 
-local function Take()
-    local rxp = RXP()
-    local guide = Dig(_G.RXPV2GuideWindow, "frame")
-    local stages = rxp and rxp.player and _G["RXPActiveStepsFrame" .. tostring(rxp.player.name)]
-    stages = Dig(stages, "frame") or stages
-    Silence(guide, true)
-    Silence(stages, true)
+local function TakeOverWindow()
+    local rxp = RestedXP()
+    local guide = DigField(_G.RXPV2GuideWindow, "frame")
+    local steps = rxp and rxp.player and _G["RXPActiveStepsFrame" .. tostring(rxp.player.name)]
+    steps = DigField(steps, "frame") or steps
+    MuteFrame(guide, true)
+    MuteFrame(steps, true)
 end
 
-local function Release()
+local function RestoreWindow()
     for frame, home in pairs(silenced) do
         silenced[frame] = nil
         if home.alpha then frame:SetAlpha(home.alpha) end
@@ -190,34 +190,34 @@ end
 --  The window
 -------------------------------------------------------------------------------
 
-local Renew
+local QueueRedraw
 
-local function MaySkip()
+local function SkipAllowed()
     local mode = Get("skip")
     return mode == "click" or (mode == "shift" and IsShiftKeyDown())
 end
 
-local function Menu() Run("Menu", Dig(RXP(), "RXPFrame", "DropDownMenu")) end
+local function Menu() CallSafely("Menu", DigField(RestedXP(), "RXPFrame", "DropDownMenu")) end
 
-local function SkipActive(step)
-    local rxp = RXP()
-    local progress = Run("Progress", rxp.GetGuideProgress)
+local function SkipStep(step)
+    local rxp = RestedXP()
+    local progress = CallSafely("Progress", rxp.GetGuideProgress)
     if not progress then return end
     if step and step.index ~= progress then
         for _, element in ipairs(step.elements or {}) do
             if not element.optional and not element.skip then
                 element.skip = true
-                if element.OnComplete then Run("Complete", element.OnComplete, element) end
+                if element.OnComplete then CallSafely("Complete", element.OnComplete, element) end
             end
         end
         rxp.updateSteps = true
-        Run("Map", rxp.UpdateMap)
+        CallSafely("Map", rxp.UpdateMap)
     else
-        Run("SetStep", rxp.SetStep, progress + 1)
+        CallSafely("SetStep", rxp.SetStep, progress + 1)
     end
 end
 
-local function Hint(owner, text)
+local function ShowTip(owner, text)
     GameTooltip:SetOwner(owner, "ANCHOR_TOP")
     GameTooltip:SetText(text, CUI.Kit.Accent())
     local mode = Get("skip")
@@ -226,16 +226,16 @@ local function Hint(owner, text)
     GameTooltip:Show()
 end
 
-local function Label(parent, dims, tint)
+local function NewText(parent, size, color)
     local fs = parent:CreateFontString(nil, "OVERLAY")
-    CUI.Kit.Font(fs, dims, "essentials")
+    CUI.Kit.Font(fs, size, "essentials")
     fs:SetJustifyH("LEFT")
     fs:SetWordWrap(true)
-    if tint then fs:SetTextColor(tint[1], tint[2], tint[3]) end
+    if color then fs:SetTextColor(color[1], color[2], color[3]) end
     return fs
 end
 
-local function Make()
+local function Build()
     if window then return window end
     local Kit = CUI.Kit
     window = CreateFrame("Frame", "CludesUIGuideWindow", UIParent)
@@ -252,20 +252,20 @@ local function Make()
         local point, _, relPoint, x, y = self:GetPoint(1)
         if point then F.Cfg().pos = { point = point, relPoint = relPoint, x = x, y = y } end
     end)
-    window:SetScript("OnMouseUp", function(_, btn)
-        if btn == "RightButton" then Menu() end
+    window:SetScript("OnMouseUp", function(_, button)
+        if button == "RightButton" then Menu() end
     end)
     Kit.Panel(window, 0.85)
-    window.title = Label(window, 14)
+    window.title = NewText(window, 14)
     window.title:SetPoint("TOPLEFT", PAD, -PAD)
     window.title:SetPoint("RIGHT", window, "RIGHT", -PAD - 20, 0)
     window.title:SetWordWrap(false)
     window.fold = Kit.Glyph(window, "-", function()
         F.Cfg().folded = not Get("folded")
-        Renew()
+        QueueRedraw()
     end, CUI.L("Fold"), "essentials")
     window.fold:SetPoint("TOPRIGHT", -5, -6)
-    window.progress = Label(window, Kit.SMALL_SIZE, Kit.Palette.muted)
+    window.progress = NewText(window, Kit.SMALL_SIZE, Kit.Palette.muted)
     window.bar = CreateFrame("StatusBar", nil, window)
     window.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     window.bar:SetHeight(BAR_H)
@@ -276,7 +276,7 @@ local function Make()
     return window
 end
 
-local function Box(i)
+local function StepBox(i)
     local b = boxes[i]
     if b then return b end
     b = CreateFrame("Button", nil, window)
@@ -287,75 +287,75 @@ local function Box(i)
     b.edge:SetPoint("TOPLEFT")
     b.edge:SetPoint("BOTTOMLEFT")
     b.edge:SetWidth(2)
-    b.label = Label(b, CUI.Kit.SMALL_SIZE)
+    b.label = NewText(b, CUI.Kit.SMALL_SIZE)
     b.label:SetPoint("TOPLEFT", BOX_PAD, -BOX_PAD)
-    b:SetScript("OnClick", function(self, btn)
-        if btn == "RightButton" then return Menu() end
-        if MaySkip() then SkipActive(self.step) end
+    b:SetScript("OnClick", function(self, button)
+        if button == "RightButton" then return Menu() end
+        if SkipAllowed() then SkipStep(self.step) end
     end)
-    b:SetScript("OnEnter", function(self) Hint(self, CUI.L("Skip step")) end)
+    b:SetScript("OnEnter", function(self) ShowTip(self, CUI.L("Skip step")) end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
     boxes[i] = b
     return b
 end
 
 local function StepLine(i)
-    local fs = lines[i]
+    local fs = rows[i]
     if fs then return fs end
-    fs = Label(window, CUI.Kit.TEXT_SIZE)
-    lines[i] = fs
+    fs = NewText(window, CUI.Kit.TEXT_SIZE)
+    rows[i] = fs
     return fs
 end
 
 -- The next steps: one button each (shift-click goes there).
-local nextLines = {}
+local nextRows = {}
 local function NextStepRow(i)
-    local r = nextLines[i]
+    local r = nextRows[i]
     if r then return r end
     r = CreateFrame("Button", nil, window)
     r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    r.text = Label(r, CUI.Kit.SMALL_SIZE, CUI.Kit.Palette.muted)
+    r.text = NewText(r, CUI.Kit.SMALL_SIZE, CUI.Kit.Palette.muted)
     r.text:SetPoint("TOPLEFT")
     r.text:SetPoint("TOPRIGHT")
     r.text:SetWordWrap(false)
-    r:SetScript("OnClick", function(self, btn)
-        if btn == "RightButton" then return Menu() end
-        if MaySkip() and self.index then Run("SetStep", RXP().SetStep, self.index) end
+    r:SetScript("OnClick", function(self, button)
+        if button == "RightButton" then return Menu() end
+        if SkipAllowed() and self.index then CallSafely("SetStep", RestedXP().SetStep, self.index) end
     end)
-    r:SetScript("OnEnter", function(self) Hint(self, CUI.Lf("Go to step %1$d", self.index or 0)) end)
+    r:SetScript("OnEnter", function(self) ShowTip(self, CUI.Lf("Go to step %1$d", self.index or 0)) end)
     r:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    nextLines[i] = r
+    nextRows[i] = r
     return r
 end
 
 -- A row's source text changing (an objective's count) redraws the window.
-local function Watch(origin)
-    if origin and not hooked[origin] and Has(origin, "SetText") then
-        hooked[origin] = true
-        hooksecurefunc(origin, "SetText", function()
-            if window and window:IsShown() then Renew() end
+local function WatchSource(source)
+    if source and not hooked[source] and HasMethod(source, "SetText") then
+        hooked[source] = true
+        hooksecurefunc(source, "SetText", function()
+            if window and window:IsShown() then QueueRedraw() end
         end)
     end
 end
 
-local function Render()
+local function Redraw()
     pending = false
-    if not (Enabled() and RXP() and Ready()) then
+    if not (Enabled() and RestedXP() and GuideReady()) then
         if window then window:Hide() end
-        Release()
+        RestoreWindow()
         return
     end
-    Take()
-    Make()
+    TakeOverWindow()
+    Build()
     local Kit = CUI.Kit
     local width = Get("width")
     local inner = width - 2 * PAD
     window:SetWidth(width)
-    local model = Load()
+    local model = ReadGuide()
     window.title:SetText(model and model.heading or CUI.L("No guide selected"))
     window.fold.t:SetText(Get("folded") and "+" or "-")
     local y = -PAD - 18
-    linesUsed, boxesUsed = 0, 0
+    rowsUsed, boxesUsed = 0, 0
     if model and model.total then
         window.progress:ClearAllPoints()
         window.progress:SetPoint("TOPLEFT", PAD, y)
@@ -379,7 +379,7 @@ local function Render()
         local r, g, b = Kit.Accent()
         for _, step in ipairs(model.steps) do
             boxesUsed = boxesUsed + 1
-            local box = Box(boxesUsed)
+            local box = StepBox(boxesUsed)
             box.step = step.source
             box.bg:SetColorTexture(r, g, b, boxesUsed == 1 and 0.12 or 0.06)
             box.edge:SetColorTexture(r, g, b, boxesUsed == 1 and 1 or 0.4)
@@ -389,53 +389,53 @@ local function Render()
             box:SetPoint("TOPLEFT", PAD, y)
             box:SetWidth(inner)
             local by = -BOX_PAD - box.label:GetStringHeight() - 4
-            for _, line in ipairs(step.rows) do
-                linesUsed = linesUsed + 1
-                local fs = StepLine(linesUsed)
+            for _, row in ipairs(step.rows) do
+                rowsUsed = rowsUsed + 1
+                local fs = StepLine(rowsUsed)
                 fs:SetParent(box)
                 fs:ClearAllPoints()
                 fs:SetPoint("TOPLEFT", box, "TOPLEFT", BOX_PAD, by)
                 fs:SetWidth(inner - 2 * BOX_PAD)
-                local text = line.text
-                if line.icon ~= "" then text = line.icon .. " " .. text end
+                local text = row.text
+                if row.icon ~= "" then text = row.icon .. " " .. text end
                 fs:SetText(text)
                 local c = Kit.Palette.text
-                if line.done then
+                if row.done then
                     c = Kit.Palette.muted
-                elseif line.have and line.need and line.need > 0 then
-                    c = line.have >= line.need and GREEN or (line.have > 0 and AMBER or c)
+                elseif row.have and row.need and row.need > 0 then
+                    c = row.have >= row.need and GREEN or (row.have > 0 and AMBER or c)
                 end
                 fs:SetTextColor(c[1], c[2], c[3])
-                fs:SetAlpha(line.done and 0.6 or 1)
+                fs:SetAlpha(row.done and 0.6 or 1)
                 fs:Show()
-                Watch(line.source)
-                by = by - fs:GetStringHeight() - LINE_SPACING
+                WatchSource(row.source)
+                by = by - fs:GetStringHeight() - ROW_GAP
             end
-            local h = -by + BOX_PAD - LINE_SPACING
+            local h = -by + BOX_PAD - ROW_GAP
             box:SetHeight(h)
             box:Show()
             y = y - h - 6
         end
-        for i, item in ipairs(model.next) do
+        for i, entry in ipairs(model.next) do
             local nr = NextStepRow(i)
-            nr.index = item.index
-            nr.text:SetText(("%d. %s"):format(item.index, item.text))
+            nr.index = entry.index
+            nr.text:SetText(("%d. %s"):format(entry.index, entry.text))
             nr:ClearAllPoints()
             nr:SetPoint("TOPLEFT", PAD, y)
             nr:SetSize(inner, 14)
             nr:Show()
             y = y - 15
         end
-        for i = #model.next + 1, #nextLines do
-            nextLines[i]:Hide()
+        for i = #model.next + 1, #nextRows do
+            nextRows[i]:Hide()
         end
     else
-        for i = 1, #nextLines do
-            nextLines[i]:Hide()
+        for i = 1, #nextRows do
+            nextRows[i]:Hide()
         end
     end
-    for i = linesUsed + 1, #lines do
-        lines[i]:Hide()
+    for i = rowsUsed + 1, #rows do
+        rows[i]:Hide()
     end
     for i = boxesUsed + 1, #boxes do
         boxes[i]:Hide()
@@ -449,25 +449,25 @@ local function Render()
 end
 
 -- Many RestedXP updates land together: one redraw on the next frame.
-function Renew()
+function QueueRedraw()
     if pending then return end
     pending = true
-    C_Timer.After(0, Render)
+    C_Timer.After(0, Redraw)
 end
 
-local function Rebuilt()
-    rosterCache = nil
-    Renew()
+local function OnGuideRebuilt()
+    listCache = nil
+    QueueRedraw()
 end
 
-local function Start()
-    if started or not RXP() then return end
+local function StartFollowing()
+    if started or not RestedXP() then return end
     started = true
-    local rxp = RXP()
-    if Has(rxp, "SetStep") then hooksecurefunc(rxp, "SetStep", Rebuilt) end
+    local rxp = RestedXP()
+    if HasMethod(rxp, "SetStep") then hooksecurefunc(rxp, "SetStep", OnGuideRebuilt) end
     local v2 = rxp.v2
     for _, name in ipairs({ "UpdateGuideWindow", "UpdateActiveStepsFrame", "UpdatePlayerActiveStepItem" }) do
-        if Has(v2, name) then hooksecurefunc(v2, name, Rebuilt) end
+        if HasMethod(v2, name) then hooksecurefunc(v2, name, OnGuideRebuilt) end
     end
 end
 
@@ -475,33 +475,33 @@ local loader = CreateFrame("Frame")
 loader:SetScript("OnEvent", function(_, evt, name)
     if evt == "ADDON_LOADED" and name ~= "RXPGuides" then return end
     loader:UnregisterEvent("ADDON_LOADED")
-    Start()
-    Renew()
+    StartFollowing()
+    QueueRedraw()
 end)
 
 local function Apply()
     if Enabled() then
-        if RXP() then
-            Start()
+        if RestedXP() then
+            StartFollowing()
         else
             loader:RegisterEvent("ADDON_LOADED")
         end
         if window and not CUI._unlockActive then F.Place(window) end
-        Rebuilt()
+        OnGuideRebuilt()
     else
         if window then window:Hide() end
-        Release()
+        RestoreWindow()
     end
 end
 
-CUI._GuideWindow = { Get = Get, Cfg = F.Cfg, Apply = Apply, Read = Load, Loaded = function() return RXP() ~= nil end, Ready = Ready }
+CUI._GuideWindow = { Get = Get, Cfg = F.Cfg, Apply = Apply, Read = ReadGuide, Loaded = function() return RestedXP() ~= nil end, Ready = GuideReady }
 
 F.Start(Apply, {
     key = "CUI_GuideWindow",
     label = "Guide Window",
     order = 762,
-    frame = function(make)
-        if make then Make() end
+    frame = function(build)
+        if build then Build() end
         return window
     end,
     size = function() return Get("width"), window and window:GetHeight() or 200 end,
