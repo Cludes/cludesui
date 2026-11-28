@@ -36,14 +36,14 @@ local DRINK_SPELL = 430
 local DRINK_GLYPH = "Interface\\Icons\\INV_Drink_07"
 local HEALER_CALLINGS = { PRIEST = true, PALADIN = true, DRUID = true, SHAMAN = true }
 local LOWER, OUT = 0.6, 0.3
-local ROW_PAD, PAD, GLYPH_SPACING = 4, 6, 4
+local LINE_PAD, PAD, GLYPH_SPACING = 4, 6, 4
 local DEAD, OFFLINE, UNKNOWN = "Dead", "Offline", "--"
 local NO_TIER = math.huge
 local UNIT_EVENTS =
     { "UNIT_POWER_UPDATE", "UNIT_MAXPOWER", "UNIT_DISPLAYPOWER", "UNIT_CONNECTION", "UNIT_AURA" }
 
-local hmFrame, drinkHeading, shareRamp
-local rowRoster, members, roster, tracked, tier, units, watchers = {}, {}, {}, {}, {}, {}, {}
+local hmWindow, drinkTitle, shareRamp
+local lineRoster, members, roster, tracked, tier, units, watchers = {}, {}, {}, {}, {}, {}, {}
 local RAID, PARTY = {}, {}
 for catalog = 1, 40 do
     RAID[catalog] = "raid" .. catalog
@@ -87,12 +87,12 @@ local function Roster()
     wipe(roster)
     wipe(tracked)
     for _, unitToken in ipairs(Units()) do
-        local heading, unitId = UnitName(unitToken), UnitGUID(unitToken)
+        local title, unitId = UnitName(unitToken), UnitGUID(unitToken)
         local _, calling = UnitClass(unitToken)
         if
-            heading
+            title
             and unitId
-            and not (Secret(heading) or Secret(unitId) or Secret(calling))
+            and not (Secret(title) or Secret(unitId) or Secret(calling))
             and IsHealer(unitToken, calling)
         then
             local num = #roster + 1
@@ -101,35 +101,35 @@ local function Roster()
             if m.guid ~= unitId then
                 m.pct, m.drinking = nil, false
             end
-            m.unit, m.name, m.class, m.guid = unitToken, heading, calling, unitId
+            m.unit, m.name, m.class, m.guid = unitToken, title, calling, unitId
             roster[num], tracked[unitToken] = m, m
         end
     end
 end
 
-local function CanReadDrink()
+local function CanLoadDrink()
     if not HM.Get("drinking") or AurasSecret() then return false end
-    drinkHeading = drinkHeading or C_Spell.GetSpellName(DRINK_SPELL)
-    return drinkHeading ~= nil
+    drinkTitle = drinkTitle or C_Spell.GetSpellName(DRINK_SPELL)
+    return drinkTitle ~= nil
 end
 
 local function Drinking(m)
-    if not (CanReadDrink() and C_UnitAuras.GetAuraDataBySpellName) then return end
-    local aura = C_UnitAuras.GetAuraDataBySpellName(m.unit, drinkHeading, "HELPFUL")
+    if not (CanLoadDrink() and C_UnitAuras.GetAuraDataBySpellName) then return end
+    local aura = C_UnitAuras.GetAuraDataBySpellName(m.unit, drinkTitle, "HELPFUL")
     m.drinking = aura ~= nil
     m.drinkID = aura and aura.auraInstanceID or nil
 end
 
 -- True when the drinking state changed (an aura update for this unit).
 local function DrinkAltered(m, details)
-    if not CanReadDrink() then return false end
+    if not CanLoadDrink() then return false end
     local was = m.drinking
     if not details or details.isFullUpdate then
         Drinking(m)
         return m.drinking ~= was
     end
     for _, a in ipairs(details.addedAuras or {}) do
-        if not Secret(a.name) and a.name == drinkHeading then
+        if not Secret(a.name) and a.name == drinkTitle then
             m.drinking, m.drinkID = true, a.auraInstanceID
         end
     end
@@ -144,7 +144,7 @@ local function DrinkAltered(m, details)
     return m.drinking ~= was
 end
 
-local function Read(m)
+local function Load(m)
     local online, dead = UnitIsConnected(m.unit), UnitIsDeadOrGhost(m.unit)
     if Secret(online) then online = true end
     if Secret(dead) then dead = false end
@@ -169,7 +169,7 @@ local function Kept(a, b)
     return a.guid < b.guid
 end
 
-local function Rank()
+local function Order()
     for catalog = 1, #roster do
         if roster[catalog].secret then
             table.sort(roster, Kept)
@@ -202,10 +202,10 @@ local SAMPLE = {
     { name = "Paladin", class = "PALADIN", guid = "4", state = DEAD },
 }
 
-local function Row(catalog)
-    local row = rowRoster[catalog]
+local function Line(catalog)
+    local row = lineRoster[catalog]
     if row then return row end
-    row = CreateFrame("Frame", nil, hmFrame)
+    row = CreateFrame("Frame", nil, hmWindow)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetTexture(DRINK_GLYPH)
     row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -216,16 +216,16 @@ local function Row(catalog)
     row.name = row:CreateFontString(nil, "OVERLAY")
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
-    rowRoster[catalog] = row
+    lineRoster[catalog] = row
     return row
 end
 
 local function RenderLines(items)
     local dims, drinks = HM.Get("size"), HM.Get("drinking")
-    local step = dims + ROW_PAD
-    hmFrame:SetSize(HM.Get("width"), #items * step + 2 * PAD)
+    local step = dims + LINE_PAD
+    hmWindow:SetSize(HM.Get("width"), #items * step + 2 * PAD)
     for catalog, m in ipairs(items) do
-        local region = Row(catalog)
+        local region = Line(catalog)
         region:ClearAllPoints()
         region:SetPoint("TOPLEFT", PAD, -PAD - (catalog - 1) * step)
         region:SetPoint("TOPRIGHT", -PAD, -PAD - (catalog - 1) * step)
@@ -269,28 +269,28 @@ local function RenderLines(items)
         end
         region:Show()
     end
-    for catalog = #items + 1, #rowRoster do
-        rowRoster[catalog]:Hide()
+    for catalog = #items + 1, #lineRoster do
+        lineRoster[catalog]:Hide()
     end
 end
 
 local function HMRedraw()
-    if not hmFrame then return end
+    if not hmWindow then return end
     if CUI._unlockActive and HM.Enabled() then
         RenderLines(SAMPLE)
-        hmFrame:Show()
+        hmWindow:Show()
         return
     end
     if not (HM.Enabled() and HMHere()) or #roster == 0 then
-        hmFrame:Hide()
+        hmWindow:Hide()
         return
     end
     for catalog = 1, #roster do
-        Read(roster[catalog])
+        Load(roster[catalog])
     end
-    Rank()
+    Order()
     RenderLines(roster)
-    hmFrame:Show()
+    hmWindow:Show()
 end
 
 local hmPending
@@ -352,12 +352,12 @@ HMUse = function()
         wipe(roster)
         wipe(tracked)
         Watch()
-        if hmFrame then hmFrame:Hide() end
+        if hmWindow then hmWindow:Hide() end
         return
     end
-    if not hmFrame then
-        hmFrame = CreateFrame("Frame", "CludesUIHealerMana", UIParent)
-        CUI.Kit.Panel(hmFrame, 0.75)
+    if not hmWindow then
+        hmWindow = CreateFrame("Frame", "CludesUIHealerMana", UIParent)
+        CUI.Kit.Panel(hmWindow, 0.75)
     end
     for _, event in ipairs({ "GROUP_ROSTER_UPDATE", "PLAYER_ROLES_ASSIGNED", "PLAYER_ENTERING_WORLD" }) do
         hmEvents:RegisterEvent(event)
@@ -371,7 +371,7 @@ HMUse = function()
         end
     end
     Watch()
-    if not CUI._unlockActive then HM.Place(hmFrame) end
+    if not CUI._unlockActive then HM.Place(hmWindow) end
     HMRedraw()
 end
 
@@ -379,12 +379,12 @@ HM.Start(HMUse, {
     key = "CUI_HealerMana",
     label = "Healer Mana",
     order = 746,
-    frame = function(build)
-        if build and not hmFrame then HMUse() end
-        if build and hmFrame then HMRedraw() end
-        return hmFrame
+    frame = function(make)
+        if make and not hmWindow then HMUse() end
+        if make and hmWindow then HMRedraw() end
+        return hmWindow
     end,
-    size = function() return HM.Get("width"), #SAMPLE * (HM.Get("size") + ROW_PAD) + 2 * PAD end,
+    size = function() return HM.Get("width"), #SAMPLE * (HM.Get("size") + LINE_PAD) + 2 * PAD end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })
@@ -426,43 +426,43 @@ local PT_EVENTS = {
     "PLAYER_CONTROL_GAINED",
 }
 
-local ptFrame, ramp, mounted, dismountClock, sacrificed
+local ptWindow, ramp, mounted, dismountClock, sacrificed
 local _, CALLING = UnitClass("player")
 
-local function Trained(ident)
+local function Learned(ident)
     return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(ident)
 end
 
-local function PTBuild()
-    if ptFrame then return ptFrame end
-    ptFrame = CreateFrame("Frame", "CludesUIPetTracker", UIParent)
-    ptFrame.icon = ptFrame:CreateTexture(nil, "ARTWORK")
-    ptFrame.icon:SetTexture(PET_GLYPH)
-    ptFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    ptFrame.text = ptFrame:CreateFontString(nil, "OVERLAY")
-    ptFrame.text:SetTextColor(1, 0.2, 0.2)
-    ptFrame:Hide()
-    return ptFrame
+local function PTMake()
+    if ptWindow then return ptWindow end
+    ptWindow = CreateFrame("Frame", "CludesUIPetTracker", UIParent)
+    ptWindow.icon = ptWindow:CreateTexture(nil, "ARTWORK")
+    ptWindow.icon:SetTexture(PET_GLYPH)
+    ptWindow.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    ptWindow.text = ptWindow:CreateFontString(nil, "OVERLAY")
+    ptWindow.text:SetTextColor(1, 0.2, 0.2)
+    ptWindow:Hide()
+    return ptWindow
 end
 
 local function Reskin()
     local dims = PT.Get("size")
-    CUI.Kit.Font(ptFrame.text, dims, "essentials")
-    ptFrame.text:ClearAllPoints()
+    CUI.Kit.Font(ptWindow.text, dims, "essentials")
+    ptWindow.text:ClearAllPoints()
     if PT.Get("showIcon") then
-        ptFrame.icon:SetSize(dims + 12, dims + 12)
-        ptFrame.icon:SetPoint("LEFT")
-        ptFrame.icon:Show()
-        ptFrame.text:SetPoint("LEFT", ptFrame.icon, "RIGHT", 8, 0)
+        ptWindow.icon:SetSize(dims + 12, dims + 12)
+        ptWindow.icon:SetPoint("LEFT")
+        ptWindow.icon:Show()
+        ptWindow.text:SetPoint("LEFT", ptWindow.icon, "RIGHT", 8, 0)
     else
-        ptFrame.icon:Hide()
-        ptFrame.text:SetPoint("CENTER")
+        ptWindow.icon:Hide()
+        ptWindow.text:SetPoint("CENTER")
     end
-    ptFrame:SetSize(220, dims + 16)
+    ptWindow:SetSize(220, dims + 16)
 end
 
 -- The warning fades out above the low-health line: 1 below it, 0 above.
-local function BuildRamp()
+local function MakeRamp()
     local below = PT.Get("lowBelow") / 100
     ramp = ramp or C_CurveUtil.CreateCurve()
     ramp:SetType(Enum.LuaCurveType.Step)
@@ -474,8 +474,8 @@ local function BuildRamp()
 end
 
 local function ShouldHavePet()
-    if CALLING == "HUNTER" then return Trained(CALL_PET) end
-    if CALLING == "WARLOCK" then return Trained(SUMMON_IMP) and not sacrificed end
+    if CALLING == "HUNTER" then return Learned(CALL_PET) end
+    if CALLING == "WARLOCK" then return Learned(SUMMON_IMP) and not sacrificed end
     return false
 end
 
@@ -493,8 +493,8 @@ end
 local function IsPassive()
     if not PetHasActionBar() then return false end
     for catalog = 1, NUM_PET_ACTION_SLOTS do
-        local heading, _, _, isActive = GetPetActionInfo(catalog)
-        if heading == "PET_MODE_PASSIVE" then return isActive == true end
+        local title, _, _, isActive = GetPetActionInfo(catalog)
+        if title == "PET_MODE_PASSIVE" then return isActive == true end
     end
     return false
 end
@@ -506,29 +506,29 @@ local function Warning()
     if PT.Get("instanceOnly") and not IsInInstance() then return end
     if not ShouldHavePet() then return end
     if not UnitExists("pet") then
-        if CALLING == "HUNTER" and (Trained(LONE_WOLF) or Trained(LONE_WOLF_TAUGHT)) then return end
+        if CALLING == "HUNTER" and (Learned(LONE_WOLF) or Learned(LONE_WOLF_TAUGHT)) then return end
         return "missingText"
     end
     if PT.Get("passive") and IsPassive() then return "passiveText" end
     if PT.Get("lowHealth") and not UnitIsDeadOrGhost("pet") then return "lowText", true end
 end
 
-local function PTRenew()
-    if not ptFrame then return end
+local function PTRefresh()
+    if not ptWindow then return end
     if CUI._unlockActive and PT.Enabled() then
-        ptFrame.text:SetText(PT.Get("missingText"))
-        ptFrame:SetAlpha(1)
-        ptFrame:Show()
+        ptWindow.text:SetText(PT.Get("missingText"))
+        ptWindow:SetAlpha(1)
+        ptWindow:Show()
         return
     end
     local id, lower = Warning()
     if not id then
-        ptFrame:Hide()
+        ptWindow:Hide()
         return
     end
-    ptFrame.text:SetText(PT.Get(id))
-    ptFrame:SetAlpha(lower and UnitHealthPercent("pet", true, ramp) or 1)
-    ptFrame:Show()
+    ptWindow.text:SetText(PT.Get(id))
+    ptWindow:SetAlpha(lower and UnitHealthPercent("pet", true, ramp) or 1)
+    ptWindow:Show()
 end
 
 local ptEvents = CreateFrame("Frame")
@@ -543,7 +543,7 @@ ptEvents:SetScript("OnEvent", function(_, evt, unitToken)
         if was and not mounted then
             dismountClock = C_Timer.NewTimer(DISMOUNT_DELAY, function()
                 dismountClock = nil
-                PTRenew()
+                PTRefresh()
             end)
         end
     elseif evt == "UNIT_AURA" or evt == "PLAYER_REGEN_ENABLED" then
@@ -551,7 +551,7 @@ ptEvents:SetScript("OnEvent", function(_, evt, unitToken)
     elseif evt == "UNIT_HEALTH" and unitToken ~= "pet" then
         return
     end
-    PTRenew()
+    PTRefresh()
 end)
 
 local function PTUse()
@@ -561,12 +561,12 @@ local function PTUse()
             dismountClock:Cancel()
             dismountClock = nil
         end
-        if ptFrame then ptFrame:Hide() end
+        if ptWindow then ptWindow:Hide() end
         return
     end
-    PTBuild()
+    PTMake()
     Reskin()
-    BuildRamp()
+    MakeRamp()
     mounted = IsMounted()
     TestSacrifice()
     for _, event in ipairs(PT_EVENTS) do
@@ -576,21 +576,21 @@ local function PTUse()
     ptEvents:RegisterUnitEvent("UNIT_HEALTH", "pet")
     ptEvents:RegisterUnitEvent("UNIT_MAXHEALTH", "pet")
     if CALLING == "WARLOCK" then ptEvents:RegisterUnitEvent("UNIT_AURA", "player") end
-    if not CUI._unlockActive then PT.Place(ptFrame) end
-    PTRenew()
+    if not CUI._unlockActive then PT.Place(ptWindow) end
+    PTRefresh()
 end
 
 PT.Start(PTUse, {
     key = "CUI_PetTracker",
     label = "Pet Tracker",
     order = 747,
-    frame = function(build)
-        if build then
-            PTBuild()
+    frame = function(make)
+        if make then
+            PTMake()
             Reskin()
-            PTRenew()
+            PTRefresh()
         end
-        return ptFrame
+        return ptWindow
     end,
     size = function() return 220, PT.Get("size") + 16 end,
     noAnchorTarget = true,
