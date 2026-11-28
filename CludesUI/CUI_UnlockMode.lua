@@ -892,10 +892,10 @@ CUI._unlockCoreInit = function()
             highlightText = "Enable Bloodlust Icon",
         },
 
-        -- Forever Essentials (WoW Forever only): Junk Items sits on the General page
+        -- Forever Essentials (WoW Forever only): Junk Items sits on the Trade page
         ["CUI_JunkList"] = {
             module = "CludesUIForeverEssentials",
-            page = "General",
+            page = "Trade",
             sectionName = "JUNK ITEMS",
             highlightText = "Enable Junk Items Window",
         },

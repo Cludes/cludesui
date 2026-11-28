@@ -597,5 +597,258 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
     end
 
+    ---------------------------------------------------------------------------
+    --  JOURNEYS
+    ---------------------------------------------------------------------------
+    local JY = CUI._Journeys
+    if JY then
+        local function Set(key, val)
+            JY.Cfg()[key] = val
+            JY.Apply()
+        end
+        local function jOff() return not JY.Get("enabled") end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "JOURNEYS", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Journeys",
+            tooltip = "Place a map pin and a small card shows the fastest way there, over walking, the flights you know, boats, zeppelins, the tram, your Hearthstone and class teleports, with an arrow pointing to the next step. Open a flight master's map once so it knows your flights. Move the card in Edit Layout.",
+            getValue = function() return not jOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Use Hearthstone",
+            disabled = jOff,
+            tooltip = "Includes your Hearthstone when it is ready. It learns where it takes you the first time you use it.",
+            getValue = function() return JY.Get("hearth") end,
+            setValue = function(val) Set("hearth", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Use Class Teleports",
+            disabled = jOff,
+            tooltip = "Includes mage teleports and Moonglade when you know them and they are ready.",
+            getValue = function() return JY.Get("teleports") end,
+            setValue = function(val) Set("teleports", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Route on Minimap",
+            disabled = jOff,
+            tooltip = "Dots on the minimap along the walk to the next step.",
+            getValue = function() return JY.Get("minimapRoute") end,
+            setValue = function(val) Set("minimapRoute", val and true or false) end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
+    --  BOAT AND ZEPPELIN TIMERS
+    ---------------------------------------------------------------------------
+    local TR2 = CUI._Transport
+    if TR2 then
+        local function tOff() return not TR2.Get("enabled") end
+        local function Set(key, val)
+            TR2.Cfg()[key] = val
+            TR2.Apply()
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "BOAT AND ZEPPELIN TIMERS", cursorY)
+        cursorY = cursorY - height
+        CUI.BuildSectionUnlockJump(
+            heading,
+            { key = "CUI_ShipTimer", disabled = tOff, disabledTooltip = "Boat and Zeppelin Timer" }
+        )
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Boat and Zeppelin Timers",
+            tooltip = "When each ship leaves and arrives, on minimap pins at its docks. A ship is timed when you ride it, when you click its pin as it arrives (left) or leaves (right), or from players who share timings.",
+            getValue = function() return not tOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Zone Timer",
+            disabled = tOff,
+            tooltip = "A list of the boats and zeppelins in your zone with their times. Move it in Edit Layout.",
+            getValue = function() return TR2.Get("zone") end,
+            setValue = function(val) Set("zone", val and true or false) end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Share Timings",
+            disabled = tOff,
+            tooltip = "Sends the ships you time to your group and guild, and takes theirs, and the timings of ForeverTransport and NauticusClassic users.",
+            getValue = function() return TR2.Get("share") end,
+            setValue = function(val) Set("share", val and true or false) end,
+        }, {
+            type = "slider",
+            text = "Text Size",
+            min = 10,
+            max = 24,
+            step = 1,
+            isPercent = false,
+            disabled = tOff,
+            getValue = function() return TR2.Get("size") end,
+            setValue = function(val) Set("size", math.floor(val + 0.5)) end,
+        })
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
+    --  TOWN MAP
+    ---------------------------------------------------------------------------
+    local TWN = CUI._TownMap
+    if TWN then
+        local function nOff() return not TWN.Get("enabled") end
+        local function Tog(key, textValue, tipText, dis)
+            return {
+                type = "toggle",
+                text = textValue,
+                tooltip = tipText,
+                disabled = dis or nOff,
+                getValue = function() return TWN.Get(key) end,
+                setValue = function(val)
+                    TWN.Cfg()[key] = val and true or false
+                    TWN.Apply()
+                end,
+            }
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "TOWN MAP", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog(
+                "enabled",
+                "Town Map",
+                "Service NPCs for your faction, mailboxes and spirit healers on the world map. Hover a pin for its name.",
+                function() return false end
+            ),
+            Tog(
+                "capitalsOnly",
+                "Vendors and Trainers Only in Cities",
+                "Keeps vendors, trainers and the bank off questing maps. Flight masters, innkeepers and stable masters still show everywhere."
+            )
+        )
+        cursorY = cursorY - height
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog("minimapMail", "Mailboxes on Minimap", "Pins the mailboxes near you on the minimap."),
+            Tog(
+                "minimapSpirit",
+                "Spirit Healers on Minimap",
+                "Pins the spirit healers near you on the minimap."
+            )
+        )
+        cursorY = cursorY - height
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog("mail", "Mailboxes", "Every mailbox, in towns and out in the world."),
+            Tog("spirit", "Spirit Healers", "Every graveyard's spirit healer, in towns and out in the world.")
+        )
+        cursorY = cursorY - height
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog("class", "Class Trainers", "Your own class's trainers only."),
+            Tog("profession", "Profession Trainers")
+        )
+        cursorY = cursorY - height
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog("flight", "Flight Masters", "Left to Map Markers when its Flight Points pins are on."),
+            Tog("inn", "Innkeepers")
+        )
+        cursorY = cursorY - height
+        _, height =
+            W:DualRow(hostFrame, cursorY, Tog("bank", "Bank and Auction House"), Tog("repair", "Repairs"))
+        cursorY = cursorY - height
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog("supplies", "Reagents, Ammo and Food"),
+            Tog("stable", "Stable Masters", "Hunters only.")
+        )
+        cursorY = cursorY - height
+        _, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            Tog("vendors", "Other Vendors", "Trade goods and every other merchant."),
+            {
+                type = "slider",
+                text = "Pin Size",
+                min = 10,
+                max = 32,
+                step = 1,
+                isPercent = false,
+                disabled = nOff,
+                getValue = function() return TWN.Get("size") end,
+                setValue = function(val)
+                    TWN.Cfg().size = math.floor(val + 0.5)
+                    TWN.Apply()
+                end,
+            }
+        )
+        cursorY = cursorY - height
+    end
+
+    ---------------------------------------------------------------------------
+    --  LAYERS
+    ---------------------------------------------------------------------------
+    local LY = CUI._Layers
+    if LY then
+        local lt, ls = LY.tracker, LY.swap
+        local function lOff() return not lt.Get("enabled") end
+        local function Set(key, val)
+            lt.Cfg()[key] = val
+            lt.Apply()
+        end
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "LAYERS", cursorY)
+        cursorY = cursorY - height
+        CUI.BuildSectionUnlockJump(
+            heading,
+            { key = "CUI_LayerTracker", disabled = lOff, disabledTooltip = "Layer Tracker" }
+        )
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Layer Tracker",
+            tooltip = "Which layer of the zone you are on, read from the NPCs around you. Hover it for the layers seen in this zone.",
+            getValue = function() return not lOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Auto-Accept Layer Swap",
+            tooltip = "Confirms the game's layer swap prompt when you join a group.",
+            getValue = function() return ls.Get("enabled") end,
+            setValue = function(val) ls.Cfg().enabled = val and true or false end,
+        })
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
+            type = "toggle",
+            text = "Countdown to a Layer Change",
+            disabled = lOff,
+            getValue = function() return lt.Get("countdown") end,
+            setValue = function(val) Set("countdown", val and true or false) end,
+        }, {
+            type = "toggle",
+            text = "Say When You Move",
+            disabled = lOff,
+            getValue = function() return lt.Get("chat") end,
+            setValue = function(val) Set("chat", val and true or false) end,
+        })
+        cursorY = cursorY - height
+    end
+
     return math.abs(cursorY)
 end

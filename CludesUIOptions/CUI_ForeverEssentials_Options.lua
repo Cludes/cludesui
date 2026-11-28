@@ -5,6 +5,9 @@ local CUI = CludesUI
 --  Registers the Forever Essentials sidebar addon (WoW Forever only) with its
 --  tabs:
 --    * General -- quality of life features (built by CUI_ForeverEssentials_General_Options.lua)
+--    * Questing, Combat, Gear, Trade -- the General page's features by theme
+--      (CUI_ForeverEssentials_<Page>_Options.lua); Travel also takes Journeys,
+--      boat timers, the Town Map and Layers
 --    * Dungeons -- "Dungeons & Raids": journal, map, kills, CC Marker Bar, LFG, inspect,
 --      instance tracker, raid debuffs (CUI_ForeverEssentials_Dungeons_Options.lua)
 --    * Travel -- flight timer (built by CUI_ForeverEssentials_Travel_Options.lua)
@@ -24,6 +27,10 @@ local PAGE_MACROS = "Macros"
 local PAGE_TRAINING = "Training"
 local PAGE_PVP = "PvP"
 local PAGE_DUNGEONS = "Dungeons"
+local PAGE_QUESTING = "Questing"
+local PAGE_COMBAT = "Combat"
+local PAGE_GEAR = "Gear"
+local PAGE_TRADE = "Trade"
 
 -- Item quality dropdown values and order from Poor up to last, each in its
 -- colour (the General and Loot pages).
@@ -49,7 +56,7 @@ CUI.AtLogin(function()
     CUI:RegisterModule("CludesUIForeverEssentials", {
         title = "Forever Tools",
         description = "Essential tools for WoW Forever.",
-        pages = { PAGE_GENERAL, PAGE_DUNGEONS, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING, PAGE_PVP },
+        pages = { PAGE_GENERAL, PAGE_DUNGEONS, PAGE_QUESTING, PAGE_COMBAT, PAGE_GEAR, PAGE_TRADE, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING, PAGE_PVP },
         tabLabels = { [PAGE_DUNGEONS] = "Dungeons & Raids" },
         searchTerms = {
             "flight timer",
@@ -112,6 +119,18 @@ CUI.AtLogin(function()
         buildPage = function(page, hostFrame, yOffset)
             if page == PAGE_GENERAL and _G._CUI_BuildForeverGeneralPage then
                 return _G._CUI_BuildForeverGeneralPage(page, hostFrame, yOffset)
+            end
+            if page == PAGE_QUESTING and _G._CUI_BuildForeverQuestingPage then
+                return _G._CUI_BuildForeverQuestingPage(page, hostFrame, yOffset)
+            end
+            if page == PAGE_COMBAT and _G._CUI_BuildForeverCombatPage then
+                return _G._CUI_BuildForeverCombatPage(page, hostFrame, yOffset)
+            end
+            if page == PAGE_GEAR and _G._CUI_BuildForeverGearPage then
+                return _G._CUI_BuildForeverGearPage(page, hostFrame, yOffset)
+            end
+            if page == PAGE_TRADE and _G._CUI_BuildForeverTradePage then
+                return _G._CUI_BuildForeverTradePage(page, hostFrame, yOffset)
             end
             if page == PAGE_DUNGEONS and _G._CUI_BuildForeverDungeonsPage then
                 return _G._CUI_BuildForeverDungeonsPage(page, hostFrame, yOffset)
