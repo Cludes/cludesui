@@ -125,7 +125,7 @@ local function DisplayOn(d) return Enabled() and (d.switch == nil or Get(d.switc
 -------------------------------------------------------------------------------
 
 -- The ids of every picked entry; n = how many ids.
-local function IsPicked(entries, prefix, into)
+local function PickedIds(entries, prefix, into)
     local n = 0
     for _, entry in ipairs(entries) do
         if Get(prefix .. entry.key) then
@@ -143,14 +143,14 @@ end
 -- no filter at all), its row is switched off instead.
 local function AuraFilters()
     local cc, debuffs = {}, {}
-    local nCC = IsPicked(SPELLS.crowdControl, CC_PREFIX, cc)
+    local nCC = PickedIds(SPELLS.crowdControl, CC_PREFIX, cc)
     if Get("ccOther") then
         for ident in pairs(SPELLS.otherCrowdControl) do
             cc[ident] = true
             nCC = nCC + 1
         end
     end
-    local nDebuffs = IsPicked(SPELLS.debuffs, DEBUFF_PREFIX, debuffs)
+    local nDebuffs = PickedIds(SPELLS.debuffs, DEBUFF_PREFIX, debuffs)
     for ident in tostring(Get("debuffExtra") or ""):gmatch("%d+") do
         debuffs[tonumber(ident)] = true
         nDebuffs = nDebuffs + 1
@@ -309,7 +309,7 @@ local ROW_LAYOUT = { elementSpacing = ICON_GAP, lineSpacing = ROW_GAP, groupLine
 
 -- The panel's frame (cheap, any time) and its container (out of combat and
 -- restriction only; false = not yet).
-local function IconFrame(d)
+local function DisplayFrame(d)
     if d.holder then return d.holder end
     local holder = CreateFrame("Frame", d.frameName, UIParent)
     holder:SetSize(Get("size"), Get("size"))
@@ -326,7 +326,7 @@ local function BuildAuraFrame(d)
     if C_AddOns and not C_AddOns.IsAddOnLoaded("Blizzard_AuraContainer") then
         pcall(C_AddOns.LoadAddOn, "Blizzard_AuraContainer")
     end
-    local holder = IconFrame(d)
+    local holder = DisplayFrame(d)
     local filters, has = AuraFilters()
     local success, err = pcall(function()
         local c = CreateFrame("AuraContainer", nil, holder, "CustomAuraContainerTemplate")
@@ -447,7 +447,7 @@ local function HidePanel(d)
 end
 
 local function ShowPanel(d)
-    IconFrame(d)
+    DisplayFrame(d)
     if not BuildAuraFrame(d) then return false end
     LayoutRows(d)
     LayoutPanel(d)
@@ -467,7 +467,7 @@ end
 
 local countHolder, countHung
 
-local function CountFrame()
+local function CountdownFrame()
     if not countHolder then
         countHolder = CreateFrame("Frame", "CludesUIBGCountdown", UIParent)
         countHolder:SetSize(COUNT_W, COUNT_H)
@@ -482,7 +482,7 @@ local function ConfigureCountdown()
     local tracker = _G.TimerTracker
     if not tracker then return end
     if FT.Enabled() then
-        local holder = CountFrame()
+        local holder = CountdownFrame()
         if not CUI._unlockActive then FT.Place(holder) end
         tracker:ClearAllPoints()
         tracker:SetSize(UIParent:GetWidth(), UIParent:GetHeight())
@@ -591,7 +591,7 @@ for _, d in ipairs(DISPLAYS) do
         order = d.order,
         shown = function() return DisplayOn(d) end,
         frame = function(build)
-            if build then IconFrame(d) end
+            if build then DisplayFrame(d) end
             return d.holder
         end,
         size = function() return PanelDimensions(d) end,
@@ -604,7 +604,7 @@ FT.Start(function() end, {
     label = "Battleground Countdown",
     order = 760,
     frame = function(build)
-        if build then CountFrame() end
+        if build then CountdownFrame() end
         return countHolder
     end,
     size = function() return COUNT_W, COUNT_H end,

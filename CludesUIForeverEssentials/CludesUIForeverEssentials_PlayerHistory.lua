@@ -144,7 +144,7 @@ local function NotePlayer(rec, unit)
     if Readable(class) then rec.classFile = class end
 end
 
-local function StartSession(st)
+local function EnterInstance(st)
     if st.inst == curInst then return end
     st.inst, st.place, st.instance = curInst, curPlace, curType
     if curType == "raid" then
@@ -176,7 +176,7 @@ local function ShowHistory(guid, unit, now, raid)
         st.extend = region.kept == true and lastS ~= nil and lastS.at == region.at
     end
     open[guid] = st
-    if curInst then StartSession(st) end
+    if curInst then EnterInstance(st) end
 end
 
 local function EndSession(guid, now)
@@ -237,7 +237,7 @@ local function InstanceName()
     end
     curInst, curType, curPlace = id, kind, (type(name) == "string" and name ~= "") and name or nil
     for _, st in pairs(open) do
-        StartSession(st)
+        EnterInstance(st)
     end
 end
 
