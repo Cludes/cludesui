@@ -6,7 +6,8 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  Dungeon Quests: the quests for the dungeon you are in, from the Dungeon
 --  Journal's quest list.
 --    On entering    one chat line: how many are in your log, done, or still
---                   to pick up (and where the first of those is given).
+--                   to pick up (and where the first of those is given), and
+--                   the dungeon's level range when you are outside it.
 --    Quests button  on the Dungeon Map's title bar. Hover it for the list;
 --                   click it to share the ones in your log with your group,
 --                   one at a time (each waits a moment so the group can
@@ -168,15 +169,25 @@ local function IsDungeonQuest(id)
 end
 
 local lastSummary
+-- "(levels 17-26, you are 14)" when you are outside the dungeon's range.
+local function LevelNote(dungeon)
+    local levels = dungeon.levels
+    local low, high = levels and levels[1], levels and levels[#levels]
+    local mine = UnitLevel("player")
+    if not (low and high and mine) or (mine >= low and mine <= high) then return "" end
+    return (" (levels %d-%d, you are %d)"):format(low, high, mine)
+end
+
 local function SummaryLine(dungeon)
     local rows = QuestsOf(dungeon)
-    if #rows == 0 then return nil end
+    local levelNote = LevelNote(dungeon)
+    if #rows == 0 then return levelNote ~= "" and (dungeon.name .. levelNote .. ".") or nil end
     local inLog, done, todo, firstTodo = Tally(rows)
     local parts = {}
     if inLog > 0 then parts[#parts + 1] = (inLog == 1 and "1 quest" or inLog .. " quests") .. " in your log" end
     if todo > 0 then parts[#parts + 1] = todo .. " you have not picked up" end
     if done > 0 and inLog == 0 and todo == 0 then parts[#parts + 1] = "all done" end
-    local line = dungeon.name .. ": " .. table.concat(parts, ", ") .. "."
+    local line = dungeon.name .. levelNote .. ": " .. table.concat(parts, ", ") .. "."
     if inLog == 0 and firstTodo and firstTodo[QUEST_WHERE] then line = line .. " " .. firstTodo[QUEST_NAME] .. " is given at " .. firstTodo[QUEST_WHERE] .. "." end
     return line
 end
