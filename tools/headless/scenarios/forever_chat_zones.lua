@@ -24,9 +24,9 @@ CludesUIDB.chatZones = { enabled = true }
 CZ.Apply()
 HARNESS_FIRE_EVENT("GUILD_ROSTER_UPDATE")
 local function Say(label, event, author, guid)
-    local args = { CZ.Filter(nil, event, "LFM Deadmines", author, "", "", "", "", 0, 0, "", 0, 0, guid) }
-    local text = args[2] or "(unchanged)"
-    OUT:write(("== %s: %s\n"):format(label, (text:gsub("|", "!"))))
+    local args = { CZ.TagChat(nil, event, "LFM Deadmines", author, "", "", "", "", 0, 0, "", 0, 0, guid) }
+    local prefix = args[2] or "(unchanged)"
+    OUT:write(("== %s: %s\n"):format(label, (prefix:gsub("|", "!"))))
 end
 Say("guild member in a channel", "CHAT_MSG_CHANNEL", "Korvath-Lightbane", "Player-1-AAA")
 Say("stranger in a channel", "CHAT_MSG_CHANNEL", "Zed-Lightbane", "Player-1-BBB")
@@ -39,4 +39,4 @@ HARNESS_ADVANCE(16 * 60)
 Say("16 minutes later", "CHAT_MSG_CHANNEL", "Nessa", "Player-1-CCC")
 CZ.Cfg().enabled = false
 CZ.Apply()
-OUT:write("== off: known " .. tostring(CZ.Fresh("Korvath") ~= nil) .. "\n")
+OUT:write("== off: known " .. tostring(CZ.Recent("Korvath") ~= nil) .. "\n")
