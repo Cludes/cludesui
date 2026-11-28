@@ -246,6 +246,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         Lay:Fit()
         PlaceKnob(animFrac)
 
+        -- After a click every row on the page re-reads its state, so the rows this
+        -- toggle switches on or off follow at once instead of on the next visit.
+        local function RefreshDependents()
+            if CUI.RefreshPage then CUI:RefreshPage() end
+        end
+
         -- The click handlers stand down after the setter when it rebuilt the page and
         -- this toggle was dressed again for another use (the rebuild painted it).
         if options.noAnim then
@@ -254,6 +260,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 local g = PoolGen(toggle)
                 setValue(value)
                 if PoolGen(toggle) ~= g then return end
+                RefreshDependents()
                 animFrac = value and 1 or 0
                 animTarget = animFrac
                 PlaceKnob(animFrac)
@@ -271,8 +278,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             toggle:SetScript("OnClick", function()
                 local value = not getValue()
                 local g = PoolGen(toggle)
+                local from = animFrac
                 setValue(value)
                 if PoolGen(toggle) ~= g then return end
+                RefreshDependents()
+                -- the re-read snapped this knob to its end; slide it from where it was
+                animFrac = from
                 animTarget = value and 1 or 0
                 toggle:SetScript("OnUpdate", AnimOnUpdate)
             end)
