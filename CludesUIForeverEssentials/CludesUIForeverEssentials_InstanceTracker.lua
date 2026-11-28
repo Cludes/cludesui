@@ -7,7 +7,9 @@ if not (CUI and CUI.IS_FOREVER) then return end
 --  in the last hour against the game's cap (10 an hour on Forever, a
 --  setting in case that changes), when the next one frees up, and a timer
 --  for the run you are in. Leaving an instance prints a summary: time,
---  deaths, experience and items looted. The last runs are kept per character.
+--  bosses killed, deaths, experience (with the share of a level and the pace
+--  per hour), gold gained and items looted. The last runs are kept per
+--  character.
 --
 --  Re-entering the same copy (after a wipe, say) is not a new instance. The
 --  copy is read from a creature's GUID inside (its zone UID field), so the
@@ -33,7 +35,7 @@ local function Font() return CUI.GetFontPath("essentials") end
 local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 -- Account store: entries = { {t, map, copy}, ... } for the last hour;
--- runs[guid] = { {name, start, seconds, deaths, xp, items}, ... } newest first.
+-- runs[guid] = { {name, start, seconds, deaths, xp, items, bosses, money}, ... } newest first.
 local function Store()
     local cfg = F.Cfg()
     cfg.entries = cfg.entries or {}
@@ -114,7 +116,7 @@ end)
 local function StartVisit(reload)
     local name, _, _, _, _, _, _, mapID = GetInstanceInfo()
     if visit and visit.map == mapID then return end -- still the same visit
-    visit = { map = mapID, name = name, start = time(), deaths = 0, xp = 0, items = 0 }
+    visit = { map = mapID, name = name, start = time(), deaths = 0, xp = 0, items = 0, bosses = 0, money = GetMoney() }
     lastXP, lastMax = UnitXP("player"), UnitXPMax("player")
     if not reload then
         local record = { t = time(), map = mapID }
@@ -138,6 +140,32 @@ local function StartVisit(reload)
     end
 end
 
+local function Plural(n, word) return ("%d %s%s"):format(n, word, n == 1 and "" or "s") end
+local function Thousands(n) return BreakUpLargeNumbers and BreakUpLargeNumbers(n) or tostring(n) end
+
+-- "Deadmines: 24:10, 6 bosses, 1 death, 8,240 XP (61% of a level, 20,457 an
+-- hour), 3g 12s, 14 items" (the parts with nothing to say are left out).
+function module.RunSummaryText(name, seconds, run)
+    local parts = { SecondsToClock and SecondsToClock(seconds) or (math.floor(seconds / 60) .. "m") }
+    if (run.bosses or 0) > 0 then parts[#parts + 1] = run.bosses == 1 and "1 boss" or (run.bosses .. " bosses") end
+    parts[#parts + 1] = Plural(run.deaths or 0, "death")
+    local xp = run.xp or 0
+    if xp > 0 then
+        local extra = {}
+        local levelSize = UnitXPMax("player")
+        if levelSize and levelSize > 0 then extra[#extra + 1] = ("%d%% of a level"):format(math.floor(xp * 100 / levelSize + 0.5)) end
+        if seconds >= 60 then extra[#extra + 1] = Thousands(math.floor(xp * 3600 / seconds)) .. " an hour" end
+        parts[#parts + 1] = Thousands(xp) .. " XP" .. (#extra > 0 and (" (" .. table.concat(extra, ", ") .. ")") or "")
+    end
+    local gained = run.money and math.max(0, GetMoney() - run.money) or run.gained or 0
+    if gained > 0 then
+        local Coins = GetCoinTextureString or GetMoneyString
+        parts[#parts + 1] = Coins and Coins(gained) or (math.floor(gained / 10000) .. "g")
+    end
+    parts[#parts + 1] = Plural(run.items or 0, "item")
+    return (name or "?") .. ": " .. table.concat(parts, ", ")
+end
+
 local function EndVisit()
     if not visit then return end
     local val = visit
@@ -154,26 +182,20 @@ local function EndVisit()
         deaths = val.deaths,
         xp = val.xp,
         items = val.items,
+        bosses = val.bosses,
+        money = math.max(0, GetMoney() - (val.money or GetMoney())),
     })
     while #runs[unitGuid] > KEEP_RUNS do
         table.remove(runs[unitGuid])
     end
     if Get("summary") then
         local num, frees = module.InstanceCount()
-        Say(
-            ("%s: %s, %d death%s, %s XP, %d item%s. %d of %d this hour%s."):format(
-                val.name or "?",
-                SecondsToClock and SecondsToClock(seconds) or (math.floor(seconds / 60) .. "m"),
-                val.deaths,
-                val.deaths == 1 and "" or "s",
-                BreakUpLargeNumbers and BreakUpLargeNumbers(val.xp) or val.xp,
-                val.items,
-                val.items == 1 and "" or "s",
-                num,
-                Get("cap"),
-                frees and (", next frees in " .. math.ceil(frees / 60) .. " min") or ""
-            )
-        )
+        Say(("%s. %d of %d this hour%s."):format(
+            module.RunSummaryText(val.name, seconds, val),
+            num,
+            Get("cap"),
+            frees and (", next frees in " .. math.ceil(frees / 60) .. " min") or ""
+        ))
     end
 end
 
@@ -227,7 +249,7 @@ local LOOT_SELF = LOOT_ITEM_SELF and LOOT_ITEM_SELF:match("^(.-)%%s")
 local LOOT_SELF_MULTI = LOOT_ITEM_SELF_MULTIPLE and LOOT_ITEM_SELF_MULTIPLE:match("^(.-)%%s")
 
 local eventFrame = CreateFrame("Frame")
-eventFrame:SetScript("OnEvent", function(_, evt, a1, a2)
+eventFrame:SetScript("OnEvent", function(_, evt, a1, a2, _, _, a5)
     if evt == "PLAYER_ENTERING_WORLD" then
         local reload = a1 or a2 -- isInitialLogin, isReloadingUi
         -- A ghost running back from the graveyard is still on the run.
@@ -242,6 +264,8 @@ eventFrame:SetScript("OnEvent", function(_, evt, a1, a2)
         return
     elseif evt == "PLAYER_DEAD" then
         visit.deaths = visit.deaths + 1
+    elseif evt == "ENCOUNTER_END" then
+        if a5 == 1 and not Secret(a5) then visit.bosses = (visit.bosses or 0) + 1 end
     elseif evt == "PLAYER_XP_UPDATE" then
         local xp, max = UnitXP("player"), UnitXPMax("player")
         if lastXP then
@@ -269,6 +293,7 @@ local function Apply()
             "PLAYER_UNGHOST",
             "PLAYER_XP_UPDATE",
             "CHAT_MSG_LOOT",
+            "ENCOUNTER_END",
         }) do
             eventFrame:RegisterEvent(event)
         end
