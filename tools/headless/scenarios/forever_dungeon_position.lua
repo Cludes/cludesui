@@ -3,7 +3,7 @@
 -- world: zoning in reads the entrance, killing Rhahk'Zor reads his pin (a
 -- few yards off, as you stand beside him), and from then the map shows you
 -- where you stand, a line to the next boss, an arrow and the yards. Where
--- the game hides your position, the footer says so.
+-- the game hides your position (every Forever dungeon), the footer stays blank.
 local CUI = rawget(_G, "CludesUI")
 local DM = CUI._DungeonMap
 if not (DM and DM.Map) then

@@ -379,15 +379,10 @@ function DrawYou()
         youDot:Hide()
         youLine:Hide()
         arrow:Hide()
-        -- Why there is no arrow: the game hides where you are, or the map is
-        -- still learning how it lines up (it needs the entrance and a kill).
-        local why = ""
-        if dungeon and not x then
-            why = CUI.L("position hidden")
-        elseif dungeon then
-            why = CUI.L("learning map")
-        end
-        yardsText:SetText(why)
+        -- While the map learns how it lines up (it needs the entrance and a
+        -- kill) the footer says so. Where the game hides your position, as
+        -- in every Forever dungeon, it says nothing: there is nothing to wait for.
+        yardsText:SetText((dungeon and x) and CUI.L("learning map") or "")
         return
     end
     local u, v = ToPicture(fit, x, y)

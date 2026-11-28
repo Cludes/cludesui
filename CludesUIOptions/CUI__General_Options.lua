@@ -149,12 +149,6 @@ CUI._WHATSNEW_PATCHES = {
             {
                 module = "Forever Tools",
                 forever = true,
-                title = "Dungeon Map: where you are",
-                desc = "Where the game gives your position in a dungeon, the map learns to show you, with a line and an arrow to the next boss.",
-            },
-            {
-                module = "Forever Tools",
-                forever = true,
                 title = "Dungeon Quests",
                 desc = "Entering a dungeon tells you which of its quests you have and its level range; the Dungeon Map's Quests button lists them and shares yours with the group.",
             },
