@@ -124,6 +124,61 @@ end
 -------------------------------------------------------------------------------
 CUI._WHATSNEW_PATCHES = {
     {
+        version = "1.6.0",
+        heroes = {
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Dungeons & Raids page",
+                desc = "Everything for dungeons and raids in one place in Forever Tools: the Journal, Dungeon Map, Boss Kills, CC Marker Bar, Res Helper, Looking For Group, Group Inspect, Instance Tracker and Raid Debuffs.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "CC Marker Bar",
+                desc = "Target a mob and press CC: it picks the right crowd control for that mob from your group (Polymorph, Sap, Shackle, Hibernate, Banish or Freezing Trap), skips ones it is immune to, marks it and calls it in chat.",
+            },
+        },
+        features = {
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Journeys on real walking maps",
+                desc = "Walks go round hills and water and along piers, the arrow follows the path, the minimap shows the route, and walks are timed at your mount's speed.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Dungeon Map: where you are",
+                desc = "Where the game gives your position in a dungeon, the map learns to show you, with a line and an arrow to the next boss.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Dungeon Quests",
+                desc = "Entering a dungeon tells you which of its quests you have and its level range; the Dungeon Map's Quests button lists them and shares yours with the group.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Res Helper",
+                desc = "After a wipe, click a dead player's name to resurrect them; the group is told who you are resurrecting.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Better run summaries",
+                desc = "The summary after each dungeon shows bosses killed, how much of a level you gained, XP an hour and gold made.",
+            },
+            {
+                module = "Forever Tools",
+                forever = true,
+                title = "Say When You Drink",
+                desc = "Healers can tell the group when they sit down to drink and when their mana is full.",
+            },
+        },
+    },
+    {
         version = "1.5.0",
         heroes = {
             {
